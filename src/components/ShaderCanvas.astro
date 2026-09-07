@@ -1,0 +1,81 @@
+---
+// One live TypeShade-compiled shader on a canvas.
+//
+// The shader is emitted at BUILD time (src/lib/hero-shader.ts → the pinned mirror) and inlined
+// here as JSON; the browser only gets src/lib/shader-runtime.ts, which knows nothing about the
+// compiler. Sizing is the caller's job — pass a class that gives this element a box.
+//
+// The element paints a CSS gradient behind the canvas, and the canvas is transparent-cleared,
+// so a browser with neither WebGPU nor WebGL2 (or a lost device) degrades to that gradient
+// instead of a black rectangle.
+import { heroShader } from '../lib/hero-shader.ts'
+
+interface Props {
+  /** shader-dsl example id, e.g. `'ocean'` — must exist in the mirror's registry. */
+  example: string
+  class?: string
+}
+
+const { example, class: className } = Astro.props
+const data = heroShader(example)
+// `</script` inside a JSON <script> would close the block early. Nothing the compiler emits
+// contains it, but escaping `<` costs one replace and removes the class of bug.
+const payload = JSON.stringify(data).replace(/</g, '\\u003c')
+---
+
+<div class:list={['ts-shader', className]} data-shader-canvas data-example={data.id}>
+  <canvas
+    role="img"
+    aria-label={`Live ${data.title.toLowerCase()}: a shader written in TypeScript, compiled by TypeShade to WGSL and GLSL ES 3.00, running in this browser`}
+    data-backend="none"></canvas>
+  <script type="application/json" data-shader-payload set:html={payload} is:inline />
+</div>
+
+<style>
+  .ts-shader {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    /* The static fallback: what shows through a transparent (or never-started) canvas.
+       The far stops are the SAME colour at alpha 0, not `transparent` — `transparent` is
+       transparent BLACK, and interpolating to it in sRGB leaves a visible dark band. */
+    background:
+      radial-gradient(120% 90% at 15% 0%, #16324a 0%, rgb(22 50 74 / 0) 70%),
+      radial-gradient(90% 80% at 85% 100%, #2b1f4a 0%, rgb(43 31 74 / 0) 70%),
+      #0b0f14;
+  }
+  .ts-shader > canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<script>
+  import { mountShader, type MountedShader, type ShaderData } from '../lib/shader-runtime.ts'
+
+  // One module script serves every instance on the page: mount each unmounted host and park
+  // the handle on its canvas, so a caller (and the QA pass) can read frames/backend per canvas.
+  type ShaderCanvasEl = HTMLCanvasElement & { __shader?: MountedShader }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-shader-canvas]')) {
+    if (root.dataset.mounted) continue
+    root.dataset.mounted = '1'
+    const canvas = root.querySelector('canvas') as ShaderCanvasEl | null
+    const raw = root.querySelector('[data-shader-payload]')?.textContent
+    if (!canvas || !raw) continue
+    let data: ShaderData
+    try {
+      data = JSON.parse(raw) as ShaderData
+    } catch {
+      continue
+    }
+    void mountShader(canvas, data)
+      .then((m) => {
+        canvas.__shader = m
+      })
+      .catch(() => {
+        // mountShader already falls back internally; this only guards an unhandled rejection.
+      })
+  }
+</script>
