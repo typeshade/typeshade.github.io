@@ -1,0 +1,46 @@
+---
+// SECTION HEADING — design §5 "Anchor marker", IA I-15, §8's focus order.
+//
+// One `h2` per section, each carrying the `#` anchor. The marker takes the link atom whole:
+// accent plus the persistent underline D-7 made the sole non-colour affordance cue. It
+// occupies its box in every state, so revealing it at >= 64rem shifts nothing (1.4.13) and it
+// is never an invisible tab stop (2.4.7) — the `opacity` rule lives in global.css.
+//
+// R-3: no `h2` on this page contains a digit. §write's numeral is therefore rendered as a
+// WORD and asserted against `hero.authoredLines` by its caller.
+//
+// The heading's ACCESSIBLE NAME is `text` and nothing else. The anchor lives inside the `h2`
+// (§5), and a name computed from the subtree concatenates the anchor's own label into every
+// heading — so a screen-reader user browsing by heading, which is this page's main navigation
+// aid for them, heard "… Permalink to types" seven times. `aria-label` here is the SAME
+// string the heading renders, from the same prop, so no second wording can appear (R-15).
+interface Props {
+  /** The section id this heading names — also the anchor's destination. */
+  id: string
+  /** deck §5's h2, verbatim. */
+  text: string
+  /** `--text-h2` (36 → 44) by default; `--text-h2-lg` (36 → 52) for §agree and §adopt (§3). */
+  size?: 'h2' | 'h2-lg'
+  class?: string
+}
+const { id, text, size = 'h2', class: className } = Astro.props
+---
+
+<h2
+  aria-label={text}
+  class:list={[
+    size === 'h2-lg' ? 'text-h2-lg' : 'text-h2',
+    // §3's tracking, per role: -0.022em at 36 px, -0.025em from 44/52 up (the ladder steps
+    // at 48rem, which is where --text-h2 does).
+    size === 'h2-lg' ? 'tracking-[-0.025em]' : 'tracking-[-0.022em] md:tracking-[-0.025em]',
+    'font-semibold text-balance',
+    className,
+  ]}
+>
+  {text}
+  {/* The `#` is aria-hidden, so the accessible name is the label alone — which is what keeps
+      the seven markers' names distinct under R-15's injectivity check. */}
+  <a class="anchor link" href={`#${id}`} aria-label={`Permalink to ${id}`}
+    ><span aria-hidden="true">#</span></a
+  >
+</h2>

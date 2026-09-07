@@ -91,26 +91,65 @@ export interface ShaderData {
 
 export type Backend = 'webgpu' | 'webgl2' | 'none'
 
+/** The state a mount's strings are written for. `still-*` is the one-frame path — taken under
+ *  `prefers-reduced-motion` or by `still` — and is a separate key because the hero says
+ *  something different there while a `still` mount says exactly what its backend row says
+ *  (07-copy-deck §6). */
+export type LabelState = Backend | 'still-webgpu' | 'still-webgl2'
+
+/** One string per state. Full, never partial: a missing key is a label that would go blank on
+ *  the path nobody tested. */
+export type StateStrings = Readonly<Record<LabelState, string>>
+
+/** A text node this mount owns, plus what it says in each state. */
+export interface LabelSlot {
+  readonly el: HTMLElement | null
+  readonly text: StateStrings
+}
+
+/** Everything on this mount whose wording names a backend. Written together, from one value
+ *  (IA I-2), so a caption and an accessible name can never disagree. */
+export interface MountLabels {
+  /** The `<figcaption>` — the caption plate. */
+  readonly caption?: LabelSlot
+  /** The bezel header, on mounts that have one. */
+  readonly header?: LabelSlot
+  /** The canvas's own accessible name. */
+  readonly ariaLabel?: StateStrings
+}
+
 export interface MountOptions {
   /** Skip the WebGPU probe and go straight to WebGL2. `?forcegl2=1` on the page URL sets
    *  this too, so a verification run can exercise the GLSL half without a code change. */
   readonly forceWebGl2?: boolean
+  /** Draw exactly one frame at the pinned clock and stop — no rAF, no observers. The same
+   *  path `prefers-reduced-motion: reduce` takes, so a still mount is not a second code path
+   *  (IA R-9, I-5). An example with no `time` control redraws an identical frame forever
+   *  without it. */
+  readonly still?: boolean
+  /** The mount's own per-state strings and the elements they are written into. */
+  readonly labels?: MountLabels
 }
 
 export interface MountedShader {
-  /** Which backend drew the first frame. `'none'` means both failed and the canvas was left
-   *  transparent over whatever the page paints behind it. */
+  /** Which backend is drawing. `'none'` means both failed — or the device was lost after
+   *  mount — and the canvas was left transparent over whatever the page paints behind it.
+   *  A live getter, not a snapshot: it is what the QA census counts, and it must never
+   *  disagree with `canvas.dataset.backend`. */
   readonly backend: Backend
-  /** Frames drawn since mount. Exactly 1, and final, under `prefers-reduced-motion`. */
+  /** Frames drawn since mount. Exactly 1, and final, on the still path. */
   readonly frames: number
   stop(): void
 }
 
-/** What a page can read for QA. Set on every mount, so on a single-hero page it is the hero;
- *  on the throwaway /spike page it is whichever canvas mounted last (each canvas also carries
- *  its own `data-backend`, and ShaderCanvas.astro parks the handle on the element). */
 declare global {
+  /** The per-element handle — the census source. `window.__typeshadeHero` is last-mount-wins
+   *  (spike §5.4) and would report one of five mounts, so QA reads this. */
+  interface HTMLCanvasElement {
+    __shader?: MountedShader
+  }
   interface Window {
+    /** Kept for compatibility with the spike's harness. Never the census source. */
     __typeshadeHero?: { backend: Backend; frames: number }
   }
 }
@@ -274,6 +313,10 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     },
     dispose(): void {
+      // Clear BEFORE tearing down: a stopped mount must show the fallback ground, not the
+      // last frame it drew under a header that no longer names a live backend.
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT)
       for (const t of guards) gl.deleteTexture(t)
       if (ubo) gl.deleteBuffer(ubo)
       gl.deleteProgram(prog)
@@ -376,6 +419,9 @@ async function createWebGpuPass(
     },
     dispose(): void {
       disposed = true
+      // `unconfigure()` is what clears the canvas to transparent; destroying the device on
+      // its own leaves the last presented frame on screen.
+      ctx.unconfigure()
       device.destroy()
     },
     onLost(handler): void {
@@ -394,12 +440,18 @@ const prefersReducedMotion = (): boolean =>
 const forceGl2FromUrl = (): boolean =>
   typeof location !== 'undefined' && new URLSearchParams(location.search).get('forcegl2') === '1'
 
+/** Which state's strings this mount prints. `'none'` has no still variant: there is no frame
+ *  to be still about. */
+const labelStateOf = (backend: Backend, still: boolean): LabelState =>
+  backend === 'none' ? 'none' : still ? (`still-${backend}` as LabelState) : backend
+
 /**
  * Compile and run one build-time-emitted example on this canvas: WebGPU when a device is
  * reachable, else WebGL2, else nothing at all — the canvas is left transparent so the page's
  * own background shows through. Never a black box, and no exception reaches the console.
  *
- * The canvas gets `data-backend`; `window.__typeshadeHero` gets a live `{ backend, frames }`.
+ * The canvas gets `data-backend` and the handle at `canvas.__shader`; `window.__typeshadeHero`
+ * is kept for the spike harness and is not the census source.
  */
 export async function mountShader(
   canvas: HTMLCanvasElement,
@@ -407,9 +459,19 @@ export async function mountShader(
   opts: MountOptions = {},
 ): Promise<MountedShader> {
   const state = createFrameState(canvas, data)
-  const still = prefersReducedMotion()
+  const still = opts.still === true || prefersReducedMotion()
   const skipWebGpu = opts.forceWebGl2 === true || forceGl2FromUrl()
   state.resize()
+
+  /** Caption, bezel header and accessible name, written from ONE value in ONE tick (IA I-2),
+   *  so no string on this mount can name a backend that is not the one in `data-backend`. */
+  const applyLabels = (labelState: LabelState): void => {
+    const l = opts.labels
+    if (!l) return
+    if (l.caption?.el) l.caption.el.textContent = l.caption.text[labelState]
+    if (l.header?.el) l.header.el.textContent = l.header.text[labelState]
+    if (l.ariaLabel) canvas.setAttribute('aria-label', l.ariaLabel[labelState])
+  }
 
   const qa = { backend: 'none' as Backend, frames: 0 }
   /** Draw one frame at `seconds`, counting it. The FIRST call is also the backend's audition:
@@ -446,19 +508,43 @@ export async function mountShader(
 
   canvas.dataset.backend = qa.backend
   window.__typeshadeHero = qa
+  applyLabels(labelStateOf(qa.backend, still))
 
-  const handle = (stop: () => void): MountedShader => ({
-    backend: qa.backend,
-    get frames() {
-      return qa.frames
-    },
-    stop,
-  })
+  /** Everything that happens in ONE tick when this mount stops drawing. `dispose()` has
+   *  already put the canvas back on the fallback ground; this moves `data-backend` and
+   *  rewrites every string that named the backend that is gone — a stale image under a live
+   *  backend name is the lie the asymmetric-backend row exists to prevent (design §5). */
+  const degrade = (): void => {
+    qa.backend = 'none'
+    canvas.dataset.backend = 'none'
+    applyLabels('none')
+  }
+
+  const handle = (stop: () => void): MountedShader => {
+    const mounted: MountedShader = {
+      get backend() {
+        return qa.backend
+      },
+      get frames() {
+        return qa.frames
+      },
+      stop,
+    }
+    // The per-element handle IS the census source (IA I-1), so the runtime parks it rather
+    // than trusting each host to.
+    canvas.__shader = mounted
+    return mounted
+  }
   if (!pass) return handle(() => {})
   const live = pass
-  // Reduced motion: one frame is drawn and that is the whole contract — no loop, and no
-  // observers either, since a resize redraw would be frame two.
-  if (still) return handle(() => live.dispose())
+  // Still: one frame is drawn and that is the whole contract — no loop, and no observers
+  // either, since a resize redraw would be frame two (IA R-9).
+  if (still) {
+    return handle(() => {
+      live.dispose()
+      degrade()
+    })
+  }
 
   let stopped = false
   let raf = 0
@@ -467,20 +553,16 @@ export async function mountShader(
   let seconds = 0
   let last = 0
 
-  const fail = (): void => {
-    stop()
-    qa.backend = 'none'
-    canvas.dataset.backend = 'none'
-  }
   const tick = (now: number): void => {
     raf = requestAnimationFrame(tick)
     seconds += (now - last) / 1000
     last = now
-    // A driver that fails mid-flight must not spray the console: stop, go transparent.
+    // A driver that fails mid-flight must not spray the console: stop, go transparent, and
+    // relabel — `stop()` does all three.
     try {
       drawOnce(live, seconds)
     } catch {
-      fail()
+      stop()
     }
   }
   const start = (): void => {
@@ -502,6 +584,7 @@ export async function mountShader(
     ro.disconnect()
     document.removeEventListener('visibilitychange', sync)
     live.dispose()
+    degrade()
   }
   const sync = (): void => {
     if (stopped) return
@@ -524,11 +607,11 @@ export async function mountShader(
     try {
       drawOnce(live, seconds)
     } catch {
-      fail()
+      stop()
     }
   })
   ro.observe(canvas)
-  live.onLost(fail)
+  live.onLost(stop)
 
   sync()
   return handle(stop)

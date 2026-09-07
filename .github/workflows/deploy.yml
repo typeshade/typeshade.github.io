@@ -28,6 +28,10 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run build
+      # Deck §11: "every CTA destination is a resolved URL, verified 200 at build". Only a
+      # 404/410 fails this step — a 403/429/timeout is a runner being rate-limited or blocked,
+      # which cannot tell a dead URL from a live one and must not block a deploy.
+      - run: bun run qa:links
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

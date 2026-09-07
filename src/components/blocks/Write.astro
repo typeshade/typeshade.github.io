@@ -1,0 +1,82 @@
+---
+// §write · "What you write" — IA beat 1, deck §5 `write`, design §4 (spans) and §5.
+//
+// The h2 carries the authored line count as a WORD, because R-3 forbids a digit in any `h2` —
+// and the word is looked up from `hero.authoredLines`, so the build fails rather than letting
+// the heading and the frame beneath it disagree. A build assertion cannot go false; a hedge
+// ("One function.") reads as a hedge, which is why the numbered form was ratified (IA D-1).
+//
+// The body says "further down this page", not "next": §recognise sits between this block and
+// the pair that runs the two emits (M-3, IA D-2).
+import { Code } from 'astro-expressive-code/components'
+import { hero } from '../../lib/examples.ts'
+import { links } from '../../lib/links.ts'
+import CanvasFigure from '../CanvasFigure.astro'
+import type { CanvasText } from '../ShaderCanvas.astro'
+import CodeFrame from '../CodeFrame.astro'
+import EmitCard from '../EmitCard.astro'
+import SectionHeading from '../SectionHeading.astro'
+
+// The numeral the deck prints is `hero.authoredLines`; the heading prints its word. One map,
+// asserted — a slice that grew a line fails the build instead of shipping a wrong heading.
+const WORDS: Record<number, string> = { 8: 'Eight', 9: 'Nine', 10: 'Ten', 11: 'Eleven', 12: 'Twelve' }
+const word = WORDS[hero.authoredLines]
+if (!word) {
+  throw new Error(
+    `[write] the authored slice is ${hero.authoredLines} lines and this block has no word for ` +
+      `it — the h2 may carry no digit (R-3), so add the word or re-cut the slice`,
+  )
+}
+
+// design §5's four-state table for `B1.CANVAS` — the fifth mount, which deck §6 predates. The
+// SERVER string names no backend and is true even where the script never runs; each state
+// appends what actually drew.
+const caption: CanvasText = {
+  neutral: 'The fragment stage beside this · emitted at build time.',
+  webgpu: 'The fragment stage beside this, drawn on WebGPU.',
+  webgl2: 'The fragment stage beside this, drawn on WebGL2.',
+  none: 'Neither WebGPU nor WebGL2 here — the shaders on this page were still emitted at build time.',
+}
+---
+
+<section id="write" class="py-24 lg:py-32">
+  <div class="mx-auto w-[var(--content)]">
+    <SectionHeading id="write" text={`${word} lines. Both shader languages.`} />
+    <p class="text-lead mt-6 max-w-[var(--measure-body)] tracking-[-0.003em] text-text-2 lg:tracking-[-0.006em]">
+      That is the fragment stage of the gradient pass. Both GPU APIs run it further down this
+      page.
+    </p>
+
+    {/* At >= 64rem the trailing micro-label and CTA take the CODE column's own track, in a
+        second row the canvas/emit column spans — so they end level with the emit card instead
+        of sitting 420 px below the frame they name, and the block closes on one edge rather
+        than on two. Stacked, this is the same DOM order §7's D-10 asks for: code → canvas →
+        emit → label → CTA, with §4's `proof → micro-label 16` as the grid's own row gap. */}
+    <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-4 lg:mt-12 lg:grid-cols-12 lg:grid-rows-[auto_1fr]">
+      <div class="lg:col-span-7 lg:col-start-1 lg:row-start-1">
+        {/* No copy button here (I-11): the slice does not run standalone, and a button would
+            promise that it does. No `WGSL | GLSL` switcher either (I-12, P4). */}
+        <CodeFrame label={`Authored fragment, ${hero.file}`}>
+          <Code code={hero.authored} lang="ts" title={hero.file} />
+        </CodeFrame>
+        <p class="micro-code mt-4">
+          <span class="num">{hero.authoredLines}</span> lines · you write
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-6 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
+        <CanvasFigure example="gradient" still caption={caption} header="gradient" aspect="4/3" />
+        <EmitCard />
+      </div>
+
+      <div class="lg:col-span-7 lg:col-start-1 lg:row-start-2 lg:self-start">
+        <p class="micro-code">authored · {hero.file}</p>
+        <p class="mt-8">
+          <a class="link link-tertiary" href={links.examplesDir.href}
+            >{links.examplesDir.label}<span aria-hidden="true">→</span></a
+          >
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

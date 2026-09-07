@@ -236,6 +236,15 @@ Carried whole from `MSG` §7 — four NN/g axes (4/5 serious · 3/5 casual-neutr
 | `/404.html` | *That page is not here. The compiler is.* + `Get started` + `TypeShade home` | §7 |
 | `/llms.txt` · `og.png` alt | summary paragraph, generated link table · alt string | §8 |
 
+**Ratified amendments (2026-09-07, from the UI/UX review's UX-08).** The deck is the copy of record, so a string that ships differently from §5 is recorded HERE rather than left as a build detail.
+
+| Slot | Deck §5 | What ships | Why |
+| --- | --- | --- | --- |
+| `B1.EMIT` row 3 | `2.9 KB inlined here` | **`2.1 KB inlined here`** | Wording unchanged; the numeral is `hero.emit.payloadBytes` measured at build time, which is what the deck's own build rule requires. The page had reworded it to "inlined on this page" — **restored**. |
+| `B1.EMIT` row 4 | `byte-identical to the last build` | **`goldens diff byte for byte`, linked** to `examples/emit-goldens.test.ts` | The site keeps no golden of its own, so it cannot check byte-identity **on this build** and stating it flat would be the one claim it cannot verify (R-4). The claim is therefore made by the suite that does check it, named and linked. Design §5 independently fixes this row as that `(href, text)` pair — the third member of the destination's R-15 triple with `B2.COUNT` and `RAIL.CHIP` 2 — and §8's focus order counts it as stop 16. |
+| `B3.LAYOUT` (below the table) | *no slot* | **removed** | `12 bytes of padding after time: the argument` was on the page with no deck slot. Design §5's wording of that idea is a BUILD RULE about the offset column, not page copy; the claim is carried where the deck puts it — the offset column, which never collapses, and the byte ruler's twelve hatched cells. |
+| `B4` half-labels | `f32` · `emulated f64` | **`f32 · banded`** · **`f64 (emulated) · smooth`** | The registry's own `splitLabels` stems (`f32`, `f64 (emulated)`) plus the word each half argues with, per design §5's split bezel; §8's 1.4.1 row rests on `banded`/`smooth` being present **in words**, so the split survives a suppressed image. |
+
 **Declined, with reason:** `B1.H2`'s numberless variant (a build assertion beats a hedge — `IA` D-1); a canvas in `write` (the pair belongs to `agree`, `IA` D-3); a CTA in `whowrites` (the seven-verb ladder is full — §7); pixel deltas anywhere (`IA` D-4). **Open in `IA`, not settled here:** D-6 poster frame · D-7 new tab vs same tab · D-8 payload dedupe — none changes a word of copy.
 
 ---
@@ -243,7 +252,7 @@ Carried whole from `MSG` §7 — four NN/g axes (4/5 serious · 3/5 casual-neutr
 ## 11. Copy QA checklist
 
 Every row is pass/fail, not judgement.
-**Counts** — h1 ≤ 6 words (is 4) · subline ≤ 14 (is 13) · every h2 ≤ 8 words · every body ≤ 25 words with each sentence ≤ 20 and one main clause · `whowrites`'s Body A is 23 words, Body B 16, and its three reader-sentences ≤ 14 each · code ≤ 10 lines in `write` (owner decision (2)) and ≤ 8 elsewhere · `<title>` ≤ 60 · `meta description` ≤ 155 · `og:title` ≤ 60 · `og:description` ≤ 200 · `og:image` alt ≤ 125 · body copy at US grade 8 or below, proper nouns exempt.
+**Counts** — h1 ≤ 6 words (is 4) · subline ≤ 14 (is 13) · every h2 ≤ 8 words, **with one stated exception: the rail's `Checked by real compilers, every build — in X-GIS CI.` is 9**, because `IA` conflict X4 corrected §4's shorter draft (`Checked by real compilers, every build.`) to stop it implying THIS build ran those gates — the honesty fix costs one word and outranks the cap · every body ≤ 25 words with each sentence ≤ 20 and one main clause · `whowrites`'s Body A is 23 words, Body B 16, and its three reader-sentences ≤ 14 each · code ≤ 10 lines in `write` (owner decision (2)) and ≤ 8 elsewhere · `<title>` ≤ 60 · `meta description` ≤ 155 · `og:title` ≤ 60 · `og:description` ≤ 200 · `og:image` alt ≤ 125 · body copy at US grade 8 or below, proper nouns exempt.
 
 **Forbidden-word sweep** — grep the built HTML for every term in §9, case-insensitive, including this panel's additions. `fast` and `prove` need a human read, not a grep: `fast` passes only beside a number, `prove` / `proven` only with its object in the same sentence.
 
@@ -264,7 +273,7 @@ Every row is pass/fail, not judgement.
 
 **Honesty sweep** — the built HTML contains **zero** occurrences of: `npm i typeshade` · `production-ready` · `1.0` · `used by` · `works with` · any star or download count · `0.000%` or any spike pixel figure · `878,943` · `no comparable library` · `Decorative`. **Host names** (`MapLibre`, `deck.gl`, `PixiJS`, `three.js`, `Babylon`) appear **only** inside `whowrites`'s `SOURCES` line — QA asserts the occurrence count equals the number of source links and that none sits in body copy or beside a benefit (§5). X-GIS is the one permitted named consumer.
 
-**Structure and links** — one `h1`, `h2` per section, no skipped levels · every proof chip is real text, not an image · **every CTA destination is a resolved URL, verified 200 at build** · no two destinations share link text and no verb repeats at a different destination (§7) · no `here` / `read more` / `click here` / `learn more` / bare URL in body copy · the npm link reads `npm typeshade — reserved for 0.1.0` · `Get started` points at the **same anchored URL** in the hero, `adopt` and the footer · every number carries its unit and label adjacent, so the strip linearises.
+**Structure and links** — one `h1`, `h2` per section, no skipped levels · every proof chip is real text, not an image · **every CTA destination is a resolved URL, verified 200 at build** (`bun run qa:links` — `scripts/qa/check-http-links.mjs`, a step of `deploy.yml`; 404/410 fails, a 403/429/timeout only warns, and a run where every link warned exits INCONCLUSIVE rather than passing) · no two destinations share link text and no verb repeats at a different destination (§7) · no `here` / `read more` / `click here` / `learn more` / bare URL in body copy · the npm link reads `npm typeshade — reserved for 0.1.0` · `Get started` points at the **same anchored URL** in the hero, `adopt` and the footer · every number carries its unit and label adjacent, so the strip linearises.
 
 **Canvas states** — for **each of the four mounts** capture all applicable states (`webgpu`, `webgl2`, reduced motion, `none`) and confirm caption and `aria-label` name the state actually rendered. A caption reading "running on WebGPU" on the `none` path is a QA failure, not a cosmetic one; so is `B2.CANVAS.GPU` claiming Tint on a WebGL2 fallback (§6).
 

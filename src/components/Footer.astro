@@ -1,0 +1,45 @@
+---
+// FOOTER — design §5 "Anchor marker, footer, skip link and 404", copy 07-copy-deck.md §7.
+//
+// Four columns, each destination labelled with its actual state: `FOOTER.PACKAGE` carries
+// npm's state IN THE LINK TEXT, because a status a visitor discovers on npm after the page
+// implied otherwise is the journey's one terminal −2. Every href and label comes from
+// `links`, so no destination on this page can acquire a second wording (R-15).
+import { facts } from '../lib/examples.ts'
+import { links } from '../lib/links.ts'
+
+const columns = [
+  { head: 'Start', items: [links.guide, links.docs] },
+  { head: 'Source', items: [links.mirror, links.xgisSource] },
+  { head: 'Package', items: [links.npm] },
+  { head: 'Agents', items: [links.llms] },
+]
+---
+
+<footer class="footer">
+  <div class="mx-auto w-[var(--content)]">
+    <h2 class="sr-only">Links</h2>
+    <div class="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
+      {
+        columns.map((column) => (
+          <div>
+            <h3>{column.head}</h3>
+            <ul class="mt-2 flex flex-col">
+              {column.items.map((item) => (
+                <li>
+                  <a href={item.href}>{item.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+    <p class="mt-8 text-meta text-text-3">
+      TypeShade · {facts.license} · compiled from the mirror pinned at <a
+        class="link"
+        href={links.commit.href}>{links.commit.label}</a
+      >.
+    </p>
+  </div>
+</footer>

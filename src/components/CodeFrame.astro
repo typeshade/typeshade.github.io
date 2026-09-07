@@ -1,0 +1,36 @@
+---
+// CODE FRAME — design §5 "Code frame — Expressive Code", IA I-13.
+//
+// Expressive Code puts the horizontal scroller on the frame's OWN `<pre>`. A wrapper around it
+// would be a second scroller around the first, so the region attributes are added to that
+// `<pre>` by a BUILD-TIME DOM pass instead: the slotted frame is rendered to a string here and
+// the attributes are injected before it reaches the page. Nothing about this is JS at runtime,
+// which is what `noscript` requires of a proof element (I-16).
+//
+// EC ships its own tabindex module, which ADDS `tabindex`/`role` to an overflowing block and
+// REMOVES them from one that fits. That second half contradicted two things this file is the
+// implementation of — §5's "exactly four [regions] exist" and §8's focus order "identical at
+// 1440 and at 390" (at 1440 both frames fit, so the walk found 46 stops and 2 regions) — and
+// left `aria-label` on a `<pre>` whose role had reverted to `generic`, where ARIA 1.2
+// prohibits a name. `astro.config.mjs` therefore drops that one JS module, with a count guard,
+// so these attributes are the whole truth at every width and no script touches them.
+interface Props {
+  /** Names the CONTENT, not the widget — "Authored fragment, gradient-pass.ts". */
+  label: string
+}
+const { label } = Astro.props
+
+const escape = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
+
+const rendered = await Astro.slots.render('default')
+const attrs = ` tabindex="0" role="region" aria-label="${escape(label)}"`
+// One frame per call, so the first `<pre` is that frame's scroller. A slot that rendered no
+// `<pre` would silently drop the region; fail the build instead.
+if (!rendered.includes('<pre')) {
+  throw new Error(`[CodeFrame] '${label}' rendered no <pre> — there is no scroller to name`)
+}
+const html = rendered.replace('<pre', `<pre${attrs}`)
+---
+
+<Fragment set:html={html} />

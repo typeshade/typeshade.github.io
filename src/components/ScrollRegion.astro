@@ -1,0 +1,18 @@
+---
+// SCROLL REGION — design §5, IA I-13. `overflow-x: auto` + `overscroll-behavior-x: contain`,
+// `tabindex="0"`, `role="region"` and an `aria-label` naming the content, so arrow keys scroll
+// what the mouse can (2.1.1). Exactly four exist on the page; two of them (`B1.CODE` and
+// `B3.EDITOR`) are Expressive Code frames whose OWN `<pre>` is the scroller, so those take
+// these attributes through `CodeFrame.astro` rather than through this wrapper — a wrapper
+// there would be a second scroller around the first.
+interface Props {
+  /** Names the content, not the widget: "Reflected std140 layout", "Submodule command". */
+  label: string
+  class?: string
+}
+const { label, class: className } = Astro.props
+---
+
+<div class:list={['scroll-region', className]} role="region" tabindex="0" aria-label={label}>
+  <slot />
+</div>

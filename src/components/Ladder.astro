@@ -1,0 +1,44 @@
+---
+// B2.LADDER — design §5, IA §4.3, deck §5 `agree`.
+//
+// One rung per link, because a rung nobody can open is not evidence. An `<ol>` with a 1 px
+// rule at x = 16 running behind the 32 px index plates; each rung is a claim plus the route
+// that proves it, and each route's link text is the wording that destination already has
+// elsewhere on the page (R-15).
+//
+// Rung ④ — a cross-backend pixel comparison — is RESERVED AND ABSENT until such a gate is
+// committed to CI (IA D-4). No `✓` and no green anywhere (R-4).
+//
+// The route link carries `RailChip`'s target treatment verbatim (`inline-flex min-h-8
+// items-center py-1`), because §8 lists chip routes and ladder links in ONE ≥ 24 × 24 row and
+// three of these destinations are the chips' own: as bare inline mono the rung link measured
+// 17 px tall against the chip's 32 for the same href and the same words.
+import { links } from '../lib/links.ts'
+
+const rungs = [
+  { claim: 'CPU f64 oracle — the same source executed in f64 on a CPU', route: links.oracle },
+  { claim: 'Tint (WebGPU) compiles every emitted variant, in CI', route: links.wgslGate },
+  { claim: 'WebGL2 compiles every emitted variant, in CI', route: links.glslGate },
+]
+---
+
+<ol class="ladder">
+  {
+    rungs.map((rung, i) => (
+      <li class="flex items-start gap-4">
+        <span class="rung-index" aria-hidden="true">
+          {i + 1}
+        </span>
+        <span class="pt-1">
+          {rung.claim}{' '}
+          <a
+            class="link inline-flex min-h-8 items-center py-1 font-mono text-code font-normal"
+            href={rung.route.href}
+          >
+            {rung.route.label}
+          </a>
+        </span>
+      </li>
+    ))
+  }
+</ol>

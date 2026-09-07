@@ -1,0 +1,45 @@
+---
+// §types · "The editor catches it" — IA beat 3, deck §5 `types`, design §4 (mirrored spans)
+// and §5.
+//
+// Claim left (486), proof right (690); below 64rem it un-mirrors and the claim comes first,
+// which is also the DOM order, so nothing has to be re-ordered for a keyboard or a reader.
+//
+// No CTA button here (design §0, X7): `reflect()` in the body is an inline link, and that
+// keeps the verb ladder injective — `Check` belongs to the rail's pinned-commit rung.
+import { links } from '../../lib/links.ts'
+import ByteRuler from '../ByteRuler.astro'
+import DiagnosticBlock from '../DiagnosticBlock.astro'
+import LayoutTable from '../LayoutTable.astro'
+import SectionHeading from '../SectionHeading.astro'
+---
+
+<section id="types" class="py-24 lg:py-32">
+  <div class="mx-auto grid w-[var(--content)] grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-6">
+    {/* The claim column is a flex column so its micro-label can take `mt-auto` at >= 64rem:
+        the two columns then end on one edge instead of leaving 393 px of hole under a claim
+        that is three elements long beside a proof that is three plates long. Stacked, the
+        label keeps §4's 16 px step under the body. */}
+    <div class="flex flex-col lg:col-span-5">
+      <SectionHeading id="types" text="Wrong field, red squiggle, not black frame." />
+      <p class="text-lead mt-6 tracking-[-0.003em] text-text-2 lg:tracking-[-0.006em]">
+        A wrong field is a type error while you type. Uniform layouts come from{' '}
+        <a class="link" href={links.reflectApi.href}>{links.reflectApi.label}</a>, so no offset is
+        hand-derived.
+      </p>
+      <p class="micro-code mt-4 lg:mt-auto lg:pt-4">std140 · std430</p>
+    </div>
+
+    <div class="flex flex-col gap-8 lg:col-span-7">
+      <DiagnosticBlock />
+      <div>
+        <LayoutTable />
+        {/* The ruler is this block's flourish and its picture of the same record: 48 cells,
+            the 12 padding bytes hatched. `aria-hidden` — the table is the authority. */}
+        <div class="mt-6">
+          <ByteRuler />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

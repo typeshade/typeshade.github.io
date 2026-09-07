@@ -1,0 +1,36 @@
+---
+// B2.DETAILS — design §5 "Disclosure", IA I-12, deck §5 `agree`.
+//
+// Native `<details>`/`<summary>`: real DOM text, crawlable, no fetch, and the panel's height
+// is never animated at any setting. The summary is a noun phrase, and it has a hover state
+// because a summary with none is the one control on the page that never answers a pointer.
+//
+// R-17 constrains the body: static text until an `agreement.json` exists, and the only
+// numerals permitted in it are the ones with a §4.3 slot row.
+const BODY =
+  'The oracle executes the authored module on a CPU in double precision, from the same ' +
+  'source the emitters read. The two compile gates run in the X-GIS globe engine’s CI: ' +
+  'one creates a shader module for every variant that engine emits, the other links each one ' +
+  'on a real WebGL2 context. The goldens diff every emit byte for byte against a committed ' +
+  'file. No pixel comparison between the two backends is committed yet, so none is printed here.'
+---
+
+{/* Server-rendered OPEN: the panel is evidence, and with no JS it must be readable and
+    crawlable. I-12 asks for it COLLAPSED below 1024, which no CSS can do to a `<details>` —
+    so one inline statement closes it there, before first paint, and its failure mode is the
+    safe one (the text stays visible). */}
+<details open>
+  <summary class="summary">
+    <span class="chevron" aria-hidden="true"></span>
+    How this was measured
+  </summary>
+  <p class="text-meta max-w-[var(--measure-body)] pb-2 text-text-2">{BODY}</p>
+</details>
+
+<script is:inline>
+  // Runs where it is parsed, so the panel is never seen open and then shut (no height
+  // animation at any setting — design §6).
+  if (window.matchMedia('(max-width: 63.99rem)').matches) {
+    document.currentScript.previousElementSibling.open = false
+  }
+</script>

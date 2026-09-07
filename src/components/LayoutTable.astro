@@ -1,0 +1,56 @@
+---
+// B3.LAYOUT — design §5 "Layout table and install control", IA §4.3 / R-5, deck §5 `types`.
+//
+// A real `<table>` inside a named scroll region, every cell from `typedError().layout` — the
+// FIXTURE block (`typed-error-shader.ts`), never `write`'s registry entry, so a reader cannot
+// read the two frames as one file (IA C4).
+//
+// The offset column never collapses and the field list is never truncated: the 12 bytes of
+// padding after `time` ARE the argument this block makes, and a hand-derived table would put
+// `top` at 4. The bezel carries the title, which frees the `<caption>` for the deck's own
+// sentence at the bottom of the table.
+import { typedError } from '../lib/typed-error.ts'
+import Plate from './Plate.astro'
+import ScrollRegion from './ScrollRegion.astro'
+
+const { layout } = typedError()
+
+// The two-field guard stays: this block's whole argument is the gap BETWEEN the first two
+// fields, so a fixture that reflected fewer of them would print a table that argues nothing.
+const first = layout.fields[0]
+const second = layout.fields[1]
+if (!first || !second) throw new Error('[LayoutTable] the fixture block reflects fewer than two fields')
+---
+
+<Plate label={`reflect() · std140 · ${layout.size} bytes`}>
+  <ScrollRegion label="Reflected std140 layout">
+    <table class="layout-table">
+      <caption>No number in this table was typed.</caption>
+      <thead>
+        <tr>
+          <th scope="col">field</th>
+          <th scope="col">type</th>
+          <th scope="col" data-align="end">offset</th>
+          <th scope="col" data-align="end">size</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          layout.fields.map((f) => (
+            <tr>
+              <td>{f.name}</td>
+              <td>{f.type}</td>
+              <td data-align="end">{f.offset}</td>
+              <td data-align="end">{f.size}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </ScrollRegion>
+</Plate>
+{/* No sentence under the table. "12 bytes of padding after `time`: the argument" was the
+    builder's, not the deck's — 07-copy-deck.md is the copy of record and has no slot for it,
+    and design §5's own wording of that idea is a BUILD RULE about the offset column, not page
+    copy. The claim is carried where the deck puts it: the offset column, which never
+    collapses, and the byte ruler's twelve hatched cells beside it. */}

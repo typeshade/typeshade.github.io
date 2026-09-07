@@ -7,7 +7,11 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "build:icons": "bun scripts/build-icons.ts",
+    "capture:og": "OG_REBASELINE=1 astro build && bun scripts/capture-og.ts",
+    "capture": "bun run build:icons && bun run capture:og",
+    "qa:links": "node scripts/qa/check-http-links.mjs dist"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -22,5 +26,7 @@
     "@webgpu/types": "^0.1.72",
     "typescript": "^5.6.3"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  }
 }

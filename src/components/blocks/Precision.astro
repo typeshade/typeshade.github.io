@@ -1,0 +1,84 @@
+---
+// §precision · "Deep zoom" — IA beat 4, deck §5 `precision`, design §5 "§precision's split".
+//
+// The body says the LANGUAGES have no f64, not the GPU: desktop GPUs do expose it, and an
+// overstatement is expensive on a page whose only differentiator is precision of claim.
+//
+// The SPLIT BEZEL ships, because the re-measure design §5 and §10 risk 3 make its
+// precondition has now been run at the crop that ships: 672 x 448, discontinuity at x = 336
+// = 50.000 % on both backends, 16 distinct column-luminance levels left against 168 right
+// (`facts.b4SplitReady`, `--b4-split`, G10). M-8's 41.4 % was a 2.40 : 1 spike frame.
+//
+// Both halves are named IN WORDS — `banded` and `smooth` — over the registry's own
+// `splitLabels` stems, which is what §8's 1.4.1 row rests on: the claim survives with the
+// image suppressed, and under forced colours the bezel collapses to one label row and the
+// rule disappears with it, so no positional claim outlives the picture it describes.
+//
+// `B4.REFLECT` is the section's build-time TEXT proof, so the argument survives with every
+// canvas removed (R-18). It is NOT a link: `reflect()`'s source already has exactly one
+// wording — §types' inline link — and a second would break R-15.
+import { facts } from '../../lib/examples.ts'
+import { links } from '../../lib/links.ts'
+import CanvasFigure from '../CanvasFigure.astro'
+import type { CanvasText } from '../ShaderCanvas.astro'
+import SectionHeading from '../SectionHeading.astro'
+import StateChip from '../StateChip.astro'
+
+const labels = facts.splitLabels
+if (!labels || labels.length !== 2) {
+  throw new Error("[precision] the registry entry 'fp64-deep-zoom' declares no two splitLabels")
+}
+// Left and right halves for the split bezel — the registry's stems plus the two words the
+// picture argues with. The fallback, if the re-measure is ever invalidated, is design §5's
+// single row: it names both halves and makes no claim about WHERE they meet.
+const [f32Label, f64Label] = labels
+const splitLeft = `${f32Label} · banded`
+const splitRight = `${f64Label} · smooth`
+const legend = facts.b4SplitReady ? splitRight : `${f32Label} (banded) → ${f64Label} (smooth)`
+
+const caption: CanvasText = {
+  neutral: 'Emulated f64 · emitted at build time.',
+  webgpu: 'Emulated f64, drawn once on WebGPU.',
+  webgl2: 'Emulated f64, drawn once on WebGL2.',
+  none: 'Neither WebGPU nor WebGL2 here — the shaders on this page were still emitted at build time.',
+}
+
+const origin = facts.deepZoomOrigin
+---
+
+<section id="precision" class="py-24 lg:py-32">
+  <div class="mx-auto grid w-[var(--content)] grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-6">
+    {/* Claim before proof when stacked; at >= 64rem the canvas is placed back on the left,
+        where the drawing puts it. */}
+    <div class="lg:col-start-8 lg:col-span-5 lg:row-start-1">
+      <SectionHeading id="precision" text="Zoom past what f32 holds." />
+      <p class="text-lead mt-6 tracking-[-0.003em] text-text-2 lg:tracking-[-0.006em]">
+        WGSL and GLSL ES 3.00 have no f64. The emulation does, and the source reads exactly like
+        the f32 version.
+      </p>
+      <p class="micro-code mt-6">
+        {origin.name} · {origin.sourceType} in the source → {origin.layoutType} in the layout
+      </p>
+      <p class="mt-6">
+        <StateChip value={`${facts.fp64Examples}`} text="fp64 examples" />
+      </p>
+      <p class="micro-code mt-6">emulated fp64</p>
+      <p class="mt-8">
+        <a class="link link-tertiary" href={links.deepZoom.href}
+          >{links.deepZoom.label}<span aria-hidden="true">→</span></a
+        >
+      </p>
+    </div>
+
+    <div class="lg:col-start-1 lg:col-span-7 lg:row-start-1">
+      <CanvasFigure
+        example="fp64-deep-zoom"
+        still
+        caption={caption}
+        header={legend}
+        splitLabel={facts.b4SplitReady ? splitLeft : undefined}
+        aspect="3/2"
+      />
+    </div>
+  </div>
+</section>

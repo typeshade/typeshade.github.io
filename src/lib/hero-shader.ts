@@ -103,3 +103,11 @@ export function heroShader(id: string): ShaderData {
     controls,
   }
 }
+
+/** The exact bytes `ShaderCanvas.astro` inlines for one example: the payload as JSON, with
+ *  `<` escaped so a `</script` inside it cannot close the block early. It lives here so the
+ *  size `examples.ts` reports (`hero.emit.payloadBytes`) is measured on the same string the
+ *  page ships — one authority for those bytes, not two that can drift. */
+export function heroPayload(id: string): string {
+  return JSON.stringify(heroShader(id)).replace(/</g, '\\u003c')
+}
