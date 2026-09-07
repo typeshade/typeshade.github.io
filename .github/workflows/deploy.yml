@@ -32,6 +32,12 @@ jobs:
       # 404/410 fails this step — a 403/429/timeout is a runner being rate-limited or blocked,
       # which cannot tell a dead URL from a live one and must not block a deploy.
       - run: bun run qa:links
+      # Enable Pages with the Actions source on the first run, so the repository needs no
+      # click in Settings before the first deploy. The custom domain (typeshade.dev) is NOT
+      # settable from a workflow — set it once in Settings → Pages after the first deploy.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
