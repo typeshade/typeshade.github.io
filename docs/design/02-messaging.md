@@ -1,5 +1,7 @@
 # Messaging and copy — TypeShade — 2026-09-07
 
+> **Superseded for page copy by `07-copy-deck.md` (2026-09-07).** The oracle-uniqueness line that appeared three times in this document was refuted (`wgsl_reflect` ships a WGSL CPU executor — `docs/plans/2026-09-07-typeshade-agent-era-strategy.md` §2) and is struck below; the copy deck §1 row 5 records the deletion from the page.
+
 Built from the product truths in `docs/design/00-brief.md` only. Nothing here names a feature, a
 number or a user that is not in that file. Page structure follows the pattern library in
 `docs/design/01-research.md` Part D, cited by pattern id (**P1**–**P10**).
@@ -48,7 +50,7 @@ public line below is derived from it and shortened.
 | Pillar | Statement (≤ 8 words) | Proof points | Feature evidence |
 | --- | --- | --- | --- |
 | **P-1 · Write it once** *(the job)* | One source, both GPU APIs | 36 examples, each emitting both targets; the hero shader on this page is one of them, emitted at build time from the pinned mirror; emit goldens are byte-stable | One module → `emitModule()` for WGSL, `emitGlslModule()` for GLSL ES 3.00 — the call pair `src/lib/examples.ts` already uses |
-| **P-2 · Proven to agree** *(the trust)* | Agreement is measured, not promised | CPU f64 oracle — no comparable library has one; every emitted variant compiled by Tint (WebGPU) and by WebGL2 in CI; 135 test files | The oracle executes the same source on the CPU in f64; the CI gates compile each emitted variant with the real compilers; goldens diff byte for byte |
+| **P-2 · Proven to agree** *(the trust)* | Agreement is measured, not promised | CPU f64 oracle over the same typed source both emitters read (uniqueness claim struck 2026-09-07 — see the note at the top); every emitted variant compiled by Tint (WebGPU) and by WebGL2 in CI; 135 test files | The oracle executes the same source on the CPU in f64; the CI gates compile each emitted variant with the real compilers; goldens diff byte for byte |
 | **P-3 · Fits what you have** *(the risk)* | No engine. No dependencies. | 0 runtime dependencies; MIT; in production inside the X-GIS globe engine as `@xgis/shader-dsl`; `reflect()` recovers std140 / std430; emulated fp64 with unchanged syntax, 13 fp64 examples | `reflect()` returns the layout, so no offset is hand-derived; the fp64 deep-zoom examples read like their f32 counterparts |
 
 ### The "so what" ladder
@@ -134,7 +136,7 @@ canvas beside it already answers "what", so the headline does not have to (**P1*
 It is inclusive where #6 is not: it lands whether the reader has shipped WebGL2 or has never written
 a shader, covering audience 1 and audience 2 with one line.
 The subline carries the whole 10-second payload — typed TypeScript, both target languages, and the
-differentiator no comparable library can print.
+differentiator: agreement checked over the same typed source, not asserted.
 BAB beats the PAS candidates here because the page has no room to agitate: agitation needs a
 paragraph, and the brief allows twenty words.
 Honesty is intact and correctly placed — the pre-release line sits under the CTAs, after the claim,
@@ -187,7 +189,7 @@ Six sections and a footer. Rhythm: **solution → credibility → hook → proof
 - **Micro-label** — `you write` · **CTA** `See the examples` · **Patterns** — P2, P4 · **Answers objection 3**
 
 ### 3 · Proven to agree — *proof*
-- **Purpose** — turn "generated shaders drift" into a checked fact; the claim no comparable library makes.
+- **Purpose** — turn "generated shaders drift" into a checked fact; the claim that is checked rather than asserted.
 - **Claim** — Agreement is measured, not promised.
 - **Proof shown** — a three-rung ladder, one badge per rung: the same source run on a **CPU f64 oracle** → every emitted variant compiled by **Tint** → every emitted variant compiled by **WebGL2**; `135 test files` beneath.
 - **Body** — The same source runs on a CPU in f64. Both emitted shaders are compiled by the real compilers, every commit. *(20 words)*
