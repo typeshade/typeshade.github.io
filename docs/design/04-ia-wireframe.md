@@ -1,0 +1,434 @@
+# IA, wireframes and interaction — TypeShade — 2026-09-07
+
+Stage 3 of `00-brief.md`. Inputs: `01-research.md` Part D (**P1**–**P10**), `02-messaging.md` §§3–8, `03-spike-hero.md`, `03b-spike-typed-error.md`, **`07-copy-deck.md`** (FINAL) and `00-brief.md` **as amended 2026-09-07** (M1/M4/M5; owner decisions 1–3 adopted). Every artifact carries the method that produced it. The structure is the **narrative-first** grammar (react.dev layer-cake: claim → what you write → what you get, one beat per viewport, a different CTA verb each time), with the proof-chip, degradation and gate work grafted in from the two competing proposals.
+**Authority split, so there are never two.** `07-copy-deck.md` owns **copy**: every string, the block list, the claim→source table. This document owns **structure, slots, states, interaction and gates**: where a string lives, what computes it, and what happens when it cannot. §0.2 resolves every conflict between them once; nothing below re-opens one.
+
+## 0. Provenance and measured corrections
+
+### 0.1 Artifact audit
+
+**Method: artifact audit — every number below was read off the build, not off a prior doc.** Run against the pinned mirror `29c9614`.
+
+| # | Prior statement | Measured | Consequence |
+| --- | --- | --- | --- |
+| C1 | `02-messaging.md` §6 §2 — "**Eight lines.** Both shader languages." | `hero.authored` (`examples.ts` → registry `gradient`, file `gradient-pass.ts`) is **10 lines** | The h2 stops carrying a numeral; the count becomes a computed micro-label (X1) |
+| C2 | §6 §2 body — "the whole source for **the shader running above**" | The hero canvas is `metaballs`; `hero.authored` is `gradient`. Different examples | §write mounts its own `gradient` canvas and the body says *beside it* (X2) |
+| C3 | Proposed chip line "`dependencies: {}` in package.json" | The mirror's `package.json` has **no `dependencies` field at all** | The chip's condition reads *no `dependencies` field in the mirror's package.json* |
+| C5 | "36 examples, **each** emitting both targets" | **35 of 36.** `compute-reduction` has no GLSL ES 3.00 path (brief, amended) | The chip cannot say *each*; it renders `35 of 36` from **NEW** `facts.bothTargets`, and the honest fraction is the stronger P6 line |
+| C4 | Both proposals printed one `reflect()` table | **Two different blocks.** Registry `gradient`: `top@0 · bottom@16 · mix_bias@32`. Typed-error fixture: `time@0 · top@16 · bottom@32`, 48 B, align 16 | §types renders the **fixture** block only — only it has the 12 padding bytes that are the argument |
+
+**The fact this IA is built on:** registry `gradient` declares `top` (const), `bottom` (const), `mix_bias` (slider) and **no `time`
+control**, so its frame is a pure function of its sliders, exactly like `fp64-deep-zoom`. Mounting it in §write and again as the §agree pair therefore needs **no shared clock across mounts** — the one gating runtime change either competing proposal demanded. Emit measurements: WGSL **one module, 29 lines**; GLSL ES 3.00 **two stages, 18 + 16 = 34 lines** — not comparable, so the indicator must name the shape (§4.3).
+
+### 0.2 Reconciliation with `07-copy-deck.md`
+
+**Method: two-authority reconciliation — one row per conflict, one winner, stated reason, no silent merge.** Both documents were
+authored on 2026-09-07 without sight of each other (07 §front-matter records `ls`-ing for this file and not finding it).
+
+| # | Conflict | Resolution and reason | Lands in |
+| --- | --- | --- | --- |
+| X1 | §write's `h2` carried a numeral (`Ten lines.`) | **07.** `One function. Both shader languages.`; the count moves to the micro-label `{n} lines · you write`, computed. A numeral the build can contradict does not belong in an `h2` | §4.2, §4.3, D-1 closed |
+| X2 | §write claimed the snippet was the hero's source (C2) | **07 findings A+B.** §write gets its own `<ShaderCanvas example="gradient" />`; body reads *beside it*. The claim becomes true in one viewport (**P2**) | §4.2–4.4, D-2 closed |
+| X3 | `facts.testFiles` = **135** (`vendor/shader-dsl/src` glob) | **07 finding C.** Widen to the package root → **146**; the 11 extra (`emit-goldens`, `glsl-stages-parity`, `emit-reflection-conformance`, `registry-drift`, …) are exactly the suites this page cites. Both counts verified here | `RAIL.CHIP` 4; the chip names the tree it counted |
+| X4 | Two compile chips implied the mirror's own CI | **07 finding D.** The mirror's root holds **no workflow file**; the gates are X-GIS `playground/e2e/_wgsl-compile-gate.spec.ts` and `_glsl-compile-gate.spec.ts`. Verified: `vendor/shader-dsl/.github` does not exist | `RAIL.CHIP` 2 and `Read the CI gates` link to X-GIS; `RAIL.H2` carries the same qualifier |
+| X5 | Rail = six two-line chips (value / methodology) | **07 §4.** Five chips, each **one claim sentence** carrying its number-or-name *and* its condition, each with a linked route. **P5** wants 4–5 one-line claims and **P6** wants unit + conditions + route: five sourced sentences satisfy both, so there is no deviation left to declare | §4.3, §5 |
+| X6 | No self-recognition block | **07 §3.** Accept `§recognise` between §write and §agree → **seven content blocks** before the footer, the top of **P7**'s 6–7 median | §4.2 |
+| X7 | §types CTA `Check the layout API` — named in three places, destination in none | **07 §5 §5.** §types carries **no CTA**; the ladder has five tertiary rungs and this block is not one (**P8**) | §4.2, I-10 |
+| X8 | 07 §5 §3 gives §recognise `Read the survey` | **04 overrides 07, with reason.** `Read` is already `Read the CI gates`, and **P8** requires one verb per destination. The Khronos citation renders as a **linked source line** under the body — a P6 route, not a P8 rung | §4.2, §4.3 |
+| X9 | 07 §3's `none` caption drops the build-time fact | **04 amends 07, one line.** Visible caption: *Neither WebGPU nor WebGL2 here — this shader was still emitted at build time.* A missing backend should print the build-time fact, not apologise. 07's `aria-label` for that state stands unchanged | §6 |
+| X10 | Nav carried `Guide`, dropped at 390, sharing a destination with `Get started` | **04.** `Guide` is removed at **every** width; nav = `Docs` · `GitHub`. Two wordings for one destination breaches 3.2.4, and removing it deletes a mobile drop instead of excusing one | §5, I-10 |
+
+---
+
+### 0.3 Orchestrator's final reconciliation (2026-09-07) — the build implements THIS
+
+`07-copy-deck.md` was written against rev 1 of this document and this document's final revision
+then diverged from it in four places. One authority per question, decided here so the build never
+has to choose:
+
+| Question | Authority | Decision |
+| --- | --- | --- |
+| Rail chips | **this document (X5)** | Five one-sentence chips, each with its number-or-name, its condition and a linked route (§4.3 `RAIL.CHIP` 1–5). The deck's sixth chip (`MIT`) lives in §adopt's state chips only |
+| A canvas in §write | **this document (X2)** | `B1.CANVAS` ships — a still `gradient` mount beside the code (**P2**, proof-adjacent). Five mounts, one animating, payload deduped by `data-example` (D-8). The deck's body copy for §write stays as written |
+| §types CTA | **this document (X7)** | No CTA button: the verb ladder is full and `Check` is already the rail's verb (**P8**). The `reflect()` in the body is an inline link to the mirror's `src/core/reflect.ts` at the pinned commit |
+| Every string on the page, incl. the canvas captions per mount × state | **the copy deck** (§3–§8) | Copy of record. Where this document paraphrases a caption, the deck's table (07 §6) wins; this document's rule stands that the server-rendered string is backend-neutral and the runtime substitutes from `canvas.dataset.backend` in the same tick as the `aria-label` |
+| Open decisions D-7 and D-11 | **owner / orchestrator** | D-7: external links open in the same tab, no `↗` glyph. D-11: Body A ships — the brief's fact list was amended 2026-09-07 to admit the Khronos 2026 figures with their source |
+
+## 1. Define summary
+
+**Method: POV problem statement (d.school) → How-Might-We reframing (IDEO).**
+
+> **A TypeScript developer who must put the same visual on both GPU APIs** needs to believe, within ten seconds and without reading a paragraph, that one typed source can produce both — **because the cost they fear is not writing the shader, it is owning the second copy forever**, and because the one page already addressing this audience (typegpu.com) answers with a technology name instead of an outcome, and is the only page in the 24-page scan that fails the 5-second test.
+
+**The compounding constraint.** The differentiator is *proof*, and proof is invisible: no screenshot, no benchmark bar, one
+production consumer, `0.1.0` unpublished. The page must be maximally credible at the moment it has the least conventional credibility to spend.
+
+> **Design problem:** make an invisible guarantee felt in three seconds, checkable in ninety, and honest about being pre-release — without explaining anything.
+
+| HMW | Question | Attacks | Patterns | Answered by |
+| --- | --- | --- | --- | --- |
+| **HMW-1** | Make a visitor *feel* "one source, both GPU APIs" before reading a word, using the thing already running in front of them | E1, F1 | P1, P2, P7 | Hero + §agree's pair |
+| **HMW-2** | Make "the two outputs agree" checkable rather than assertable — without printing one line of generated shader | F2, E2 | P4, P5, P6 | Rail's five sourced chips, §agree |
+| **HMW-3** | Turn "`0.1.0` is not published yet" from a reason to leave into evidence of care | S1, obj. 9–10 | P9 | Status line under the CTAs, §adopt, footer link text |
+| **HMW-4** | Keep five live canvases inside a phone's budget without dropping a single proof | all | — | 5 mounts, **1 animating**, one shared payload (§4.4) |
+
+---
+
+## 2. Personas and JTBD
+
+**Method: Cooper goal-directed proto-personas in the NN/g format, plus a 5-second exit test.** Assumption-based (no interviews run) — used to force one decision per section, not to describe reality.
+
+| Persona | Arrival | Goal | Leaves in 5 s if… | Must land |
+| --- | --- | --- | --- | --- |
+| **A · Mina** (audience 1) the visual builder | Senior FE eng., owns a WebGL2 canvas layer, quarterly goal says "evaluate WebGPU". Newsletter link, laptop, 11 tabs | A second backend without a second thing to maintain | The hero opens with a wall of GLSL or a WGSL/GLSL diff — she came to *stop* reading two shader languages. Or nothing moves. Or it looks welded to three.js | Hero (P1, P2) · §write · §agree |
+| **B · Tobias** (audience 2) the maintainer paying the tax | ~4k-star renderer, dozens of shader pairs; opens the repo in tab 2 before finishing the hero | Delete the second file; prove agreement in CI; add nothing to users' bundles; keep an exit | He sees a runtime dependency, a renderer, a hedged WebGL2 story, no precision story, or a comparison table (**P10**) | Rail · §recognise · §agree · §precision · §adopt |
+| **C · Priya** (audience 3) the evaluator | On the dependency-approval group. 90 s, scanning. Scan order **licence → tests → who uses it → last commit → release state** | Decide "worth an hour" or "no", defensibly | Licence or tests need two scrolls. Status is hidden — she finds `0.0.0` on npm within a minute, and discovering it *after* the page implied otherwise ends it | Rail (incl. **MIT**) · status line (P9) · §adopt · footer |
+
+**Negative personas**, so a later "we should also add…" can be refused by name: the three.js user wanting a material system → no
+node-graph imagery, no material vocabulary. The artist wanting a playground → the hero takes no pointer input and never invites a click it cannot honour. The buyer wanting pricing → nothing is for sale.
+
+**Method: Christensen JTBD job statements.** **F1** *one source, two targets* — author once in a language my editor understands, so
+I ship one feature instead of two files kept in step by hand (A, B → hero, §write, §agree). **F2** *verify without owning the hardware* — both outputs checked against each other and the real compilers before merge, so divergence surfaces in CI and not in a bug report (B, C → rail, §agree). **F3** *stop hand-deriving what the compiler knows* — get the layout and the error from the toolchain, so a `std140` offset cannot fail silently (A, B → §types). **E1** *relief from the second copy* — saying yes to WebGPU does not double the maintenance surface for years (A, B → hero headline; §recognise names the cost; §adopt as risk reversal).
+**E2** *confidence in code I did not write* — agreement measured, not promised (B, C → §agree's ladder; the hero pre-pays it, the
+visitor already watching TypeShade output on their own GPU). **S1** *be the careful one* — evidence anyone can verify in a minute: licence, tests, a named consumer, a pinned commit (C, B → rail, §adopt, footer). **Coverage** (every block serves ≥ 1 job, every job served ≥ 1×): hero E1/F1 · rail F2/S1 · write F1 · recognise E1 · agree F2/E2 · types F3 · precision F1 · adopt S1/E1 · footer S1.
+
+---
+
+## 3. Customer journey map
+
+**Method: NN/g current-state journey map, closing on a gap register.** Emotion −2 … +2.
+
+| Stage | Persona | Their question | Evidence needed to advance | Emo | Element |
+| --- | --- | --- | --- | --- | --- |
+| 1 Trigger | A, B | "We want WebGPU, but I'm not writing every shader twice." | Recognition that the second copy is the cost | −1 | `§recognise` is the only on-page answer; reach itself → G1 |
+| 2 Search | all | "Is there a way to write one shader for both?" | A name plus one line matching the query | 0 | `<title>` / meta / OG card / `llms.txt` → G2 |
+| 3 Landing | A | "What is this and why should I care?" (3 s, confirmed by 10 s) | An outcome in ≤ 6 words with the product visibly doing it | +1 | Hero: P1, P2, P7, caption, `pre-release` chip (P9) |
+| 4 Evaluate | C → B | "Real, or a weekend project? Who uses it? What does it drag in? Licence?" | Numbers with units **and conditions**; a named consumer; a licence; a route to the gates; the state stated by us | +1→+2, or **−2 terminal** if the status feels concealed | Rail (5 chips + commit) · §agree ladder · §types layout · §precision badge · §adopt chips |
+| 5 Try | A, B | "How do I get a shader of my own running in 20 minutes?" | A first working shader **without a release** | **+2 → −1: the only structural break** | `Get started` (never `npm i`), `See the examples`, the submodule line, `Watch releases` → G3, G4 |
+| 6 Adopt | B | "Can I defend this in six months?" | Stability signals | 0 | §adopt as *reversibility*, not stability → G5 |
+| 7 Advocate | B, A | "Is this worth my name?" | Something to point at | +1 | **Nothing** → G6 |
+
+**Gap register.** **G1** the trigger moment is reached only by `§recognise`'s self-description — no ad, no logo band; `llms.txt` is
+the one honest acquisition device. **G2** `npm i typeshade` does not work → **never printed as a CTA**; the footer link reads `npm typeshade — reserved for 0.1.0`, so npm *confirms* the page instead of contradicting it. **G3** no playground → the hero must not look interactive; appetite is redirected to destinations that exist. **G4** the try path is a submodule → say it plainly and make it copyable; no "simply/easily". **G5** no changelog → substitute *reversibility* (0 dependencies, MIT, no engine). **G6** no advocacy surface → with one production consumer a logo band would be a lie; §adopt names X-GIS and stops.
+
+---
+
+## 4. Information architecture
+
+### 4.1 Site map
+
+**Method: content inventory + route audit (Rosenfeld/Morville), scoped to the brief's "one page".**
+
+| Route | Purpose | Verdict |
+| --- | --- | --- |
+| `/` | The whole argument: hero + rail + 6 beats + footer | **Ship** |
+| `/llms.txt` (exists) | Agent-native acquisition (P8 tertiary) | **Amend** — generated from the same `facts` / CTA records the page renders from, and gated by **R-14**, or it becomes the stalest text in the repo |
+| `/og.png` (replaces `og.svg`) | A share is a hero impression whether or not anyone clicks | **Change** — a real captured hero frame on the deterministic reduced-motion path (`OG.IMAGE`, **R-13**); do not ship a *drawn* card on a page whose pitch is "this is real" |
+| `/404.html` (new, ~15 lines) | One line + the primary CTA + a route home | **Ship** — copy and destinations in §4.3 (`P404.*`). `/spike` is live and in the sitemap; every crawler and existing link hits it the moment it is deleted |
+| `robots.txt`, `favicon.svg`, `CNAME`, sitemap | Existing | **Keep** |
+| `/spike` | Throwaway 12-canvas bench | **Delete before launch** (spike §5.6). Verify absent from `dist/` **and** the generated sitemap |
+
+**Rejected, recorded so they are not re-proposed:** `/compare` or `/vs-typegpu` — **P10** and the v1 anti-pattern; competitor lines
+live in the docs. `/examples`, `/docs`, `/playground` — the docs site already owns and runs these, and a second copy is two authorities. A blog or changelog — nothing to put in it before `0.1.0`, and an empty changelog is evidence *against* the page's own claim.
+
+### 4.2 Page order — one `h1`, seven content `h2` blocks, plus the footer's
+
+**Method: section-grammar audit (react.dev layer-cake; P2/P7/P8), one claim per viewport.** The spine: the hero shows the
+**result**; §write shows the **source and its result side by side**; §recognise names the cost the reader already pays; §agree shows
+that source **compiled twice and running twice**. §types, §precision and §adopt answer types, precision and adoption cost, each objection met as it forms (`02-messaging.md` §3 order). **Seven content blocks** = the top of **P7**'s 6–7 median (X6); the footer carries a visually-hidden `h2` and four `h3` column labels, so heading levels never skip.
+
+| # | Section | Purpose — the one transition it owns | Claim (`h2`) | Proof element | Patterns | Obj. | CTA |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | `nav` | Carry version state without letting it lead | TypeShade | `pre-release` chip beside the wordmark — a `<span>`, not a control. Links: `Docs` · `GitHub` (X10) | P9 | — | — |
+| 1 | `hero` | Want it in 3 s; know it in 10 | **Write the shader once.** | Full-bleed live `metaballs`, emitted at build time, compiled in *their* browser; caption names the backend it actually got | P1, P2, P7, P9 | 1, 9, 10 | `Get started` · `GitHub` |
+| 2 | `rail` | Borrow trust at fold + 1, before any argument | Checked by real compilers, every build — in X-GIS CI. | **Five chips**, each one sentence with its number-or-name, its condition and a linked route; pinned commit beneath | P3, P5, P6 | 2 | `Check the pinned commit` |
+| 3 | `write` | The whole authoring cost in one glance, with its result beside it | **One function. Both shader languages.** | `hero.authored` + a live `gradient` canvas + an emit **indicator card** that measures the output and never lists it | P2, P4, P8 | 3 | `See the examples` |
+| 4 | `recognise` | Name the cost the reader already pays, in their words | **You have written this twice.** | Three self-recognition sentences in a scan row (never a table — **P10**) over a linked source line | P5, P10 | — | — (X8) |
+| 5 | `agree` | The differentiator, as the narrative payoff | **Agreement is measured, not promised.** | **The pair** — that same source mounted twice, `WGSL → WebGPU` and `GLSL ES 3.00 → WebGL2` — a three-rung ladder, and a `<details>` carrying the conditions | P2, P5, P6, P8 | 4 | `Read the CI gates` |
+| 6 | `types` | Move failure from a black frame to a squiggle | **Wrong field, red squiggle, not black frame.** | The **real** TS2339 diagnostic captured at build time, beside the `reflect()` std140 table, captioned *No number in this table was typed.* | P2, P6 | 5, 6 | — (X7) |
+| 7 | `precision` | The capability nothing comparable has, as a picture *and* as text | **Zoom past what f32 holds.** | Live `fp64-deep-zoom`, drawn once and stopped, both halves labelled in HTML; beside it the reflected `f64 → vec2<f32>` line that survives a `none` backend | P2, P6, P8 | 7 | `Open the deep-zoom example` |
+| 8 | `adopt` | Remove the last two risks, then ask | **No engine. No dependencies.** | Four state chips (plain text, not links) + the one command that is true today, copyable | P5, P6, P8, P10 | 8, 9, 10 | `Get started` · `GitHub` · copy · `Watch releases` |
+| 9 | `footer` | Four destinations, each labelled with its actual state | *(visually hidden)* Links | Start / Source / Package / Agents; the npm link carries its state **in the link text** | P8, P9 | 10 | `llms.txt` |
+
+**Verb ladder (P8), restated so it is countable.** **Each tertiary verb is unique to its destination:** `Check` the pinned commit ·
+`See` the examples · `Read` the CI gates · `Open` the deep-zoom example · `Watch` releases. **The primary pair is deliberately repeated at the close** — `Get started` and `GitHub` appear in the hero and again in §adopt, same wording, same URL, as react.dev repeats its primary. `llms.txt` is a **destination label in the footer, not a verb rung**. Every destination on the page has exactly one wording (3.2.4); where a rail chip and a later CTA point into the same area they carry **different URLs** (chip 2 → the WGSL gate spec; §agree → the `playground/e2e` directory), which is why both may be links.
+
+### 4.3 Content slots and their build-time source
+
+**Method: slot → source binding (single authority). Nothing in this column may be typed into the page.** Rows marked **NEW** are
+build-time facts this page needs and `examples.ts` does not yet expose. The copy of record for every string is `07-copy-deck.md`.
+
+| Slot | Renders | Source |
+| --- | --- | --- |
+| `NAV.CHIP` | `pre-release` | static label, gated on **NEW** `facts.published === false` (definition below) |
+| `HERO.CANVAS` | live `metaballs` | `<ShaderCanvas example="metaballs">` → `heroShader('metaballs')` |
+| `HERO.CAPTION` + canvas `aria-label` | the four §6 strings | `canvas.dataset.backend`, both written in the **same tick from the same value**; build-time text is backend-neutral |
+| `HERO.STATUS` | `{nextVersion} is not published yet. Running in production today inside the X-GIS globe engine.` | **NEW** `facts.nextVersion` + `facts.packageName`; rendered only while `facts.published === false`. Plain text — no link (3.2.4: the footer's `X-GIS source` owns that destination) |
+| `RAIL.H2` | `Checked by real compilers, every build — in X-GIS CI.` | static; the qualifier is the same one the chips carry (X4), so the `h2` cannot be read as a claim about *this* build |
+| `RAIL.CHIP` 1 | `35 of 36 examples emit WGSL and GLSL ES 3.00 from one source.` ↗ | `facts.examples` + **NEW** `facts.bothTargets` (C5) → mirror `examples/index.ts` |
+| `RAIL.CHIP` 2 | `Tint and WebGL2 compile every emitted variant, in CI.` ↗ | static + X-GIS `playground/e2e/_wgsl-compile-gate.spec.ts` (names both gates, links the WGSL one) |
+| `RAIL.CHIP` 3 | `A CPU f64 oracle executes the same source in double precision.` ↗ | mirror `src/core/oracle.ts`, re-exported at `src/index.ts` |
+| `RAIL.CHIP` 4 | `146 test files in the mirror package; emit goldens diff byte for byte.` ↗ | **NEW** `facts.testFiles` **widened to the package root** (X3) → mirror `examples/emit-goldens.test.ts` |
+| `RAIL.CHIP` 5 | `0 runtime dependencies · MIT.` ↗ | **NEW** `facts.runtimeDeps` (no `dependencies` field, C3) + **NEW** `facts.license` → mirror `package.json` |
+| `RAIL.COMMIT` | `Check the pinned commit` — every shader on this page was emitted at build time from `29c9614` | `facts.pinnedCommit` → mirror tree at that commit |
+| `B1.CODE` | the authored fragment, verbatim, 10 lines — the brief's code cap is **10 for §write only** (owner decision 3) | `hero.authored` (registry `gradient`) |
+| `B1.CANVAS` | live `gradient`, one frame then stop | `<ShaderCanvas example="gradient" still>` (X2, R-9) |
+| `B1.LABEL` | `{n} lines · you write` | **NEW** `hero.authoredLines`, asserted equal to the rendered numeral (R-3) |
+| `B1.EMIT` | `→ WGSL · one module, 29 lines` · `→ GLSL ES 3.00 · two stages, 34 lines` · `2.9 KB inlined on this page` · `goldens diff byte for byte` ↗ | **NEW** `hero.emit = { wgslLines, glslVertexLines, glslFragmentLines, payloadBytes }`. **No "byte-identical to the last build"** — this site keeps no golden, so the byte-stability claim is delegated to the mirror's `examples/emit-goldens.test.ts`, named and linked |
+| `BR.LINES` ×3 | the three self-recognition sentences, ≤ 14 words each | static copy (07 §5 §3); no host name, no logo, no table |
+| `BR.SOURCE` | *Khronos Shader Ecosystem Survey 2026 · >400 respondents · fielded 2026-06-16 → 07-10* ↗ `khronos.org/blog/shader-ecosystem-survey-results-2026` | **Body A ships** — the brief's fact list was amended 2026-09-07 (owner decision 1). A linked source line beneath the body, not a CTA rung (X8) |
+| `B2.CANVAS.GPU` / `.GL` | the pair, both `gradient`, headers `WGSL → WebGPU` / `GLSL ES 3.00 → WebGL2` | `<ShaderCanvas example="gradient" still>` and the same **with `forceWebGl2`** (R-8). **Headers are written from `canvas.dataset.backend`, never from the intent** (I-2). "Tint" appears only on ladder rung 2, where it is true |
+| `B2.LADDER` ① | `CPU f64 oracle — the same source executed in f64 on a CPU` ↗ | mirror `src/core/oracle.ts` |
+| `B2.LADDER` ② | `Tint (WebGPU) compiles every emitted variant, in CI` ↗ | X-GIS `_wgsl-compile-gate.spec.ts` |
+| `B2.LADDER` ③ | `WebGL2 compiles every emitted variant, in CI` ↗ | X-GIS `_glsl-compile-gate.spec.ts` |
+| `B2.COUNT` | `146 test files · goldens diff byte for byte` | `facts.testFiles` + mirror `examples/emit-goldens.test.ts` |
+| `B2.DETAILS` | *How this was measured* — what each rung compiles, how often, on which commit | static text today; **numerals only once `agreement.json` exists** (D-4), gated by **R-17** |
+| `B3.EDITOR` | snippet, wrong line, `TS2339 · line 7:47 · Property 'colour' does not exist…` | `typedError()` — `.snippet`, `.wrongLine`, `.diagnostic` |
+| `B3.TRUNC` | when `diagnostic.truncated === true`: the first line followed by the visible marker `… message truncated at 300 characters` | `typedError().diagnostic.truncated` (`false` at `29c9614`) — R-16. Never a silently shortened message |
+| `B3.LAYOUT` | `Uniforms · std140 · 48 bytes` — `time f32 @0 (4)` · `top vec4<f32> @16 (16)` · `bottom vec4<f32> @32 (16)` | `typedError().layout` — **the fixture block, not the registry one** (C4) |
+| `B4.CANVAS` / `B4.LABELS` | live `fp64-deep-zoom`, one frame / the two half-labels `f32` · `f64 (emulated)` | `<ShaderCanvas example="fp64-deep-zoom" still>` (R-9) / the registry's `splitLabels` — HTML, never in the shader |
+| `B4.REFLECT` | `origin · f64 in the source → vec2<f32> in the layout — the two halves of one double` | **NEW** `reflect()` over the `fp64-deep-zoom` module. **The section's build-time text proof**, so the argument survives a `none` backend (R-18) |
+| `B4.BADGE` | `13 fp64 examples` | `facts.fp64Examples` |
+| `B5.CHIPS` | `0 runtime dependencies` · `@xgis/shader-dsl` · `MIT` · `pinned 29c9614` — **plain text, not links** (the rail owns those routes) | `facts.runtimeDeps` · `facts.packageName` (also the source for §adopt's production claim) · `facts.license` · `facts.pinnedCommit` |
+| `B5.BODY` | `…{nextVersion} is not published yet — start from the mirror and the guide.` | `facts.nextVersion` |
+| `B5.INSTALL` | `git submodule add <mirror> vendor/shader-dsl` | **NEW** `facts.mirrorUrl` + a docs-owner-ratified target path (R-11) |
+| `B5.WATCH` | `Watch releases for {nextVersion}` ↗ | `facts.nextVersion` → `github.com/typeshade/typeshade/releases` (D-5) |
+| `FOOTER.PACKAGE` | `npm typeshade — reserved for {nextVersion}` | `facts.nextVersion` → npm package page |
+| `OG.IMAGE` | 1200×630 capture of the composited hero | headless capture on the reduced-motion pinned-clock path, WebGPU arm (R-13) |
+| `P404.*` | `No page at this address.` + `Get started` (same URL and wording as the hero) + `TypeShade` → `/` | static + the same CTA record the hero renders from |
+
+**`facts.published`, defined as a check rather than a boolean (R-2).** `mirrorVersion` = the mirror's `package.json.version`
+(`0.0.1` at `29c9614`); `nextVersion` = the next minor above it (`0.1.0`), derived, never typed; `published = semverGte(mirrorVersion, nextVersion)` → `false`. Every `0.1.0` on the page renders `facts.nextVersion`, and the build fails if `published === true` while the `pre-release` chip, `HERO.STATUS` or the npm label still render — so the honesty device cannot silently outlive its truth.
+
+### 4.4 Canvas census — measured, not assumed
+
+`HERO.CANVAS` `metaballs` — **animates**, 4.3 KB (spike, shipped shape). `B1.CANVAS`, `B2.CANVAS.GPU`, `B2.CANVAS.GL` — all `gradient`, **no `time` control**, one frame then stop, ≤ 2.9 KB, **one identical payload**. `B4.CANVAS` `fp64-deep-zoom`, no `time` — one frame then stop, ≤ 6.2 KB. **Five mounts, one animating** — which retires both competing proposals' largest build risks: no shared clock is needed and two animating GPU contexts cannot coexist. Inlined JSON **19.2 KB uncompressed, 13.4 KB with the three `gradient` payloads deduped by `data-example`** — with three copies the dedup stops being an optimisation, so **D-8 is resolved: dedup ships**, and NFR-2 measures the deduped figure.
+
+---
+
+## 5. Lo-fi wireframes
+
+**Method: lo-fi wireframe, Garrett skeleton plane.** 1440 · content 1200 · pad 120 · 12 col / 24 gutter. `HERO` and `RAIL` full-bleed, every beat in the 1200 column. Slot names are the build contract, copy of record is `07-copy-deck.md`, and every slot's source is §4.3; sizes are QA targets.
+
+```
+┌ NAV h56 sticky · transparent over hero → solid + hairline after 24px ────────────────────────┐
+│ ◧ TypeShade [pre-release]                                       Docs   GitHub ↗              │
+╔═ HERO full-bleed · h = clamp(560, 72svh, 720) ═══════════════════════ beat 0: the hook ══════╗
+║ HERO.CANVAS metaballs · absolute inset-0 -z-10 · SCRIM.L 96deg .94→.86@32%→0@66%             ║
+║ ▓ HERO.H1  Write the shader once.   72/1.02 w600  ░ · ○ ● · ○  ● ← right 40 %: NO type (P2)  ║
+║ ▓ HERO.SUB Typed TypeScript, proven to agree: WGSL and GLSL ES 3.00 from one source.  20/1.5 ║
+║ ▓ HERO.CTA [ Get started → ] [ GitHub ↗ ]  h44 · 1°→AUTHORING.md#1 · 2°→mirror               ║
+║ ▓ HERO.STATUS 0.1.0 is not published yet. In production inside X-GIS.  14 · P9 · plain TEXT  ║
+║ ▓ SCRIM.B 0deg 1.0→.70@12%→0@34% welds hero into RAIL · HERO.CAPTION ● …running on WebGPU.   ║
+╠═ RAIL full-bleed · min-h 128 · flat ground · fold+1 ══════════════════ P3 · P5 · P6 ═════════╣
+║ RAIL.H2 Checked by real compilers, every build — in X-GIS CI.   14px muted — an h2, no banner║
+║ ┌ chip 1 ────┬ chip 2 ────┬ chip 3 ────┬ chip 4 ────┬ chip 5 ────┐ sentences in §4.3         ║
+║ └ ONE sentence each: number-or-name + condition + a linked route ↗ · never a tooltip, never ┘║
+║ RAIL.COMMIT Check the pinned commit ↗ — every shader here emitted at build time from 29c9614 ║
+╠═ §write · py 128 ═══════════════════════════════════════════════ beat 1: what you write ═════╣
+║ B1.H2 One function. Both shader languages.  44/1.1 · no numeral in any h2 (X1, R-3)          ║
+║ B1.BODY That is the whole source for the gradient beside it. Both targets come out of it.    ║
+║ ┌ B1.CODE 588 · mono 14/1.7 ────────┐ ┌ B1.CANVAS 340 ─┐ ┌ B1.EMIT 220 ──────────────┐      ║
+║ │ const fsGradient = fn(            │ │ live `gradient`│ │ → WGSL  1 module, 29 lines│      ║
+║ │   'fs_gradient', { vo: VsOut },   │ │ ONE frame then │ │ → GLSL  2 stages, 34 lines│      ║
+║ │   (p) => { … return … },        ) │ │ stop (R-9) ·   │ │ 2.9 KB inlined · goldens  │      ║
+║ │ scroll region · tabindex 0 · I-13 │ │ hdr = backend  │ │ diff byte for byte ↗      │      ║
+║ └ B1.LABEL 10 lines · you write ────┘ └ that DREW (I-2)┘ └ MEASURED, never LISTED (P4)┘     ║
+║ B1.CTA See the examples →                                                                    ║
+╠═ §recognise · py 112 · flat ═══════════════════════════ beat 2: the cost you already pay ════╣
+║ BR.H2 You have written this twice.  44/1.1   BR.BODY Khronos 64 % / ~10 %, source beneath   ║
+║ ┌ BR.LINES scan row of 3 reader-sentences, ≤14 words, NEVER a table (P10), no host named ┐   ║
+║ └ BR.SOURCE Khronos survey · >400 respondents · field dates ↗ — a source line, not a CTA ──┘ ║
+╠═ §agree · py 128 · ground steps darker ═══════════════════ beat 3: what you get, twice ══════╣
+║ B2.H2 Agreement is measured, not promised.  centred 44/1.1  ·  B2.BODY two lines             ║
+║ ┌ B2.CANVAS.GPU 588 · 16:9 ────────────┐ ┌ B2.CANVAS.GL 588 · 16:9 ──────────────────────┐  ║
+║ │ hdr WGSL → WebGPU ← written from     │ │ hdr GLSL ES 3.00 → WebGL2 (forceWebGl2, R-8)  │  ║
+║ │  canvas.dataset.backend, NEVER from  │ │ example="gradient" · ONE frame, then stop     │  ║
+║ │  the intent (I-2). "Tint" only on ②  │ │ no shared clock · identical deduped payload   │  ║
+║ │ cap running now on WebGPU            │ │ cap running now on WebGL2                     │  ║
+║ └──────────────────────────────────────┘ └───────────────────────────────────────────────┘  ║
+║ B2.NOTE one source · two compilers · two GPU APIs · the one function above                   ║
+║ B2.LADDER ① CPU f64 oracle ↗  ② Tint (WebGPU), in CI ↗  ③ WebGL2, in CI ↗   B2.COUNT 146 ↗   ║
+║ ▸ B2.DETAILS How this was measured ← native <details>, real DOM text, no numerals (R-17)     ║
+║ B2.CTA Read the CI gates → X-GIS playground/e2e                                              ║
+╠═ §types · py 128 · MIRRORED (claim left, proof right) ══════ beat 4: where failure lands ════╣
+║ ┌ left 452 ─────────────────────────┐ ┌ right 700 ─────────────────────────────────────────┐║
+║ │ B3.H2 Wrong field, red squiggle,  │ │ B3.EDITOR 7│ mix(…, U.field.colour, t) ~~~~~~      │║
+║ │       not black frame.            │ │ ⨯ TS2339 · line 7:47 — Property 'colour' does not  │║
+║ │ B3.BODY A wrong field is a type   │ │   exist… — real text under the frame, never a      │║
+║ │  error while you type. Uniform    │ │   tooltip · B3.TRUNC marker if truncated (R-16)    │║
+║ │  layouts come from reflect(), so  │ │ B3.LAYOUT reflect() · std140 · 48 bytes [scroll rgn]│║
+║ │  no offset is hand-derived.       │ │  time f32 0 4 · top vec4 16 16 · bottom vec4 32 16 │║
+║ │ B3.MICROLABEL std140 · std430     │ │  ← 12 bytes of padding after `time`: the argument  │║
+║ └ no CTA (X7) ──────────────────────┘ └ cap No number in this table was typed. ────────────┘║
+╠═ §precision · py 128 ══════════════════════════════════════ beat 5: the capability ══════════╣
+║ ┌ B4.CANVAS 640 · f32 ███▓▓░░ │ ██ ██ f64 ┐ ┌ B4.H2 Zoom past what f32 holds.             ┐ ║
+║ │ B4.LABELS from splitLabels — HTML, not  │ │ B4.BODY The GPU has no f64. The emulation   │ ║
+║ │  the shader · one frame, then stop      │ │  does; the source reads f32.                │ ║
+║ └─────────────────────────────────────────┘ │ B4.REFLECT origin: f64 → vec2<f32> — the two│ ║
+║   B4.BADGE 13 fp64 examples                 │  halves of one double. TEXT proof, survives │ ║
+║   B4.CTA Open the deep-zoom example →       └  a `none` backend (R-18) ────────────────────┘ ║
+╠═ §adopt · py 144 · centred close ══════════════════════════════════ beat 6: the ask ═════════╣
+║ B5.H2 No engine. No dependencies.  52/1.1 centred                                            ║
+║ B5.BODY In production today inside X-GIS. 0.1.0 is not published yet — start from the mirror.║
+║ B5.CHIPS [0 runtime dependencies][@xgis/shader-dsl][MIT][pinned 29c9614] ← text, NOT links   ║
+║ B5.INSTALL ┌ git submodule add https://github.com/typeshade/typeshade vendor/… [ copy ] ┐    ║
+║ B5.CTA [ Get started → ][ GitHub ↗ ]   B5.WATCH Watch releases for 0.1.0 ↗  (D-5)           ║
+╠═ FOOTER · sr-only h2 + 4 h3 columns · py 72 ═════════════════════════════════════════════════╣
+║ Start/Authoring guide·Docs │ Source/GitHub mirror·X-GIS source │ Package/npm typeshade —    ║
+║ reserved for 0.1.0 │ Agents/llms.txt        TypeShade · MIT · pinned at 29c9614             ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
+```
+
+**768 px is derived, not drawn.** Two breakpoints, and every intermediate state follows from them. **≥ 1024** = the drawing above. **640–1023** (the 768 state): nav unchanged (two links already); hero keeps `SCRIM.L` with the text column widened to 52 % and the `h1` at 56/1.05; the rail's five chips wrap **3 + 2**, never into a 2-column grid; every 2-column beat stacks to one column, claim before proof — **except §agree's pair, which stays side by side down to 640** (each canvas ≥ 300 px, and the pair *is* the claim); `B2.DETAILS` renders collapsed (I-12); `B1.CANVAS` moves under `B1.CODE`; footer 4 → 2×2. **< 640** = the 390 drawing below. **320 CSS px** is the reflow floor and is gated by NFR-5, not by a drawing.
+
+**390 px** · content 350 · gutters 20 · one column · `svh` not `vh`. No hamburger — two links fit.
+
+```
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│NAV h52 · TypeShade [pre-release]   Docs  GitHub ↗                                         │
+│THE HERO ORDER INVERTS — at 390 a text column would cover the whole canvas, turning the    │
+│ proof into wallpaper and killing P2. FLAT ground: no scrim, no compositing at all, so     │
+│ contrast is measured against a constant and §6's sweep stays desktop-only                 │
+│HERO.H1 40/1.05 → HERO.SUB 17/1.55 → [Get started][GitHub] h48 full-width → HERO.STATUS    │
+│ 13 → HERO.CANVAS full-bleed 390×230, hairlines t+b → HERO.CAPTION on the page's own flat  │
+│ ground, min-height 2 lines so substitution shifts nothing. Fold 436 + 230 + 34 = 700 of   │
+│ ~740 usable on an 844-tall phone → canvas AND caption stay above the fold                 │
+│RAIL → 5 STACKED ROWS, each sentence then its route link                                   │
+│§write → B1.CODE (scroll rgn) → B1.CANVAS → B1.EMIT → B1.LABEL → B1.CTA          (D-10)    │
+│§recognise → BR.H2 → 3 lines STACK (never a table, at any width) → BR.SOURCE (Body A)      │
+│§agree → PAIR STACKS, header ABOVE each canvas, 350×197 ×2 → B2.NOTE → B2.LADDER ①②③ →     │
+│ B2.COUNT → ▸B2.DETAILS (shut) → B2.CTA · ≈620 px for both canvases and their headers      │
+│§types UN-MIRRORS: claim first, proof second. The TS2339 message WRAPS, never truncated —  │
+│ it IS the proof. B3.LAYOUT 4-col 12px mono, scroll rgn, offset col NEVER collapses (C4)   │
+│§precision 350×197 at 3:2 (the split needs height) · §adopt 4 chips 2×2, [copy] on its own │
+│ row, copies the WHOLE string · FOOTER 4 cols → 2×2 · TypeShade · MIT · pinned 29c9614     │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Collapses:** hero order inverts · scrim removed · rail 5×1 → 5 rows · every 2-col beat → 1 col, claim before proof · §agree's pair stacks with headers above · footer 4 → 2×2 · buttons full-width. **Nothing is dropped — no content, no proof, no CTA, no canvas and no destination.** The one presentational change is the `h2` anchor markers, which stop being hover-revealed and become permanently visible below 1024 (I-15): a change of trigger, not a removal. **Scrolls inside its own box:** `B1.CODE`, `B3.LAYOUT`, `B5.INSTALL` — each a named, focusable scroll region (I-13); every grid child carries `min-width: 0`, the actual cause of page-level x-overflow.
+
+---
+
+## 6. Hero composition over the live canvas
+
+**Method: Copyhackers–Wiebe value-proposition hierarchy over an F reading path, plus a measured worst-frame contrast sweep (WCAG 1.4.3 applied to moving media).**
+
+**Placement, and F rather than Z.** `<ShaderCanvas example="metaballs" class="absolute inset-0 -z-10" />` in a `position: relative`
+section of `clamp(560px, 72svh, 720px)` — 648 px at 1440×900, i.e. 2.22 ∶ 1, within a hair of the 2.4 ∶ 1 the spike benched. `metaballs` is the spike's pick for compositional reasons: its ground `#080a14` is already the page ground, 60–70 % of a wide frame stays dark, its motion is a slow orbital drift, and it is the cheapest candidate that still looks expensive. Text takes a 34ch column at x = 120…740 and the right 40 % carries no type, so the orbs read as an object rather than a background (**P2**). This is
+**a declared deviation from P7**: a Z hero centres the headline over the brightest region of a moving image — the one composition
+that cannot be made legible without a full-frame scrim, and a full-frame scrim turns the product into wallpaper. P7's stated purpose still holds, since the `h1` is the largest object on the page and sits where the scan starts; Tailwind, the reference this page most resembles on code-as-hook, is F for the same reason.
+
+**Legibility: three layers, no text-shadow.** All alphas interpolate one rgb, never the `transparent` keyword (that is transparent
+*black*; the spike already paid for the resulting band). **SCRIM.L** `linear-gradient(96deg, rgb(6 8 15/.94) 0%, rgb(6 8 15/.86)
+32%, rgb(6 8 15/0) 66%)` — every glyph lives left of the 32 % stop. **SCRIM.B** `linear-gradient(0deg, rgb(6 8 15/1) 0%, rgb(6 8 15/.70) 12%, rgb(6 8 15/0) 34%)` — carries the caption and welds the hero into the rail's flat ground. **The caption pill** gets its own local ground (`rgb(6 8 15/.55)` + `blur(6px)`), so its contrast is a property of the pill, not of whatever the orbs are doing. A shadow over a moving image reads cheap and still fails at the worst frame. At 390 there is no scrim and no compositing at all — the canvas sits below the text and the caption sits below the canvas on flat page ground (§5), which is why the sweep is desktop-only.
+
+**The sweep — an instrument, not an eyeball.** A metaball drifts under the headline nine seconds in and no single screenshot sees
+it. Reusing the spike's Playwright + pixel-readback harness: sample the **composited** hero (canvas + both scrims) every 250 ms for 20 s (80 frames) on **both** backends; take the maximum luminance inside each element's bounding box across all frames; compute WCAG contrast against that worst pixel. **Why 20 s, derived rather than asserted:** with `count = 5` the orbits run at ω_x = 0.13 i + 0.5 and ω_y = 0.11 i + 0.4 rad/s for i = 0…4, so the slowest component is ball 0's vertical term at 0.4 rad/s → **T = 2π/0.4 = 15.71 s**. The ten frequencies are mutually incommensurate, so the field is quasi-periodic and has *no* exact common period; 20 s covers the slowest component with 27 % headroom, and the gate additionally requires the running worst-case luminance to have stopped rising for the final 4 s — if it is still rising, extend and re-sample. Floors: `HERO.H1` **7 : 1** (headroom over AA-large — this is the 5-second test) · `HERO.SUB` 4.5 : 1 · `HERO.STATUS` **4.5 : 1** (small, and it is the honesty disclosure: it must not be what fails) · caption text 4.5 : 1 measured **over the pill**, which is measured too · the `GitHub` ghost-button **border 3 : 1 against the scrimmed worst case**, not against the page ground — a button that vanishes when a bright orb passes under it is a lost click at the moment of decision. Fix a failure by raising scrim alpha in 0.04 steps, never by lightening type, adding a shadow or moving the shader. It is a **launch gate** (NFR-4) because there is no analytics loop to catch it afterwards (D-12).
+
+**LCP discipline.** `HERO.H1` is server-rendered text and must be the **measured LCP element**, not the canvas, at **≤ 2.5 s** on the
+NFR-3 profile. Inter self-hosted, preloaded woff2, `font-display: optional`. `mountShader` runs after first paint (its WebGPU probe is async by construction), and `SCRIM.L` sits over `ShaderCanvas`'s own CSS gradient meanwhile, so the hero is never empty.
+
+**Caption substitution, and its announcement policy.** The caption ships honest server-rendered text (*Compiled at build time from
+one typed source.*) and is rewritten once from `canvas.dataset.backend`. Its `min-width` is sized in `ch` to the longest string below so substitution causes **zero layout shift** — the only string on the page that changes after paint — and the canvas `aria-label` is rewritten in the **same tick from the same value**, so caption and accessible name cannot disagree. **It is deliberately not a live region:** no `aria-live`, no focus move. The build-time string is backend-neutral and true on every path, so a screen-reader user who has already passed the canvas is never left holding a false statement — which is the only thing an announcement would buy, at the cost of interrupting a reader for a decorative fact.
+
+| State | Composition | Caption (copy of record: 07 §3) |
+| --- | --- | --- |
+| WebGPU / WebGL2 | live canvas | `Compiled at build time from one typed source — running on WebGPU` / `…on WebGL2.` |
+| `prefers-reduced-motion` | one frame at a pinned clock, no rAF, no observers (spike-verified 12/12, both backends) | `…— shown as a still frame on WebGPU / WebGL2.` |
+| No GPU (`'none'`) | canvas transparent, `ShaderCanvas`'s CSS gradient shows through — a dark blue→violet field, not a black box; 0 console errors (spike arm 4) | **`Neither WebGPU nor WebGL2 here — this shader was still emitted at build time.`** (X9) |
+| Device lost after mount | loop stops, canvas clears to the CSS gradient, **caption and `aria-label` rewritten on the same event** (I-2) | the `none` string above |
+
+That last pair is the graft that matters: a missing backend **prints the build-time fact** instead of apologising, so the degraded read is a claim about the compiler rather than about the visitor's hardware. A build-time poster frame was considered and is carried as **D-6**.
+
+---
+
+## 7. Interaction inventory and states
+
+**Method: interaction inventory — state × input × assistive path.**
+
+| # | Interaction | Specification |
+| --- | --- | --- |
+| I-1 | **Backend audition** | `mountShader` creates the pipeline, draws one frame and checks `getCompilationInfo()` **before** claiming a backend, so no label ever names a backend that did not draw. Handles are read from `canvas.__shader` per element — **never** `window.__typeshadeHero`, which is last-mount-wins (spike §5.4) and would report one of five mounts. Caption and `aria-label` substitution is §6 |
+| I-2 | **Degraded and asymmetric backends** | **Every backend label on the page is written from `canvas.dataset.backend`, never from the intent.** `none` (neither API): both §agree headers are replaced by the single build-time line *emitted at build time — no GPU API here to run it on*, so the section cannot show two identical fallbacks under two different backend headers. WebGPU absent but WebGL2 present: the left canvas draws on WebGL2 and its header becomes *no WebGPU here — this WGSL was still emitted at build time*; the pair's claim degrades to one live half plus one build-time fact, and never inverts into evidence against itself. WebGL2 absent (the `forceWebGl2` mount reports `none`): the right header takes the same treatment. Device lost after mount: the spike does not re-mount, so the **stop** event rewrites every caption, header and `aria-label` that named that backend, in one tick (§6) |
+| I-3 | **`prefers-reduced-motion: reduce`** | Every canvas draws one frame at a pinned clock, no rAF, no observers. Header condense becomes instant; button transforms are dropped (colour changes stay — they carry state, motion does not); scroll reveals disabled |
+| I-4 | **Offscreen / hidden pause** | `IntersectionObserver` at 0.25 plus `document.hidden`; the clock accumulates only while running, so resuming causes no time jump. Only the hero animates, so at most one loop exists at any scroll position — verify at 1440×900, 1440×1200 **and** a 1440×1440 window |
+| I-5 | **Draw-once canvases** | `gradient` (×3) and `fp64-deep-zoom` declare no `time`, so their frames are pure functions of their sliders. `mountShader(…, { still: true })` — the path reduced motion already takes. Without it they burn a rAF redrawing an identical frame |
+| I-6 | **No pointer input on any canvas** | `mouse` packs `[0,0,0,0]` with `used = 0`, the flag the examples read for their canonical framing. Canvases are `role="img"`, not focusable, `pointer-events: none` on the wrapper so a drag over the hero scrolls the page. **No sliders, no play/pause, no backend toggle, no "try it" verb near a canvas** — the page must never invite a click it cannot honour (G3) |
+| I-7 | **Sticky header condense** | One 1px sentinel at the hero's lower edge drives one `IntersectionObserver`; no scroll listener. 64 → 56 px, blurred ground + hairline. It never hides on scroll-down — hiding costs the visitor a gesture at the moment they decided to act |
+| I-8 | **CTA states** | Primary: background lifts one step, 120 ms, **no transform** (a transform on a 44 px button over a moving canvas produces visible jitter). Secondary: border brightens. Tertiary: underline offset 4 → 2 px. The `↗` marker is **always visible**, never hover-revealed, and lives **inside** the link's own target box — an evaluator scanning the link list needs to know which links leave before hovering |
+| I-9 | **`:focus-visible` everywhere** | One 2 px accent ring at 2 px offset on every interactive element, with a 1 px dark outer stroke over the hero so it survives a bright frame. No `:focus { outline: none }` anywhere. Ring contrast is checked by the same sweep as the type |
+| I-10 | **Focus order = DOM order = visual order** | **≥ 1024:** skip-link → wordmark → Docs → GitHub → hero 1° → hero 2° → rail chips 1–5 → `Check the pinned commit` → `B1.CODE` (scroll region) → `See the examples` → `BR.SOURCE` → `B2.LADDER` ①②③ → `<summary>` → `Read the CI gates` → `B3.LAYOUT` (scroll region) → `B4.REFLECT` link → `Open the deep-zoom example` → `B5.INSTALL` (scroll region) → copy → `Get started` → `GitHub` → `Watch releases` → footer in column order. **≤ 1023 (the 390 walk):** identical, minus nothing — every stop above exists at 390; only the visual order of §write's three panes changes, and DOM order follows it. `NAV.CHIP` is a `<span>`: state, not a control. No positive `tabindex` |
+| I-11 | **One copy affordance, in §adopt** | The submodule line is the only paste-and-run text on the page. Copies the **full** string, never the visual truncation; label swaps to `Copied` for 1.6 s, announced via a polite status message (4.1.3); on failure (insecure context, denied permission) the label becomes `Press ⌘C` and the text is programmatically selected. **`B1.CODE` gets no copy button** — it does not run standalone, and a button would promise that it does |
+| I-12 | **The code pane is not an editor** | No Monaco, no runtime highlighter, no `WGSL \| GLSL` toggle. Highlighting and the squiggle are static build-time markup; `→ WGSL · 29 lines` is text, not a control. A switcher is an invitation to read generated output — **P4**, and v1's failure wearing a nicer control. `B2.DETAILS` is likewise a native `<details>`/`<summary>` — real DOM text, crawlable, no fetch, summary a noun phrase, rendered collapsed below 1024, no height animation on an evidence panel |
+| I-13 | **Scroll regions are keyboard-reachable** | `B1.CODE`, `B3.LAYOUT`, `B5.INSTALL` each get `tabindex="0"`, `role="region"` and an `aria-label` naming the content (`Authored fragment, gradient.ts` · `Reflected std140 layout` · `Submodule command`), so arrow keys scroll what the mouse can. They are in I-10's order. Without this, a keyboard-only user cannot reach content that scrolls out of view (2.1.1) |
+| I-14 | **Overflow + off-site marking** | `B1.CODE`, `B3.LAYOUT`, `B5.INSTALL`: `overflow-x: auto` + `overscroll-behavior-x: contain`; every grid child `min-width: 0`. Every CTA leaves the site: visible `↗`, link text names its destination as a noun, one destination one wording. New tab vs same tab is **D-7**. Motion budget: at most an 8 px rise + opacity over 240 ms, once per element, off under reduced motion; **no parallax, no scroll-jacking, no counters** — a counting animation makes a measured number look like a marketing device |
+| I-15 | **`h2` anchor markers** | A `#` link inside each `h2`, destination `#<section-id>`, `opacity: 0` only at ≥ 1024 and only until `:hover`/`:focus-visible`; **permanently visible below 1024**. It is never an invisible tab stop at any width (2.4.7), and revealing it changes no layout (1.4.13: the marker occupies its box always) |
+| I-16 | **No-JS and forced colours** | **`noscript`:** the CSS gradient plus the server-rendered captions, headers, snippet, diagnostic, layout table and every number — **no proof text is JS-injected**, so the page's whole argument survives with zero canvases. The copy button is hidden and `B5.INSTALL` stays selectable text. **`forced-colors: active`:** chips, canvas frames and the caption pill keep a 1 px `ButtonBorder`; the focus ring becomes `Highlight`; every canvas gets a text-carrying frame so a suppressed image leaves a labelled box, not a hole; accent-only states repeat in text (1.4.1) |
+
+---
+
+## 8. Requirements
+
+**Method: requirements register — every row carries the check that closes it. A requirement with no verification is a wish.**
+
+| # | Functional requirement | Verification |
+| --- | --- | --- |
+| R-1 | Every number, snippet, layout and commit renders at build time from the pinned mirror; nothing typed into the page | The checklist is **`07-copy-deck.md` §9's claim → source table**, row by row: grep the built HTML for each literal it names and confirm the slot row in §4.3. `bun run build` green |
+| R-2 | Seven new build-time facts: `facts.runtimeDeps`, `facts.license`, `facts.mirrorUrl`, `facts.mirrorVersion` → `nextVersion` → `published`, `facts.bothTargets`, `hero.authoredLines`, `hero.emit`; plus `facts.testFiles` widened to the package root | Assertions in `examples.ts`; the build fails if the mirror's `package.json` shape changes, if `published === true` while the pre-release strings render, or if `testFiles < 146` |
+| R-3 | `B1.LABEL`'s numeral equals `hero.authoredLines`; no `h2` on the page contains a digit | Build assertion + a grep of every rendered `h2` (X1 removed the last one) |
+| R-4 | Every compile claim carries `in CI` **and** resolves to an X-GIS spec | **Copy-review row + link check.** Without it, `WGSL → Tint ✓` claims *this build* ran Tint — a subtly false verification claim on a page whose whole pitch is verification (X4) |
+| R-5 | `B3.LAYOUT` renders `typedError().layout`, every cell, offset column never collapsed, field list never truncated | Compare the rendered table to `typedError()`; assert 3 rows and offsets 0/16/32 |
+| R-6 | Generated WGSL / GLSL is **never printed**, only measured | Grep the built HTML for `@fragment`, `void main`, `#version` — zero hits (**P4**) |
+| R-7 | No comparison table, logo band, output listing, pricing, waitlist or urgency device | **Zero-hit greps, not a judgement:** `<table` outside `B3.LAYOUT` · `pricing` · `waitlist` · `sign up` · `countdown` · any host name from 07 §9's honesty sweep · any `<img>` inside `nav`/`§adopt` |
+| R-8 | `ShaderCanvas` accepts `forceWebGl2` and passes it to `mountShader` | **A required component change** — today it takes only `example` and `class`. QA asserts the right pair canvas reports `data-backend === "webgl2"`, or the header is a lie |
+| R-9 | `ShaderCanvas` accepts `still` → `mountShader(…, { still: true })` | Assert `canvas.__shader.frames === 1` for `gradient` ×3 and `fp64-deep-zoom` |
+| R-10 | Mount count is exactly 5; exactly 1 animates; the three `gradient` payloads are one deduped record | QA asserts the count **before** asserting anything about backends; assert one `<script type="application/json">` per distinct `data-example` |
+| R-11 | The submodule command is generated from `facts.mirrorUrl`, with a docs-owner-ratified target path | It is the one element a visitor *executes*; a wrong path costs more trust than a missing feature. Unratified → drop the copy chip, keep the prose |
+| R-12 | `/spike` deleted; `/404.html` shipped with `P404.*`'s copy and the hero's CTA record | Assert absent from `dist/` **and** the generated sitemap; assert `/404.html` present and its CTA href equals the hero's |
+| R-13 | `og.png` is a captured hero frame, not a drawing, and the capture is **deterministic** | Capture with `prefers-reduced-motion: reduce` on the WebGPU arm — one frame at a pinned clock (spike arm 3, 12/12) — and assert the PNG's SHA-256 equals the committed file's on the pinned Chromium build. A Chromium or SwiftShader bump re-baselines it deliberately; an animated capture never could |
+| R-14 | The built `llms.txt` carries the same numerals as `facts` | Parse both, assert every numeral in `llms.txt` appears in `facts` with the same value; fail the build otherwise (no hand-maintained copy) |
+| R-15 | Every destination on the page has exactly one wording; every wording exactly one destination | Extract `(href, text)` from the built HTML, assert both maps are injective (3.2.4) |
+| R-16 | `B3.TRUNC` renders the flag, never a silently shortened message | Assert `typedError().diagnostic.truncated === false` at `29c9614`, **and** that a forced-true fixture renders the visible marker |
+| R-17 | `B2.DETAILS` contains no numeric claim until `agreement.json` exists (D-4) | Grep the rendered disclosure for digits; the only permitted matches are `GLSL ES 3.00`, `f64` and `146 test files`, each of which has a §4.3 slot row |
+| R-18 | §precision carries a build-time **text** proof, not only a canvas | Assert `B4.REFLECT` renders `reflect()`'s `origin` field as `vec2<f32>` with the source's `f64` beside it, and that the section still argues its claim with every canvas removed |
+
+| # | Non-functional budget | Target and verification |
+| --- | --- | --- |
+| NFR-1 | Canvas DPR | Cap **1.5**, `ResizeObserver`-sized, never a per-frame layout read. Measured at `deviceScaleFactor: 3`: CSS 800 → buffer 1200, ratio 1.500, both arms (spike) |
+| NFR-2 | JS size | Runtime module + **≤ 13.4 KB** inlined JSON uncompressed, deduped (19.2 KB before dedup — D-8 resolved, dedup ships). **Zero runtime dependencies**; `@webgpu/types` is types-only. Measure `dist/` |
+| NFR-3 | LCP | `HERO.H1` is the LCP **element**, not the canvas, at **≤ 2.5 s** — throttled "Slow 4G", 4× CPU slowdown, cold cache, 1440×900. Assert both the identity and the time |
+| NFR-4 | Contrast over moving media | The §6 floors at the worst of 80 composited frames (20 s, derived from T = 15.71 s), both backends, with the stopped-rising condition. **Launch gate**; body ≥ 4.5:1 is the brief's own bar. Desktop only — at 390 nothing composites (§5) |
+| NFR-5 | Horizontal overflow | `document.scrollingElement.scrollWidth === clientWidth` at **320 / 390 / 768 / 1440**. **Launch gate**, not a hope |
+| NFR-6 | WCAG 2.2 AA, the items that apply | 1.1.1 canvas names generated from the build-time record · 1.3.1 one `h1`, `h2` per section, no skipped levels, chips are real text with unit and label adjacent so they linearise · **1.4.1** no fact carried by colour alone — the caption's `●`, the chip accents and the `↗` all repeat in text · 1.4.3 → NFR-4 · **1.4.4** 200 % text-only zoom at 1440: no clipping, no lost chip condition, no lost methodology — every chip and the rail are `min-height`, never fixed height · 1.4.10 reflow at 320 CSS px with no 2-D scroll (→ NFR-5) · 1.4.11 focus ring and ghost border ≥ 3:1 · **1.4.12** text-spacing bookmarklet (1.5× line, 0.12em letter, 0.16em word, 2em paragraph): no clipping or overlap, checked hardest on the chips and the pinned caption · **2.1.1** every scroll region focusable and arrow-scrollable (I-13) · **2.2.2** the only moving content is the hero and it is not essential; reduced motion stops it · **2.4.1** skip-link → `<main id="main" tabindex="-1">`, which takes focus · 2.4.7 no invisible tab stop at any width (I-15) · **2.4.11** `scroll-margin-top: 72px` (56 header + 8 ring offset + 8 gap) on every anchor target, asserted at each · **2.5.8** ≥ 24 px: CTAs are 44–52; rail chips, footer links and `↗`-bearing links get ≥ 24 × 24 px padded targets with ≥ 8 px spacing; only links inside a sentence use the inline exception · **3.1.1** `<html lang="en">` · 3.2.4 → R-15 · **4.1.2** canvas names · **4.1.3** the copy confirmation is a status message. Axe pass + a manual keyboard walk of I-10 at 1440 **and** 390 |
+| NFR-7 | Console | 0 console errors, 0 page errors, 0 HTTP ≥ 400 on all four backend arms (spike harness, re-run on the built page) |
+| NFR-8 | SEO / OG / document | `<html lang="en">`; `<title>` and meta description carry the tagline of record; one `h1`; `og.png` + `twitter:card summary_large_image`; canonical; sitemap without `/spike`; `llms.txt` gated by R-14 |
+| NFR-9 | Motion | Exactly **1** rAF registration after settle, and **0** under `prefers-reduced-motion` — asserted as equalities, not as "few". No scroll-triggered motion on any text, chip or number |
+| NFR-10 | Page weight | First load ≤ **220 KB gzipped** total: ≤ 120 KB for the two self-hosted woff2 (Latin subset), ≤ 40 KB CSS, ≤ 40 KB HTML, ≤ 20 KB JS + inlined JSON. `og.png` is not first-load and is capped at 300 KB. Verification: measure `dist/`, per file type |
+| NFR-11 | Frame time on real hardware | The spike measured structure, not time (spike §5.1), and handed this here. Hero only, 390 CSS px, DPR 1.5 → 585×345 buffer, on **one named low-end device: Pixel 4a (Snapdragon 730G), Chrome, WebGL2**: **median ≥ 50 fps over 10 s**. Miss → drop the DPR cap to 1.0 below 640 px and re-measure; miss again → serve the still frame below 640 px (the reduced-motion path, already built). Recorded as a fallback so a miss is not a redesign |
+| NFR-12 | Build time | `bun run build` ≤ **8 s** (`03b`'s budget, which `typedError()` already spends +1.18 s of; this stage adds emit measurement, a fifth payload and, under D-6/R-13, a headless capture). Median of three runs, reported in QA |
+
+**The 5-second test, as QA rows.** *Method: NN/g five-second test with a countable pass condition.* Target answer: *"It turns
+TypeScript you write once into shaders for both WebGPU and WebGL2 — and that moving picture is one of them, running right now."* Pass: **≥ 4 of 5** first-time subjects name **one source** and **both target APIs**, unprompted. Four wrong answers, each with the element that prevents it: *"…something about WGSL?"* → the `h1` names no mechanism (**P1**) · *"a shader playground"* → no sliders, no play/pause, no pointer affordance (I-6) · *"a rendering engine"* → §adopt's `h2`, and the hero never uses a verb implying it draws for you · *"some three.js thing"* → the hero names TypeScript, WGSL and GLSL ES 3.00 and no framework. **The mechanical proxy, with its measure and its number:** blur the composited hero at σ = 6, compute each candidate box's mean luminance minus the frame mean (`|ΔL|`) over the six boxes `HERO.H1` · `HERO.SUB` · `HERO.CTA` · `HERO.STATUS` · caption pill · the brightest canvas-only 200×200 patch; **pass = `HERO.H1`, `HERO.CTA` and the caption pill are the top three by `|ΔL|`, and the canvas patch ranks below all three.** If the orbs win the squint, `SCRIM.L` is too weak. This proxy never replaces the 4-of-5 human run; it is what survives having no participants.
+
+---
+
+## 9. Open decisions for the design-system phase
+
+**Method: decision register (ADR-lite). Each row is owned, has a default, and is one line to revert.** D-1, D-2, D-8 and D-11 were closed by §0.2, §4.4 and the brief's amendment; they stay as struck-through pointers so a later reader does not re-open them.
+
+| # | Decision | Default if unratified | Why it is open |
+| --- | --- | --- | --- |
+| ~~D-1 · D-2 · D-8~~ | §write's numeral · §write's body claim · payload dedup | **Closed by X1, X2 and §4.4** — no `h2` carries a numeral (`B1.LABEL` renders `hero.authoredLines`); §write mounts its own `gradient` and the body reads *beside it*; three `gradient` copies make dedup mandatory and NFR-2 measures 13.4 KB | Kept as pointers so they are not re-opened |
+| **D-3** | `§agree` mounts `gradient` (static, honest, the source just read) vs `metaballs` (visually richer) | `gradient` | `metaballs` would make "the same source above" false, reintroduce the shared-clock problem and put two animating contexts on a phone. Recorded so it is not re-proposed as a visual upgrade |
+| **D-4** | Promote the spike's arm-3 parity measurement to `scripts/verify-agreement.ts` → `agreement.json`, read at build time beside `facts` | **Print no pixel deltas until it exists** (R-17 enforces it) | The 0.009 % figure is a throwaway bench, not a committed gate (spike §5.2). Printing it would make the page's one verification claim its least verifiable number. The highest-value follow-up this page could ask for — it becomes ladder rung ④ |
+| **D-5** | `Watch releases for {nextVersion}` — the page's only Retention instrument | Ship it; destination `github.com/typeshade/typeshade/releases`, slot row in §4.3 | `02-messaging.md` §5 leaves Retention deliberately unserved. But the journey's only structural break is Try, and the visitor who believes everything and then reads "not published yet" has **no way to come back**. A GitHub release watch is not our account, our list or our data — no email, no waitlist, no urgency device |
+| **D-6** | A build-time poster frame as the `backend: 'none'` fallback | The CSS gradient + the honest caption in §6 | It restores **P2**'s proof-adjacency for a visitor with no GPU, and costs a headless browser inside the Pages deploy workflow — which R-13 now requires anyway, so the marginal cost has fallen |
+| **D-7** | Every CTA leaves the site: new tab or same tab? | New tab, with the always-visible `↗` and noun link text | Contested a11y practice. Same-tab makes the page a one-shot and promotes the sticky header CTA to the only recovery path. **Owner call** |
+| **D-9** | The `metaballs` palette runs blue → green → magenta; the green half is off the site accents `#7dd3fc` / `#c4b5fd` | Accept the green; let the accent brand a mostly-blue frame | The palette is inside the mirror's shader and this project **must not hand-edit it**. Recorded so it is not re-litigated as a bug — and if the green phase coincides with the headline box it is also an NFR-4 input, which the 80-frame sample covers |
+| **D-10** | If §write's stacked height at 390 breaches 1.4 × svh | Order `B1.CODE` → `B1.CANVAS` → `B1.EMIT`, and move `B1.EMIT` above `B1.CODE` only if it still breaches | A long unbroken scroll with no heading break is where abandonment concentrates. Three panes now stack here, not two (X2) |
+| ~~D-11~~ | `§recognise` Body A vs Body B | **Closed: Body A ships.** `00-brief.md`'s fact list was amended 2026-09-07 (owner decision 1) to admit the Khronos 2026 figures — 64 % adapt shaders across platforms/APIs/tools, ~10 % call it one of their largest engineering costs | Kept as a pointer: the figures are facts about the **market**, never about TypeShade's audience, and must render with their source beside them (`BR.SOURCE`) |
+| **D-12** | Analytics on the page | **None** — no script, no beacon, no third-party origin | Owner-visible consequence, recorded here rather than as a parenthetical: with no analytics there is no post-hoc loop, so NFR-4, NFR-5 and the 5-second test are **launch gates** and not "monitor after ship". Reversing this adds a consent surface to a page that currently needs none |
+
+**Carried to `05-design-system.md`:** the type scale behind the sizes used here (72/56/52/44/36/20/17/14), the single accent,
+the chip / scroll-region / code-pane components, the exact scrim tokens, the `forced-colors` mappings, and one focus-ring token that survives both the flat grounds and the scrimmed hero.
