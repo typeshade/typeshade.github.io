@@ -15,8 +15,16 @@ does not explain; it makes the visitor want the thing and then shows proof. The 
   every emitted variant compiles on Tint (WebGPU) and on WebGL2 in CI; emit goldens are
   byte-stable; emulated fp64 with unchanged syntax (the deep-zoom demos); zero runtime
   dependencies; `reflect()` recovers std140 / std430 layouts so nothing is hand-derived.
-- Build-time numbers: 36 examples (each emitting both targets), 13 fp64 examples, 135 test files,
-  0 runtime dependencies.
+- Build-time numbers: 36 examples, of which 35 emit both targets (`compute-reduction` has no
+  GLSL ES 3.00 path), 13 fp64 examples, 146 test files counted from the package root (135 under
+  `src/` alone), 0 runtime dependencies (the mirror's `package.json` declares no dependency field
+  at all). Amended 2026-09-07 per the copy deck's measurements M1, M4, M5 — owner decisions (2)
+  and (3) adopted: the `write` block may show 10 lines; the test-file count is the package root.
+- Market facts admitted 2026-09-07 (owner decision (1) of the copy deck): the Khronos Shader
+  Ecosystem Survey 2026 (>400 respondents, fielded 2026-06-16 → 2026-07-10,
+  https://www.khronos.org/blog/shader-ecosystem-survey-results-2026) — 64% adapt shaders across
+  platforms, APIs or tools; about 10% call it one of their largest engineering costs. These are
+  facts about the market, never about TypeShade's audience, and render with their source beside them.
 - In production inside the X-GIS globe engine as npm `@xgis/shader-dsl`. npm `typeshade` is
   reserved at 0.0.0; `0.1.0` is not released → the honest primary CTA is GitHub / Get started
   (AUTHORING.md), not `npm i typeshade`.
