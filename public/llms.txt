@@ -1,0 +1,18 @@
+# TypeShade
+
+> Typed shaders in TypeScript, compiled to WGSL (WebGPU) and GLSL ES 3.00 (WebGL2) from one source, with a CPU f64 oracle that proves the two targets agree. Pre-release: the compiler ships today inside the X-GIS monorepo as `@xgis/shader-dsl`; the `typeshade` and `@typeshade/core` npm packages are placeholders until the 0.1.0 tag.
+
+## Where the code is
+
+- Read-only mirror (consume as a git submodule; its root is the package): https://github.com/typeshade/typeshade
+- Source of truth (issues and pull requests go here): https://github.com/X-GIS/X-GIS/tree/main/shader-dsl
+- Authoring guide: https://github.com/typeshade/typeshade/blob/main/AUTHORING.md
+- Docs (current home): https://x-gis.github.io/X-GIS/shader-dsl/
+
+## What it does
+
+- One typed IR → `emitModule(m)` gives WGSL, `emitGlslModule(m, stage)` gives GLSL ES 3.00; `reflect(m)` gives bind groups, std140/std430 layouts and entry signatures.
+- Optimizer passes (CSE, DCE, LICM, const-fold, algebraic), a lint engine with coded diagnostics (`SD####`), a fail-closed capability profile.
+- CPU f64 oracle: the same module compiled to a CPU function for parity checks; emulated fp64 (`f64`) with unchanged authoring syntax.
+- Production emit plugins: `inline()`, `mangle()`, `minify()` on the `emit-prod` subpath.
+- Zero runtime dependencies. MIT.

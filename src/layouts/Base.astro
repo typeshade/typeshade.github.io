@@ -1,0 +1,61 @@
+---
+import '../styles/global.css'
+
+interface Props {
+  title?: string
+  description?: string
+}
+const {
+  title = 'TypeShade — typed shaders in TypeScript',
+  description =
+    'TypeShade compiles one typed TypeScript source to WGSL for WebGPU and GLSL ES 3.00 for WebGL2, and proves the two targets agree with a CPU f64 oracle.',
+} = Astro.props
+
+const siteUrl = 'https://typeshade.dev/'
+const canonical = new URL(Astro.url.pathname, Astro.site ?? siteUrl).toString()
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'WebSite', '@id': `${siteUrl}#website`, url: siteUrl, name: 'TypeShade', description, inLanguage: 'en' },
+    {
+      '@type': 'SoftwareSourceCode',
+      '@id': `${siteUrl}#software`,
+      name: 'TypeShade',
+      description,
+      programmingLanguage: ['TypeScript', 'WGSL', 'GLSL'],
+      codeRepository: 'https://github.com/typeshade/typeshade',
+      license: 'https://opensource.org/licenses/MIT',
+      url: siteUrl,
+    },
+  ],
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b0f14" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={`${siteUrl}og.svg`} />
+    <meta property="og:site_name" content="TypeShade" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={`${siteUrl}og.svg`} />
+    <title>{title}</title>
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body class="min-h-screen bg-bg text-fg overflow-x-hidden">
+    <slot />
+  </body>
+</html>

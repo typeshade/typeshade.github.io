@@ -1,0 +1,32 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/geist-mono';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-bg: #0b0f14;
+  --color-bg-2: #10161d;
+  --color-card: #121920;
+  --color-line: #1f2830;
+  --color-line-2: #2b3640;
+  --color-fg: #f2f4f6;
+  --color-fg-2: #b8c0c8;
+  --color-fg-3: #7c8791;
+  --color-accent: #7dd3fc;
+  --color-accent-2: #c4b5fd;
+  --color-ok: #86efac;
+}
+
+html { background: var(--color-bg); color: var(--color-fg); scroll-behavior: smooth; }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.grad-text {
+  background: linear-gradient(90deg, #7dd3fc 0%, #c4b5fd 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.grad-line { background: linear-gradient(90deg, #7dd3fc, #c4b5fd); }
+/* expressive-code frames: sit flat on the card ground, no drop shadow */
+.expressive-code { --ec-frm-shdCol: transparent; }
+.expressive-code .frame pre { max-height: 1240px; overflow: auto; }
