@@ -1,0 +1,31 @@
+---
+import { facts } from '../../lib/examples.ts'
+import { links } from '../../lib/links.ts'
+
+const sources = [links.maplibreRoadmap, links.deckglWebgpu, links.pixijsMigration]
+---
+
+<section id="why" class="section">
+  <div class="wrap">
+    <h2>If you support WebGL and WebGPU, you are writing every shader twice.</h2>
+    <p class="lead mt-5">
+      {facts.survey.figure64}% of the {facts.survey.n}+ shader developers in the{' '}
+      <a class="link" href={links.survey.href}>{links.survey.label}</a> adapt shaders across platforms, APIs or
+      tools, and about {facts.survey.figure10}% call it one of their largest engineering costs.
+    </p>
+    <p class="mt-5 text-text-2">
+      The web is in the middle of that move. MapLibre, deck.gl and PixiJS are each adding a WebGPU path beside their
+      WebGL one, which means a custom layer or extension written in GLSL now has an expiry date, and an effect has to
+      exist as two programs before it runs everywhere. TypeShade removes the second program: one typed source, both
+      outputs.
+    </p>
+    <p class="meta mt-5">
+      See the{' '}
+      {sources.map((s, i) => (
+        <>
+          <a class="link" href={s.href}>{s.label}</a>{i < sources.length - 1 ? ', ' : '.'}
+        </>
+      ))}
+    </p>
+  </div>
+</section>

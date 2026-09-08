@@ -1,543 +1,273 @@
-/* typeshade.dev — the design system, implemented from docs/design/05-design-system.md.
- *
- * Four parts, in this order and no other: §2's token set VERBATIM, §3's @font-face block,
- * the base reset, and one class per §5 component (the inventory is §5's first paragraph).
- * Nothing else may declare a colour, a size or a scrim.
- *
- * Deleted here, by §10: both `@fontsource-variable` imports (13 faces, 288 960 B — M-4),
- * `.grad-text`, `.grad-line`, the global `scroll-behavior: smooth` and
- * `.expressive-code .frame pre { max-height }`.
- */
+/* typeshade.dev styles. Tokens, fonts, base rules, then one block per component.
+   The palette follows the visitor's colour scheme; light is the default. */
 
-/* ─── §2. Tokens ────────────────────────────────────────────────────────────────────── */
-@import 'tailwindcss';   /* NOT `@fontsource-variable` — 13 faces, 288 960 B (M-4). §3 ships two. */
+@import 'tailwindcss';
+
 @theme {
-  --font-sans: 'Inter Variable', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'Geist Mono Variable', 'Geist Mono Fallback', ui-monospace, SFMono-Regular, Menlo, monospace;
-  /* grounds — the page ground IS the shader's (03-spike §2), so a full-bleed canvas has no seam */
-  --color-ground: #080A14; --color-surface-1: #0C1018; --color-surface-2: #10151F; --color-surface-3: #161C28;
-  /* lines — three tokens, three jobs. line-2 is the specimen frame and NEVER touches an image: §5's 8px
-     ground mat puts --color-ground on BOTH its sides → 3.39:1 by construction (M-9). line-3 identifies a
-     control; line-1 is decorative at 1.39:1 and carries no boundary (§1.7, §8). */
-  --color-line-1: #232B3C; --color-line-2: #5B657D; --color-line-3: #8E99B0;
-  /* text — four tiers, ratios below; text-4 is the dimmest and is licensed everywhere */
-  --color-text-1: #F4F7FF; --color-text-2: #C3CCE0; --color-text-3: #9AA5BB; --color-text-4: #828DA4;
-  /* one accent (hue 39°, outside the palette — M-3) + two state colours, each licensed: --color-ok has
-     exactly two uses (`Copied`, the marker beside `drawn`); --color-diag never leaves a diagnostic block
-     and --color-accent never enters one. */
-  --color-accent: #F2B441; --color-ok: #7BD8A4; --color-diag: #FF8A80;
-  --radius-xs: 3px; --radius-sm: 6px; --radius-md: 10px;   /* no pill: the caption is a plate, not a pill */
-  /* type — MODULAR below 32 (r = 1.125 from 16: 11 · 12.5 · 14 · 16 · 18 · 20), a 4-px DISPLAY ladder
-     above (36 · 40 · 44 · 52 · 56 · 64 · 72): the ratio emits 36.50 41.06 46.19 51.96 58.46 65.77 74.00,
-     which land on that ladder with a max error of 2.46 px and on the 4-px grid the layout is built on.
-     Every size the IA or the deck uses has a token and nothing here is unused. h1 and both h2 roles are
-     STEPPED below, not clamped, so each has three measured span widths and INV-1 is checkable at three
-     points rather than over a continuum. */
-  --text-micro: .6875rem; --text-micro--line-height: 1.4545;  --text-code: .78125rem;  /* 11/16 · 12.5/20 */
-  --text-code--line-height: 1.6;  --text-meta: .875rem; --text-meta--line-height: 1.7143;   /* 14/24 */
-  --text-ui: 1rem; --text-ui--line-height: 1.5;  --text-lead-sm: 1.125rem;   /* 16/24 · 18/28.8 (recognise) */
-  --text-lead-sm--line-height: 1.6;  --text-lead: clamp(1.0625rem, .4732vw + .9472rem, 1.25rem);  /* 17→20 */
-  --text-lead--line-height: 1.6;  --text-h1: 2.5rem; --text-h1--line-height: 1.05;   /* 40/42 → 56 → 72 */
-  --text-h2: 2.25rem; --text-h2--line-height: 1.1;   /* 36/39.6 → 44 */
-  --text-h2-lg: 2.25rem; --text-h2-lg--line-height: 1.1;   /* agree · adopt · 404 → 52 */
-  --text-h1-og: 4rem; --text-h1-og--line-height: 1.05;     /* 64/67.2 — the /og/ route only (§9) */
+  --font-sans: 'IBM Plex Sans Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --spacing: .25rem;   /* the 8-pt rule, its three exceptions and what is exempt by kind are in §4 */
-  /* breakpoints in REM, so 200 % text-only zoom reflows the rail and footer with no media-query rewrite */
-  --breakpoint-sm: 40rem; --breakpoint-md: 48rem; --breakpoint-lg: 64rem; --breakpoint-xl: 80rem;
-  --ease-out: cubic-bezier(.2,0,0,1); --ease-std: cubic-bezier(.4,0,.2,1);  --duration-fast: 120ms;
-  --duration-chrome: 160ms;
+  --color-ground: #ffffff;
+  --color-surface-1: #f6f6f3;
+  --color-surface-2: #eeeeea;
+  --color-line-1: #e3e3de;
+  --color-line-2: #b9b9b2;
+  --color-text-1: #1a1a1a;
+  --color-text-2: #454545;
+  --color-text-3: #6b6b6b;
+  --color-accent: #1f6f43;
+  --color-diag: #b3261e;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  --text-code: 0.8125rem;
+  --text-code--line-height: 1.6;
+  --text-meta: 0.875rem;
+  --text-meta--line-height: 1.6;
+  --text-ui: 1rem;
+  --text-ui--line-height: 1.6;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.6;
+  --text-h2: 1.75rem;
+  --text-h2--line-height: 1.2;
+  --text-h1: 2.25rem;
+  --text-h1--line-height: 1.12;
+
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
 }
+
 :root {
-  color-scheme: dark;
-  /* grid — one formula; --pad-x is DERIVED, never typed (1440 → 120, 1280 → 48, 390 → 20) */
-  --gutter-x: 20px; --grid-gap: 24px; --nav-h: 64px; --nav-h-condensed: 56px; --nav-h-mobile: 52px;
-  --content: min(1200px, 100vw - 2 * var(--gutter-x));  --pad-x: calc((100vw - var(--content)) / 2);
-  --hero-col: calc(var(--content) * .5 - 12px);  /* 6 of 12 cols + 5 gutters → 588 at 1200 */
-  --hero-h: clamp(624px, 72svh, 720px);           /* the floor IS §4's stack budget, not a round number */
-  --measure-body: 56ch;  --anchor-offset: calc(var(--nav-h-condensed) + 16px);  /* 705px at 20px · 72, 68 <64rem */
-  /* §precision's split, RE-MEASURED at the shipped 3:2 crop (design §5, §10 risk 3). M-8's
-     41.4 % was a 2.40:1 spike frame; on the 672 x 448 mount this build ships, the banded ->
-     smooth discontinuity is at x = 336 of 672 = 50.000 % on BOTH backends (WebGPU and WebGL2,
-     byte-identical profiles), with 16 distinct column-luminance levels left of it and 168
-     right — 10.5x, against G10's >= 8x rung. The example's own source says the same thing
-     (`uv.x.lt(0.5).select(stripes32, stripes64)`), so the constant is corroborated as well as
-     measured. Declared as a UNITLESS FRACTION, not a percentage, because the rule's x is
-     `9px + (canvas width) * split` — calc() may multiply a length by a number and may not
-     multiply by a percentage. G10 asserts the rendered discontinuity against THIS value. */
-  --b4-split: .5;
-  /* scrims. Every alpha interpolates ONE rgb triple; `transparent` appears nowhere — it is transparent
-     BLACK and bands in sRGB (03-spike §4 arm 4). --weld equals the page ground, so SCRIM.BASE terminates
-     in it with no seam. Stops are ABSOLUTE calc() lengths keyed to the text column and the gradient 90deg,
-     so a stop maps exactly to an x and NFR-4's sweep keeps its box→alpha map; the tilt lives in the hue
-     layer, which has no contrast duty. At 1440: p0 = 732 (50.8 %) · p1 = 825.6 · p2 = 943.2 (65.5 %). */
-  --scrim-key: 6 10 26; --scrim-glow: 40 70 160; --weld: 8 10 20;
-  --scrim-p0: calc(var(--pad-x) + var(--hero-col) + 24px);  --scrim-p1: calc(var(--pad-x) + var(--hero-col) * 1.20);
-  --scrim-p2: calc(var(--pad-x) + var(--hero-col) * 1.40);
-  --scrim-hue: radial-gradient(92% 128% at 6% 32%, rgb(var(--scrim-glow) / .32) 0%, rgb(var(--scrim-glow) / 0) 62%);
-  --scrim-key-layer: linear-gradient(90deg, rgb(var(--scrim-key) / .86) 0,   /* HARD PLATEAU to p0: one
-      */ rgb(var(--scrim-key) / .86) var(--scrim-p0),           /* constant alpha under every glyph */
-      rgb(var(--scrim-key) / .40) var(--scrim-p1), rgb(var(--scrim-key) / 0) var(--scrim-p2));
-  --scrim-edge: linear-gradient(180deg, rgb(var(--weld) / .88) 0, rgb(var(--weld) / .88) 64px,
-      rgb(var(--weld) / 0) 132px);   /* seats the transparent nav — see §4 */
-  --scrim-base: linear-gradient(0deg, rgb(var(--weld)) 0%, rgb(var(--weld) / .86) 10%,
-      rgb(var(--weld) / .45) 24%, rgb(var(--weld) / 0) 42%);
-  /* the caption plate is SELF-SUFFICIENT: it clears its floor with NO scrim assumed. And ONE focus ring
-     for both grounds — its inner 2px ground gap is load-bearing, the accent being 1.72:1 against the
-     white primary fill it must never touch; against the gap it is 10.70:1. */
-  --plate-caption: rgb(var(--weld) / .82); --plate-caption-line: rgb(154 165 187 / .28);
-  --ring: 0 0 0 2px var(--color-ground), 0 0 0 4px var(--color-accent), 0 0 0 5px rgb(8 10 20 / .92);
-  --z-canvas: 0; --z-hue: 1; --z-key: 2; --z-edge: 3; --z-base: 4; --z-hero: 5; --z-nav: 50; --z-skip: 60; }
+  color-scheme: light dark;
+  --content: min(1080px, 100vw - 2 * var(--gutter-x));
+  --gutter-x: 20px;
+  --measure: 62ch;
+  --ring: 0 0 0 2px var(--color-ground), 0 0 0 4px var(--color-accent);
+}
+@media (min-width: 40rem) { :root { --gutter-x: 32px } }
+@media (min-width: 48rem) {
+  :root { --text-h1: 3rem; --text-h2: 2rem; --text-lead: 1.25rem }
+}
+@media (min-width: 64rem) { :root { --gutter-x: 48px; --text-h1: 3.5rem } }
 
-@media (max-width:22.5rem){:root{--gutter-x:16px}}  @media (min-width:40rem){:root{--gutter-x:32px}}
-@media (max-width:63.99rem){:root{--anchor-offset:calc(var(--nav-h-mobile) + 16px)}}
-@media (min-width:48rem){:root{--text-h1:3.5rem;                /* 56/58.8 · 44/48 · 52/56 */
-  --text-h2:2.75rem;--text-h2--line-height:1.0909;--text-h2-lg:3.25rem;--text-h2-lg--line-height:1.0769}}
-@media (min-width:64rem){:root{--gutter-x:48px}}  @media (min-width:80rem){:root{--text-h1:4.5rem}} /*72*/
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-ground: #121212;
+    --color-surface-1: #1b1b1b;
+    --color-surface-2: #242424;
+    --color-line-1: #2e2e2e;
+    --color-line-2: #5a5a5a;
+    --color-text-1: #ededed;
+    --color-text-2: #bdbdbd;
+    --color-text-3: #8f8f8f;
+    --color-accent: #7fd3a1;
+    --color-diag: #ff8a80;
+  }
+}
 
-/* every preference override may only RAISE the floor it governs; forced colours are §8 and drop every scrim */
-@media (prefers-reduced-transparency: reduce) {   /* ALL FOUR layers, not just two — see the note below */
-  :root { --plate-caption: var(--color-ground); --scrim-hue: none;   /* it ADDS luminance — dropped whole */
-    --scrim-key-layer: linear-gradient(90deg, rgb(var(--scrim-key)) 0, rgb(var(--scrim-key)) var(--scrim-p0),
-      rgb(var(--scrim-key) / .55) var(--scrim-p1), rgb(var(--scrim-key) / 0) var(--scrim-p2));
-    --scrim-edge: linear-gradient(180deg, rgb(var(--weld)) 0, rgb(var(--weld)) 64px, rgb(var(--weld) / 0) 96px);
-    --scrim-base: linear-gradient(0deg, rgb(var(--weld)) 0%, rgb(var(--weld)) 18%, rgb(var(--weld) / 0) 34%) } }
-@media (prefers-contrast: more) { :root { --color-text-2: #F4F7FF; --color-text-3: #C3CCE0;
-  --color-text-4: #9AA5BB; --color-line-1: #3A4457; --color-line-2: #8E99B0 } }
+/* Fonts. Latin subsets only, self-hosted. */
+@font-face {
+  font-family: 'IBM Plex Sans Variable';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
-/* ─── §3. Fonts — the NFR-10 fix (M-4): two latin-only faces, 71 384 B against a 120 KB cap ─── */
-/* unicode-range is fontsource's own latin range, copied verbatim from each package's index.css. */
-@font-face{font-family:'Inter Variable';font-weight:100 900;font-display:optional;
-  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,
-    U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-  src:url('/fonts/inter-latin-wght-normal.woff2') format('woff2-variations')}
-@font-face{font-family:'Geist Mono Variable';font-weight:100 900;font-display:optional;
-  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,
-    U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-  src:url('/fonts/geist-mono-latin-wght-normal.woff2') format('woff2-variations')}
-/* metric-matched fallbacks so the `optional` miss-path does not reflow the h1. `local()` names an
-   Arial-METRIC face, never Arial alone: on a system with no font literally called Arial (most
-   Linux, ChromeOS, some Android) a one-name `src` makes the whole @font-face fail to resolve, the
-   stack falls through to an uncalibrated generic, and the h1's first span gains a wrapped line on
-   exactly the LCP element this fallback exists to hold still — measured +75.6 px at 1440, +58.8 at
-   1024. Every name below is metric-compatible with Arial, so the literals hold unchanged; DejaVu
-   Sans is not and is deliberately absent. */
-@font-face{font-family:'Inter Fallback';src:local('Arial'),local('Liberation Sans'),local('Arimo'),
-  local('Helvetica'),local('Nimbus Sans');size-adjust:107.12%;ascent-override:90.44%;
-  descent-override:22.52%;line-gap-override:0%}
-@font-face{font-family:'Geist Mono Fallback';src:local('Menlo'),local('Consolas'),local('monospace');
-  size-adjust:100%;ascent-override:100%;descent-override:25%;line-gap-override:0%}
-
-/* ─── Base reset ───────────────────────────────────────────────────────────────────────
- * Tailwind's preflight owns box-sizing and the margin zeroing; what is added here is the
- * page ground, the type default, §7's five anti-overflow mechanisms and §5's one focus ring.
- * `html`/`body` never get `overflow-x: hidden` — it would mask exactly the defect NFR-5
- * exists to catch (§7 mechanism 5). */
+/* Base */
 html { background: var(--color-ground) }
-body { background: var(--color-ground); color: var(--color-text-1); font-family: var(--font-sans);
-  font-size: var(--text-ui); line-height: var(--text-ui--line-height); -webkit-font-smoothing: antialiased }
-/* §7 mechanism (1): min-width:0 on every grid and flex child, the actual cause of page-level
-   x-overflow. Zero specificity, so any component may take it back. */
+body {
+  background: var(--color-ground);
+  color: var(--color-text-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
+  -webkit-font-smoothing: antialiased;
+}
 :where(body *) { min-inline-size: 0 }
-/* §7 mechanism (4) */
 :where(img, canvas, svg, video) { max-inline-size: 100%; display: block }
-/* 2.4.1 / 2.4.11 — every anchor target clears the sticky nav */
-:where([id]) { scroll-margin-block-start: var(--anchor-offset) }
-/* §5 atoms — the one focus ring. `:focus { outline: none }` appears nowhere; the transparent
-   outline is what forced-colors repaints, and the ring is instant (0 ms). */
+:where([id]) { scroll-margin-block-start: 24px }
 :where(a, button, summary, [tabindex]):focus-visible {
-  outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--ring); border-radius: inherit }
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--ring);
+  border-radius: inherit;
+}
 
-/* ─── §5. Components — one class per row of the §5 inventory ─────────────────────────── */
+h1 { font-size: var(--text-h1); line-height: var(--text-h1--line-height); font-weight: 600; letter-spacing: -0.02em; text-wrap: balance }
+h2 { font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.015em; text-wrap: balance }
+p { max-inline-size: var(--measure) }
+.lead { font-size: var(--text-lead); line-height: var(--text-lead--line-height); color: var(--color-text-2) }
+.meta { font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-3) }
+.mono { font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height) }
+.wrap { inline-size: var(--content); margin-inline: auto }
+.section { padding-block: 56px }
+@media (min-width: 64rem) { .section { padding-block: 80px } }
+.section + .section { border-block-start: 1px solid var(--color-line-1) }
 
-/* skip link — the first tab stop, off-screen by clip-path (never `display: none`) */
-.skip { position: fixed; inset-block-start: 8px; inset-inline-start: 8px; z-index: var(--z-skip);
-  display: inline-flex; align-items: center; justify-content: center;
-  min-inline-size: 132px; min-block-size: 40px; padding-inline: 8px;   /* 116.0 text + 16 = 132 */
-  background: var(--color-surface-2); color: var(--color-text-1);
-  border: 1px solid var(--color-line-1); border-radius: var(--radius-sm);
-  font-size: var(--text-ui); font-weight: 500; text-decoration: none; clip-path: inset(50%) }
+/* Links */
+.link {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.link:hover { text-decoration-thickness: 2px }
+.prose a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px }
+.prose a:hover { text-decoration-thickness: 2px }
+.prose code { font-family: var(--font-mono); font-size: 0.92em }
+
+/* Skip link */
+.skip {
+  position: fixed; inset-block-start: 8px; inset-inline-start: 8px; z-index: 60;
+  padding: 8px 12px; background: var(--color-surface-1); color: var(--color-text-1);
+  border: 1px solid var(--color-line-2); border-radius: var(--radius-sm);
+  text-decoration: none; clip-path: inset(50%);
+}
 .skip:focus-visible { clip-path: none }
 
-/* nav — sticky, transparent over the hero (legibility is SCRIM.EDGE's job), condensed off it.
-   `min-block-size`, never `height`: §8 forbids a fixed height, and below 388 px the row wraps. */
-.nav { position: sticky; inset-block-start: 0; z-index: var(--z-nav);
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  column-gap: 12px; row-gap: 4px; min-block-size: var(--nav-h); padding-inline: var(--pad-x);
-  background: transparent; border-block-end: 1px solid transparent;
-  transition: min-block-size var(--duration-chrome) var(--ease-std),
-    background-color var(--duration-chrome) var(--ease-std),
-    border-color var(--duration-chrome) var(--ease-std) }
-.nav[data-condensed] { min-block-size: var(--nav-h-condensed); background: rgb(8 10 20 / .92);
-  border-block-end-color: var(--color-line-1) }
-@media (max-width: 63.99rem) { .nav, .nav[data-condensed] { min-block-size: var(--nav-h-mobile) } }
-.nav-wordmark { display: inline-flex; align-items: center; gap: 8px; min-block-size: 40px;
-  color: var(--color-text-1); font-size: var(--text-ui); font-weight: 600; letter-spacing: -.01em;
-  text-decoration: none }
-.nav-mark { inline-size: 20px; block-size: 20px; flex: none; color: currentColor }
-/* Two links at every width — no hamburger, no `Guide` (X10). 56 x 40 and 69 x 40, 8 px apart
-   (50 and 62 below 40rem, where the links step to 14/500). */
-.nav [data-nav-links] { display: flex; align-items: center; gap: 8px }
-/* D-7 removed the `↗`, and §0 drew the consequence: the persistent underline is the SOLE
-   non-colour affordance cue and may never be hover-only (§8's 1.4.1 row — "links are
-   underlined at all times"). The nav is chrome, but it is not exempt: these two are the only
-   links in the header, and a colour-only hover left them indistinguishable from the wordmark
-   beside them. The link ATOM's geometry, at the nav's own text tier. */
-.nav [data-nav-links] a { display: inline-flex; align-items: center; min-block-size: 40px;
-  padding-inline: 8px; color: var(--color-text-2);
-  text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
-  font-size: var(--text-meta); font-weight: 500;
-  transition: color var(--duration-fast) var(--ease-out),
-    text-decoration-color var(--duration-fast) var(--ease-out),
-    text-underline-offset var(--duration-fast) var(--ease-out) }
-.nav [data-nav-links] a:hover, .nav [data-nav-links] a:focus-visible {
-  color: var(--color-text-1); text-decoration-color: currentColor; text-underline-offset: 2px }
-@media (min-width: 40rem) { .nav [data-nav-links] a { font-size: var(--text-ui) } }
-
-/* state chip — a <span>: state, not a control. Not focusable, not in the tab order (P9, I-10) */
-.state-chip { display: inline-flex; align-items: center; min-block-size: 24px; padding: 4px 8px;
-  background: var(--color-surface-2); border: 1px solid var(--color-line-1);
-  border-radius: var(--radius-xs); cursor: default;
-  font-family: var(--font-mono); font-size: var(--text-micro); line-height: var(--text-micro--line-height);
-  font-weight: 500; letter-spacing: .02em; color: var(--color-text-4) }
-
-/* rail chip — a top rule and nothing else, so the five rules form one continuous scale.
-   A COLUMN, so the route link takes `margin-block-start: auto` and all five links share the
-   band's baseline however many lines their sentences take (measured: 3 · 1 · 3 · 2 · 3 lines,
-   a 48 px spread before this). The 12 px of §4's `chip sentence → route link` step stays as
-   the sentence's own bottom margin, so the auto margin can only ever ADD to it. */
-.rail-chip { display: flex; flex-direction: column;
-  border-block-start: 1px solid var(--color-line-2); padding: 24px 0 0;
-  font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-2);
-  overflow-wrap: anywhere; hyphens: none }
-/* The 120 px floor exists to equalise the FIVE-ACROSS band; stacked, it is 60 px of trailing
-   white under a one-line chip and the five top rules stop reading as one rhythm (1.4.4 keeps
-   it a `min-block-size`, never a height). */
-@media (min-width: 64rem) { .rail-chip { min-block-size: 120px } }
-
-/* hero — §4's six layers. The section declares NO background of its own.
-   `display: grid` is what makes the column's `min-block-size: 100%` definite: against a
-   parent whose height is `min-block-size` and whose used height is auto, a percentage
-   min-height resolves to auto and `justify-content: center` would centre the ladder in its
-   own content box rather than in the hero. */
-.hero { position: relative; display: grid; isolation: isolate; overflow: clip;
-  container-name: hero; min-block-size: var(--hero-h) }
-/* The nav is TRANSPARENT over the hero, which it can only be if it is over it: the sticky
-   header is in flow, so the composited hero takes back its 64 px and the column's 64 px top
-   padding is what clears the overlay (§4). Without this the hero starts BELOW the nav, the
-   ladder sits 64 px low, SCRIM.EDGE paints where no nav is, and the fold at 900 shows 188 px
-   of the rail instead of the 252 §4 derives. Stacked (< 64rem, and forced colours at every
-   width) the nav is in flow above the hero, which is what the 390 stack budgets. */
-@media (min-width: 64rem) { .hero { margin-block-start: calc(-1 * var(--nav-h)) } }
-/* The column carries NO z-index and NO position of its own — deliberately, and this is
-   load-bearing. It is a grid item, and a grid item with a z-index opens a stacking context
-   even when static, which would drag the canvas layer INSIDE it and paint the shader over
-   the very scrims that make the type legible. So the two content blocks lift themselves
-   (§4 layer 5) and the canvas, an absolute child of this column, resolves against `.hero`. */
-.hero-col { display: flex; flex-direction: column; justify-content: center;
-  inline-size: var(--hero-col); min-block-size: 100%;
-  padding-block: 64px 40px; margin-inline-start: var(--pad-x) }
-/* layer 0 — the live specimen. `z-canvas`, never `-z-10`: a negative layer would hide it
-   behind any background a later editor gives the section. */
-.hero-canvas { position: absolute; inset: 0; z-index: var(--z-canvas); pointer-events: none }
-.scrim-hue { position: absolute; inset: 0; z-index: var(--z-hue); background: var(--scrim-hue) }
-.scrim-key { position: absolute; inset: 0; z-index: var(--z-key); background: var(--scrim-key-layer) }
-.scrim-edge { position: absolute; inset-inline: 0; inset-block-start: 0; block-size: 132px;
-  z-index: var(--z-edge); background: var(--scrim-edge) }
-.scrim-base { position: absolute; inset-inline: 0; inset-block-end: 0; block-size: 42%;
-  z-index: var(--z-base); background: var(--scrim-base) }
-/* state marker — the hero's caption plate IS its bezel (§1.5), so it carries one. Both words
-   are real text and CSS shows exactly one, keyed on the SAME attribute every label on the
-   mount is keyed on (`data-backend`), so the marker cannot disagree with the caption beside
-   it. `build-time` is the default, which is also what a browser without `:has()` keeps: the
-   honest state for a frame that has not been drawn. */
-.hero-marker { display: inline-flex; align-items: center; gap: 8px; flex: none;
-  white-space: nowrap }
-.hero-marker[data-when='drawn'] { display: none }
-.hero:has(canvas:not([data-backend='none'])) .hero-marker[data-when='drawn'] { display: inline-flex }
-.hero:has(canvas:not([data-backend='none'])) .hero-marker[data-when='build-time'] { display: none }
-/* ONE stacked switch with two triggers (§8): narrow, and forced colours. The hero composites
-   only at >= 64rem (§7's table), so that is the width at which the flag is written. */
-@media (max-width: 63.99rem) { .hero { --hero-stacked: 1 } }
-@container hero style(--hero-stacked: 1) {
-  .hero-col { inline-size: 100%; margin-inline-start: 0; padding: 24px var(--pad-x) 0 }
-  /* the order inverts: text, then the canvas full-bleed between two hairlines, then the
-     caption on FLAT GROUND — nothing composites here, so the plate would be a box drawn
-     over nothing (§4). DOM order already reads text → canvas → caption. */
-  .hero-canvas { position: static; block-size: 220px; margin-inline: calc(-1 * var(--pad-x));
-    border-block: 1px solid var(--color-line-1) }
-  .hero .caption-plate { background: none; border: 0; padding: 0 }
-  .scrim-hue, .scrim-key, .scrim-edge, .scrim-base { display: none } }
-
-/* plate — one shape, ten proofs: surface step + 1px frame + an optional 32px bezel */
-.plate { background: var(--color-surface-2); border: 1px solid var(--color-line-1);
-  border-radius: var(--radius-md) }
-.plate-bezel { display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  min-block-size: 32px; padding-inline: 16px; background: var(--color-surface-3);
+/* Header */
+.nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-block-size: 60px; padding-inline: calc((100vw - var(--content)) / 2);
   border-block-end: 1px solid var(--color-line-1);
-  border-start-start-radius: var(--radius-md); border-start-end-radius: var(--radius-md);
-  font-family: var(--font-mono); font-size: var(--text-micro); line-height: var(--text-micro--line-height);
-  font-weight: 500; letter-spacing: .02em; color: var(--color-text-4) }
-.plate-body { padding: 16px }
+}
+.nav-wordmark {
+  display: inline-flex; align-items: center; gap: 8px; min-block-size: 40px;
+  color: var(--color-text-1); font-weight: 600; text-decoration: none;
+}
+.nav-mark { inline-size: 20px; block-size: 20px; flex: none }
+.nav nav { display: flex; align-items: center; gap: 4px }
+.nav nav a {
+  display: inline-flex; align-items: center; min-block-size: 40px; padding-inline: 10px;
+  color: var(--color-text-2); font-size: var(--text-meta); text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+.nav nav a:hover { color: var(--color-text-1); background: var(--color-surface-1) }
 
-/* canvas mount (specimen) — the 8 px ground mat is what lets `line-2` be the frame token */
-.canvas-figure { display: flex; flex-direction: column }
-.canvas-frame { background: var(--color-ground); padding: 8px; border: 1px solid var(--color-line-2);
-  border-radius: var(--radius-md); overflow: hidden }
-/* §5's canvas-mount contract is `role="img"`, POINTER-EVENTS: NONE, not focusable — for every
-   mount, so a specimen can never behave like a control by construction (I-6, G3). The hero's
-   own layer carries it too (`.hero-canvas`), for the different reason that it is absolutely
-   positioned over the column. */
-.canvas-frame canvas { pointer-events: none }
-.caption-plate { background: var(--plate-caption); border: 1px solid var(--plate-caption-line);
-  border-radius: var(--radius-sm); padding: 8px 16px; display: flex; align-items: center;
-  min-block-size: calc(3 * 1lh);
-  font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height);
-  color: var(--color-text-2) }
-@media (min-width: 40rem) { .caption-plate { min-block-size: calc(2 * 1lh) } }
+.tag {
+  display: inline-flex; align-items: center; min-block-size: 22px; padding: 0 8px;
+  border: 1px solid var(--color-line-2); border-radius: 999px;
+  font-size: 0.75rem; line-height: 1; color: var(--color-text-3);
+}
 
-/* scroll region — exactly four exist (§5); each carries role="region" and an aria-label.
-   Two of them are Expressive Code's own `<pre>`, which is why the affordance below names both
-   selectors. A keyboard user gets a tab stop; a POINTER user got nothing at all, so the
-   region is given a thin scrollbar in the system's own tokens — `line-3`, which §2 defines as
-   the tier that IDENTIFIES A CONTROL, on the `surface-2` ground all four sit on. It is not a
-   shadow and it costs no layout where nothing overflows. The two Expressive Code frames are
-   NOT in this selector on purpose: EC styles its `<pre>` through `::-webkit-scrollbar`
-   pseudo-elements, and Chromium drops `scrollbar-width`/`scrollbar-color` on any element that
-   has them (measured: the declaration applied, `getComputedStyle` still read `auto`), so those
-   two are set at their own source — `scrollbarThumbColor` in `ec.config.mjs`, whose default
-   `#8b949e33` is the 0.2-alpha thumb the review found invisible. */
-.scroll-region { overflow-x: auto; overscroll-behavior-x: contain;
-  scrollbar-width: thin; scrollbar-color: var(--color-line-3) var(--color-surface-2) }
-/* §5: "Focus is always the one `--ring`". EC paints its own `focusBorder` outline on the two
-   code-frame regions, which gave the page two focus vocabularies at stops 15 and 32; the base
-   `:where(...)` ring is zero-specificity and cannot reach past it. `[tabindex]` is not
-   decoration: EC's own rule is `.expressive-code pre:focus-visible` and its sheet loads AFTER
-   this one, so an equal-specificity rule here loses the cascade — and the attribute is exactly
-   what `CodeFrame.astro` writes on the two `<pre>`s that are regions. */
-.expressive-code pre[tabindex]:focus-visible { outline: 2px solid transparent;
-  outline-offset: 2px; box-shadow: var(--ring) }
+/* Buttons */
+.btn, .btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-block-size: 44px; padding-inline: 20px; border-radius: var(--radius-md);
+  font-size: var(--text-ui); font-weight: 500; text-decoration: none; white-space: nowrap;
+}
+.btn { background: var(--color-text-1); color: var(--color-ground); border: 1px solid var(--color-text-1) }
+.btn:hover { opacity: 0.9 }
+.btn-ghost { background: transparent; color: var(--color-text-1); border: 1px solid var(--color-line-2) }
+.btn-ghost:hover { border-color: var(--color-text-2) }
+@media (max-width: 39.99rem) { .btn, .btn-ghost { inline-size: 100% } }
 
-/* buttons */
-.btn-primary, .btn-ghost { display: inline-flex; align-items: center; justify-content: center;
-  min-block-size: 48px; padding-inline: 32px; border-radius: var(--radius-sm);
-  font-size: var(--text-ui); font-weight: 500; text-decoration: none; white-space: nowrap }
-@media (min-width: 64rem) { .btn-primary, .btn-ghost { min-block-size: 52px } }
-@media (max-width: 39.99rem) { .btn-primary, .btn-ghost { inline-size: 100% } }
-/* opaque, so the page's most consequential control leaves the contrast sweep entirely */
-.btn-primary { background: var(--color-text-1); color: var(--color-ground);
-  border: 1px solid transparent;   /* forced-colors needs a border to paint */
-  transition: background-color var(--duration-fast) var(--ease-out) }
-.btn-primary:hover { background: #FFFFFF }
-.btn-primary:active { background: #E6EAF5 }
-.btn-ghost { background: transparent; color: var(--color-text-2); border: 1px solid var(--color-line-3);
-  transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out) }
-/* §5: hover border → text-3 and label → text-1. The border is what moves first, because the
-   label is the thing being read. */
-.btn-ghost:hover { color: var(--color-text-1); border-color: var(--color-text-3) }
-.btn-ghost:active { border-color: var(--color-text-1) }
-/* copy — a ghost variant at the small size, its width reserved from its longest label */
-.btn-copy { display: inline-flex; align-items: center; justify-content: center;
-  min-block-size: 40px; min-inline-size: 104px; padding-inline: 16px; border-radius: var(--radius-sm);
-  background: transparent; color: var(--color-text-2); border: 1px solid var(--color-line-3);
-  font-size: var(--text-meta); font-weight: 500; white-space: nowrap;
-  transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out) }
-.btn-copy:hover { color: var(--color-text-1); border-color: var(--color-text-3) }
-.btn-copy:active { border-color: var(--color-text-1) }
-@media (max-width: 39.99rem) { .btn-copy { min-block-size: 48px; inline-size: 100% } }
-
-/* link atom — D-7 removed the `↗`, so the underline is the sole non-colour affordance cue
-   and may never be hover-only. `:visited` is unchanged: it would leak reading history. */
-.link { color: var(--color-accent); text-decoration: underline; text-underline-offset: 4px;
-  text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
-  transition: text-decoration-color var(--duration-fast) var(--ease-out),
-    text-underline-offset var(--duration-fast) var(--ease-out) }
-.link:hover, .link:focus-visible { text-decoration-color: currentColor; text-underline-offset: 2px }
-.link-tertiary { display: inline-flex; align-items: center; min-block-size: 24px; padding-block: 4px;
-  font-size: var(--text-ui); font-weight: 500 }
-/* the `->` glyph's leading space — one of §4's three named 4-px optical exceptions */
-.btn-primary, .link-tertiary { gap: 4px }
-/* h2 anchor marker — a stated 11 px, never 0.5em; it occupies its box in every state (1.4.13) */
-.anchor { display: inline-flex; align-items: center; justify-content: center;
-  inline-size: 24px; block-size: 24px; margin-inline-start: 12px; vertical-align: middle;
-  font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .02em }
+/* Hero */
+.hero { display: grid; gap: 32px; padding-block: 48px }
 @media (min-width: 64rem) {
-  .anchor { opacity: 0; transition: opacity var(--duration-fast) var(--ease-out) }
-  h2:hover .anchor, .anchor:focus-visible { opacity: 1 } }
+  .hero { grid-template-columns: 6fr 5fr; align-items: center; gap: 48px; padding-block: 80px }
+}
 
-/* micro labels — two variants, because uppercase is forbidden on any string carrying an
-   identifier, a file name or a version (§3) */
-.micro-word, .micro-code { font-size: var(--text-micro); line-height: var(--text-micro--line-height);
-  font-weight: 500; color: var(--color-text-4) }
-.micro-word { text-transform: uppercase; letter-spacing: .08em }
-.micro-code { font-family: var(--font-mono); letter-spacing: .02em }
+/* Canvas figure: a framed box with a still image underneath the live canvas */
+.figure { display: flex; flex-direction: column; gap: 8px }
+.figure-frame {
+  position: relative; overflow: hidden; border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-md); background: var(--color-surface-1);
+}
+.figure-frame > img, .figure-frame > canvas {
+  position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover;
+}
+.figure-frame > canvas { pointer-events: none }
+.figure-frame > canvas[data-backend='none'] { opacity: 0 }
+.figure-caption { font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-3) }
+.figure-split {
+  position: absolute; inset-block: 0; inset-inline-start: 50%; inline-size: 1px;
+  background: color-mix(in srgb, #fff 70%, transparent); pointer-events: none;
+}
+.figure-labels {
+  position: absolute; inset-inline: 0; inset-block-end: 0; display: flex; justify-content: space-between;
+  padding: 6px 10px; font-family: var(--font-mono); font-size: 0.75rem; color: #fff;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent); pointer-events: none;
+}
 
-/* numeral — the colour is never the carrier: the unit and the label stay Inter and neutral */
-.num { font-family: var(--font-mono); font-size: .94em; font-variant-numeric: tabular-nums;
-  color: var(--color-accent) }
+/* Panels: bordered boxes for code, tables, commands */
+.panel { border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-surface-1) }
+.panel-title {
+  padding: 8px 14px; border-block-end: 1px solid var(--color-line-1);
+  font-family: var(--font-mono); font-size: var(--text-code); color: var(--color-text-3);
+}
+.panel-body { padding: 14px }
 
-/* state marker — a dot or a ring, ALWAYS beside its word (1.4.1) */
-.marker-dot, .marker-ring { display: inline-block; inline-size: 6px; block-size: 6px;
-  border-radius: 50%; flex: none }
-.marker-dot { background: var(--color-ok) }
-.marker-ring { border: 1px solid var(--color-line-3) }
+.scroll-region { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin }
+.expressive-code pre[tabindex]:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--ring) }
 
-/* emit card row — 16 px arrow column + value, hairline-ruled */
-.emit-row { display: grid; grid-template-columns: 16px 1fr; align-items: center; gap: 8px;
-  min-block-size: 48px; border-block-start: 1px solid var(--color-line-1);
-  font-size: var(--text-code); line-height: var(--text-code--line-height);
-  font-family: var(--font-mono); color: var(--color-text-2) }
-.emit-row:first-child { border-block-start: 0 }
+/* Diagnostic */
+.diagnostic { font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); color: var(--color-text-2); overflow-wrap: anywhere }
+.diagnostic b { color: var(--color-diag); font-weight: 500 }
 
-/* ladder — a 1 px rule at x = 16 running behind the indices. The rung is §3's `--text-ui`
-   row: 16/24 at 500 in text-2, set HERE rather than on the claim span so the rung reads the
-   same whichever element is measured; the mono route link inside takes `--text-code`'s own
-   400 back (`font-normal` in `Ladder.astro`). */
-.ladder { position: relative; list-style: none; display: flex; flex-direction: column; gap: 24px;
-  margin: 0; padding: 0; font-size: var(--text-ui); line-height: var(--text-ui--line-height);
-  font-weight: 500; color: var(--color-text-2) }
-.ladder::before { content: ''; position: absolute; inset-block: 16px; inset-inline-start: 16px;
-  inline-size: 1px; background: var(--color-line-2) }
-.rung-index { position: relative; display: inline-flex; align-items: center; justify-content: center;
-  inline-size: 32px; block-size: 32px; flex: none; background: var(--color-surface-3);
-  border: 1px solid var(--color-line-2); border-radius: var(--radius-xs);
-  font-family: var(--font-mono); font-size: var(--text-code); color: var(--color-accent) }
-
-/* disclosure — a summary with no hover state is the one control that never answers a pointer */
-.summary { display: flex; align-items: center; gap: 8px; min-block-size: 48px; cursor: pointer;
-  list-style: none; font-size: var(--text-ui); font-weight: 500; color: var(--color-text-2);
-  transition: color var(--duration-fast) var(--ease-out) }
-.summary::-webkit-details-marker { display: none }
-.summary:hover { color: var(--color-text-1) }
-.chevron { inline-size: 10px; block-size: 10px; flex: none; border-inline-end: 2px solid currentColor;
-  border-block-start: 2px solid currentColor; rotate: 45deg; translate: -2px 0;
-  transition: rotate var(--duration-chrome) var(--ease-out) }
-[open] > .summary .chevron { rotate: 135deg }
-
-/* diagnostic — text on the page ground, never on a plate. It wraps, never truncates: it IS the proof. */
-.diagnostic { font-family: var(--font-mono); font-size: var(--text-code);
-  line-height: var(--text-code--line-height); color: var(--color-text-2);
-  min-block-size: calc(3 * 1lh); overflow-wrap: anywhere; hyphens: none }
-@media (max-width: 39.99rem) { .diagnostic { min-block-size: calc(5 * 1lh) } }
-.squiggle { text-decoration: underline wavy var(--color-diag); text-decoration-thickness: 2px;
-  text-underline-offset: 3px }
-
-/* layout table — the offset column never collapses: the 12 padding bytes are the argument */
-.layout-table { border-collapse: collapse; inline-size: 100%;
-  font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height);
-  font-variant-numeric: tabular-nums; color: var(--color-text-2) }
-.layout-table caption { caption-side: bottom; padding-block-start: 16px; text-align: start;
-  font-family: var(--font-sans); font-size: var(--text-ui); line-height: var(--text-ui--line-height);
-  font-weight: 400; color: var(--color-text-2) }
-.layout-table th, .layout-table td { padding: 8px 16px; block-size: 40px; text-align: start;
-  border-block-start: 1px solid var(--color-line-1) }
-.layout-table th { font-weight: 500; color: var(--color-text-3) }
+/* Layout table */
+.layout-table { border-collapse: collapse; inline-size: 100%; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); font-variant-numeric: tabular-nums; color: var(--color-text-2) }
+.layout-table caption { caption-side: bottom; padding-block-start: 12px; text-align: start; font-family: var(--font-sans); font-size: var(--text-meta); color: var(--color-text-3) }
+.layout-table th, .layout-table td { padding: 8px 12px; text-align: start; border-block-start: 1px solid var(--color-line-1) }
+.layout-table th { font-weight: 500; color: var(--color-text-3); border-block-start: 0 }
 .layout-table [data-align='end'] { text-align: end; white-space: nowrap }
-/* byte ruler — 48 cells on a 1fr grid, so it can never overflow at any width. aria-hidden:
-   the table is the accessible authority. */
-.byte-ruler { display: grid; grid-template-columns: repeat(48, 1fr); block-size: 12px }
-.scale-rule { block-size: 1px; background: var(--color-line-1) }
-/* §precision's split — §5, driven by `--b4-split` (the re-measured 50.000 %, above) and by
-   nothing else on the page. The bezel becomes two cells whose boundary is the rule; the two
-   halves are named IN WORDS (`banded` / `smooth`), so the split survives a suppressed image
-   (§8's 1.4.1 row). Column 1 is the rule's x in the bezel's own PADDING BOX: the canvas
-   starts 8 px inside it (1 px frame border + 8 px mat, less the bezel's own 1 px border) and
-   is 16 px narrower, hence `8px + (100% - 16px) * split`. The bezel's inline padding moves to
-   the cells so the arithmetic stays in one place. */
-.canvas-figure[data-split] > .plate-bezel { position: relative; display: grid;
-  grid-template-columns: calc(8px + (100% - 16px) * var(--b4-split)) 1fr; gap: 0;
-  padding-inline: 0 }
-.canvas-figure[data-split] > .plate-bezel > .split-cell { display: flex; align-items: center;
-  padding-inline: 16px; min-inline-size: 0 }
-.canvas-figure[data-split] > .plate-bezel > .bezel-main { display: flex; align-items: center;
-  justify-content: space-between; gap: 16px; padding-inline: 16px; min-inline-size: 0 }
-/* crop marks — §precision's flourish: the rule at `--b4-split`, extended past the frame. The
-   one inside the bezel is the bezel's own divider; the one below the frame is 16 px in the
-   gap the figure opens for it. Neither is ever drawn OVER the specimen — a crop mark sits
-   outside the image, and §5 puts no ink on `B4.CANVAS`. Both are `.crop-mark`, so §8's
-   forced-colors block drops them and the bezel collapses to one label row with no positional
-   claim left standing. */
-.crop-mark { inline-size: 1px; background: var(--color-line-2) }
-.canvas-figure[data-split] > .plate-bezel > .crop-mark { position: absolute; inset-block: 0;
-  inset-inline-start: calc(8px + (100% - 16px) * var(--b4-split)) }
-/* Below the frame: 16 px of rule, then §5's own 8 px before the caption plate. */
-.split-marks { position: relative; block-size: 16px }
-.split-marks > .crop-mark { position: absolute; inset-block: 0;
-  inset-inline-start: calc(9px + (100% - 18px) * var(--b4-split)) }
 
-/* install row — the page's only paste-and-run text */
-.install-row { display: flex; align-items: center; gap: 16px; padding: 16px }
-.install-row > .scroll-region { flex: 1 1 auto }
-.install-row .divider { inline-size: 1px; align-self: stretch; background: var(--color-line-1); flex: none }
-@media (max-width: 39.99rem) { .install-row { flex-wrap: wrap }
-  .install-row .divider { display: none } }
+.byte-ruler { display: grid; grid-template-columns: repeat(48, 1fr); block-size: 10px; border-radius: 2px; overflow: hidden }
+.byte-ruler .cell { background: var(--color-accent) }
+.byte-ruler .cell.pad { background: repeating-linear-gradient(-45deg, var(--color-line-2) 0 1px, var(--color-surface-1) 1px 3px) }
+.byte-ruler .cell.run-start { box-shadow: inset 1px 0 0 var(--color-ground) }
 
-/* recognise scan row — deliberately unplated, never a table at any width (P10) */
-.scan-row { display: grid; gap: 32px; font-size: var(--text-lead-sm);
-  line-height: var(--text-lead-sm--line-height); color: var(--color-text-2) }
-@media (min-width: 64rem) { .scan-row { grid-template-columns: repeat(3, 1fr); column-gap: var(--grid-gap);
-  font-size: var(--text-lead); line-height: var(--text-lead--line-height) } }
-/* the two vertical rules are DROPPED when the row stacks — a horizontal rule between three
-   sentences is the list-that-becomes-a-table P10 refuses */
-.scan-rule { display: none; inline-size: 1px; background: var(--color-line-1) }
-@media (min-width: 64rem) { .scan-rule { display: block } }
+/* Install row */
+.install { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px }
+.install > .scroll-region { flex: 1 1 auto }
+.btn-copy {
+  display: inline-flex; align-items: center; justify-content: center; min-block-size: 36px; min-inline-size: 80px;
+  padding-inline: 12px; border-radius: var(--radius-sm); background: var(--color-ground);
+  color: var(--color-text-1); border: 1px solid var(--color-line-2); font-size: var(--text-meta); white-space: nowrap;
+}
+.btn-copy:hover { border-color: var(--color-text-2) }
+@media (max-width: 39.99rem) { .install { flex-wrap: wrap } .btn-copy { inline-size: 100% } }
 
-/* footer */
-.footer { background: var(--color-surface-1); border-block-start: 1px solid var(--color-line-1);
-  padding-block: 56px }
-@media (min-width: 64rem) { .footer { padding-block: 72px } }
-.footer h3 { font-size: var(--text-micro); line-height: var(--text-micro--line-height);
-  font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-4) }
-/* The link atom's persistent underline at the footer's own text tier (§8's 1.4.1 row; D-7
-   made that underline the sole non-colour affordance cue). Undecorated, these six were the
-   same `text-2` as the static line beneath them while the baseline hash IS accent-and-
-   underlined — one footer teaching the eye two different things a link looks like. */
-.footer li a { display: inline-flex; align-items: center; min-block-size: 24px; padding-block: 4px;
-  font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-2);
-  text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
-  transition: color var(--duration-fast) var(--ease-out),
-    text-decoration-color var(--duration-fast) var(--ease-out),
-    text-underline-offset var(--duration-fast) var(--ease-out) }
-.footer li a:hover, .footer li a:focus-visible { color: var(--color-text-1);
-  text-decoration-color: currentColor; text-underline-offset: 2px }
-.footer p .link { padding-block: 4px }
+/* Plain lists */
+.checks { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px }
+.checks li { display: grid; grid-template-columns: 24px 1fr; gap: 8px; max-inline-size: var(--measure) }
+.checks li > span:first-child { font-family: var(--font-mono); font-size: var(--text-code); color: var(--color-text-3); padding-block-start: 3px }
 
-/* ─── §6. Motion — the reduced-motion floor. 1 ms rather than 0 so `transitionend` still
- * fires and no state machine hangs. The canvas half is not CSS: `mountShader` reads the media
- * query itself and takes the `still` path. */
+/* Footer */
+.footer { border-block-start: 1px solid var(--color-line-1); padding-block: 40px; font-size: var(--text-meta); color: var(--color-text-3) }
+.footer a { color: var(--color-text-2); text-decoration: underline; text-underline-offset: 3px }
+.footer a:hover { color: var(--color-text-1) }
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important; scroll-behavior: auto !important }
-  html { scroll-behavior: auto } }
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
+}
 
-/* ─── §8. Forced colours ─────────────────────────────────────────────────────────────── */
 @media (forced-colors: active) {
-  :root { --color-ground:Canvas; --color-surface-1:Canvas; --color-surface-2:Canvas; --color-surface-3:Canvas;
-    --color-text-1:CanvasText; --color-text-2:CanvasText; --color-text-3:CanvasText; --color-text-4:GrayText;
-    --color-accent:LinkText; --color-diag:CanvasText; --color-ok:CanvasText; --color-line-1:ButtonBorder;
-    --color-line-2:ButtonBorder; --color-line-3:ButtonBorder }
-  .scrim-hue,.scrim-key,.scrim-edge,.scrim-base,.byte-ruler,.scale-rule,.crop-mark { display:none }
-  /* reuse the <64rem STACKED order at EVERY width — consumed above — and give the nav its
-     flow space back with it, since a stacked hero does not sit under the header */
-  .hero { --hero-stacked: 1; margin-block-start: 0 }
-  .plate,.state-chip,.canvas-frame,.caption-plate,.rung-index { background:Canvas; border:1px solid ButtonBorder }
-  .rail-chip { border-block-start:1px solid ButtonBorder }        /* a top rule, never a box */
-  .canvas-frame::after { content:attr(data-label); color:CanvasText }  /* suppressed image → labelled box */
-  /* the split collapses to ONE label row: no rule (the marks are `.crop-mark`, dropped
-     above) and no two-track grid, so nothing asserts a left/right correspondence to an image
-     forced colours does not draw */
-  .canvas-figure[data-split] .plate-bezel { display:block }
-  /* the same selector SHAPE as the split rules above, or their (0,4,0) beats this and the two
-     labels stack instead of collapsing */
-  .canvas-figure[data-split] > .plate-bezel > .split-cell,
-  .canvas-figure[data-split] > .plate-bezel > .bezel-main { display:inline }
-  .btn-primary { background:ButtonFace; color:ButtonText; border:1px solid ButtonBorder }
-  .btn-ghost,.btn-copy { background:Canvas; color:ButtonText; border:1px solid ButtonBorder }
-  .num,.rung-index b { color:CanvasText; font-weight:600 }   /* accent → weight */  .chevron{color:currentColor}
-  .marker-dot { background:CanvasText } .marker-ring { border-color:GrayText }
-  .squiggle { text-decoration-color:currentColor } a { color:LinkText; text-decoration:underline }
-  :focus-visible { outline:3px solid Highlight; outline-offset:2px; box-shadow:none }
+  .figure-split, .figure-labels, .byte-ruler { display: none }
+  .btn { background: ButtonFace; color: ButtonText; border: 1px solid ButtonBorder }
+  .btn-ghost, .btn-copy { background: Canvas; color: ButtonText; border: 1px solid ButtonBorder }
+  a { color: LinkText }
 }

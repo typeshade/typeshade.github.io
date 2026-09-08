@@ -1,11 +1,6 @@
 ---
-// BYTE RULER — design §5, §types' flourish. 48 cells on a `repeat(48, 1fr)` grid, so it can
-// never overflow at any width, with the padding bytes hatched and a `micro/code` legend of the
-// boundaries. `aria-hidden`: the table beside it is the accessible authority, and a 48-cell
-// grid read aloud is noise.
-//
-// Every cell and every legend stop is derived from `typedError().layout` — the same record the
-// table renders — so the picture and the numbers cannot disagree.
+// The same layout as a strip of bytes: fields solid, padding hatched. Decorative; the table
+// beside it is the accessible version.
 import { typedError } from '../lib/typed-error.ts'
 
 const { layout } = typedError()
@@ -13,30 +8,25 @@ const { layout } = typedError()
 interface Run {
   readonly kind: 'field' | 'pad'
   readonly bytes: number
-  readonly name?: string
 }
 const runs: Run[] = []
 let at = 0
 for (const f of layout.fields) {
   if (f.offset > at) runs.push({ kind: 'pad', bytes: f.offset - at })
-  runs.push({ kind: 'field', bytes: f.size, name: f.name })
+  runs.push({ kind: 'field', bytes: f.size })
   at = f.offset + f.size
 }
 if (layout.size > at) runs.push({ kind: 'pad', bytes: layout.size - at })
-
 const cells = runs.reduce((n, r) => n + r.bytes, 0)
-if (cells !== layout.size) {
-  throw new Error(`[ByteRuler] the runs cover ${cells} bytes; the block is ${layout.size}`)
-}
+if (cells !== layout.size) throw new Error(`[ByteRuler] the runs cover ${cells} bytes; the block is ${layout.size}`)
 
-// The legend is every boundary in the block: 0, each field's start and end, and the total.
 const stops = [...new Set([0, ...layout.fields.flatMap((f) => [f.offset, f.offset + f.size]), layout.size])].sort(
   (a, b) => a - b,
 )
 ---
 
-<div>
-  <div class="byte-ruler" aria-hidden="true">
+<div aria-hidden="true">
+  <div class="byte-ruler">
     {
       runs.map((run) =>
         Array.from({ length: run.bytes }, (_, i) => (
@@ -45,27 +35,5 @@ const stops = [...new Set([0, ...layout.fields.flatMap((f) => [f.offset, f.offse
       )
     }
   </div>
-  <p class="micro-code mt-2" aria-hidden="true">{stops.join(' · ')}</p>
+  <p class="mono mt-2 text-text-3">bytes {stops.join(', ')}</p>
 </div>
-
-<style>
-  /* A byte that carries a field is solid accent; a padding byte is hatched `line-2`, so the
-     12 bytes the table argues about are visible as a texture rather than as a colour alone. */
-  .cell {
-    background: var(--color-accent);
-  }
-  .cell.pad {
-    /* `transparent` is transparent BLACK and bands in sRGB (§2), so the hatch's gaps are the
-       page ground by name rather than by accident. */
-    background: repeating-linear-gradient(
-      -45deg,
-      var(--color-line-2) 0 1px,
-      var(--color-ground) 1px 3px
-    );
-  }
-  /* One ground-coloured hairline at every run boundary, so `top` and `bottom` — which meet at
-     byte 32 with no padding between them — read as two fields and not as one 32-byte bar. */
-  .cell.run-start {
-    box-shadow: inset 1px 0 0 var(--color-ground);
-  }
-</style>

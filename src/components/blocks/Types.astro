@@ -1,44 +1,54 @@
 ---
-// §types · "The editor catches it" — IA beat 3, deck §5 `types`, design §4 (mirrored spans)
-// and §5.
-//
-// Claim left (486), proof right (690); below 64rem it un-mirrors and the claim comes first,
-// which is also the DOM order, so nothing has to be re-ordered for a keyboard or a reader.
-//
-// No CTA button here (design §0, X7): `reflect()` in the body is an inline link, and that
-// keeps the verb ladder injective — `Check` belongs to the rail's pinned-commit rung.
+import { facts } from '../../lib/examples.ts'
 import { links } from '../../lib/links.ts'
 import ByteRuler from '../ByteRuler.astro'
 import DiagnosticBlock from '../DiagnosticBlock.astro'
 import LayoutTable from '../LayoutTable.astro'
-import SectionHeading from '../SectionHeading.astro'
+import ShaderCanvas from '../ShaderCanvas.astro'
+import type { CanvasText } from '../ShaderCanvas.astro'
+
+const caption: CanvasText = {
+  neutral: 'Emulated f64 on the right, plain f32 on the left. Rendered at build time.',
+  webgpu: 'Emulated f64 on the right, plain f32 on the left. Drawn on WebGPU.',
+  webgl2: 'Emulated f64 on the right, plain f32 on the left. Drawn on WebGL2.',
+  none: 'Emulated f64 on the right, plain f32 on the left. Rendered at build time.',
+}
+const origin = facts.deepZoomOrigin
 ---
 
-<section id="types" class="py-24 lg:py-32">
-  <div class="mx-auto grid w-[var(--content)] grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-6">
-    {/* The claim column is a flex column so its micro-label can take `mt-auto` at >= 64rem:
-        the two columns then end on one edge instead of leaving 393 px of hole under a claim
-        that is three elements long beside a proof that is three plates long. Stacked, the
-        label keeps §4's 16 px step under the body. */}
-    <div class="flex flex-col lg:col-span-5">
-      <SectionHeading id="types" text="Wrong field, red squiggle, not black frame." />
-      <p class="text-lead mt-6 tracking-[-0.003em] text-text-2 lg:tracking-[-0.006em]">
-        A wrong field is a type error while you type. Uniform layouts come from{' '}
-        <a class="link" href={links.reflectApi.href}>{links.reflectApi.label}</a>, so no offset is
-        hand-derived.
-      </p>
-      <p class="micro-code mt-4 lg:mt-auto lg:pt-4">std140 · std430</p>
-    </div>
-
-    <div class="flex flex-col gap-8 lg:col-span-7">
+<section id="types" class="section">
+  <div class="wrap">
+    <h2>Typed fields, reflected layouts, and an f64 that reads like f32.</h2>
+    <p class="lead mt-5">
+      A misspelt uniform field is a TypeScript error in the editor, before anything reaches a GPU. Uniform layouts come
+      from <a class="link" href={links.reflectApi.href}>{links.reflectApi.label}</a>, so no byte offset is worked out
+      by hand.
+    </p>
+    <div class="mt-8 grid gap-6 lg:grid-cols-2">
       <DiagnosticBlock />
       <div>
         <LayoutTable />
-        {/* The ruler is this block's flourish and its picture of the same record: 48 cells,
-            the 12 padding bytes hatched. `aria-hidden` — the table is the authority. */}
-        <div class="mt-6">
-          <ByteRuler />
-        </div>
+        <div class="mt-4"><ByteRuler /></div>
+      </div>
+    </div>
+
+    <h3 class="mt-12 text-xl font-semibold">Double precision where the shader languages have none</h3>
+    <div class="mt-5 grid gap-6 lg:grid-cols-12">
+      <div class="lg:col-span-5">
+        <p class="text-text-2">
+          WGSL and GLSL ES 3.00 have no f64. TypeShade emulates it with a pair of f32 values, and the source reads
+          exactly like the f32 version. In the example on the right, the <code class="mono">{origin.name}</code> field
+          is declared as <code class="mono">{origin.sourceType}</code> in the source and lands in the uniform block as{' '}
+          <code class="mono">{origin.layoutType}</code>. The left half of the frame uses plain f32 and breaks into bands
+          far from the origin. The right half keeps its stripes.
+        </p>
+        <p class="meta mt-4">
+          {facts.fp64Examples} of the examples use the emulated type. Start with{' '}
+          <a class="link" href={links.deepZoom.href}>{links.deepZoom.label}</a>.
+        </p>
+      </div>
+      <div class="lg:col-span-7">
+        <ShaderCanvas example="fp64-deep-zoom" aspect="3/2" still split caption={caption} />
       </div>
     </div>
   </div>

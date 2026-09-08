@@ -1,20 +1,13 @@
-// ═══ verify the section-4 typed-error proof — `bun run scripts/verify-typed-error.ts` ═══
+// Checks the typed-error proof outside the build: bun run scripts/verify-typed-error.ts
 //
-// Astro does not build `scripts/`, so this stays out of the site. It calls the same
-// `typedError()` the page frontmatter calls and asserts what a reader is entitled to assume:
-//
-//   1. the diagnostic is the real TypeScript property error (TS2339) at the snippet's wrong line;
-//   2. the control arm is clean — proven inside typedError(), which throws otherwise, and
-//      re-proven here by running the control snippet's own module through reflect();
-//   3. the layout obeys std140: vec2 on 8, vec3/vec4 and structs on 16, each field's offset is
-//      its own alignment's multiple, offsets ascend without overlap, and the block size is a
-//      multiple of 16.
-//
-// Exit code is the verdict; every assertion prints what it compared.
+// It calls the same typedError() the page calls and asserts that the diagnostic is the real
+// TypeScript property error (TS2339) on the snippet's wrong line, that the correct snippet's
+// module reflects, and that the layout obeys std140 (vec2 on 8, vec3/vec4 and structs on
+// 16, offsets ascending without overlap, block size a multiple of 16).
 
 import { typedError } from '../src/lib/typed-error.ts'
 
-const EXPECTED_CODE = 2339 // TS2339 — "Property 'x' does not exist on type 'y'"
+const EXPECTED_CODE = 2339 // "Property 'x' does not exist on type 'y'"
 
 /** std140 base alignment, in bytes, for the DSL type keys a uniform block can hold. */
 function std140Align(type: string): number {
@@ -28,7 +21,7 @@ function std140Align(type: string): number {
 
 let failures = 0
 function check(ok: boolean, label: string, detail: string): void {
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${label} — ${detail}`)
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}: ${detail}`)
   if (!ok) failures++
 }
 
@@ -94,5 +87,5 @@ const vec4s = r.layout.fields.filter((f) => f.type.startsWith('vec4<'))
 check(vec4s.length > 0 && vec4s.every((f) => f.offset % 16 === 0), 'vec4 fields are 16-byte aligned',
   vec4s.map((f) => `${f.name}@${f.offset}`).join(', ') || 'none present')
 
-console.log(`\n${failures === 0 ? 'OK — all assertions passed' : `${failures} assertion(s) FAILED`}`)
+console.log(`\n${failures === 0 ? 'OK, all assertions passed' : `${failures} assertion(s) failed`}`)
 process.exit(failures === 0 ? 0 : 1)

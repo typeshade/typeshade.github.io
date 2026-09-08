@@ -1,12 +1,7 @@
-// ═══ typeshade.dev — the shader fragment section 4 puts a red squiggle on ═══
-//
-// ONE authority for all three arms of the typed-error proof. `typed-error.ts` reads this
-// file's TEXT (the snippet between the region markers), type-checks a COPY of that text with
-// the field read misspelt (the diagnostic), and imports the module below (the std140 layout,
-// from `reflect()`). Nothing about the proof is written twice, so nothing can drift.
-//
-// Keep the `#region snippet` / `#endregion snippet` markers, and keep exactly ONE read of the
-// `top` field inside the region: typed-error.ts fails the build if either goes missing.
+// The fixture the types section type-checks and reflects. typed-error.ts reads the text
+// between the region markers, type-checks a copy with the `top` read misspelt, and imports
+// the module below for its std140 layout. Keep the markers and exactly one read of `top`
+// inside the region.
 
 import {
   builtin,

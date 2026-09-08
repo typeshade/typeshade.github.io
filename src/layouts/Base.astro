@@ -1,55 +1,36 @@
 ---
-// The frame every page shares — design §10, meta and social 07-copy-deck.md §8.
-//
-// Order of the first tab stops is fixed here and asserted by §8's numbered walk: the skip
-// link, then the nav. `<main id="main" tabindex="-1">` is the skip link's target and takes
-// focus, which is what makes 2.4.1 real rather than a link that scrolls.
 import '../styles/global.css'
 import Nav from '../components/Nav.astro'
 import Footer from '../components/Footer.astro'
 import { facts } from '../lib/examples.ts'
 
 interface Props {
-  /** Deck §8's `<title>` of record, unless a route states its own. */
   title?: string
   description?: string
 }
 
-// Deck §8, verbatim and within its own caps: title 57/60, description 147/155,
-// og:title 33/60, og:description 152/200, og:image alt 78/125.
-const DECK = {
-  title: 'TypeShade — typed shaders in TypeScript, to WGSL and GLSL',
+const META = {
+  title: 'TypeShade: typed shaders in TypeScript, emitted as WGSL and GLSL',
   description:
-    'Write the shader once. Typed TypeScript, proven to agree: WGSL and GLSL ES 3.00 from one source, checked by a CPU f64 oracle and by real compilers.',
-  ogTitle: 'TypeShade — write the shader once',
-  ogDescription:
-    'One typed TypeScript source becomes WGSL and GLSL ES 3.00. A CPU f64 oracle runs the same source, and Tint and WebGL2 compile every variant X-GIS emits.',
-  ogAlt: 'TypeShade — a shader written in TypeScript, compiled to WGSL and GLSL ES 3.00.',
+    'Write a shader once in TypeScript and emit WGSL for WebGPU and GLSL ES 3.00 for WebGL2. The same source runs on the CPU in double precision so the outputs can be checked.',
+  ogTitle: 'TypeShade',
+  ogAlt: 'TypeShade: one shader source for WebGPU and WebGL2, with a rendered metaballs shader.',
 }
-const { title = DECK.title, description = DECK.description } = Astro.props
+const { title = META.title, description = META.description } = Astro.props
 
 const site = Astro.site ?? new URL('https://typeshade.dev/')
 const canonical = new URL(Astro.url.pathname, site).toString()
 const ogImage = new URL('/og.png', site).toString()
 
-// The graph names the repository and the licence from `facts`, so neither can drift from the
-// mirror the page was built out of.
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
-    {
-      '@type': 'WebSite',
-      '@id': `${site.origin}/#website`,
-      url: `${site.origin}/`,
-      name: 'TypeShade',
-      description: DECK.description,
-      inLanguage: 'en',
-    },
+    { '@type': 'WebSite', '@id': `${site.origin}/#website`, url: `${site.origin}/`, name: 'TypeShade', description: META.description, inLanguage: 'en' },
     {
       '@type': 'SoftwareSourceCode',
       '@id': `${site.origin}/#software`,
       name: 'TypeShade',
-      description: DECK.description,
+      description: META.description,
       programmingLanguage: ['TypeScript', 'WGSL', 'GLSL'],
       codeRepository: facts.mirrorUrl,
       license: 'https://opensource.org/licenses/MIT',
@@ -67,44 +48,28 @@ const jsonLd = {
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#080A14" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121212" />
     <link rel="canonical" href={canonical} />
-    {/* §9: `favicon.svg` is the only image the page LINKS, beside the mask icon —
-        `favicon.ico` and `apple-touch-icon.png` are found by convention at the root, and both,
-        like the mask, are generated from that one SVG by `scripts/build-icons.ts`. */}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="mask-icon" href="/mask-icon.svg" color="#F2B441" />
+    <link rel="mask-icon" href="/mask-icon.svg" color="#1f6f43" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    {/* font-display: optional keeps the h1 the LCP element and costs zero swap CLS (§3) */}
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      href="/fonts/inter-latin-wght-normal.woff2"
-      crossorigin
-    />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      href="/fonts/geist-mono-latin-wght-normal.woff2"
-      crossorigin
-    />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-latin-wght-normal.woff2" crossorigin />
     <meta property="og:site_name" content="TypeShade" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
-    <meta property="og:title" content={DECK.ogTitle} />
-    <meta property="og:description" content={DECK.ogDescription} />
+    <meta property="og:title" content={META.ogTitle} />
+    <meta property="og:description" content={META.description} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:alt" content={DECK.ogAlt} />
+    <meta property="og:image:alt" content={META.ogAlt} />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={DECK.ogTitle} />
-    <meta name="twitter:description" content={DECK.ogDescription} />
+    <meta name="twitter:title" content={META.ogTitle} />
+    <meta name="twitter:description" content={META.description} />
     <meta name="twitter:image" content={ogImage} />
-    <meta name="twitter:image:alt" content={DECK.ogAlt} />
+    <meta name="twitter:image:alt" content={META.ogAlt} />
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </head>
   <body>

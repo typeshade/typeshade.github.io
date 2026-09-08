@@ -1,100 +1,39 @@
 ---
-// HERO — design §4 "Layout, spacing and the hero composition", copy 07-copy-deck.md §3 and §6.
-//
-// Six layers, bottom to top: the live `metaballs` mount, SCRIM.HUE, SCRIM.KEY, SCRIM.EDGE,
-// SCRIM.BASE, and the content column. Everything about the composition that is a colour, a
-// size or a scrim comes from global.css; this file owns the ladder and the strings.
-//
-// Two invariants are the whole reason the geometry is derived rather than drawn, and they are
-// asserted against the DOM in both font states (design §10 G3):
-//
-//   INV-1  every hero text box's right edge <= calc(var(--pad-x) + var(--hero-col))  — 708 at
-//          1440, 500 at 1024. The key scrim's HARD PLATEAU runs to `--scrim-p0` (732 at 1440),
-//          so a glyph inside that bound stands on a constant alpha .86 and inherits the
-//          12.93:1 white-bound floor. A glyph outside it stands on a gradient.
-//   INV-2  the CTA row's right edge <= var(--scrim-p0).
-//
-// The h1 and the subline are set as two BLOCK SPANS each, never left to the wrapping engine:
-// `font-display: optional` can serve the metric-matched fallback permanently, and a break
-// that moves between font states makes INV-1 a hope instead of a check (§3). Both pairs come
-// from `hero-copy.ts`, which the /og/ card sets at 64 px from the same strings (§9).
 import ShaderCanvas from './ShaderCanvas.astro'
-import type { CanvasText } from './ShaderCanvas.astro'
+import { claims } from '../lib/claims.ts'
 import { facts } from '../lib/examples.ts'
 import { heroCaption, heroCopy } from '../lib/hero-copy.ts'
 import { links } from '../lib/links.ts'
-
-// deck §3. The version is `facts.nextVersion` — derived from the mirror's own package version,
-// never typed — and the line renders only while the release it discloses does not exist.
-const status = `${facts.nextVersion} is not published yet. Running in production today inside the X-GIS globe engine.`
-
-// deck §6's hero row, over IA §6's backend-neutral server string — in `hero-copy.ts`, because
-// the /og/ card mounts the same specimen and must not carry a second set of strings for it.
-const caption: CanvasText = heroCaption
 ---
 
-<section class="hero" data-shader-scope>
-  {/* 1–4: the scrims. Decorative by construction — every ratio they hold is measured in
-      §2's table, and they carry no content, so they are hidden from the a11y tree. */}
-  <div class="scrim-hue" aria-hidden="true"></div>
-  <div class="scrim-key" aria-hidden="true"></div>
-  <div class="scrim-edge" aria-hidden="true"></div>
-  <div class="scrim-base" aria-hidden="true"></div>
-
-  <div class="hero-col">
-    {/* 5: the content column. It lifts ITSELF above the scrims (the column may not — see
-        global.css), and every y below is a function of the ladder, not of the window. */}
-    <div class="relative z-[var(--z-hero)]">
-      <h1 class="text-h1 font-semibold tracking-[-0.03em]" data-inv="text">
-        {heroCopy.h1.map((line) => <span class="block">{line}</span>)}
-      </h1>
-      <p
-        class="text-lead mt-4 tracking-[-0.003em] text-text-2 lg:mt-6 lg:tracking-[-0.006em]"
-        data-inv="text"
-      >
-        {heroCopy.sub.map((line) => <span class="block">{line}</span>)}
-      </p>
-      <div class="mt-6 flex flex-wrap items-center gap-3 sm:gap-4 lg:mt-8" data-inv="cta">
-        {/* The `→` is aria-hidden, so the accessible name is exactly the copy of record and
-            R-15 can compare accessible names rather than innerText (§5). */}
-        <a class="btn-primary" href={links.guide.href}
-          >{links.guide.label}<span aria-hidden="true">→</span></a
-        >
-        <a class="btn-ghost" href={links.mirror.href}>{links.mirror.label}</a>
-      </div>
-      {
-        facts.published === false && (
-          <p class="text-meta mt-4 text-text-2 lg:mt-6" data-inv="text">
-            {status}
-          </p>
-        )
-      }
+<section class="wrap hero">
+  <div>
+    <h1>{heroCopy.h1}</h1>
+    <p class="lead mt-5">{heroCopy.sub}</p>
+    <div class="mt-7 flex flex-wrap items-center gap-3">
+      <a class="btn" href={links.guide.href}>{links.guide.label}</a>
+      <a class="btn-ghost" href={links.mirror.href}>{links.mirror.label}</a>
     </div>
-
-    {/* 0: the live specimen. `bleed` — the hero has no box of its own, so the mount emits its
-        host and payload only, and this column owns the caption plate below. Absolute at
-        >= 64rem; in flow, full-bleed and hairline-bounded when the hero stacks. */}
-    <ShaderCanvas example="metaballs" bleed class="hero-canvas" caption={caption} />
-
-    {/* The caption plate IS the hero's bezel (§1.5), so it carries the state marker on its
-        right. It clears its 4.5:1 floor on its own alpha with NO scrim assumed (8.29:1), and
-        it is deliberately not a live region: the served string is backend-neutral and true on
-        every path, so an announcement would interrupt a reader to say nothing new. */}
-    <p
-      class="caption-plate relative z-[var(--z-hero)] mt-3 justify-between gap-4 lg:mt-6"
-      data-inv="text"
-    >
-      <span data-shader-caption>{caption.neutral}</span>
-      <span class="hero-marker" data-when="drawn"
-        ><span class="marker-dot" aria-hidden="true"></span>drawn</span
-      >
-      <span class="hero-marker" data-when="build-time"
-        ><span class="marker-ring" aria-hidden="true"></span>build-time</span
-      >
-    </p>
+    {
+      facts.published === false && (
+        <p class="meta mt-5">
+          Version {facts.nextVersion} is not on npm yet. The compiler already runs in production inside the X-GIS
+          globe engine.
+        </p>
+      )
+    }
   </div>
+  <ShaderCanvas example="metaballs" aspect="16/10" caption={heroCaption} />
+</section>
 
-  {/* I-7: ONE 1 px sentinel at the hero's lower edge drives the nav's ONE
-      IntersectionObserver. No scroll listener anywhere on the page. */}
-  <div class="absolute inset-x-0 bottom-0 h-px" data-nav-sentinel aria-hidden="true"></div>
+<section class="wrap pb-12 lg:pb-16">
+  <p class="prose text-text-2">
+    Measured from the compiler at commit <a href={links.commit.href}>{links.commit.label}</a> when this page was
+    built:{' '}
+    {claims.map((c, i) => (
+      <>
+        {c.text}{' '}<a href={c.source.href}>{c.source.label}</a>{i < claims.length - 1 ? '. ' : '.'}
+      </>
+    ))}
+  </p>
 </section>

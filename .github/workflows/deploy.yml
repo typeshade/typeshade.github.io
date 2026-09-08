@@ -20,21 +20,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # vendor/shader-dsl is the compiler mirror; the page is emitted from it.
+          # vendor/shader-dsl is the compiler; the page is built from it.
           submodules: true
           persist-credentials: false
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      # The build starts with scripts/check-style.mjs; see DESIGN.md.
       - run: bun run build
-      # Deck §11: "every CTA destination is a resolved URL, verified 200 at build". Only a
-      # 404/410 fails this step — a 403/429/timeout is a runner being rate-limited or blocked,
-      # which cannot tell a dead URL from a live one and must not block a deploy.
+      # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
       - run: bun run qa:links
-      # Enable Pages with the Actions source on the first run, so the repository needs no
-      # click in Settings before the first deploy. The custom domain (typeshade.dev) is NOT
-      # settable from a workflow — set it once in Settings → Pages after the first deploy.
+      # Enable Pages with the Actions source on the first run. The custom domain is set once
+      # in Settings, after the first deploy.
       - uses: actions/configure-pages@v5
         with:
           enablement: true

@@ -1,18 +1,6 @@
 ---
-// B3.EDITOR — design §5 "Diagnostic block", IA §4.3 / R-16, deck §5 `types`.
-//
-// The code frame with the wrong line marked, then the diagnostic as TEXT beneath it on the
-// page ground — never an image, never a tooltip, and never elided. The message is
-// `typedError().diagnostic.message` verbatim: it was produced by the real `typescript`
-// compiler over the very snippet printed above it, by a run that had to demonstrate it could
-// tell a broken shader from a correct one before its output was used.
-//
-// It WRAPS, never truncates — it is the proof. `B3.TRUNC` renders the flag when the message
-// really was shortened, so a reader is never shown a silently cut message (R-16).
-//
-// The frame's title is `typed-error-shader.ts`, distinct from §write's `gradient-pass.ts`:
-// this is the site's own fixture, not the registry entry, and titling them alike would let a
-// reader take the two frames for one file (IA C4).
+// The snippet with the wrong field, marked, and the TypeScript diagnostic it produces.
+// The message is the compiler's own text, from src/lib/typed-error.ts.
 import { Code } from 'astro-expressive-code/components'
 import { typedError } from '../lib/typed-error.ts'
 import CodeFrame from './CodeFrame.astro'
@@ -22,38 +10,19 @@ const TITLE = 'typed-error-shader.ts'
 ---
 
 <div data-diagnostic>
-  <CodeFrame label={`Typed-error fixture, ${TITLE}`}>
-    {/* The marked line is Expressive Code's own `{n}` meta — build-time markup, not a runtime
-        highlighter (I-12). The wavy `--color-diag` underline is added to that line below. */}
+  <CodeFrame label={`Shader with a misspelt field, ${TITLE}`}>
     <Code code={snippet} lang="ts" title={TITLE} meta={`{${wrongLine}}`} />
   </CodeFrame>
-
-  <p class="diagnostic mt-4">
-    <span class="diagnostic-code"
-      >⨯ TS{diagnostic.code} · line {diagnostic.line}:{diagnostic.column} —</span
-    >{' '}{diagnostic.message}
+  <p class="diagnostic mt-3">
+    <b>error TS{diagnostic.code}</b> at line {diagnostic.line}, column {diagnostic.column}: {diagnostic.message}
+    {diagnostic.truncated && <span>(first line of a longer message)</span>}
   </p>
-
-  {
-    diagnostic.truncated && (
-      <p class="micro-code mt-2" data-trunc>
-        … message truncated at 300 characters
-      </p>
-    )
-  }
 </div>
 
 <style is:global>
-  /* Expressive Code renders the frame from a string, so its own markup carries no scoped
-     attribute — these rules are keyed on the block instead, which bounds them as tightly. */
   [data-diagnostic] .expressive-code .ec-line.mark {
     text-decoration: underline wavy var(--color-diag);
     text-decoration-thickness: 2px;
     text-underline-offset: 3px;
-  }
-  /* The marked line's own background is left to the theme: the squiggle is the signal, and a
-     second one would make the frame the loudest thing in a section about a quiet failure. */
-  [data-diagnostic] .diagnostic-code {
-    color: var(--color-diag);
   }
 </style>
