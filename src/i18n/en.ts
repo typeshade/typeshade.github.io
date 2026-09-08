@@ -22,14 +22,26 @@ export const en = {
   },
 
   nav: {
-    motivation: 'Motivation',
-    checks: 'Checks',
-    examples: 'Examples',
     guide: 'Guide',
+    examples: 'Examples',
     github: 'GitHub',
     llms: 'llms.txt',
     languages: 'Languages',
+    theme: 'Toggle dark mode',
     menu: 'Menu',
+  },
+  docs: {
+    introduction: 'Introduction',
+    authoring: 'Authoring',
+    reference: 'Reference',
+    why: 'Why TypeShade',
+    quickStart: 'Quick start',
+    authoringGuide: 'Authoring guide',
+    checks: 'Checks',
+    examples: 'Examples',
+    onThisPage: 'On this page',
+    previous: 'Previous',
+    next: 'Next',
   },
   footer: {
     docs: 'Documentation',
@@ -92,6 +104,7 @@ export const en = {
       none: 'Metaballs. Rendered at build time; this browser has no WebGPU or WebGL2.',
       reduced: `Metaballs, compiled to WGSL and to ${glsl}. One frame is drawn here, since this system asks for reduced motion.`,
     },
+    note: `Pre-release: the repository is at ${facts.mirrorVersion}, and ${facts.nextVersion} is not on npm yet. Install it as a git submodule from the [quick start](quickStart).`,
     highlights: [
       {
         h: 'One source',
@@ -106,12 +119,14 @@ export const en = {
         p: `A misspelt uniform field or a wrong-typed return is a TypeScript error in the editor. \`reflect()\` reads bind groups and ${facts.layoutStandards.join(' and ')} layouts from the same intermediate representation.`,
       },
     ],
-    quickStart: {
-      h: 'Quick start',
+  },
+  quickStart: {
+    title: 'TypeShade quick start: install and a first shader',
+    description: 'Add TypeShade as a git submodule and follow the fragment stage of the gradient example to the WGSL it emits, with a note on the pre-release status.',
+    h1: 'Quick start',
       p1: `The package ships TypeScript source, so your build needs a toolchain that compiles it. This is the fragment stage of the gradient example, ${hero.authoredLines} lines as authored in \`${hero.file}\`:`,
       p2: 'It emits this WGSL entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [reflect()](reflectApi) recovers for it, are on the [examples page](examples). The [authoring guide](guide) covers the rest of the surface.`,
-    },
     status: {
       h: 'Status',
       p: `Pre-release. The repository is at version ${facts.mirrorVersion}; ${facts.nextVersion} is the release the npm name [typeshade](npm) is reserved for, and the manifest and the imports are renamed at that tag. Issues are welcome; pull requests cannot be merged yet, because changes land upstream and this tree is fast-forwarded from there. [Watch releases](releases) to hear about ${facts.nextVersion}.`,
@@ -120,7 +135,7 @@ export const en = {
   motivation: {
     title: 'Why one shader source for WebGPU and WebGL2, TypeShade',
     description: `Why TypeShade emits WGSL and ${glsl} from one typed TypeScript module: what maintaining two shader languages costs, with the Khronos survey figures.`,
-    h1: 'Motivation',
+    h1: 'Why TypeShade',
     paragraphs: [
       'A shader that has to run on WebGL2 and on WebGPU exists twice. The two languages disagree about types, entry points, resource binding and precision, so the second copy is a rewrite. A fix that lands in one copy and misses the other only shows up on the machines that take the other path, and a reviewer has to read two dialects to decide whether they still mean the same thing.',
       'The web is in the middle of one such move. The [MapLibre graphics modernization roadmap](maplibreRoadmap), the [deck.gl WebGPU guide](deckglWebgpu) and the [PixiJS v8 migration guide](pixijsMigration) each describe a WebGPU path arriving beside an existing WebGL one, so a custom layer written as GLSL will need a WGSL copy.',

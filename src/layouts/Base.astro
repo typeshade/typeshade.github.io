@@ -63,6 +63,10 @@ const jsonLd = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <script is:inline>
+      // A remembered dark-mode choice, applied before the first paint. With none, the page follows the system.
+      try { const t = localStorage.getItem('theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t } catch {}
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
@@ -103,5 +107,13 @@ const jsonLd = {
       <slot />
     </main>
     <SiteFooter locale={locale} path={path} />
+    <script is:inline>
+      for (const b of document.querySelectorAll('[data-theme-toggle]')) b.addEventListener('click', () => {
+        const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches
+        const next = dark ? 'light' : 'dark'
+        document.documentElement.dataset.theme = next
+        try { localStorage.setItem('theme', next) } catch {}
+      })
+    </script>
   </body>
 </html>

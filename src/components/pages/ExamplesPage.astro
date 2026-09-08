@@ -1,11 +1,12 @@
 ---
 import { Code } from 'astro-expressive-code/components'
-import Base from '../../layouts/Base.astro'
+import Docs from '../../layouts/Docs.astro'
 import CodeFrame from '../CodeFrame.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import type { CanvasText } from '../ShaderCanvas.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
+import { links } from '../../lib/links.ts'
 import { hero } from '../../lib/examples.ts'
 
 interface Props {
@@ -24,8 +25,7 @@ const deepZoom: CanvasText = {
 const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts hillshade'].join('\n')
 ---
 
-<Base locale={locale} path="/examples" title={e.title} description={e.description}>
-  <article class="wrap doc">
+<Docs locale={locale} path={links.examples.href} title={e.title} description={e.description}>
     <h1>{e.h1}</h1>
     <p><Rich text={e.intro} locale={locale} /></p>
     <p>{e.printIntro}</p>
@@ -48,5 +48,4 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
       <p><Rich text={e.f64.p2} locale={locale} /></p>
       <ShaderCanvas locale={locale} example="fp64-deep-zoom" aspect="3/1" still split caption={deepZoom} />
     </section>
-  </article>
-</Base>
+</Docs>

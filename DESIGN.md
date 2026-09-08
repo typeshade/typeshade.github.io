@@ -29,8 +29,9 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 
 ## Colour
 
-- Light by default; dark follows `prefers-color-scheme`. Both palettes live in
-  `src/styles/global.css` and nowhere else.
+- Light by default; dark follows `prefers-color-scheme`, or the switch in the header, which
+  is remembered in `localStorage`. Both palettes live in `src/styles/global.css` and nowhere
+  else; the code themes follow through `ec.config.mjs`.
 - One accent, TypeScript's blue (#3178c6), for links and the mark; one red for diagnostics.
   The one gradient on the site runs across the front page's headline, from that blue on
   "Typed" to a violet on "shaders": the language on one side, the GPU on the other. No glows, no coloured card borders.
@@ -40,7 +41,8 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 ## Layout
 
 - A full-width header bar (56px, one rule under it) and a full-width footer on a soft ground
-  frame every page. Under 48rem the header's links sit in a panel behind a menu button.
+  frame every page. Under 48rem the header's links, the language menu and the dark-mode switch
+  sit in a panel behind a menu button.
 - The front page is centred on a 960px measure: the headline in two lines, one sentence, three
   links, the live shader, three short points. Quick start and Status follow in the document
   column. The layout follows vuejs.org's front page.
@@ -61,19 +63,23 @@ why lives on its own page.
 - `/`: the headline, one sentence, three links (Get started, Why TypeShade, Examples), the live
   metaballs shader, three points (One source, Checked, Typed), Quick start (the submodule
   command, the authored fragment, the WGSL it emits), Status.
-- `/motivation/`: the two-shader problem, the hosts' migration guides, the survey figures, what
-  TypeShade does about it and what it does not do.
-- `/checks/`: the CPU oracle, the compile gate, the golden files, the same pass drawn on
-  WebGPU and on WebGL2 as one side-by-side figure, and the typed diagnostic with its reflected
-  layout.
-- `/examples/`: the examples, the print commands, the GLSL emit of the gradient pass, and the
-  emulated-double demo.
-- `/guide/`: the compiler's AUTHORING.md, rendered from the vendored checkout at the pinned
-  commit (an Astro content collection over `vendor/shader-dsl`), with a contents list. The
-  package name is shown as its release name. No page sends a reader to GitHub for something
-  the site can show.
+- `/guide/…`: the documentation, on the layout every documentation site uses (VitePress,
+  Docusaurus): a sidebar on the left with three groups, the document in the middle, and on a
+  wide screen an outline of the page on the right. Under 64rem the sidebar is a bar under the
+  header that names the current page. Previous and next links close each page.
+  - Introduction: `/guide/introduction/` (why one source; the hosts' migration guides; the
+    survey figures; what TypeShade does not do) and `/guide/quick-start/` (the submodule
+    command, the authored fragment, the WGSL it emits, the release state).
+  - Authoring: `/guide/authoring/`, the compiler's AUTHORING.md rendered from the vendored
+    checkout at the pinned commit (an Astro content collection over `vendor/shader-dsl`). The
+    package name is shown as its release name. No page sends a reader to GitHub for something
+    the site can show.
+  - Reference: `/guide/checks/` (the oracle, the compile gate, the golden files, the same pass
+    on both backends, the typed diagnostic) and `/guide/examples/`.
+- The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect.
 
-The header links to the three pages, the guide and GitHub. The footer is a site map in three
+The header is the one every library site has: the name on the left; Guide and Examples; then
+a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 columns (Documentation, Project, Languages), then the licence, the copyright and the commit the
 page was built from. Headings are single nouns or short noun phrases: Motivation, Checks, Quick
 start.

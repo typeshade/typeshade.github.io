@@ -1,23 +1,18 @@
 ---
-// The front page in one locale: the headline and its three links, the live shader, three
-// short points, then Quick start and Status in the document column. Every number is read
+// The front page in one locale: the headline and its three links, the live shader, and
+// three short points. Every number is read
 // at build time from the compiler vendored at vendor/shader-dsl; the words come from src/i18n.
-import { Code } from 'astro-expressive-code/components'
 import Base from '../../layouts/Base.astro'
-import CodeFrame from '../CodeFrame.astro'
-import InstallCommand from '../InstallCommand.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { hero } from '../../lib/examples.ts'
 import { links } from '../../lib/links.ts'
 
 interface Props {
   locale: Locale
 }
 const { locale } = Astro.props
-const t = copyFor(locale)
-const f = t.front
+const f = copyFor(locale).front
 const h = f.hero
 ---
 
@@ -28,7 +23,7 @@ const h = f.hero
     </h1>
     <p class="hero-tagline">{h.tagline}</p>
     <p class="hero-actions">
-      <a class="button" href="#quick-start">
+      <a class="button" href={localePath(locale, links.quickStart.href)}>
         {h.getStarted}
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z" /></svg>
       </a>
@@ -50,24 +45,5 @@ const h = f.hero
     ))}
   </section>
 
-  <article class="wrap doc front-doc">
-    <div id="quick-start">
-      <h2>{f.quickStart.h}</h2>
-      <InstallCommand locale={locale} />
-      <p><Rich text={f.quickStart.p1} locale={locale} /></p>
-      <CodeFrame label={t.codeLabels.authored}>
-        <Code code={hero.authored} lang="ts" title={hero.file} />
-      </CodeFrame>
-      <p>{f.quickStart.p2}</p>
-      <CodeFrame label={t.codeLabels.wgsl}>
-        <Code code={hero.wgsl} lang="wgsl" />
-      </CodeFrame>
-      <p><Rich text={f.quickStart.p3} locale={locale} /></p>
-    </div>
-
-    <section>
-      <h2>{f.status.h}</h2>
-      <p><Rich text={f.status.p} locale={locale} /></p>
-    </section>
-  </article>
+  <p class="wide front-note"><Rich text={f.note} locale={locale} /></p>
 </Base>

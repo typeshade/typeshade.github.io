@@ -14,10 +14,11 @@ const at = (file: string): string => `${mirror}/blob/${facts.pinnedCommit}/${fil
 
 export const links = {
   home: { label: 'TypeShade', href: '/' },
-  motivation: { label: 'Motivation', href: '/motivation/' },
-  checks: { label: 'Checks', href: '/checks/' },
-  examples: { label: 'Examples', href: '/examples/' },
-  guide: { label: 'Authoring guide', href: '/guide/' },
+  motivation: { label: 'Why TypeShade', href: '/guide/introduction/' },
+  quickStart: { label: 'Quick start', href: '/guide/quick-start/' },
+  guide: { label: 'Authoring guide', href: '/guide/authoring/' },
+  checks: { label: 'Checks', href: '/guide/checks/' },
+  examples: { label: 'Examples', href: '/guide/examples/' },
   guideSource: { label: 'AUTHORING.md', href: at('AUTHORING.md') },
   mirror: { label: 'GitHub', href: mirror },
   docs: { label: 'README', href: at('README.md') },
@@ -46,14 +47,27 @@ export const links = {
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
 
-/** The header's links in one locale. The footer repeats them and adds llms.txt. */
+/** The header's two links in one locale. GitHub is an icon beside them. */
 export function navLinks(locale: Locale): readonly Destination[] {
   const t = copyFor(locale).nav
   return [
-    { label: t.motivation, href: localePath(locale, links.motivation.href) },
-    { label: t.checks, href: localePath(locale, links.checks.href) },
+    { label: t.guide, href: localePath(locale, links.motivation.href) },
     { label: t.examples, href: localePath(locale, links.examples.href) },
-    { label: t.guide, href: localePath(locale, links.guide.href) },
-    { label: t.github, href: links.mirror.href },
+  ]
+}
+
+export interface SidebarGroup {
+  readonly title: string
+  readonly items: readonly Destination[]
+}
+
+/** The docs sidebar in one locale: three groups, five pages. */
+export function sidebar(locale: Locale): readonly SidebarGroup[] {
+  const d = copyFor(locale).docs
+  const page = (key: 'motivation' | 'quickStart' | 'guide' | 'checks' | 'examples') => localePath(locale, links[key].href)
+  return [
+    { title: d.introduction, items: [{ label: d.why, href: page('motivation') }, { label: d.quickStart, href: page('quickStart') }] },
+    { title: d.authoring, items: [{ label: d.authoringGuide, href: page('guide') }] },
+    { title: d.reference, items: [{ label: d.checks, href: page('checks') }, { label: d.examples, href: page('examples') }] },
   ]
 }

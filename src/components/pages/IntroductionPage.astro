@@ -1,0 +1,17 @@
+---
+import Docs from '../../layouts/Docs.astro'
+import Rich from '../Rich.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+import { links } from '../../lib/links.ts'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const m = copyFor(locale).motivation
+---
+
+<Docs locale={locale} path={links.motivation.href} title={m.title} description={m.description}>
+  <h1>{m.h1}</h1>
+  {m.paragraphs.map((p) => <p><Rich text={p} locale={locale} /></p>)}
+</Docs>

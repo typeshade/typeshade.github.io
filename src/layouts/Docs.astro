@@ -1,0 +1,77 @@
+---
+// A documentation page: the sidebar on the left, the document in the middle, and on a wide
+// screen an outline of the page on the right. Under 64rem the sidebar folds into a bar
+// under the header. Previous and next follow the sidebar's order.
+import Base from './Base.astro'
+import { sidebar } from '../lib/links.ts'
+import { copyFor, localePath, type Locale } from '../i18n/index.ts'
+
+export interface Heading {
+  readonly depth: number
+  readonly slug: string
+  readonly text: string
+}
+
+interface Props {
+  locale: Locale
+  /** The locale-neutral route, for example '/guide/checks/'. */
+  path: string
+  title: string
+  description: string
+  /** Headings for the outline; h2 and h3 are shown. */
+  headings?: readonly Heading[]
+  /** The document is in another language than the page's chrome. */
+  bodyLang?: string
+}
+const { locale, path, title, description, headings = [], bodyLang } = Astro.props
+const d = copyFor(locale).docs
+const groups = sidebar(locale)
+const here = localePath(locale, path)
+const flat = groups.flatMap((g) => g.items)
+const at = flat.findIndex((i) => i.href === here)
+const previous = at > 0 ? flat[at - 1] : undefined
+const next = at >= 0 && at < flat.length - 1 ? flat[at + 1] : undefined
+const current = at >= 0 ? flat[at] : undefined
+const outline = headings.filter((h) => h.depth === 2 || h.depth === 3)
+---
+
+<Base locale={locale} path={path} title={title} description={description}>
+  <details class="docs-local">
+    <summary>{current?.label ?? title}</summary>
+    <nav aria-label={title}>
+      {groups.map((g) => (
+        <div class="docs-group">
+          <p class="docs-group-title">{g.title}</p>
+          <ul>{g.items.map((i) => <li><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
+        </div>
+      ))}
+    </nav>
+  </details>
+  <div class="docs">
+    <aside class="docs-sidebar">
+      <nav class="docs-sidebar-in" aria-label={title}>
+        {groups.map((g) => (
+          <div class="docs-group">
+            <p class="docs-group-title">{g.title}</p>
+            <ul>{g.items.map((i) => <li><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
+          </div>
+        ))}
+      </nav>
+    </aside>
+    <article class="doc docs-content" lang={bodyLang}>
+      <slot />
+      <nav class="docs-pager" aria-label={`${d.previous} / ${d.next}`} lang={locale}>
+        {previous ? <a class="docs-pager-prev" href={previous.href}><span>{d.previous}</span>{previous.label}</a> : <span></span>}
+        {next ? <a class="docs-pager-next" href={next.href}><span>{d.next}</span>{next.label}</a> : <span></span>}
+      </nav>
+    </article>
+    {outline.length > 0 && (
+      <aside class="docs-outline">
+        <nav aria-label={d.onThisPage}>
+          <p class="docs-outline-title" lang={locale}>{d.onThisPage}</p>
+          <ul>{outline.map((h) => <li class={`depth-${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
+        </nav>
+      </aside>
+    )}
+  </div>
+</Base>

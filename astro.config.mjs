@@ -19,6 +19,11 @@ export default defineConfig({
   site: 'https://typeshade.dev',
   output: 'static',
   trailingSlash: 'always',
+  // The docs moved under /guide/ on the day the site launched; the first routes redirect.
+  redirects: Object.fromEntries(
+    Object.entries({ '/motivation/': '/guide/introduction/', '/checks/': '/guide/checks/', '/examples/': '/guide/examples/', '/guide/': '/guide/introduction/' })
+      .flatMap(([from, to]) => [[from, to], [`/ko${from}`, `/ko${to}`]]),
+  ),
   // English at /, every other locale under its own prefix. The copy lives in src/i18n.
   i18n: { defaultLocale: 'en', locales: ['en', 'ko'], routing: { prefixDefaultLocale: false } },
   integrations: [
@@ -43,9 +48,9 @@ export default defineConfig({
         },
       },
     },
-    expressiveCode(),
+    expressiveCode(), // options in ec.config.mjs
     sitemap({
-      filter: (page) => new URL(page).pathname.replace(/\/$/, '') !== '/og',
+      filter: (page) => !['/og', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide'].includes(new URL(page).pathname.replace(/\/$/, '')),
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
       serialize: (item) => ({ ...item, lastmod }),
     }),

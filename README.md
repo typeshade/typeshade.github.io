@@ -22,9 +22,11 @@ asks you to update the copy.
 | Route | What it is |
 | --- | --- |
 | `/` | the front page: the headline, the live shader, three points, Quick start, Status |
-| `/motivation/`, `/checks/`, `/examples/` | the longer material the front page links to |
-| `/guide/` | the authoring guide, rendered from `vendor/shader-dsl/AUTHORING.md` at the pinned commit |
-| `/ko/`, `/ko/motivation/`, `/ko/checks/`, `/ko/examples/`, `/ko/guide/` | the same pages in Korean; the guide's body stays English. See DESIGN.md, Languages |
+| `/guide/introduction/`, `/guide/quick-start/` | why one source, and the install and first shader |
+| `/guide/authoring/` | the authoring guide, rendered from `vendor/shader-dsl/AUTHORING.md` at the pinned commit |
+| `/guide/checks/`, `/guide/examples/` | what CI runs, and the examples |
+| `/ko/…` | the same pages in Korean; the authoring guide's body stays English. See DESIGN.md, Languages |
+| `/motivation/`, `/checks/`, `/examples/`, `/guide/` | the first routes; they redirect |
 | `/404.html` | not found |
 | `/llms.txt` | a plain-text summary generated from the same records as the page |
 | `/og/` | the social card. Only exists so `scripts/capture-og.ts` can photograph it; removed from `dist/` on every build |
@@ -74,4 +76,5 @@ PLAYWRIGHT_CHROMIUM=/path/to/chrome \
   `node_modules/.cache`, serving the files the way GitHub Pages does. A warning or critical
   issue fails the deploy.
 
-`DESIGN.md` is the one document about how the page is written and designed.
+`DESIGN.md` is the one document about how the page is written and designed. `.claude/skills/typeshade-site/SKILL.md`
+is the working procedure for changing copy, layout or the Korean dictionary with Claude Code.

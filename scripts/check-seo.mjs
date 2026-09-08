@@ -31,6 +31,7 @@ const pages = walk(dist).filter((f) => f.endsWith('.html'))
 for (const file of pages) {
   const html = readFileSync(file, 'utf8')
   const rel = file.slice(dist.length + 1)
+  if (html.includes('http-equiv="refresh"')) continue
   const fail = (what) => problems.push(`${rel}: ${what}`)
   const isNotFound = rel === '404.html'
 

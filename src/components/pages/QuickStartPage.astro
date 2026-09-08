@@ -1,0 +1,36 @@
+---
+// The submodule command, the authored fragment, the WGSL it emits, and the status note.
+import { Code } from 'astro-expressive-code/components'
+import Docs from '../../layouts/Docs.astro'
+import CodeFrame from '../CodeFrame.astro'
+import InstallCommand from '../InstallCommand.astro'
+import Rich from '../Rich.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+import { hero } from '../../lib/examples.ts'
+import { links } from '../../lib/links.ts'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const t = copyFor(locale)
+const q = t.quickStart
+---
+
+<Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description}>
+  <h1>{q.h1}</h1>
+  <InstallCommand locale={locale} />
+  <p><Rich text={q.p1} locale={locale} /></p>
+  <CodeFrame label={t.codeLabels.authored}>
+    <Code code={hero.authored} lang="ts" title={hero.file} />
+  </CodeFrame>
+  <p>{q.p2}</p>
+  <CodeFrame label={t.codeLabels.wgsl}>
+    <Code code={hero.wgsl} lang="wgsl" />
+  </CodeFrame>
+  <p><Rich text={q.p3} locale={locale} /></p>
+  <section>
+    <h2>{q.status.h}</h2>
+    <p><Rich text={q.status.p} locale={locale} /></p>
+  </section>
+</Docs>

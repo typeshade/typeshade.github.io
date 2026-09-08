@@ -23,14 +23,26 @@ export const ko: Copy = {
   },
 
   nav: {
-    motivation: '동기',
-    checks: '검증',
-    examples: '예제',
     guide: '가이드',
+    examples: '예제',
     github: 'GitHub',
     llms: 'llms.txt',
     languages: '언어',
+    theme: '다크 모드 전환',
     menu: '메뉴',
+  },
+  docs: {
+    introduction: '소개',
+    authoring: '작성',
+    reference: '참고',
+    why: '왜 TypeShade인가',
+    quickStart: '빠른 시작',
+    authoringGuide: '작성 가이드',
+    checks: '검증 방식',
+    examples: '예제',
+    onThisPage: '이 페이지에서',
+    previous: '이전',
+    next: '다음',
   },
   footer: {
     docs: '문서',
@@ -92,6 +104,7 @@ export const ko: Copy = {
       none: 'Metaballs. 빌드할 때 렌더링한 화면입니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.',
       reduced: `WGSL과 ${glsl}로 컴파일한 Metaballs. 시스템이 움직임 줄이기를 켜 두어서 한 프레임만 그렸습니다.`,
     },
+    note: `정식 출시 전입니다. 저장소는 ${facts.mirrorVersion} 버전이고 ${facts.nextVersion}은 아직 npm에 없습니다. 지금은 [빠른 시작](quickStart)대로 git 서브모듈로 설치합니다.`,
     highlights: [
       {
         h: '소스 하나',
@@ -106,12 +119,14 @@ export const ko: Copy = {
         p: `유니폼 필드 이름을 잘못 쓰거나 반환 타입이 틀리면 편집기에서 바로 TypeScript 오류가 납니다. \`reflect()\`는 같은 중간 표현에서 바인드 그룹과 ${facts.layoutStandards.join('과 ')} 레이아웃을 읽어 옵니다.`,
       },
     ],
-    quickStart: {
-      h: '빠른 시작',
+  },
+  quickStart: {
+    title: 'TypeShade 빠른 시작: 설치와 첫 셰이더',
+    description: 'TypeShade를 git 서브모듈로 추가하고, gradient 예제의 프래그먼트 단계에서 WGSL이 나오는 과정을 따라갑니다. 출시 전 상태도 함께 적었습니다.',
+    h1: '빠른 시작',
       p1: `패키지에는 TypeScript 소스가 그대로 들어 있어서, 빌드 쪽에 TypeScript를 컴파일할 도구가 있어야 합니다. 아래는 gradient 예제의 프래그먼트 단계이고, \`${hero.file}\`에 쓴 그대로 ${hero.authoredLines}줄입니다.`,
       p2: '컴파일하면 이 WGSL 진입점이 나옵니다.',
       p3: `같은 함수의 ${glsl} 단계와, [reflect()](reflectApi)가 복원한 유니폼 레이아웃은 [예제 페이지](examples)에 있습니다. 나머지 API는 [작성 가이드](guide)를 보면 됩니다.`,
-    },
     status: {
       h: '상태',
       p: `정식 출시 전입니다. 저장소는 ${facts.mirrorVersion} 버전이고, npm 이름 [typeshade](npm)는 ${facts.nextVersion} 출시용으로 잡아 두었습니다. 매니페스트와 import 이름은 그 태그에서 바뀝니다. 이슈는 환영합니다. 다만 변경은 업스트림에 먼저 들어가고 이 트리는 거기서 fast-forward되기 때문에, 풀 리퀘스트는 아직 머지할 수 없습니다. ${facts.nextVersion} 소식은 [릴리스 구독](releases)으로 받을 수 있습니다.`,
@@ -120,7 +135,7 @@ export const ko: Copy = {
   motivation: {
     title: 'WebGPU와 WebGL2에 셰이더 소스 하나를 쓰는 이유, TypeShade',
     description: `TypeShade가 타입 있는 TypeScript 모듈 하나에서 WGSL과 ${glsl}을 내는 이유. 셰이더 언어 두 개를 유지하는 비용과 Khronos 설문 수치.`,
-    h1: '동기',
+    h1: '왜 TypeShade인가',
     paragraphs: [
       'WebGL2와 WebGPU 양쪽에서 돌아야 하는 셰이더는 두 벌이 됩니다. 두 언어는 타입, 진입점, 리소스 바인딩, 정밀도가 서로 달라서 두 번째 복사본은 사실상 처음부터 다시 쓰는 일입니다. 한쪽에만 들어간 수정은 다른 경로를 타는 기기에서야 드러나고, 리뷰어는 두 언어로 된 코드를 나란히 읽으면서 둘이 여전히 같은 일을 하는지 판단해야 합니다.',
       '웹은 지금 그런 이동의 한가운데에 있습니다. [MapLibre 그래픽 현대화 로드맵](maplibreRoadmap), [deck.gl WebGPU 가이드](deckglWebgpu), [PixiJS v8 마이그레이션 가이드](pixijsMigration) 모두 기존 WebGL 경로 옆에 WebGPU 경로가 생기는 과정을 설명합니다. GLSL로 쓴 커스텀 레이어라면 WGSL로 된 복사본이 하나 더 필요해집니다.',
@@ -133,7 +148,7 @@ export const ko: Copy = {
   checks: {
     title: 'TypeShade 검증: CPU 오라클, 컴파일 게이트, 골든 파일',
     description: 'TypeShade의 CI가 푸시마다 실행하는 것: f64 CPU 오라클, Tint와 실제 WebGL2 컨텍스트에서 도는 컴파일 게이트, 출력마다의 골든 파일.',
-    h1: '검증',
+    h1: '검증 방식',
     intro: '저장소의 CI는 푸시와 풀 리퀘스트마다 [CI 워크플로](ciGates)에서 다음을 실행합니다.',
     items: [
       '같은 모듈을 f64 산술로 도는 CPU 함수로도 컴파일합니다. 이것이 기준값을 내는 오라클입니다. 기본 모드에서는 동등 비교만 먼저 f32로 반올림해 GPU와 맞추고, 연산마다 반올림하는 f32 모드는 따로 켭니다. 테스트는 이 함수를 알려진 답과 맞춰 보고, 생성된 JavaScript라는 두 번째 CPU 백엔드와도 맞춰 봅니다. 둘은 비트 단위로 같아야 합니다. 드라이버의 반올림에 대해서는 아무것도 말해 주지 않고, 이 저장소에서 GPU 출력을 여기에 맞춰 보지는 않습니다. [src/core/oracle.ts](oracle)',

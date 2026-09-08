@@ -3,7 +3,7 @@
 // was built from.
 import Rich from './Rich.astro'
 import { facts } from '../lib/examples.ts'
-import { links } from '../lib/links.ts'
+import { links, sidebar } from '../lib/links.ts'
 import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts'
 
 interface Props {
@@ -12,17 +12,10 @@ interface Props {
 }
 const { locale, path } = Astro.props
 const t = copyFor(locale)
-const page = (key: 'motivation' | 'checks' | 'examples' | 'guide') => localePath(locale, links[key].href)
 const columns = [
   {
     h: t.footer.docs,
-    items: [
-      { label: t.nav.motivation, href: page('motivation') },
-      { label: t.nav.checks, href: page('checks') },
-      { label: t.nav.examples, href: page('examples') },
-      { label: t.nav.guide, href: page('guide') },
-      { label: t.footer.readme, href: links.docs.href },
-    ],
+    items: [...sidebar(locale).flatMap((g) => g.items), { label: t.footer.readme, href: links.docs.href }],
   },
   {
     h: t.footer.project,
