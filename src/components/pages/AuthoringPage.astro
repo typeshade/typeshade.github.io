@@ -1,0 +1,43 @@
+---
+// One section of the authoring guide, rendered from the compiler's AUTHORING.md at the
+// pinned commit. The body is English on every locale; the title, the description and the rest
+// of the chrome come from the language's own guide.sections map. The section's own heading is
+// dropped from the body, because the page's h1 carries it.
+import { getEntry, render } from 'astro:content'
+import Docs from '../../layouts/Docs.astro'
+import Rich from '../Rich.astro'
+import { assertGuideSections, copyFor, guideSection, type Locale } from '../../i18n/index.ts'
+import { editGuide, links } from '../../lib/links.ts'
+
+interface Props {
+  locale: Locale
+  /** The entry's id. 'overview' is the guide's own page, at /guide/authoring/. */
+  section: string
+}
+const { locale, section } = Astro.props
+const g = copyFor(locale).guide
+const entry = await getEntry('guide', section)
+if (!entry) throw new Error(`[guide] AUTHORING.md has no section '${section}'`)
+const { Content, headings } = await render(entry)
+
+// Every section is named and described in every language, and no language names one the
+// guide has dropped. A build stops here with the id that is missing or stale.
+assertGuideSections()
+const overview = entry.id === 'overview'
+const named = overview ? undefined : guideSection(locale, entry.id)
+const title = named?.title ?? ''
+---
+
+<Docs
+  locale={locale}
+  path={overview ? links.guide.href : `/guide/authoring/${entry.id}/`}
+  title={overview ? g.title : g.sectionTitle(title)}
+  description={overview ? g.description : named!.description}
+  headings={headings}
+  editHref={editGuide(entry.data.sourceLine)}
+  bodyLang="en"
+>
+  <p class="guide-note" lang={locale} data-pagefind-ignore><Rich text={g.note} locale={locale} /></p>
+  {!overview && <h1>{title}</h1>}
+  <Content />
+</Docs>

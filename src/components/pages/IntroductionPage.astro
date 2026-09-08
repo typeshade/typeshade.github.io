@@ -1,0 +1,27 @@
+---
+// Why one source, in five sections: the cost of two copies, the move the hosts are making,
+// the survey figures, what TypeShade does, and what it leaves to the host.
+import Docs from '../../layouts/Docs.astro'
+import Rich from '../Rich.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+import { editCopy, links } from '../../lib/links.ts'
+import { slugify } from '../../lib/slug.ts'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const m = copyFor(locale).motivation
+const sections = m.sections.map((s) => ({ ...s, slug: slugify(s.h) }))
+const headings = sections.map((s) => ({ depth: 2, slug: s.slug, text: s.h }))
+---
+
+<Docs locale={locale} path={links.motivation.href} title={m.title} description={m.description} headings={headings} editHref={editCopy(locale)}>
+  <h1>{m.h1}</h1>
+  {sections.map((s) => (
+    <Fragment>
+      <h2 id={s.slug}>{s.h}</h2>
+      <p><Rich text={s.p} locale={locale} /></p>
+    </Fragment>
+  ))}
+</Docs>

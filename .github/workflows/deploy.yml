@@ -34,6 +34,8 @@ jobs:
       # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
       - run: bun run qa:links
       - run: bun run qa:seo
+      # OpenSEO's audit engine over dist, pinned; see scripts/openseo-audit.mts.
+      - run: bun run qa:openseo
       # Enable Pages with the Actions source on the first run. The custom domain is set once
       # in Settings, after the first deploy.
       - uses: actions/configure-pages@v5

@@ -7,8 +7,11 @@ import path from 'node:path'
 
 const dist = process.argv[2] ?? 'dist'
 const SITE = 'https://typeshade.dev'
+// The same bounds OpenSEO's page reporters use (scripts/openseo-audit.mts runs those too).
 const TITLE_MAX = 60
+const TITLE_MIN = 10
 const DESCRIPTION_MAX = 160
+const DESCRIPTION_MIN = 70
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -28,8 +31,10 @@ const pages = walk(dist).filter((f) => f.endsWith('.html'))
 for (const file of pages) {
   const html = readFileSync(file, 'utf8')
   const rel = file.slice(dist.length + 1)
+  if (html.includes('http-equiv="refresh"')) continue
   const fail = (what) => problems.push(`${rel}: ${what}`)
   const isNotFound = rel === '404.html'
+  const isPreview = html.includes('class="api-preview"')
 
   const title = decode(one(html, /<title>([^<]*)<\/title>/) ?? '')
   const description = decode(one(html, /name="description" content="([^"]*)"/) ?? '')
@@ -43,8 +48,10 @@ for (const file of pages) {
 
   if (!title) fail('no title')
   else if (title.length > TITLE_MAX) fail(`title is ${title.length} characters, over ${TITLE_MAX}`)
+  else if (title.length < TITLE_MIN) fail(`title is ${title.length} characters, under ${TITLE_MIN}`)
   if (!description) fail('no description')
   else if (description.length > DESCRIPTION_MAX) fail(`description is ${description.length} characters, over ${DESCRIPTION_MAX}`)
+  else if (!isNotFound && description.length < DESCRIPTION_MIN) fail(`description is ${description.length} characters, under ${DESCRIPTION_MIN}`)
   if (!canonical) fail('no canonical')
   else if (!isNotFound && !canonical.endsWith('/')) fail(`canonical ${canonical} does not end in a slash`)
   if (ogTitle !== title) fail(`og:title "${ogTitle}" differs from the title`)
@@ -52,9 +59,13 @@ for (const file of pages) {
   if (imagesWithoutAlt) fail(`${imagesWithoutAlt} images without alt`)
   if (noSlash.length) fail(`links without a trailing slash: ${noSlash.join(', ')}`)
   if (!html.includes('application/ld+json')) fail('no JSON-LD')
+  // The site names no consumer of the library. The guide keeps one env var with the old prefix.
+  if (/x-?gis/i.test(html.replace(/XGIS_SHADER_DSL_TRACE/g, ''))) fail('names the former host')
   if (!/property="og:image" content="https:/.test(html)) fail('no absolute og:image')
 
-  if (isNotFound) {
+  if (isPreview) {
+    if (robots !== 'noindex') fail('a template preview must carry noindex')
+  } else if (isNotFound) {
     if (robots !== 'noindex') fail('the 404 must carry noindex')
   } else {
     if (robots) fail(`unexpected robots directive: ${robots}`)

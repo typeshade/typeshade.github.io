@@ -11,19 +11,25 @@ export interface Destination {
 
 const mirror = facts.mirrorUrl
 const at = (file: string): string => `${mirror}/blob/${facts.pinnedCommit}/${file}`
+// This site's own repository, for the "edit this page" link every documentation site carries.
+const siteRepo = 'https://github.com/typeshade/typeshade.github.io'
 
 export const links = {
   home: { label: 'TypeShade', href: '/' },
-  motivation: { label: 'Motivation', href: '/motivation/' },
-  checks: { label: 'Checks', href: '/checks/' },
-  examples: { label: 'Examples', href: '/examples/' },
-  guide: { label: 'Authoring guide', href: `${at('AUTHORING.md')}#1-the-authoring-surface` },
+  motivation: { label: 'Why TypeShade', href: '/guide/introduction/' },
+  quickStart: { label: 'Quick start', href: '/guide/quick-start/' },
+  guide: { label: 'Authoring guide', href: '/guide/authoring/' },
+  checks: { label: 'Verification', href: '/guide/checks/' },
+  examples: { label: 'Examples', href: '/guide/examples/' },
+  guideSource: { label: 'AUTHORING.md', href: at('AUTHORING.md') },
   mirror: { label: 'GitHub', href: mirror },
   docs: { label: 'README', href: at('README.md') },
   npm: { label: 'typeshade', href: 'https://www.npmjs.com/package/typeshade' },
   llms: { label: 'llms.txt', href: '/llms.txt' },
   commit: { label: facts.pinnedCommit, href: `${mirror}/tree/${facts.pinnedCommit}` },
   releases: { label: 'Watch releases', href: `${mirror}/releases` },
+  license: { label: 'MIT License', href: at('LICENSE') },
+  changelog: { label: 'Changelog', href: at('CHANGELOG.md') },
 
   examplesIndex: { label: 'examples/index.ts', href: at('examples/index.ts') },
   examplesDir: { label: 'the examples directory', href: `${mirror}/tree/${facts.pinnedCommit}/examples` },
@@ -44,14 +50,39 @@ export const links = {
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
 
-/** The header's links in one locale. The footer repeats them and adds llms.txt. */
+/** The file a hand-written page is written in, on GitHub. The copy is the page. */
+export function editCopy(locale: Locale): string {
+  return `${siteRepo}/blob/main/src/i18n/${locale}.ts`
+}
+
+/** The line a guide section starts on in the vendored AUTHORING.md, on GitHub. */
+export function editGuide(sourceLine: number): string {
+  return `${links.guideSource.href}#L${sourceLine}`
+}
+
+/** The header's two links in one locale. GitHub is an icon beside them. */
 export function navLinks(locale: Locale): readonly Destination[] {
   const t = copyFor(locale).nav
   return [
-    { label: t.motivation, href: localePath(locale, links.motivation.href) },
-    { label: t.checks, href: localePath(locale, links.checks.href) },
+    { label: t.guide, href: localePath(locale, links.motivation.href) },
     { label: t.examples, href: localePath(locale, links.examples.href) },
-    { label: t.guide, href: links.guide.href },
-    { label: t.github, href: links.mirror.href },
+  ]
+}
+
+export interface SidebarGroup {
+  readonly title: string
+  readonly items: readonly Destination[]
+}
+
+/** The docs sidebar in one locale: three groups. The guide's sections follow its overview,
+ *  in the file's order, so previous and next walk the whole guide. The footer's site map
+ *  passes none of them and lists the five pages. */
+export function sidebar(locale: Locale, sections: readonly Destination[] = []): readonly SidebarGroup[] {
+  const d = copyFor(locale).docs
+  const page = (key: 'motivation' | 'quickStart' | 'guide' | 'checks' | 'examples') => localePath(locale, links[key].href)
+  return [
+    { title: d.introduction, items: [{ label: d.why, href: page('motivation') }, { label: d.quickStart, href: page('quickStart') }] },
+    { title: d.authoring, items: [{ label: d.authoringGuide, href: page('guide') }, ...sections] },
+    { title: d.project, items: [{ label: d.checks, href: page('checks') }, { label: d.examples, href: page('examples') }] },
   ]
 }

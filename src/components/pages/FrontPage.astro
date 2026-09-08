@@ -1,14 +1,16 @@
 ---
-// The front page in one locale. Every listing and number is read at build time from the
-// compiler vendored at vendor/shader-dsl; the words come from src/i18n.
+// The front page in one locale: the headline, its three links and the pre-release pill, the
+// live shader, the authored fragment beside the WGSL it emits, and three short points. Every
+// number is read at build time from the compiler vendored at vendor/shader-dsl; the words
+// come from src/i18n.
 import { Code } from 'astro-expressive-code/components'
 import Base from '../../layouts/Base.astro'
 import CodeFrame from '../CodeFrame.astro'
-import InstallCommand from '../InstallCommand.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { hero } from '../../lib/examples.ts'
+import { links } from '../../lib/links.ts'
 
 interface Props {
   locale: Locale
@@ -16,44 +18,58 @@ interface Props {
 const { locale } = Astro.props
 const t = copyFor(locale)
 const f = t.front
+const h = f.hero
+// The headline is set in pieces, so a search result is given the whole line.
+const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(' ')
 ---
 
-<Base locale={locale} path="/">
-  <article class="wrap doc">
-    <h1>TypeShade</h1>
-    <p>{f.intro1}</p>
-    <p>{f.intro2}</p>
+<Base locale={locale} path="/" searchable searchTitle={headline}>
+  <section class="hero">
+    <h1 class="hero-title">
+      {h.before && <span class="hero-line">{h.before}</span>}
+      <span class="hero-line accent">{h.accent}</span>
+      {h.after && <span class="hero-line">{h.after}</span>}
+    </h1>
+    <p class="hero-subtitle">{h.subtitle}</p>
+    <p class="hero-tagline">{h.tagline}</p>
+    <p class="hero-actions">
+      <a class="button" href={localePath(locale, links.quickStart.href)}>
+        {h.getStarted}
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z" /></svg>
+      </a>
+      <a class="button" href={localePath(locale, links.motivation.href)}>{h.why}</a>
+      <a class="button" href={localePath(locale, links.examples.href)}>{h.examples}</a>
+    </p>
+    <p class="hero-prerelease">
+      <a href={localePath(locale, links.quickStart.href)}>{h.prerelease}</a>
+    </p>
+  </section>
 
-    <ShaderCanvas locale={locale} example="metaballs" aspect="2/1" eager caption={f.metaballs} />
+  <section class="wide demo">
+    <ShaderCanvas locale={locale} example="metaballs" aspect="3/1" eager caption={f.metaballs} />
+  </section>
 
-    <section>
-      <h2>{f.quickStart.h}</h2>
-      <InstallCommand locale={locale} />
-      <p><Rich text={f.quickStart.p1} locale={locale} /></p>
+  <section class="wide front-code">
+    <h2>{f.code.h}</h2>
+    <p><Rich text={f.code.p} locale={locale} /></p>
+    <div class="code-pair">
       <CodeFrame label={t.codeLabels.authored}>
         <Code code={hero.authored} lang="ts" title={hero.file} />
       </CodeFrame>
-      <p>{f.quickStart.p2}</p>
       <CodeFrame label={t.codeLabels.wgsl}>
-        <Code code={hero.wgsl} lang="wgsl" />
+        {/* The emitted WGSL has no file of its own, so the title bar names the language. */}
+        <Code code={hero.wgsl} lang="wgsl" title="WGSL" />
       </CodeFrame>
-      <p><Rich text={f.quickStart.p3} locale={locale} /></p>
-    </section>
+    </div>
+    <p class="front-code-more"><Rich text={f.code.more} locale={locale} /></p>
+  </section>
 
-    <section>
-      <h2>{f.does.h}</h2>
-      <ul>{f.does.items.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
-      <p>{f.does.note}</p>
-    </section>
-
-    <section>
-      <h2>{f.more.h}</h2>
-      <ul>{f.more.items.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
-    </section>
-
-    <section>
-      <h2>{f.status.h}</h2>
-      <p><Rich text={f.status.p} locale={locale} /></p>
-    </section>
-  </article>
+  <section class="wide highlights">
+    {f.highlights.map((item) => (
+      <div class="highlight">
+        <h2>{item.h}</h2>
+        <p><Rich text={item.p} locale={locale} /></p>
+      </div>
+    ))}
+  </section>
 </Base>

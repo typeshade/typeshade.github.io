@@ -11,7 +11,7 @@ interface Props {
 }
 const { text, locale } = Astro.props
 
-const PAGES: Record<string, string> = { home: '/', motivation: '/motivation/', checks: '/checks/', examples: '/examples/' }
+const PAGES: Record<string, string> = { home: '/', motivation: links.motivation.href, quickStart: links.quickStart.href, checks: links.checks.href, examples: links.examples.href, guide: links.guide.href }
 
 type Part = { kind: 'text'; value: string } | { kind: 'code'; value: string } | { kind: 'link'; value: string; href: string }
 

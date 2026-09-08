@@ -1,0 +1,11 @@
+---
+import { getCollection } from 'astro:content'
+import ApiReferencePage from '../../../components/pages/ApiReferencePage.astro'
+
+export async function getStaticPaths() {
+  return (await getCollection('api')).map((entry) => ({ params: { slug: entry.id }, props: { entry: entry.data } }))
+}
+const { entry } = Astro.props
+---
+
+<ApiReferencePage locale="ko" entry={entry} path={`/api/${entry.slug}/`} />

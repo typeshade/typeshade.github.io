@@ -1,0 +1,101 @@
+---
+// A documentation page: the sidebar on the left, the document in the middle, and on a wide
+// screen an outline of the page on the right. Under 64rem the sidebar folds into a bar
+// under the header. Every page ends with a link to the file it is written in and with
+// previous and next, which follow the sidebar's order. The document is what the search
+// indexes; the sidebar, the outline, the pager and the edit link stay out of it.
+import { getCollection } from 'astro:content'
+import Base from './Base.astro'
+import { sidebar } from '../lib/links.ts'
+import { copyFor, guideSection, localePath, type Locale } from '../i18n/index.ts'
+
+export interface Heading {
+  readonly depth: number
+  readonly slug: string
+  readonly text: string
+}
+
+interface Props {
+  locale: Locale
+  /** The locale-neutral route, for example '/guide/checks/'. */
+  path: string
+  title: string
+  description: string
+  /** Headings for the outline; the shallowest level sits at the margin. */
+  headings?: readonly Heading[]
+  /** Where the page's text is written, on GitHub. */
+  editHref: string
+  /** The document is in another language than the page's chrome. */
+  bodyLang?: string
+  /** Keep the page out of search indexes (a template preview). */
+  noindex?: boolean
+}
+const { locale, path, title, description, headings = [], editHref, bodyLang, noindex = false } = Astro.props
+const d = copyFor(locale).docs
+
+// The guide's sections follow its overview in the sidebar, so previous and next walk the
+// whole guide one section at a time. A section is named in the page's own language.
+const guide = (await getCollection('guide')).sort((a, b) => a.data.order - b.data.order)
+const sections = guide
+  .filter((entry) => entry.id !== 'overview')
+  .map((entry) => ({ label: guideSection(locale, entry.id).title, href: localePath(locale, `/guide/authoring/${entry.id}/`) }))
+
+const groups = sidebar(locale, sections)
+const here = localePath(locale, path)
+const flat = groups.flatMap((g) => g.items)
+const at = flat.findIndex((i) => i.href === here)
+const previous = at > 0 ? flat[at - 1] : undefined
+const next = at >= 0 && at < flat.length - 1 ? flat[at + 1] : undefined
+const current = at >= 0 ? flat[at] : undefined
+const outline = headings.filter((h) => h.depth === 2 || h.depth === 3)
+// A section of the guide has h3 headings under the page's h1, so the outline indents from
+// the shallowest heading it was given.
+const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
+---
+
+<Base locale={locale} path={path} title={title} description={description} noindex={noindex}>
+  <details class="docs-local" data-pagefind-ignore>
+    <summary>{current?.label ?? title}</summary>
+    <nav aria-label={title}>
+      {groups.map((g) => (
+        <div class="docs-group">
+          <p class="docs-group-title">{g.title}</p>
+          <ul>{g.items.map((i) => <li><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
+        </div>
+      ))}
+    </nav>
+  </details>
+  <div class={outline.length > 0 ? 'docs' : 'docs docs-wide'}>
+    <aside class="docs-sidebar" data-pagefind-ignore>
+      <nav class="docs-sidebar-in" aria-label={title}>
+        {groups.map((g) => (
+          <div class="docs-group">
+            <p class="docs-group-title">{g.title}</p>
+            <ul>{g.items.map((i) => <li><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
+          </div>
+        ))}
+      </nav>
+    </aside>
+    <article class="doc docs-content" lang={bodyLang} data-pagefind-body>
+      <slot />
+      <p class="docs-edit" lang={locale} data-pagefind-ignore>
+        <a href={editHref}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z" /></svg>
+          {d.editPage}
+        </a>
+      </p>
+      <nav class="docs-pager" aria-label={`${d.previous} / ${d.next}`} lang={locale} data-pagefind-ignore>
+        {previous ? <a class="docs-pager-prev" href={previous.href}><span>{d.previous}</span>{previous.label}</a> : <span></span>}
+        {next ? <a class="docs-pager-next" href={next.href}><span>{d.next}</span>{next.label}</a> : <span></span>}
+      </nav>
+    </article>
+    {outline.length > 0 && (
+      <aside class="docs-outline" data-pagefind-ignore>
+        <nav aria-label={d.onThisPage}>
+          <p class="docs-outline-title" lang={locale}>{d.onThisPage}</p>
+          <ul>{outline.map((h) => <li class={`depth-${h.depth - top + 2}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
+        </nav>
+      </aside>
+    )}
+  </div>
+</Base>

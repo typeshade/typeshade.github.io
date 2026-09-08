@@ -1,0 +1,218 @@
+---
+// One API reference page, laid out the way an MDN reference page is: the name, a one-sentence
+// summary, then Syntax, Parameters, Return value, Exceptions, Description, Examples, Targets
+// (the compatibility table), the members of an interface or class, In the guide, See also and
+// Source. A section with nothing to show is left out, and the outline lists the sections that
+// remain. The data is an ApiEntry (src/lib/api-types.ts), generated from the compiler at the
+// pinned commit; the words around it come from the dictionary (docs.api).
+import { Code } from 'astro-expressive-code/components'
+import Docs, { type Heading } from '../../layouts/Docs.astro'
+import Rich from '../Rich.astro'
+import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { facts } from '../../lib/examples.ts'
+import { slugify } from '../../lib/slug.ts'
+
+interface Props {
+  locale: Locale
+  /** The entry with its markdown fields rendered by the content loader (src/lib/api-loader.ts). */
+  entry: ApiEntry & { html: ApiEntryHtml }
+  /** The locale-neutral route of this page, for example '/api/clamp/'. */
+  path: string
+}
+const { locale, entry, path } = Astro.props
+const html = entry.html
+const t = copyFor(locale)
+const a = t.docs.api
+const category = a.categories[entry.category.slug] ?? { name: entry.category.name, summary: entry.category.summary }
+const callable = entry.kind === 'function' || entry.kind === 'constant'
+const heading = callable && entry.signatures.length > 0 ? `${entry.name}()` : entry.name
+const title = a.pageTitle(entry.name)
+const description = locale === 'en' ? entry.summary : a.pageDescription(entry.name, a.kinds[entry.kind], category.name, entry.summary)
+const sourceHref = `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/${entry.source.file}#L${entry.source.line}`
+
+const withHtml = entry.members.map((m, i) => ({ ...m, html: html.members[i] ?? '' }))
+const properties = withHtml.filter((m) => m.kind === 'property')
+const methods = withHtml.filter((m) => m.kind === 'method')
+const constructors = withHtml.filter((m) => m.kind === 'constructor')
+
+// The sections this page shows, in MDN's order; the outline follows the same list.
+const sections = [
+  { id: 'syntax', label: a.syntax, show: entry.signatures.length > 0 || entry.declaration.length > 0 },
+  { id: 'parameters', label: a.parameters, show: entry.parameters.length > 0 },
+  { id: 'return-value', label: a.returnValue, show: entry.returns !== null },
+  { id: 'exceptions', label: a.exceptions, show: entry.exceptions.length > 0 },
+  { id: 'description', label: a.descriptionHeading, show: entry.description.length > 0 },
+  { id: 'examples', label: a.examples, show: entry.examples.length > 0 },
+  { id: 'targets', label: a.targets, show: entry.targets.length > 0 },
+  { id: 'constructor', label: a.constructor, show: constructors.length > 0 },
+  { id: 'instance-properties', label: a.instanceProperties, show: properties.length > 0 },
+  { id: 'instance-methods', label: a.instanceMethods, show: methods.length > 0 },
+  { id: 'in-the-guide', label: a.inGuide, show: entry.guideSections.length > 0 },
+  { id: 'see-also', label: a.seeAlso, show: entry.seeAlso.length > 0 },
+  { id: 'source', label: a.source, show: true },
+].filter((s) => s.show)
+const headings: Heading[] = [
+  ...sections.map((s) => ({ depth: 2, slug: s.id, text: s.label })),
+  ...entry.examples.map((e) => ({ depth: 3, slug: `example-${slugify(e.title)}`, text: e.title })),
+]
+const supportLabel = (s: string) => a.support[s as keyof typeof a.support] ?? s
+const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames] ?? s
+---
+
+<Docs locale={locale} path={path} title={title} description={description} headings={headings} editHref={sourceHref} bodyLang="en" noindex={entry.preview === true}>
+  {entry.preview && <p class="api-preview" lang={locale}>{a.previewNote}</p>}
+  <nav class="api-crumbs" aria-label={a.breadcrumbs} lang={locale}>
+    <a href={localePath(locale, '/api/')}>{a.reference}</a>
+    <span aria-hidden="true">›</span>
+    <a href={localePath(locale, `/api/${entry.category.slug}/`)}>{category.name}</a>
+  </nav>
+  <h1><code>{heading}</code></h1>
+  <p class="api-kind" lang={locale}>{a.kindLine(a.kinds[entry.kind], category.name)}</p>
+  <p class="api-summary"><Fragment set:html={html.summary} /></p>
+  <p class="guide-note" lang={locale}><Rich text={a.note} locale={locale} /></p>
+
+  {sections.some((s) => s.id === 'syntax') && (
+    <section>
+      <h2 id="syntax" lang={locale}>{a.syntax}</h2>
+      {entry.signatures.length > 0
+        ? <Code code={entry.signatures.map((s) => s.text).join('\n')} lang="ts" />
+        : <Code code={entry.declaration} lang="ts" />}
+    </section>
+  )}
+
+  {entry.parameters.length > 0 && (
+    <section>
+      <h2 id="parameters" lang={locale}>{a.parameters}</h2>
+      <dl class="api-list">
+        {entry.parameters.map((p, i) => (
+          <>
+            <dt><code>{p.name}</code>{p.optional && <span class="api-optional" lang={locale}>{a.optional}</span>} <code class="api-type">{p.type}</code></dt>
+            <dd>{html.parameters[i] ? <Fragment set:html={html.parameters[i]} /> : <span class="api-empty" lang={locale}>{a.undocumented}</span>}</dd>
+          </>
+        ))}
+      </dl>
+    </section>
+  )}
+
+  {entry.returns && (
+    <section>
+      <h2 id="return-value" lang={locale}>{a.returnValue}</h2>
+      <p><code class="api-type">{entry.returns.type}</code></p>
+      {html.returns && <Fragment set:html={html.returns} />}
+    </section>
+  )}
+
+  {entry.exceptions.length > 0 && (
+    <section>
+      <h2 id="exceptions" lang={locale}>{a.exceptions}</h2>
+      <dl class="api-list">
+        {entry.exceptions.map((e, i) => (
+          <>
+            <dt><code>{e.name}</code></dt>
+            <dd><Fragment set:html={html.exceptions[i]} /></dd>
+          </>
+        ))}
+      </dl>
+    </section>
+  )}
+
+  {entry.description && (
+    <section>
+      <h2 id="description" lang={locale}>{a.descriptionHeading}</h2>
+      <Fragment set:html={html.description} />
+    </section>
+  )}
+
+  {entry.examples.length > 0 && (
+    <section>
+      <h2 id="examples" lang={locale}>{a.examples}</h2>
+      {entry.examples.map((e, i) => (
+        <section>
+          <h3 id={`example-${slugify(e.title)}`}>{e.title}</h3>
+          {html.examples[i] && <Fragment set:html={html.examples[i]} />}
+          <Code code={e.code} lang={e.lang ?? 'ts'} />
+        </section>
+      ))}
+    </section>
+  )}
+
+  {entry.targets.length > 0 && (
+    <section>
+      <h2 id="targets" lang={locale}>{a.targets}</h2>
+      <table class="api-targets">
+        <thead lang={locale}><tr><th>{a.target}</th><th>{a.supportHeading}</th><th>{a.notes}</th></tr></thead>
+        <tbody>
+          {entry.targets.map((s, i) => (
+            <tr>
+              <th scope="row">{targetLabel(s.target)}</th>
+              <td><span class={`api-support api-support-${s.support}`} lang={locale}>{supportLabel(s.support)}</span></td>
+              <td>{html.targets[i] ? <Fragment set:html={html.targets[i]} /> : ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  )}
+
+  {constructors.length > 0 && (
+    <section>
+      <h2 id="constructor" lang={locale}>{a.constructor}</h2>
+      <dl class="api-list">
+        {constructors.map((m) => (
+          <>
+            <dt><code>{m.type}</code></dt>
+            <dd>{m.html && <Fragment set:html={m.html} />}</dd>
+          </>
+        ))}
+      </dl>
+    </section>
+  )}
+
+  {properties.length > 0 && (
+    <section>
+      <h2 id="instance-properties" lang={locale}>{a.instanceProperties}</h2>
+      <dl class="api-list">
+        {properties.map((m) => (
+          <>
+            <dt><code>{m.name}</code>{m.optional && <span class="api-optional" lang={locale}>{a.optional}</span>}{m.readonly && <span class="api-optional" lang={locale}>{a.readonly}</span>} <code class="api-type">{m.type}</code></dt>
+            <dd>{m.html ? <Fragment set:html={m.html} /> : <span class="api-empty" lang={locale}>{a.undocumented}</span>}</dd>
+          </>
+        ))}
+      </dl>
+    </section>
+  )}
+
+  {methods.length > 0 && (
+    <section>
+      <h2 id="instance-methods" lang={locale}>{a.instanceMethods}</h2>
+      <dl class="api-list">
+        {methods.map((m) => (
+          <>
+            <dt><code>{m.name}</code> <code class="api-type">{m.type}</code></dt>
+            <dd>{m.html ? <Fragment set:html={m.html} /> : <span class="api-empty" lang={locale}>{a.undocumented}</span>}</dd>
+          </>
+        ))}
+      </dl>
+    </section>
+  )}
+
+  {entry.guideSections.length > 0 && (
+    <section lang={locale}>
+      <h2 id="in-the-guide">{a.inGuide}</h2>
+      <ul>{entry.guideSections.map((l) => <li><a href={localePath(locale, l.href)}>{l.label}</a></li>)}</ul>
+    </section>
+  )}
+
+  {entry.seeAlso.length > 0 && (
+    <section>
+      <h2 id="see-also" lang={locale}>{a.seeAlso}</h2>
+      <ul class="api-see-also">{entry.seeAlso.map((l) => <li><a href={localePath(locale, l.href)}><code>{l.label}</code></a></li>)}</ul>
+    </section>
+  )}
+
+  <section lang={locale}>
+    <h2 id="source">{a.source}</h2>
+    <p><a href={sourceHref}><code>{entry.source.file}</code>, {a.line(entry.source.line)}</a>, {a.atCommit(facts.pinnedCommit)}</p>
+  </section>
+</Docs>

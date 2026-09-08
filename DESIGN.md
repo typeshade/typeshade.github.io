@@ -29,17 +29,27 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 
 ## Colour
 
-- Light by default; dark follows `prefers-color-scheme`. Both palettes live in
-  `src/styles/global.css` and nowhere else.
-- One accent (green) for links, one red for diagnostics. No gradients, no
-  glows, no coloured card borders.
+- Light by default; dark follows `prefers-color-scheme`, or the switch in the header, which
+  is remembered in `localStorage`. Both palettes live in `src/styles/global.css` and nowhere
+  else; the code themes follow through `ec.config.mjs`.
+- One accent, TypeScript's blue (#3178c6), for links, the mark and the accent line of the
+  front page's headline; one red for diagnostics. No colour gradients, no glows, no coloured
+  card borders.
 - Tailwind is kept only for its `@theme` tokens and preflight. No utility classes appear in
   the markup.
 
 ## Layout
 
-- One content column, 740px, left-aligned, with code blocks and figures at the same width.
-  Sections are 48 to 56px apart. The only rule on the page sits above the footer.
+- A full-width header bar (56px, one rule under it) and a full-width footer on a soft ground
+  frame every page. Under 48rem the header's links, the language menu and the dark-mode switch
+  sit in a panel behind a menu button.
+- The front page is centred on a 960px measure: the name as the headline in the accent colour,
+  the category line under it ("The verifiable TypeScript shader library", the way react.dev
+  sets its one line under "React" and vuejs.org attaches "Progressive"), one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
+  it emits, three short points. Under 40rem the three links are a grid, Get started across the
+  top; the two code frames stack under 48rem. The layout follows vuejs.org's front page.
+- Every other page is one content column, 740px, left-aligned, with code blocks and figures at
+  the same width. Sections are 48 to 56px apart.
 - The one thing that should stand out is a rendered shader. Everything else is quiet.
 - Every canvas has a still image underneath it, captured at build time
   (`bun run capture:stills`), so the page never shows an empty frame.
@@ -52,21 +62,97 @@ The front page answers "what is it" in about 350 words, the length of comparable
 front pages (htmx, esbuild, wgpu, TypeGPU are 250 to 350). Everything that explains how or
 why lives on its own page.
 
-- `/`: the name, two sentences, one line of measured numbers, the live metaballs shader, Quick
-  start (the submodule command, the authored fragment, the WGSL it emits), a seven-line list of
-  what it does, links to the pages below, Status.
-- `/motivation/`: the two-shader problem, the hosts' migration guides, the survey figures, what
-  TypeShade does about it and what it does not do.
-- `/checks/`: the CPU oracle, the compile gate, the golden files, the same pass drawn on
-  WebGPU and on WebGL2 as one side-by-side figure, and the typed diagnostic with its reflected
-  layout.
-- `/examples/`: the examples, the print commands, the GLSL emit of the gradient pass, and the
-  emulated-double demo.
+- `/`: the name, the category line, one sentence, three links (Get started, Why TypeShade, Examples), a
+  bordered pill with the release state that links to the quick start, the live metaballs
+  shader, the fragment stage of the gradient example beside the WGSL it emits, and three
+  points.
+- `/guide/…`: the documentation, on the layout every documentation site uses (VitePress,
+  Docusaurus): a sidebar on the left with three groups, the document in the middle, and on a
+  wide screen an outline of the page on the right. Under 64rem the sidebar is a bar under the
+  header that names the current page. Every page carries its own headings in that outline,
+  and closes with a link to the file it is written in ("Edit this page", the VitePress
+  convention) and with previous and next.
+  - Introduction: `/guide/introduction/` (why one source; the hosts' migration guides; the
+    survey figures; what TypeShade does not do) and `/guide/quick-start/` (the submodule
+    command, the authored fragment, the WGSL it emits, the release state).
+  - Authoring: the compiler's AUTHORING.md, rendered from the vendored checkout at the pinned
+    commit. A custom content loader (`src/content.config.ts`) cuts the file at its top-level
+    headings and stores one entry per section, so the guide is one page per section:
+    `/guide/authoring/` is the overview and `/guide/authoring/<section>/` the rest, in the
+    file's order, which the sidebar and the pager follow. The package name is shown as its
+    release name; an environment variable keeps its real name, the one the pinned compiler
+    reads. No page sends a reader to GitHub for something the site can show; the edit
+    link points at the section's line in AUTHORING.md.
+  - Project: `/guide/checks/` (the oracle, the compile gate, the golden files, the same pass
+    on both backends, the typed diagnostic) and `/guide/examples/`, which opens with a table of
+    every example in the compiler's registry, grouped by category, each row linking to its
+    source file at the pinned commit and naming the targets it emits.
+- The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect.
 
-The header links to the three pages, the guide and GitHub; the footer repeats them and adds
-llms.txt. Headings are single nouns or short noun phrases: Motivation, Checks, Quick start.
+Search is Pagefind. The build runs it over `dist/` after Astro, so `dist/pagefind/` holds the
+index and the search UI, and nothing about them is committed. The index is built from the
+document itself: the article on a documentation page and the main element on the front page
+carry `data-pagefind-body`, and the header, the footer, the sidebar, the docs bar, the
+outline, the pager and the edit link carry `data-pagefind-ignore`. Pagefind keeps one index
+per `html lang`, so a Korean page is searched in Korean. The magnifier in the header opens a
+dialog that loads the index on its first open, and Pagefind's UI is dressed in the site's
+tokens through the CSS variables its stylesheet reads.
+
+The header is the one every library site has: the name on the left; Guide and Examples; then
+search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
+columns (Documentation, Project, Languages), then the licence, the copyright and the commit the
+page was built from. Headings are single nouns or short noun phrases: Motivation, Verification, Quick
+start.
+
+## Versions
+
+The header carries the repository's version as a menu (v0.0.1: Releases, Changelog, the pinned
+commit), the way VitePress sites do. The site documents one version, the one vendored at the
+pinned commit, and every number on it is measured there. When 0.1.0 ships and a later version
+diverges, older documentation moves under a path prefix (`/v0.1/guide/…`, the convention
+PixiJS uses with `/8.x/`), the unprefixed path stays the latest, and the version menu lists the
+versions. Vue's separate host per major (v2.vuejs.org) needs a domain per version and is not the
+plan.
+
+## Reference pages
+
+`/api/…` is the API reference, one page per public export of the compiler, generated at build
+time from the source at the pinned commit (`src/lib/api.ts`) and rendered by
+`src/components/pages/ApiReferencePage.astro`. Nothing on these pages is hand-written; a
+wrong sentence is fixed upstream in the compiler's JSDoc and arrives at the next pin.
+
+A page follows MDN's reference page, section by section, and leaves out a section with
+nothing to show:
+
+| MDN | Here | Where it comes from |
+| --- | --- | --- |
+| Breadcrumb | Reference › category › name | the category map in `src/lib/api.ts` |
+| Title | the export's name in code, `name()` for a callable | the export |
+| First paragraph | one plain sentence | the first sentence of the JSDoc |
+| Syntax | the signatures, one per overload; a declaration block for an interface, type or class | the declaration |
+| Parameters | name, type, optional, description | the signature and `@param` |
+| Return value | type and description | the signature and `@returns` |
+| Exceptions | the error class or code and when it is thrown | `@throws` and the diagnostics registry |
+| Description | the rest of the JSDoc as markdown, `{@link X}` as links to other pages | the JSDoc |
+| Examples | an h3 and a code block each | `@example` |
+| Browser compatibility | Targets: WGSL, GLSL ES 3.00, CPU oracle, each Supported, Emulated, Stub, Not supported or Does not apply, with the spelling the target emits | the intrinsics registry and the oracle's stub list |
+| Instance properties, Instance methods, Constructor | the members of an interface or class with their JSDoc | the declaration |
+| See also | other reference pages | `{@link}` targets and `@see` |
+| Specifications | In the guide: the guide sections that mention the name | `src/lib/authoring.ts` |
+| Source | file, line and commit on GitHub | the declaration |
+
+The sidebar shows the category index pages under a Reference group and, on a page of the
+reference, that category's members under it. On a Korean page the chrome is Korean and the
+body English, as on the guide; the note above the body says so. The contract between the
+generator and the page is `src/lib/api-types.ts`.
 
 ## Languages
+
+Each language lives under a path prefix (`/ko/…`), the convention MDN, MS Learn, the Astro docs
+and VitePress sites use; English, the source, has none. The header's language menu (globe
+icon, the current language, the others in a list) switches to the same page in the other
+language, and every page declares its alternates with `hreflang`. A host per language
+(ko.vuejs.org) needs DNS per language and is not the plan.
 
 - English is the source text, in `src/i18n/en.ts`. Every other language is a translation of
   it: `src/i18n/ko.ts` is typed against the English object, so a string missing in one
@@ -95,3 +181,4 @@ llms.txt. Headings are single nouns or short noun phrases: Motivation, Checks, Q
 - `src/lib/examples.ts`: every number, and that the pinned compiler still matches the copy.
 - `src/pages/llms.txt.ts`: every numeral in `/llms.txt` exists in `facts`.
 - `scripts/artifacts.mjs`: og.png, the icons and the stills match their committed hashes.
+- `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).
