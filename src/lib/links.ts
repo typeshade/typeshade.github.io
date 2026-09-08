@@ -2,6 +2,7 @@
 // at the pinned commit, so a link never points at a file the site's numbers were not
 // measured from. No consumer of the library is named or linked anywhere.
 import { facts } from './examples.ts'
+import { copyFor, localePath, type Locale } from '../i18n/index.ts'
 
 export interface Destination {
   readonly label: string
@@ -43,5 +44,14 @@ export const links = {
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
 
-/** The header's links. The footer repeats them and adds llms.txt. */
-export const navLinks = [links.motivation, links.checks, links.examples, links.guide, links.mirror] as const
+/** The header's links in one locale. The footer repeats them and adds llms.txt. */
+export function navLinks(locale: Locale): readonly Destination[] {
+  const t = copyFor(locale).nav
+  return [
+    { label: t.motivation, href: localePath(locale, links.motivation.href) },
+    { label: t.checks, href: localePath(locale, links.checks.href) },
+    { label: t.examples, href: localePath(locale, links.examples.href) },
+    { label: t.guide, href: links.guide.href },
+    { label: t.github, href: links.mirror.href },
+  ]
+}

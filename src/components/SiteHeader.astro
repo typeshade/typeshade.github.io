@@ -1,11 +1,20 @@
 ---
-// The name, the mark and the links the footer repeats.
+// The name, the mark, the page links, and the other languages this page exists in.
 import { MARK } from '../lib/mark.ts'
 import { navLinks } from '../lib/links.ts'
+import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts'
+
+interface Props {
+  locale: Locale
+  path: string
+}
+const { locale, path } = Astro.props
+const t = copyFor(locale)
+const others = locales.filter((l) => l !== locale)
 ---
 
 <header class="wrap site-header">
-  <a class="site-name" href="/">
+  <a class="site-name" href={localePath(locale, '/')}>
     <svg viewBox={MARK.viewBox} aria-hidden="true" focusable="false">
       <path
         d={MARK.d}
@@ -18,6 +27,7 @@ import { navLinks } from '../lib/links.ts'
     TypeShade
   </a>
   <nav class="site-links" aria-label="Primary">
-    {navLinks.map((l) => <a href={l.href}>{l.label}</a>)}
+    {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
+    {others.map((l) => <a href={localePath(l, path)} hreflang={l} lang={l} aria-label={`${t.nav.languages}: ${copyFor(l).name}`}>{copyFor(l).name}</a>)}
   </nav>
 </header>

@@ -29,6 +29,8 @@ jobs:
       - run: bun install --frozen-lockfile
       # The build starts with scripts/check-style.mjs; see DESIGN.md.
       - run: bun run build
+      # The translations are typed against the English copy; a missing string fails here.
+      - run: bun run check:types
       # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
       - run: bun run qa:links
       # Enable Pages with the Actions source on the first run. The custom domain is set once

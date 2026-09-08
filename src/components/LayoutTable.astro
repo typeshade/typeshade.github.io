@@ -4,21 +4,28 @@
 import { facts } from '../lib/examples.ts'
 import { typedError } from '../lib/typed-error.ts'
 import ScrollRegion from './ScrollRegion.astro'
+import { copyFor, type Locale } from '../i18n/index.ts'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const t = copyFor(locale).layout
 
 const { layout } = typedError()
 if (layout.fields.length < 2) throw new Error('[LayoutTable] the fixture block reflects fewer than two fields')
 const standard = facts.layoutStandards[0]
 ---
 
-<ScrollRegion label={`Reflected ${standard} layout`}>
+<ScrollRegion label={t.region}>
   <table class="layout-table">
-    <caption>reflect(), {standard}, {layout.size} bytes</caption>
+    <caption>{t.caption(layout.size)}</caption>
     <thead>
       <tr>
-        <th scope="col">field</th>
-        <th scope="col">type</th>
-        <th scope="col" data-align="end">offset</th>
-        <th scope="col" data-align="end">size</th>
+        <th scope="col">{t.field}</th>
+        <th scope="col">{t.type}</th>
+        <th scope="col" data-align="end">{t.offset}</th>
+        <th scope="col" data-align="end">{t.size}</th>
       </tr>
     </thead>
     <tbody>

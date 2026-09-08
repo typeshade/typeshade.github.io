@@ -1,0 +1,19 @@
+---
+import Base from '../../layouts/Base.astro'
+import Rich from '../Rich.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const n = copyFor(locale).notFound
+---
+
+<Base locale={locale} path="/404" title={n.title} noAlternates>
+  <article class="wrap doc">
+    <h1>{n.h1}</h1>
+    <p>{n.p}</p>
+    <p><Rich text={n.links} locale={locale} /></p>
+  </article>
+</Base>

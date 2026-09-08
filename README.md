@@ -23,6 +23,7 @@ asks you to update the copy.
 | --- | --- |
 | `/` | the front page, about 350 words |
 | `/motivation`, `/checks`, `/examples` | the longer material the front page links to |
+| `/ko/`, `/ko/motivation`, `/ko/checks`, `/ko/examples` | the same four pages in Korean; see DESIGN.md, Languages |
 | `/404.html` | not found |
 | `/llms.txt` | a plain-text summary generated from the same records as the page |
 | `/og/` | the social card. Only exists so `scripts/capture-og.ts` can photograph it; removed from `dist/` on every build |

@@ -6,6 +6,7 @@
 import { heroShader, heroPayload } from '../lib/hero-shader.ts'
 import type { StateStrings } from '../lib/shader-runtime.ts'
 import { facts } from '../lib/examples.ts'
+import { copyFor, type Locale } from '../i18n/index.ts'
 
 /** Caption text by what drew the frame. `neutral` is what the server renders. */
 export interface CanvasText {
@@ -17,6 +18,7 @@ export interface CanvasText {
 }
 
 interface Props {
+  locale: Locale
   example: string
   caption: CanvasText
   aspect: '3/1' | '2/1' | '16/9' | '3/2'
@@ -35,6 +37,7 @@ interface Props {
 }
 
 const {
+  locale,
   example,
   caption,
   aspect,
@@ -55,14 +58,7 @@ const expand = (t: CanvasText): StateStrings => ({
   'still-webgl2': t.reduced ?? t.webgl2,
 })
 
-const subject = `${data.title} shader, written in TypeScript and compiled by TypeShade`
-const aria: StateStrings = {
-  webgpu: `${subject} to WGSL, running on WebGPU.`,
-  webgl2: `${subject} to ${facts.glslTarget}, running on WebGL2.`,
-  'still-webgpu': `${subject} to WGSL, one frame drawn on WebGPU.`,
-  'still-webgl2': `${subject} to ${facts.glslTarget}, one frame drawn on WebGL2.`,
-  none: `${subject}, rendered at build time.`,
-}
+const aria: StateStrings = copyFor(locale).canvas.aria(data.title)
 const labels = { caption: expand(caption), aria }
 
 // A split figure's halves are named in its caption, so the example has to declare them.

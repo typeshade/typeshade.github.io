@@ -66,6 +66,26 @@ why lives on its own page.
 The header links to the three pages, the guide and GitHub; the footer repeats them and adds
 llms.txt. Headings are single nouns or short noun phrases: Motivation, Checks, Quick start.
 
+## Languages
+
+- English is the source text, in `src/i18n/en.ts`. Every other language is a translation of
+  it: `src/i18n/ko.ts` is typed against the English object, so a string missing in one
+  language fails the type check.
+- English lives at `/`, other languages under their code (`/ko/`). Route files in
+  `src/pages` and `src/pages/ko` are one line each; the page itself is a component in
+  `src/components/pages` that takes a locale.
+- Inline links in copy are written `[text](key)`, inline code in backticks; `Rich.astro`
+  renders them. `key` is a record in `src/lib/links.ts` or a page name, which the locale
+  prefixes.
+- Numbers are interpolated from `facts` in every language. Captions, accessible names, table
+  headers and code-frame labels are in the dictionary too.
+- Every page links its other languages in the header and carries `hreflang` alternates.
+  `/llms.txt`, `/404` and the social card are English only.
+- Korean text uses the system's Korean face beside Plex for Latin, a 1.75 line height and
+  `word-break: keep-all`. Adding a language: add `src/i18n/<code>.ts`, the code to `locales`
+  in `src/i18n/index.ts` and `astro.config.mjs`, and a `src/pages/<code>/` directory with
+  the four one-line route files.
+
 ## Things the build checks
 
 - `scripts/check-style.mjs`: the voice rules above, over `src/`, `scripts/` and the two Markdown files.

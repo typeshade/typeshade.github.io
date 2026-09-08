@@ -9,6 +9,7 @@
     "build": "node scripts/check-style.mjs && astro build",
     "preview": "astro preview",
     "check:style": "node scripts/check-style.mjs",
+    "check:types": "tsc --noEmit -p tsconfig.json",
     "build:icons": "bun scripts/build-icons.ts",
     "capture:stills": "STILLS_REBASELINE=1 astro build && bun scripts/capture-stills.ts",
     "capture:og": "OG_REBASELINE=1 astro build && bun scripts/capture-og.ts",

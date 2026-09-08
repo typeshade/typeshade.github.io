@@ -192,6 +192,10 @@ if (drift.length > 0) {
 }
 // The page says the next version is not published. When the compiler reaches it, that copy
 // has to change, so the build stops here instead of printing a stale sentence.
-if (facts.published) {
-  throw new Error(`[examples] the compiler is at ${facts.mirrorVersion}; the page still says ${facts.nextVersion} is unreleased`)
+const reached = ((a, b) => {
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i]! > b[i]!
+  return true
+})(semver(mirrorVersion), semver(nextVersion))
+if (reached) {
+  throw new Error(`[examples] the compiler is at ${mirrorVersion}; the page still says ${nextVersion} is unreleased`)
 }
