@@ -11,6 +11,7 @@
     "check:style": "node scripts/check-style.mjs",
     "check:types": "tsc --noEmit -p tsconfig.json",
     "build:icons": "bun scripts/build-icons.ts",
+    "build:fonts": "python3 scripts/build-fonts.py",
     "capture:stills": "STILLS_REBASELINE=1 astro build && bun scripts/capture-stills.ts",
     "capture:og": "OG_REBASELINE=1 astro build && bun scripts/capture-og.ts",
     "capture": "bun run build:icons && bun run capture:stills && bun run capture:og",

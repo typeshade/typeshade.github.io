@@ -41,6 +41,7 @@ shader changes:
 | `bun run capture:stills` | one rendered frame per mounted example, shown under each canvas |
 | `bun run capture:og` | `public/og.png`, a screenshot of `/og/` |
 | `bun run capture` | all three, in that order |
+| `bun run build:fonts` | `ibm-plex-sans-kr-400.woff2`, `-600.woff2` and their sidecar: IBM Plex Sans KR subset to the KS X 1001 syllables plus every character the translated copy uses. Needs `pip install fonttools brotli`. The build fails if the Korean copy uses a character the subset lacks |
 
 The capture scripts use Playwright, which is not a dependency of this site. Point them at an
 installation:

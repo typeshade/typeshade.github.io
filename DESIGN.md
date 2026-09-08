@@ -20,7 +20,7 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 
 ## Type
 
-- Text: IBM Plex Sans (variable), self-hosted, latin subset.
+- Text: IBM Plex Sans (variable), self-hosted, latin subset. Korean: IBM Plex Sans KR 400 and 600.
 - Code and identifiers: IBM Plex Mono 400 and 500.
 - Body 16px / 1.65. h3 18px, h2 24px, h1 32 to 36px. The column holds about 72
   characters of prose.
@@ -81,8 +81,11 @@ llms.txt. Headings are single nouns or short noun phrases: Motivation, Checks, Q
   headers and code-frame labels are in the dictionary too.
 - Every page links its other languages in the header and carries `hreflang` alternates.
   `/llms.txt`, `/404` and the social card are English only.
-- Korean text uses the system's Korean face beside Plex for Latin, a 1.75 line height and
-  `word-break: keep-all`. Adding a language: add `src/i18n/<code>.ts`, the code to `locales`
+- Korean text is set in IBM Plex Sans KR, the Korean companion to Plex Sans, at 400 and 600,
+  subset to the 2,350 KS X 1001 syllables plus every character the copy uses (about 110 KB a
+  weight, loaded on Korean pages only). `bun run build:fonts` regenerates the subset and its
+  sidecar; the build fails if the copy uses a character the subset lacks. Line height 1.8,
+  `word-break: keep-all`, headings without negative tracking. Adding a language: add `src/i18n/<code>.ts`, the code to `locales`
   in `src/i18n/index.ts` and `astro.config.mjs`, and a `src/pages/<code>/` directory with
   the four one-line route files.
 

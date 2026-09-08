@@ -61,6 +61,8 @@ const jsonLd = {
     <link rel="mask-icon" href="/mask-icon.svg" color="#1f6f43" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-latin-wght-normal.woff2" crossorigin />
+    {locale === 'ko' && <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-kr-400.woff2" crossorigin />}
+    {locale === 'ko' && <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-kr-600.woff2" crossorigin />}
     <meta property="og:site_name" content="TypeShade" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />

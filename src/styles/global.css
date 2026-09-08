@@ -94,15 +94,37 @@
     U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* Korean pages: Latin stays in Plex, Hangul comes from the system's own Korean face, with
-   the taller line height and the no-mid-word breaking Hangul needs. */
+/* IBM Plex Sans KR, the Korean companion to Plex Sans: two weights, subset to the KS X 1001
+   syllables plus every character the copy uses (scripts/build-fonts.py). The unicode-range
+   keeps it off pages with no Hangul; Latin on Korean pages still comes from Plex Sans. */
+@font-face {
+  font-family: 'IBM Plex Sans KR';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-kr-400.woff2') format('woff2');
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7AF, U+3000-303F, U+FF00-FFEF;
+}
+@font-face {
+  font-family: 'IBM Plex Sans KR';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-kr-600.woff2') format('woff2');
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7AF, U+3000-303F, U+FF00-FFEF;
+}
+
+/* Korean pages: Latin in Plex Sans, Hangul in Plex Sans KR, with the taller line height
+   and the no-mid-word breaking Hangul needs. Plex KR sits a little high on the Latin
+   baseline, so body text drops half a size and headings lose their negative tracking. */
 :lang(ko) body, :lang(ko) .doc {
   font-family: 'IBM Plex Sans Variable', 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
-  line-height: 1.75;
+  line-height: 1.8;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
-:lang(ko) h1, :lang(ko) h2, :lang(ko) h3 { letter-spacing: 0 }
+:lang(ko) h1, :lang(ko) h2, :lang(ko) h3 { letter-spacing: -0.005em; line-height: 1.35 }
+:lang(ko) .figure-caption, :lang(ko) .site-links { line-height: 1.65 }
 
 /* Base */
 html { background: var(--color-ground) }
