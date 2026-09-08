@@ -5,6 +5,7 @@ import { defineConfig } from 'astro/config'
 import sitemap from '@astrojs/sitemap'
 import tailwindcss from '@tailwindcss/vite'
 import expressiveCode from 'astro-expressive-code'
+import remarkPackageName from './src/lib/remark-package-name.mjs'
 import { verifyArtifacts } from './scripts/artifacts.mjs'
 import { verifyKoreanFonts } from './scripts/fonts.mjs'
 
@@ -49,5 +50,6 @@ export default defineConfig({
       serialize: (item) => ({ ...item, lastmod }),
     }),
   ],
+  markdown: { remarkPlugins: [remarkPackageName] },
   vite: { plugins: [tailwindcss()] },
 })

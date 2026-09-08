@@ -57,6 +57,8 @@ for (const file of pages) {
   if (imagesWithoutAlt) fail(`${imagesWithoutAlt} images without alt`)
   if (noSlash.length) fail(`links without a trailing slash: ${noSlash.join(', ')}`)
   if (!html.includes('application/ld+json')) fail('no JSON-LD')
+  // The site names no consumer of the library. The guide keeps one env var with the old prefix.
+  if (/x-?gis/i.test(html.replace(/XGIS_SHADER_DSL_TRACE/g, ''))) fail('names the former host')
   if (!/property="og:image" content="https:/.test(html)) fail('no absolute og:image')
 
   if (isNotFound) {

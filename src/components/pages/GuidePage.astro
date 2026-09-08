@@ -1,0 +1,31 @@
+---
+// The authoring guide, rendered from the compiler's AUTHORING.md at the pinned commit. The
+// body is English on every locale; the note, the contents heading and the chrome follow the
+// page's language.
+import { getCollection, render } from 'astro:content'
+import Base from '../../layouts/Base.astro'
+import Rich from '../Rich.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const g = copyFor(locale).guide
+const [entry] = await getCollection('guide')
+if (!entry) throw new Error('[guide] vendor/shader-dsl/AUTHORING.md is not in the collection')
+const { Content, headings } = await render(entry)
+const sections = headings.filter((h) => h.depth === 2)
+if (sections.length < 5) throw new Error(`[guide] only ${sections.length} sections; the guide changed shape`)
+---
+
+<Base locale={locale} path="/guide/" title={g.title} description={g.description}>
+  <article class="wrap doc guide" lang="en">
+    <p class="guide-note" lang={locale}><Rich text={g.note} locale={locale} /></p>
+    <nav class="guide-toc" aria-label={g.contents}>
+      <p class="guide-toc-title" lang={locale}>{g.contents}</p>
+      <ol>{sections.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ol>
+    </nav>
+    <Content />
+  </article>
+</Base>

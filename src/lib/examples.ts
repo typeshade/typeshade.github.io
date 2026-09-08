@@ -6,13 +6,13 @@ import path from 'node:path'
 import { examples } from '../../vendor/shader-dsl/examples/index.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 
-const rawSources = import.meta.glob('../../vendor/shader-dsl/examples/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>
+// Read with fs from the site root, without Vite's glob, so scripts run by bun
+// (check-copy.ts) can import this module too.
+const examplesDir = path.resolve('vendor/shader-dsl/examples')
 const sourceByFile = Object.fromEntries(
-  Object.entries(rawSources).map(([p, src]) => [p.split('/').pop()!, src]),
+  readdirSync(examplesDir)
+    .filter((f) => f.endsWith('.ts'))
+    .map((f) => [f, readFileSync(path.join(examplesDir, f), 'utf8')]),
 )
 
 /** Text from `from` (inclusive) to the first `to` after it (inclusive), else ''. */

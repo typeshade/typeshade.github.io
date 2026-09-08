@@ -17,7 +17,8 @@ export const links = {
   motivation: { label: 'Motivation', href: '/motivation/' },
   checks: { label: 'Checks', href: '/checks/' },
   examples: { label: 'Examples', href: '/examples/' },
-  guide: { label: 'Authoring guide', href: `${at('AUTHORING.md')}#1-the-authoring-surface` },
+  guide: { label: 'Authoring guide', href: '/guide/' },
+  guideSource: { label: 'AUTHORING.md', href: at('AUTHORING.md') },
   mirror: { label: 'GitHub', href: mirror },
   docs: { label: 'README', href: at('README.md') },
   npm: { label: 'typeshade', href: 'https://www.npmjs.com/package/typeshade' },
@@ -52,7 +53,7 @@ export function navLinks(locale: Locale): readonly Destination[] {
     { label: t.motivation, href: localePath(locale, links.motivation.href) },
     { label: t.checks, href: localePath(locale, links.checks.href) },
     { label: t.examples, href: localePath(locale, links.examples.href) },
-    { label: t.guide, href: links.guide.href },
+    { label: t.guide, href: localePath(locale, links.guide.href) },
     { label: t.github, href: links.mirror.href },
   ]
 }

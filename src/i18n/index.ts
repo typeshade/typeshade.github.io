@@ -10,7 +10,7 @@ export const defaultLocale: Locale = 'en'
 
 export type Copy = typeof en
 
-const copies: Record<Locale, Copy> = { en, ko }
+export const copies: Record<Locale, Copy> = { en, ko }
 
 export const copyFor = (locale: Locale): Copy => copies[locale]
 

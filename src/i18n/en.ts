@@ -180,6 +180,12 @@ export const en = {
     },
   },
 
+  guide: {
+    title: 'TypeShade authoring guide: writing shaders in TypeScript',
+    description: 'The authoring surface of TypeShade, section by section: values, control flow, layouts, diagnostics, emulated f64, production emit and migrating a GLSL shader.',
+    contents: 'Contents',
+    note: `Rendered from [AUTHORING.md](guideSource) at commit ${facts.pinnedCommit}. The package is imported here by its ${facts.nextVersion} name, \`typeshade\`.`,
+  },
   notFound: {
     title: 'Page not found, TypeShade',
     description: 'There is nothing at this address on typeshade.dev.',

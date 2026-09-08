@@ -23,7 +23,8 @@ asks you to update the copy.
 | --- | --- |
 | `/` | the front page: the headline, the live shader, three points, Quick start, Status |
 | `/motivation/`, `/checks/`, `/examples/` | the longer material the front page links to |
-| `/ko/`, `/ko/motivation/`, `/ko/checks/`, `/ko/examples/` | the same four pages in Korean; see DESIGN.md, Languages |
+| `/guide/` | the authoring guide, rendered from `vendor/shader-dsl/AUTHORING.md` at the pinned commit |
+| `/ko/`, `/ko/motivation/`, `/ko/checks/`, `/ko/examples/`, `/ko/guide/` | the same pages in Korean; the guide's body stays English. See DESIGN.md, Languages |
 | `/404.html` | not found |
 | `/llms.txt` | a plain-text summary generated from the same records as the page |
 | `/og/` | the social card. Only exists so `scripts/capture-og.ts` can photograph it; removed from `dist/` on every build |
@@ -56,6 +57,12 @@ PLAYWRIGHT_CHROMIUM=/path/to/chrome \
 
 - `bun run check:style` runs at the start of every build. It flags the writing patterns
   listed in `DESIGN.md`.
+- `bun run check:copy` runs next. Every translated string is compared with its English one:
+  the same numerals, link keys and code spans; no label wider than about 1.35 times the
+  English label it replaces; and none of the translation tells the
+  [im-not-ai](https://github.com/epoko77-ai/im-not-ai) rulebook makes countable.
+- The build then clears `node_modules/.astro`, where Astro caches the rendered guide, so a
+  change to `src/lib/remark-package-name.mjs` always reaches `dist/`.
 - `bun run qa:links` resolves every off-site URL in `dist/`. A 404 or 410 fails the deploy;
   a 403, 429 or timeout only warns, because a rate-limited runner cannot tell a dead URL from a
   live one.

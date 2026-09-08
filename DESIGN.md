@@ -68,6 +68,10 @@ why lives on its own page.
   layout.
 - `/examples/`: the examples, the print commands, the GLSL emit of the gradient pass, and the
   emulated-double demo.
+- `/guide/`: the compiler's AUTHORING.md, rendered from the vendored checkout at the pinned
+  commit (an Astro content collection over `vendor/shader-dsl`), with a contents list. The
+  package name is shown as its release name. No page sends a reader to GitHub for something
+  the site can show.
 
 The header links to the three pages, the guide and GitHub. The footer is a site map in three
 columns (Documentation, Project, Languages), then the licence, the copyright and the commit the

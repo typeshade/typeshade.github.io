@@ -12,7 +12,7 @@ interface Props {
 }
 const { locale, path } = Astro.props
 const t = copyFor(locale)
-const page = (key: 'motivation' | 'checks' | 'examples') => localePath(locale, links[key].href)
+const page = (key: 'motivation' | 'checks' | 'examples' | 'guide') => localePath(locale, links[key].href)
 const columns = [
   {
     h: t.footer.docs,
@@ -20,7 +20,7 @@ const columns = [
       { label: t.nav.motivation, href: page('motivation') },
       { label: t.nav.checks, href: page('checks') },
       { label: t.nav.examples, href: page('examples') },
-      { label: t.nav.guide, href: links.guide.href },
+      { label: t.nav.guide, href: page('guide') },
       { label: t.footer.readme, href: links.docs.href },
     ],
   },

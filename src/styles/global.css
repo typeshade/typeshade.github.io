@@ -282,6 +282,24 @@ body {
 .doc li { margin-block-start: 8px; padding-inline-start: 4px }
 .doc li::marker { color: var(--color-text-3) }
 
+/* The rendered guide: tables scroll inside themselves, quotes get a rule, the contents list
+   sits above the document's own headings */
+.doc table { display: block; overflow-x: auto; margin-block-start: 18px; border-collapse: collapse; font-size: var(--text-meta); line-height: var(--text-meta--line-height) }
+.doc th, .doc td { padding: 6px 16px 6px 0; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-line-1) }
+.doc th { font-weight: 600; color: var(--color-text-2) }
+.doc blockquote { margin-block-start: 16px; padding-inline-start: 16px; border-inline-start: 3px solid var(--color-line-2); color: var(--color-text-2) }
+.doc hr { margin-block: 40px 0; border: 0; border-block-start: 1px solid var(--color-line-1) }
+.doc strong { font-weight: 600 }
+.doc h2 { margin-block-start: var(--section-gap) }
+.doc h1 + h2, .doc .guide-toc + h2 { margin-block-start: 24px }
+.guide-note { font-size: var(--text-meta); color: var(--color-text-3) }
+.guide-toc { margin-block-start: 16px; padding: 16px 20px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-surface-1) }
+.guide-toc-title { font-weight: 600; font-size: var(--text-meta) }
+.guide-toc ol { margin-block-start: 6px; padding-inline-start: 22px; font-size: var(--text-meta) }
+.guide-toc li { margin-block-start: 4px }
+.guide-toc a { color: var(--color-text-2) }
+.guide-toc a:hover { color: var(--color-text-1) }
+
 /* Code blocks sit at the column width and scroll inside themselves */
 .doc .expressive-code { margin-block-start: 18px }
 .figure .expressive-code { margin-block-start: 0 }
