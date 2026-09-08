@@ -12,7 +12,7 @@ const mirror = facts.mirrorUrl
 const at = (file: string): string => `${mirror}/blob/${facts.pinnedCommit}/${file}`
 
 export const links = {
-  guide: { label: 'Get started', href: `${mirror}/blob/main/AUTHORING.md#1-the-authoring-surface` },
+  guide: { label: 'Get started', href: `${at('AUTHORING.md')}#1-the-authoring-surface` },
   mirror: { label: 'GitHub', href: mirror },
   docs: { label: 'Docs', href: at('README.md') },
   npm: { label: `npm: typeshade (reserved for ${facts.nextVersion})`, href: 'https://www.npmjs.com/package/typeshade' },
@@ -39,3 +39,11 @@ export const links = {
   pixijsMigration: { label: 'PixiJS v8 migration guide', href: 'https://pixijs.com/8.x/guides/migrations/v8' },
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
+
+/** The four destinations the header and the footer both list, with the text the page uses. */
+export const navLinks = [
+  { text: 'Guide', href: links.guide.href },
+  { text: 'Examples', href: links.examplesDir.href },
+  { text: 'GitHub', href: links.mirror.href },
+  { text: 'llms.txt', href: links.llms.href },
+] as const

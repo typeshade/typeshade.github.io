@@ -13,7 +13,7 @@ const TITLE = 'typed-error-shader.ts'
   <CodeFrame label={`Shader with a misspelt field, ${TITLE}`}>
     <Code code={snippet} lang="ts" title={TITLE} meta={`{${wrongLine}}`} />
   </CodeFrame>
-  <p class="diagnostic mt-3">
+  <p class="diagnostic">
     <b>error TS{diagnostic.code}</b> at line {diagnostic.line}, column {diagnostic.column}: {diagnostic.message}
     {diagnostic.truncated && <span>(first line of a longer message)</span>}
   </p>

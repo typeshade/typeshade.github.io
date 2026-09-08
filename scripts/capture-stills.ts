@@ -7,7 +7,7 @@ import { existsSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchChromium } from './playwright.mjs'
-import { STILL_EXAMPLES, writeHashed } from './artifacts.mjs'
+import { STILLS, writeHashed } from './artifacts.mjs'
 import { serveDist } from './serve-dist.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -34,12 +34,16 @@ try {
     { timeout: 30_000 },
   )
   // Hide the previous stills so the screenshot is the canvas alone.
-  await page.addStyleTag({ content: '.figure-frame > img, .figure-split, .figure-labels { visibility: hidden }' })
+  await page.addStyleTag({ content: '.figure-frame > img, .figure-split { visibility: hidden }' })
 
-  for (const id of STILL_EXAMPLES) {
-    const frame = page.locator(`[data-shader-canvas][data-example="${id}"]`).first()
+  for (const { id, example, forceWebGl2, backend: expected } of STILLS) {
+    const forced = forceWebGl2 ? '[data-force-webgl2]' : ':not([data-force-webgl2])'
+    const frame = page.locator(`[data-shader-canvas][data-example="${example}"]${forced}`).first()
     const backend = await frame.locator('canvas').getAttribute('data-backend')
     if (backend === 'none') throw new Error(`[stills] '${id}' did not draw on any backend`)
+    if (expected && backend !== expected) {
+      throw new Error(`[stills] '${id}' was drawn on ${backend}; its caption says ${expected}`)
+    }
     const png = (await frame.screenshot({ type: 'png' })) as Buffer
     const width = png.readUInt32BE(16)
     const height = png.readUInt32BE(20)

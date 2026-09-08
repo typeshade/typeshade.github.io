@@ -5,7 +5,6 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { examples } from '../../vendor/shader-dsl/examples/index.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
-import { heroPayload } from './hero-shader.ts'
 
 const rawSources = import.meta.glob('../../vendor/shader-dsl/examples/*.ts', {
   query: '?raw',
@@ -25,7 +24,7 @@ function between(text: string, from: string, to: string): string {
 }
 
 /** Line count as an editor gutter shows it, including the empty line after a trailing newline. */
-const countLines = (text: string): number => text.split('\n').length
+const countLines = (text: string): number => text.trimEnd().split('\n').length
 
 const ex = examples.find((e) => e.id === 'gradient')
 if (!ex) throw new Error("example 'gradient' is not in the registry")
@@ -47,9 +46,14 @@ export const hero = {
     wgslLines: countLines(wgsl),
     glslVertexLines: countLines(glslVertex),
     glslFragmentLines: countLines(glsl),
-    /** Measured on the exact string the page inlines. */
-    payloadBytes: new TextEncoder().encode(heroPayload(ex.id)).length,
   },
+}
+
+/** The source file of one registry example, so a caption can name it. */
+export function exampleFile(id: string): string {
+  const e = examples.find((x) => x.id === id)
+  if (!e) throw new Error(`[examples] no example '${id}' in the registry`)
+  return e.file
 }
 
 const vendorRoot = path.resolve(process.cwd(), 'vendor/shader-dsl')
@@ -118,11 +122,6 @@ const semver = (v: string): [number, number, number] => {
   if (!m) throw new Error(`[examples] the mirror's version '${v}' is not semver`)
   return [Number(m[1]), Number(m[2]), Number(m[3])]
 }
-const gte = (a: string, b: string): boolean => {
-  const [x, y] = [semver(a), semver(b)]
-  for (let i = 0; i < 3; i++) if (x[i]! !== y[i]!) return x[i]! > y[i]!
-  return true
-}
 const mirrorVersion = pkg.version
 /** The next minor above the mirror's own version: the release the page says is not out yet. */
 const nextVersion = `${semver(mirrorVersion)[0]}.${semver(mirrorVersion)[1] + 1}.0`
@@ -167,18 +166,14 @@ export const facts = {
   mirrorPath: gitmodulesField('path'),
   mirrorVersion,
   nextVersion,
-  /** True once the mirror's own version reaches the release the page names. */
-  published: gte(mirrorVersion, nextVersion),
   splitLabels: examples.find((e) => e.id === 'fp64-deep-zoom')?.splitLabels ?? null,
   deepZoomOrigin: deepZoomOrigin(),
   /** Third-party survey figures. They describe the market as a whole. */
   survey: {
-    title: 'Khronos Shader Ecosystem Survey 2026',
+    title: 'Khronos 2026 Real-Time Shading Ecosystem Survey',
     figure64: 64,
     figure10: 10,
     n: 400,
-    fieldStart: '2026-06-16',
-    fieldEnd: '2026-07-10',
     url: 'https://www.khronos.org/blog/shader-ecosystem-survey-results-2026',
   },
 }
@@ -194,4 +189,9 @@ if (facts.pinnedCommit === pinned.commit) {
 if (facts.testFiles < pinned.testFiles) drift.push(`testFiles ${facts.testFiles} < ${pinned.testFiles}`)
 if (drift.length > 0) {
   throw new Error(`[examples] the pinned mirror no longer matches the copy: ${drift.join('; ')}`)
+}
+// The page says the next version is not published. When the compiler reaches it, that copy
+// has to change, so the build stops here instead of printing a stale sentence.
+if (facts.published) {
+  throw new Error(`[examples] the compiler is at ${facts.mirrorVersion}; the page still says ${facts.nextVersion} is unreleased`)
 }

@@ -1,5 +1,5 @@
 /* typeshade.dev styles. Tokens, fonts, base rules, then one block per component.
-   The palette follows the visitor's colour scheme; light is the default. */
+   The page is one column of prose, code and figures; light is the default palette. */
 
 @import 'tailwindcss';
 
@@ -24,15 +24,15 @@
   --text-code: 0.8125rem;
   --text-code--line-height: 1.6;
   --text-meta: 0.875rem;
-  --text-meta--line-height: 1.6;
+  --text-meta--line-height: 1.55;
   --text-ui: 1rem;
-  --text-ui--line-height: 1.6;
-  --text-lead: 1.125rem;
-  --text-lead--line-height: 1.6;
-  --text-h2: 1.75rem;
-  --text-h2--line-height: 1.2;
-  --text-h1: 2.25rem;
-  --text-h1--line-height: 1.12;
+  --text-ui--line-height: 1.65;
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.35;
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.25;
+  --text-h1: 2rem;
+  --text-h1--line-height: 1.15;
 
   --breakpoint-sm: 40rem;
   --breakpoint-md: 48rem;
@@ -41,16 +41,14 @@
 
 :root {
   color-scheme: light dark;
-  --content: min(1080px, 100vw - 2 * var(--gutter-x));
   --gutter-x: 20px;
-  --measure: 62ch;
+  /* One column, about 72 characters of prose wide. Code and figures share it. */
+  --content: min(740px, 100vw - 2 * var(--gutter-x));
+  --section-gap: 48px;
   --ring: 0 0 0 2px var(--color-ground), 0 0 0 4px var(--color-accent);
 }
-@media (min-width: 40rem) { :root { --gutter-x: 32px } }
-@media (min-width: 48rem) {
-  :root { --text-h1: 3rem; --text-h2: 2rem; --text-lead: 1.25rem }
-}
-@media (min-width: 64rem) { :root { --gutter-x: 48px; --text-h1: 3.5rem } }
+@media (min-width: 40rem) { :root { --gutter-x: 32px; --section-gap: 56px } }
+@media (min-width: 48rem) { :root { --text-h1: 2.25rem } }
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -116,28 +114,7 @@ body {
   border-radius: inherit;
 }
 
-h1 { font-size: var(--text-h1); line-height: var(--text-h1--line-height); font-weight: 600; letter-spacing: -0.02em; text-wrap: balance }
-h2 { font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.015em; text-wrap: balance }
-p { max-inline-size: var(--measure) }
-.lead { font-size: var(--text-lead); line-height: var(--text-lead--line-height); color: var(--color-text-2) }
-.meta { font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-3) }
-.mono { font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height) }
 .wrap { inline-size: var(--content); margin-inline: auto }
-.section { padding-block: 56px }
-@media (min-width: 64rem) { .section { padding-block: 80px } }
-.section + .section { border-block-start: 1px solid var(--color-line-1) }
-
-/* Links */
-.link {
-  color: var(--color-accent);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
-}
-.link:hover { text-decoration-thickness: 2px }
-.prose a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px }
-.prose a:hover { text-decoration-thickness: 2px }
-.prose code { font-family: var(--font-mono); font-size: 0.92em }
 
 /* Skip link */
 .skip {
@@ -148,51 +125,50 @@ p { max-inline-size: var(--measure) }
 }
 .skip:focus-visible { clip-path: none }
 
-/* Header */
-.nav {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  min-block-size: 60px; padding-inline: calc((100vw - var(--content)) / 2);
-  border-block-end: 1px solid var(--color-line-1);
+/* Header: the mark, the name, and the four links the footer repeats */
+.site-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 8px 24px; padding-block: 20px;
 }
-.nav-wordmark {
-  display: inline-flex; align-items: center; gap: 8px; min-block-size: 40px;
+.site-name {
+  display: inline-flex; align-items: center; gap: 8px;
   color: var(--color-text-1); font-weight: 600; text-decoration: none;
 }
-.nav-mark { inline-size: 20px; block-size: 20px; flex: none }
-.nav nav { display: flex; align-items: center; gap: 4px }
-.nav nav a {
-  display: inline-flex; align-items: center; min-block-size: 40px; padding-inline: 10px;
-  color: var(--color-text-2); font-size: var(--text-meta); text-decoration: none;
-  border-radius: var(--radius-sm);
-}
-.nav nav a:hover { color: var(--color-text-1); background: var(--color-surface-1) }
+.site-name svg { inline-size: 18px; block-size: 18px; flex: none; translate: 0 1px }
+.site-links { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: var(--text-meta) }
+.site-links a { color: var(--color-text-2); text-decoration: none }
+.site-links a:hover { color: var(--color-text-1); text-decoration: underline; text-underline-offset: 3px }
 
-.tag {
-  display: inline-flex; align-items: center; min-block-size: 22px; padding: 0 8px;
-  border: 1px solid var(--color-line-2); border-radius: 999px;
-  font-size: 0.75rem; line-height: 1; color: var(--color-text-3);
-}
+/* The document column */
+.doc { padding-block: 8px 24px }
+.doc a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px }
+.doc a:hover { text-decoration-thickness: 2px }
+.doc code { font-family: var(--font-mono); font-size: 0.9em }
 
-/* Buttons */
-.btn, .btn-ghost {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-block-size: 44px; padding-inline: 20px; border-radius: var(--radius-md);
-  font-size: var(--text-ui); font-weight: 500; text-decoration: none; white-space: nowrap;
-}
-.btn { background: var(--color-text-1); color: var(--color-ground); border: 1px solid var(--color-text-1) }
-.btn:hover { opacity: 0.9 }
-.btn-ghost { background: transparent; color: var(--color-text-1); border: 1px solid var(--color-line-2) }
-.btn-ghost:hover { border-color: var(--color-text-2) }
-@media (max-width: 39.99rem) { .btn, .btn-ghost { inline-size: 100% } }
+.doc h1 { font-size: var(--text-h1); line-height: var(--text-h1--line-height); font-weight: 600; letter-spacing: -0.02em }
+.doc h2 { font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.01em }
+.doc h3 { font-size: var(--text-h3); line-height: var(--text-h3--line-height); font-weight: 600 }
 
-/* Hero */
-.hero { display: grid; gap: 32px; padding-block: 48px }
-@media (min-width: 64rem) {
-  .hero { grid-template-columns: 6fr 5fr; align-items: center; gap: 48px; padding-block: 80px }
-}
+.doc section { margin-block-start: var(--section-gap) }
+.doc h1 { margin-block-end: 10px }
+.doc h2 { margin-block-end: 18px }
+.doc h3 { margin-block: 36px 14px }
+.doc p { margin-block-start: 16px }
+.doc h1 + p, .doc h2 + p, .doc h3 + p { margin-block-start: 0 }
+.doc ul, .doc ol { margin-block-start: 16px; padding-inline-start: 22px }
+.doc ul { list-style: disc }
+.doc ol { list-style: decimal }
+.doc li { margin-block-start: 8px; padding-inline-start: 4px }
+.doc li::marker { color: var(--color-text-3) }
+
+/* Code blocks sit at the column width and scroll inside themselves */
+.doc .expressive-code { margin-block-start: 18px }
+.figure .expressive-code { margin-block-start: 0 }
+.expressive-code pre[tabindex]:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--ring) }
 
 /* Canvas figure: a framed box with a still image underneath the live canvas */
-.figure { display: flex; flex-direction: column; gap: 8px }
+.doc figure { margin-block-start: 24px }
+.figure { display: flex; flex-direction: column; gap: 10px }
 .figure-frame {
   position: relative; overflow: hidden; border: 1px solid var(--color-line-2);
   border-radius: var(--radius-md); background: var(--color-surface-1);
@@ -203,71 +179,42 @@ p { max-inline-size: var(--measure) }
 .figure-frame > canvas { pointer-events: none }
 .figure-frame > canvas[data-backend='none'] { opacity: 0 }
 .figure-caption { font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-3) }
+/* Two frames of the same pass, one per backend, read as one figure */
+.figure-pair { display: grid; gap: 16px; margin-block-start: 18px }
+.figure-pair .figure { margin-block-start: 0 }
+@media (min-width: 40rem) { .figure-pair { grid-template-columns: 1fr 1fr; gap: 20px } }
 .figure-split {
-  position: absolute; inset-block: 0; inset-inline-start: 50%; inline-size: 1px;
-  background: color-mix(in srgb, #fff 70%, transparent); pointer-events: none;
+  position: absolute; inset-block: 0; inset-inline-start: 50%; inline-size: 2px; translate: -1px 0;
+  background: #fff; mix-blend-mode: difference; pointer-events: none;
 }
-.figure-labels {
-  position: absolute; inset-inline: 0; inset-block-end: 0; display: flex; justify-content: space-between;
-  padding: 6px 10px; font-family: var(--font-mono); font-size: 0.75rem; color: #fff;
-  background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent); pointer-events: none;
-}
-
-/* Panels: bordered boxes for code, tables, commands */
-.panel { border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-surface-1) }
-.panel-title {
-  padding: 8px 14px; border-block-end: 1px solid var(--color-line-1);
-  font-family: var(--font-mono); font-size: var(--text-code); color: var(--color-text-3);
-}
-.panel-body { padding: 14px }
-
 .scroll-region { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin }
-.expressive-code pre[tabindex]:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--ring) }
 
 /* Diagnostic */
-.diagnostic { font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); color: var(--color-text-2); overflow-wrap: anywhere }
+.diagnostic { margin-block-start: 12px; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); color: var(--color-text-2); overflow-wrap: anywhere }
 .diagnostic b { color: var(--color-diag); font-weight: 500 }
 
-/* Layout table */
-.layout-table { border-collapse: collapse; inline-size: 100%; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); font-variant-numeric: tabular-nums; color: var(--color-text-2) }
-.layout-table caption { caption-side: bottom; padding-block-start: 12px; text-align: start; font-family: var(--font-sans); font-size: var(--text-meta); color: var(--color-text-3) }
-.layout-table th, .layout-table td { padding: 8px 12px; text-align: start; border-block-start: 1px solid var(--color-line-1) }
+/* Layout table: it sits at its natural width, with a visible caption above it */
+.layout-table { margin-block-start: 18px; border-collapse: collapse; inline-size: auto; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); font-variant-numeric: tabular-nums; color: var(--color-text-2) }
+.layout-table th, .layout-table td { padding: 7px 28px 7px 0; text-align: start; border-block-start: 1px solid var(--color-line-1) }
 .layout-table th { font-weight: 500; color: var(--color-text-3); border-block-start: 0 }
 .layout-table [data-align='end'] { text-align: end; white-space: nowrap }
+.layout-table th:last-child, .layout-table td:last-child { padding-inline-end: 0 }
+.layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-meta); color: var(--color-text-3) }
 
-.byte-ruler { display: grid; grid-template-columns: repeat(48, 1fr); block-size: 10px; border-radius: 2px; overflow: hidden }
-.byte-ruler .cell { background: var(--color-accent) }
-.byte-ruler .cell.pad { background: repeating-linear-gradient(-45deg, var(--color-line-2) 0 1px, var(--color-surface-1) 1px 3px) }
-.byte-ruler .cell.run-start { box-shadow: inset 1px 0 0 var(--color-ground) }
-
-/* Install row */
-.install { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px }
-.install > .scroll-region { flex: 1 1 auto }
-.btn-copy {
-  display: inline-flex; align-items: center; justify-content: center; min-block-size: 36px; min-inline-size: 80px;
-  padding-inline: 12px; border-radius: var(--radius-sm); background: var(--color-ground);
-  color: var(--color-text-1); border: 1px solid var(--color-line-2); font-size: var(--text-meta); white-space: nowrap;
+/* Footer: the header's links again, and the commit the page was built from */
+.site-footer {
+  margin-block-start: var(--section-gap); border-block-start: 1px solid var(--color-line-1);
+  padding-block: 24px 48px; font-size: var(--text-meta); color: var(--color-text-3);
 }
-.btn-copy:hover { border-color: var(--color-text-2) }
-@media (max-width: 39.99rem) { .install { flex-wrap: wrap } .btn-copy { inline-size: 100% } }
-
-/* Plain lists */
-.checks { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px }
-.checks li { display: grid; grid-template-columns: 24px 1fr; gap: 8px; max-inline-size: var(--measure) }
-.checks li > span:first-child { font-family: var(--font-mono); font-size: var(--text-code); color: var(--color-text-3); padding-block-start: 3px }
-
-/* Footer */
-.footer { border-block-start: 1px solid var(--color-line-1); padding-block: 40px; font-size: var(--text-meta); color: var(--color-text-3) }
-.footer a { color: var(--color-text-2); text-decoration: underline; text-underline-offset: 3px }
-.footer a:hover { color: var(--color-text-1) }
+.site-footer p { margin-block-start: 12px }
+.site-footer a { color: var(--color-text-2); text-decoration: underline; text-underline-offset: 3px }
+.site-footer a:hover { color: var(--color-text-1) }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
 }
 
 @media (forced-colors: active) {
-  .figure-split, .figure-labels, .byte-ruler { display: none }
-  .btn { background: ButtonFace; color: ButtonText; border: 1px solid ButtonBorder }
-  .btn-ghost, .btn-copy { background: Canvas; color: ButtonText; border: 1px solid ButtonBorder }
+  .figure-split { display: none }
   a { color: LinkText }
 }

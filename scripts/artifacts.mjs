@@ -5,14 +5,21 @@ import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 
-export const STILL_EXAMPLES = ['metaballs', 'gradient', 'fp64-deep-zoom']
+/** One still per mount on the front page. A mount forced onto WebGL2 gets its own file, so the
+ *  image under it is a frame that backend drew. */
+export const STILLS = [
+  { id: 'metaballs', example: 'metaballs' },
+  { id: 'gradient', example: 'gradient', backend: 'webgpu' },
+  { id: 'gradient-webgl2', example: 'gradient', forceWebGl2: true, backend: 'webgl2' },
+  { id: 'fp64-deep-zoom', example: 'fp64-deep-zoom' },
+]
 
 export const ARTIFACTS = [
   { file: 'og.png', env: 'OG_REBASELINE', regenerate: 'bun run capture:og' },
   { file: 'favicon.ico', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
   { file: 'apple-touch-icon.png', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
   { file: 'mask-icon.svg', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
-  ...STILL_EXAMPLES.map((id) => ({
+  ...STILLS.map(({ id }) => ({
     file: `stills/${id}.png`,
     env: 'STILLS_REBASELINE',
     regenerate: 'bun run capture:stills',

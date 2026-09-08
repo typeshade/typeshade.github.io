@@ -1,56 +1,13 @@
 ---
 // The submodule command, read from .gitmodules so it is the command this repository ran.
+// It wraps, because it is the one line a reader has to copy and a phone cannot scroll it.
+import { Code } from 'astro-expressive-code/components'
 import { facts } from '../lib/examples.ts'
-import ScrollRegion from './ScrollRegion.astro'
+import CodeFrame from './CodeFrame.astro'
 
 const command = `git submodule add ${facts.mirrorUrl} ${facts.mirrorPath}`
 ---
 
-<div class="panel">
-  <div class="install" data-install>
-    <ScrollRegion label="Submodule command">
-      <code class="mono whitespace-pre">{command}</code>
-    </ScrollRegion>
-    <button class="btn-copy" type="button" data-copy={command}>Copy</button>
-  </div>
-  <p class="sr-only" role="status" data-copy-status></p>
-</div>
-
-<script>
-  const DWELL_MS = 1600
-  for (const row of document.querySelectorAll<HTMLElement>('[data-install]')) {
-    const button = row.querySelector<HTMLButtonElement>('[data-copy]')
-    const code = row.querySelector('code')
-    const status = row.parentElement?.querySelector<HTMLElement>('[data-copy-status]') ?? null
-    if (!button || !code) continue
-    const text = button.dataset.copy ?? ''
-    let timer: number | undefined
-
-    const settle = (label: string, announce: string, failed: boolean): void => {
-      button.textContent = label
-      if (status) status.textContent = announce
-      if (timer) clearTimeout(timer)
-      if (failed) return
-      timer = window.setTimeout(() => {
-        button.textContent = 'Copy'
-        if (status) status.textContent = ''
-      }, DWELL_MS)
-    }
-
-    button.addEventListener('click', () => {
-      void (async () => {
-        try {
-          await navigator.clipboard.writeText(text)
-          settle('Copied', 'Command copied to the clipboard.', false)
-        } catch {
-          const range = document.createRange()
-          range.selectNodeContents(code)
-          const selection = window.getSelection()
-          selection?.removeAllRanges()
-          selection?.addRange(range)
-          settle('Press Ctrl+C', 'The command is selected. Press Ctrl+C or Cmd+C to copy.', true)
-        }
-      })()
-    })
-  }
-</script>
+<CodeFrame label="Submodule command">
+  <Code code={command} lang="bash" wrap />
+</CodeFrame>

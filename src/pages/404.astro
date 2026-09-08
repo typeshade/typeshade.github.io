@@ -4,12 +4,12 @@ import { links } from '../lib/links.ts'
 ---
 
 <Base title="Page not found, TypeShade">
-  <section class="wrap section">
+  <article class="wrap doc">
     <h1>There is nothing at this address.</h1>
-    <p class="lead mt-5">The page may have moved. The front page and the guide are still here.</p>
-    <div class="mt-7 flex flex-wrap items-center gap-3">
-      <a class="btn" href={links.home.href}>{links.home.label}</a>
-      <a class="btn-ghost" href={links.guide.href}>{links.guide.label}</a>
-    </div>
-  </section>
+    <p>The page may have moved. The front page and the authoring guide are still here.</p>
+    <p>
+      <a href={links.home.href}>{links.home.label}</a>, or read the{' '}
+      <a href={links.guide.href}>authoring guide</a>.
+    </p>
+  </article>
 </Base>

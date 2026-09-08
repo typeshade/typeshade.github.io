@@ -1,18 +1,287 @@
 ---
+// The front page: one column of prose, code and figures. Every listing and every number
+// below is read at build time from the compiler vendored at vendor/shader-dsl.
+import { Code } from 'astro-expressive-code/components'
 import Base from '../layouts/Base.astro'
-import Hero from '../components/Hero.astro'
-import Why from '../components/blocks/Why.astro'
-import Write from '../components/blocks/Write.astro'
-import Agree from '../components/blocks/Agree.astro'
-import Types from '../components/blocks/Types.astro'
-import Adopt from '../components/blocks/Adopt.astro'
+import CodeFrame from '../components/CodeFrame.astro'
+import DiagnosticBlock from '../components/DiagnosticBlock.astro'
+import InstallCommand from '../components/InstallCommand.astro'
+import LayoutTable from '../components/LayoutTable.astro'
+import ShaderCanvas from '../components/ShaderCanvas.astro'
+import type { CanvasText } from '../components/ShaderCanvas.astro'
+import { exampleFile, facts, hero } from '../lib/examples.ts'
+import { links } from '../lib/links.ts'
+import { typedError } from '../lib/typed-error.ts'
+
+const glslTarget = facts.glslTarget
+const std = facts.layoutStandards[0]
+const err = typedError()
+const origin = facts.deepZoomOrigin
+const split = facts.splitLabels
+if (!split) throw new Error("[index] 'fp64-deep-zoom' declares no split labels")
+
+const metaballs: CanvasText = {
+  neutral: `Metaballs, from examples/${exampleFile('metaballs')}. The still is captured at build time.`,
+  webgpu: 'Metaballs. The WGSL emit is drawing this frame on WebGPU.',
+  webgl2: `Metaballs. The ${glslTarget} emit is drawing this frame on WebGL2.`,
+  none: 'Metaballs. Rendered at build time; this browser has no WebGPU or WebGL2.',
+  reduced: `Metaballs, compiled to WGSL and to ${glslTarget}. One frame is drawn here, since this system asks for reduced motion.`,
+}
+
+// The pair below is captioned from the backend that drew each frame, so a reader is never
+// told they are looking at WebGPU when WebGL2 drew it. Every state gets a string that is
+// true of it, including the states a prop makes unreachable today.
+const gpuFrame: CanvasText = {
+  neutral: 'The WGSL emit, drawn on WebGPU at build time.',
+  webgpu: 'The WGSL emit, drawn here on WebGPU.',
+  webgl2: `WebGPU is not available here, so the ${glslTarget} emit drew this frame on WebGL2.`,
+  none: 'The WGSL emit, drawn on WebGPU at build time. This browser has no WebGPU or WebGL2.',
+}
+const glFrame: CanvasText = {
+  neutral: `The ${glslTarget} emit, drawn on WebGL2 at build time.`,
+  webgpu: 'The WGSL emit, drawn here on WebGPU.',
+  webgl2: `The ${glslTarget} emit, drawn here on WebGL2.`,
+  none: `The ${glslTarget} emit, drawn on WebGL2 at build time. This browser has no WebGPU or WebGL2.`,
+}
+
+const deepZoom: CanvasText = (() => {
+  const text =
+    `One world coordinate drawn twice: ${split[0]} on the left, ${split[1]} on the right. ` +
+    `The ${split[0]} half draws the stripes as steps because one ${split[0]} ulp at this distance is ` +
+    'coarser than the fraction a stripe needs; the other half draws them smooth.'
+  return {
+    neutral: text,
+    webgpu: text,
+    webgl2: text,
+    none: `${text} Rendered at build time; this browser has no WebGPU or WebGL2.`,
+  }
+})()
+
+const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts hillshade'].join('\n')
 ---
 
 <Base>
-  <Hero />
-  <Why />
-  <Write />
-  <Agree />
-  <Types />
-  <Adopt />
+  <article class="wrap doc">
+    <h1>TypeShade</h1>
+    <p>
+      TypeShade is a TypeScript library for writing shaders. One typed module emits WGSL for WebGPU
+      and {glslTarget} for WebGL2. The same module also compiles to a CPU function in double precision;
+      the test suite uses it to check the compiler's algebra. Version {facts.nextVersion} is not on npm
+      yet; the repository is the package, used as a git submodule.
+    </p>
+
+    <ShaderCanvas example="metaballs" aspect="2/1" eager caption={metaballs} />
+
+    <section>
+      <h2>Quick start</h2>
+      <InstallCommand />
+      <p>
+        The package ships TypeScript source, so the consuming build needs a toolchain that compiles
+        TypeScript. <code>tsc -p {facts.mirrorPath}</code> type-checks the submodule by itself; it needs no
+        install and no <code>node_modules</code>.
+      </p>
+      <p>
+        The listing below is the fragment stage of the gradient example, {hero.authoredLines} lines as
+        authored in <code>{hero.file}</code>. Parameters arrive as typed nodes, uniform fields are read
+        through <code>U</code>, the block declared further up the same file, and the returned value fixes
+        the return type.
+      </p>
+      <CodeFrame label={`Authored fragment, ${hero.file}`}>
+        <Code code={hero.authored} lang="ts" title={hero.file} />
+      </CodeFrame>
+      <p>That emits a WGSL entry point:</p>
+      <CodeFrame label="The emitted WGSL fragment entry point">
+        <Code code={hero.wgsl} lang="wgsl" />
+      </CodeFrame>
+      <p>and a {glslTarget} <code>main</code> for the same stage:</p>
+      <CodeFrame label={`The emitted ${glslTarget} fragment main`}>
+        <Code code={hero.glsl} lang="glsl" />
+      </CodeFrame>
+      <p>
+        The whole module is {hero.emit.wgslLines} lines of WGSL; the GLSL vertex stage is{' '}
+        {hero.emit.glslVertexLines} lines and the fragment stage {hero.emit.glslFragmentLines}. Uniform
+        types, byte offsets, bind-group entries and entry signatures come from{' '}
+        <a href={links.reflectApi.href}>reflect()</a>, which reads the same intermediate representation
+        and stays off the emit path, so a host can pack its uniform buffer from that layout.
+      </p>
+    </section>
+
+    <section>
+      <h2>Why this exists</h2>
+      <p>
+        A shader that has to run on WebGL2 and on WebGPU exists twice. The two languages disagree about
+        types, entry points, resource binding and precision, so the second copy is a rewrite. A fix that
+        lands in one copy and misses the other only shows up on the machines that take the other path. A
+        reviewer has to read two dialects and hold both in their head to decide whether they still mean
+        the same thing.
+      </p>
+      <p>
+        The web is in the middle of one such move. The{' '}
+        <a href={links.maplibreRoadmap.href}>{links.maplibreRoadmap.label}</a>, the{' '}
+        <a href={links.deckglWebgpu.href}>{links.deckglWebgpu.label}</a> and the{' '}
+        <a href={links.pixijsMigration.href}>{links.pixijsMigration.label}</a> each describe a WebGPU path
+        arriving beside an existing WebGL one, so a custom layer written as GLSL will need a WGSL copy. In
+        the <a href={links.survey.href}>{facts.survey.title}</a>, {facts.survey.figure64}% of the{' '}
+        {facts.survey.n}+ shader developers surveyed adapt shaders across platforms, APIs or tools, and
+        nearly {facts.survey.figure10}% describe it as a significant engineering cost or one of their
+        largest.
+      </p>
+    </section>
+
+    <section>
+      <h2>What it does</h2>
+      <ul>
+        <li>
+          Typed functions, entry points, control flow and declarators for uniform blocks, storage buffers,
+          IO structs, textures and samplers.
+        </li>
+        <li>A wrong-typed return, or a field the uniform struct does not have, is a TypeScript error.</li>
+        <li>
+          Optimizer passes over the IR: common subexpression and dead code elimination, loop-invariant
+          hoisting, constant folding and algebraic rewrites.
+        </li>
+        <li>
+          Coded diagnostics with a one-line hint, aggregated by <code>validate()</code> and rendered by{' '}
+          <code>diagnose()</code>.
+        </li>
+        <li>
+          Reflection over the IR: bind groups, {facts.layoutStandards.join(' and ')} struct layouts and
+          entry signatures.
+        </li>
+        <li>A WGSL backend for WebGPU, byte-stable across runs.</li>
+        <li>
+          A {glslTarget} backend for vertex and fragment stages, checked on a WebGL2 context.
+        </li>
+        <li>Emulated double precision, authored with the same syntax as f32.</li>
+        <li>A gather-only compute tier that lowers to WebGPU and to a WebGL2 emulation.</li>
+        <li>A CPU oracle: the same module compiled to an f64 JavaScript function.</li>
+        <li>
+          <code>variantFamily</code>: one module emitted N ways against a shared prelude, validated as a
+          unit.
+        </li>
+        <li>
+          <code>semanticDiff</code>: two modules compared across interface, resources, constants and the
+          control-flow skeleton.
+        </li>
+      </ul>
+      <p>
+        TypeShade has no renderer. It returns strings and reflection metadata; creating pipelines, binding
+        resources and issuing draws stay with the host. SPIR-V, MSL and HLSL come out of naga or Tint, fed
+        the WGSL, because every native host already reaches WGSL through Dawn or wgpu.{' '}
+        <code>semanticDiff</code> is a review aid for an emit change; it does not compare expression trees,
+        so it cannot show two modules are equivalent.
+      </p>
+
+      <h3>A misspelt field is a compile error</h3>
+      <p>
+        The uniform block is declared once, and every field read is typed against that declaration.
+        Misspell one and TypeScript says so in the editor, before a string reaches a GPU.
+      </p>
+      <figure class="figure">
+        <DiagnosticBlock />
+        <LayoutTable />
+        <figcaption class="figure-caption">
+          The wrong read on line {err.wrongLine}, the diagnostic it produces, and the {std} layout{' '}
+          <a href={links.reflectApi.href}>reflect()</a> recovers for the block it reads from: {err.layout.size}{' '}
+          bytes over {err.layout.fields.length} fields. The gap after the first field is alignment.
+        </figcaption>
+      </figure>
+
+      <h3>Emulated double precision</h3>
+      <p>
+        Neither WGSL nor {glslTarget} has a double-precision float. TypeShade emulates one as an unevaluated
+        pair of f32 values, and lowers arithmetic, comparisons and a set of builtins into calls on that
+        pair. An operation outside that set fails at emit with a coded error. What you write is unchanged:
+        only the declared type differs. In the deep-zoom example the <code>{origin.name}</code> field is
+        declared <code>{origin.sourceType}</code> in the source and occupies a{' '}
+        <code>{origin.layoutType}</code> slot in the uniform block, which the host fills with the split
+        pair.
+      </p>
+      <p>
+        A module that does f64 arithmetic also carries an injected guard texture binding for the host to
+        fill with a single white texel. A downstream shader compiler cannot fold a texel read, and without
+        one it is free to optimise the error-compensation terms away. Each operation costs several times
+        its f32 equivalent, so the type is opted into per value. The example is{' '}
+        <a href={links.deepZoom.href}>{links.deepZoom.label}</a>.
+      </p>
+      <ShaderCanvas example="fp64-deep-zoom" aspect="3/1" still split caption={deepZoom} />
+    </section>
+
+    <section>
+      <h2>How it is checked</h2>
+      <p>
+        The repository's CI runs these on every push and pull request, in{' '}
+        <a href={links.ciGates.href}>{links.ciGates.label}</a>:
+      </p>
+      <ol>
+        <li>
+          The same module compiles to a CPU function that runs in f64 arithmetic. In its default mode only
+          its equality tests round to f32 first, so they agree with the GPU; an f32 mode that rounds after
+          every operation is opt-in. The test suite checks that function against known
+          answers and against a second CPU backend, generated JavaScript, which must match it bit for bit.
+          It says nothing about what rounding does on a driver, and no GPU output is compared against it in
+          this repository. <a href={links.oracle.href}>{links.oracle.label}</a>
+        </li>
+        <li>
+          The compile gate emits every registered example, hands each WGSL emit to Tint inside headless
+          Chromium, and compiles and links both {glslTarget} stages of every renderable example on a real
+          WebGL2 context. It also hands each compiler a shader that cannot compile: if either accepts that
+          non-program, the gate fails and the verdicts on the examples do not count.{' '}
+          <a href={links.compileGate.href}>{links.compileGate.label}</a>
+        </li>
+        <li>
+          Golden files hold the emitted bytes of every example, so any change in a backend surfaces as a
+          diff in review. <a href={links.goldens.href}>{links.goldens.label}</a>
+        </li>
+      </ol>
+      <p>
+        The gradient pass from Quick start, drawn once by each backend. No pixel comparison between the two
+        is committed yet.
+      </p>
+      <div class="figure-pair">
+        <ShaderCanvas example="gradient" aspect="3/2" still caption={gpuFrame} />
+        <ShaderCanvas example="gradient" stillId="gradient-webgl2" aspect="3/2" still forceWebGl2 caption={glFrame} />
+      </div>
+    </section>
+
+    <section>
+      <h2>Examples</h2>
+      <p>
+        There are {facts.examples} runnable examples in the repository, covering cartographic passes, the
+        ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel.{' '}
+        {facts.bothTargets} of them emit WGSL and {glslTarget} from one source. The compute kernel has no
+        vertex or fragment stage to emit as {glslTarget}, so it emits WGSL and reflection; its WebGL2 path
+        is the opt-in emulation. {facts.fp64Examples} use emulated double precision. The renderable ones
+        are exported from <a href={links.examplesIndex.href}>{links.examplesIndex.label}</a>; browse{' '}
+        <a href={links.examplesDir.href}>{links.examplesDir.label}</a>.
+      </p>
+      <p>
+        The first command below prints WGSL, GLSL and reflection for every example; the second does one by
+        id.
+      </p>
+      <CodeFrame label="Printing an example's emits">
+        <Code code={printCommands} lang="bash" />
+      </CodeFrame>
+    </section>
+
+    <section>
+      <h2>Status</h2>
+      <p>
+        Pre-release. The GitHub repository is a mirror of the upstream tree and sits at version{' '}
+        {facts.mirrorVersion}; {facts.nextVersion} is the release the npm name{' '}
+        <a href={links.npm.href}>typeshade</a> is reserved for. It is {facts.license} licensed, has{' '}
+        {facts.runtimeDeps} runtime dependencies (<a href={links.packageJson.href}
+          >{links.packageJson.label}</a
+        >) and carries {facts.testFiles} test files. The manifest and the imports still use the old scoped
+        name and are renamed at that tag, with the old name kept as an alias for one major version.
+      </p>
+      <p>
+        The <a href={links.docs.href}>README</a> and the <a href={links.guide.href}>authoring guide</a> go
+        further, including the shapes each backend refuses and the subset each tier accepts. Issues are
+        welcome on the mirror; pull requests cannot be merged there yet, because changes still land
+        upstream and this tree is fast-forwarded from there.{' '}
+        <a href={links.releases.href}>Watch releases</a> if you want to hear about {facts.nextVersion}.
+      </p>
+    </section>
+  </article>
 </Base>

@@ -58,8 +58,6 @@ export interface TypedError {
   /** The same snippet, correct, checked to have zero diagnostics. */
   readonly fixed: { readonly snippet: string }
   readonly layout: TypedErrorLayout
-  /** Seconds the type-check took. */
-  readonly typeCheckSeconds: number
 }
 
 /** Lines strictly between `// #region <name>` and `// #endregion <name>`, plus the 1-based
@@ -82,8 +80,7 @@ function countOf(haystack: string, needle: string): number {
 function checkBothArms(
   wrongSource: string,
   fixedSource: string,
-): { wrong: readonly ts.Diagnostic[]; fixed: readonly ts.Diagnostic[]; wrongFile: ts.SourceFile; seconds: number } {
-  const t0 = performance.now()
+): { wrong: readonly ts.Diagnostic[]; fixed: readonly ts.Diagnostic[]; wrongFile: ts.SourceFile } {
   const root = process.cwd()
   const configPath = path.join(root, 'tsconfig.json')
   const readConfig = ts.readConfigFile(configPath, ts.sys.readFile)
@@ -134,7 +131,6 @@ function checkBothArms(
     wrong: ts.getPreEmitDiagnostics(program, wrongFile),
     fixed: ts.getPreEmitDiagnostics(program, fixedFile),
     wrongFile,
-    seconds: (performance.now() - t0) / 1000,
   }
 }
 
@@ -169,7 +165,7 @@ export function typedError(): TypedError {
   const wrongSource = fixtureSource.replace(fixedSnippet, wrongSnippet)
   if (wrongSource === fixtureSource) throw new Error('[typed-error] the snippet region did not substitute')
 
-  const { wrong, fixed, wrongFile, seconds } = checkBothArms(wrongSource, fixtureSource)
+  const { wrong, fixed, wrongFile } = checkBothArms(wrongSource, fixtureSource)
 
   // Both arms must behave, or the diagnostic says nothing about the compiler.
   if (fixed.length > 0)
@@ -208,7 +204,6 @@ export function typedError(): TypedError {
       size: block.size,
       fields: block.fields.map((f) => ({ name: f.name, type: f.type, offset: f.offset, size: f.size })),
     },
-    typeCheckSeconds: seconds,
   }
   return memo
 }

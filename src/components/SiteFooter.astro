@@ -1,0 +1,11 @@
+---
+import { facts } from '../lib/examples.ts'
+import { links, navLinks } from '../lib/links.ts'
+---
+
+<footer class="wrap site-footer">
+  <nav class="site-links" aria-label="Secondary">
+    {navLinks.map((l) => <a href={l.href}>{l.text}</a>)}
+  </nav>
+  <p>Built from commit <a href={links.commit.href}>{facts.pinnedCommit}</a>.</p>
+</footer>

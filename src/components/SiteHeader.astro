@@ -1,0 +1,23 @@
+---
+// The name, the mark and the four links the footer repeats.
+import { MARK } from '../lib/mark.ts'
+import { navLinks } from '../lib/links.ts'
+---
+
+<header class="wrap site-header">
+  <a class="site-name" href="/">
+    <svg viewBox={MARK.viewBox} aria-hidden="true" focusable="false">
+      <path
+        d={MARK.d}
+        fill="none"
+        stroke="currentColor"
+        stroke-width={MARK.strokeWidth}
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+    TypeShade
+  </a>
+  <nav class="site-links" aria-label="Primary">
+    {navLinks.map((l) => <a href={l.href}>{l.text}</a>)}
+  </nav>
+</header>

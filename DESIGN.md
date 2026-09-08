@@ -20,7 +20,8 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 
 - Text: IBM Plex Sans (variable), self-hosted, latin subset.
 - Code and identifiers: IBM Plex Mono 400 and 500.
-- Body 16px / 1.6. Lead 18 to 20px. h2 28 to 32px. h1 36 to 56px. Line length at most 62ch.
+- Body 16px / 1.65. h3 18px, h2 24px, h1 32 to 36px. The column holds about 72
+  characters of prose.
 - No uppercase labels, no tracked "eyebrow" lines above headings, no single-word labels <!-- ok -->
   under blocks, no "a · b · c" metadata strings. <!-- ok -->
 
@@ -28,27 +29,36 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 
 - Light by default; dark follows `prefers-color-scheme`. Both palettes live in
   `src/styles/global.css` and nowhere else.
-- One accent (green) for links and the byte ruler, one red for diagnostics. No gradients, no
+- One accent (green) for links, one red for diagnostics. No gradients, no
   glows, no coloured card borders.
+- Tailwind is kept only for its `@theme` tokens and preflight. No utility classes appear in
+  the markup.
 
 ## Layout
 
-- One content column, 1080px maximum, left-aligned. Sections are 56 to 80px apart and
-  separated by a 1px rule.
+- One content column, 740px, left-aligned, with code blocks and figures at the same width.
+  Sections are 48 to 56px apart. The only rule on the page sits above the footer.
 - The one thing that should stand out is a rendered shader. Everything else is quiet.
 - Every canvas has a still image underneath it, captured at build time
   (`bun run capture:stills`), so the page never shows an empty frame.
-- Boxes (`.panel`, `.figure-frame`) have a 1px border and a 6px radius. No shadows.
+- The figure frame (`.figure-frame`) has a 1px border and a 6px radius. No shadows. A table
+  sits at its natural width with a caption above it.
 
 ## Structure of the front page
 
-1. Hero: headline, three sentences, two buttons, the live metaballs shader.
-2. One paragraph of measured facts with links to the files that back them.
-3. Why: the two-shader problem, with the survey figures and three hosts' migration guides.
-4. What you write: the authored fragment beside its rendered output.
-5. Agreement: the same shader on WebGPU and WebGL2, and the four checks that run in CI.
-6. Types and precision: the TypeScript diagnostic, the reflected layout, the f64 example.
-7. Adopt: licence, dependencies, the submodule command, the buttons again.
+The page reads as documentation: a title, a paragraph, a figure, then sections of prose,
+code and figures in one column.
+
+1. Header: the mark, the name, and the four links the footer repeats.
+2. `h1`, then body text: three sentences on what TypeShade is and where the release stands.
+3. The live metaballs shader, captioned by the backend that drew the frame.
+4. Quick start: the submodule command, the authored fragment, and the WGSL and GLSL it emits.
+5. Why this exists: the two-shader problem, the survey figures, three hosts' migration guides.
+6. What it does: a list of capabilities, then the typed diagnostic with its reflected layout
+   and the emulated-double example.
+7. How it is checked: the CPU oracle, the compile gate, the golden files, and the same pass
+   drawn through each API as one side-by-side figure, each half over a still that backend drew.
+8. Examples, then Status.
 
 ## Things the build checks
 

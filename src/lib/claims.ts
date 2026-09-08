@@ -1,5 +1,4 @@
-// The measured claims the front page and /llms.txt both state, each with the file that
-// backs it.
+// The measured claims /llms.txt states, each with the file that backs it.
 import { facts } from './examples.ts'
 import { links, type Destination } from './links.ts'
 
@@ -13,7 +12,10 @@ export const claims: readonly Claim[] = [
     text: `${facts.bothTargets} of the ${facts.examples} examples emit WGSL and ${facts.glslTarget} from one source.`,
     source: links.examplesIndex,
   },
-  { text: `${facts.testFiles} test files.`, source: links.goldens },
+  {
+    text: `${facts.testFiles} test files.`,
+    source: { label: `every *.test.ts in the tree at ${facts.pinnedCommit}`, href: links.commit.href },
+  },
   { text: `${facts.runtimeDeps} runtime dependencies.`, source: links.packageJson },
   {
     text: `On every push, Tint compiles every WGSL emit and a real WebGL2 context links every renderable example's ${facts.glslTarget}.`,

@@ -1,37 +1,37 @@
 ---
-// The std140 layout of the fixture's uniform block, every cell from reflect().
+// The uniform block of the fixture, every cell from reflect(). The table sits at its natural
+// width, with the caption naming the standard and the block size.
+import { facts } from '../lib/examples.ts'
 import { typedError } from '../lib/typed-error.ts'
 import ScrollRegion from './ScrollRegion.astro'
 
 const { layout } = typedError()
 if (layout.fields.length < 2) throw new Error('[LayoutTable] the fixture block reflects fewer than two fields')
+const standard = facts.layoutStandards[0]
 ---
 
-<div class="panel">
-  <div class="panel-title">reflect(), std140, {layout.size} bytes</div>
-  <ScrollRegion label="Reflected std140 layout" class="panel-body">
-    <table class="layout-table">
-      <caption>The {layout.struct} block as reflect() lays it out. The gap after the first field is std140 alignment.</caption>
-      <thead>
-        <tr>
-          <th scope="col">field</th>
-          <th scope="col">type</th>
-          <th scope="col" data-align="end">offset</th>
-          <th scope="col" data-align="end">size</th>
-        </tr>
-      </thead>
-      <tbody>
-        {
-          layout.fields.map((f) => (
-            <tr>
-              <td>{f.name}</td>
-              <td>{f.type}</td>
-              <td data-align="end">{f.offset}</td>
-              <td data-align="end">{f.size}</td>
-            </tr>
-          ))
-        }
-      </tbody>
-    </table>
-  </ScrollRegion>
-</div>
+<ScrollRegion label={`Reflected ${standard} layout`}>
+  <table class="layout-table">
+    <caption>reflect(), {standard}, {layout.size} bytes</caption>
+    <thead>
+      <tr>
+        <th scope="col">field</th>
+        <th scope="col">type</th>
+        <th scope="col" data-align="end">offset</th>
+        <th scope="col" data-align="end">size</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        layout.fields.map((f) => (
+          <tr>
+            <td>{f.name}</td>
+            <td>{f.type}</td>
+            <td data-align="end">{f.offset}</td>
+            <td data-align="end">{f.size}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</ScrollRegion>

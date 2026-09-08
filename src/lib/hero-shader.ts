@@ -71,7 +71,9 @@ function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayo
   }
 }
 
-/** Emit one registry example as the runtime's payload: both targets plus the reflected layout. */
+/** Emit one registry example as the runtime's payload: both targets plus the reflected layout.
+ *  The registry's `blurb` is left out: nothing reads it, and it would ship prose the page
+ *  never renders into every inlined payload. */
 export function heroShader(id: string): ShaderData {
   const ex = examples.find((e) => e.id === id)
   if (!ex) throw new Error(`[hero-shader] no example '${id}' in the mirror's registry`)
@@ -85,7 +87,6 @@ export function heroShader(id: string): ShaderData {
   return {
     id: ex.id,
     title: ex.title,
-    blurb: ex.blurb,
     wgsl: emitModule(ex.module),
     vertex: emitGlslModule(ex.module, 'vertex'),
     fragment: emitGlslModule(ex.module, 'fragment'),

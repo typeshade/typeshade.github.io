@@ -31,6 +31,16 @@ export default {
     codeFontFamily: "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
     uiFontFamily: "'IBM Plex Sans Variable', 'IBM Plex Sans', system-ui, sans-serif",
     textMarkers: { markBackground: '#00000000', markBorderColor: '#00000000' },
-    frames: { shadowColor: 'transparent', frameBoxShadowCssValue: 'none' },
+    // The github theme marks the active tab of a titled frame with its own accent colour.
+    // The site uses one accent, so the indicator goes and the tab is drawn by its border.
+    frames: {
+      shadowColor: 'transparent',
+      frameBoxShadowCssValue: 'none',
+      editorActiveTabIndicatorTopColor: 'transparent',
+      editorActiveTabIndicatorHeight: '0px',
+      editorActiveTabBackground: 'var(--color-surface-1)',
+      editorTabBarBackground: 'var(--color-ground)',
+      editorTabBarBorderBottomColor: 'var(--color-line-1)',
+    },
   },
 }

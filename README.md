@@ -30,7 +30,8 @@ asks you to update the copy.
 
 `public/og.png`, the three icons and `public/stills/*.png` are generated and committed with a
 `.sha256` beside each. The build checks the hashes and never launches a browser. Regenerate
-them when the mark, the fonts, the headline or a mounted shader changes:
+them when the mark, the fonts, the social-card wording in `src/lib/hero-copy.ts` or a mounted
+shader changes:
 
 | Command | Writes |
 | --- | --- |

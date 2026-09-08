@@ -19,17 +19,32 @@ export interface CanvasText {
 interface Props {
   example: string
   caption: CanvasText
-  aspect: '4/3' | '16/9' | '3/2' | '16/10'
+  aspect: '3/1' | '2/1' | '16/9' | '3/2'
   /** Draw one frame at a fixed clock, then stop. */
   still?: boolean
   /** Skip the WebGPU probe and draw on WebGL2. */
   forceWebGl2?: boolean
-  /** Draw the registry's split labels over the two halves of the frame. */
+  /** Divide the frame in two, for an example whose halves are captioned separately. */
   split?: boolean
+  /** Load this figure's still with the first paint. Set on the figure above the fold. */
+  eager?: boolean
+  /** Which still sits under the canvas; defaults to the example id. A second mount of the
+   *  same example forced onto another backend names its own still. */
+  stillId?: string
   class?: string
 }
 
-const { example, caption, aspect, still = false, forceWebGl2 = false, split = false, class: className } = Astro.props
+const {
+  example,
+  caption,
+  aspect,
+  still = false,
+  forceWebGl2 = false,
+  split = false,
+  stillId,
+  eager = false,
+  class: className,
+} = Astro.props
 const data = heroShader(example)
 
 const expand = (t: CanvasText): StateStrings => ({
@@ -43,15 +58,15 @@ const expand = (t: CanvasText): StateStrings => ({
 const subject = `${data.title} shader, written in TypeScript and compiled by TypeShade`
 const aria: StateStrings = {
   webgpu: `${subject} to WGSL, running on WebGPU.`,
-  webgl2: `${subject} to GLSL ES 3.00, running on WebGL2.`,
+  webgl2: `${subject} to ${facts.glslTarget}, running on WebGL2.`,
   'still-webgpu': `${subject} to WGSL, one frame drawn on WebGPU.`,
-  'still-webgl2': `${subject} to GLSL ES 3.00, one frame drawn on WebGL2.`,
+  'still-webgl2': `${subject} to ${facts.glslTarget}, one frame drawn on WebGL2.`,
   none: `${subject}, rendered at build time.`,
 }
 const labels = { caption: expand(caption), aria }
 
-const splitLabels = split ? facts.splitLabels : null
-if (split && !splitLabels) throw new Error(`[ShaderCanvas] '${example}' declares no splitLabels`)
+// A split figure's halves are named in its caption, so the example has to declare them.
+if (split && !facts.splitLabels) throw new Error(`[ShaderCanvas] '${example}' declares no splitLabels`)
 
 // One payload per example per page.
 const store = Astro.locals as Record<string, unknown>
@@ -72,17 +87,15 @@ emitted.add(data.id)
     data-force-webgl2={forceWebGl2 ? '1' : undefined}
     data-labels={JSON.stringify(labels)}
   >
-    <img src={`/stills/${data.id}.png`} alt="" loading="lazy" decoding="async" />
+    <img
+      src={`/stills/${stillId ?? data.id}.png`}
+      alt=""
+      loading={eager ? 'eager' : 'lazy'}
+      fetchpriority={eager ? 'high' : undefined}
+      decoding="async"
+    />
     <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
     {split && <span class="figure-split" aria-hidden="true"></span>}
-    {
-      splitLabels && (
-        <div class="figure-labels">
-          <span>{splitLabels[0]}</span>
-          <span>{splitLabels[1]}</span>
-        </div>
-      )
-    }
   </div>
   <figcaption class="figure-caption" data-shader-caption>{caption.neutral}</figcaption>
   {firstOfExample && <script type="application/json" id={payloadId} set:html={heroPayload(data.id)} is:inline />}

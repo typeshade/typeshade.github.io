@@ -1,5 +1,5 @@
-// Dependency-free WebGPU / WebGL2 runner for one emitted example. Derived from the X-GIS
-// shader playground (MIT), trimmed to a single fullscreen-triangle pass.
+// Dependency-free WebGPU / WebGL2 runner for one emitted example: a single
+// fullscreen-triangle pass.
 //
 // This file imports nothing from the compiler. The WGSL, the GLSL ES 3.00 stages, the
 // std140 field offsets and the entry-point names are emitted at build time by
@@ -74,7 +74,6 @@ export interface ShaderLayout {
 export interface ShaderData {
   readonly id: string
   readonly title: string
-  readonly blurb: string
   /** One WGSL module carrying both entry points. */
   readonly wgsl: string
   readonly vertex: string // GLSL ES 3.00, vertex stage
@@ -107,8 +106,6 @@ export interface LabelSlot {
 export interface MountLabels {
   /** The `<figcaption>`, the caption plate. */
   readonly caption?: LabelSlot
-  /** The bezel header, on mounts that have one. */
-  readonly header?: LabelSlot
   /** The canvas's own accessible name. */
   readonly ariaLabel?: StateStrings
 }
@@ -137,14 +134,10 @@ export interface MountedShader {
 }
 
 declare global {
-  /** The per-element handle, the census source. `window.__typeshadeHero` is last-mount-wins
-   *   and would report one of five mounts, so QA reads this. */
+  /** The per-element handle. A page mounts several canvases, so the state a verification run
+   *  reads (scripts/capture-stills.ts) hangs off the element, one handle per mount. */
   interface HTMLCanvasElement {
     __shader?: MountedShader
-  }
-  interface Window {
-    /** Kept for compatibility with the spike's harness. Never the census source. */
-    __typeshadeHero?: { backend: Backend; frames: number }
   }
 }
 
@@ -442,8 +435,7 @@ const labelStateOf = (backend: Backend, still: boolean): LabelState =>
  * reachable, else WebGL2, else nothing at all, the canvas is left transparent so the page's
  * own background shows through. Never a black box, and no exception reaches the console.
  *
- * The canvas gets `data-backend` and the handle at `canvas.__shader`; `window.__typeshadeHero`
- * is kept for the spike harness and is not the census source.
+ * The canvas gets `data-backend` and the handle at `canvas.__shader`.
  */
 export async function mountShader(
   canvas: HTMLCanvasElement,
@@ -455,13 +447,12 @@ export async function mountShader(
   const skipWebGpu = opts.forceWebGl2 === true || forceGl2FromUrl()
   state.resize()
 
-  /** Caption, bezel header and accessible name, written from one value in one tick ,
-   *  so no string on this mount can name a backend that is not the one in `data-backend`. */
+  /** Caption and accessible name, written from one value in one tick , so no string on this
+   *  mount can name a backend that is not the one in `data-backend`. */
   const applyLabels = (labelState: LabelState): void => {
     const l = opts.labels
     if (!l) return
     if (l.caption?.el) l.caption.el.textContent = l.caption.text[labelState]
-    if (l.header?.el) l.header.el.textContent = l.header.text[labelState]
     if (l.ariaLabel) canvas.setAttribute('aria-label', l.ariaLabel[labelState])
   }
 
@@ -499,7 +490,6 @@ export async function mountShader(
   }
 
   canvas.dataset.backend = qa.backend
-  window.__typeshadeHero = qa
   applyLabels(labelStateOf(qa.backend, still))
 
   /** Everything that happens in one tick when this mount stops drawing. `dispose()` has

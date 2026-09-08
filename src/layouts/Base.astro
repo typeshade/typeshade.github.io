@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css'
-import Nav from '../components/Nav.astro'
-import Footer from '../components/Footer.astro'
+import SiteHeader from '../components/SiteHeader.astro'
+import SiteFooter from '../components/SiteFooter.astro'
 import { facts } from '../lib/examples.ts'
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 const META = {
   title: 'TypeShade: typed shaders in TypeScript, emitted as WGSL and GLSL',
   description:
-    'Write a shader once in TypeScript and emit WGSL for WebGPU and GLSL ES 3.00 for WebGL2. The same source runs on the CPU in double precision so the outputs can be checked.',
+    `Write a shader once in TypeScript and emit WGSL for WebGPU and ${facts.glslTarget} for WebGL2. The same module also compiles to a CPU function in double precision, which the test suite uses to check the compiler's algebra.`,
   ogTitle: 'TypeShade',
   ogAlt: 'TypeShade: one shader source for WebGPU and WebGL2, with a rendered metaballs shader.',
 }
@@ -74,10 +74,10 @@ const jsonLd = {
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
-    <Nav />
+    <SiteHeader />
     <main id="main" tabindex="-1">
       <slot />
     </main>
-    <Footer />
+    <SiteFooter />
   </body>
 </html>
