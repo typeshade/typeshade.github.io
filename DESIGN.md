@@ -5,7 +5,8 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 
 ## Voice
 
-- Say what the tool does. Lead with the reader's problem, then the mechanism, then the proof.
+- Say what the tool does. The front page states what; a linked page explains how or why.
+- The second sentence a reader meets carries a number.
 - Short sentences. One idea per sentence. Plain verbs: "emits", "runs", "checks".
 - Numbers come from the build (`src/lib/examples.ts`). A number that is not measured is not on the page.
 - Do not praise the page or the tool. Words like "honest", "measured" and "proven" go. <!-- ok -->
@@ -13,7 +14,8 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - No em dashes. Use a comma, a colon or a new sentence.
 - No all-caps emphasis in prose or comments.
 - No lists of three for rhythm. Use the number of items there are.
-- Headings are sentences in sentence case, and they say something specific.
+- Headings are short nouns in sentence case: Quick start, Motivation, Checks. A heading is
+  never a slogan and never a full sentence.
 - Comments in code say why in one or two lines. They do not cite design documents.
 
 ## Type
@@ -44,21 +46,25 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - The figure frame (`.figure-frame`) has a 1px border and a 6px radius. No shadows. A table
   sits at its natural width with a caption above it.
 
-## Structure of the front page
+## Structure of the site
 
-The page reads as documentation: a title, a paragraph, a figure, then sections of prose,
-code and figures in one column.
+The front page answers "what is it" in about 350 words, the length of comparable library
+front pages (htmx, esbuild, wgpu, TypeGPU are 250 to 350). Everything that explains how or
+why lives on its own page.
 
-1. Header: the mark, the name, and the four links the footer repeats.
-2. `h1`, then body text: three sentences on what TypeShade is and where the release stands.
-3. The live metaballs shader, captioned by the backend that drew the frame.
-4. Quick start: the submodule command, the authored fragment, and the WGSL and GLSL it emits.
-5. Why this exists: the two-shader problem, the survey figures, three hosts' migration guides.
-6. What it does: a list of capabilities, then the typed diagnostic with its reflected layout
-   and the emulated-double example.
-7. How it is checked: the CPU oracle, the compile gate, the golden files, and the same pass
-   drawn through each API as one side-by-side figure, each half over a still that backend drew.
-8. Examples, then Status.
+- `/`: the name, two sentences, one line of measured numbers, the live metaballs shader, Quick
+  start (the submodule command, the authored fragment, the WGSL it emits), a seven-line list of
+  what it does, links to the pages below, Status.
+- `/motivation`: the two-shader problem, the hosts' migration guides, the survey figures, what
+  TypeShade does about it and what it does not do.
+- `/checks`: the CPU oracle, the compile gate, the golden files, the same pass drawn on
+  WebGPU and on WebGL2 as one side-by-side figure, and the typed diagnostic with its reflected
+  layout.
+- `/examples`: the examples, the print commands, the GLSL emit of the gradient pass, and the
+  emulated-double demo.
+
+The header links to the three pages, the guide and GitHub; the footer repeats them and adds
+llms.txt. Headings are single nouns or short noun phrases: Motivation, Checks, Quick start.
 
 ## Things the build checks
 

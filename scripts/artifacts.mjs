@@ -5,13 +5,13 @@ import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 
-/** One still per mount on the front page. A mount forced onto WebGL2 gets its own file, so the
- *  image under it is a frame that backend drew. */
+/** One still per mount, with the page it is captured from. A mount forced onto WebGL2 gets
+ *  its own file, so the image under it is a frame that backend drew. */
 export const STILLS = [
-  { id: 'metaballs', example: 'metaballs' },
-  { id: 'gradient', example: 'gradient', backend: 'webgpu' },
-  { id: 'gradient-webgl2', example: 'gradient', forceWebGl2: true, backend: 'webgl2' },
-  { id: 'fp64-deep-zoom', example: 'fp64-deep-zoom' },
+  { id: 'metaballs', example: 'metaballs', page: '/' },
+  { id: 'gradient', example: 'gradient', page: '/checks', backend: 'webgpu' },
+  { id: 'gradient-webgl2', example: 'gradient', page: '/checks', forceWebGl2: true, backend: 'webgl2' },
+  { id: 'fp64-deep-zoom', example: 'fp64-deep-zoom', page: '/examples' },
 ]
 
 export const ARTIFACTS = [

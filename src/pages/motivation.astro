@@ -1,0 +1,46 @@
+---
+import Base from '../layouts/Base.astro'
+import { facts } from '../lib/examples.ts'
+import { links } from '../lib/links.ts'
+---
+
+<Base
+  title="Motivation, TypeShade"
+  description="Why TypeShade emits WGSL and GLSL ES 3.00 from one typed TypeScript module."
+>
+  <article class="wrap doc">
+    <h1>Motivation</h1>
+    <p>
+      A shader that has to run on WebGL2 and on WebGPU exists twice. The two languages disagree about
+      types, entry points, resource binding and precision, so the second copy is a rewrite. A fix that
+      lands in one copy and misses the other only shows up on the machines that take the other path, and
+      a reviewer has to read two dialects to decide whether they still mean the same thing.
+    </p>
+    <p>
+      The web is in the middle of one such move. The{' '}
+      <a href={links.maplibreRoadmap.href}>{links.maplibreRoadmap.label}</a>, the{' '}
+      <a href={links.deckglWebgpu.href}>{links.deckglWebgpu.label}</a> and the{' '}
+      <a href={links.pixijsMigration.href}>{links.pixijsMigration.label}</a> each describe a WebGPU path
+      arriving beside an existing WebGL one, so a custom layer written as GLSL will need a WGSL copy.
+    </p>
+    <p>
+      In the <a href={links.survey.href}>{facts.survey.title}</a>, {facts.survey.figure64}% of the{' '}
+      {facts.survey.n}+ shader developers surveyed adapt shaders across platforms, APIs or tools, and
+      nearly {facts.survey.figure10}% describe it as a significant engineering cost or one of their
+      largest.
+    </p>
+    <p>
+      TypeShade keeps one source. The module is typed TypeScript, so a misspelt field or a wrong-typed
+      return is caught in the editor; one intermediate representation emits both languages; and the same
+      module compiles to a CPU function in double precision, so what a backend produces can be checked
+      against a reference computed from the same source. The <a href={links.checks.href}>checks page</a>{' '}
+      says what runs on every push.
+    </p>
+    <p>
+      What it does not do: TypeShade has no renderer and no scene graph. It returns strings and reflection
+      metadata; creating pipelines, binding resources and issuing draws stay with the host. SPIR-V, MSL
+      and HLSL come out of naga or Tint, fed the WGSL, because every native host already reaches WGSL
+      through Dawn or wgpu.
+    </p>
+  </article>
+</Base>

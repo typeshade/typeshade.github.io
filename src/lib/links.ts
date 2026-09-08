@@ -1,6 +1,6 @@
-// Every destination the page links to, in one place. Routes into the compiler are permalinks
-// at the pinned commit, so a link never points at a file the page's numbers were not
-// measured from. No consumer of the library is named or linked anywhere on the page.
+// Every destination the site links to, in one place. Routes into the compiler are permalinks
+// at the pinned commit, so a link never points at a file the site's numbers were not
+// measured from. No consumer of the library is named or linked anywhere.
 import { facts } from './examples.ts'
 
 export interface Destination {
@@ -12,17 +12,20 @@ const mirror = facts.mirrorUrl
 const at = (file: string): string => `${mirror}/blob/${facts.pinnedCommit}/${file}`
 
 export const links = {
-  guide: { label: 'Get started', href: `${at('AUTHORING.md')}#1-the-authoring-surface` },
+  home: { label: 'TypeShade', href: '/' },
+  motivation: { label: 'Motivation', href: '/motivation' },
+  checks: { label: 'Checks', href: '/checks' },
+  examples: { label: 'Examples', href: '/examples' },
+  guide: { label: 'Authoring guide', href: `${at('AUTHORING.md')}#1-the-authoring-surface` },
   mirror: { label: 'GitHub', href: mirror },
-  docs: { label: 'Docs', href: at('README.md') },
-  npm: { label: `npm: typeshade (reserved for ${facts.nextVersion})`, href: 'https://www.npmjs.com/package/typeshade' },
+  docs: { label: 'README', href: at('README.md') },
+  npm: { label: 'typeshade', href: 'https://www.npmjs.com/package/typeshade' },
   llms: { label: 'llms.txt', href: '/llms.txt' },
-  home: { label: 'Back to the front page', href: '/' },
   commit: { label: facts.pinnedCommit, href: `${mirror}/tree/${facts.pinnedCommit}` },
-  releases: { label: `Watch releases for ${facts.nextVersion}`, href: `${mirror}/releases` },
+  releases: { label: 'Watch releases', href: `${mirror}/releases` },
 
   examplesIndex: { label: 'examples/index.ts', href: at('examples/index.ts') },
-  examplesDir: { label: `all ${facts.examples} examples`, href: `${mirror}/tree/${facts.pinnedCommit}/examples` },
+  examplesDir: { label: 'the examples directory', href: `${mirror}/tree/${facts.pinnedCommit}/examples` },
   goldens: { label: 'emit-goldens.test.ts', href: at('examples/emit-goldens.test.ts') },
   packageJson: { label: 'package.json', href: at('package.json') },
   oracle: { label: 'src/core/oracle.ts', href: at('src/core/oracle.ts') },
@@ -40,10 +43,5 @@ export const links = {
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
 
-/** The four destinations the header and the footer both list, with the text the page uses. */
-export const navLinks = [
-  { text: 'Guide', href: links.guide.href },
-  { text: 'Examples', href: links.examplesDir.href },
-  { text: 'GitHub', href: links.mirror.href },
-  { text: 'llms.txt', href: links.llms.href },
-] as const
+/** The header's links. The footer repeats them and adds llms.txt. */
+export const navLinks = [links.motivation, links.checks, links.examples, links.guide, links.mirror] as const

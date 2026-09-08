@@ -1,0 +1,88 @@
+---
+// The same gradient source is mounted twice below: once through the WebGPU path and once
+// forced onto WebGL2. Each caption is written from the backend that actually drew the frame.
+import Base from '../layouts/Base.astro'
+import DiagnosticBlock from '../components/DiagnosticBlock.astro'
+import LayoutTable from '../components/LayoutTable.astro'
+import ShaderCanvas from '../components/ShaderCanvas.astro'
+import type { CanvasText } from '../components/ShaderCanvas.astro'
+import { facts } from '../lib/examples.ts'
+import { links } from '../lib/links.ts'
+import { typedError } from '../lib/typed-error.ts'
+
+const glslTarget = facts.glslTarget
+const std = facts.layoutStandards[0]
+const err = typedError()
+
+const gpuFrame: CanvasText = {
+  neutral: 'The WGSL emit, drawn on WebGPU at build time.',
+  webgpu: 'The WGSL emit, drawn here on WebGPU.',
+  webgl2: `WebGPU is not available here, so the ${glslTarget} emit drew this frame on WebGL2.`,
+  none: 'The WGSL emit, drawn on WebGPU at build time. This browser has no WebGPU or WebGL2.',
+}
+const glFrame: CanvasText = {
+  neutral: `The ${glslTarget} emit, drawn on WebGL2 at build time.`,
+  webgpu: 'The WGSL emit, drawn here on WebGPU.',
+  webgl2: `The ${glslTarget} emit, drawn here on WebGL2.`,
+  none: `The ${glslTarget} emit, drawn on WebGL2 at build time. This browser has no WebGPU or WebGL2.`,
+}
+---
+
+<Base
+  title="Checks, TypeShade"
+  description="What TypeShade's CI runs on every push: the CPU oracle, the compile gate on Tint and WebGL2, and the golden files."
+>
+  <article class="wrap doc">
+    <h1>Checks</h1>
+    <p>
+      The repository's CI runs these on every push and pull request, in{' '}
+      <a href={links.ciGates.href}>{links.ciGates.label}</a>:
+    </p>
+    <ol>
+      <li>
+        The same module compiles to a CPU function that runs in f64 arithmetic. In its default mode only its
+        equality tests round to f32 first, so they agree with the GPU; an f32 mode that rounds after every
+        operation is opt-in. The test suite checks that function against known answers and against a
+        second CPU backend, generated JavaScript, which must match it bit for bit. It says nothing about
+        what rounding does on a driver, and no GPU output is compared against it in this repository.{' '}
+        <a href={links.oracle.href}>{links.oracle.label}</a>
+      </li>
+      <li>
+        The compile gate emits every registered example, hands each WGSL emit to Tint inside headless
+        Chromium, and compiles and links both {glslTarget} stages of every renderable example on a real
+        WebGL2 context. It also hands each compiler a shader that cannot compile: if either accepts that
+        non-program, the gate fails and the verdicts on the examples do not count.{' '}
+        <a href={links.compileGate.href}>{links.compileGate.label}</a>
+      </li>
+      <li>
+        Golden files hold the emitted bytes of every example, so any change in a backend surfaces as a diff
+        in review. <a href={links.goldens.href}>{links.goldens.label}</a>
+      </li>
+    </ol>
+    <p>
+      The gradient pass from the front page, drawn once by each backend. No pixel comparison between the
+      two is committed yet.
+    </p>
+    <div class="figure-pair">
+      <ShaderCanvas example="gradient" aspect="3/2" still caption={gpuFrame} />
+      <ShaderCanvas example="gradient" stillId="gradient-webgl2" aspect="3/2" still forceWebGl2 caption={glFrame} />
+    </div>
+
+    <section>
+      <h2>At author time</h2>
+      <p>
+        The uniform block is declared once, and every field read is typed against that declaration.
+        Misspell one and TypeScript says so in the editor, before a string reaches a GPU.
+      </p>
+      <figure class="figure">
+        <DiagnosticBlock />
+        <LayoutTable />
+        <figcaption class="figure-caption">
+          The wrong read on line {err.wrongLine}, the diagnostic it produces, and the {std} layout{' '}
+          <a href={links.reflectApi.href}>reflect()</a> recovers for the block it reads from: {err.layout.size}{' '}
+          bytes over {err.layout.fields.length} fields. The gap after the first field is alignment.
+        </figcaption>
+      </figure>
+    </section>
+  </article>
+</Base>

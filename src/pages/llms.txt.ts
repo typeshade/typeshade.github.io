@@ -20,6 +20,9 @@ const summary = [
 ].join(' ')
 
 const table = [
+  { dest: links.motivation, note: 'why one source for two shader languages' },
+  { dest: links.checks, note: 'what CI runs on every push' },
+  { dest: links.examples, note: `the ${facts.examples} examples, the GLSL emit and the emulated-double demo` },
   { dest: links.guide, note: 'the authoring guide' },
   {
     dest: links.mirror,

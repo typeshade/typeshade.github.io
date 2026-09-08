@@ -1,5 +1,5 @@
 ---
-// The name, the mark and the four links the footer repeats.
+// The name, the mark and the links the footer repeats.
 import { MARK } from '../lib/mark.ts'
 import { navLinks } from '../lib/links.ts'
 ---
@@ -18,6 +18,6 @@ import { navLinks } from '../lib/links.ts'
     TypeShade
   </a>
   <nav class="site-links" aria-label="Primary">
-    {navLinks.map((l) => <a href={l.href}>{l.text}</a>)}
+    {navLinks.map((l) => <a href={l.href}>{l.label}</a>)}
   </nav>
 </header>

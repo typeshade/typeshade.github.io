@@ -26,17 +26,20 @@ try {
     reducedMotion: 'reduce',
   })
   const page = await context.newPage()
-  await page.goto(`${server.url}/`, { waitUntil: 'networkidle' })
-  await page.evaluate(() => document.fonts.ready)
-  await page.waitForFunction(
-    () => [...document.querySelectorAll('canvas')].every((c) => (c as { __shader?: unknown }).__shader != null),
-    undefined,
-    { timeout: 30_000 },
-  )
-  // Hide the previous stills so the screenshot is the canvas alone.
-  await page.addStyleTag({ content: '.figure-frame > img, .figure-split { visibility: hidden }' })
-
-  for (const { id, example, forceWebGl2, backend: expected } of STILLS) {
+  let current = ''
+  for (const { id, example, page: route, forceWebGl2, backend: expected } of STILLS) {
+    if (route !== current) {
+      await page.goto(`${server.url}${route}`, { waitUntil: 'networkidle' })
+      await page.evaluate(() => document.fonts.ready)
+      await page.waitForFunction(
+        () => [...document.querySelectorAll('canvas')].every((c) => (c as { __shader?: unknown }).__shader != null),
+        undefined,
+        { timeout: 30_000 },
+      )
+      // Hide the previous stills so the screenshot is the canvas alone.
+      await page.addStyleTag({ content: '.figure-frame > img, .figure-split { visibility: hidden }' })
+      current = route
+    }
     const forced = forceWebGl2 ? '[data-force-webgl2]' : ':not([data-force-webgl2])'
     const frame = page.locator(`[data-shader-canvas][data-example="${example}"]${forced}`).first()
     const backend = await frame.locator('canvas').getAttribute('data-backend')

@@ -21,7 +21,8 @@ asks you to update the copy.
 
 | Route | What it is |
 | --- | --- |
-| `/` | the page |
+| `/` | the front page, about 350 words |
+| `/motivation`, `/checks`, `/examples` | the longer material the front page links to |
 | `/404.html` | not found |
 | `/llms.txt` | a plain-text summary generated from the same records as the page |
 | `/og/` | the social card. Only exists so `scripts/capture-og.ts` can photograph it; removed from `dist/` on every build |
