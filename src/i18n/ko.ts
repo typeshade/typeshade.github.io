@@ -15,8 +15,8 @@ export const ko: Copy = {
   skip: '본문으로 건너뛰기',
 
   meta: {
-    title: 'TypeShade: TypeScript로 쓰는 타입 있는 셰이더, WGSL과 GLSL로 출력',
-    description: `TypeScript로 셰이더를 한 번 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 모듈이 CPU에서 배정밀도로도 실행되고, 테스트는 컴파일러의 계산을 그 결과와 대조합니다.`,
+    title: 'TypeShade: WebGPU와 WebGL2를 위한 TypeScript 셰이더',
+    description: `TypeScript로 셰이더를 한 번 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 모듈이 CPU에서 f64로 실행되어 출력을 대조할 수 있습니다.`,
     ogAlt: 'TypeShade: WebGPU와 WebGL2를 위한 하나의 셰이더 소스. 렌더링된 metaballs 셰이더.',
   },
 
@@ -107,8 +107,8 @@ export const ko: Copy = {
   },
 
   motivation: {
-    title: '동기, TypeShade',
-    description: `TypeShade가 타입 있는 TypeScript 모듈 하나에서 WGSL과 ${glsl}을 내는 이유.`,
+    title: 'WebGPU와 WebGL2에 셰이더 소스 하나를 쓰는 이유, TypeShade',
+    description: `TypeShade가 타입 있는 TypeScript 모듈 하나에서 WGSL과 ${glsl}을 내는 이유. 셰이더 언어 두 개를 유지하는 비용과 Khronos 설문 수치.`,
     h1: '동기',
     paragraphs: [
       'WebGL2와 WebGPU 양쪽에서 돌아야 하는 셰이더는 두 번 존재합니다. 두 언어는 타입, 진입점, 리소스 바인딩, 정밀도에서 서로 다르므로 두 번째 사본은 다시 쓰는 일입니다. 한쪽에만 들어간 수정은 다른 경로를 타는 기기에서만 드러나고, 리뷰어는 두 방언을 읽으면서 둘이 여전히 같은 뜻인지 판단해야 합니다.',
@@ -120,7 +120,7 @@ export const ko: Copy = {
   },
 
   checks: {
-    title: '검증, TypeShade',
+    title: 'TypeShade 검증: CPU 오라클, 컴파일 게이트, 골든 파일',
     description: 'TypeShade의 CI가 푸시마다 실행하는 것: CPU 오라클, Tint와 WebGL2에서 도는 컴파일 게이트, 골든 파일.',
     h1: '검증',
     intro: '저장소의 CI는 푸시와 풀 리퀘스트마다 [CI 워크플로](ciGates)에서 다음을 실행합니다.',
@@ -150,7 +150,7 @@ export const ko: Copy = {
   },
 
   examples: {
-    title: '예제, TypeShade',
+    title: `TypeShade 예제 ${facts.examples}개, GLSL 출력, 에뮬레이션 f64`,
     description: `TypeShade 예제 ${facts.examples}개, gradient 패스의 ${glsl} 출력, 에뮬레이션 배정밀도 데모.`,
     h1: '예제',
     intro: `저장소에는 실행 가능한 예제가 ${facts.examples}개 있습니다. 지도 관련 패스, ShaderToy 시절의 화면 공간 효과, 에뮬레이션 배정밀도 계열, 컴퓨트 커널 하나를 다룹니다. 그중 ${facts.bothTargets}개가 한 소스에서 WGSL과 ${glsl}을 모두 냅니다. 컴퓨트 커널은 ${glsl}로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL과 리플렉션만 내고, WebGL2 경로는 선택형 에뮬레이션입니다. ${facts.fp64Examples}개가 에뮬레이션 배정밀도를 씁니다. 렌더링 가능한 예제는 [examples/index.ts](examplesIndex)에서 export되며, [예제 디렉터리](examplesDir)에서 둘러볼 수 있습니다.`,
@@ -171,6 +171,7 @@ export const ko: Copy = {
 
   notFound: {
     title: '페이지를 찾을 수 없음, TypeShade',
+    description: 'typeshade.dev의 이 주소에는 아무것도 없습니다.',
     h1: '이 주소에는 아무것도 없습니다.',
     p: '페이지가 옮겨졌을 수 있습니다. 첫 페이지와 작성 가이드는 그대로 있습니다.',
     links: '[첫 페이지로 가기](home), 또는 [작성 가이드](guide) 읽기.',

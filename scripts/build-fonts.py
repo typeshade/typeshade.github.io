@@ -3,7 +3,7 @@
 
 IBM Plex Sans KR, subset to the 2,350 KS X 1001 syllables, the compatibility jamo, and every
 non-ASCII character the translated copy uses. The complete font is 440 KB per weight; the
-subset is about 110 KB. The sidecar lists the code points each file carries and the hash of
+subset is about 115 KB with the font's hints kept, which Windows rendering relies on. The sidecar lists the code points each file carries and the hash of
 each file, and the build refuses a copy that uses a character the subset does not have.
 
 Needs fonttools and brotli:  pip install fonttools brotli
@@ -99,7 +99,6 @@ def main() -> None:
                     f"--unicodes-file={unicodes}",
                     "--flavor=woff2",
                     "--layout-features=*",
-                    "--no-hinting",
                     "--desubroutinize",
                     f"--output-file={out}",
                 ],

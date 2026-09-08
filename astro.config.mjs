@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'astro/config'
@@ -8,6 +9,8 @@ import { verifyArtifacts } from './scripts/artifacts.mjs'
 import { verifyKoreanFonts } from './scripts/fonts.mjs'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
+// The sitemap's lastmod is the last commit's date, so it moves when the site does.
+const lastmod = execSync('git log -1 --format=%cI', { cwd: root, encoding: 'utf8' }).trim()
 
 // typeshade.dev: a static site built from the compiler vendored at vendor/shader-dsl. Every
 // code sample and number on the page is computed from that checkout at build time.
@@ -43,6 +46,7 @@ export default defineConfig({
     sitemap({
       filter: (page) => new URL(page).pathname.replace(/\/$/, '') !== '/og',
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
+      serialize: (item) => ({ ...item, lastmod }),
     }),
   ],
   vite: { plugins: [tailwindcss()] },

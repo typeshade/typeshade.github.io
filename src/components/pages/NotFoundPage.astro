@@ -10,7 +10,7 @@ const { locale } = Astro.props
 const n = copyFor(locale).notFound
 ---
 
-<Base locale={locale} path="/404" title={n.title} noAlternates>
+<Base locale={locale} path="/404" title={n.title} description={n.description} noAlternates noindex>
   <article class="wrap doc">
     <h1>{n.h1}</h1>
     <p>{n.p}</p>

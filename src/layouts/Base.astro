@@ -14,13 +14,16 @@ interface Props {
   description?: string
   /** A page that exists in one locale only (the 404) lists no alternates. */
   noAlternates?: boolean
+  /** Keep the page out of search indexes (the 404). */
+  noindex?: boolean
 }
 
-const { locale, path, noAlternates = false } = Astro.props
+const { locale, path, noAlternates = false, noindex = false } = Astro.props
 const t = copyFor(locale)
 const title = Astro.props.title ?? t.meta.title
 const description = Astro.props.description ?? t.meta.description
 
+const OG_LOCALE: Record<Locale, string> = { en: 'en_US', ko: 'ko_KR' }
 const site = Astro.site ?? new URL('https://typeshade.dev/')
 const canonical = localeUrl(site, locale, path)
 const ogImage = new URL('/og.png', site).toString()
@@ -54,6 +57,7 @@ const jsonLd = {
     <meta name="description" content={description} />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121212" />
+    {noindex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
     {alternates.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
     {alternates.length > 0 && <link rel="alternate" hreflang="x-default" href={localeUrl(site, defaultLocale, path)} />}
@@ -66,7 +70,8 @@ const jsonLd = {
     <meta property="og:site_name" content="TypeShade" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
-    <meta property="og:locale" content={locale === 'ko' ? 'ko_KR' : 'en_US'} />
+    <meta property="og:locale" content={OG_LOCALE[locale]} />
+    {!noAlternates && locales.filter((l) => l !== locale).map((l) => <meta property="og:locale:alternate" content={OG_LOCALE[l]} />)}
     <meta property="og:title" content="TypeShade" />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />

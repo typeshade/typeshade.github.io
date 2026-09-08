@@ -16,8 +16,8 @@ export const en = {
   skip: 'Skip to content',
 
   meta: {
-    title: 'TypeShade: typed shaders in TypeScript, emitted as WGSL and GLSL',
-    description: `Write a shader once in TypeScript and emit WGSL for WebGPU and ${glsl} for WebGL2. The same module also compiles to a CPU function in double precision, which the test suite uses to check the compiler's algebra.`,
+    title: 'TypeShade: typed shaders in TypeScript for WebGPU and WebGL2',
+    description: `Write a shader once in TypeScript and emit WGSL for WebGPU and ${glsl} for WebGL2. The same module runs on the CPU in f64, so its output can be checked.`,
     ogAlt: 'TypeShade: one shader source for WebGPU and WebGL2, with a rendered metaballs shader.',
   },
 
@@ -109,8 +109,8 @@ export const en = {
   },
 
   motivation: {
-    title: 'Motivation, TypeShade',
-    description: `Why TypeShade emits WGSL and ${glsl} from one typed TypeScript module.`,
+    title: 'Why one shader source for WebGPU and WebGL2, TypeShade',
+    description: `Why TypeShade emits WGSL and ${glsl} from one typed TypeScript module: what maintaining two shader languages costs, with the Khronos survey figures.`,
     h1: 'Motivation',
     paragraphs: [
       'A shader that has to run on WebGL2 and on WebGPU exists twice. The two languages disagree about types, entry points, resource binding and precision, so the second copy is a rewrite. A fix that lands in one copy and misses the other only shows up on the machines that take the other path, and a reviewer has to read two dialects to decide whether they still mean the same thing.',
@@ -122,8 +122,8 @@ export const en = {
   },
 
   checks: {
-    title: 'Checks, TypeShade',
-    description: "What TypeShade's CI runs on every push: the CPU oracle, the compile gate on Tint and WebGL2, and the golden files.",
+    title: 'How TypeShade is checked: oracle, compile gate, goldens',
+    description: "What TypeShade's CI runs on every push: a CPU oracle in f64, a compile gate on Tint and a real WebGL2 context, and golden files for every emit.",
     h1: 'Checks',
     intro: "The repository's CI runs these on every push and pull request, in [the CI workflow](ciGates):",
     items: [
@@ -152,8 +152,8 @@ export const en = {
   },
 
   examples: {
-    title: 'Examples, TypeShade',
-    description: `The ${facts.examples} TypeShade examples, the ${glsl} emit of the gradient pass, and the emulated double precision demo.`,
+    title: `TypeShade examples: ${facts.examples} shaders, GLSL emit, emulated f64`,
+    description: `The ${facts.examples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
     h1: 'Examples',
     intro: `There are ${facts.examples} runnable examples in the repository, covering cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel. ${facts.bothTargets} of them emit WGSL and ${glsl} from one source. The compute kernel has no vertex or fragment stage to emit as ${glsl}, so it emits WGSL and reflection; its WebGL2 path is the opt-in emulation. ${facts.fp64Examples} use emulated double precision. The renderable ones are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
     printIntro: 'The first command below prints WGSL, GLSL and reflection for every example; the second does one by id.',
@@ -173,6 +173,7 @@ export const en = {
 
   notFound: {
     title: 'Page not found, TypeShade',
+    description: 'There is nothing at this address on typeshade.dev.',
     h1: 'There is nothing at this address.',
     p: 'The page may have moved. The front page and the authoring guide are still here.',
     links: '[Go to the front page](home), or read the [authoring guide](guide).',
