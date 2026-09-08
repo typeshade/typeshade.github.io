@@ -92,9 +92,17 @@ function pinnedCommit(): string {
   return sha
 }
 
+function pinnedYear(): number {
+  const date = execSync('git -C vendor/shader-dsl log -1 --format=%cs HEAD', { encoding: 'utf8' }).trim()
+  const year = Number(date.slice(0, 4))
+  if (!Number.isInteger(year) || year < 2020) throw new Error(`[examples] unusable commit date '${date}'`)
+  return year
+}
+
 const pkg = JSON.parse(readFileSync(path.join(vendorRoot, 'package.json'), 'utf8')) as {
   version: string
   license: string
+  author: string
   dependencies?: unknown
   peerDependencies?: unknown
   optionalDependencies?: unknown
@@ -159,6 +167,9 @@ export const facts = {
   testFiles: testFiles.length,
   pinnedCommit: pinnedCommit(),
   license: pkg.license,
+  author: pkg.author,
+  /** The year of the pinned commit, for the copyright line. */
+  year: pinnedYear(),
   glslTarget: glslTarget(),
   layoutStandards: layoutStandards(),
   runtimeDeps: runtimeDeps(),

@@ -69,7 +69,7 @@ def used_codepoints() -> set[int]:
     for path in (ROOT / "src" / "i18n").glob("*.ts"):
         if path.name in ("index.ts", "en.ts"):
             continue
-        out |= {ord(c) for c in path.read_text(encoding="utf-8") if ord(c) > 0x7F}
+        out |= {ord(c) for c in path.read_text(encoding="utf-8") if ord(c) > 0xFF}
     return out
 
 

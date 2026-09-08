@@ -34,7 +34,9 @@ export function verifyKoreanFonts(root) {
     if (!name.endsWith('.ts') || name === 'index.ts' || name === 'en.ts') continue
     for (const ch of readFileSync(path.join(dir, name), 'utf8')) {
       const cp = ch.codePointAt(0)
-      if (cp > 0x7f && !covered.has(cp)) missing.set(ch, name)
+      // Latin-1 (© and the like) comes from the Plex Sans latin subset, whose unicode-range
+      // covers U+0000 to U+00FF; only characters beyond it need the Korean font.
+      if (cp > 0xff && !covered.has(cp)) missing.set(ch, name)
     }
   }
   if (missing.size > 0) {

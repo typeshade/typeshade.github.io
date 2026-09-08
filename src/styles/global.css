@@ -1,5 +1,6 @@
 /* typeshade.dev styles. Tokens, fonts, base rules, then one block per component.
-   The page is one column of prose, code and figures; light is the default palette. */
+   A full-width header and footer frame either the front page (headline, live shader, three
+   points) or one column of prose, code and figures; light is the default palette. */
 
 @import 'tailwindcss';
 
@@ -15,7 +16,9 @@
   --color-text-1: #1a1a1a;
   --color-text-2: #454545;
   --color-text-3: #6b6b6b;
+  --color-surface-3: #e4e4df;
   --color-accent: #1f6f43;
+  --color-accent-2: #3d9a66;
   --color-diag: #b3261e;
 
   --radius-sm: 4px;
@@ -44,6 +47,10 @@
   --gutter-x: 20px;
   /* One column, about 72 characters of prose wide. Code and figures share it. */
   --content: min(740px, 100vw - 2 * var(--gutter-x));
+  /* The wider measure the front page's figure, highlights and the site map use. */
+  --wide: min(960px, 100vw - 2 * var(--gutter-x));
+  --container: 1280px;
+  --nav-height: 56px;
   --section-gap: 48px;
   --ring: 0 0 0 2px var(--color-ground), 0 0 0 4px var(--color-accent);
 }
@@ -60,7 +67,9 @@
     --color-text-1: #ededed;
     --color-text-2: #bdbdbd;
     --color-text-3: #8f8f8f;
+    --color-surface-3: #2e2e2e;
     --color-accent: #7fd3a1;
+    --color-accent-2: #b5e8c8;
     --color-diag: #ff8a80;
   }
 }
@@ -124,7 +133,7 @@
   overflow-wrap: anywhere;
 }
 :lang(ko) h1, :lang(ko) h2, :lang(ko) h3 { letter-spacing: -0.005em; line-height: 1.35 }
-:lang(ko) .figure-caption, :lang(ko) .site-links { line-height: 1.65 }
+:lang(ko) .figure-caption, :lang(ko) .site-nav, :lang(ko) .site-map { line-height: 1.65 }
 
 /* Base */
 html { background: var(--color-ground) }
@@ -157,19 +166,99 @@ body {
 }
 .skip:focus-visible { clip-path: none }
 
-/* Header: the mark, the name, and the four links the footer repeats */
-.site-header {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
-  gap: 8px 24px; padding-block: 20px;
+/* Header: a bar with the mark and the name, the page links, and the other languages.
+   Under 48rem the links live in a panel behind a menu button (a details element). */
+.site-header { border-block-end: 1px solid var(--color-line-1); background: var(--color-ground) }
+.site-header-in {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  block-size: var(--nav-height); max-inline-size: var(--container); margin-inline: auto;
+  padding-inline: var(--gutter-x);
 }
 .site-name {
   display: inline-flex; align-items: center; gap: 8px;
-  color: var(--color-text-1); font-weight: 600; text-decoration: none;
+  color: var(--color-text-1); font-weight: 600; font-size: 1.0625rem; text-decoration: none;
 }
-.site-name svg { inline-size: 18px; block-size: 18px; flex: none; translate: 0 1px }
-.site-links { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: var(--text-meta) }
-.site-links a { color: var(--color-text-2); text-decoration: none }
-.site-links a:hover { color: var(--color-text-1); text-decoration: underline; text-underline-offset: 3px }
+.site-name svg { inline-size: 20px; block-size: 20px; flex: none; translate: 0 1px }
+.site-nav { display: none; align-items: center; gap: 24px; font-size: var(--text-meta); font-weight: 500 }
+.site-nav a { color: var(--color-text-2); text-decoration: none; padding-block: 4px }
+.site-nav a:hover { color: var(--color-text-1) }
+.site-nav-sep { inline-size: 1px; block-size: 20px; background: var(--color-line-1) }
+.site-menu summary {
+  position: relative; list-style: none; display: block; inline-size: 40px; block-size: 40px;
+  margin-inline-end: -8px; cursor: pointer; border-radius: var(--radius-sm);
+}
+.site-menu summary::-webkit-details-marker { display: none }
+.site-menu-bar {
+  position: absolute; inset-inline-start: 10px; inline-size: 20px; block-size: 2px;
+  background: var(--color-text-1); border-radius: 1px; transform-origin: center;
+  transition: transform 0.2s, opacity 0.2s, inset-block-start 0.2s;
+}
+.site-menu-bar:nth-child(1) { inset-block-start: 12px }
+.site-menu-bar:nth-child(2) { inset-block-start: 19px }
+.site-menu-bar:nth-child(3) { inset-block-start: 26px }
+.site-menu[open] .site-menu-bar:nth-child(1) { inset-block-start: 19px; transform: rotate(45deg) }
+.site-menu[open] .site-menu-bar:nth-child(2) { opacity: 0 }
+.site-menu[open] .site-menu-bar:nth-child(3) { inset-block-start: 19px; transform: rotate(-45deg) }
+.site-screen {
+  position: fixed; inset: calc(var(--nav-height) + 1px) 0 0 0; z-index: 50; overflow-y: auto;
+  display: flex; flex-direction: column; padding: 8px var(--gutter-x) 96px;
+  background: var(--color-ground);
+}
+.site-screen a {
+  display: block; padding: 14px 0; border-block-end: 1px solid var(--color-line-1);
+  color: var(--color-text-1); font-weight: 500; text-decoration: none;
+}
+@media (min-width: 48rem) {
+  .site-nav { display: flex }
+  .site-menu { display: none }
+}
+
+/* Front page: the headline and its three links, then the live shader and three points */
+.hero { padding: 56px var(--gutter-x) 40px; text-align: center }
+.hero-title {
+  max-inline-size: var(--wide); margin-inline: auto;
+  font-size: 2.5rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em;
+}
+.hero-title .accent {
+  background: linear-gradient(315deg, var(--color-accent) 25%, var(--color-accent-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:lang(ko) .hero-title { font-weight: 600; letter-spacing: -0.01em }
+.hero-tagline {
+  max-inline-size: 720px; margin: 20px auto 32px;
+  font-size: 1.125rem; line-height: 1.5; color: var(--color-text-2);
+}
+.hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 16px }
+.button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px;
+  border-radius: 8px; background: var(--color-surface-2); color: var(--color-text-1);
+  font-size: var(--text-ui); font-weight: 500; text-decoration: none; transition: background-color 0.2s;
+}
+.button:hover { background: var(--color-surface-3) }
+.button-icon { inline-size: 10px; block-size: 10px; fill: currentColor; transition: transform 0.2s }
+.button:hover .button-icon { transform: translateX(2px) }
+.wide { inline-size: var(--wide); margin-inline: auto }
+.demo { margin-block-start: 8px }
+.highlights { display: grid; gap: 28px; padding-block: 48px 8px; color: var(--color-text-2) }
+.highlight h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; color: var(--color-text-1); margin-block-end: 0.5em }
+.highlight p { font-size: 0.9375rem; line-height: 1.6 }
+.highlight code { font-family: var(--font-mono); font-size: 0.9em }
+.front-doc { padding-block-start: 32px }
+.front-doc h2:first-child { margin-block-start: 0 }
+@media (min-width: 40rem) {
+  .hero { padding: 80px var(--gutter-x) 56px }
+  .hero-title { font-size: 3.25rem }
+  .hero-tagline { font-size: 1.25rem; margin: 24px auto 40px }
+}
+@media (min-width: 48rem) {
+  .hero-title { font-size: 4rem }
+  .highlights { grid-template-columns: repeat(3, 1fr); gap: 32px; padding-block: 64px 16px }
+}
+@media (min-width: 64rem) {
+  .hero { padding: 96px var(--gutter-x) 64px }
+  .hero-title { font-size: 4.75rem }
+  .hero-tagline { font-size: 1.375rem }
+}
 
 /* The document column */
 .doc { padding-block: 8px 24px }
@@ -233,14 +322,20 @@ body {
 .layout-table th:last-child, .layout-table td:last-child { padding-inline-end: 0 }
 .layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-meta); color: var(--color-text-3) }
 
-/* Footer: the header's links again, and the commit the page was built from */
-.site-footer {
-  margin-block-start: var(--section-gap); border-block-start: 1px solid var(--color-line-1);
-  padding-block: 24px 48px; font-size: var(--text-meta); color: var(--color-text-3);
+/* Footer: the site map in three columns, then the licence, the copyright and the commit */
+.site-footer { margin-block-start: 80px; background: var(--color-surface-1); border-block-start: 1px solid var(--color-line-1) }
+.site-map { inline-size: var(--wide); margin-inline: auto; padding-block: 40px 24px; display: grid; gap: 28px }
+.site-map h2 { font-size: var(--text-meta); font-weight: 600; color: var(--color-text-1) }
+.site-map li { margin-block-start: 8px }
+.site-map a { font-size: var(--text-meta); color: var(--color-text-2); text-decoration: none }
+.site-map a:hover { color: var(--color-text-1); text-decoration: underline; text-underline-offset: 3px }
+.site-legal {
+  border-block-start: 1px solid var(--color-line-1); padding: 22px var(--gutter-x) 24px;
+  text-align: center; font-size: 0.75rem; line-height: 20px; font-weight: 500; color: var(--color-text-2);
 }
-.site-footer p { margin-block-start: 12px }
-.site-footer a { color: var(--color-text-2); text-decoration: underline; text-underline-offset: 3px }
-.site-footer a:hover { color: var(--color-text-1) }
+.site-legal a { color: var(--color-text-1); text-decoration: none }
+.site-legal a:hover { color: var(--color-text-2) }
+@media (min-width: 40rem) { .site-map { grid-template-columns: repeat(3, 1fr) } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
@@ -249,4 +344,6 @@ body {
 @media (forced-colors: active) {
   .figure-split { display: none }
   a { color: LinkText }
+  .hero-title .accent { background: none; color: CanvasText }
+  .site-menu-bar { background: CanvasText }
 }

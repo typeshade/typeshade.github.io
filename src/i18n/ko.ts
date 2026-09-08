@@ -24,12 +24,23 @@ export const ko: Copy = {
     motivation: '동기',
     checks: '검증',
     examples: '예제',
-    guide: '작성 가이드',
+    guide: '가이드',
     github: 'GitHub',
     llms: 'llms.txt',
     languages: '언어',
+    menu: '메뉴',
   },
-  footer: { builtFrom: '빌드 기준 커밋' },
+  footer: {
+    docs: '문서',
+    project: '프로젝트',
+    languages: '언어',
+    readme: 'README',
+    releases: '릴리스',
+    npm: 'npm 패키지',
+    license: '[MIT 라이선스](license)로 배포됩니다.',
+    copyright: `Copyright © ${facts.year} ${facts.author}`,
+    builtFrom: '빌드 기준 커밋',
+  },
 
   canvas: {
     aria: (title: string) => ({
@@ -63,8 +74,15 @@ export const ko: Copy = {
   },
 
   front: {
-    intro1: `TypeShade는 셰이더를 쓰기 위한 TypeScript 라이브러리입니다. 타입이 붙은 모듈 하나에서 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나오고, 같은 모듈이 CPU에서 배정밀도로 실행되므로 컴파일러의 출력을 그 결과와 대조해 확인할 수 있습니다.`,
-    intro2: `저장소의 예제 ${facts.examples}개 중 ${facts.bothTargets}개가 한 소스에서 두 출력을 모두 냅니다. 런타임 의존성 ${facts.runtimeDeps}개, 테스트 파일 ${facts.testFiles}개, ${facts.license} 라이선스입니다. ${facts.nextVersion} 버전은 아직 npm에 없습니다. 저장소 자체가 패키지이고, git 서브모듈로 사용합니다.`,
+    hero: {
+      before: 'WebGPU와 WebGL2를 위한',
+      accent: '타입 있는 셰이더',
+      after: '',
+      tagline: `셰이더를 한 번 쓰면 WGSL과 ${glsl}이 나오는 TypeScript 라이브러리입니다. 같은 모듈이 CPU에서 배정밀도로 실행되므로 컴파일러의 출력을 대조해 확인할 수 있습니다.`,
+      getStarted: '시작하기',
+      why: 'TypeShade를 쓰는 이유',
+      examples: '예제',
+    },
     metaballs: {
       neutral: `Metaballs, examples/${exampleFile('metaballs')}에서. 정지 화면은 빌드 시점에 캡처한 것입니다.`,
       webgpu: 'Metaballs. WGSL 출력이 WebGPU에서 이 프레임을 그리고 있습니다.',
@@ -72,40 +90,31 @@ export const ko: Copy = {
       none: 'Metaballs. 빌드 시점에 렌더링한 화면입니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.',
       reduced: `Metaballs, WGSL과 ${glsl}로 컴파일됨. 시스템이 움직임 줄이기를 요청해서 한 프레임만 그렸습니다.`,
     },
+    highlights: [
+      {
+        h: '소스 하나',
+        p: `타입이 붙은 모듈 하나에서 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 저장소의 예제 ${facts.examples}개 중 ${facts.bothTargets}개가 파일 하나에서 두 출력을 모두 냅니다.`,
+      },
+      {
+        h: '검증됨',
+        p: '같은 모듈이 CPU에서 f64로 실행되고, 테스트는 컴파일러의 산술을 그 결과와 대조합니다. 모든 출력은 푸시마다 Tint에서 컴파일되고 WebGL2에서 링크됩니다.',
+      },
+      {
+        h: '타입 검사',
+        p: `유니폼 필드 이름을 잘못 쓰거나 반환 타입이 틀리면 편집기에서 TypeScript 오류가 납니다. \`reflect()\`는 바인드 그룹과 ${facts.layoutStandards.join('과 ')} 레이아웃을 같은 중간 표현에서 읽어 냅니다.`,
+      },
+    ],
     quickStart: {
       h: '빠른 시작',
       p1: `패키지는 TypeScript 소스를 그대로 담고 있으므로, 빌드에 TypeScript를 컴파일하는 도구가 필요합니다. 아래는 gradient 예제의 프래그먼트 단계로, \`${hero.file}\`에 쓰인 그대로 ${hero.authoredLines}줄입니다.`,
       p2: '여기서 이 WGSL 진입점이 나옵니다.',
       p3: `같은 함수의 ${glsl} 단계와, [reflect()](reflectApi)가 복원하는 유니폼 레이아웃은 [예제 페이지](examples)에 있습니다. 나머지 API는 [작성 가이드](guide)에서 다룹니다.`,
     },
-    does: {
-      h: '하는 일',
-      items: [
-        '타입이 붙은 함수, 진입점, 제어 흐름, 그리고 유니폼 블록, 스토리지 버퍼, IO 구조체, 텍스처, 샘플러 선언.',
-        '유니폼 필드 이름을 잘못 쓰거나 반환 타입이 틀리면 편집기에서 TypeScript 오류가 납니다.',
-        `\`reflect()\`: 바인드 그룹, ${facts.layoutStandards.join('과 ')} 레이아웃, 진입점 시그니처를 같은 중간 표현에서 읽어 냅니다.`,
-        'f32와 같은 문법으로 쓰는 에뮬레이션 배정밀도.',
-        'IR 위의 최적화 패스: 공통 부분식 제거, 죽은 코드 제거, 루프 불변식 끌어올리기, 상수 접기.',
-        'CPU 오라클: 모듈을 f64 JavaScript 함수로 컴파일한 것으로, 테스트가 사용합니다.',
-        '코드가 붙은 진단, 한 모듈을 N가지로 특수화해 출력하는 `variantFamily`, 출력 변경을 검토하는 `semanticDiff`.',
-      ],
-      note: 'TypeShade에는 렌더러가 없습니다. 문자열과 리플렉션 메타데이터를 돌려줄 뿐이고, 파이프라인 생성, 바인딩, 드로우 호출은 호스트의 몫입니다.',
-    },
-    more: {
-      h: '더 읽기',
-      items: [
-        '[동기](motivation): 두 셰이더 언어에 소스 하나를 쓰는 이유.',
-        '[검증](checks): CPU 오라클, Tint와 WebGL2에서 도는 컴파일 게이트, 골든 파일.',
-        `[예제](examples): 예제 ${facts.examples}개, GLSL 출력, 에뮬레이션 배정밀도 데모.`,
-        '[작성 가이드](guide)와 [README](docs), GitHub에서.',
-      ],
-    },
     status: {
       h: '상태',
       p: `정식 출시 전입니다. 저장소는 ${facts.mirrorVersion} 버전이고, npm 이름 [typeshade](npm)는 ${facts.nextVersion} 출시를 위해 예약되어 있으며 매니페스트와 import 이름은 그 태그에서 바뀝니다. 이슈는 환영합니다. 변경은 아직 업스트림에 먼저 들어가고 이 트리는 거기서 fast-forward되므로, 풀 리퀘스트는 아직 머지할 수 없습니다. ${facts.nextVersion} 소식을 받으려면 [릴리스를 구독](releases)하세요.`,
     },
   },
-
   motivation: {
     title: 'WebGPU와 WebGL2에 셰이더 소스 하나를 쓰는 이유, TypeShade',
     description: `TypeShade가 타입 있는 TypeScript 모듈 하나에서 WGSL과 ${glsl}을 내는 이유. 셰이더 언어 두 개를 유지하는 비용과 Khronos 설문 수치.`,

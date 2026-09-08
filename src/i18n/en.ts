@@ -25,12 +25,23 @@ export const en = {
     motivation: 'Motivation',
     checks: 'Checks',
     examples: 'Examples',
-    guide: 'Authoring guide',
+    guide: 'Guide',
     github: 'GitHub',
     llms: 'llms.txt',
     languages: 'Languages',
+    menu: 'Menu',
   },
-  footer: { builtFrom: 'Built from commit' },
+  footer: {
+    docs: 'Documentation',
+    project: 'Project',
+    languages: 'Languages',
+    readme: 'README',
+    releases: 'Releases',
+    npm: 'npm package',
+    license: 'Released under the [MIT License](license).',
+    copyright: `Copyright © ${facts.year} ${facts.author}`,
+    builtFrom: 'Built from commit',
+  },
 
   canvas: {
     /** Accessible names for a mounted shader, by what drew it. */
@@ -65,8 +76,15 @@ export const en = {
   },
 
   front: {
-    intro1: `TypeShade is a TypeScript library for writing shaders. One typed module emits WGSL for WebGPU and ${glsl} for WebGL2, and the same module runs on the CPU in double precision, so the compiler's output can be checked against it.`,
-    intro2: `${facts.bothTargets} of the ${facts.examples} examples in the repository emit both targets from one source. The library has ${facts.runtimeDeps} runtime dependencies, ${facts.testFiles} test files and an ${facts.license} licence. Version ${facts.nextVersion} is not on npm yet; the repository is the package, used as a git submodule.`,
+    hero: {
+      before: '',
+      accent: 'Typed shaders',
+      after: 'for WebGPU and WebGL2',
+      tagline: `A TypeScript library that writes a shader once and emits WGSL and ${glsl}. The same module runs on the CPU in double precision, so the compiler's output can be checked.`,
+      getStarted: 'Get started',
+      why: 'Why TypeShade',
+      examples: 'Examples',
+    },
     metaballs: {
       neutral: `Metaballs, from examples/${exampleFile('metaballs')}. The still is captured at build time.`,
       webgpu: 'Metaballs. The WGSL emit is drawing this frame on WebGPU.',
@@ -74,40 +92,31 @@ export const en = {
       none: 'Metaballs. Rendered at build time; this browser has no WebGPU or WebGL2.',
       reduced: `Metaballs, compiled to WGSL and to ${glsl}. One frame is drawn here, since this system asks for reduced motion.`,
     },
+    highlights: [
+      {
+        h: 'One source',
+        p: `One typed module emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file.`,
+      },
+      {
+        h: 'Checked',
+        p: "The same module runs on the CPU in f64, and the test suite checks the compiler's algebra against it. Every emit is compiled on Tint and linked on WebGL2 on each push.",
+      },
+      {
+        h: 'Typed',
+        p: `A misspelt uniform field or a wrong-typed return is a TypeScript error in the editor. \`reflect()\` reads bind groups and ${facts.layoutStandards.join(' and ')} layouts from the same intermediate representation.`,
+      },
+    ],
     quickStart: {
       h: 'Quick start',
       p1: `The package ships TypeScript source, so your build needs a toolchain that compiles it. This is the fragment stage of the gradient example, ${hero.authoredLines} lines as authored in \`${hero.file}\`:`,
       p2: 'It emits this WGSL entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [reflect()](reflectApi) recovers for it, are on the [examples page](examples). The [authoring guide](guide) covers the rest of the surface.`,
     },
-    does: {
-      h: 'What it does',
-      items: [
-        'Typed functions, entry points, control flow, and declarators for uniform blocks, storage buffers, IO structs, textures and samplers.',
-        'A misspelt uniform field or a wrong-typed return is a TypeScript error in the editor.',
-        `\`reflect()\`: bind groups, ${facts.layoutStandards.join(' and ')} layouts and entry signatures, read from the same intermediate representation.`,
-        'Emulated double precision, written with the same syntax as f32.',
-        'An optimizer over the IR: common subexpression and dead code elimination, loop-invariant hoisting, constant folding.',
-        'A CPU oracle: the module compiled to an f64 JavaScript function, used by the test suite.',
-        'Coded diagnostics, `variantFamily` for N specialised emits of one module, and `semanticDiff` for reviewing an emit change.',
-      ],
-      note: 'TypeShade has no renderer. It returns strings and reflection metadata; pipelines, bindings and draw calls stay with the host.',
-    },
-    more: {
-      h: 'Read more',
-      items: [
-        '[Motivation](motivation): why one source for two shader languages.',
-        '[Checks](checks): the CPU oracle, the compile gate on Tint and WebGL2, and the golden files.',
-        `[Examples](examples): the ${facts.examples} examples, the GLSL emit, and the emulated-double demo.`,
-        '[Authoring guide](guide) and the [README](docs), on GitHub.',
-      ],
-    },
     status: {
       h: 'Status',
       p: `Pre-release. The repository is at version ${facts.mirrorVersion}; ${facts.nextVersion} is the release the npm name [typeshade](npm) is reserved for, and the manifest and the imports are renamed at that tag. Issues are welcome; pull requests cannot be merged yet, because changes land upstream and this tree is fast-forwarded from there. [Watch releases](releases) to hear about ${facts.nextVersion}.`,
     },
   },
-
   motivation: {
     title: 'Why one shader source for WebGPU and WebGL2, TypeShade',
     description: `Why TypeShade emits WGSL and ${glsl} from one typed TypeScript module: what maintaining two shader languages costs, with the Khronos survey figures.`,

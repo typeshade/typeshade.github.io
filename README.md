@@ -21,7 +21,7 @@ asks you to update the copy.
 
 | Route | What it is |
 | --- | --- |
-| `/` | the front page, about 350 words |
+| `/` | the front page: the headline, the live shader, three points, Quick start, Status |
 | `/motivation/`, `/checks/`, `/examples/` | the longer material the front page links to |
 | `/ko/`, `/ko/motivation/`, `/ko/checks/`, `/ko/examples/` | the same four pages in Korean; see DESIGN.md, Languages |
 | `/404.html` | not found |

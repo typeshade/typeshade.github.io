@@ -31,15 +31,20 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 
 - Light by default; dark follows `prefers-color-scheme`. Both palettes live in
   `src/styles/global.css` and nowhere else.
-- One accent (green) for links, one red for diagnostics. No gradients, no
-  glows, no coloured card borders.
+- One accent (green) for links, one red for diagnostics. The one gradient on the site is the
+  two greens across the front page's headline. No glows, no coloured card borders.
 - Tailwind is kept only for its `@theme` tokens and preflight. No utility classes appear in
   the markup.
 
 ## Layout
 
-- One content column, 740px, left-aligned, with code blocks and figures at the same width.
-  Sections are 48 to 56px apart. The only rule on the page sits above the footer.
+- A full-width header bar (56px, one rule under it) and a full-width footer on a soft ground
+  frame every page. Under 48rem the header's links sit in a panel behind a menu button.
+- The front page is centred on a 960px measure: the headline in two lines, one sentence, three
+  links, the live shader, three short points. Quick start and Status follow in the document
+  column. The layout follows vuejs.org's front page.
+- Every other page is one content column, 740px, left-aligned, with code blocks and figures at
+  the same width. Sections are 48 to 56px apart.
 - The one thing that should stand out is a rendered shader. Everything else is quiet.
 - Every canvas has a still image underneath it, captured at build time
   (`bun run capture:stills`), so the page never shows an empty frame.
@@ -52,9 +57,9 @@ The front page answers "what is it" in about 350 words, the length of comparable
 front pages (htmx, esbuild, wgpu, TypeGPU are 250 to 350). Everything that explains how or
 why lives on its own page.
 
-- `/`: the name, two sentences, one line of measured numbers, the live metaballs shader, Quick
-  start (the submodule command, the authored fragment, the WGSL it emits), a seven-line list of
-  what it does, links to the pages below, Status.
+- `/`: the headline, one sentence, three links (Get started, Why TypeShade, Examples), the live
+  metaballs shader, three points (One source, Checked, Typed), Quick start (the submodule
+  command, the authored fragment, the WGSL it emits), Status.
 - `/motivation/`: the two-shader problem, the hosts' migration guides, the survey figures, what
   TypeShade does about it and what it does not do.
 - `/checks/`: the CPU oracle, the compile gate, the golden files, the same pass drawn on
@@ -63,8 +68,10 @@ why lives on its own page.
 - `/examples/`: the examples, the print commands, the GLSL emit of the gradient pass, and the
   emulated-double demo.
 
-The header links to the three pages, the guide and GitHub; the footer repeats them and adds
-llms.txt. Headings are single nouns or short noun phrases: Motivation, Checks, Quick start.
+The header links to the three pages, the guide and GitHub. The footer is a site map in three
+columns (Documentation, Project, Languages), then the licence, the copyright and the commit the
+page was built from. Headings are single nouns or short noun phrases: Motivation, Checks, Quick
+start.
 
 ## Languages
 
