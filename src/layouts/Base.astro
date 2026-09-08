@@ -23,7 +23,7 @@ const DECK = {
     'Write the shader once. Typed TypeScript, proven to agree: WGSL and GLSL ES 3.00 from one source, checked by a CPU f64 oracle and by real compilers.',
   ogTitle: 'TypeShade — write the shader once',
   ogDescription:
-    'One typed TypeScript source becomes WGSL and GLSL ES 3.00. A CPU f64 oracle runs the same source, and Tint and WebGL2 compile every variant X-GIS emits.',
+    'One typed TypeScript source becomes WGSL and GLSL ES 3.00. A CPU f64 oracle runs the same source; Tint compiles every WGSL emit and WebGL2 links every renderable example, on every push.',
   ogAlt: 'TypeShade — a shader written in TypeScript, compiled to WGSL and GLSL ES 3.00.',
 }
 const { title = DECK.title, description = DECK.description } = Astro.props

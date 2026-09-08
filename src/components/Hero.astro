@@ -25,8 +25,10 @@ import { heroCaption, heroCopy } from '../lib/hero-copy.ts'
 import { links } from '../lib/links.ts'
 
 // deck §3. The version is `facts.nextVersion` — derived from the mirror's own package version,
-// never typed — and the line renders only while the release it discloses does not exist.
-const status = `${facts.nextVersion} is not published yet. Running in production today inside the X-GIS globe engine.`
+// never typed — and the line renders only while the release it discloses does not exist. It
+// answers the CTA pair above it (there is no npm install yet) and names no consumer: this
+// library does not advertise who ships it.
+const status = `${facts.nextVersion} is not published yet. The read-only mirror is the package.`
 
 // deck §6's hero row, over IA §6's backend-neutral server string — in `hero-copy.ts`, because
 // the /og/ card mounts the same specimen and must not carry a second set of strings for it.

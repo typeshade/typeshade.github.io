@@ -12,7 +12,7 @@ does not explain; it makes the visitor want the thing and then shows proof. The 
 - Positioning sentence: _the engine-agnostic shader compiler for TypeScript — one typed source
   emits WGSL and GLSL ES 3.00 that are proven to agree._
 - Proofs, each already true on this tree: a CPU f64 oracle (no comparable library has one);
-  every emitted variant compiles on Tint (WebGPU) and on WebGL2 in CI; emit goldens are
+  every WGSL emit compiles on Tint (WebGPU) and every renderable example links on WebGL2 in the mirror's own CI; emit goldens are
   byte-stable; emulated fp64 with unchanged syntax (the deep-zoom demos); zero runtime
   dependencies; `reflect()` recovers std140 / std430 layouts so nothing is hand-derived.
 - Build-time numbers: 36 examples, of which 35 emit both targets (`compute-reduction` has no
@@ -25,15 +25,28 @@ does not explain; it makes the visitor want the thing and then shows proof. The 
   https://www.khronos.org/blog/shader-ecosystem-survey-results-2026) — 64% adapt shaders across
   platforms, APIs or tools; about 10% call it one of their largest engineering costs. These are
   facts about the market, never about TypeShade's audience, and render with their source beside them.
-- In production inside the X-GIS globe engine as npm `@xgis/shader-dsl`. npm `typeshade` is
+- ~~In production inside the X-GIS globe engine as npm `@xgis/shader-dsl`.~~ **Struck 2026-09-07
+  (owner decision): TypeShade removes its relationship with that consumer from every public
+  surface — a library does not advertise or link the project that ships it (the MapLibre ↔
+  deck.gl shape). The fact is true and stays out of the copy; nothing on the page, in `/llms.txt`
+  or in a meta tag may name it, and `07-copy-deck.md` §9 / §11 make that a grep.** The package
+  name that carried the consumer's npm scope is struck with it. npm `typeshade` is
   reserved at 0.0.0; `0.1.0` is not released → the honest primary CTA is GitHub / Get started
   (AUTHORING.md), not `npm i typeshade`.
+- The mirror runs its **own** CI (2026-09-07): `.github/workflows/ci.yml` — jobs `check` (tsc +
+  the unit suite) and `compile-gate` — driving `scripts/compile-gate.ts`, which emits every
+  registered example, compiles each WGSL emit on real Tint and links both GLSL ES 3.00 stages of
+  the renderable ones on a real WebGL2 context, proving the instrument on a deliberately broken
+  shader first, on every push and pull request. Every compile claim on the page routes here.
 - Against incumbents, one line each: three.js TSL is tied to three; TypeGPU's WebGL2 backend is
   experimental; WESL is complementary; hand-written twin shaders are the tax.
 - Links: mirror https://github.com/typeshade/typeshade · guide
-  https://github.com/typeshade/typeshade/blob/main/AUTHORING.md · docs
-  https://x-gis.github.io/X-GIS/shader-dsl/ · source https://github.com/X-GIS/X-GIS/tree/main/shader-dsl
-  · npm https://www.npmjs.com/package/typeshade · license MIT.
+  https://github.com/typeshade/typeshade/blob/main/AUTHORING.md · docs — the mirror's own
+  `README.md` at the pinned commit · npm https://www.npmjs.com/package/typeshade · license MIT.
+  **Amended 2026-09-07:** the `docs` link was a site on the consumer's domain and the `source`
+  link was that consumer's monorepo subtree; both are struck. The page links no repository but
+  the mirror, and the only off-mirror destinations left are npm and the three `SOURCES`
+  citations (MapLibre, deck.gl, PixiJS), which are attribution and stay exactly as they are.
 
 ## Audience
 
@@ -77,7 +90,7 @@ zero horizontal overflow; `prefers-reduced-motion` respected.
   DPR cap, pause when offscreen, `prefers-reduced-motion` → one still frame, static fallback if
   neither API is available.
 - English only in the repo. `/home/user/X-GIS` is a read-only reference (its `site/src/lib/
-  shader-playground.ts` and `site/src/components/LiveShader.astro` already run these examples
+shader-playground.ts` and `site/src/components/LiveShader.astro` already run these examples
   live). Do not `git commit` — the orchestrator commits.
 - Verification tooling in this container: Playwright via
   `import { chromium } from '/home/user/X-GIS/node_modules/.bun/playwright@1.60.0/node_modules/playwright/index.mjs'`,

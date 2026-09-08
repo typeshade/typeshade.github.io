@@ -8,7 +8,7 @@ await page.goto('http://127.0.0.1:4401/', { waitUntil: 'networkidle' })
 
 const info = await page.evaluate(() => {
   const links = [...document.querySelectorAll('a')].filter((a) =>
-    ['goldens diff byte for byte', 'src/core/oracle.ts', '_wgsl-compile-gate.spec.ts', '_glsl-compile-gate.spec.ts'].includes(a.textContent.trim())
+    ['goldens diff byte for byte', 'src/core/oracle.ts', 'scripts/compile-gate.ts'].includes(a.textContent.trim())
   )
   return links.map((a) => {
     const r = a.getBoundingClientRect()
