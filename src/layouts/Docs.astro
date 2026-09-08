@@ -38,8 +38,12 @@ interface Props {
   next?: Destination
   /** What search should record about the page beyond its text, as Pagefind writes it. */
   meta?: string
+  /** The breadcrumb trail this page already shows, for Base's BreadcrumbList. */
+  breadcrumbs?: readonly { name: string; href: string }[]
+  /** The pinned commit's date, for Base's WebPage.dateModified. */
+  dateModified?: string
 }
-const { locale, path, title, description, headings = [], editHref, bodyLang, noindex = false, openCategory, label, meta } = Astro.props
+const { locale, path, title, description, headings = [], editHref, bodyLang, noindex = false, openCategory, label, meta, breadcrumbs, dateModified } = Astro.props
 const d = copyFor(locale).docs
 
 // The guide's sections follow its overview in the sidebar, so previous and next walk the
@@ -64,7 +68,7 @@ const outline = headings.filter((h) => h.depth === 2 || h.depth === 3)
 const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
 ---
 
-<Base locale={locale} path={path} title={title} description={description} noindex={noindex}>
+<Base locale={locale} path={path} title={title} description={description} noindex={noindex} breadcrumbs={breadcrumbs} dateModified={dateModified}>
   <details class="docs-local" data-pagefind-ignore>
     <summary>{current ?? title}</summary>
     <nav aria-label={title}>

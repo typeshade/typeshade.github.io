@@ -90,6 +90,30 @@ export function describe(markdown: string): string | undefined {
   return out.length >= DESCRIPTION_MIN ? out : undefined
 }
 
+const SUBHEADING = /^(#{3,6})(\s.*)$/
+
+/** Every heading in a section's body, outside code fences, promoted one level: '### ' becomes
+ *  '## ', '#### ' becomes '### '. AUTHORING.md nests its subheadings under the '## ' the site
+ *  cuts off into the page's own h1, so a body rendered as-is skips straight from h1 to h3. Both
+ *  the content loader for English (src/content.config.ts, the `authoring` loader) and the one
+ *  for a translation (the `translated` loader) call this on the body right before rendering it,
+ *  so the two languages keep the same outline. The stored `body` itself is left alone: it is
+ *  what the translation hash and /llms-full.txt use, and both already read AUTHORING.md's own
+ *  levels correctly (the hash is a fingerprint, and llms-full.txt writes its own '## ' title in
+ *  front of the section, so the body's '### ' is already one level under it). */
+export function promoteHeadings(markdown: string): string {
+  let fenced = false
+  return markdown
+    .split('\n')
+    .map((line) => {
+      if (line.startsWith('```')) fenced = !fenced
+      if (fenced) return line
+      const m = SUBHEADING.exec(line)
+      return m ? `${m[1].slice(1)}${m[2]}` : line
+    })
+    .join('\n')
+}
+
 /** AUTHORING.md as an overview and one entry per top-level section, in the file's order. */
 export function authoringSections(markdown: string): AuthoringSection[] {
   const lines = markdown.split('\n')

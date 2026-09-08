@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url'
 import { defineCollection } from 'astro:content'
 import type { Loader } from 'astro/loaders'
 import { z } from 'astro/zod'
+import { promoteHeadings } from './lib/authoring.ts'
 import { GUIDE_FILE, guideSections } from './lib/guide.ts'
 import { guideTranslations, translationDir } from './lib/guide-translations.ts'
 import { apiLoader } from './lib/api-loader.ts'
@@ -24,7 +25,9 @@ const authoring: Loader = {
     const fileURL = pathToFileURL(path.resolve(process.cwd(), GUIDE_FILE))
     for (const { id, title, order, sourceLine, description, body } of sections) {
       const data = { title, order, sourceLine, description }
-      store.set({ id, data, body, rendered: await renderMarkdown(body, { fileURL }) })
+      // The stored body keeps AUTHORING.md's own levels (englishHash and /llms-full.txt read
+      // it); only what gets rendered is promoted, so the page's h1 is followed by h2, not h3.
+      store.set({ id, data, body, rendered: await renderMarkdown(promoteHeadings(body), { fileURL }) })
     }
     logger.info(`${sections.length} sections from ${GUIDE_FILE}`)
   },
@@ -42,7 +45,7 @@ const translated = (locale: string): Loader => ({
     for (const t of entries.values()) {
       const fileURL = pathToFileURL(path.resolve(process.cwd(), t.file))
       const data = { order: t.order, sourceLine: t.sourceLine, source: t.source }
-      store.set({ id: t.id, data, body: t.body, rendered: await renderMarkdown(t.body, { fileURL }) })
+      store.set({ id: t.id, data, body: t.body, rendered: await renderMarkdown(promoteHeadings(t.body), { fileURL }) })
     }
     const missing = guideSections.filter((s) => !entries.has(s.id)).map((s) => s.id)
     if (missing.length) logger.warn(`${locale}: ${missing.length} section(s) without a translation, shown in English: ${missing.join(', ')}`)

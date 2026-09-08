@@ -64,6 +64,15 @@ for (const file of pages) {
   if (imagesWithoutAlt) fail(`${imagesWithoutAlt} images without alt`)
   if (noSlash.length) fail(`links without a trailing slash: ${noSlash.join(', ')}`)
   if (!html.includes('application/ld+json')) fail('no JSON-LD')
+  // The reference and the guide render a BreadcrumbList from the trail they already show.
+  if (!isNotFound && /^(ko\/)?(api\/|guide\/authoring\/)/.test(rel)) {
+    const ld = one(html, /<script type="application\/ld\+json">([^]*?)<\/script>/)
+    let graph = []
+    try { graph = JSON.parse(ld ?? '{}')['@graph'] ?? [] } catch { graph = [] }
+    const crumbs = graph.find((n) => n['@type'] === 'BreadcrumbList')
+    if (!crumbs) fail('no BreadcrumbList in JSON-LD')
+    else if (!Array.isArray(crumbs.itemListElement) || crumbs.itemListElement.length === 0) fail('BreadcrumbList has no items')
+  }
   // The site names no consumer of the library. The guide keeps one env var with the old prefix.
   if (/x-?gis/i.test(html.replace(/XGIS_SHADER_DSL_TRACE/g, ''))) fail('names the former host')
   if (!/property="og:image" content="https:/.test(html)) fail('no absolute og:image')

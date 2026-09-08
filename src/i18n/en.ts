@@ -18,12 +18,25 @@ const split = facts.splitLabels ?? ['f32', 'f64']
 const written: Record<string, string> = {
   'before-after': 'The ceremony the authoring surface removed, in pairs: the old hand-synced code beside the one-declaration form that took its place.',
   'quick-reference': 'One table for the whole authoring surface: what you need in the left column, and the call that writes it in the right.',
+  // The remaining entries replace a derived description that opened with a code fragment or
+  // read as a truncated sentence (the SEO review, onpage, guide section descriptions). A page
+  // description is plain text, so these carry no markdown code marks, the way describe() in
+  // src/lib/authoring.ts strips them from a derived one.
+  'the-authoring-surface': 'The fn helper authors every function in a module: a plain helper and a vertex, fragment or compute entry point all use the same call.',
+  'values-and-mutation': 'Every intermediate value is a plain JavaScript const. The emit pass decides whether it becomes an inlined expression, a shared let or a var.',
+  'control-flow': 'If, elif and else take zero-argument closures that author statements into the innermost active scope, and Loop gives the C-style for loop the same way.',
+  diagnostics: 'Every authoring mistake surfaces as a coded ShaderDslError with a stable code and a one-line hint, and validate() reports every failing rule at once.',
+  'production-emit': 'A bundler minifies the JavaScript around a module but leaves the shader text alone: mangling, minifying and obfuscating it are opt-in plugins.',
+  'capabilities-extensions': 'A module declares the GPU features its emit needs by a neutral capability id instead of a raw extension string, so an unsupported one fails closed.',
+  'conditional-programs': 'A shader that must vary by feature takes the varying part as a function parameter and a plain if, since the module is only a JavaScript value.',
+  'glsl-float-precision': `The ${glsl} backend emits highp float precision by default; a build-time option drops it to mediump for shaders where the narrower range is safe.`,
+  'migrating-a-glsl-shader': 'A table maps common GLSL constructs to their DSL spelling and WGSL result, for a migration that keeps re-solving problems filed under unfamiliar names.',
 }
 const sections: Record<string, { title: string; description: string }> = Object.fromEntries(
   guideSections
     .filter((s) => s.id !== 'overview')
     .map((s) => {
-      const description = s.description ?? written[s.id]
+      const description = written[s.id] ?? s.description
       if (!description) throw new Error(`[guide] section '${s.id}' has no prose to describe it; write one in src/i18n/en.ts`)
       return [s.id, { title: s.title, description }]
     }),
@@ -98,14 +111,26 @@ export const en = {
     permalink: 'Link to heading',
     // The API reference: the words around a generated ApiEntry (src/lib/api-types.ts).
     api: {
-      title: 'TypeShade API reference',
+      // Lengthened past the review's 45-character floor for a reference title (the SEO
+      // review, onpage, title length); the description below is unaffected.
+      title: 'TypeShade API reference: functions, types and interfaces',
       description: 'Every public export of TypeShade on its own page: syntax, parameters, return value, examples and which targets support it.',
       h1: 'API reference',
       intro: `Every export of the typeshade package, generated from the compiler at commit ${facts.pinnedCommit}. One page per function, type, interface and class.`,
       reference: 'Reference',
       breadcrumbs: 'Breadcrumbs',
-      pageTitle: (name: string) => `${name}, TypeShade API reference`,
-      categoryTitle: (name: string) => `${name} in the TypeShade API reference`,
+      // The title names the export, its kind and its category, and grows a suffix only as
+      // far as it fits under the 60-character limit check-seo.mjs enforces (the SEO review,
+      // onpage, title length). 'clamp(): function in Builtins, TypeShade API reference'. A
+      // short base (a short name in a short category) tried the two shortest suffixes first
+      // and landed under the review's 45-character floor, so the longest suffix now leads.
+      pageTitle: (heading: string, kind: string, category: string) => {
+        const base = `${heading}: ${kind.toLowerCase()} in ${category}`
+        const suffixes = [', TypeShade API reference for developers', ', TypeShade API reference', ', TypeShade API', ', TypeShade']
+        const fitting = suffixes.find((suffix) => (base + suffix).length <= 60)
+        return fitting ? base + fitting : base
+      },
+      categoryTitle: (name: string) => `${name}, a category in the TypeShade API reference`,
       categoryDescription: (name: string, summary: string) => `${name} in the TypeShade API reference. ${summary}`,
       pageDescription: (name: string, kind: string, category: string, summary: string) => {
         // 'interface' is the one kind that starts with a vowel, so the article follows the word.
@@ -198,7 +223,7 @@ export const en = {
       accent: 'TypeShade',
       after: '',
       subtitle: 'The verifiable TypeScript shader library',
-      tagline: `Write a shader once in TypeScript, and TypeShade emits WGSL and ${glsl}. The same module runs on the CPU in double precision, so the compiler's output can be checked.`,
+      tagline: `Write a shader once in TypeScript, and TypeShade emits WGSL for WebGPU and ${glsl} for WebGL2. The same module runs on the CPU in double precision, so the compiler's output can be checked.`,
       getStarted: 'Get started',
       why: 'Why TypeShade',
       examples: 'Examples',
@@ -223,7 +248,7 @@ export const en = {
       },
       {
         h: 'Checked against the CPU',
-        p: "The same module runs on the CPU in f64, and the test suite checks the compiler's algebra against it. Every emit is compiled on Tint and linked on WebGL2 on each push.",
+        p: "The same module runs on the CPU in f64, and [the test suite](checks) checks the compiler's algebra against it. Every emit is compiled on Tint and linked on WebGL2 on each push.",
       },
       {
         h: 'Typed in the editor',
@@ -263,7 +288,7 @@ export const en = {
       },
       {
         h: 'What TypeShade does',
-        p: 'TypeShade keeps one source. The module is typed TypeScript, so a misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same module compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. [Verification](checks) says what runs on every push.',
+        p: 'The README describes TypeShade as "a TSL-style (three.js Shading Language) graph with a real type checker, an optimizer, a lint pass, and pipeline reflection." It keeps one source: the module is typed TypeScript, so a misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same module compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. [Verification](checks) says what runs on every push.',
       },
       {
         h: 'What it does not do',
@@ -339,6 +364,9 @@ export const en = {
     sectionTitle: (title: string) => `${title}, TypeShade authoring guide`,
     /** Every section with a page of its own: what the sidebar, the h1 and the title show. */
     sections,
+    /** Quick reference has no prose to open a section with, just its table: the heading
+     *  src/lib/remark-promote-bold-leads.mjs adds in front of it, so the page still has one. */
+    referenceTableHeading: 'Reference table',
     note: `Rendered from [AUTHORING.md](guideSource) at commit ${facts.pinnedCommit}. The package is imported here by its ${facts.nextVersion} name, \`typeshade\`.`,
     noteUntranslated: `Rendered from [AUTHORING.md](guideSource) at commit ${facts.pinnedCommit}. The package is imported here by its ${facts.nextVersion} name, \`typeshade\`.`,
   },

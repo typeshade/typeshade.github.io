@@ -21,10 +21,18 @@ interface Props {
   searchable?: boolean
   /** What a search result calls this page, where its h1 is set in pieces. */
   searchTitle?: string
+  /** Root first, the trail the page already shows on screen (a docs page's breadcrumb nav,
+   *  or the guide's own Guide › Authoring › section shape). A locale-neutral href per item;
+   *  omitted on a page with no such trail, so it carries no BreadcrumbList. */
+  breadcrumbs?: readonly { name: string; href: string }[]
+  /** The pinned commit's date (facts.pinnedDate), for WebPage.dateModified. Only the guide
+   *  and the reference are generated from that commit; a hand-written page omits it. */
+  dateModified?: string
 }
 
-const { locale, path, noAlternates = false, noindex = false, searchable = false, searchTitle } = Astro.props
+const { locale, path, noAlternates = false, noindex = false, searchable = false, searchTitle, breadcrumbs, dateModified } = Astro.props
 const t = copyFor(locale)
+const siteDescription = copyFor(defaultLocale).meta.description
 const title = Astro.props.title ?? t.meta.title
 const description = Astro.props.description ?? t.meta.description
 
@@ -34,19 +42,41 @@ const canonical = localeUrl(site, locale, path)
 const ogImage = new URL('/og.png', site).toString()
 const alternates = noAlternates ? [] : locales.map((l) => ({ lang: l, href: localeUrl(site, l, path) }))
 
+// One Organization node carries the facts every other node points back to: the WebSite it
+// publishes, the SoftwareSourceCode it wrote. The WebSite and SoftwareSourceCode nodes share
+// their @id across every page, so their description and inLanguage stay fixed to the source
+// locale and the full locale list. The same @id needs one description, not one per page.
+const organizationId = `${site.origin}/#organization`
+const breadcrumbId = `${canonical}#breadcrumb`
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'WebSite', '@id': `${site.origin}/#website`, url: `${site.origin}/`, name: 'TypeShade', description: t.meta.description, inLanguage: locale },
+    {
+      '@type': 'Organization',
+      '@id': organizationId,
+      name: facts.author,
+      url: `${site.origin}/`,
+      logo: { '@type': 'ImageObject', url: new URL('/apple-touch-icon.png', site).toString(), width: 180, height: 180 },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${site.origin}/#website`,
+      url: `${site.origin}/`,
+      name: 'TypeShade',
+      description: siteDescription,
+      inLanguage: [...locales],
+      publisher: { '@id': organizationId },
+    },
     {
       '@type': 'SoftwareSourceCode',
       '@id': `${site.origin}/#software`,
       name: 'TypeShade',
-      description: t.meta.description,
+      description: siteDescription,
       programmingLanguage: ['TypeScript', 'WGSL', 'GLSL'],
       codeRepository: facts.mirrorUrl,
       license: 'https://opensource.org/licenses/MIT',
       url: `${site.origin}/`,
+      author: { '@id': organizationId },
     },
     {
       '@type': 'WebPage',
@@ -57,7 +87,23 @@ const jsonLd = {
       inLanguage: locale,
       isPartOf: { '@id': `${site.origin}/#website` },
       about: { '@id': `${site.origin}/#software` },
+      ...(dateModified ? { dateModified } : {}),
+      ...(breadcrumbs ? { breadcrumb: { '@id': breadcrumbId } } : {}),
     },
+    ...(breadcrumbs
+      ? [
+          {
+            '@type': 'BreadcrumbList',
+            '@id': breadcrumbId,
+            itemListElement: breadcrumbs.map((b, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: b.name,
+              item: localeUrl(site, locale, b.href),
+            })),
+          },
+        ]
+      : []),
   ],
 }
 ---
@@ -85,7 +131,6 @@ const jsonLd = {
     <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-latin-wght-normal.woff2" crossorigin />
     {locale === 'ko' && <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-kr-400.woff2" crossorigin />}
-    {locale === 'ko' && <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-kr-600.woff2" crossorigin />}
     <meta property="og:site_name" content="TypeShade" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />

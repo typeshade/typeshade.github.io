@@ -157,7 +157,7 @@
   word-break: keep-all;
   overflow-wrap: break-word;
 }
-:lang(ko) h1, :lang(ko) h2, :lang(ko) h3 { letter-spacing: -0.005em; line-height: 1.35 }
+:lang(ko) h1, :lang(ko) h2, :lang(ko) h3, :lang(ko) h4 { letter-spacing: -0.005em; line-height: 1.35 }
 :lang(ko) .figure-caption, :lang(ko) .site-nav, :lang(ko) .site-map { line-height: 1.65 }
 
 /* Base */
@@ -440,7 +440,7 @@ body > main { flex: 1 }
 .hero-actions > :first-child { grid-column: 1 / -1 }
 .hero-actions .button { justify-content: center }
 .button {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
   border-radius: 8px; background: var(--color-surface-2); color: var(--color-text-1);
   font-size: var(--text-ui); font-weight: 500; text-decoration: none; transition: background-color 0.2s;
 }
@@ -508,6 +508,10 @@ body > main { flex: 1 }
 .doc h1 { font-size: var(--text-h1); line-height: var(--text-h1--line-height); font-weight: 600; letter-spacing: -0.02em }
 .doc h2 { font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.01em }
 .doc h3 { font-size: var(--text-h3); line-height: var(--text-h3--line-height); font-weight: 600 }
+/* Only one guide section nests this deep (SoT helpers, an h3 with two of its own subheadings).
+   Without a rule of its own it would inherit the browser default: body size, no space above
+   it, indistinguishable from the paragraph before it. */
+.doc h4 { font-size: var(--text-ui); line-height: var(--text-ui--line-height); font-weight: 600 }
 /* A permalink beside a heading, hidden until hover or keyboard focus finds it, the VitePress
    convention for linking to one part of a page. Selectors carry the .doc prefix so this beats
    .doc a's own color and underline on specificity, not just source order. */
@@ -524,8 +528,9 @@ body > main { flex: 1 }
 .doc h1 { margin-block-end: 10px }
 .doc h2 { margin-block-end: 18px }
 .doc h3 { margin-block: 36px 14px }
+.doc h4 { margin-block: 28px 8px }
 .doc p { margin-block-start: 16px }
-.doc h1 + p, .doc h2 + p, .doc h3 + p { margin-block-start: 0 }
+.doc h1 + p, .doc h2 + p, .doc h3 + p, .doc h4 + p { margin-block-start: 0 }
 .doc ul, .doc ol { margin-block-start: 16px; padding-inline-start: 22px }
 .doc ul { list-style: disc }
 .doc ol { list-style: decimal }

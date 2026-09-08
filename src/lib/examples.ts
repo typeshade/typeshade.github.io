@@ -174,6 +174,14 @@ function pinnedYear(): number {
   return year
 }
 
+/** The pinned commit's own date, ISO 8601 with its offset, for WebPage.dateModified on the
+ *  pages generated from it (the guide and the reference). Nothing else on the site reads it. */
+function pinnedDate(): string {
+  const date = execSync('git -C vendor/shader-dsl log -1 --format=%cI HEAD', { encoding: 'utf8' }).trim()
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/.test(date)) throw new Error(`[examples] unusable commit date '${date}'`)
+  return date
+}
+
 const pkg = JSON.parse(readFileSync(path.join(vendorRoot, 'package.json'), 'utf8')) as {
   version: string
   license: string
@@ -246,6 +254,8 @@ export const facts = {
   author: pkg.author,
   /** The year of the pinned commit, for the copyright line. */
   year: pinnedYear(),
+  /** The pinned commit's own date, for WebPage.dateModified on the guide and the reference. */
+  pinnedDate: pinnedDate(),
   glslTarget: glslTarget(),
   layoutStandards: layoutStandards(),
   runtimeDeps: runtimeDeps(),

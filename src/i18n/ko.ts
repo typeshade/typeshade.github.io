@@ -16,55 +16,55 @@ const split = facts.splitLabels ?? ['f32', 'f64']
 const sections: Record<string, { title: string; description: string }> = {
   'the-authoring-surface': {
     title: '작성 API',
-    description: '모듈의 함수는 모두 fn으로 씁니다. 평범한 헬퍼도, @vertex와 @fragment와 @compute 진입점도 같은 함수 하나로 선언합니다.',
+    description: '함수는 전부 fn으로 씁니다. 평범한 헬퍼든 @vertex, @fragment, @compute 진입점이든 같은 함수 하나로 선언하며, 진입점 전용 헬퍼는 따로 없고 반환 타입도 본문에서 그대로 추론됩니다.',
   },
   'values-and-mutation': {
     title: '값과 변경',
-    description: '중간 값은 평범한 JS const로 씁니다. Let(...)이나 Var(...)로 감쌀 일은 없고, 값을 바꿀 때만 assign을 부릅니다.',
+    description: '중간 값은 모두 평범한 const로 씁니다. 나중에 그 값을 바꾸면 이미터가 자동으로 WGSL var로 바꾸고, 그렇지 않은 값은 공유되는 let나 인라인 식으로 남아 마커가 필요 없습니다.',
   },
   'control-flow': {
     title: '제어 흐름',
-    description: 'If, elif, else의 본문은 인자를 받지 않는 클로저입니다. 클로저 안에 쓴 코드는 그때 열려 있는 가장 안쪽 스코프로 들어갑니다.',
+    description: 'If, elif, else의 본문은 인자를 받지 않는 클로저이며 그 코드는 그때 열려 있는 가장 안쪽 스코프로 들어가고, Loop는 같은 방식으로 C 스타일 for문을 제공합니다.',
   },
   'sot-helpers': {
     title: '레이아웃 선언',
-    description: '버텍스와 유니폼 레이아웃을 예전에는 최대 네 곳에 손으로 적고 서로 맞춰야 했습니다. 폴리곤 슬롯이 어긋나던 버그가 거기서 나왔습니다.',
+    description: '버텍스와 유니폼 레이아웃은 예전에 최대 네 곳에 손으로 적고 서로 맞춰야 했고, 그 어긋남이 폴리곤 슬롯 버그 계열의 원인이었습니다. SoT 헬퍼는 레이아웃을 한 번만 선언하고 나머지를 이끌어 냅니다.',
   },
   'before-after': {
     title: '전과 후',
-    description: '작성 API가 걷어낸 절차를 짝으로 보여 줍니다. 손으로 맞추던 예전 코드와, 선언 한 번으로 끝나는 지금 코드를 나란히 놓았습니다.',
+    description: '작성 API가 걷어낸 절차를 짝으로 보여 줍니다. 손으로 맞추던 예전 코드와 선언 한 번으로 끝나는 지금 코드를 나란히 놓아, 무엇이 사라졌는지 절마다 한눈에 비교해 볼 수 있습니다.',
   },
   diagnostics: {
     title: '진단',
-    description: '작성하다 낸 실수는 코드가 붙은 오류로 드러나고, 오류마다 한 줄짜리 힌트가 따라옵니다. 속을 알 수 없는 문자열은 나오지 않습니다.',
+    description: '작성 실수는 안정된 코드와 한 줄 힌트가 붙은 ShaderDslError로 드러나며, validate()를 부르면 어긋난 규칙을 처음 하나만이 아니라 전부 모아 한 번에 보고합니다.',
   },
   fp64: {
     title: 'fp64',
-    description: 'GPU에는 f64가 없습니다. 합치지 않고 나란히 든 f32 두 개로 f64를 에뮬레이션해서, f32 지수 범위에서 가수 48비트 정도를 씁니다.',
+    description: 'GPU에는 f64가 없습니다. 합치지 않고 나란히 둔 f32 두 개를 이어 붙여 f64를 흉내 내며, f32 지수 범위에서 가수 48비트 정도를 냅니다. 작성 문법은 f32를 쓸 때와 똑같고 선언한 타입만 다릅니다.',
   },
   'production-emit': {
     title: '프로덕션 출력',
-    description: '번들러는 JS만 줄입니다. gl.shaderSource나 createShaderModule에 넘기는 셰이더 문자열에는 손대지 않습니다.',
+    description: '번들러는 모듈을 감싼 JS만 줄이고 gl.shaderSource에 넘기는 셰이더 문자열 자체는 건드리지 않으며, 이름 뭉개기와 압축과 난독화는 별도 서브패스에 얹는 선택형 플러그인입니다.',
   },
   'glsl-float-precision': {
     title: 'GLSL 부동소수점 정밀도',
-    description: 'GLSL ES 3.00 백엔드는 precision highp float을 냅니다. mediump로 충분한 자리에 highp를 쓰면 모바일 GPU가 대역폭과 전력을 더 씁니다.',
+    description: `${glsl} 백엔드는 기본으로 highp 정밀도를 냅니다. 빌드 시점 옵션을 주면 좁은 범위로도 충분한 셰이더에 한해 mediump로 낮춰 대역폭과 전력을 아낄 수 있습니다.`,
   },
   'capabilities-extensions': {
     title: '기능과 확장',
-    description: '모듈은 출력에 필요한 GPU 기능을 중립적인 id로 선언합니다. EXT_나 OVR_ 같은 확장 이름을 그대로 적는 자리는 없습니다.',
+    description: '모듈은 출력에 필요한 GPU 기능을 중립적인 id로 선언하고 EXT_나 OVR_ 같은 확장 문자열을 직접 적지 않으며, 그 기능을 지원하지 않는 백엔드는 컴파일 시점에 닫힌 채로 실패합니다.',
   },
   'conditional-programs': {
     title: '조건부 프로그램',
-    description: '기능에 따라 달라져야 하는 셰이더는, GLSL 코드베이스라면 #define과 #ifdef 사다리를 꺼내 들던 자리입니다. 여기서는 그 자리를 다르게 씁니다.',
+    description: '기능에 따라 달라지는 부분은 함수 매개변수로 받아 평범한 if로 가르며, 모듈은 그저 하나의 자바스크립트 값이라 프리프로세서 없이도 그 갈래를 다룰 수 있고 쓰이지 않는 갈래는 아예 만들어지지 않습니다.',
   },
   'migrating-a-glsl-shader': {
     title: 'GLSL 셰이더 옮기기',
-    description: '§1부터 §11까지는 새로 쓰는 사람을 위한 순서입니다. 이 절은 옮겨 오는 사람이 실제로 묻는 질문, 내 GLSL이 하던 일을 여기서 어떻게 쓰는지에 답합니다.',
+    description: '자주 쓰는 GLSL 구문을 DSL 표기와 WGSL 결과로 옮긴 표이며, 낯선 이름 아래 묻혀 있던 탓에 실제 마이그레이션에서 적어도 한 번씩 다시 손으로 풀었던 문제를 이 표 하나로 줄여 줍니다.',
   },
   'quick-reference': {
     title: '빠른 참조',
-    description: '작성 API 전체를 표 하나로 정리했습니다. 왼쪽 칸에 필요한 일이 적혀 있고, 오른쪽 칸에 그 일을 쓰는 호출이 적혀 있습니다.',
+    description: '작성 API 전체를 표 하나로 정리했습니다. 왼쪽 칸에 필요한 일이 적혀 있고 오른쪽 칸에 그 일을 쓰는 호출이 적혀 있어, 절을 다시 읽지 않고도 이름이 가물거릴 때 바로 찾아볼 수 있습니다.',
   },
 }
 
@@ -187,16 +187,35 @@ export const ko: Copy = {
     editPage: '이 페이지 편집',
     permalink: '제목 고정 링크',
     api: {
-      title: 'TypeShade API 참조',
+      // 영어 제목의 45자 하한과 짝을 맞추려 늘렸습니다(SEO 리뷰, onpage, 제목 길이).
+      title: 'TypeShade API 참조: 함수, 타입, 인터페이스, 클래스',
       description: 'TypeShade의 공개 export를 하나씩 페이지로 정리했습니다. 구문, 매개변수, 반환값, 예제, 그리고 어느 대상에서 지원되는지를 담습니다.',
       h1: 'API 참조',
       intro: `typeshade 패키지가 내보내는 export를 모두 모았습니다. 커밋 ${facts.pinnedCommit}의 컴파일러에서 뽑았습니다. 함수, 타입, 인터페이스, 클래스마다 페이지가 하나씩 있습니다.`,
       reference: '참조',
       breadcrumbs: '현재 위치',
-      pageTitle: (name: string) => `${name}, TypeShade API 참조`,
-      categoryTitle: (name: string) => `${name}, TypeShade API 참조`,
+      // 영어와 같은 이유로 제목에 분류와 종류를 넣고, 60자 안에서 들어가는 만큼만 꾸밈말을 붙입니다.
+      // 한글 음절은 로마자보다 스니펫에서 더 넓게 렌더링되므로(check-copy.ts의 1.35배 폭 예산과
+      // ApiReferencePage.astro의 META_MAX가 로케일별로 다른 이유와 같음), 이 함수가 실제로 내는
+      // 39-44자 제목은 리뷰가 영어 기준으로 잰 45자 하한보다 화면에서 좁지 않습니다. export 제목은
+      // 그대로 두고, 훨씬 짧은 참조 인덱스와 분류 제목만 아래에서 늘렸습니다.
+      pageTitle: (heading: string, kind: string, category: string) => {
+        const variants = [
+          `: TypeShade 셰이더 API의 ${category} 분류 ${kind} 참조 문서`,
+          `: TypeShade API의 ${category} 분류 ${kind} 참조 문서`,
+          `: TypeShade API의 ${category} 분류 ${kind} 참조`,
+          `: TypeShade API ${category} 분류 ${kind}`,
+          `: TypeShade API ${kind}`,
+        ]
+        const fitting = variants.find((suffix) => (heading + suffix).length <= 60)
+        return fitting ? heading + fitting : heading
+      },
+      categoryTitle: (name: string) => `${name} 분류, TypeShade 셰이더 API 참조 문서`,
       categoryDescription: (name: string, summary: string) => `TypeShade API 참조의 ${name} 분류입니다. ${summary}`,
-      pageDescription: (name: string, kind: string, category: string, summary: string) => `${category} 분류의 ${kind} ${name}에 대한 TypeShade API 참조입니다. ${summary}`,
+      // "~에 대한 TypeShade API 참조입니다"였던 접두어를 줄였습니다: 예제 요약(summary)은 컴파일러의
+      // JSDoc 원문이라 영어이고, 접두어만 한글이라서 접두어가 길수록 문장 경계를 찾을 70-140자 구간이
+      // 좁아져 단어 중간에서 잘리는 사례가 늘었습니다(SEO 리뷰, onpage, 설명 절단).
+      pageDescription: (name: string, kind: string, category: string, summary: string) => `${name}, ${category} 분류 ${kind}입니다. ${summary}`,
       kindLine: (kind: string, category: string) => `${kind}, ${category} 분류`,
       note: `시그니처, 설명, 예제는 커밋 ${facts.pinnedCommit}의 컴파일러 소스에서 그대로 가져온 영어 원문입니다.`,
       syntax: '구문',
@@ -305,7 +324,7 @@ export const ko: Copy = {
       },
       {
         h: 'CPU 결과와 대조',
-        p: '같은 모듈을 CPU에서 f64로 실행하고, 테스트는 컴파일러의 산술을 그 결과와 맞춰 봅니다. 출력은 푸시할 때마다 Tint에서 컴파일하고 WebGL2에서 링크합니다.',
+        p: '같은 모듈을 CPU에서 f64로 실행하고, [테스트](checks)는 컴파일러의 산술을 그 결과와 맞춰 봅니다. 출력은 푸시할 때마다 Tint에서 컴파일하고 WebGL2에서 링크합니다.',
       },
       {
         h: '편집기에서 타입 검사',
@@ -345,7 +364,7 @@ export const ko: Copy = {
       },
       {
         h: 'TypeShade가 하는 일',
-        p: 'TypeShade는 소스를 하나로 둡니다. 모듈이 타입 있는 TypeScript라서 잘못 쓴 필드나 틀린 반환 타입은 편집기에서 잡힙니다. 중간 표현 하나가 두 언어를 모두 내고, 같은 모듈이 CPU에서 배정밀도로 실행되므로 백엔드가 낸 결과를 같은 소스로 계산한 기준값과 맞춰 볼 수 있습니다. 푸시마다 무엇을 실행하는지는 [검증 페이지](checks)에 있습니다.',
+        p: 'README는 TypeShade를 "타입 검사기와 최적화기, 린트 패스, 파이프라인 리플렉션을 갖춘 TSL(three.js Shading Language) 스타일 그래프"로 소개합니다. 소스는 하나로 둡니다. 모듈이 타입 있는 TypeScript라서 잘못 쓴 필드나 틀린 반환 타입은 편집기에서 잡힙니다. 중간 표현 하나가 두 언어를 모두 내고, 같은 모듈이 CPU에서 배정밀도로 실행되므로 백엔드가 낸 결과를 같은 소스로 계산한 기준값과 맞춰 볼 수 있습니다. 푸시마다 무엇을 실행하는지는 [검증 페이지](checks)에 있습니다.',
       },
       {
         h: '하지 않는 일',
@@ -454,6 +473,7 @@ export const ko: Copy = {
     contents: '목차',
     sectionTitle: (title: string) => `${title}, TypeShade 작성 가이드`,
     sections,
+    referenceTableHeading: '참조 표',
     note: `커밋 ${facts.pinnedCommit}의 [AUTHORING.md](guideSource)를 한국어로 옮긴 것입니다. 패키지는 ${facts.nextVersion}에서 쓸 \`typeshade\`라는 이름으로 가져옵니다.`,
     noteUntranslated: `커밋 ${facts.pinnedCommit}의 [AUTHORING.md](guideSource)를 그대로 옮긴 것으로, 이 절의 본문은 아직 영어입니다. 패키지는 ${facts.nextVersion}에서 쓸 \`typeshade\`라는 이름으로 가져옵니다.`,
   },

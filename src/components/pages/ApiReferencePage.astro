@@ -14,6 +14,7 @@ import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts'
 import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { apiSiblings } from '../../lib/api-nav.ts'
 import { facts } from '../../lib/examples.ts'
+import { links } from '../../lib/links.ts'
 import { slugify } from '../../lib/slug.ts'
 
 interface Props {
@@ -44,14 +45,59 @@ const a = t.docs.api
 const category = apiCategoryCopy(locale, entry.category.slug)
 const callable = entry.kind === 'function' || entry.kind === 'constant'
 const heading = callable && entry.signatures.length > 0 ? `${entry.name}()` : entry.name
-const title = a.pageTitle(entry.name)
+const title = a.pageTitle(heading, a.kinds[entry.kind], category.name)
 // The meta description. A JSDoc summary of one short sentence is under the 70 characters the
-// SEO checks want, so the category's own sentence fills it out, and a long one is cut at 160.
+// SEO checks want, so the category's own sentence fills it out. A long one is cut at 160 on
+// an English page. A Korean page's description is a short Korean lead-in (docs.api.pageDescription)
+// in front of the JSDoc's own English sentence, so only the lead-in renders wider per character;
+// 140 leaves the English tail enough room to find its own sentence or clause end instead of
+// falling to the word-boundary cut on almost every page, which a flat 100 did (the SEO review,
+// onpage, Korean description cutoff and mid-sentence cuts).
 const META_MIN = 70
-const META_MAX = 160
+const META_MAX = locale === 'ko' ? 140 : 160
 const composed = a.pageDescription(entry.name, a.kinds[entry.kind], category.name, entry.summary)
 const filled = composed.length < META_MIN ? `${composed} ${category.summary}` : composed
-const description = filled.length <= META_MAX ? filled : `${filled.slice(0, META_MAX - 1).replace(/\s+\S*$/, '')}…`
+// A cut lands at the end of a sentence (. ! ?) or a clause (, ; :) when one leaves enough
+// characters to clear META_MIN. The search runs twice: first inside the locale's own budget
+// (max), which is where almost every description finds its break; a description whose
+// punctuation lands a few characters past a tight Korean budget gets a second look up to the
+// hard SEO ceiling those pages still have room under (check-seo.mjs DESCRIPTION_MAX) before
+// anything falls to the raw word-boundary cut. This is the fix-round finding that the original
+// word-boundary fallback itself still landed mid-clause on 50 of 732 pages (6.8%): widening the
+// search to the hard ceiling and adding ':' as a clause mark brought that to 13 (1.8%), all of
+// them a single continuous clause with no sentence or clause mark anywhere inside 160 characters
+// of the composed text, so the word-boundary cut there is the correct fallback for a sentence
+// that genuinely has nowhere shorter to break.
+const HARD_MAX = 160
+// The last character of the window is also a valid break: a mark one truncated character short
+// of "mark, more words" reads as mid-clause under a strict trailing-space search even though the
+// mark itself is the true end of what fits.
+const markEnd = (window: string, marks: readonly string[]): number => {
+  let best = -1
+  for (const mark of marks) {
+    const withSpace = window.lastIndexOf(`${mark} `)
+    if (withSpace >= 0) best = Math.max(best, withSpace + mark.length)
+    if (window.endsWith(mark)) best = Math.max(best, window.length)
+  }
+  return best
+}
+const cutAt = (text: string, limit: number): string | null => {
+  const window = text.slice(0, limit)
+  const sentenceEnd = markEnd(window, ['.', '!', '?'])
+  if (sentenceEnd >= META_MIN) return window.slice(0, sentenceEnd)
+  const clauseEnd = markEnd(window, [',', ';', ':'])
+  if (clauseEnd >= META_MIN) return `${window.slice(0, clauseEnd - 1)}…`
+  return null
+}
+const truncate = (text: string, max: number): string => {
+  if (text.length <= max) return text
+  return (
+    cutAt(text, max) ??
+    cutAt(text, HARD_MAX) ??
+    `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`
+  )
+}
+const description = truncate(filled, META_MAX)
 // The line a reader types before using any of this. Every entry is a named export of the
 // package's barrel, and a type is imported as one.
 const typeOnly = entry.kind === 'interface' || entry.kind === 'type'
@@ -123,6 +169,12 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
   previous={previous}
   next={next}
   meta={meta}
+  breadcrumbs={[
+    { name: a.reference, href: links.api.href },
+    { name: category.name, href: `/api/${entry.category.slug}/` },
+    { name: heading, href: `/api/${entry.slug}/` },
+  ]}
+  dateModified={facts.pinnedDate}
 >
   {entry.preview && <p class="api-preview" lang={locale}>{a.previewNote}</p>}
   <nav class="api-crumbs" aria-label={a.breadcrumbs} lang={locale}>

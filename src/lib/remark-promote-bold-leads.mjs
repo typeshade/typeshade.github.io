@@ -6,9 +6,26 @@
 // a section written this way renders with neither. This runs only on a section with no real
 // heading of its own, and turns exactly that convention into one; a paragraph or list item that
 // opens some other way is left as it is.
+//
+// Runs on AUTHORING.md itself and on a translation under content/guide/<locale>/, the only two
+// places a guide section's body comes from (the same test src/lib/remark-api-links.mjs uses). A
+// translation that keeps the bold-lead convention needs the same treatment, or its page would
+// carry no heading at all where the English one does.
 import { visit } from 'unist-util-visit'
+import { copyFor, defaultLocale, locales } from '../i18n/index.ts'
 
 const GUIDE = 'AUTHORING.md'
+const TRANSLATION = /[\\/]content[\\/]guide[\\/]([^\\/]+)[\\/][^\\/]+\.md$/
+
+/** 'en' for AUTHORING.md itself, the locale segment for a translation under content/guide/,
+ *  and the default locale for anything else (splitLead never runs on that; see isGuideFile). */
+function localeOf(filePath) {
+  const m = TRANSLATION.exec(filePath)
+  const locale = m?.[1]
+  return locale && locales.includes(locale) ? locale : defaultLocale
+}
+
+const isGuideFile = (filePath) => filePath.endsWith(GUIDE) || TRANSLATION.test(filePath)
 // The leftover separator between a bold lead and the rest of its sentence: an em dash (written
 // here as an escape so this file itself carries no literal one), a plain dash, or nothing, when
 // the bold run already ends the sentence with its own period.
@@ -16,7 +33,10 @@ const LEAD_SEP = /^\s*(?:[\u2014-]\s*)?/
 
 const startsWithBold = (node) => node?.type === 'paragraph' && node.children[0]?.type === 'strong'
 
-const headingFrom = (strong) => ({ type: 'heading', depth: 3, children: strong.children })
+// Depth 2: the page's h1 carries the section title (src/lib/authoring.ts strips AUTHORING.md's
+// own heading off), so a real subheading in the body starts at h2 (src/lib/authoring.ts'
+// promoteHeadings does the same for '### '). A pseudo-heading follows the same rule.
+const headingFrom = (strong) => ({ type: 'heading', depth: 2, children: strong.children })
 
 /** A bold-lead paragraph split into its heading and, if the sentence continues, a paragraph for
  *  the rest. `null` for a paragraph whose first child is anything else. */
@@ -44,7 +64,8 @@ const hasOutlineHeading = (tree) => {
 
 export default function remarkPromoteBoldLeads() {
   return (tree, file) => {
-    if (!String(file?.path ?? '').endsWith(GUIDE)) return
+    const filePath = String(file?.path ?? '')
+    if (!isGuideFile(filePath)) return
     if (hasOutlineHeading(tree)) return
 
     // A bare paragraph opening with a bold run, wherever it sits: before-after's section
@@ -76,10 +97,11 @@ export default function remarkPromoteBoldLeads() {
 
     // Quick reference is one table with no bold lead anywhere to promote. A heading in front of
     // the table still gives it an outline entry and the same three-column layout every other
-    // guide page has.
+    // guide page has, in whichever language this file is.
     if (!hasOutlineHeading(tree)) {
       const at = tree.children.findIndex((n) => n.type === 'table')
-      if (at !== -1) tree.children.splice(at, 0, { type: 'heading', depth: 3, children: [{ type: 'text', value: 'Reference table' }] })
+      const text = copyFor(localeOf(filePath)).guide.referenceTableHeading
+      if (at !== -1) tree.children.splice(at, 0, { type: 'heading', depth: 2, children: [{ type: 'text', value: text }] })
     }
   }
 }
