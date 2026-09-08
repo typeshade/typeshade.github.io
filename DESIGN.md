@@ -32,9 +32,9 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - Light by default; dark follows `prefers-color-scheme`, or the switch in the header, which
   is remembered in `localStorage`. Both palettes live in `src/styles/global.css` and nowhere
   else; the code themes follow through `ec.config.mjs`.
-- One accent, TypeScript's blue (#3178c6), for links and the mark; one red for diagnostics.
-  The one gradient on the site runs across the front page's headline, from that blue on
-  "Typed" to a violet on "shaders": the language on one side, the GPU on the other. No glows, no coloured card borders.
+- One accent, TypeScript's blue (#3178c6), for links, the mark and the accent line of the
+  front page's headline; one red for diagnostics. No colour gradients, no glows, no coloured
+  card borders.
 - Tailwind is kept only for its `@theme` tokens and preflight. No utility classes appear in
   the markup.
 

@@ -18,7 +18,6 @@
   --color-text-3: #6b6b6b;
   --color-surface-3: #e4e4df;
   --color-accent: #3178c6;
-  --color-accent-2: #7c4dff;
   --color-diag: #b3261e;
   /* The edge shadow that shows a table has more of itself to one side. */
   --color-shade: rgb(0 0 0 / 0.2);
@@ -73,7 +72,6 @@
     --color-text-2: #bdbdbd;
     --color-text-3: #8f8f8f;
     --color-accent: #7ab8f5;
-    --color-accent-2: #b8a6ff;
     --color-diag: #ff8a80;
     --color-shade: rgb(0 0 0 / 0.55);
 }
@@ -90,7 +88,6 @@
     --color-text-2: #bdbdbd;
     --color-text-3: #8f8f8f;
     --color-accent: #7ab8f5;
-    --color-accent-2: #b8a6ff;
     --color-diag: #ff8a80;
     --color-shade: rgb(0 0 0 / 0.55);
   }
@@ -382,13 +379,9 @@ body > main { flex: 1 }
   max-inline-size: var(--wide); margin-inline: auto;
   font-size: 2.5rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em;
 }
-/* Each half of the headline breaks on its own, so a line is never left with one word.
-   The box is the width of its text, so the accent's gradient runs across the words. */
+/* Each half of the headline breaks on its own, so a line is never left with one word. */
 .hero-line { display: block; inline-size: fit-content; margin-inline: auto; text-wrap: balance }
-.hero-title .accent {
-  background: linear-gradient(90deg, var(--color-accent) 30%, var(--color-accent-2));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
+.hero-title .accent { color: var(--color-accent) }
 :lang(ko) .hero-title { font-weight: 600; letter-spacing: -0.01em }
 .hero-tagline {
   max-inline-size: 720px; margin: 20px auto 32px;
@@ -417,14 +410,11 @@ body > main { flex: 1 }
 /* The release state, in the bordered pill vuejs.org puts under its buttons */
 .hero-prerelease { margin-block-start: 20px }
 .hero-prerelease a {
-  display: inline-block; padding: 7px 18px; border: 2px solid transparent; border-radius: 999px;
-  background:
-    linear-gradient(var(--color-ground), var(--color-ground)) padding-box,
-    linear-gradient(90deg, var(--color-accent), var(--color-accent-2)) border-box;
+  display: inline-block; padding: 8px 19px; border: 1px solid var(--color-line-2); border-radius: 999px;
   font-size: var(--text-meta); line-height: 1.45; font-weight: 500;
   color: var(--color-text-2); text-decoration: none; text-wrap: balance;
 }
-.hero-prerelease a:hover { color: var(--color-text-1) }
+.hero-prerelease a:hover { color: var(--color-text-1); border-color: var(--color-text-3) }
 
 /* The authored fragment and the WGSL it emits, side by side from 48rem */
 .front-code { padding-block: 48px 0 }
