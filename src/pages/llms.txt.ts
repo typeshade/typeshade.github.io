@@ -19,6 +19,8 @@ const summary = [
   `mirror and the authoring guide.`,
 ].join(' ')
 
+const absolute = (href: string) => (href.startsWith('/') ? `https://typeshade.dev${href}` : href)
+
 const table = [
   { dest: links.motivation, note: 'why one source for two shader languages' },
   { dest: links.checks, note: 'what CI runs on every push' },
@@ -39,7 +41,7 @@ const body = `# TypeShade
 
 ## Links
 
-${table.map((r) => `- ${r.dest.label}${r.note ? ` (${r.note})` : ''}: ${r.dest.href}`).join('\n')}
+${table.map((r) => `- ${r.dest.label}${r.note ? ` (${r.note})` : ''}: ${absolute(r.dest.href)}`).join('\n')}
 
 ## Measured at build time from the compiler pinned at ${facts.pinnedCommit}
 

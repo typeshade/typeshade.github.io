@@ -28,6 +28,6 @@ const others = locales.filter((l) => l !== locale)
   </a>
   <nav class="site-links" aria-label="Primary">
     {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
-    {others.map((l) => <a href={localePath(l, path)} hreflang={l} lang={l} aria-label={`${t.nav.languages}: ${copyFor(l).name}`}>{copyFor(l).name}</a>)}
+    {others.map((l) => <a href={localePath(l, /\.[a-z0-9]+$/i.test(path) ? '/' : path)} hreflang={l} lang={l} aria-label={`${t.nav.languages}: ${copyFor(l).name}`}>{copyFor(l).name}</a>)}
   </nav>
 </header>

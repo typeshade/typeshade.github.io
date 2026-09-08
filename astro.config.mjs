@@ -17,7 +17,7 @@ const lastmod = execSync('git log -1 --format=%cI', { cwd: root, encoding: 'utf8
 export default defineConfig({
   site: 'https://typeshade.dev',
   output: 'static',
-  trailingSlash: 'ignore',
+  trailingSlash: 'always',
   // English at /, every other locale under its own prefix. The copy lives in src/i18n.
   i18n: { defaultLocale: 'en', locales: ['en', 'ko'], routing: { prefixDefaultLocale: false } },
   integrations: [

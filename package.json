@@ -15,7 +15,8 @@
     "capture:stills": "STILLS_REBASELINE=1 astro build && bun scripts/capture-stills.ts",
     "capture:og": "OG_REBASELINE=1 astro build && bun scripts/capture-og.ts",
     "capture": "bun run build:icons && bun run capture:stills && bun run capture:og",
-    "qa:links": "node scripts/check-http-links.mjs dist"
+    "qa:links": "node scripts/check-http-links.mjs dist",
+    "qa:seo": "node scripts/check-seo.mjs dist"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

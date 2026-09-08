@@ -14,9 +14,9 @@ const at = (file: string): string => `${mirror}/blob/${facts.pinnedCommit}/${fil
 
 export const links = {
   home: { label: 'TypeShade', href: '/' },
-  motivation: { label: 'Motivation', href: '/motivation' },
-  checks: { label: 'Checks', href: '/checks' },
-  examples: { label: 'Examples', href: '/examples' },
+  motivation: { label: 'Motivation', href: '/motivation/' },
+  checks: { label: 'Checks', href: '/checks/' },
+  examples: { label: 'Examples', href: '/examples/' },
   guide: { label: 'Authoring guide', href: `${at('AUTHORING.md')}#1-the-authoring-surface` },
   mirror: { label: 'GitHub', href: mirror },
   docs: { label: 'README', href: at('README.md') },

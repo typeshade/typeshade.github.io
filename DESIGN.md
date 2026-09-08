@@ -55,12 +55,12 @@ why lives on its own page.
 - `/`: the name, two sentences, one line of measured numbers, the live metaballs shader, Quick
   start (the submodule command, the authored fragment, the WGSL it emits), a seven-line list of
   what it does, links to the pages below, Status.
-- `/motivation`: the two-shader problem, the hosts' migration guides, the survey figures, what
+- `/motivation/`: the two-shader problem, the hosts' migration guides, the survey figures, what
   TypeShade does about it and what it does not do.
-- `/checks`: the CPU oracle, the compile gate, the golden files, the same pass drawn on
+- `/checks/`: the CPU oracle, the compile gate, the golden files, the same pass drawn on
   WebGPU and on WebGL2 as one side-by-side figure, and the typed diagnostic with its reflected
   layout.
-- `/examples`: the examples, the print commands, the GLSL emit of the gradient pass, and the
+- `/examples/`: the examples, the print commands, the GLSL emit of the gradient pass, and the
   emulated-double demo.
 
 The header links to the three pages, the guide and GitHub; the footer repeats them and adds

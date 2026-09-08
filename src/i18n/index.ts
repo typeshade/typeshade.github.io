@@ -14,10 +14,11 @@ const copies: Record<Locale, Copy> = { en, ko }
 
 export const copyFor = (locale: Locale): Copy => copies[locale]
 
-/** The path of a locale-neutral route ('/', '/checks') in a given locale. */
+/** The path of a locale-neutral route ('/', '/checks/') in a given locale. */
 export function localePath(locale: Locale, path: string): string {
-  if (locale === defaultLocale) return path
-  return path === '/' ? `/${locale}/` : `/${locale}${path}`
+  // Pages end in a slash, which is the URL GitHub Pages serves them at; files keep their name.
+  const p = path.endsWith('/') || /\.[a-z0-9]+$/i.test(path) ? path : `${path}/`
+  return locale === defaultLocale ? p : `/${locale}${p}`
 }
 
 /** Absolute URL for hreflang and canonical links. */
