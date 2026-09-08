@@ -437,6 +437,14 @@ body > main { flex: 1 }
 .doc .expressive-code { margin-block-start: 18px }
 .figure .expressive-code { margin-block-start: 0 }
 .expressive-code pre[tabindex]:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--ring) }
+/* Without hover the copy button stays on screen, so a frame with no title opens with an
+   empty band and the first code line starts below the button instead of under it */
+@media (hover: none) {
+  .expressive-code .frame:not(.has-title):not(.is-terminal) { --button-spacing: 0.5rem }
+  .expressive-code .frame:not(.has-title):not(.is-terminal) pre > code {
+    padding-block-start: calc(var(--button-spacing) + 2.9rem);
+  }
+}
 
 /* Canvas figure: a framed box with a still image underneath the live canvas */
 .doc figure { margin-block-start: 24px }

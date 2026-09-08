@@ -65,9 +65,9 @@ export const ko: Copy = {
   canvas: {
     aria: (title: string) => ({
       webgpu: `TypeScript로 쓰고 TypeShade가 WGSL로 컴파일한 ${title} 셰이더. WebGPU에서 실행 중.`,
-      webgl2: `TypeScript로 쓰고 TypeShade가 ${glsl}로 컴파일한 ${title} 셰이더. WebGL2에서 실행 중.`,
+      webgl2: `TypeScript로 쓰고 TypeShade가 ${glsl}으로 컴파일한 ${title} 셰이더. WebGL2에서 실행 중.`,
       'still-webgpu': `TypeScript로 쓰고 TypeShade가 WGSL로 컴파일한 ${title} 셰이더. WebGPU에서 한 프레임을 그림.`,
-      'still-webgl2': `TypeScript로 쓰고 TypeShade가 ${glsl}로 컴파일한 ${title} 셰이더. WebGL2에서 한 프레임을 그림.`,
+      'still-webgl2': `TypeScript로 쓰고 TypeShade가 ${glsl}으로 컴파일한 ${title} 셰이더. WebGL2에서 한 프레임을 그림.`,
       none: `TypeScript로 쓰고 TypeShade가 컴파일한 ${title} 셰이더. 빌드할 때 렌더링함.`,
     }),
   },
@@ -89,7 +89,7 @@ export const ko: Copy = {
   codeLabels: {
     authored: `작성한 프래그먼트, ${hero.file}`,
     wgsl: 'WGSL로 나온 프래그먼트 진입점',
-    glsl: `${glsl}로 나온 프래그먼트 main`,
+    glsl: `${glsl}으로 나온 프래그먼트 main`,
     print: '예제의 WGSL, GLSL, 리플렉션을 인쇄하는 명령',
   },
 
@@ -107,7 +107,7 @@ export const ko: Copy = {
     metaballs: {
       neutral: `examples/${exampleFile('metaballs')}의 Metaballs. 빌드할 때 그린 화면입니다.`,
       webgpu: '컴파일된 WGSL로 WebGPU에서 실시간으로 그리는 Metaballs.',
-      webgl2: `컴파일된 ${glsl}로 WebGL2에서 실시간으로 그리는 Metaballs.`,
+      webgl2: `컴파일된 ${glsl}으로 WebGL2에서 실시간으로 그리는 Metaballs.`,
       none: '빌드할 때 렌더링한 Metaballs. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.',
       reduced: '한 프레임만 그린 Metaballs. 시스템이 움직임 줄이기를 켜 두었습니다.',
     },
@@ -188,14 +188,14 @@ export const ko: Copy = {
     gpuFrame: {
       neutral: '컴파일된 WGSL로 빌드할 때 WebGPU에서 그렸습니다.',
       webgpu: '컴파일된 WGSL로 지금 WebGPU에서 그리고 있습니다.',
-      webgl2: `여기서는 WebGPU를 쓸 수 없어서, 컴파일된 ${glsl}로 WebGL2에서 이 프레임을 그렸습니다.`,
+      webgl2: `여기서는 WebGPU를 쓸 수 없어서, 컴파일된 ${glsl}으로 WebGL2에서 이 프레임을 그렸습니다.`,
       none: '컴파일된 WGSL로 빌드할 때 WebGPU에서 그렸습니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.',
     },
     glFrame: {
-      neutral: `컴파일된 ${glsl}로 빌드할 때 WebGL2에서 그렸습니다.`,
+      neutral: `컴파일된 ${glsl}으로 빌드할 때 WebGL2에서 그렸습니다.`,
       webgpu: '컴파일된 WGSL로 지금 WebGPU에서 그리고 있습니다.',
-      webgl2: `컴파일된 ${glsl}로 지금 WebGL2에서 그리고 있습니다.`,
-      none: `컴파일된 ${glsl}로 빌드할 때 WebGL2에서 그렸습니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.`,
+      webgl2: `컴파일된 ${glsl}으로 지금 WebGL2에서 그리고 있습니다.`,
+      none: `컴파일된 ${glsl}으로 빌드할 때 WebGL2에서 그렸습니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.`,
     },
     authorTime: {
       h: '코드를 쓰는 동안',
@@ -208,7 +208,7 @@ export const ko: Copy = {
     title: `TypeShade 예제 ${facts.examples}개, GLSL 출력, 에뮬레이션 f64`,
     description: `TypeShade 예제 ${facts.examples}개와 출력을 인쇄하는 명령, gradient 패스의 ${glsl} 출력, 에뮬레이션 배정밀도의 딥 줌 데모.`,
     h1: '예제',
-    intro: `저장소에는 실행할 수 있는 예제가 ${facts.examples}개 있습니다. 지도용 패스, ShaderToy 시절의 화면 공간 효과, 에뮬레이션 배정밀도 계열, 컴퓨트 커널 하나를 다룹니다. 그중 ${facts.bothTargets}개는 한 소스에서 WGSL과 ${glsl}을 모두 냅니다. 컴퓨트 커널은 ${glsl}로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL과 리플렉션만 내고, WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다. ${facts.fp64Examples}개는 에뮬레이션 배정밀도를 씁니다. 렌더링 가능한 예제는 [examples/index.ts](examplesIndex)에서 export하고, [예제 디렉터리](examplesDir)에서 둘러볼 수 있습니다.`,
+    intro: `저장소에는 실행할 수 있는 예제가 ${facts.examples}개 있습니다. 지도용 패스, ShaderToy 시절의 화면 공간 효과, 에뮬레이션 배정밀도 계열, 컴퓨트 커널 하나를 다룹니다. 그중 ${facts.bothTargets}개는 한 소스에서 WGSL과 ${glsl}을 모두 냅니다. 컴퓨트 커널은 ${glsl}으로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL과 리플렉션만 내고, WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다. ${facts.fp64Examples}개는 에뮬레이션 배정밀도를 씁니다. 렌더링 가능한 예제는 [examples/index.ts](examplesIndex)에서 export하고, [예제 디렉터리](examplesDir)에서 둘러볼 수 있습니다.`,
     categories: { cartographic: '지도', generic: '화면 공간', compute: '컴퓨트' },
     columns: { example: '예제', category: '분류', targets: '출력', blurb: '설명' },
     targets: { both: `WGSL과 ${glsl}`, wgsl: 'WGSL' },
