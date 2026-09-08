@@ -1,6 +1,8 @@
 // Every destination the site links to, in one place. Routes into the compiler are permalinks
 // at the pinned commit, so a link never points at a file the site's numbers were not
 // measured from. No consumer of the library is named or linked anywhere.
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { apiCategories, apiSlugByName } from './api-nav.ts'
 import { facts } from './examples.ts'
 import { apiCategoryCopy, copyFor, localePath, type Locale } from '../i18n/index.ts'
@@ -51,9 +53,31 @@ export const links = {
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
 
-/** The file a hand-written page is written in, on GitHub. The copy is the page. */
-export function editCopy(locale: Locale): string {
-  return `${siteRepo}/blob/main/src/i18n/${locale}.ts`
+const i18nSourceByLocale = new Map<Locale, string>()
+
+/** The dictionary file's own text, read once per locale so an edit link can find a key's line. */
+function i18nSource(locale: Locale): string {
+  const cached = i18nSourceByLocale.get(locale)
+  if (cached !== undefined) return cached
+  const text = readFileSync(path.resolve(`src/i18n/${locale}.ts`), 'utf8')
+  i18nSourceByLocale.set(locale, text)
+  return text
+}
+
+/** The line a top-level dictionary key starts on, 1-based. Fails the build if the key moves
+ *  out of the top level or a call site misspells it, so the link can never go stale. */
+function dictionaryLine(locale: Locale, key: string): number {
+  const lines = i18nSource(locale).split('\n')
+  const at = lines.findIndex((l) => l.startsWith(`  ${key}: {`) || l.startsWith(`  ${key}: `))
+  if (at < 0) throw new Error(`[links] '${key}' is not a top-level key of src/i18n/${locale}.ts`)
+  return at + 1
+}
+
+/** The file a hand-written page is written in, on GitHub. The copy is the page. Passing the
+ *  page's own top-level dictionary key points the link at that key's line in the file. */
+export function editCopy(locale: Locale, key?: string): string {
+  const at = key === undefined ? '' : `#L${dictionaryLine(locale, key)}`
+  return `${siteRepo}/blob/main/src/i18n/${locale}.ts${at}`
 }
 
 /** The line a guide section starts on in the vendored AUTHORING.md, on GitHub. */

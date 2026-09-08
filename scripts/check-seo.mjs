@@ -33,7 +33,8 @@ for (const file of pages) {
   const rel = file.slice(dist.length + 1)
   if (html.includes('http-equiv="refresh"')) continue
   const fail = (what) => problems.push(`${rel}: ${what}`)
-  const isNotFound = rel === '404.html'
+  // The root 404 GitHub Pages serves, and the Korean one it sends a /ko/ path on to.
+  const isNotFound = rel === '404.html' || rel.endsWith('/404/index.html')
   const isPreview = html.includes('class="api-preview"')
 
   const title = decode(one(html, /<title>([^<]*)<\/title>/) ?? '')
@@ -52,6 +53,10 @@ for (const file of pages) {
   if (!description) fail('no description')
   else if (description.length > DESCRIPTION_MAX) fail(`description is ${description.length} characters, over ${DESCRIPTION_MAX}`)
   else if (!isNotFound && description.length < DESCRIPTION_MIN) fail(`description is ${description.length} characters, under ${DESCRIPTION_MIN}`)
+  // The reference composes "Name, a <kind> in <category>." from the kind words, and 'interface'
+  // is the one that takes "an" (src/i18n/en.ts, api.pageDescription).
+  const article = description.match(/\ba (?:interface)\b|\ban (?:function|constant|type|class)\b/i)
+  if (article) fail(`description says "${article[0]}"`)
   if (!canonical) fail('no canonical')
   else if (!isNotFound && !canonical.endsWith('/')) fail(`canonical ${canonical} does not end in a slash`)
   if (ogTitle !== title) fail(`og:title "${ogTitle}" differs from the title`)

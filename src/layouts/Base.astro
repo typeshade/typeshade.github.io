@@ -118,6 +118,11 @@ const jsonLd = {
     </main>
     <SiteFooter locale={locale} path={path} />
     <dialog class="search-dialog" aria-label={t.nav.search} data-pagefind-ignore>
+      <div class="search-dialog-bar">
+        <button class="search-dialog-close" type="button" aria-label={t.nav.close} data-search-close>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
       <div id="search"></div>
       <p class="search-note" hidden>{t.nav.searchUnavailable}</p>
     </dialog>
@@ -152,7 +157,9 @@ const jsonLd = {
         dialog.querySelector('input')?.focus()
       }
       for (const b of document.querySelectorAll('[data-search-open]')) b.addEventListener('click', openSearch)
-      // A click on the backdrop lands on the dialog itself; Escape is the dialog's own.
+      dialog.querySelector('[data-search-close]')?.addEventListener('click', () => dialog.close())
+      // A click on the backdrop lands on the dialog itself; Escape is the dialog's own, but a
+      // phone has no Escape key, so the close button above is the button that always works.
       dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close() })
       addEventListener('keydown', (e) => {
         if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openSearch() }
@@ -165,6 +172,59 @@ const jsonLd = {
         document.documentElement.dataset.theme = next
         try { localStorage.setItem('theme', next) } catch {}
       })
+    </script>
+    <script is:inline>
+      // The header's own menus: the version and language dropdowns, and the phone panel, are
+      // all <details>. This keeps only one open at a time, closes the dropdowns on Escape and
+      // an outside click, and gives the phone panel a scroll lock and a focus trap, since it
+      // is a full-screen overlay and its close control (the summary itself) must stay put.
+      const drops = [...document.querySelectorAll('.site-menu-drop')]
+      const panel = document.querySelector('.site-menu')
+      const all = panel ? [...drops, panel] : drops
+
+      function closeAllBut(except) {
+        for (const d of all) if (d !== except && d.open) d.open = false
+      }
+      for (const d of drops) d.addEventListener('toggle', () => { if (d.open) closeAllBut(d) })
+
+      document.addEventListener('click', (e) => {
+        for (const d of drops) if (d.open && !d.contains(e.target)) d.open = false
+      })
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return
+        const open = drops.find((d) => d.open)
+        if (open) { open.open = false; open.querySelector('summary')?.focus() }
+      })
+
+      if (panel) {
+        const summary = panel.querySelector(':scope > summary')
+        let restoreOverflow = ''
+        panel.addEventListener('toggle', () => {
+          if (panel.open) {
+            closeAllBut(panel)
+            restoreOverflow = document.documentElement.style.overflow
+            document.documentElement.style.overflow = 'hidden'
+          } else {
+            document.documentElement.style.overflow = restoreOverflow
+          }
+        })
+        panel.addEventListener('keydown', (e) => {
+          if (!panel.open) return
+          if (e.key === 'Escape') {
+            e.preventDefault()
+            panel.open = false
+            summary?.focus()
+            return
+          }
+          if (e.key !== 'Tab') return
+          const focusable = [...panel.querySelectorAll('summary, a[href], button:not([disabled])')].filter((el) => el.offsetParent !== null)
+          if (focusable.length === 0) return
+          const first = focusable[0]
+          const last = focusable[focusable.length - 1]
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+        })
+      }
     </script>
   </body>
 </html>

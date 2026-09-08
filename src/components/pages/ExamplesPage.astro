@@ -7,7 +7,7 @@ import ShaderCanvas from '../ShaderCanvas.astro'
 import type { CanvasText } from '../ShaderCanvas.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
-import { checkedBlurbs, emitsGlsl, facts, hero } from '../../lib/examples.ts'
+import { checkedBlurbs, facts, hero } from '../../lib/examples.ts'
 import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
 import { slugify } from '../../lib/slug.ts'
 
@@ -36,23 +36,23 @@ const rows = examples.map((x) => ({
   title: x.title,
   href: `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/examples/${x.file}`,
   category: e.categories[x.category],
-  targets: emitsGlsl(x.module) ? e.targets.both : e.targets.wgsl,
+  wgslOnly: x.id === facts.wgslOnlyExample.id,
   blurb: blurbs[x.id]!,
 }))
 const groups = order.map((c) => rows.filter((r) => r.category === e.categories[c]))
 const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts hillshade'].join('\n')
 ---
 
-<Docs locale={locale} path={links.examples.href} title={e.title} description={e.description} headings={headings} editHref={editCopy(locale)}>
+<Docs locale={locale} path={links.examples.href} title={e.title} description={e.description} headings={headings} editHref={editCopy(locale, 'examples')}>
     <h1>{e.h1}</h1>
     <p><Rich text={e.intro} locale={locale} /></p>
+    <p class="example-table-caption">{e.tableCaption}</p>
 
     <table class="example-table" role="table">
       <thead role="rowgroup">
         <tr role="row">
           <th role="columnheader" scope="col">{e.columns.example}</th>
           <th role="columnheader" scope="col">{e.columns.category}</th>
-          <th role="columnheader" scope="col">{e.columns.targets}</th>
           <th role="columnheader" scope="col">{e.columns.blurb}</th>
         </tr>
       </thead>
@@ -60,9 +60,11 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
         <tbody role="rowgroup">
           {group.map((row) => (
             <tr role="row">
-              <th role="rowheader" scope="row"><a href={row.href}>{row.title}</a></th>
+              <th role="rowheader" scope="row">
+                <a href={row.href}>{row.title}</a>
+                {row.wgslOnly && <span class="example-wgsl-only">{e.wgslOnly}</span>}
+              </th>
               <td role="cell">{row.category}</td>
-              <td role="cell" data-targets>{row.targets}</td>
               <td role="cell"><Rich text={row.blurb} locale={locale} /></td>
             </tr>
           ))}

@@ -46,7 +46,9 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - The front page is centred on a 960px measure: the name as the headline in the accent colour,
   the category line under it ("The verifiable TypeScript shader library", the way react.dev
   sets its one line under "React" and vuejs.org attaches "Progressive"), one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
-  it emits, three short points. Under 40rem the three links are a grid, Get started across the
+  it emits, three short points. Get started is the one filled button (accent background, the
+  way vuejs.org fills its own Get Started); Why TypeShade and Examples stay the plain surface
+  button. Under 40rem the three links are a grid, Get started across the
   top; the two code frames stack under 48rem. The layout follows vuejs.org's front page.
 - Every other page is one content column, 740px, left-aligned, with code blocks and figures at
   the same width. Sections are 48 to 56px apart.
@@ -186,7 +188,9 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - Numbers are interpolated from `facts` in every language. Captions, accessible names, table
   headers and code-frame labels are in the dictionary too.
 - Every page links its other languages in the header and carries `hreflang` alternates.
-  `/llms.txt`, `/404` and the social card are English only.
+  `/llms.txt` and the social card are English only. GitHub Pages serves one 404 page, in
+  English; a missing path under `/ko/` is sent on to `/ko/404/`, a Korean page with Korean
+  chrome. Both are noindex and out of the sitemap.
 - Korean text is set in IBM Plex Sans KR, the Korean companion to Plex Sans, at 400 and 600,
   subset to the 2,350 KS X 1001 syllables plus every character the copy uses (about 110 KB a
   weight, loaded on Korean pages only). `bun run build:fonts` regenerates the subset and its

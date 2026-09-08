@@ -2,7 +2,7 @@
 // build (src/lib/examples.ts). Inline links are written as [text](key), where key names a
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
 import { API_CATEGORIES } from '../lib/api.ts'
-import { exampleFile, facts, hero, registryBlurbs } from '../lib/examples.ts'
+import { exampleFile, facts, hero, quickStartFile, registryBlurbs } from '../lib/examples.ts'
 import { guideSections } from '../lib/guide.ts'
 import { typedError } from '../lib/typed-error.ts'
 
@@ -59,6 +59,7 @@ export const en = {
     theme: 'Toggle dark mode',
     menu: 'Menu',
     search: 'Search',
+    close: 'Close',
     /** Astro's dev server has no index; only a build writes dist/pagefind/. */
     searchUnavailable: 'Search is available on the built site',
     /** Pagefind's own UI strings. [SEARCH_TERM] and [COUNT] are its placeholders. */
@@ -94,6 +95,7 @@ export const en = {
     previous: 'Previous',
     next: 'Next',
     editPage: 'Edit this page',
+    permalink: 'Link to heading',
     // The API reference: the words around a generated ApiEntry (src/lib/api-types.ts).
     api: {
       title: 'TypeShade API reference',
@@ -105,7 +107,11 @@ export const en = {
       pageTitle: (name: string) => `${name}, TypeShade API reference`,
       categoryTitle: (name: string) => `${name} in the TypeShade API reference`,
       categoryDescription: (name: string, summary: string) => `${name} in the TypeShade API reference. ${summary}`,
-      pageDescription: (name: string, kind: string, category: string, summary: string) => `${name}, a ${kind.toLowerCase()} in ${category}. ${summary}`,
+      pageDescription: (name: string, kind: string, category: string, summary: string) => {
+        // 'interface' is the one kind that starts with a vowel, so the article follows the word.
+        const k = kind.toLowerCase()
+        return `${name}, ${/^[aeiou]/.test(k) ? 'an' : 'a'} ${k} in ${category}. ${summary}`
+      },
       kindLine: (kind: string, category: string) => `${kind} in ${category}`,
       note: `The signature, the description and the examples come from the compiler's own source at commit ${facts.pinnedCommit}.`,
       syntax: 'Syntax',
@@ -180,6 +186,7 @@ export const en = {
   },
   codeLabels: {
     authored: `Authored fragment, ${hero.file}`,
+    quickStartFile: 'The complete file, shader.ts',
     wgsl: 'The emitted WGSL fragment entry point',
     glsl: `The emitted ${glsl} fragment main`,
     print: "Printing an example's WGSL, GLSL and reflection",
@@ -191,7 +198,7 @@ export const en = {
       accent: 'TypeShade',
       after: '',
       subtitle: 'The verifiable TypeScript shader library',
-      tagline: `A TypeScript library that writes a shader once and emits WGSL and ${glsl}. The same module runs on the CPU in double precision, so the compiler's output can be checked.`,
+      tagline: `Write a shader once in TypeScript, and TypeShade emits WGSL and ${glsl}. The same module runs on the CPU in double precision, so the compiler's output can be checked.`,
       getStarted: 'Get started',
       why: 'Why TypeShade',
       examples: 'Examples',
@@ -226,15 +233,15 @@ export const en = {
   },
   quickStart: {
     title: 'TypeShade quick start: install and a first shader',
-    description: 'Add TypeShade as a git submodule and follow the fragment stage of the gradient example to the WGSL it emits, with a note on the pre-release status.',
+    description: 'Add TypeShade as a git submodule and run a complete file, the gradient example, to the WGSL it emits, with a note on the pre-release status.',
     h1: 'Quick start',
     installH: 'Install',
-      p1: `The package ships TypeScript source, so your build needs a toolchain that compiles it. This is the fragment stage of the gradient example, declared with [\`fn\`](apiFn), ${hero.authoredLines} lines as authored in \`${hero.file}\`:`,
-      p2: 'It emits this WGSL entry point:',
+      p1: `The package ships TypeScript source, so your build needs a toolchain that compiles it. Here is a complete file: the gradient example's uniform block and both stages, declared with [\`fn\`](apiFn) and built with [\`module()\`](apiModule), ${quickStartFile.lines} lines from the import line to a call that emits WGSL:`,
+      p2: 'Running it emits WGSL for both stages. Here is the fragment entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [authoring guide](guide) covers the rest of the surface.`,
     status: {
       h: 'Status',
-      p: `Pre-release. The repository is at version ${facts.mirrorVersion}; ${facts.nextVersion} is the release the npm name [typeshade](npm) is reserved for, and the manifest and the imports are renamed at that tag. Issues are welcome; pull requests cannot be merged yet, because changes land upstream and this tree is fast-forwarded from there. [Watch releases](releases) to hear about ${facts.nextVersion}.`,
+      p: `Pre-release. The repository is at version ${facts.mirrorVersion}; ${facts.nextVersion} is the release the npm name [typeshade](npm) is reserved for, and the manifest and the imports are renamed at that tag. Until then this is a mirror: the import above resolves at \`${quickStartFile.importPath}\`, inside the submodule itself. Issues are welcome; pull requests cannot be merged yet, because changes land upstream and this tree is fast-forwarded from there. [Watch releases](releases) to hear about ${facts.nextVersion}.`,
     },
   },
   motivation: {
@@ -256,7 +263,7 @@ export const en = {
       },
       {
         h: 'What TypeShade does',
-        p: 'TypeShade keeps one source. The module is typed TypeScript, so a misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same module compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. The [checks page](checks) says what runs on every push.',
+        p: 'TypeShade keeps one source. The module is typed TypeScript, so a misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same module compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. [Verification](checks) says what runs on every push.',
       },
       {
         h: 'What it does not do',
@@ -301,10 +308,11 @@ export const en = {
     title: `TypeShade examples: ${facts.examples} shaders, GLSL emit, emulated f64`,
     description: `The ${facts.examples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
     h1: 'Examples',
-    intro: `There are ${facts.examples} runnable examples in the repository, covering cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel. ${facts.bothTargets} of them emit WGSL and ${glsl} from one source. The compute kernel has no vertex or fragment stage to emit as ${glsl}, so it emits WGSL and reflection; its WebGL2 path is the opt-in emulation. ${facts.fp64Examples} use emulated double precision. The renderable ones are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
+    intro: `There are ${facts.examples} runnable examples in the repository, covering cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel. ${facts.fp64Examples} use emulated double precision. The renderable ones are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
     categories: { cartographic: 'Cartographic', generic: 'Screen space', compute: 'Compute' },
-    columns: { example: 'Example', category: 'Category', targets: 'Targets', blurb: 'Description' },
-    targets: { both: `WGSL and ${glsl}`, wgsl: 'WGSL' },
+    columns: { example: 'Example', category: 'Category', blurb: 'Description' },
+    tableCaption: `${facts.bothTargets} of the ${facts.examples} examples below emit WGSL and ${glsl}. ${facts.wgslOnlyExample.title} has no vertex or fragment stage to emit as ${glsl}, so the table marks it WGSL only; its WebGL2 path is the opt-in emulation.`,
+    wgslOnly: 'WGSL only',
     /** The Description column, one line per example, keyed by the registry's id. English
      *  takes the compiler's own wording; a translation writes the same lines in its language. */
     blurbs: registryBlurbs(),
@@ -312,7 +320,7 @@ export const en = {
     glsl: {
       h: `The gradient pass in ${glsl}`,
       p1: `The front page shows the fragment stage of \`${hero.file}\` and the WGSL entry point it emits. The same function emits this ${glsl} \`main\`:`,
-      p2: `The whole module is ${hero.emit.wgslLines} lines of WGSL; the GLSL vertex stage is ${hero.emit.glslVertexLines} lines and the fragment stage ${hero.emit.glslFragmentLines}. Uniform types, byte offsets, bind-group entries and entry signatures come from [\`reflect()\`](apiReflect), which reads the same intermediate representation and stays off the emit path, so a host can pack its uniform buffer from that layout. The [checks page](checks) shows the reflected layout of a uniform block beside the diagnostic for a misspelt field.`,
+      p2: `The whole module is ${hero.emit.wgslLines} lines of WGSL; the GLSL vertex stage is ${hero.emit.glslVertexLines} lines and the fragment stage ${hero.emit.glslFragmentLines}. Uniform types, byte offsets, bind-group entries and entry signatures come from [\`reflect()\`](apiReflect), which reads the same intermediate representation and stays off the emit path, so a host can pack its uniform buffer from that layout. [Verification](checks) shows the reflected layout of a uniform block beside the diagnostic for a misspelt field.`,
     },
     f64: {
       h: 'Emulated double precision',

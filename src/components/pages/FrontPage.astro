@@ -33,7 +33,7 @@ const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(
     <p class="hero-subtitle">{h.subtitle}</p>
     <p class="hero-tagline">{h.tagline}</p>
     <p class="hero-actions">
-      <a class="button" href={localePath(locale, links.quickStart.href)}>
+      <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
         {h.getStarted}
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z" /></svg>
       </a>

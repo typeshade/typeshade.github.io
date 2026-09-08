@@ -1,9 +1,11 @@
 ---
 // The bar at the top of every page: the mark and the name; Guide and Examples; then search,
-// the language menu, the dark-mode switch and GitHub as icons. Under 48rem everything but the
-// name sits in a panel behind a menu button. Both menus are details elements; the dark-mode
-// switch and the search dialog need the scripts in Base.astro. The bar is out of the search
-// index, so a hit is a hit in the page's own text.
+// the language menu, the dark-mode switch and GitHub as icons. Under 48rem the nav, the version
+// and language menus and the dark-mode switch sit in a panel behind a menu button, but the
+// magnifier stays in the bar so search is one tap either way. Every menu (version, language,
+// the phone panel) is a details element; the script in Base.astro keeps only one open at a
+// time and closes them on Escape and an outside click. The bar is out of the search index, so
+// a hit is a hit in the page's own text.
 import { MARK } from '../lib/mark.ts'
 import { links, navLinks } from '../lib/links.ts'
 import { facts } from '../lib/examples.ts'
@@ -43,7 +45,7 @@ const ordered = [...languages.filter((l) => l.current), ...others]
           <span class="site-search-label">{t.nav.search}</span>
         </button>
         <details class="site-menu-drop site-version">
-          <summary aria-label={`${t.nav.version} ${facts.mirrorVersion}`}>
+          <summary>
             <span>v{facts.mirrorVersion}</span>
             <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
           </summary>
@@ -55,7 +57,7 @@ const ordered = [...languages.filter((l) => l.current), ...others]
           </ul>
         </details>
         <details class="site-menu-drop site-lang">
-          <summary aria-label={t.nav.languages}>
+          <summary>
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm7.93 9h-3.02a15.7 15.7 0 0 0-1.3-5.36A8.03 8.03 0 0 1 19.93 11ZM12 4.07c.9 1.2 1.9 3.5 2.2 6.93H9.8c.3-3.43 1.3-5.73 2.2-6.93ZM4.07 13h3.02c.14 1.98.6 3.8 1.3 5.36A8.03 8.03 0 0 1 4.07 13Zm3.02-2H4.07a8.03 8.03 0 0 1 4.32-5.36A15.7 15.7 0 0 0 7.09 11ZM12 19.93c-.9-1.2-1.9-3.5-2.2-6.93h4.4c-.3 3.43-1.3 5.73-2.2 6.93Zm3.61-1.57c.7-1.56 1.16-3.38 1.3-5.36h3.02a8.03 8.03 0 0 1-4.32 5.36Z" /></svg>
             <span class="site-lang-current">{t.name}</span>
             <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
@@ -85,42 +87,43 @@ const ordered = [...languages.filter((l) => l.current), ...others]
       </div>
     </div>
 
-    <details class="site-menu">
-      <summary aria-label={t.nav.menu}>
-        <span class="site-menu-bar"></span>
-        <span class="site-menu-bar"></span>
-        <span class="site-menu-bar"></span>
-      </summary>
-      <div class="site-screen">
-        <button class="site-screen-search" type="button" aria-label={t.nav.search} data-search-open>
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" /><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m16.2 16.2 4 4" /></svg>
-          <span>{t.nav.search}</span>
-        </button>
-        <nav aria-label={t.nav.menu}>
-          {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
-          <a href={links.mirror.href}>{t.nav.github}</a>
-        </nav>
-        <div class="site-screen-row">
-          <span>{t.nav.version}</span>
-          <span class="site-screen-langs">
-            v{facts.mirrorVersion}
-            <a href={links.releases.href}>{t.nav.releases}</a>
-            <a href={links.changelog.href}>{t.nav.changelog}</a>
-            <a href={links.commit.href} aria-label={`${t.nav.commit} ${facts.pinnedCommit}`}>{facts.pinnedCommit}</a>
-          </span>
+    <div class="site-mobile-tools">
+      <button class="site-search-phone" type="button" aria-label={t.nav.search} data-search-open>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" /><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m16.2 16.2 4 4" /></svg>
+      </button>
+      <details class="site-menu">
+        <summary aria-label={t.nav.menu}>
+          <span class="site-menu-bar"></span>
+          <span class="site-menu-bar"></span>
+          <span class="site-menu-bar"></span>
+        </summary>
+        <div class="site-screen">
+          <nav aria-label={t.nav.menu}>
+            {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
+            <a href={links.mirror.href}>{t.nav.github}</a>
+          </nav>
+          <div class="site-screen-row">
+            <span>{t.nav.version}</span>
+            <span class="site-screen-langs">
+              v{facts.mirrorVersion}
+              <a href={links.releases.href}>{t.nav.releases}</a>
+              <a href={links.changelog.href}>{t.nav.changelog}</a>
+              <a href={links.commit.href} aria-label={`${t.nav.commit} ${facts.pinnedCommit}`}>{facts.pinnedCommit}</a>
+            </span>
+          </div>
+          <div class="site-screen-row">
+            <span>{t.nav.languages}</span>
+            <span class="site-screen-langs">{others.map((l) => <a href={l.href} hreflang={l.locale} lang={l.locale}>{l.label}</a>)}</span>
+          </div>
+          <div class="site-screen-row">
+            <span>{t.nav.theme}</span>
+            <button class="site-theme" type="button" aria-label={t.nav.theme} data-theme-toggle>
+              <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" /><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+              <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
+            </button>
+          </div>
         </div>
-        <div class="site-screen-row">
-          <span>{t.nav.languages}</span>
-          <span class="site-screen-langs">{others.map((l) => <a href={l.href} hreflang={l.locale} lang={l.locale}>{l.label}</a>)}</span>
-        </div>
-        <div class="site-screen-row">
-          <span>{t.nav.theme}</span>
-          <button class="site-theme" type="button" aria-label={t.nav.theme} data-theme-toggle>
-            <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" /><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2" /></svg>
-            <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
-          </button>
-        </div>
-      </div>
-    </details>
+      </details>
+    </div>
   </div>
 </header>

@@ -22,4 +22,17 @@ export default {
   themes: ['github-light', 'github-dark'],
   themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
   defaultLocale: 'en',
+  // The github themes bring their own frame colours: a light background equal to the page
+  // ground (so a frame reads as a bare 1px border, not a surface) and an orange active-tab
+  // indicator outside the site's two-colour palette (accent blue, diagnostic red). Both are
+  // pinned to the site's own tokens so a frame reads as one step off the ground in either
+  // theme and carries no colour the palette doesn't have.
+  styleOverrides: {
+    frames: {
+      editorBackground: 'var(--color-surface-1)',
+      terminalBackground: 'var(--color-surface-1)',
+      editorActiveTabIndicatorTopColor: 'transparent',
+      editorActiveTabIndicatorBottomColor: 'transparent',
+    },
+  },
 }

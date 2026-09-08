@@ -49,6 +49,35 @@ export const hero = {
   },
 }
 
+/** The complete file the quick start shows: gradient-pass.ts's uniform block, both stages
+ *  and the module they build, real source with nothing rewritten except the import line,
+ *  which now points at the path this pin resolves (nothing is on npm yet; the checked-out
+ *  submodule is the package), and one emit call appended so the file runs end to end. */
+function buildQuickStartFile(): { code: string; lines: number; importPath: string } {
+  const importPath = `./${gitmodulesField('path')}/src/index.js`
+  const importStart = source.indexOf('import {')
+  const importEnd = source.indexOf(`from '../src/index.js'`)
+  if (importStart < 0 || importEnd < 0) throw new Error("[examples] gradient-pass.ts's import block moved")
+  const names = source
+    .slice(importStart + 'import {'.length, importEnd)
+    .replace(/\}\s*$/, '')
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean)
+  const importLine = `import { ${[...names, 'emitModule'].join(', ')} } from '${importPath}'`
+
+  const declStart = source.indexOf('const U = uniformStruct(')
+  const moduleStart = source.indexOf('const gradientModule = module({')
+  const moduleEnd = source.indexOf('\n})', moduleStart)
+  if (declStart < 0 || moduleStart < 0 || moduleEnd < 0) throw new Error("[examples] gradient-pass.ts's declarations moved")
+  const decls = source.slice(declStart, moduleStart).trim()
+  const moduleDecl = source.slice(moduleStart, moduleEnd + 3)
+
+  const code = [importLine, '', decls, '', moduleDecl, '', 'console.log(emitModule(gradientModule))'].join('\n')
+  return { code, lines: countLines(code), importPath }
+}
+export const quickStartFile = buildQuickStartFile()
+
 /** The source file of one registry example, so a caption can name it. */
 export function exampleFile(id: string): string {
   const e = examples.find((x) => x.id === id)
@@ -79,6 +108,15 @@ export function emitsGlsl(module: ShaderExample['module']): boolean {
   } catch {
     return false
   }
+}
+
+/** The one registry example that emits WGSL alone, so the examples table can name it once
+ *  instead of repeating "WGSL and GLSL ES 3.00" in every other row. The build stops if the
+ *  registry ever has none or more than one, the same way it stops on a drifted count. */
+function wgslOnlyExample(): { id: string; title: string } {
+  const only = examples.filter((e) => !emitsGlsl(e.module))
+  if (only.length !== 1) throw new Error(`[examples] expected exactly one WGSL-only example, found ${only.length}`)
+  return { id: only[0]!.id, title: only[0]!.title }
 }
 
 /** How many registry examples emit both targets. WGSL emission runs outside the guard
@@ -200,6 +238,7 @@ function layoutStandards(): readonly string[] {
 export const facts = {
   examples: examples.length,
   bothTargets: countBothTargets(),
+  wgslOnlyExample: wgslOnlyExample(),
   fp64Examples: examples.filter((e) => e.id.startsWith('fp64')).length,
   testFiles: testFiles.length,
   pinnedCommit: pinnedCommit(),
