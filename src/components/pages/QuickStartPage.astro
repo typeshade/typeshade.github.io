@@ -7,7 +7,8 @@ import InstallCommand from '../InstallCommand.astro'
 import Rich from '../Rich.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
 import { hero } from '../../lib/examples.ts'
-import { links } from '../../lib/links.ts'
+import { editCopy, links } from '../../lib/links.ts'
+import { slugify } from '../../lib/slug.ts'
 
 interface Props {
   locale: Locale
@@ -15,10 +16,12 @@ interface Props {
 const { locale } = Astro.props
 const t = copyFor(locale)
 const q = t.quickStart
+const headings = [q.installH, q.status.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 ---
 
-<Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description}>
+<Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description} headings={headings} editHref={editCopy(locale)}>
   <h1>{q.h1}</h1>
+  <h2 id={slugify(q.installH)}>{q.installH}</h2>
   <InstallCommand locale={locale} />
   <p><Rich text={q.p1} locale={locale} /></p>
   <CodeFrame label={t.codeLabels.authored}>
@@ -30,7 +33,7 @@ const q = t.quickStart
   </CodeFrame>
   <p><Rich text={q.p3} locale={locale} /></p>
   <section>
-    <h2>{q.status.h}</h2>
+    <h2 id={slugify(q.status.h)}>{q.status.h}</h2>
     <p><Rich text={q.status.p} locale={locale} /></p>
   </section>
 </Docs>

@@ -44,8 +44,9 @@ enforces the parts that can be checked mechanically and runs at the start of eve
   frame every page. Under 48rem the header's links, the language menu and the dark-mode switch
   sit in a panel behind a menu button.
 - The front page is centred on a 960px measure: the headline in two lines, one sentence, three
-  links, the live shader, three short points. Quick start and Status follow in the document
-  column. The layout follows vuejs.org's front page.
+  links, a pill with the release state, the live shader, the authored fragment beside the WGSL
+  it emits, three short points. Under 40rem the three links are a grid, Get started across the
+  top; the two code frames stack under 48rem. The layout follows vuejs.org's front page.
 - Every other page is one content column, 740px, left-aligned, with code blocks and figures at
   the same width. Sections are 48 to 56px apart.
 - The one thing that should stand out is a rendered shader. Everything else is quiet.
@@ -60,28 +61,36 @@ The front page answers "what is it" in about 350 words, the length of comparable
 front pages (htmx, esbuild, wgpu, TypeGPU are 250 to 350). Everything that explains how or
 why lives on its own page.
 
-- `/`: the headline, one sentence, three links (Get started, Why TypeShade, Examples), the live
-  metaballs shader, three points (One source, Checked, Typed), Quick start (the submodule
-  command, the authored fragment, the WGSL it emits), Status.
+- `/`: the headline, one sentence, three links (Get started, Why TypeShade, Examples), a
+  bordered pill with the release state that links to the quick start, the live metaballs
+  shader, the fragment stage of the gradient example beside the WGSL it emits, and three
+  points.
 - `/guide/…`: the documentation, on the layout every documentation site uses (VitePress,
   Docusaurus): a sidebar on the left with three groups, the document in the middle, and on a
   wide screen an outline of the page on the right. Under 64rem the sidebar is a bar under the
-  header that names the current page. Previous and next links close each page.
+  header that names the current page. Every page carries its own headings in that outline,
+  and closes with a link to the file it is written in ("Edit this page", the VitePress
+  convention) and with previous and next.
   - Introduction: `/guide/introduction/` (why one source; the hosts' migration guides; the
     survey figures; what TypeShade does not do) and `/guide/quick-start/` (the submodule
     command, the authored fragment, the WGSL it emits, the release state).
-  - Authoring: `/guide/authoring/`, the compiler's AUTHORING.md rendered from the vendored
-    checkout at the pinned commit (an Astro content collection over `vendor/shader-dsl`). The
-    package name is shown as its release name. No page sends a reader to GitHub for something
-    the site can show.
-  - Reference: `/guide/checks/` (the oracle, the compile gate, the golden files, the same pass
-    on both backends, the typed diagnostic) and `/guide/examples/`.
+  - Authoring: the compiler's AUTHORING.md, rendered from the vendored checkout at the pinned
+    commit. A custom content loader (`src/content.config.ts`) cuts the file at its top-level
+    headings and stores one entry per section, so the guide is one page per section:
+    `/guide/authoring/` is the overview and `/guide/authoring/<section>/` the rest, in the
+    file's order, which the sidebar and the pager follow. The package name is shown as its
+    release name. No page sends a reader to GitHub for something the site can show; the edit
+    link points at the section's line in AUTHORING.md.
+  - Project: `/guide/checks/` (the oracle, the compile gate, the golden files, the same pass
+    on both backends, the typed diagnostic) and `/guide/examples/`, which opens with a table of
+    every example in the compiler's registry, grouped by category, each row linking to its
+    source file at the pinned commit and naming the targets it emits.
 - The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect.
 
 The header is the one every library site has: the name on the left; Guide and Examples; then
 a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 columns (Documentation, Project, Languages), then the licence, the copyright and the commit the
-page was built from. Headings are single nouns or short noun phrases: Motivation, Checks, Quick
+page was built from. Headings are single nouns or short noun phrases: Motivation, Verification, Quick
 start.
 
 ## Versions

@@ -11,13 +11,15 @@ export interface Destination {
 
 const mirror = facts.mirrorUrl
 const at = (file: string): string => `${mirror}/blob/${facts.pinnedCommit}/${file}`
+// This site's own repository, for the "edit this page" link every documentation site carries.
+const siteRepo = 'https://github.com/typeshade/typeshade.github.io'
 
 export const links = {
   home: { label: 'TypeShade', href: '/' },
   motivation: { label: 'Why TypeShade', href: '/guide/introduction/' },
   quickStart: { label: 'Quick start', href: '/guide/quick-start/' },
   guide: { label: 'Authoring guide', href: '/guide/authoring/' },
-  checks: { label: 'Checks', href: '/guide/checks/' },
+  checks: { label: 'Verification', href: '/guide/checks/' },
   examples: { label: 'Examples', href: '/guide/examples/' },
   guideSource: { label: 'AUTHORING.md', href: at('AUTHORING.md') },
   mirror: { label: 'GitHub', href: mirror },
@@ -48,6 +50,16 @@ export const links = {
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
 
+/** The file a hand-written page is written in, on GitHub. The copy is the page. */
+export function editCopy(locale: Locale): string {
+  return `${siteRepo}/blob/main/src/i18n/${locale}.ts`
+}
+
+/** The line a guide section starts on in the vendored AUTHORING.md, on GitHub. */
+export function editGuide(sourceLine: number): string {
+  return `${links.guideSource.href}#L${sourceLine}`
+}
+
 /** The header's two links in one locale. GitHub is an icon beside them. */
 export function navLinks(locale: Locale): readonly Destination[] {
   const t = copyFor(locale).nav
@@ -62,13 +74,15 @@ export interface SidebarGroup {
   readonly items: readonly Destination[]
 }
 
-/** The docs sidebar in one locale: three groups, five pages. */
-export function sidebar(locale: Locale): readonly SidebarGroup[] {
+/** The docs sidebar in one locale: three groups. The guide's sections follow its overview,
+ *  in the file's order, so previous and next walk the whole guide. The footer's site map
+ *  passes none of them and lists the five pages. */
+export function sidebar(locale: Locale, sections: readonly Destination[] = []): readonly SidebarGroup[] {
   const d = copyFor(locale).docs
   const page = (key: 'motivation' | 'quickStart' | 'guide' | 'checks' | 'examples') => localePath(locale, links[key].href)
   return [
     { title: d.introduction, items: [{ label: d.why, href: page('motivation') }, { label: d.quickStart, href: page('quickStart') }] },
-    { title: d.authoring, items: [{ label: d.authoringGuide, href: page('guide') }] },
-    { title: d.reference, items: [{ label: d.checks, href: page('checks') }, { label: d.examples, href: page('examples') }] },
+    { title: d.authoring, items: [{ label: d.authoringGuide, href: page('guide') }, ...sections] },
+    { title: d.project, items: [{ label: d.checks, href: page('checks') }, { label: d.examples, href: page('examples') }] },
   ]
 }

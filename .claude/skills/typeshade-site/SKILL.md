@@ -21,9 +21,10 @@ The site follows the shapes readers already know, and nothing else:
   icon, current language, list of the others), a dark-mode switch (sun or moon), GitHub as an
   icon. Under 48rem, a menu button and a panel with the same items.
 - **Docs**: VitePress. Sidebar on the left in three groups (Introduction, Authoring,
-  Reference), the document in the middle at 740px, an outline on the right on wide screens,
-  previous and next at the bottom. Under 64rem the sidebar is a bar under the header that
-  names the current page. Every document lives under `/guide/`.
+  Project), the document in the middle at 740px, an outline of the page's own headings on the
+  right on wide screens, an "Edit this page" link and previous and next at the bottom. Under
+  64rem the sidebar is a bar under the header that names the current page. Every document
+  lives under `/guide/`; the authoring guide is one page per section of AUTHORING.md.
 - **Footer**: vuejs.org. A site map in three columns, then the licence, the copyright and the
   commit the page was built from.
 

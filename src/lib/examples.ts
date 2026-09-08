@@ -3,7 +3,7 @@
 import { execSync } from 'node:child_process'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
-import { examples } from '../../vendor/shader-dsl/examples/index.ts'
+import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/index.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 
 // Read with fs from the site root, without Vite's glob, so scripts run by bun
@@ -69,21 +69,58 @@ function walk(dir: string, out: string[] = []): string[] {
 const packageFiles = walk(vendorRoot)
 const testFiles = packageFiles.filter((f) => f.endsWith('.test.ts'))
 
+/** Whether one example emits both GLSL stages. A compute kernel has no GLSL ES 3.00 stage
+ *  and refuses, which is what the count and the examples table both read. */
+export function emitsGlsl(module: ShaderExample['module']): boolean {
+  try {
+    emitGlslModule(module, 'vertex')
+    emitGlslModule(module, 'fragment')
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** How many registry examples emit both targets. WGSL emission runs outside the guard
  *  because every example must emit WGSL; only a GLSL refusal is counted. */
 function countBothTargets(): number {
   let n = 0
   for (const e of examples) {
     emitModule(e.module)
-    try {
-      emitGlslModule(e.module, 'vertex')
-      emitGlslModule(e.module, 'fragment')
-      n += 1
-    } catch {
-      // WGSL-only example (compute has no GLSL ES 3.00 stage).
-    }
+    if (emitsGlsl(e.module)) n += 1
   }
   return n
+}
+
+// Acronyms an example's blurb may keep in capitals. Anything else in capitals is the
+// upstream file emphasising a word, which this site sets in ordinary type.
+const ACRONYMS = new Set(['WGSL', 'GLSL', 'ES', 'GPU', 'CPU', 'RGB', 'LOD', 'SDF', 'API', 'LORAN', 'IO'])
+// The first clause of a blurb, up to an em dash, a colon or the first full stop.
+const CLAUSE = new RegExp(` \u2014 |: |(?<=\\.)\\s`)
+
+/** One example's blurb, shortened to its first clause. The blurbs are written in the
+ *  compiler's repository, so they are trimmed to this site's typography. */
+function shortBlurb(text: string): string {
+  const clause = text.split(CLAUSE)[0]!.replace(/\s*\(#\d+\)/g, '').trim()
+  const plain = clause.replace(/\b[A-Z]{2,}\b/g, (w) => (ACRONYMS.has(w) ? w : w.toLowerCase()))
+  return `${plain.replace(/[.,;:]$/, '')}.`
+}
+
+/** The English description of every example, keyed by id. English is the compiler's own
+ *  wording; every other language writes its own line against the same keys, in src/i18n. */
+export function registryBlurbs(): Record<string, string> {
+  return Object.fromEntries(examples.map((e) => [e.id, shortBlurb(e.blurb)]))
+}
+
+/** One locale's descriptions, checked against the registry, so an example added upstream
+ *  cannot reach the table without a line in each language. */
+export function checkedBlurbs(blurbs: Record<string, string>): Record<string, string> {
+  const ids = examples.map((e) => e.id)
+  const missing = ids.filter((id) => !blurbs[id])
+  const extra = Object.keys(blurbs).filter((id) => !ids.includes(id))
+  if (missing.length > 0) throw new Error(`[examples] no description for ${missing.join(', ')}`)
+  if (extra.length > 0) throw new Error(`[examples] description for ${extra.join(', ')}, which the registry has no example for`)
+  return blurbs
 }
 
 function pinnedCommit(): string {

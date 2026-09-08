@@ -21,10 +21,10 @@ asks you to update the copy.
 
 | Route | What it is |
 | --- | --- |
-| `/` | the front page: the headline, the live shader, three points, Quick start, Status |
+| `/` | the front page: the headline, the release pill, the live shader, the authored fragment beside the WGSL it emits, three points |
 | `/guide/introduction/`, `/guide/quick-start/` | why one source, and the install and first shader |
-| `/guide/authoring/` | the authoring guide, rendered from `vendor/shader-dsl/AUTHORING.md` at the pinned commit |
-| `/guide/checks/`, `/guide/examples/` | what CI runs, and the examples |
+| `/guide/authoring/`, `/guide/authoring/<section>/` | the authoring guide, rendered from `vendor/shader-dsl/AUTHORING.md` at the pinned commit, one page per section: the overview, then a page for each `##` heading |
+| `/guide/checks/`, `/guide/examples/` | how the compiler is verified, and a table of every example in the registry |
 | `/ko/…` | the same pages in Korean; the authoring guide's body stays English. See DESIGN.md, Languages |
 | `/motivation/`, `/checks/`, `/examples/`, `/guide/` | the first routes; they redirect |
 | `/404.html` | not found |

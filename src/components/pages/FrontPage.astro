@@ -1,25 +1,32 @@
 ---
-// The front page in one locale: the headline and its three links, the live shader, and
-// three short points. Every number is read
-// at build time from the compiler vendored at vendor/shader-dsl; the words come from src/i18n.
+// The front page in one locale: the headline, its three links and the pre-release pill, the
+// live shader, the authored fragment beside the WGSL it emits, and three short points. Every
+// number is read at build time from the compiler vendored at vendor/shader-dsl; the words
+// come from src/i18n.
+import { Code } from 'astro-expressive-code/components'
 import Base from '../../layouts/Base.astro'
+import CodeFrame from '../CodeFrame.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { hero } from '../../lib/examples.ts'
 import { links } from '../../lib/links.ts'
 
 interface Props {
   locale: Locale
 }
 const { locale } = Astro.props
-const f = copyFor(locale).front
+const t = copyFor(locale)
+const f = t.front
 const h = f.hero
 ---
 
 <Base locale={locale} path="/">
   <section class="hero">
     <h1 class="hero-title">
-      {h.before}{h.before && <br />}<span class="accent">{h.accent}</span>{h.after && <br />}{h.after}
+      {h.before && <span class="hero-line">{h.before}</span>}
+      <span class="hero-line accent">{h.accent}</span>
+      {h.after && <span class="hero-line">{h.after}</span>}
     </h1>
     <p class="hero-tagline">{h.tagline}</p>
     <p class="hero-actions">
@@ -30,10 +37,27 @@ const h = f.hero
       <a class="button" href={localePath(locale, links.motivation.href)}>{h.why}</a>
       <a class="button" href={localePath(locale, links.examples.href)}>{h.examples}</a>
     </p>
+    <p class="hero-prerelease">
+      <a href={localePath(locale, links.quickStart.href)}>{h.prerelease}</a>
+    </p>
   </section>
 
   <section class="wide demo">
     <ShaderCanvas locale={locale} example="metaballs" aspect="3/1" eager caption={f.metaballs} />
+  </section>
+
+  <section class="wide front-code">
+    <h2>{f.code.h}</h2>
+    <p><Rich text={f.code.p} locale={locale} /></p>
+    <div class="code-pair">
+      <CodeFrame label={t.codeLabels.authored}>
+        <Code code={hero.authored} lang="ts" title={hero.file} />
+      </CodeFrame>
+      <CodeFrame label={t.codeLabels.wgsl}>
+        <Code code={hero.wgsl} lang="wgsl" />
+      </CodeFrame>
+    </div>
+    <p class="front-code-more"><Rich text={f.code.more} locale={locale} /></p>
   </section>
 
   <section class="wide highlights">
@@ -44,6 +68,4 @@ const h = f.hero
       </div>
     ))}
   </section>
-
-  <p class="wide front-note"><Rich text={f.note} locale={locale} /></p>
 </Base>

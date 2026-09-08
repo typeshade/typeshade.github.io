@@ -1,25 +1,42 @@
 ---
-// The authoring guide, rendered from the compiler's AUTHORING.md at the pinned commit. The
-// body is English on every locale; the note and the chrome follow the page's language.
-import { getCollection, render } from 'astro:content'
+// One section of the authoring guide, rendered from the compiler's AUTHORING.md at the
+// pinned commit. The body is English on every locale; the note and the chrome follow the
+// page's language. The section's own heading is dropped from the body, because the page's
+// h1 carries it.
+import { getEntry, render } from 'astro:content'
 import Docs from '../../layouts/Docs.astro'
 import Rich from '../Rich.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import { links } from '../../lib/links.ts'
+import { copyFor, defaultLocale, type Locale } from '../../i18n/index.ts'
+import { editGuide, links } from '../../lib/links.ts'
 
 interface Props {
   locale: Locale
+  /** The entry's id. 'overview' is the guide's own page, at /guide/authoring/. */
+  section: string
 }
-const { locale } = Astro.props
+const { locale, section } = Astro.props
 const g = copyFor(locale).guide
-const [entry] = await getCollection('guide')
-if (!entry) throw new Error('[guide] vendor/shader-dsl/AUTHORING.md is not in the collection')
+const entry = await getEntry('guide', section)
+if (!entry) throw new Error(`[guide] AUTHORING.md has no section '${section}'`)
 const { Content, headings } = await render(entry)
-const sections = headings.filter((h) => h.depth === 2)
-if (sections.length < 5) throw new Error(`[guide] only ${sections.length} sections; the guide changed shape`)
+
+const overview = entry.id === 'overview'
+const title = entry.data.title
+// English pages describe themselves from the section's own prose. The body is English, so a
+// Korean page says in Korean which section it is.
+const summary = locale === defaultLocale ? (entry.data.description ?? g.sectionSummary(title)) : g.sectionSummary(title)
 ---
 
-<Docs locale={locale} path={links.guide.href} title={g.title} description={g.description} headings={sections} bodyLang="en">
+<Docs
+  locale={locale}
+  path={overview ? links.guide.href : `/guide/authoring/${entry.id}/`}
+  title={overview ? g.title : g.sectionTitle(title)}
+  description={overview ? g.description : summary}
+  headings={headings}
+  editHref={editGuide(entry.data.sourceLine)}
+  bodyLang="en"
+>
   <p class="guide-note" lang={locale}><Rich text={g.note} locale={locale} /></p>
+  {!overview && <h1>{title}</h1>}
   <Content />
 </Docs>

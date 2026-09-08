@@ -1,7 +1,7 @@
 // English copy: the source text every translation follows. Every number comes from the
 // build (src/lib/examples.ts). Inline links are written as [text](key), where key names a
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
-import { exampleFile, facts, hero } from '../lib/examples.ts'
+import { exampleFile, facts, hero, registryBlurbs } from '../lib/examples.ts'
 import { typedError } from '../lib/typed-error.ts'
 
 const glsl = facts.glslTarget
@@ -30,6 +30,7 @@ export const en = {
     theme: 'Toggle dark mode',
     menu: 'Menu',
     version: 'Version',
+    prerelease: `Pre-release; ${facts.nextVersion} is next`,
     releases: 'Releases',
     commit: 'Pinned commit',
     changelog: 'Changelog',
@@ -37,15 +38,16 @@ export const en = {
   docs: {
     introduction: 'Introduction',
     authoring: 'Authoring',
-    reference: 'Reference',
+    project: 'Project',
     why: 'Why TypeShade',
     quickStart: 'Quick start',
     authoringGuide: 'Authoring guide',
-    checks: 'Checks',
+    checks: 'Verification',
     examples: 'Examples',
     onThisPage: 'On this page',
     previous: 'Previous',
     next: 'Next',
+    editPage: 'Edit this page',
   },
   footer: {
     docs: 'Documentation',
@@ -55,7 +57,7 @@ export const en = {
     releases: 'Releases',
     npm: 'npm package',
     license: 'Released under the [MIT License](license).',
-    copyright: `Copyright © ${facts.year} ${facts.author}`,
+    copyright: `Copyright © ${facts.year} ${facts.author} contributors`,
     builtFrom: 'Built from commit',
   },
 
@@ -88,7 +90,7 @@ export const en = {
     authored: `Authored fragment, ${hero.file}`,
     wgsl: 'The emitted WGSL fragment entry point',
     glsl: `The emitted ${glsl} fragment main`,
-    print: "Printing an example's emits",
+    print: "Printing an example's WGSL, GLSL and reflection",
   },
 
   front: {
@@ -100,26 +102,31 @@ export const en = {
       getStarted: 'Get started',
       why: 'Why TypeShade',
       examples: 'Examples',
+      prerelease: `Pre-release: ${facts.nextVersion} is not on npm yet. Install as a git submodule`,
     },
     metaballs: {
-      neutral: `Metaballs, from examples/${exampleFile('metaballs')}. The still is captured at build time.`,
-      webgpu: 'Metaballs. The WGSL emit is drawing this frame on WebGPU.',
-      webgl2: `Metaballs. The ${glsl} emit is drawing this frame on WebGL2.`,
-      none: 'Metaballs. Rendered at build time; this browser has no WebGPU or WebGL2.',
-      reduced: `Metaballs, compiled to WGSL and to ${glsl}. One frame is drawn here, since this system asks for reduced motion.`,
+      neutral: `Metaballs, from examples/${exampleFile('metaballs')}, drawn at build time.`,
+      webgpu: 'Metaballs, running live on WebGPU from the compiled WGSL.',
+      webgl2: `Metaballs, running live on WebGL2 from the compiled ${glsl}.`,
+      none: 'Metaballs, rendered at build time; this browser has no WebGPU or WebGL2.',
+      reduced: 'Metaballs, drawn as one frame, since this system asks for reduced motion.',
     },
-    note: `Pre-release: the repository is at ${facts.mirrorVersion}, and ${facts.nextVersion} is not on npm yet. Install it as a git submodule from the [quick start](quickStart).`,
+    code: {
+      h: 'Write it once',
+      p: `The fragment stage of the gradient example as written, ${hero.authoredLines} lines, and the WGSL entry point it emits. The ${glsl} stage comes from the same function.`,
+      more: '[Quick start](quickStart)',
+    },
     highlights: [
       {
-        h: 'One source',
+        h: 'One source, two targets',
         p: `One typed module emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file.`,
       },
       {
-        h: 'Checked',
+        h: 'Checked against the CPU',
         p: "The same module runs on the CPU in f64, and the test suite checks the compiler's algebra against it. Every emit is compiled on Tint and linked on WebGL2 on each push.",
       },
       {
-        h: 'Typed',
+        h: 'Typed in the editor',
         p: `A misspelt uniform field or a wrong-typed return is a TypeScript error in the editor. \`reflect()\` reads bind groups and ${facts.layoutStandards.join(' and ')} layouts from the same intermediate representation.`,
       },
     ],
@@ -128,6 +135,7 @@ export const en = {
     title: 'TypeShade quick start: install and a first shader',
     description: 'Add TypeShade as a git submodule and follow the fragment stage of the gradient example to the WGSL it emits, with a note on the pre-release status.',
     h1: 'Quick start',
+    installH: 'Install',
       p1: `The package ships TypeScript source, so your build needs a toolchain that compiles it. This is the fragment stage of the gradient example, ${hero.authoredLines} lines as authored in \`${hero.file}\`:`,
       p2: 'It emits this WGSL entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [reflect()](reflectApi) recovers for it, are on the [examples page](examples). The [authoring guide](guide) covers the rest of the surface.`,
@@ -140,37 +148,54 @@ export const en = {
     title: 'Why one shader source for WebGPU and WebGL2, TypeShade',
     description: `Why TypeShade emits WGSL and ${glsl} from one typed TypeScript module: what maintaining two shader languages costs, with the Khronos survey figures.`,
     h1: 'Why TypeShade',
-    paragraphs: [
-      'A shader that has to run on WebGL2 and on WebGPU exists twice. The two languages disagree about types, entry points, resource binding and precision, so the second copy is a rewrite. A fix that lands in one copy and misses the other only shows up on the machines that take the other path, and a reviewer has to read two dialects to decide whether they still mean the same thing.',
-      'The web is in the middle of one such move. The [MapLibre graphics modernization roadmap](maplibreRoadmap), the [deck.gl WebGPU guide](deckglWebgpu) and the [PixiJS v8 migration guide](pixijsMigration) each describe a WebGPU path arriving beside an existing WebGL one, so a custom layer written as GLSL will need a WGSL copy.',
-      `In the [${facts.survey.title}](survey), ${facts.survey.figure64}% of the ${facts.survey.n}+ shader developers surveyed adapt shaders across platforms, APIs or tools, and nearly ${facts.survey.figure10}% describe it as a significant engineering cost or one of their largest.`,
-      'TypeShade keeps one source. The module is typed TypeScript, so a misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same module compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. The [checks page](checks) says what runs on every push.',
-      'What it does not do: TypeShade has no renderer and no scene graph. It returns strings and reflection metadata; creating pipelines, binding resources and issuing draws stay with the host. SPIR-V, MSL and HLSL come out of naga or Tint, fed the WGSL, because every native host already reaches WGSL through Dawn or wgpu.',
+    sections: [
+      {
+        h: 'Two copies of every shader',
+        p: 'A shader that has to run on WebGL2 and on WebGPU exists twice. The two languages disagree about types, entry points, resource binding and precision, so the second copy is a rewrite. A fix that lands in one copy and misses the other only shows up on the machines that take the other path, and a reviewer has to read two dialects to decide whether they still mean the same thing.',
+      },
+      {
+        h: 'The move to WebGPU',
+        p: 'The web is in the middle of one such move. The [MapLibre graphics modernization roadmap](maplibreRoadmap), the [deck.gl WebGPU guide](deckglWebgpu) and the [PixiJS v8 migration guide](pixijsMigration) each describe a WebGPU path arriving beside an existing WebGL one, so a custom layer written as GLSL will need a WGSL copy.',
+      },
+      {
+        h: 'What the survey says',
+        p: `In the [${facts.survey.title}](survey), ${facts.survey.figure64}% of the ${facts.survey.n}+ shader developers surveyed adapt shaders across platforms, APIs or tools, and nearly ${facts.survey.figure10}% describe it as a significant engineering cost or one of their largest.`,
+      },
+      {
+        h: 'What TypeShade does',
+        p: 'TypeShade keeps one source. The module is typed TypeScript, so a misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same module compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. The [checks page](checks) says what runs on every push.',
+      },
+      {
+        h: 'What it does not do',
+        p: 'TypeShade has no renderer and no scene graph. It returns strings and reflection metadata; creating pipelines, binding resources and issuing draws stay with the host. SPIR-V, MSL and HLSL come out of naga or Tint, fed the WGSL, because every native host already reaches WGSL through Dawn or wgpu.',
+      },
     ],
   },
 
   checks: {
     title: 'How TypeShade is checked: oracle, compile gate, goldens',
     description: "What TypeShade's CI runs on every push: a CPU oracle in f64, a compile gate on Tint and a real WebGL2 context, and golden files for every emit.",
-    h1: 'Checks',
+    h1: 'Verification',
+    ciH: 'On every push',
     intro: "The repository's CI runs these on every push and pull request, in [the CI workflow](ciGates):",
     items: [
       'The same module compiles to a CPU function that runs in f64 arithmetic. In its default mode only its equality tests round to f32 first, so they agree with the GPU; an f32 mode that rounds after every operation is opt-in. The test suite checks that function against known answers and against a second CPU backend, generated JavaScript, which must match it bit for bit. It says nothing about what rounding does on a driver, and no GPU output is compared against it in this repository. [src/core/oracle.ts](oracle)',
       `The compile gate emits every registered example, hands each WGSL emit to Tint inside headless Chromium, and compiles and links both ${glsl} stages of every renderable example on a real WebGL2 context. It also hands each compiler a shader that cannot compile: if either accepts that non-program, the gate fails and the verdicts on the examples do not count. [scripts/compile-gate.ts](compileGate)`,
       'Golden files hold the emitted bytes of every example, so any change in a backend surfaces as a diff in review. [emit-goldens.test.ts](goldens)',
     ],
+    pairH: 'The same pass on both backends',
     pairIntro: 'The gradient pass from the front page, drawn once by each backend. No pixel comparison between the two is committed yet.',
     gpuFrame: {
-      neutral: 'The WGSL emit, drawn on WebGPU at build time.',
-      webgpu: 'The WGSL emit, drawn here on WebGPU.',
-      webgl2: `WebGPU is not available here, so the ${glsl} emit drew this frame on WebGL2.`,
-      none: 'The WGSL emit, drawn on WebGPU at build time. This browser has no WebGPU or WebGL2.',
+      neutral: 'Drawn on WebGPU at build time, from the compiled WGSL.',
+      webgpu: 'Drawn here on WebGPU, from the compiled WGSL.',
+      webgl2: `WebGPU is not available here, so this frame was drawn on WebGL2 from the compiled ${glsl}.`,
+      none: 'Drawn on WebGPU at build time, from the compiled WGSL. This browser has no WebGPU or WebGL2.',
     },
     glFrame: {
-      neutral: `The ${glsl} emit, drawn on WebGL2 at build time.`,
-      webgpu: 'The WGSL emit, drawn here on WebGPU.',
-      webgl2: `The ${glsl} emit, drawn here on WebGL2.`,
-      none: `The ${glsl} emit, drawn on WebGL2 at build time. This browser has no WebGPU or WebGL2.`,
+      neutral: `Drawn on WebGL2 at build time, from the compiled ${glsl}.`,
+      webgpu: 'Drawn here on WebGPU, from the compiled WGSL.',
+      webgl2: `Drawn here on WebGL2, from the compiled ${glsl}.`,
+      none: `Drawn on WebGL2 at build time, from the compiled ${glsl}. This browser has no WebGPU or WebGL2.`,
     },
     authorTime: {
       h: 'At author time',
@@ -184,7 +209,13 @@ export const en = {
     description: `The ${facts.examples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
     h1: 'Examples',
     intro: `There are ${facts.examples} runnable examples in the repository, covering cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel. ${facts.bothTargets} of them emit WGSL and ${glsl} from one source. The compute kernel has no vertex or fragment stage to emit as ${glsl}, so it emits WGSL and reflection; its WebGL2 path is the opt-in emulation. ${facts.fp64Examples} use emulated double precision. The renderable ones are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
-    printIntro: 'The first command below prints WGSL, GLSL and reflection for every example; the second does one by id.',
+    categories: { cartographic: 'Cartographic', generic: 'Screen space', compute: 'Compute' },
+    columns: { example: 'Example', category: 'Category', targets: 'Targets', blurb: 'Description' },
+    targets: { both: `WGSL and ${glsl}`, wgsl: 'WGSL' },
+    /** The Description column, one line per example, keyed by the registry's id. English
+     *  takes the compiler's own wording; a translation writes the same lines in its language. */
+    blurbs: registryBlurbs(),
+    printIntro: 'From a checkout of the repository, the first command prints WGSL, GLSL and reflection for every example; the second does one by id.',
     glsl: {
       h: `The gradient pass in ${glsl}`,
       p1: `The front page shows the fragment stage of \`${hero.file}\` and the WGSL entry point it emits. The same function emits this ${glsl} \`main\`:`,
@@ -203,6 +234,9 @@ export const en = {
     title: 'TypeShade authoring guide: writing shaders in TypeScript',
     description: 'The authoring surface of TypeShade, section by section: values, control flow, layouts, diagnostics, emulated f64, production emit and migrating a GLSL shader.',
     contents: 'Contents',
+    /** A section's page title and, where its prose gives no description, its description. */
+    sectionTitle: (title: string) => `${title}, TypeShade authoring guide`,
+    sectionSummary: (title: string) => `${title}, a section of the TypeShade authoring guide for writing shaders in TypeScript for WebGPU and WebGL2.`,
     note: `Rendered from [AUTHORING.md](guideSource) at commit ${facts.pinnedCommit}. The package is imported here by its ${facts.nextVersion} name, \`typeshade\`.`,
   },
   notFound: {

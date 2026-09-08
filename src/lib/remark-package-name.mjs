@@ -9,6 +9,13 @@ import { visit } from 'unist-util-visit'
 
 const FROM = '@xgis/shader-dsl'
 const TO = 'typeshade'
+// The same name as an environment variable spells it, as in XGIS_SHADER_DSL_TRACE.
+const FROM_ENV = FROM.replace(/^@/, '').replace(/[^A-Za-z0-9]+/g, '_').toUpperCase()
+const TO_ENV = TO.toUpperCase()
+// Every section landed with an issue in the compiler's tracker, and its number is written
+// into headings, prose and code comments alike. The site has no tracker to send a reader
+// to, so the number goes wherever it appears.
+const ISSUE = /\s*\(#\d+\)/g
 
 const mirror = /url\s*=\s*(\S+)/.exec(readFileSync('.gitmodules', 'utf8'))?.[1]?.replace(/\.git$/, '')
 const pin = execSync('git -C vendor/shader-dsl rev-parse --short HEAD', { encoding: 'utf8' }).trim()
@@ -17,8 +24,8 @@ if (!mirror || !/^[0-9a-f]{7,40}$/.test(pin)) throw new Error('[guide] no mirror
 export default function remarkPackageName() {
   return (tree) => {
     visit(tree, (node, index, parent) => {
-      if ((node.type === 'text' || node.type === 'inlineCode' || node.type === 'code') && node.value.includes(FROM)) {
-        node.value = node.value.split(FROM).join(TO)
+      if (node.type === 'text' || node.type === 'inlineCode' || node.type === 'code') {
+        node.value = node.value.split(FROM).join(TO).split(FROM_ENV).join(TO_ENV).replace(ISSUE, '')
       }
       if (node.type === 'link' && !/^(https?:|#|mailto:)/.test(node.url)) {
         if (node.url.startsWith('/')) {

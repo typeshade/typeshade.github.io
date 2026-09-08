@@ -16,8 +16,11 @@ const { locale, path } = Astro.props
 const t = copyFor(locale)
 // The 404 exists in one language, so its language links go to the other front pages.
 const target = /\.[a-z0-9]+$/i.test(path) ? '/' : path
+// The menu lists every language, the current one first and not as a link, the way VitePress
+// and the MDN language menu mark the page you are on.
 const languages = locales.map((l) => ({ locale: l, href: localePath(l, target), label: copyFor(l).name, current: l === locale }))
 const others = languages.filter((l) => !l.current)
+const ordered = [...languages.filter((l) => l.current), ...others]
 ---
 
 <header class="site-header">
@@ -40,6 +43,7 @@ const others = languages.filter((l) => !l.current)
             <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
           </summary>
           <ul class="site-drop-list">
+            <li><span class="site-drop-note">{t.nav.prerelease}</span></li>
             <li><a href={links.releases.href}>{t.nav.releases}</a></li>
             <li><a href={links.changelog.href}>{t.nav.changelog}</a></li>
             <li><a href={links.commit.href}>{t.nav.commit} {facts.pinnedCommit}</a></li>
@@ -52,7 +56,18 @@ const others = languages.filter((l) => !l.current)
             <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
           </summary>
           <ul class="site-drop-list">
-            {others.map((l) => <li><a href={l.href} hreflang={l.locale} lang={l.locale}>{l.label}</a></li>)}
+            {ordered.map((l) => (
+              <li>
+                {l.current ? (
+                  <span class="site-drop-current" lang={l.locale}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4 10-10" /></svg>
+                    {l.label}
+                  </span>
+                ) : (
+                  <a href={l.href} hreflang={l.locale} lang={l.locale}>{l.label}</a>
+                )}
+              </li>
+            ))}
           </ul>
         </details>
         <button class="site-theme" type="button" aria-label={t.nav.theme} data-theme-toggle>
