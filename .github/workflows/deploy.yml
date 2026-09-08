@@ -27,7 +27,8 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      # The build starts with scripts/check-style.mjs; see DESIGN.md.
+      # The build runs scripts/check-style.mjs, check-copy.ts and check-api.ts first; see
+      # DESIGN.md.
       - run: bun run build
       # The translations are typed against the English copy; a missing string fails here.
       - run: bun run check:types

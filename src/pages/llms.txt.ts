@@ -26,6 +26,7 @@ const table = [
   { dest: links.checks, note: 'what CI runs on every push' },
   { dest: links.examples, note: `the ${facts.examples} examples, the GLSL emit and the emulated-double demo` },
   { dest: links.guide, note: 'the authoring guide' },
+  { dest: links.api, note: 'the API reference, one page per public export' },
   {
     dest: links.mirror,
     note: 'mirror; pull requests cannot be merged there yet; consume as a git submodule, its root is the package',

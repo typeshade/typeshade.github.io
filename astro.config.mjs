@@ -5,6 +5,7 @@ import { defineConfig } from 'astro/config'
 import sitemap from '@astrojs/sitemap'
 import tailwindcss from '@tailwindcss/vite'
 import expressiveCode from 'astro-expressive-code'
+import remarkApiLinks from './src/lib/remark-api-links.mjs'
 import remarkPackageName from './src/lib/remark-package-name.mjs'
 import { verifyArtifacts } from './scripts/artifacts.mjs'
 import { verifyKoreanFonts } from './scripts/fonts.mjs'
@@ -50,12 +51,13 @@ export default defineConfig({
     },
     expressiveCode(), // options in ec.config.mjs
     sitemap({
-      // The API reference is a template preview until src/lib/api.ts supplies real entries.
-      filter: (page) => !/^\/(ko\/)?api\//.test(new URL(page).pathname) && !['/og', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide'].includes(new URL(page).pathname.replace(/\/$/, '')),
+      filter: (page) => !['/og', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide'].includes(new URL(page).pathname.replace(/\/$/, '')),
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
       serialize: (item) => ({ ...item, lastmod }),
     }),
   ],
-  markdown: { remarkPlugins: [remarkPackageName] },
+  // The package name first, then the guide's first mention of each export as a link to its
+  // reference page.
+  markdown: { remarkPlugins: [remarkPackageName, remarkApiLinks] },
   vite: { plugins: [tailwindcss()] },
 })

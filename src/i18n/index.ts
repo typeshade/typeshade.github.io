@@ -1,6 +1,7 @@
 // Locales, and the two things every page needs from them: the copy and the path.
 // English is the source text; every other locale is a translation of it, typed against it
 // so a missing string is a build error.
+import { API_CATEGORIES } from '../lib/api.ts'
 import { guideSectionIds } from '../lib/guide.ts'
 import { en } from './en.ts'
 import { ko } from './ko.ts'
@@ -44,6 +45,31 @@ export function assertGuideSections(): void {
     }
     for (const id of Object.keys(map)) {
       if (!guideSectionIds.includes(id)) throw new Error(`[guide] src/i18n/${locale}.ts still names the section '${id}', which the guide no longer has`)
+    }
+  }
+}
+
+/** One category of the API reference, named in one language. */
+export function apiCategoryCopy(locale: Locale, slug: string): { name: string; summary: string } {
+  const named = copyFor(locale).docs.api.categories[slug]
+  if (!named) throw new Error(`[api] src/i18n/${locale}.ts has no docs.api.categories['${slug}']`)
+  return named
+}
+
+/** Every category of the reference is named in every language, and no language names one the
+ *  reference no longer has. The reference's pages call this at build time. */
+export function assertApiCategories(): void {
+  for (const locale of locales) {
+    const map = copies[locale].docs.api.categories
+    for (const { slug } of API_CATEGORIES) {
+      const named = map[slug]
+      if (!named?.name) throw new Error(`[api] src/i18n/${locale}.ts has no name for the category '${slug}'`)
+      if (!named.summary) throw new Error(`[api] src/i18n/${locale}.ts has no summary for the category '${slug}'`)
+    }
+    for (const slug of Object.keys(map)) {
+      if (!API_CATEGORIES.some((c) => c.slug === slug)) {
+        throw new Error(`[api] src/i18n/${locale}.ts still names the category '${slug}', which the reference no longer has`)
+      }
     }
   }
 }

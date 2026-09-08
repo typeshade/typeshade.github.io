@@ -68,6 +68,67 @@ const sections: Record<string, { title: string; description: string }> = {
   },
 }
 
+// 참조의 분류 이름과 한 줄 설명입니다. 키는 추출기가 정한 슬러그이고, 하나라도 빠지면
+// assertApiCategories()가 그 슬러그를 알려 주며 빌드를 세웁니다.
+const apiCategories: Record<string, { name: string; summary: string }> = {
+  authoring: {
+    name: '작성',
+    summary: '셰이더를 쓰는 빌더입니다. 모듈과 함수, 변수, 제어 흐름을 여기 있는 호출로 선언합니다.',
+  },
+  builtins: {
+    name: '내장 함수',
+    summary: '셰이더에서 부르는 수학, 벡터, 텍스처 함수입니다. 이름 하나로 두 대상 모두에 나갑니다.',
+  },
+  values: {
+    name: '값',
+    summary: '리터럴과 타입이 붙은 참조, 그리고 자바스크립트 값을 노드로 바꾸는 생성자입니다.',
+  },
+  types: {
+    name: '타입',
+    summary: '작성 API에 타입을 붙이는 타입 키와 타입 기술자입니다. 셰이더 값의 형태가 여기서 정해집니다.',
+  },
+  ir: {
+    name: 'IR',
+    summary: '모든 백엔드가 읽는 중간 표현입니다. 노드와 문장과 선언이 들어 있고, 출력은 모두 여기서 나옵니다.',
+  },
+  layout: {
+    name: '레이아웃',
+    summary: '구조체와 바인딩 리소스를 한 번만 선언하는 선언자입니다. 호스트와 두 대상이 같은 선언을 씁니다.',
+  },
+  emit: {
+    name: '출력',
+    summary: `WGSL과 ${glsl}을 쓰는 출력기와 모듈 조각, 그리고 그 앞에서 도는 패스입니다.`,
+  },
+  'reflection-api': {
+    name: '리플렉션',
+    summary: 'reflect()가 모듈에서 복원해 내는 것들입니다. 바인드 그룹과 바이트 레이아웃, 진입점이 여기 있습니다.',
+  },
+  'cpu-oracle': {
+    name: 'CPU 오라클',
+    summary: '모듈을 f64로 실행하는 CPU 백엔드입니다. 여기서 나온 값이 GPU 출력을 맞춰 보는 기준이 됩니다.',
+  },
+  diagnostics: {
+    name: '진단',
+    summary: '코드가 붙은 오류 클래스와, 출력이 나가기 전에 거치는 검증 단계입니다. 실수는 여기서 걸립니다.',
+  },
+  'emulated-f64': {
+    name: 'f64 에뮬레이션',
+    summary: 'f64가 없는 대상에서 쓰는 배정밀도입니다. f32 레인 두 개에 나눠 담아 계산합니다.',
+  },
+  variants: {
+    name: '배리언트',
+    summary: '기능 축을 모듈 한 계열로 다룹니다. 조합마다 컴파일하고 링크해서 프로그램을 냅니다.',
+  },
+  backends: {
+    name: '백엔드',
+    summary: '백엔드가 지켜야 하는 계약과 기능 모델, 그리고 대상마다 내장 함수를 어떤 이름으로 낼지 정하는 레지스트리입니다.',
+  },
+  tooling: {
+    name: '도구',
+    summary: '레지스트리 생성과 의미 비교, 출력 동일성 확인, 크기 측정에 쓰는 도구를 모았습니다.',
+  },
+}
+
 export const ko: Copy = {
   lang: 'ko',
   name: '한국어',
@@ -80,7 +141,9 @@ export const ko: Copy = {
   },
 
   nav: {
+    primary: '주요 메뉴',
     guide: '가이드',
+    api: 'API',
     examples: '예제',
     github: 'GitHub',
     llms: 'llms.txt',
@@ -125,12 +188,14 @@ export const ko: Copy = {
       title: 'TypeShade API 참조',
       description: 'TypeShade의 공개 export를 하나씩 페이지로 정리했습니다. 구문, 매개변수, 반환값, 예제, 그리고 어느 대상에서 지원되는지를 담습니다.',
       h1: 'API 참조',
-      intro: `커밋 ${facts.pinnedCommit}의 컴파일러에서 생성한 패키지의 모든 export입니다. 함수, 타입, 인터페이스, 클래스마다 페이지가 하나씩 있습니다.`,
+      intro: `typeshade 패키지가 내보내는 export를 모두 모았습니다. 커밋 ${facts.pinnedCommit}의 컴파일러에서 뽑았습니다. 함수, 타입, 인터페이스, 클래스마다 페이지가 하나씩 있습니다.`,
       reference: '참조',
       breadcrumbs: '현재 위치',
       pageTitle: (name: string) => `${name}, TypeShade API 참조`,
+      categoryTitle: (name: string) => `${name}, TypeShade API 참조`,
+      categoryDescription: (name: string, summary: string) => `TypeShade API 참조의 ${name} 분류입니다. ${summary}`,
       pageDescription: (name: string, kind: string, category: string, summary: string) => `${category} 분류의 ${kind} ${name}에 대한 TypeShade API 참조입니다. ${summary}`,
-      kindLine: (kind: string, category: string) => `${category}의 ${kind}`,
+      kindLine: (kind: string, category: string) => `${kind}, ${category} 분류`,
       note: `시그니처, 설명, 예제는 커밋 ${facts.pinnedCommit}의 컴파일러 소스에서 그대로 가져온 영어 원문입니다.`,
       syntax: '구문',
       parameters: '매개변수',
@@ -145,20 +210,21 @@ export const ko: Copy = {
       constructor: '생성자',
       instanceProperties: '인스턴스 속성',
       instanceMethods: '인스턴스 메서드',
-      inGuide: '가이드에서',
+      inGuide: '가이드의 관련 절',
       seeAlso: '함께 보기',
       source: '소스',
-      optional: '선택',
+      optional: '선택 사항',
       readonly: '읽기 전용',
+      deprecated: '지원 중단',
       previewNote: '템플릿 미리보기입니다. 이 페이지의 내용은 예시 데이터이고 컴파일러에서 가져온 것이 아닙니다.',
-      undocumented: '소스에 아직 설명이 없습니다.',
       line: (n: number) => `${n}행`,
       atCommit: (sha: string) => `커밋 ${sha} 기준`,
-      members: (n: number) => `${n}개 항목`,
+      members: (n: number) => `export ${n}개`,
+      kindMeta: '종류',
       kinds: { function: '함수', constant: '상수', interface: '인터페이스', type: '타입', class: '클래스' },
       targetNames: { wgsl: 'WGSL (WebGPU)', glsl: `${glsl} (WebGL2)`, cpu: 'CPU 오라클' },
       support: { native: '지원', emulated: '에뮬레이션', stub: '스텁', none: '지원 안 함', 'n/a': '해당 없음' },
-      categories: {} as Record<string, { name: string; summary: string }>,
+      categories: apiCategories,
     },
   },
   footer: {
@@ -183,6 +249,7 @@ export const ko: Copy = {
     }),
   },
 
+  code: { copy: '클립보드로 복사', copied: '복사됨' },
   install: { label: '서브모듈 추가 명령' },
   diagnostic: {
     frameLabel: '필드 이름을 잘못 쓴 셰이더, typed-error-shader.ts',
@@ -231,7 +298,7 @@ export const ko: Copy = {
     highlights: [
       {
         h: '소스 하나, 출력 둘',
-        p: `타입이 있는 모듈 하나에서 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 저장소의 예제 ${facts.examples}개 가운데 ${facts.bothTargets}개가 파일 하나로 두 출력을 다 냅니다.`,
+        p: `타입이 있는 모듈 하나에서 WebGPU용 WGSL은 [\`emitModule()\`](apiEmitModule)로, WebGL2용 ${glsl}은 [\`emitGlslModule()\`](apiEmitGlsl)로 나옵니다. 저장소의 예제 ${facts.examples}개 가운데 ${facts.bothTargets}개가 파일 하나로 두 출력을 다 냅니다.`,
       },
       {
         h: 'CPU 결과와 대조',
@@ -239,7 +306,7 @@ export const ko: Copy = {
       },
       {
         h: '편집기에서 타입 검사',
-        p: `유니폼 필드 이름을 잘못 쓰거나 반환 타입이 틀리면 편집기에서 바로 TypeScript 오류가 납니다. \`reflect()\`는 같은 중간 표현에서 바인드 그룹과 ${facts.layoutStandards.join('과 ')} 레이아웃을 읽어 옵니다.`,
+        p: `유니폼 필드 이름을 잘못 쓰거나 반환 타입이 틀리면 편집기에서 바로 TypeScript 오류가 납니다. [\`reflect()\`](apiReflect)는 같은 중간 표현에서 바인드 그룹과 ${facts.layoutStandards.join('과 ')} 레이아웃을 읽어 옵니다.`,
       },
     ],
   },
@@ -248,9 +315,9 @@ export const ko: Copy = {
     description: 'TypeShade를 git 서브모듈로 추가하고, gradient 예제의 프래그먼트 단계에서 WGSL이 나오는 과정을 따라갑니다. 출시 전 상태도 함께 적었습니다.',
     h1: '빠른 시작',
     installH: '설치',
-      p1: `패키지에는 TypeScript 소스가 그대로 들어 있어서, 빌드 쪽에 TypeScript를 컴파일할 도구가 있어야 합니다. 아래는 gradient 예제의 프래그먼트 단계이고, \`${hero.file}\`에 쓴 그대로 ${hero.authoredLines}줄입니다.`,
+      p1: `패키지에는 TypeScript 소스가 그대로 들어 있어서, 빌드 쪽에 TypeScript를 컴파일할 도구가 있어야 합니다. 아래는 [\`fn\`](apiFn)으로 선언한 gradient 예제의 프래그먼트 단계이고, \`${hero.file}\`에 쓴 그대로 ${hero.authoredLines}줄입니다.`,
       p2: '컴파일하면 이 WGSL 진입점이 나옵니다.',
-      p3: `같은 함수의 ${glsl} 단계와, [reflect()](reflectApi)가 복원한 유니폼 레이아웃은 [예제 페이지](examples)에 있습니다. 나머지 API는 [작성 가이드](guide)를 보면 됩니다.`,
+      p3: `같은 함수의 ${glsl} 단계와, [\`reflect()\`](apiReflect)가 복원한 유니폼 레이아웃은 [예제 페이지](examples)에 있습니다. 나머지 API는 [작성 가이드](guide)를 보면 됩니다.`,
     status: {
       h: '상태',
       p: `정식 출시 전입니다. 저장소는 ${facts.mirrorVersion} 버전이고, npm 이름 [typeshade](npm)는 ${facts.nextVersion} 출시용으로 잡아 두었습니다. 매니페스트와 import 이름은 그 태그에서 바뀝니다. 이슈는 환영합니다. 다만 변경은 업스트림에 먼저 들어가고 이 트리는 그것을 fast-forward로 따라가기 때문에, 풀 리퀘스트는 아직 머지할 수 없습니다. ${facts.nextVersion} 소식은 [릴리스 구독](releases)으로 받을 수 있습니다.`,
@@ -262,8 +329,8 @@ export const ko: Copy = {
     h1: '왜 TypeShade인가',
     sections: [
       {
-        h: '셰이더가 두 벌이 되는 이유',
-        p: 'WebGL2와 WebGPU 양쪽에서 돌아야 하는 셰이더는 두 벌이 됩니다. 두 언어는 타입, 진입점, 리소스 바인딩, 정밀도가 서로 달라서 두 번째 복사본은 사실상 처음부터 다시 쓰는 일입니다. 한쪽에만 들어간 수정은 다른 경로를 타는 기기에서야 드러나고, 리뷰어는 두 언어로 된 코드를 나란히 읽으면서 둘이 여전히 같은 일을 하는지 판단해야 합니다.',
+        h: '셰이더를 두 번 쓰는 문제',
+        p: 'WebGL2와 WebGPU 양쪽에서 돌아야 하는 셰이더는 두 번 써야 합니다. 두 언어는 타입, 진입점, 리소스 바인딩, 정밀도가 서로 달라서, 두 번째 셰이더는 사실상 처음부터 다시 쓰는 일입니다. 한쪽에만 들어간 수정은 다른 경로를 타는 기기에서야 드러나고, 리뷰어는 두 언어로 된 코드를 나란히 읽으면서 둘이 여전히 같은 일을 하는지 판단해야 합니다.',
       },
       {
         h: 'WebGPU로 넘어가는 흐름',
@@ -312,7 +379,7 @@ export const ko: Copy = {
     authorTime: {
       h: '코드를 쓰는 동안',
       p: '유니폼 블록은 한 번 선언하고, 필드를 읽는 곳마다 그 선언에 맞춰 타입 검사를 받습니다. 하나만 잘못 써도 문자열이 GPU에 닿기 전에 편집기에서 TypeScript가 알려 줍니다.',
-      caption: `${err.wrongLine}행에서 잘못 읽은 필드, 그 줄이 내는 진단, 그리고 읽으려던 블록에 대해 [reflect()](reflectApi)가 복원한 ${std} 레이아웃입니다. 필드 ${err.layout.fields.length}개에 ${err.layout.size}바이트이고, 첫 필드 뒤의 빈 공간은 정렬입니다.`,
+      caption: `${err.wrongLine}행에서 잘못 읽은 필드, 그 줄이 내는 진단, 그리고 읽으려던 블록에 대해 [\`reflect()\`](apiReflect)가 복원한 ${std} 레이아웃입니다. 필드 ${err.layout.fields.length}개에 ${err.layout.size}바이트이고, 첫 필드 뒤의 빈 공간은 정렬입니다.`,
     },
   },
 
@@ -366,7 +433,7 @@ export const ko: Copy = {
     glsl: {
       h: `gradient 패스의 ${glsl} 출력`,
       p1: `첫 페이지에는 \`${hero.file}\`의 프래그먼트 단계와 거기서 나오는 WGSL 진입점이 있습니다. 같은 함수에서 이 ${glsl} \`main\`이 나옵니다.`,
-      p2: `모듈 전체는 WGSL로 ${hero.emit.wgslLines}줄이고, GLSL은 버텍스 단계 ${hero.emit.glslVertexLines}줄, 프래그먼트 단계 ${hero.emit.glslFragmentLines}줄입니다. 유니폼 타입, 바이트 오프셋, 바인드 그룹 항목, 진입점 시그니처는 [reflect()](reflectApi)에서 나옵니다. reflect()는 같은 중간 표현을 읽지만 출력 경로에는 관여하지 않으므로, 호스트는 그 레이아웃대로 유니폼 버퍼를 채우면 됩니다. [검증 페이지](checks)에는 유니폼 블록의 복원된 레이아웃이 잘못 쓴 필드의 진단과 나란히 있습니다.`,
+      p2: `모듈 전체는 WGSL로 ${hero.emit.wgslLines}줄이고, GLSL은 버텍스 단계 ${hero.emit.glslVertexLines}줄, 프래그먼트 단계 ${hero.emit.glslFragmentLines}줄입니다. 유니폼 타입, 바이트 오프셋, 바인드 그룹 항목, 진입점 시그니처는 [\`reflect()\`](apiReflect)에서 나옵니다. reflect()는 같은 중간 표현을 읽지만 출력 경로에는 관여하지 않으므로, 호스트는 그 레이아웃대로 유니폼 버퍼를 채우면 됩니다. [검증 페이지](checks)에는 유니폼 블록의 복원된 레이아웃이 잘못 쓴 필드의 진단과 나란히 있습니다.`,
     },
     f64: {
       h: '에뮬레이션 배정밀도',

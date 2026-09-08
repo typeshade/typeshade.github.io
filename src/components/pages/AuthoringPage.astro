@@ -19,6 +19,9 @@ const g = copyFor(locale).guide
 const entry = await getEntry('guide', section)
 if (!entry) throw new Error(`[guide] AUTHORING.md has no section '${section}'`)
 const { Content, headings } = await render(entry)
+// The cross-links the remark plugin adds name the English reference; a Korean page keeps the
+// reader in Korean chrome by prefixing them in the rendered HTML.
+const localized = locale === 'en' ? null : (entry.rendered?.html ?? '').replace(/href="\/api\//g, `href="/${locale}/api/`)
 
 // Every section is named and described in every language, and no language names one the
 // guide has dropped. A build stops here with the id that is missing or stale.
@@ -39,5 +42,5 @@ const title = named?.title ?? ''
 >
   <p class="guide-note" lang={locale} data-pagefind-ignore><Rich text={g.note} locale={locale} /></p>
   {!overview && <h1>{title}</h1>}
-  <Content />
+  {localized === null ? <Content /> : <Fragment set:html={localized} />}
 </Docs>

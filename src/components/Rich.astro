@@ -1,8 +1,10 @@
 ---
 // Renders a copy string with inline links written as [text](key) and inline code in
 // backticks. `key` names a record in src/lib/links.ts, or a page ('home', 'motivation',
-// 'checks', 'examples'), which the locale prefixes. An unknown key fails the build.
-import { links } from '../lib/links.ts'
+// 'checks', 'examples', and the reference pages the copy names), which the locale prefixes.
+// An unknown key fails the build, and so does a reference page for a name the compiler has
+// stopped exporting.
+import { apiPage, links } from '../lib/links.ts'
 import { localePath, type Locale } from '../i18n/index.ts'
 
 interface Props {
@@ -11,9 +13,24 @@ interface Props {
 }
 const { text, locale } = Astro.props
 
-const PAGES: Record<string, string> = { home: '/', motivation: links.motivation.href, quickStart: links.quickStart.href, checks: links.checks.href, examples: links.examples.href, guide: links.guide.href }
+const PAGES: Record<string, string> = {
+  home: '/',
+  motivation: links.motivation.href,
+  quickStart: links.quickStart.href,
+  checks: links.checks.href,
+  examples: links.examples.href,
+  guide: links.guide.href,
+  api: links.api.href,
+  apiFn: apiPage('fn'),
+  apiReflect: apiPage('reflect'),
+  apiEmitModule: apiPage('emitModule'),
+  apiEmitGlsl: apiPage('emitGlslModule'),
+}
 
-type Part = { kind: 'text'; value: string } | { kind: 'code'; value: string } | { kind: 'link'; value: string; href: string }
+type Part =
+  | { kind: 'text'; value: string }
+  | { kind: 'code'; value: string }
+  | { kind: 'link'; value: string; href: string; code: boolean }
 
 const parts: Part[] = []
 const re = /\[([^\]]+)\]\(([A-Za-z]+)\)|`([^`]+)`/g
@@ -26,7 +43,10 @@ for (const m of text.matchAll(re)) {
     const key = m[2]!
     const href = key in PAGES ? localePath(locale, PAGES[key]!) : (links as Record<string, { href: string }>)[key]?.href
     if (!href) throw new Error(`[Rich] unknown link key '${key}' in: ${text.slice(0, 60)}`)
-    parts.push({ kind: 'link', value: m[1]!, href })
+    // A link whose text is an identifier is written [`name()`](key) and keeps the code font.
+    const label = m[1]!
+    const code = /^`.+`$/.test(label)
+    parts.push({ kind: 'link', value: code ? label.slice(1, -1) : label, href, code })
   }
   last = m.index! + m[0].length
 }
@@ -35,6 +55,12 @@ if (last < text.length) parts.push({ kind: 'text', value: text.slice(last) })
 
 {
   parts.map((p) =>
-    p.kind === 'text' ? p.value : p.kind === 'code' ? <code>{p.value}</code> : <a href={p.href}>{p.value}</a>,
+    p.kind === 'text' ? (
+      p.value
+    ) : p.kind === 'code' ? (
+      <code>{p.value}</code>
+    ) : (
+      <a href={p.href}>{p.code ? <code>{p.value}</code> : p.value}</a>
+    ),
   )
 }

@@ -70,6 +70,8 @@ export interface ApiMember {
   readonly type: string
   readonly optional: boolean
   readonly readonly: boolean
+  /** True when the member's JSDoc carries @deprecated. */
+  readonly deprecated: boolean
   /** Markdown; may be empty. */
   readonly description: string
 }
@@ -79,9 +81,9 @@ export interface ApiLink {
   readonly href: string
 }
 
-/** The markdown fields of an entry rendered to HTML by the content loader, in the same order. */
+/** The markdown fields of an entry rendered to HTML by the content loader, in the same order.
+ *  `summary` is not here: it is one plain sentence and the page prints it as text. */
 export interface ApiEntryHtml {
-  readonly summary: string
   readonly description: string
   readonly parameters: readonly string[]
   readonly returns: string
@@ -100,7 +102,9 @@ export interface ApiEntry {
   readonly slug: string
   readonly kind: ApiKind
   readonly category: ApiCategory
-  /** One plain-text sentence, 160 characters at most: the page's first paragraph and its meta description. */
+  /** True when the export's JSDoc carries @deprecated. */
+  readonly deprecated: boolean
+  /** One plain-text sentence, whole: the page's first paragraph and the base of its meta description. */
   readonly summary: string
   /** Markdown, the rest of the JSDoc after the summary; may be empty. */
   readonly description: string

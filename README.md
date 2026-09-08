@@ -23,8 +23,11 @@ asks you to update the copy.
 | --- | --- |
 | `/` | the front page: the headline, the release pill, the live shader, the authored fragment beside the WGSL it emits, three points |
 | `/guide/introduction/`, `/guide/quick-start/` | why one source, and the install and first shader |
-| `/guide/authoring/`, `/guide/authoring/<section>/` | the authoring guide, rendered from `vendor/shader-dsl/AUTHORING.md` at the pinned commit, one page per section: the overview, then a page for each `##` heading |
+| `/guide/authoring/`, `/guide/authoring/<section>/` | the authoring guide, rendered from `vendor/shader-dsl/AUTHORING.md` at the pinned commit, one page per section: the overview, then a page for each `##` heading. The first mention of a public export in inline code becomes a link to its reference page (`src/lib/remark-api-links.mjs`) |
 | `/guide/checks/`, `/guide/examples/` | how the compiler is verified, and a table of every example in the registry |
+| `/api/` | the API reference's index: every category with the number of exports in it |
+| `/api/<category>/` | one category's index: every export in it, alphabetically, with its summary |
+| `/api/<export>/` | one public export, on MDN's page shape. Generated from the compiler's own source at the pinned commit (`src/lib/api.ts`), so the reference moves only when the submodule does. `bun run check:api` prints the categories and their counts and fails on an export with no documentation or a slug that its name and kind did not ask for |
 | `/ko/…` | the same pages in Korean; the authoring guide's body stays English. See DESIGN.md, Languages |
 | `/motivation/`, `/checks/`, `/examples/`, `/guide/` | the first routes; they redirect |
 | `/404.html` | not found |
@@ -64,12 +67,17 @@ PLAYWRIGHT_CHROMIUM=/path/to/chrome \
 
 - `bun run check:style` runs at the start of every build. It flags the writing patterns
   listed in `DESIGN.md`.
+- `bun run check:api` reads the reference out of the compiler before it reaches a page: an
+  export with no documentation, a slug two exports share or that its name and kind did not
+  ask for, an export with no category, a category with no exports, a Targets table under its
+  floor, or a text that names a consumer fails it. The build runs it after `check:copy`.
 - `bun run check:copy` runs next. Every translated string is compared with its English one:
   the same numerals, link keys and code spans; no label wider than about 1.35 times the
   English label it replaces; and none of the translation tells the
   [im-not-ai](https://github.com/epoko77-ai/im-not-ai) rulebook makes countable.
-- The build then clears `node_modules/.astro`, where Astro caches the rendered guide, so a
-  change to `src/lib/remark-package-name.mjs` always reaches `dist/`.
+- The build then clears `node_modules/.astro`, where Astro caches the rendered guide and the
+  reference, so a change to `src/lib/remark-package-name.mjs` or
+  `src/lib/remark-api-links.mjs` always reaches `dist/`.
 - `bun run qa:links` resolves every off-site URL in `dist/`. A 404 or 410 fails the deploy;
   a 403, 429 or timeout only warns, because a rate-limited runner cannot tell a dead URL from a
   live one.

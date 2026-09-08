@@ -72,14 +72,14 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
 
     <p>{e.printIntro}</p>
     <CodeFrame label={t.codeLabels.print}>
-      <Code code={printCommands} lang="bash" />
+      <Code code={printCommands} lang="bash" locale={locale} />
     </CodeFrame>
 
     <section>
       <h2 id={slugify(e.glsl.h)}>{e.glsl.h}</h2>
       <p><Rich text={e.glsl.p1} locale={locale} /></p>
       <CodeFrame label={t.codeLabels.glsl}>
-        <Code code={hero.glsl} lang="glsl" />
+        <Code code={hero.glsl} lang="glsl" locale={locale} />
       </CodeFrame>
       <p><Rich text={e.glsl.p2} locale={locale} /></p>
     </section>

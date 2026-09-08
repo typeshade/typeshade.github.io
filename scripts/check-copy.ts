@@ -11,6 +11,7 @@
 //      quick-rules A, C, D, H) makes countable: translationese particles, double passives,
 //      signature phrases, stacked sentence-initial conjunctions, commas after connective
 //      endings, and five or more sentences in a row on the same ending.
+import { codeUiTexts } from '../ec.config.mjs'
 import { en } from '../src/i18n/en.ts'
 import { copies, defaultLocale, type Locale } from '../src/i18n/index.ts'
 
@@ -111,6 +112,17 @@ function walk(a: unknown, b: unknown, locale: Locale, path: string): void {
   if (a && typeof a === 'object' && b && typeof b === 'object') {
     if (path === 'front.hero') heroWidth(a as Record<string, unknown>, b as Record<string, unknown>, locale)
     for (const key of Object.keys(a)) walk((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], locale, path ? `${path}.${key}` : key)
+  }
+}
+
+// The copy button's words are set in ec.config.mjs, which Node loads and which cannot read a
+// dictionary written in TypeScript. This is where the two are held to the same text.
+for (const locale of Object.keys(copies) as Locale[]) {
+  const texts = (codeUiTexts as Record<string, { copy: string; copied: string } | undefined>)[locale]
+  const dictionary = copies[locale].code
+  if (!texts) problems.push({ path: 'code', what: `ec.config.mjs has no copy button text for ${locale}` })
+  else if (texts.copy !== dictionary.copy || texts.copied !== dictionary.copied) {
+    problems.push({ path: 'code', what: `ec.config.mjs says "${texts.copy}" / "${texts.copied}" where the ${locale} dictionary says "${dictionary.copy}" / "${dictionary.copied}"` })
   }
 }
 

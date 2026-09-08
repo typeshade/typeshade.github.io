@@ -7,31 +7,57 @@
 import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { visit } from 'unist-util-visit'
+import { apiSlugByName } from './api-nav.ts'
 
 const FROM = '@xgis/shader-dsl'
 const TO = 'typeshade'
 // Every section landed with an issue in the compiler's tracker, and its number is written
 // into headings, prose and code comments alike. The site has no tracker to send a reader
-// to, so the number goes wherever it appears.
-const ISSUE = /\s*\(#\d+\)/g
+// to, so the number goes wherever it appears, on its own or with the short tag the compiler
+// files it under ("(#763 H7)"). The reference does the same in src/lib/api.ts.
+const ISSUE = /\s*\(#\d+[^)]{0,20}\)/g
 
 const mirror = /url\s*=\s*(\S+)/.exec(readFileSync('.gitmodules', 'utf8'))?.[1]?.replace(/\.git$/, '')
 const pin = execSync('git -C vendor/shader-dsl rev-parse --short HEAD', { encoding: 'utf8' }).trim()
 if (!mirror || !/^[0-9a-f]{7,40}$/.test(pin)) throw new Error('[guide] no mirror url or pinned commit')
 
+// The reference's slugs, read on the first link that needs one: the extractor reads the
+// compiler, so calling it at module load would run it for every markdown file.
+let byName = null
+const slugs = () => (byName ??= apiSlugByName())
+
 export default function remarkPackageName() {
   return (tree) => {
+    // One link per export name per page, the rule src/lib/remark-api-links.mjs follows: a
+    // later link to a page already linked above unwraps to the code it was written as.
+    const linked = new Set()
     visit(tree, (node, index, parent) => {
       if (node.type === 'text' || node.type === 'inlineCode' || node.type === 'code') {
         node.value = node.value.split(FROM).join(TO).replace(ISSUE, '')
       }
+      // A number the sentence names on its own ("(SD0109, #1654)") goes too, with the comma
+      // it leaves behind. Prose only: a code block writes its own hashes.
+      if (node.type === 'text') node.value = node.value.replace(/\s*#\d+\b/g, '').replace(/[,;]\s*\)/g, ')')
       if (node.type === 'link' && !/^(https?:|#|mailto:)/.test(node.url)) {
         if (node.url.startsWith('/')) {
-          // An absolute path is the upstream API site's; unwrap to the link's text.
+          // A reference page of this site stays a link: the API reference writes its
+          // {@link} targets as /api/<name>/. Any other absolute path is the upstream API
+          // site's, which does not exist here, so it unwraps to the link's text.
+          if (/^\/api\/[a-z0-9-]+\/$/.test(node.url)) return
           parent.children.splice(index, 1, ...node.children)
           return index
         }
-        node.url = `${mirror}/blob/${pin}/${node.url.replace(/^\.\//, '')}`
+        // A link into the compiler's source whose text is one export's name goes to that
+        // export's reference page, which shows the signature the reader was being sent for.
+        const only = node.children.length === 1 && node.children[0].type === 'inlineCode' ? node.children[0].value : ''
+        const name = only.replace(/\(\)$/, '')
+        const slug = only ? slugs().get(name) : undefined
+        if (slug && linked.has(name)) {
+          parent.children.splice(index, 1, ...node.children)
+          return index
+        }
+        if (slug) linked.add(name)
+        node.url = slug ? `/api/${slug}/` : `${mirror}/blob/${pin}/${node.url.replace(/^\.\//, '')}`
       }
     })
   }

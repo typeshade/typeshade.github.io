@@ -25,11 +25,11 @@ const headings = [q.installH, q.status.h].map((h) => ({ depth: 2, slug: slugify(
   <InstallCommand locale={locale} />
   <p><Rich text={q.p1} locale={locale} /></p>
   <CodeFrame label={t.codeLabels.authored}>
-    <Code code={hero.authored} lang="ts" title={hero.file} />
+    <Code code={hero.authored} lang="ts" title={hero.file} locale={locale} />
   </CodeFrame>
   <p>{q.p2}</p>
   <CodeFrame label={t.codeLabels.wgsl}>
-    <Code code={hero.wgsl} lang="wgsl" />
+    <Code code={hero.wgsl} lang="wgsl" locale={locale} />
   </CodeFrame>
   <p><Rich text={q.p3} locale={locale} /></p>
   <section>
