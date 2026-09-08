@@ -1,0 +1,59 @@
+---
+// The front page in one locale. Every listing and number is read at build time from the
+// compiler vendored at vendor/shader-dsl; the words come from src/i18n.
+import { Code } from 'astro-expressive-code/components'
+import Base from '../../layouts/Base.astro'
+import CodeFrame from '../CodeFrame.astro'
+import InstallCommand from '../InstallCommand.astro'
+import Rich from '../Rich.astro'
+import ShaderCanvas from '../ShaderCanvas.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+import { hero } from '../../lib/examples.ts'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const t = copyFor(locale)
+const f = t.front
+---
+
+<Base locale={locale} path="/">
+  <article class="wrap doc">
+    <h1>TypeShade</h1>
+    <p>{f.intro1}</p>
+    <p>{f.intro2}</p>
+
+    <ShaderCanvas locale={locale} example="metaballs" aspect="2/1" eager caption={f.metaballs} />
+
+    <section>
+      <h2>{f.quickStart.h}</h2>
+      <InstallCommand locale={locale} />
+      <p><Rich text={f.quickStart.p1} locale={locale} /></p>
+      <CodeFrame label={t.codeLabels.authored}>
+        <Code code={hero.authored} lang="ts" title={hero.file} />
+      </CodeFrame>
+      <p>{f.quickStart.p2}</p>
+      <CodeFrame label={t.codeLabels.wgsl}>
+        <Code code={hero.wgsl} lang="wgsl" />
+      </CodeFrame>
+      <p><Rich text={f.quickStart.p3} locale={locale} /></p>
+    </section>
+
+    <section>
+      <h2>{f.does.h}</h2>
+      <ul>{f.does.items.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
+      <p>{f.does.note}</p>
+    </section>
+
+    <section>
+      <h2>{f.more.h}</h2>
+      <ul>{f.more.items.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
+    </section>
+
+    <section>
+      <h2>{f.status.h}</h2>
+      <p><Rich text={f.status.p} locale={locale} /></p>
+    </section>
+  </article>
+</Base>

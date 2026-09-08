@@ -1,19 +1,7 @@
-// ═══ typeshade.dev — BUILD-TIME proof for section 4, "The editor catches it" ═══
-//
-// Two claims, both computed here and neither hand-written:
-//   (a) a wrong field in a TypeShade shader is a TypeScript error — the message below comes
-//       out of the real `typescript` compiler, run over the snippet the page prints;
-//   (b) the uniform block's std140 byte layout comes out of `reflect()`, so no offset on the
-//       page was derived by hand — which is the product's own claim about layouts.
-//
-// The instrument is gated rather than trusted. The SAME program type-checks two arms — the
-// snippet with the field misspelt, and the snippet as authored — and the build fails if the
-// wrong arm is clean or the control arm is not. An instrument that cannot tell the two apart
-// would report "0 errors" for a broken compiler and "1 error" for a working one with equal
-// confidence; this one has to demonstrate the difference before its output is used.
-//
-// Runs in the Astro frontmatter (Node), never in the browser: it reads the filesystem and
-// drives `ts.createProgram`. One program, memoized for the whole build (~1 s).
+// Build-time proof for the types section. The snippet with a misspelt field is type-checked
+// by the real TypeScript compiler, and the uniform block's std140 layout comes from
+// reflect(). The correct snippet is checked too, and the build fails if the wrong one is
+// clean or the correct one is not.
 
 import ts from 'typescript'
 import { readFileSync } from 'node:fs'
@@ -23,12 +11,10 @@ import { gradientModule } from './typed-error-shader.ts'
 
 /** The authored fragment, its uniform struct, and the module `reflect()` is run over. */
 const FIXTURE = path.resolve(process.cwd(), 'src/lib/typed-error-shader.ts')
-/** The read the wrong arm breaks, and what it is broken into. Exactly one of the former must
- *  sit inside the snippet region — asserted, so renaming the field cannot silently defuse the
- *  proof into a control-vs-control comparison. */
+/** The field read the wrong arm breaks, and what it is broken into. */
 const RIGHT_READ = 'U.field.top'
 const WRONG_READ = 'U.field.colour'
-/** The brief caps a page snippet at 8 lines; enforced here rather than remembered. */
+/** Page snippets are capped at 8 lines. */
 const MAX_SNIPPET_LINES = 8
 /** A `Property 'x' does not exist on type '<struct>'` message carries the whole struct type.
  *  Past this many characters the page gets the first line only, with `truncated` set. */
@@ -37,9 +23,9 @@ const MAX_MESSAGE_CHARS = 300
 export interface TypedErrorDiagnostic {
   /** TypeScript's own error number (2339 for a property that does not exist). */
   readonly code: number
-  /** The compiler's text, verbatim unless `truncated`. */
+  /** The compiler's own text, or its first line when `truncated`. */
   readonly message: string
-  /** 1-based line WITHIN `snippet` — the same number as `wrongLine`. */
+  /** 1-based line within `snippet`. */
   readonly line: number
   /** 1-based column within that line. */
   readonly column: number
@@ -66,14 +52,12 @@ export interface TypedErrorLayout {
 export interface TypedError {
   /** The snippet as the page shows it: the authored fragment with the wrong field read. */
   readonly snippet: string
-  /** 1-based line of the wrong read within `snippet` — the line a code frame marks. */
+  /** 1-based line of the wrong read within `snippet`. */
   readonly wrongLine: number
   readonly diagnostic: TypedErrorDiagnostic
-  /** The control arm: the same snippet, correct, proven to type-check with zero diagnostics. */
+  /** The same snippet, correct, checked to have zero diagnostics. */
   readonly fixed: { readonly snippet: string }
   readonly layout: TypedErrorLayout
-  /** Seconds the type-check took, so the build cost is a measured number on the page's own terms. */
-  readonly typeCheckSeconds: number
 }
 
 /** Lines strictly between `// #region <name>` and `// #endregion <name>`, plus the 1-based
@@ -91,14 +75,12 @@ function countOf(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1
 }
 
-/** Build a program over the two in-memory arms. They live at real paths inside `src/lib/` (they
- *  are never written there) so the fixture's own relative import of the mirror resolves exactly
- *  as it does on disk, and so both arms are compiled by ONE checker under ONE set of options. */
+/** Build one program over both in-memory arms. They get real paths inside src/lib (nothing is
+ *  written to disk) so the fixture's relative import of the compiler resolves as on disk. */
 function checkBothArms(
   wrongSource: string,
   fixedSource: string,
-): { wrong: readonly ts.Diagnostic[]; fixed: readonly ts.Diagnostic[]; wrongFile: ts.SourceFile; seconds: number } {
-  const t0 = performance.now()
+): { wrong: readonly ts.Diagnostic[]; fixed: readonly ts.Diagnostic[]; wrongFile: ts.SourceFile } {
   const root = process.cwd()
   const configPath = path.join(root, 'tsconfig.json')
   const readConfig = ts.readConfigFile(configPath, ts.sys.readFile)
@@ -107,9 +89,7 @@ function checkBothArms(
 
   const options: ts.CompilerOptions = {
     ...parsed.options,
-    // The project's options are the point (`strict`, `allowImportingTsExtensions`, bundler
-    // resolution); these overrides only make the run cheap and side-effect-free. `types` is
-    // pinned because the mirror's `variant-link.ts` names WebGPU handles.
+    // Keep the project's options; these overrides only make the run cheap and side-effect-free.
     noEmit: true,
     skipLibCheck: true,
     isolatedModules: false,
@@ -151,7 +131,6 @@ function checkBothArms(
     wrong: ts.getPreEmitDiagnostics(program, wrongFile),
     fixed: ts.getPreEmitDiagnostics(program, fixedFile),
     wrongFile,
-    seconds: (performance.now() - t0) / 1000,
   }
 }
 
@@ -164,8 +143,8 @@ let memo: TypedError | undefined
 /**
  * The section-4 proof, computed once per build.
  *
- * Throws rather than returning a weakened result: a missing region, a snippet over 8 lines, a
- * control arm with diagnostics, or a wrong arm without one all fail `bun run build`.
+ * A missing region, a snippet over 8 lines, a clean wrong arm or a failing correct arm all
+ * fail the build.
  */
 export function typedError(): TypedError {
   if (memo) return memo
@@ -179,27 +158,24 @@ export function typedError(): TypedError {
   const reads = countOf(fixedSnippet, RIGHT_READ)
   if (reads !== 1)
     throw new Error(
-      `[typed-error] the snippet region reads '${RIGHT_READ}' ${reads} times; exactly 1 is required, ` +
-        `or the wrong arm is not the control arm with one field broken`,
+      `[typed-error] the snippet region reads '${RIGHT_READ}' ${reads} times; exactly 1 is required`,
     )
 
   const wrongSnippet = fixedSnippet.replace(RIGHT_READ, WRONG_READ)
   const wrongSource = fixtureSource.replace(fixedSnippet, wrongSnippet)
   if (wrongSource === fixtureSource) throw new Error('[typed-error] the snippet region did not substitute')
 
-  const { wrong, fixed, wrongFile, seconds } = checkBothArms(wrongSource, fixtureSource)
+  const { wrong, fixed, wrongFile } = checkBothArms(wrongSource, fixtureSource)
 
-  // The instrument must distinguish. Either failure here means the reported diagnostic says
-  // nothing about the compiler, so the build stops instead of publishing it.
+  // Both arms must behave, or the diagnostic says nothing about the compiler.
   if (fixed.length > 0)
     throw new Error(
-      `[typed-error] the CONTROL arm (the authored snippet) must type-check clean; ` +
+      `[typed-error] the correct snippet must type-check clean; ` +
         `got ${fixed.length}: ${fixed.map(describe).join(' | ')}`,
     )
   if (wrong.length === 0)
     throw new Error(
-      `[typed-error] the WRONG arm ('${WRONG_READ}') produced no diagnostic — the type-check ` +
-        `cannot tell a broken shader from a correct one, so its output is worthless`,
+      `[typed-error] the wrong arm ('${WRONG_READ}') produced no diagnostic`,
     )
 
   const located = wrong.find((d) => d.file === wrongFile && d.start !== undefined)
@@ -228,7 +204,6 @@ export function typedError(): TypedError {
       size: block.size,
       fields: block.fields.map((f) => ({ name: f.name, type: f.type, offset: f.offset, size: f.size })),
     },
-    typeCheckSeconds: seconds,
   }
   return memo
 }

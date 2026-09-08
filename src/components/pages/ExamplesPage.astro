@@ -1,0 +1,52 @@
+---
+import { Code } from 'astro-expressive-code/components'
+import Base from '../../layouts/Base.astro'
+import CodeFrame from '../CodeFrame.astro'
+import Rich from '../Rich.astro'
+import ShaderCanvas from '../ShaderCanvas.astro'
+import type { CanvasText } from '../ShaderCanvas.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+import { hero } from '../../lib/examples.ts'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const t = copyFor(locale)
+const e = t.examples
+
+const deepZoom: CanvasText = {
+  neutral: e.f64.caption,
+  webgpu: e.f64.caption,
+  webgl2: e.f64.caption,
+  none: `${e.f64.caption} ${e.f64.captionNone}`,
+}
+const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts hillshade'].join('\n')
+---
+
+<Base locale={locale} path="/examples" title={e.title} description={e.description}>
+  <article class="wrap doc">
+    <h1>{e.h1}</h1>
+    <p><Rich text={e.intro} locale={locale} /></p>
+    <p>{e.printIntro}</p>
+    <CodeFrame label={t.codeLabels.print}>
+      <Code code={printCommands} lang="bash" />
+    </CodeFrame>
+
+    <section>
+      <h2>{e.glsl.h}</h2>
+      <p><Rich text={e.glsl.p1} locale={locale} /></p>
+      <CodeFrame label={t.codeLabels.glsl}>
+        <Code code={hero.glsl} lang="glsl" />
+      </CodeFrame>
+      <p><Rich text={e.glsl.p2} locale={locale} /></p>
+    </section>
+
+    <section>
+      <h2>{e.f64.h}</h2>
+      <p><Rich text={e.f64.p1} locale={locale} /></p>
+      <p><Rich text={e.f64.p2} locale={locale} /></p>
+      <ShaderCanvas locale={locale} example="fp64-deep-zoom" aspect="3/1" still split caption={deepZoom} />
+    </section>
+  </article>
+</Base>

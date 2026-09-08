@@ -1,13 +1,11 @@
 # typeshade.dev
 
-The TypeShade website, deployed to GitHub Pages by `.github/workflows/deploy.yml`.
+The TypeShade website. Astro, deployed to GitHub Pages by `.github/workflows/deploy.yml`.
 
-The compiler is consumed the documented way: `vendor/shader-dsl` is the read-only mirror
-[typeshade/typeshade](https://github.com/typeshade/typeshade) as a git submodule, and every
-code sample and every number on the page is computed at build time from it. Nothing on the page
-is a typed number: `src/lib/examples.ts` measures the mirror, `src/lib/hero-shader.ts` emits the
-shaders, and a measurement that stops matching what the copy was written against fails the
-build rather than quietly restating a different fact.
+The compiler is vendored at `vendor/shader-dsl` as a git submodule of
+[typeshade/typeshade](https://github.com/typeshade/typeshade). Every code sample and every
+number on the page is computed from that checkout at build time (`src/lib/examples.ts`), and
+the shaders on the page are emitted from it (`src/lib/hero-shader.ts`).
 
 ```bash
 git clone --recurse-submodules https://github.com/typeshade/typeshade.github.io
@@ -16,51 +14,50 @@ bun run dev
 ```
 
 To move the pinned compiler forward: `git -C vendor/shader-dsl pull origin main`, then commit
-the submodule pointer.
+the submodule pointer. If a measured number changes, `src/lib/examples.ts` stops the build and
+asks you to update the copy.
 
 ## Routes
 
 | Route | What it is |
 | --- | --- |
-| `/` | the page — `Nav · Hero · Rail · write · recognise · agree · types · precision · adopt · Footer` |
-| `/404.html` | not-found, rendering the hero's own CTA record |
-| `/llms.txt` | generated from the same `facts` and CTA records the page renders from; every numeral in it must appear in `facts` with the same value, or the build fails |
-| `/og/` | **not a page** — the 1200 × 630 composition `scripts/capture-og.ts` photographs. `noindex`, excluded from the sitemap, and removed from `dist/` by the capture |
+| `/` | the front page, about 350 words |
+| `/motivation/`, `/checks/`, `/examples/` | the longer material the front page links to |
+| `/ko/`, `/ko/motivation/`, `/ko/checks/`, `/ko/examples/` | the same four pages in Korean; see DESIGN.md, Languages |
+| `/404.html` | not found |
+| `/llms.txt` | a plain-text summary generated from the same records as the page |
+| `/og/` | the social card. Only exists so `scripts/capture-og.ts` can photograph it; removed from `dist/` on every build |
 
-## Generated artifacts
+## Generated files
 
-`public/og.png` and the three icons are **generated, never authored**, each committed beside a
-`.sha256`. `bun run build` asserts those hashes (~5 ms) and never runs a capture — a headless
-launch is 3–5 s against the 8 s build budget, and the Pages deploy builds from the committed
-bytes. A stale or hand-edited artifact therefore fails the build instead of shipping.
+`public/og.png`, the three icons and `public/stills/*.png` are generated and committed with a
+`.sha256` beside each. The build checks the hashes and never launches a browser. Regenerate
+them when the mark, the fonts, the social-card wording in `src/lib/hero-copy.ts` or a mounted
+shader changes:
 
 | Command | Writes |
 | --- | --- |
-| `bun run build:icons` | `mask-icon.svg`, `favicon.ico` (32 × 32), `apple-touch-icon.png` (180 × 180) — all rasterised from `public/favicon.svg`, the one source, which it also asserts `src/lib/mark.ts` still describes |
-| `bun run capture:og` | `public/og.png` — builds with `OG_REBASELINE=1`, serves `dist/` on loopback, and captures `/og/` on the reduced-motion pinned-clock path. It asserts WebGPU drew the frame, that exactly one frame was drawn, and that the composition resolved to its specified geometry before the shutter |
-| `bun run capture` | both, in that order |
+| `bun run build:icons` | `mask-icon.svg`, `favicon.ico`, `apple-touch-icon.png`, from `public/favicon.svg` |
+| `bun run capture:stills` | one rendered frame per mounted example, shown under each canvas |
+| `bun run capture:og` | `public/og.png`, a screenshot of `/og/` |
+| `bun run capture` | all three, in that order |
+| `bun run build:fonts` | `ibm-plex-sans-kr-400.woff2`, `-600.woff2` and their sidecar: IBM Plex Sans KR subset to the KS X 1001 syllables plus every character the translated copy uses. Needs `pip install fonttools brotli`. The build fails if the Korean copy uses a character the subset lacks |
 
-`bun run qa:links` resolves every off-site URL in `dist/` (copy deck §11's *verified 200 at
-build*) and is a step of `deploy.yml` after the build: a 404 or 410 fails it, while a 403, 429
-or timeout only warns, because a rate-limited CI runner cannot tell a dead URL from a live one.
-The other QA instruments in `scripts/qa/` drive a real headless browser and are run by hand;
-each one's header states what it measures and the traps that measurement has already paid for.
-
-Both use Playwright, which is deliberately **not** a dependency of this site — it would put a
-browser download into every `bun install` for two scripts that run when the mark or the hero
-changes. Name the installation and the browser instead:
+The capture scripts use Playwright, which is not a dependency of this site. Point them at an
+installation:
 
 ```bash
 PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs \
-PLAYWRIGHT_CHROMIUM=/path/to/chrome-linux/headless_shell \
+PLAYWRIGHT_CHROMIUM=/path/to/chrome \
   bun run capture
 ```
 
-`OG_REBASELINE=1` / `ICONS_REBASELINE=1` are the one deliberate way past a hash mismatch; the
-failure prints both hashes and names the command that regenerates the file.
+## Checks
 
-## Where the specification lives
+- `bun run check:style` runs at the start of every build. It flags the writing patterns
+  listed in `DESIGN.md`.
+- `bun run qa:links` resolves every off-site URL in `dist/`. A 404 or 410 fails the deploy;
+  a 403, 429 or timeout only warns, because a rate-limited runner cannot tell a dead URL from a
+  live one.
 
-`docs/design/` holds the documents the build is written from, in authority order: the brief, the
-IA and wireframe, the spike reports, the design system (tokens, components, QA gates) and the
-copy deck, which is the copy of record for every string on the page.
+`DESIGN.md` is the one document about how the page is written and designed.

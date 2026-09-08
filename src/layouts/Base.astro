@@ -1,118 +1,107 @@
 ---
-// The frame every page shares — design §10, meta and social 07-copy-deck.md §8.
-//
-// Order of the first tab stops is fixed here and asserted by §8's numbered walk: the skip
-// link, then the nav. `<main id="main" tabindex="-1">` is the skip link's target and takes
-// focus, which is what makes 2.4.1 real rather than a link that scrolls.
+// The frame every page shares: head metadata, hreflang alternates, header and footer.
 import '../styles/global.css'
-import Nav from '../components/Nav.astro'
-import Footer from '../components/Footer.astro'
+import SiteHeader from '../components/SiteHeader.astro'
+import SiteFooter from '../components/SiteFooter.astro'
 import { facts } from '../lib/examples.ts'
+import { copyFor, defaultLocale, locales, localeUrl, type Locale } from '../i18n/index.ts'
 
 interface Props {
-  /** Deck §8's `<title>` of record, unless a route states its own. */
+  locale: Locale
+  /** The locale-neutral route, for example '/checks/'; the 404 passes its file name. */
+  path: string
   title?: string
   description?: string
+  /** A page that exists in one locale only (the 404) lists no alternates. */
+  noAlternates?: boolean
+  /** Keep the page out of search indexes (the 404). */
+  noindex?: boolean
 }
 
-// Deck §8, verbatim and within its own caps: title 57/60, description 147/155,
-// og:title 33/60, og:description 152/200, og:image alt 78/125.
-const DECK = {
-  title: 'TypeShade — typed shaders in TypeScript, to WGSL and GLSL',
-  description:
-    'Write the shader once. Typed TypeScript, proven to agree: WGSL and GLSL ES 3.00 from one source, checked by a CPU f64 oracle and by real compilers.',
-  ogTitle: 'TypeShade — write the shader once',
-  ogDescription:
-    'One typed TypeScript source becomes WGSL and GLSL ES 3.00. A CPU f64 oracle runs the same source; Tint compiles every WGSL emit and WebGL2 links every renderable example, on every push.',
-  ogAlt: 'TypeShade — a shader written in TypeScript, compiled to WGSL and GLSL ES 3.00.',
-}
-const { title = DECK.title, description = DECK.description } = Astro.props
+const { locale, path, noAlternates = false, noindex = false } = Astro.props
+const t = copyFor(locale)
+const title = Astro.props.title ?? t.meta.title
+const description = Astro.props.description ?? t.meta.description
 
+const OG_LOCALE: Record<Locale, string> = { en: 'en_US', ko: 'ko_KR' }
 const site = Astro.site ?? new URL('https://typeshade.dev/')
-const canonical = new URL(Astro.url.pathname, site).toString()
+const canonical = localeUrl(site, locale, path)
 const ogImage = new URL('/og.png', site).toString()
+const alternates = noAlternates ? [] : locales.map((l) => ({ lang: l, href: localeUrl(site, l, path) }))
 
-// The graph names the repository and the licence from `facts`, so neither can drift from the
-// mirror the page was built out of.
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
-    {
-      '@type': 'WebSite',
-      '@id': `${site.origin}/#website`,
-      url: `${site.origin}/`,
-      name: 'TypeShade',
-      description: DECK.description,
-      inLanguage: 'en',
-    },
+    { '@type': 'WebSite', '@id': `${site.origin}/#website`, url: `${site.origin}/`, name: 'TypeShade', description: t.meta.description, inLanguage: locale },
     {
       '@type': 'SoftwareSourceCode',
       '@id': `${site.origin}/#software`,
       name: 'TypeShade',
-      description: DECK.description,
+      description: t.meta.description,
       programmingLanguage: ['TypeScript', 'WGSL', 'GLSL'],
       codeRepository: facts.mirrorUrl,
       license: 'https://opensource.org/licenses/MIT',
       url: `${site.origin}/`,
+    },
+    {
+      '@type': 'WebPage',
+      '@id': canonical,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: locale,
+      isPartOf: { '@id': `${site.origin}/#website` },
+      about: { '@id': `${site.origin}/#software` },
     },
   ],
 }
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#080A14" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121212" />
+    {noindex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
-    {/* §9: `favicon.svg` is the only image the page LINKS, beside the mask icon —
-        `favicon.ico` and `apple-touch-icon.png` are found by convention at the root, and both,
-        like the mask, are generated from that one SVG by `scripts/build-icons.ts`. */}
+    {alternates.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
+    {alternates.length > 0 && <link rel="alternate" hreflang="x-default" href={localeUrl(site, defaultLocale, path)} />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="mask-icon" href="/mask-icon.svg" color="#F2B441" />
+    <link rel="mask-icon" href="/mask-icon.svg" color="#1f6f43" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    {/* font-display: optional keeps the h1 the LCP element and costs zero swap CLS (§3) */}
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      href="/fonts/inter-latin-wght-normal.woff2"
-      crossorigin
-    />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      href="/fonts/geist-mono-latin-wght-normal.woff2"
-      crossorigin
-    />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-latin-wght-normal.woff2" crossorigin />
+    {locale === 'ko' && <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-kr-400.woff2" crossorigin />}
+    {locale === 'ko' && <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-kr-600.woff2" crossorigin />}
     <meta property="og:site_name" content="TypeShade" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
-    <meta property="og:title" content={DECK.ogTitle} />
-    <meta property="og:description" content={DECK.ogDescription} />
+    <meta property="og:locale" content={OG_LOCALE[locale]} />
+    {!noAlternates && locales.filter((l) => l !== locale).map((l) => <meta property="og:locale:alternate" content={OG_LOCALE[l]} />)}
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:alt" content={DECK.ogAlt} />
+    <meta property="og:image:alt" content={t.meta.ogAlt} />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={DECK.ogTitle} />
-    <meta name="twitter:description" content={DECK.ogDescription} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
-    <meta name="twitter:image:alt" content={DECK.ogAlt} />
+    <meta name="twitter:image:alt" content={t.meta.ogAlt} />
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </head>
   <body>
-    <a class="skip" href="#main">Skip to content</a>
-    <Nav />
+    <a class="skip" href="#main">{t.skip}</a>
+    <SiteHeader locale={locale} path={path} />
     <main id="main" tabindex="-1">
       <slot />
     </main>
-    <Footer />
+    <SiteFooter locale={locale} path={path} />
   </body>
 </html>

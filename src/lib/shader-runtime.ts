@@ -1,32 +1,27 @@
-// ═══ typeshade.dev — dependency-free WebGPU / WebGL2 runner for ONE emitted example ═══
+// Dependency-free WebGPU / WebGL2 runner for one emitted example: a single
+// fullscreen-triangle pass.
 //
-// Derived from X-GIS site/src/lib/shader-playground.ts (MIT), trimmed to what a hero needs:
-// one fullscreen-triangle pass, no sliders, no pointer, no play/pause chrome.
-//
-// This file imports NOTHING from the compiler. Every shader-side artefact — the WGSL, the
-// GLSL ES 3.00 stage pair, the std140 field offsets, the entry-point names — is emitted at
-// BUILD time by src/lib/hero-shader.ts and arrives here as plain data. All this does is
-// create a pipeline, write the uniform block at the byte offsets `reflect()` recovered, and
-// draw. Nothing about the layout is hand-derived, here or there.
+// This file imports nothing from the compiler. The WGSL, the GLSL ES 3.00 stages, the
+// std140 field offsets and the entry-point names are emitted at build time by
+// hero-shader.ts and arrive here as plain data.
 
 /** Device-pixel-ratio ceiling. A fullscreen fragment shader is fill-rate bound, so a 3× phone
  *  would pay 4× the pixels for detail nobody can see behind body text. */
 const MAX_DPR = 1.5
-/** The clock value of the single frame drawn under `prefers-reduced-motion: reduce` —
+/** The clock value of the single frame drawn under `prefers-reduced-motion: reduce` ,
  *  far enough in for the noise-driven examples to have settled into their steady look. */
 const STILL_SECONDS = 3
 
-/** How the host fills one uniform-struct FIELD each frame.
+/** How the host fills one uniform-struct field each frame.
  *
- *  A structural mirror of the compiler mirror's `examples/_shared.ts` `Control`, deliberately
- *  copied rather than imported: importing it would pull the compiler's module graph into the
- *  browser bundle, which is the one thing this file must not do. `hero-shader.ts` translates
- *  the mirror's union into this one at build time and THROWS on a kind that is missing here,
+ *  A structural copy of `examples/_shared.ts` `Control` in the compiler. It is copied so the
+ *  browser bundle does not import the compiler's module graph. `hero-shader.ts` translates
+ *  the mirror's union into this one at build time and throws on a kind that is missing here,
  *  so the two cannot drift silently. */
 export type Control =
   | { readonly kind: 'time' } // elapsed seconds → f32
   | { readonly kind: 'resolution' } // drawing-buffer size in px → vec2<f32>
-  // Pointer state → vec4 [x, y, down, used]. The hero is a background, not a widget: it packs
+  // Pointer state as vec4 [x, y, down, used]. The page has no pointer input, so it packs
   // [0,0,0,0], and `used = 0` is exactly the flag the examples read to render their canonical
   // autopilot framing (the one thumbnails and render gates see).
   | { readonly kind: 'mouse' }
@@ -34,7 +29,7 @@ export type Control =
   | { readonly kind: 'slider'; readonly value: number } // held at the author's default
   | { readonly kind: 'toggle'; readonly value: boolean } // f32 1 / 0
   // Log-magnitude sweep → a SCALAR f64 field: `base·10^s + offset`, where s is the default of
-  // the `magField` slider. Packed as two f32 (hi, lo) into the field's 8 std140 bytes — the
+  // the `magField` slider. Packed as two f32 (hi, lo) into the field's 8 std140 bytes, the
   // host half of the emulated-double story.
   | {
       readonly kind: 'logmag1d'
@@ -46,8 +41,8 @@ export type Control =
 /** One std140 field of the module's uniform block, as `reflect()` recovered it. */
 export interface UniformField {
   readonly name: string
-  /** DSL type key — `'f32'`, `'vec2<f32>'`, `'f64'`. Reported for the page builder; the
-   *  packer switches on the CONTROL, not on this. */
+  /** DSL type key, `'f32'`, `'vec2<f32>'`, `'f64'`. Reported for the page builder; the
+   *  packer switches on the control. */
   readonly type: string
   /** Byte offset inside the block. Always a multiple of 4, so `offset / 4` indexes the
    *  Float32Array view. */
@@ -58,8 +53,8 @@ export interface UniformField {
 export interface ShaderLayout {
   /** Uniform-block size in bytes, already padded to its std140 alignment. 0 = no block. */
   readonly size: number
-  /** GLSL binds the block by its STRUCT name (`layout(std140) uniform <block> { … } U;`),
-   *  which is not the WGSL variable name — getting this wrong does not fail to link, it
+  /** GLSL binds the block by its struct name (`layout(std140) uniform <block> { … } U;`),
+   *  which is not the WGSL variable name, getting this wrong does not fail to link, it
    *  silently lands on binding point 0. */
   readonly block: string
   readonly group: number
@@ -79,7 +74,6 @@ export interface ShaderLayout {
 export interface ShaderData {
   readonly id: string
   readonly title: string
-  readonly blurb: string
   /** One WGSL module carrying both entry points. */
   readonly wgsl: string
   readonly vertex: string // GLSL ES 3.00, vertex stage
@@ -91,10 +85,10 @@ export interface ShaderData {
 
 export type Backend = 'webgpu' | 'webgl2' | 'none'
 
-/** The state a mount's strings are written for. `still-*` is the one-frame path — taken under
- *  `prefers-reduced-motion` or by `still` — and is a separate key because the hero says
+/** The state a mount's strings are written for. `still-*` is the one-frame path, taken under
+ *  `prefers-reduced-motion` or by `still`, and is a separate key because the hero says
  *  something different there while a `still` mount says exactly what its backend row says
- *  (07-copy-deck §6). */
+ *  . */
 export type LabelState = Backend | 'still-webgpu' | 'still-webgl2'
 
 /** One string per state. Full, never partial: a missing key is a label that would go blank on
@@ -108,12 +102,10 @@ export interface LabelSlot {
 }
 
 /** Everything on this mount whose wording names a backend. Written together, from one value
- *  (IA I-2), so a caption and an accessible name can never disagree. */
+ *  , so a caption and an accessible name can never disagree. */
 export interface MountLabels {
-  /** The `<figcaption>` — the caption plate. */
+  /** The `<figcaption>`, the caption plate. */
   readonly caption?: LabelSlot
-  /** The bezel header, on mounts that have one. */
-  readonly header?: LabelSlot
   /** The canvas's own accessible name. */
   readonly ariaLabel?: StateStrings
 }
@@ -122,9 +114,9 @@ export interface MountOptions {
   /** Skip the WebGPU probe and go straight to WebGL2. `?forcegl2=1` on the page URL sets
    *  this too, so a verification run can exercise the GLSL half without a code change. */
   readonly forceWebGl2?: boolean
-  /** Draw exactly one frame at the pinned clock and stop — no rAF, no observers. The same
+  /** Draw exactly one frame at the pinned clock and stop, no rAF, no observers. The same
    *  path `prefers-reduced-motion: reduce` takes, so a still mount is not a second code path
-   *  (IA R-9, I-5). An example with no `time` control redraws an identical frame forever
+   *  . An example with no `time` control redraws an identical frame forever
    *  without it. */
   readonly still?: boolean
   /** The mount's own per-state strings and the elements they are written into. */
@@ -132,10 +124,9 @@ export interface MountOptions {
 }
 
 export interface MountedShader {
-  /** Which backend is drawing. `'none'` means both failed — or the device was lost after
-   *  mount — and the canvas was left transparent over whatever the page paints behind it.
-   *  A live getter, not a snapshot: it is what the QA census counts, and it must never
-   *  disagree with `canvas.dataset.backend`. */
+  /** Which backend is drawing. `'none'` means both failed, or the device was lost after
+   *  mount, and the canvas was left transparent over whatever the page paints behind it.
+   *  A live getter that always agrees with `canvas.dataset.backend`. */
   readonly backend: Backend
   /** Frames drawn since mount. Exactly 1, and final, on the still path. */
   readonly frames: number
@@ -143,14 +134,10 @@ export interface MountedShader {
 }
 
 declare global {
-  /** The per-element handle — the census source. `window.__typeshadeHero` is last-mount-wins
-   *  (spike §5.4) and would report one of five mounts, so QA reads this. */
+  /** The per-element handle. A page mounts several canvases, so the state a verification run
+   *  reads (scripts/capture-stills.ts) hangs off the element, one handle per mount. */
   interface HTMLCanvasElement {
     __shader?: MountedShader
-  }
-  interface Window {
-    /** Kept for compatibility with the spike's harness. Never the census source. */
-    __typeshadeHero?: { backend: Backend; frames: number }
   }
 }
 
@@ -175,7 +162,7 @@ function createFrameState(canvas: HTMLCanvasElement, data: ShaderData): FrameSta
   const byteLength = layout.size
   const buf = byteLength > 0 ? new Float32Array(byteLength / 4) : null
 
-  /** The live value of a `slider`/`toggle` field by name — `logmag1d` reads its `magField`. */
+  /** The live value of a `slider`/`toggle` field by name, `logmag1d` reads its `magField`. */
   const sliderValue = (field: string): number => {
     const c = controls[field]
     if (c?.kind === 'slider') return c.value
@@ -232,7 +219,7 @@ function createFrameState(canvas: HTMLCanvasElement, data: ShaderData): FrameSta
 interface Pass {
   draw(): void
   dispose(): void
-  /** Register a handler for device/context loss — the loop stops and the canvas goes clear. */
+  /** Register a handler for device/context loss, the loop stops and the canvas goes clear. */
   onLost(handler: () => void): void
 }
 
@@ -252,8 +239,7 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLSh
 }
 
 function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: FrameState): Pass {
-  // alpha:true + a transparent clear: a pass that stops drawing reveals the page behind it
-  // rather than a black rectangle.
+  // alpha:true + a transparent clear: a pass that stops drawing reveals the page behind it.
   const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, depth: false })
   if (!gl) throw new Error('no WebGL2 context')
 
@@ -271,7 +257,7 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
 
   let ubo: WebGLBuffer | null = null
   if (state.data) {
-    // GLSL binds the block by the STRUCT name reflect() reported — see ShaderLayout.block.
+    // GLSL binds the block by the struct name reflect() reported, see ShaderLayout.block.
     const idx = gl.getUniformBlockIndex(prog, data.layout.block)
     if (idx === gl.INVALID_INDEX) throw new Error(`no uniform block '${data.layout.block}'`)
     ubo = gl.createBuffer()
@@ -313,8 +299,7 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     },
     dispose(): void {
-      // Clear BEFORE tearing down: a stopped mount must show the fallback ground, not the
-      // last frame it drew under a header that no longer names a live backend.
+      // Clear before tearing down, so a stopped mount shows the still image beneath it.
       gl.clearColor(0, 0, 0, 0)
       gl.clear(gl.COLOR_BUFFER_BIT)
       for (const t of guards) gl.deleteTexture(t)
@@ -447,11 +432,10 @@ const labelStateOf = (backend: Backend, still: boolean): LabelState =>
 
 /**
  * Compile and run one build-time-emitted example on this canvas: WebGPU when a device is
- * reachable, else WebGL2, else nothing at all — the canvas is left transparent so the page's
+ * reachable, else WebGL2, else nothing at all, the canvas is left transparent so the page's
  * own background shows through. Never a black box, and no exception reaches the console.
  *
- * The canvas gets `data-backend` and the handle at `canvas.__shader`; `window.__typeshadeHero`
- * is kept for the spike harness and is not the census source.
+ * The canvas gets `data-backend` and the handle at `canvas.__shader`.
  */
 export async function mountShader(
   canvas: HTMLCanvasElement,
@@ -463,18 +447,17 @@ export async function mountShader(
   const skipWebGpu = opts.forceWebGl2 === true || forceGl2FromUrl()
   state.resize()
 
-  /** Caption, bezel header and accessible name, written from ONE value in ONE tick (IA I-2),
-   *  so no string on this mount can name a backend that is not the one in `data-backend`. */
+  /** Caption and accessible name, written from one value in one tick , so no string on this
+   *  mount can name a backend that is not the one in `data-backend`. */
   const applyLabels = (labelState: LabelState): void => {
     const l = opts.labels
     if (!l) return
     if (l.caption?.el) l.caption.el.textContent = l.caption.text[labelState]
-    if (l.header?.el) l.header.el.textContent = l.header.text[labelState]
     if (l.ariaLabel) canvas.setAttribute('aria-label', l.ariaLabel[labelState])
   }
 
   const qa = { backend: 'none' as Backend, frames: 0 }
-  /** Draw one frame at `seconds`, counting it. The FIRST call is also the backend's audition:
+  /** Draw one frame at `seconds`, counting it. The first call is also the backend's audition:
    *  a pass that compiled but cannot draw throws here and the next backend gets its turn. */
   const drawOnce = (pass: Pass, seconds: number): void => {
     state.pack(seconds)
@@ -507,13 +490,12 @@ export async function mountShader(
   }
 
   canvas.dataset.backend = qa.backend
-  window.__typeshadeHero = qa
   applyLabels(labelStateOf(qa.backend, still))
 
-  /** Everything that happens in ONE tick when this mount stops drawing. `dispose()` has
+  /** Everything that happens in one tick when this mount stops drawing. `dispose()` has
    *  already put the canvas back on the fallback ground; this moves `data-backend` and
-   *  rewrites every string that named the backend that is gone — a stale image under a live
-   *  backend name is the lie the asymmetric-backend row exists to prevent (design §5). */
+   *  rewrites every string that named the backend that is gone, a stale image under a live
+   *  backend name is the lie the asymmetric-backend row exists to prevent . */
   const degrade = (): void => {
     qa.backend = 'none'
     canvas.dataset.backend = 'none'
@@ -530,15 +512,15 @@ export async function mountShader(
       },
       stop,
     }
-    // The per-element handle IS the census source (IA I-1), so the runtime parks it rather
+    // The per-element handle is the census source , so the runtime parks it rather
     // than trusting each host to.
     canvas.__shader = mounted
     return mounted
   }
   if (!pass) return handle(() => {})
   const live = pass
-  // Still: one frame is drawn and that is the whole contract — no loop, and no observers
-  // either, since a resize redraw would be frame two (IA R-9).
+  // Still: one frame is drawn and that is the whole contract, no loop, and no observers
+  // either, since a resize redraw would be frame two .
   if (still) {
     return handle(() => {
       live.dispose()
@@ -558,7 +540,7 @@ export async function mountShader(
     seconds += (now - last) / 1000
     last = now
     // A driver that fails mid-flight must not spray the console: stop, go transparent, and
-    // relabel — `stop()` does all three.
+    // relabel, `stop()` does all three.
     try {
       drawOnce(live, seconds)
     } catch {
@@ -598,7 +580,7 @@ export async function mountShader(
   })
   io.observe(canvas)
   document.addEventListener('visibilitychange', sync)
-  // The drawing buffer follows the CSS box from HERE, not from a per-frame layout read. A
+  // The drawing buffer follows the CSS box from here instead of a per-frame layout read. A
   // paused canvas needs the extra redraw to look right; a running one gets one anyway.
   const ro = new ResizeObserver(() => {
     if (stopped) return

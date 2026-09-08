@@ -1,0 +1,20 @@
+---
+import { facts } from '../lib/examples.ts'
+import { links, navLinks } from '../lib/links.ts'
+import { copyFor, type Locale } from '../i18n/index.ts'
+
+interface Props {
+  locale: Locale
+  path: string
+}
+const { locale } = Astro.props
+const t = copyFor(locale)
+---
+
+<footer class="wrap site-footer">
+  <nav class="site-links" aria-label="Secondary">
+    {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
+    <a href={links.llms.href}>{t.nav.llms}</a>
+  </nav>
+  <p>{t.footer.builtFrom} <a href={links.commit.href}>{facts.pinnedCommit}</a>.</p>
+</footer>

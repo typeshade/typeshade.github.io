@@ -1,0 +1,40 @@
+---
+// Renders a copy string with inline links written as [text](key) and inline code in
+// backticks. `key` names a record in src/lib/links.ts, or a page ('home', 'motivation',
+// 'checks', 'examples'), which the locale prefixes. An unknown key fails the build.
+import { links } from '../lib/links.ts'
+import { localePath, type Locale } from '../i18n/index.ts'
+
+interface Props {
+  text: string
+  locale: Locale
+}
+const { text, locale } = Astro.props
+
+const PAGES: Record<string, string> = { home: '/', motivation: '/motivation/', checks: '/checks/', examples: '/examples/' }
+
+type Part = { kind: 'text'; value: string } | { kind: 'code'; value: string } | { kind: 'link'; value: string; href: string }
+
+const parts: Part[] = []
+const re = /\[([^\]]+)\]\(([A-Za-z]+)\)|`([^`]+)`/g
+let last = 0
+for (const m of text.matchAll(re)) {
+  if (m.index! > last) parts.push({ kind: 'text', value: text.slice(last, m.index) })
+  if (m[3] !== undefined) {
+    parts.push({ kind: 'code', value: m[3] })
+  } else {
+    const key = m[2]!
+    const href = key in PAGES ? localePath(locale, PAGES[key]!) : (links as Record<string, { href: string }>)[key]?.href
+    if (!href) throw new Error(`[Rich] unknown link key '${key}' in: ${text.slice(0, 60)}`)
+    parts.push({ kind: 'link', value: m[1]!, href })
+  }
+  last = m.index! + m[0].length
+}
+if (last < text.length) parts.push({ kind: 'text', value: text.slice(last) })
+---
+
+{
+  parts.map((p) =>
+    p.kind === 'text' ? p.value : p.kind === 'code' ? <code>{p.value}</code> : <a href={p.href}>{p.value}</a>,
+  )
+}

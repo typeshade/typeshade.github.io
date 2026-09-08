@@ -1,91 +1,55 @@
 ---
-// One live TypeShade-compiled shader, mounted as a specimen.
-//
-// The shader is emitted at BUILD time (src/lib/hero-shader.ts → the pinned mirror) and inlined
-// here as JSON; the browser only gets src/lib/shader-runtime.ts, which knows nothing about the
-// compiler. Sizing is the caller's job — pass a class that gives the mount host a box.
-//
-// The host paints `--color-ground` behind the canvas, and the canvas is transparent-cleared,
-// so a browser with neither WebGPU nor WebGL2 (or a lost device) degrades to the page's own
-// ground instead of a black rectangle — one value for the pre-mount window, the fallback and
-// the page (design §5).
+// One compiled shader in a framed figure. The shader is emitted at build time
+// (src/lib/hero-shader.ts) and inlined as JSON; the browser runs src/lib/shader-runtime.ts.
+// A still image captured at build time sits under the canvas, so a browser with no GPU API,
+// a crawler or a social preview still sees the rendered shader.
 import { heroShader, heroPayload } from '../lib/hero-shader.ts'
 import type { StateStrings } from '../lib/shader-runtime.ts'
+import { facts } from '../lib/examples.ts'
+import { copyFor, type Locale } from '../i18n/index.ts'
 
-/** One mount's copy, in the columns 07-copy-deck §6 writes: the two backend rows, the `none`
- *  row, and — only where it differs from the backend row — the reduced-motion row.
- *  `neutral` is what the SERVER renders: backend-neutral, and true on every path including
- *  the one where the script never runs. */
+/** Caption text by what drew the frame. `neutral` is what the server renders. */
 export interface CanvasText {
   readonly neutral: string
   readonly webgpu: string
   readonly webgl2: string
   readonly none: string
-  /** The one-frame row, where it is not simply the backend row: the hero says its own
-   *  sentence there, a `still` mount says exactly what its backend row says (deck §6). */
   readonly reduced?: string
 }
 
 interface Props {
-  /** shader-dsl example id, e.g. `'metaballs'` — must exist in the mirror's registry. */
+  locale: Locale
   example: string
-  /** Sizes the mount host. */
-  class?: string
-  /** One frame at the pinned clock, then stop — no rAF, no observers (IA R-9). */
-  still?: boolean
-  /** Skip the WebGPU probe: this mount is the GLSL ES 3.00 half of §agree's pair (IA R-8). */
-  forceWebGl2?: boolean
-  /** Full-bleed: emit the mount host and its payload, and NOTHING else — no figure, no
-   *  ground mat, no caption element. The hero is the one mount with no box of its own
-   *  (design §5): its canvas is an absolutely-positioned layer of the section while its
-   *  caption plate is the last rung of the text column and carries the state marker, so
-   *  the two cannot share a `<figure>`. The CALLER then owns two things: an ancestor
-   *  carrying `data-shader-scope`, and an element carrying `data-shader-caption` inside
-   *  it. Everything else — the per-state strings, the derived accessible name, the D-8
-   *  payload dedup — is still this component's, so there is one authority for them. */
-  bleed?: boolean
   caption: CanvasText
-  /** The bezel header, on mounts that have one. */
-  header?: CanvasText
-  /** §precision's split bezel (design §5). The LEFT half's label; `header` is then the RIGHT
-   *  half's, so the runtime keeps its one write path for the bezel's text. Passing it splits
-   *  the bezel at `--b4-split`, draws the rule and the crop mark, and marks the figure
-   *  `data-split` — which is what §8's forced-colors block collapses back to one label row. */
-  splitLabel?: string
+  aspect: '3/1' | '2/1' | '16/9' | '3/2'
+  /** Draw one frame at a fixed clock, then stop. */
+  still?: boolean
+  /** Skip the WebGPU probe and draw on WebGL2. */
+  forceWebGl2?: boolean
+  /** Divide the frame in two, for an example whose halves are captioned separately. */
+  split?: boolean
+  /** Load this figure's still with the first paint. Set on the figure above the fold. */
+  eager?: boolean
+  /** Which still sits under the canvas; defaults to the example id. A second mount of the
+   *  same example forced onto another backend names its own still. */
+  stillId?: string
+  class?: string
 }
 
 const {
+  locale,
   example,
-  class: className,
+  caption,
+  aspect,
   still = false,
   forceWebGl2 = false,
-  bleed = false,
-  caption,
-  header,
-  splitLabel,
+  split = false,
+  stillId,
+  eager = false,
+  class: className,
 } = Astro.props
 const data = heroShader(example)
 
-// A bleed mount has no bezel to put a header in, and silently dropping one would leave a
-// caller believing a string ships that never renders. Fail the build instead.
-if (bleed && header) {
-  throw new Error(
-    `[ShaderCanvas] '${example}' is a bleed mount: it renders no bezel, so the caller owns ` +
-      `its header element. Pass the header where the caller renders it, or drop \`bleed\`.`,
-  )
-}
-// A split label with no header would name one half and leave the other blank — a positional
-// claim with half its evidence missing, which is the exact failure `--b4-split` exists to
-// prevent. Fail the build rather than render it.
-if (splitLabel && !header) {
-  throw new Error(
-    `[ShaderCanvas] '${example}' passes splitLabel '${splitLabel}' with no header: the split ` +
-      `bezel names BOTH halves or it names neither.`,
-  )
-}
-
-/** deck §6's four columns → the runtime's five states. A `still` mount that names no
- *  reduced-motion row keeps its backend row, which is what the deck says it must. */
 const expand = (t: CanvasText): StateStrings => ({
   webgpu: t.webgpu,
   webgl2: t.webgl2,
@@ -94,212 +58,53 @@ const expand = (t: CanvasText): StateStrings => ({
   'still-webgl2': t.reduced ?? t.webgl2,
 })
 
-// The accessible name is DERIVED from the same build-time record as the caption and
-// `data-label`, in deck §6's one pattern, so no mount can carry a hand-written name and
-// `Decorative` cannot appear. On `none` the label IS the caption sentence (deck §6).
-const subject = `${data.title.toLowerCase()} shader, written in TypeScript and compiled by TypeShade`
-const named = (lead: string, target: string, api: string): string =>
-  `${lead} ${subject} to ${target}, running on ${api} in this browser.`
-const ariaLabel: StateStrings = {
-  webgpu: named('Live', 'WGSL', 'WebGPU'),
-  webgl2: named('Live', 'GLSL ES 3.00', 'WebGL2'),
-  'still-webgpu': named('Still frame of a', 'WGSL', 'WebGPU'),
-  'still-webgl2': named('Still frame of a', 'GLSL ES 3.00', 'WebGL2'),
-  none: caption.none,
-}
-const neutralAria = `A ${subject} to WGSL and GLSL ES 3.00.`
+const aria: StateStrings = copyFor(locale).canvas.aria(data.title)
+const labels = { caption: expand(caption), aria }
 
-const labels = {
-  caption: expand(caption),
-  header: header ? expand(header) : null,
-  aria: ariaLabel,
-}
+// A split figure's halves are named in its caption, so the example has to declare them.
+if (split && !facts.splitLabels) throw new Error(`[ShaderCanvas] '${example}' declares no splitLabels`)
 
-// Zero-shift reserve: the caption plate holds the widest string this mount can print, in `ch`
-// of its own mono face — capped at 100% so the reserve can never author a horizontal scroll
-// (NFR-5). The height reserve is the plate's, in `lh` (design §5).
-const captionCh = Math.max(...Object.values(labels.caption).map((s) => s.length), caption.neutral.length)
-
-/** A framed mount is a `<figure>` whose `<figcaption>` is its caption plate. A bleed mount
- *  has neither: both wrappers collapse to `display: contents`, so the mount host is laid out
- *  by the caller's own box (the hero column) and can be positioned against the section. */
-const Wrap = bleed ? 'div' : 'figure'
-
-// D-8: ONE payload per distinct example per page, read by id. `Astro.locals` is per page
-// render (verified in this build), so a second page emits its own copy and a second mount of
-// the same example emits none.
+// One payload per example per page.
 const store = Astro.locals as Record<string, unknown>
-const emitted = ((store.__shaderPayloads ??= new Set<string>()) as Set<string>)
+const emitted = (store.__shaderPayloads ??= new Set<string>()) as Set<string>
 const payloadId = `shader-payload-${data.id}`
 const firstOfExample = !emitted.has(data.id)
 emitted.add(data.id)
 ---
 
-<Wrap
-  class={bleed ? 'canvas-bleed' : 'canvas-figure'}
-  data-label={bleed ? undefined : data.id}
-  data-split={splitLabel ? '' : undefined}
-  data-shader-scope={bleed ? undefined : ''}
->
-  {
-    header && !bleed && (
-      <div class="plate-bezel">
-        {/* §precision's left half. Static text: it names a half of the picture, not a backend,
-            so it is outside the runtime's rewrite path entirely. */}
-        {splitLabel && <span class="split-cell">{splitLabel}</span>}
-        {/* The header TEXT is its own element: the runtime rewrites it with `textContent`,
-            which would erase the state marker if the two shared a node. On a split bezel it
-            is the RIGHT half's label and the marker rides in the same cell. */}
-        <span class="bezel-main">
-          <span data-shader-header>{header.neutral}</span>
-          {/* State marker — design §5. A 6 px `--color-ok` dot plus the WORD `drawn`, or a
-              hollow ring plus `build-time`: 1.4.1-safe by construction, and the only thing on
-              a specimen that says at a glance which frame a GPU actually drew. Keyed on
-              `data-backend`, the same value every string on this mount is keyed on (I-2). */}
-          <span class="mount-marker" data-marker="drawn">
-            <span class="marker-dot" aria-hidden="true" />
-            drawn
-          </span>
-          <span class="mount-marker" data-marker="build-time">
-            <span class="marker-ring" aria-hidden="true" />
-            build-time
-          </span>
-        </span>
-        {/* The rule itself — a `.crop-mark`, so §8's forced-colors block drops it with the
-            other two and the bezel collapses to one label row. */}
-        {splitLabel && <span class="crop-mark" aria-hidden="true" />}
-      </div>
-    )
-  }
-  {/* The 8 px ground mat is what lets `line-2` be the frame token: both of the rule's
-      neighbours are `--color-ground`, so it is 3.39:1 at every mount and every frame
-      rather than 1.52:1 against a bright pixel (design §5, M-9). */}
-  <div class={bleed ? 'canvas-bleed' : 'canvas-frame'} data-label={bleed ? undefined : data.id}>
-    <div
-      class:list={['ts-shader', className]}
-      data-shader-canvas
-      data-example={data.id}
-      data-payload={payloadId}
-      data-still={still ? '1' : undefined}
-      data-force-webgl2={forceWebGl2 ? '1' : undefined}
-      data-labels={JSON.stringify(labels)}
-    >
-      <canvas role="img" aria-label={neutralAria} data-backend="none"></canvas>
-    </div>
+<figure class:list={['figure', className]} data-shader-scope>
+  <div
+    class="figure-frame"
+    style={`aspect-ratio: ${aspect}`}
+    data-shader-canvas
+    data-example={data.id}
+    data-payload={payloadId}
+    data-still={still ? '1' : undefined}
+    data-force-webgl2={forceWebGl2 ? '1' : undefined}
+    data-labels={JSON.stringify(labels)}
+  >
+    <img
+      src={`/stills/${stillId ?? data.id}.png`}
+      alt=""
+      loading={eager ? 'eager' : 'lazy'}
+      fetchpriority={eager ? 'high' : undefined}
+      decoding="async"
+    />
+    <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
+    {split && <span class="figure-split" aria-hidden="true"></span>}
   </div>
-  {/* The second crop mark: 16 px of the same rule below the frame, then §5's own 8 px before
-      the caption plate. Outside the image, never over it (§5 puts no ink on `B4.CANVAS`). */}
-  {splitLabel && !bleed && (
-    <div class="split-marks" aria-hidden="true">
-      <span class="crop-mark" />
-    </div>
-  )}
-  {
-    !bleed && (
-      <figcaption class="caption-plate" data-shader-caption style={`--caption-ch:${captionCh}`}>
-        {caption.neutral}
-      </figcaption>
-    )
-  }
-  {
-    firstOfExample && (
-      <script
-        type="application/json"
-        id={payloadId}
-        data-shader-payload
-        set:html={heroPayload(data.id)}
-        is:inline
-      />
-    )
-  }
-</Wrap>
-
-<style>
-  /* No `position` here on purpose: a full-bleed mount is positioned by the caller AGAINST
-     its section, and a positioned host would silently become that layer's containing box.
-     `isolation` needs no positioning to open a stacking context. */
-  .ts-shader {
-    isolation: isolate;
-    overflow: hidden;
-    /* The static fallback: what shows through a transparent (or never-started) canvas. One
-       value with the page ground, so the pre-mount window and the `none` path have no seam. */
-    background: var(--color-ground, #080a14);
-  }
-  .ts-shader > canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-  /* A canvas that has not drawn — or whose backend is gone — must not paint. Measured on this
-     build: a WebGL2 drawing buffer whose context has been released composites as OPAQUE WHITE
-     (mean 255,255,255 over the whole box), which on a near-black page is worse than the stale
-     frame `stop()` exists to remove. Keyed on `data-backend`, the same value every label on
-     the mount is keyed on (IA I-2), so paint and wording degrade together. */
-  .ts-shader > canvas[data-backend='none'] {
-    opacity: 0;
-  }
-  .caption-plate {
-    min-width: min(100%, calc(var(--caption-ch, 0) * 1ch));
-  }
-  /* The bezel and the frame are ONE object: a hairline between them, never a gap (design §5),
-     so the bezel takes the frame's own rule and the frame drops its top corners. */
-  .canvas-figure > .plate-bezel {
-    border-block-start: 1px solid var(--color-line-2);
-    border-inline: 1px solid var(--color-line-2);
-  }
-  .canvas-figure > .plate-bezel + .canvas-frame {
-    border-block-start: 0;
-    border-start-start-radius: 0;
-    border-start-end-radius: 0;
-  }
-  .canvas-figure > .caption-plate {
-    margin-block-start: 8px;
-  }
-  /* The header and its marker are children of the BEZEL's own flex row on four of the five
-     mounts — `display: contents` is what keeps them there, so the split variant can be a
-     wrapper element without changing any layout it does not own. On the split bezel they
-     become its right-hand cell (design §5, `--b4-split`). */
-  .bezel-main {
-    display: contents;
-  }
-  /* Its split-bezel form is in global.css beside `--b4-split`: one place owns that
-     geometry, and §8's forced-colors collapse must be able to outrank it. */
-  /* The marker is the mount's own state, so it is toggled from `data-backend` in CSS rather
-     than by a second write the runtime would have to remember to make. */
-  .mount-marker {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    flex: none;
-  }
-  .mount-marker[data-marker='drawn'] {
-    display: none;
-  }
-  .canvas-figure:has(canvas:not([data-backend='none'])) .mount-marker[data-marker='drawn'] {
-    display: inline-flex;
-  }
-  .canvas-figure:has(canvas:not([data-backend='none'])) .mount-marker[data-marker='build-time'] {
-    display: none;
-  }
-  /* The bleed wrappers generate no box, so the host is a child of the caller's own layout
-     and neither wrapper can add a frame, a mat or a containing block. */
-  .canvas-bleed {
-    display: contents;
-  }
-</style>
+  <figcaption class="figure-caption" data-shader-caption>{caption.neutral}</figcaption>
+  {firstOfExample && <script type="application/json" id={payloadId} set:html={heroPayload(data.id)} is:inline />}
+</figure>
 
 <script>
   import { mountShader, type ShaderData, type StateStrings } from '../lib/shader-runtime.ts'
 
   interface MountLabelData {
     caption: StateStrings
-    header: StateStrings | null
     aria: StateStrings
   }
 
-  // One module script serves every instance on the page: mount each unmounted host with ITS
-  // OWN options and strings. The handle is parked on the canvas by mountShader itself, so the
-  // QA census reads one handle per mount rather than a last-mount-wins global.
   for (const root of document.querySelectorAll<HTMLElement>('[data-shader-canvas]')) {
     if (root.dataset.mounted) continue
     root.dataset.mounted = '1'
@@ -314,22 +119,14 @@ emitted.add(data.id)
     } catch {
       continue
     }
-    // The mount's SCOPE — its `<figure>`, or, for a bleed mount, whatever box the caller
-    // marked. Every string this mount owns is looked up inside it, so two mounts of the
-    // same example on one page can never write into each other's caption.
     const scope = root.closest<HTMLElement>('[data-shader-scope]')
     void mountShader(canvas, data, {
       still: root.dataset.still === '1',
       forceWebGl2: root.dataset.forceWebgl2 === '1',
       labels: {
         caption: { el: scope?.querySelector<HTMLElement>('[data-shader-caption]') ?? null, text: labels.caption },
-        header: labels.header
-          ? { el: scope?.querySelector<HTMLElement>('[data-shader-header]') ?? null, text: labels.header }
-          : undefined,
         ariaLabel: labels.aria,
       },
-    }).catch(() => {
-      // mountShader already falls back internally; this only guards an unhandled rejection.
-    })
+    }).catch(() => {})
   }
 </script>

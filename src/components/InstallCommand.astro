@@ -1,95 +1,18 @@
 ---
-// B5.INSTALL — design §5 "Layout table and install control", IA I-11 / R-11, deck §5 `adopt`.
-//
-// The one command that is true today, and the page's ONLY paste-and-run text. Both halves are
-// read from `.gitmodules` (`facts.mirrorUrl`, `facts.mirrorPath`) — the one place this
-// repository declares where the mirror was cloned from and to — so the command a visitor runs
-// is the command this build ran, which is what ratifies the target path rather than asserting
-// it. `npm i typeshade` is forbidden everywhere on this site: the name is reserved and its
-// downloads API returns no record.
-//
-// The button copies the FULL string from `data-copy`, never the `textContent` of a node the
-// scroll region may be showing half of. `Copy` → `Copied` for 1.6 s, announced politely
-// (4.1.3); on failure — an insecure context, a denied permission — the label becomes
-// `Press ⌘C` and the text is programmatically selected, so the affordance never dead-ends.
+// The submodule command, read from .gitmodules so it is the command this repository ran.
+// It wraps, because it is the one line a reader has to copy and a phone cannot scroll it.
+import { Code } from 'astro-expressive-code/components'
 import { facts } from '../lib/examples.ts'
-import Plate from './Plate.astro'
-import ScrollRegion from './ScrollRegion.astro'
+import CodeFrame from './CodeFrame.astro'
+import { copyFor, type Locale } from '../i18n/index.ts'
 
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
 const command = `git submodule add ${facts.mirrorUrl} ${facts.mirrorPath}`
 ---
 
-<Plate flush>
-  <div class="install-row" data-install>
-    <ScrollRegion label="Submodule command">
-      <code class="font-mono text-code whitespace-pre text-text-1">{command}</code>
-    </ScrollRegion>
-    <div class="divider" aria-hidden="true"></div>
-    <button class="btn-copy" type="button" data-copy={command}>Copy</button>
-  </div>
-  {/* The status message is a live region with no text until there is something to say, so it
-      announces the confirmation rather than the control's existence. */}
-  <p class="sr-only" role="status" data-copy-status></p>
-</Plate>
-
-<script>
-  // One handler for the page's single copy affordance. Nothing here is required for the
-  // command to be readable or selectable — with no JS the row is still text (I-16).
-  const DWELL_MS = 1600
-  for (const row of document.querySelectorAll<HTMLElement>('[data-install]')) {
-    const button = row.querySelector<HTMLButtonElement>('[data-copy]')
-    const code = row.querySelector('code')
-    const status = row.parentElement?.querySelector<HTMLElement>('[data-copy-status]') ?? null
-    if (!button || !code) continue
-    const text = button.dataset.copy ?? ''
-    let timer: number | undefined
-
-    const settle = (label: string, announce: string, failed: boolean): void => {
-      button.textContent = label
-      button.dataset.state = failed ? 'failed' : 'copied'
-      if (status) status.textContent = announce
-      if (timer) clearTimeout(timer)
-      // The failure label is not a transient: it names the gesture the visitor must make, so
-      // it stays until the next attempt. Only the success label dwells and reverts.
-      if (failed) return
-      timer = window.setTimeout(() => {
-        button.textContent = 'Copy'
-        delete button.dataset.state
-        if (status) status.textContent = ''
-      }, DWELL_MS)
-    }
-
-    const select = (): void => {
-      const range = document.createRange()
-      range.selectNodeContents(code)
-      const selection = window.getSelection()
-      selection?.removeAllRanges()
-      selection?.addRange(range)
-    }
-
-    button.addEventListener('click', () => {
-      void (async () => {
-        try {
-          await navigator.clipboard.writeText(text)
-          settle('Copied', 'Command copied to the clipboard.', false)
-        } catch {
-          select()
-          settle('Press ⌘C', 'The command is selected — press Command-C or Control-C to copy.', true)
-        }
-      })()
-    })
-  }
-</script>
-
-<style>
-  /* `Copied` is the one place `--color-ok` appears outside the mounts' state marker, and
-     `Press ⌘C` the one place `--color-diag` appears outside the diagnostic (§10 G9). */
-  .btn-copy[data-state='copied'] {
-    color: var(--color-ok);
-    border-color: var(--color-ok);
-  }
-  .btn-copy[data-state='failed'] {
-    color: var(--color-diag);
-    border-color: var(--color-diag);
-  }
-</style>
+<CodeFrame label={copyFor(locale).install.label}>
+  <Code code={command} lang="bash" wrap />
+</CodeFrame>

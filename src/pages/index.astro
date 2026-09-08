@@ -1,27 +1,5 @@
 ---
-// The page — IA §4.2's order, one `h1` and seven content `h2` blocks before the footer's own.
-//
-// Nothing here holds a string or a number: every block reads its copy from 07-copy-deck.md's
-// wording and its values from `facts` / `hero` / `typedError()`, which are measured against
-// the pinned mirror at build time.
-import Base from '../layouts/Base.astro'
-import Hero from '../components/Hero.astro'
-import Rail from '../components/Rail.astro'
-import Write from '../components/blocks/Write.astro'
-import Recognise from '../components/blocks/Recognise.astro'
-import Agree from '../components/blocks/Agree.astro'
-import Types from '../components/blocks/Types.astro'
-import Precision from '../components/blocks/Precision.astro'
-import Adopt from '../components/blocks/Adopt.astro'
+import FrontPage from '../components/pages/FrontPage.astro'
 ---
 
-<Base>
-  <Hero />
-  <Rail />
-  <Write />
-  <Recognise />
-  <Agree />
-  <Types />
-  <Precision />
-  <Adopt />
-</Base>
+<FrontPage locale="en" />

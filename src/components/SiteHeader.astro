@@ -1,0 +1,33 @@
+---
+// The name, the mark, the page links, and the other languages this page exists in.
+import { MARK } from '../lib/mark.ts'
+import { navLinks } from '../lib/links.ts'
+import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts'
+
+interface Props {
+  locale: Locale
+  path: string
+}
+const { locale, path } = Astro.props
+const t = copyFor(locale)
+const others = locales.filter((l) => l !== locale)
+---
+
+<header class="wrap site-header">
+  <a class="site-name" href={localePath(locale, '/')}>
+    <svg viewBox={MARK.viewBox} aria-hidden="true" focusable="false">
+      <path
+        d={MARK.d}
+        fill="none"
+        stroke="currentColor"
+        stroke-width={MARK.strokeWidth}
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+    TypeShade
+  </a>
+  <nav class="site-links" aria-label="Primary">
+    {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
+    {others.map((l) => <a href={localePath(l, /\.[a-z0-9]+$/i.test(path) ? '/' : path)} hreflang={l} lang={l} aria-label={`${t.nav.languages}: ${copyFor(l).name}`}>{copyFor(l).name}</a>)}
+  </nav>
+</header>

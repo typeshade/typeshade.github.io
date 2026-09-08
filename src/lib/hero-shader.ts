@@ -1,23 +1,15 @@
-// ═══ typeshade.dev — BUILD-TIME shader emission for the live hero ═══
-//
-// Runs in the Astro frontmatter, never in the browser. It takes one example out of the pinned
-// mirror's registry and produces the payload `shader-runtime.ts` renders: the WGSL module, the
-// GLSL ES 3.00 stage pair, and — the point of the exercise — the uniform layout as `reflect()`
-// recovers it. No WGSL/GLSL is written here, and no byte offset is derived here; both come out
-// of the compiler, which is the product's own claim.
-//
-// A shape the runtime cannot render fails the BUILD rather than the page: an unrenderable
-// example, a control kind with no packer, a texture binding that is not the fp64 guard. A live
-// hero that silently draws nothing is the failure mode worth spending a build error on.
+// Build-time shader emission. Runs in Astro frontmatter only. It takes one
+// example from the vendored registry and produces what shader-runtime.ts renders, including
+// the uniform layout as reflect() recovers it. An example the runtime cannot render fails
+// the build.
 
 import { examples } from '../../vendor/shader-dsl/examples/index.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 import type { Control as MirrorControl } from '../../vendor/shader-dsl/examples/_shared.ts'
 import type { Control, ShaderData, ShaderLayout } from './shader-runtime.ts'
 
-/** Translate the mirror's `Control` union into the runtime's. Throws on a kind the browser
- *  packer has no case for, so adding such an example to the page is a build error naming the
- *  file to fix — never a hero that renders with a zeroed uniform. */
+/** Translate the registry's `Control` union into the runtime's. Throws on a kind the packer
+ *  has no case for. */
 function toRuntimeControl(id: string, field: string, c: MirrorControl): Control {
   switch (c.kind) {
     case 'time':
@@ -35,7 +27,7 @@ function toRuntimeControl(id: string, field: string, c: MirrorControl): Control 
     default:
       throw new Error(
         `[hero-shader] example '${id}' field '${field}' uses control kind '${c.kind}', ` +
-          `which src/lib/shader-runtime.ts has no packer for — add the case there first`,
+          `which src/lib/shader-runtime.ts has no packer for. Add the case there first`,
       )
   }
 }
@@ -51,9 +43,7 @@ function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayo
   const textures = (group?.entries ?? [])
     .filter((e) => e.resourceKind === 'texture')
     .map((e) => {
-      // The only texture a fullscreen example declares is the compiler's auto-injected fp64
-      // fast-math guard, which the runtime answers with a 1×1 white texel. Anything else would
-      // silently get a white square instead of its data.
+      // The runtime only supplies the compiler's fp64 guard texture (a 1x1 white texel).
       if (e.name !== '_fp64') {
         throw new Error(
           `[hero-shader] '${id}' declares texture '${e.name}'; the runtime only supplies the ` +
@@ -81,7 +71,9 @@ function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayo
   }
 }
 
-/** Emit one registry example as the runtime's payload: both targets plus the reflected layout. */
+/** Emit one registry example as the runtime's payload: both targets plus the reflected layout.
+ *  The registry's `blurb` is left out: nothing reads it, and it would ship prose the page
+ *  never renders into every inlined payload. */
 export function heroShader(id: string): ShaderData {
   const ex = examples.find((e) => e.id === id)
   if (!ex) throw new Error(`[hero-shader] no example '${id}' in the mirror's registry`)
@@ -95,7 +87,6 @@ export function heroShader(id: string): ShaderData {
   return {
     id: ex.id,
     title: ex.title,
-    blurb: ex.blurb,
     wgsl: emitModule(ex.module),
     vertex: emitGlslModule(ex.module, 'vertex'),
     fragment: emitGlslModule(ex.module, 'fragment'),
@@ -104,10 +95,8 @@ export function heroShader(id: string): ShaderData {
   }
 }
 
-/** The exact bytes `ShaderCanvas.astro` inlines for one example: the payload as JSON, with
- *  `<` escaped so a `</script` inside it cannot close the block early. It lives here so the
- *  size `examples.ts` reports (`hero.emit.payloadBytes`) is measured on the same string the
- *  page ships — one authority for those bytes, not two that can drift. */
+/** The exact bytes ShaderCanvas.astro inlines for one example, with `<` escaped so a
+ *  `</script` inside the JSON cannot close the block early. */
 export function heroPayload(id: string): string {
   return JSON.stringify(heroShader(id)).replace(/</g, '\\u003c')
 }
