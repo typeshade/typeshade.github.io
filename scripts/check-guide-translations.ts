@@ -90,6 +90,14 @@ for (const locale of locales) {
       if (/해요|어요|예요/.test(prose)) push('해요체 in prose')
     }
     if (/!/.test(prose.replace(/!=/g, ''))) push('an exclamation mark in prose')
+    // CommonMark reads a closing ** only when no punctuation precedes it or nothing letter-like
+    // follows it, and an opening ** only when no punctuation follows it or nothing letter-like
+    // precedes it. English writes **`code`** and a space; a translation that glues a particle to
+    // it (**`FnHandle`**입니다) prints the asterisks. Drop the emphasis or put a space.
+    const marks = strip(ko)
+    const badClose = marks.match(/\*\*[^*\n]+[^\p{L}\p{N}\s]\*\*(?=[\p{L}\p{N}])/gu) ?? []
+    const badOpen = marks.match(/[\p{L}\p{N}]\*\*`[^`\n]+`\*\*/gu) ?? []
+    if (badClose.length || badOpen.length) push(`bold markers CommonMark cannot parse: ${[...badClose, ...badOpen].slice(0, 3).join(' | ')}`)
     const latin = prose.split(/\n\s*\n/).filter((p) => p.trim() && !/^[#>|+*-]/.test(p.trim()) && !/[가-힣]/.test(p) && (p.match(/[A-Za-z]{3,}/g) ?? []).length >= 4)
     if (latin.length) push(`${latin.length} prose paragraph(s) left in English: ${latin[0].trim().slice(0, 60)}`)
   }
