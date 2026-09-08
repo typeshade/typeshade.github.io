@@ -34,6 +34,7 @@ for (const file of pages) {
   if (html.includes('http-equiv="refresh"')) continue
   const fail = (what) => problems.push(`${rel}: ${what}`)
   const isNotFound = rel === '404.html'
+  const isPreview = html.includes('class="api-preview"')
 
   const title = decode(one(html, /<title>([^<]*)<\/title>/) ?? '')
   const description = decode(one(html, /name="description" content="([^"]*)"/) ?? '')
@@ -62,7 +63,9 @@ for (const file of pages) {
   if (/x-?gis/i.test(html.replace(/XGIS_SHADER_DSL_TRACE/g, ''))) fail('names the former host')
   if (!/property="og:image" content="https:/.test(html)) fail('no absolute og:image')
 
-  if (isNotFound) {
+  if (isPreview) {
+    if (robots !== 'noindex') fail('a template preview must carry noindex')
+  } else if (isNotFound) {
     if (robots !== 'noindex') fail('the 404 must carry noindex')
   } else {
     if (robots) fail(`unexpected robots directive: ${robots}`)

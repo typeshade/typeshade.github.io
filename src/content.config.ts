@@ -6,6 +6,7 @@ import { defineCollection } from 'astro:content'
 import type { Loader } from 'astro/loaders'
 import { z } from 'astro/zod'
 import { GUIDE_FILE, guideSections } from './lib/guide.ts'
+import { apiLoader } from './lib/api-loader.ts'
 
 const SECTIONS_MIN = 10
 
@@ -24,6 +25,8 @@ const authoring: Loader = {
 }
 
 export const collections = {
+  // The API reference: one entry per public export, markdown fields rendered to HTML.
+  api: defineCollection({ loader: apiLoader() }),
   guide: defineCollection({
     loader: authoring,
     schema: z.object({

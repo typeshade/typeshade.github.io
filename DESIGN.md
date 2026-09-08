@@ -113,6 +113,38 @@ PixiJS uses with `/8.x/`), the unprefixed path stays the latest, and the version
 versions. Vue's separate host per major (v2.vuejs.org) needs a domain per version and is not the
 plan.
 
+## Reference pages
+
+`/api/…` is the API reference, one page per public export of the compiler, generated at build
+time from the source at the pinned commit (`src/lib/api.ts`) and rendered by
+`src/components/pages/ApiReferencePage.astro`. Nothing on these pages is hand-written; a
+wrong sentence is fixed upstream in the compiler's JSDoc and arrives at the next pin.
+
+A page follows MDN's reference page, section by section, and leaves out a section with
+nothing to show:
+
+| MDN | Here | Where it comes from |
+| --- | --- | --- |
+| Breadcrumb | Reference › category › name | the category map in `src/lib/api.ts` |
+| Title | the export's name in code, `name()` for a callable | the export |
+| First paragraph | one plain sentence | the first sentence of the JSDoc |
+| Syntax | the signatures, one per overload; a declaration block for an interface, type or class | the declaration |
+| Parameters | name, type, optional, description | the signature and `@param` |
+| Return value | type and description | the signature and `@returns` |
+| Exceptions | the error class or code and when it is thrown | `@throws` and the diagnostics registry |
+| Description | the rest of the JSDoc as markdown, `{@link X}` as links to other pages | the JSDoc |
+| Examples | an h3 and a code block each | `@example` |
+| Browser compatibility | Targets: WGSL, GLSL ES 3.00, CPU oracle, each Supported, Emulated, Stub, Not supported or Does not apply, with the spelling the target emits | the intrinsics registry and the oracle's stub list |
+| Instance properties, Instance methods, Constructor | the members of an interface or class with their JSDoc | the declaration |
+| See also | other reference pages | `{@link}` targets and `@see` |
+| Specifications | In the guide: the guide sections that mention the name | `src/lib/authoring.ts` |
+| Source | file, line and commit on GitHub | the declaration |
+
+The sidebar shows the category index pages under a Reference group and, on a page of the
+reference, that category's members under it. On a Korean page the chrome is Korean and the
+body English, as on the guide; the note above the body says so. The contract between the
+generator and the page is `src/lib/api-types.ts`.
+
 ## Languages
 
 Each language lives under a path prefix (`/ko/…`), the convention MDN, MS Learn, the Astro docs

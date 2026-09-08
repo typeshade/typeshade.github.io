@@ -50,7 +50,8 @@ export default defineConfig({
     },
     expressiveCode(), // options in ec.config.mjs
     sitemap({
-      filter: (page) => !['/og', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide'].includes(new URL(page).pathname.replace(/\/$/, '')),
+      // The API reference is a template preview until src/lib/api.ts supplies real entries.
+      filter: (page) => !/^\/(ko\/)?api\//.test(new URL(page).pathname) && !['/og', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide'].includes(new URL(page).pathname.replace(/\/$/, '')),
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
       serialize: (item) => ({ ...item, lastmod }),
     }),

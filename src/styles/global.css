@@ -592,6 +592,33 @@ body > main { flex: 1 }
 .site-legal a:hover { color: var(--color-text-2) }
 @media (min-width: 40rem) { .site-map { grid-template-columns: repeat(3, 1fr) } }
 
+/* API reference page: the crumbs, the kind line, definition lists for parameters and members,
+   the targets table, the see-also list */
+.api-crumbs { display: flex; flex-wrap: wrap; gap: 8px; font-size: var(--text-meta); color: var(--color-text-3) }
+.api-crumbs a { color: var(--color-text-2); text-decoration: none }
+.api-crumbs a:hover { color: var(--color-text-1); text-decoration: underline; text-underline-offset: 3px }
+.doc .api-crumbs + h1 { margin-block-start: 12px }
+.doc h1 code { font-size: 0.9em; font-weight: 600 }
+.api-kind { margin-block-start: 4px; font-size: var(--text-meta); color: var(--color-text-3) }
+.api-summary { font-size: 1.0625rem; color: var(--color-text-1) }
+.api-list { margin-block-start: 16px }
+.api-list dt { margin-block-start: 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px }
+.api-list dt:first-child { margin-block-start: 0 }
+.api-list dd { margin-block-start: 4px; padding-inline-start: 20px; color: var(--color-text-2) }
+.api-list dd p { margin-block-start: 8px }
+.api-list dd p:first-child { margin-block-start: 0 }
+.api-type { color: var(--color-text-3) }
+.api-optional { font-size: 0.75rem; padding: 1px 6px; border: 1px solid var(--color-line-2); border-radius: 999px; color: var(--color-text-3) }
+.api-empty { color: var(--color-text-3); font-style: italic }
+.api-targets th[scope='row'] { font-weight: 500; color: var(--color-text-1); white-space: nowrap }
+.api-support { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8125rem; font-weight: 500; border: 1px solid var(--color-line-2) }
+.api-support-native { color: var(--color-accent); border-color: var(--color-accent) }
+.api-support-emulated, .api-support-stub { color: var(--color-text-2) }
+.api-support-none { color: var(--color-diag); border-color: var(--color-diag) }
+.api-see-also { columns: 2; column-gap: 24px }
+.api-see-also li { break-inside: avoid }
+.api-preview { margin-block-start: 12px; padding: 8px 12px; border: 1px solid var(--color-diag); border-radius: var(--radius-sm); font-size: var(--text-meta); color: var(--color-diag) }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
 }

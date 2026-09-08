@@ -27,8 +27,10 @@ interface Props {
   editHref: string
   /** The document is in another language than the page's chrome. */
   bodyLang?: string
+  /** Keep the page out of search indexes (a template preview). */
+  noindex?: boolean
 }
-const { locale, path, title, description, headings = [], editHref, bodyLang } = Astro.props
+const { locale, path, title, description, headings = [], editHref, bodyLang, noindex = false } = Astro.props
 const d = copyFor(locale).docs
 
 // The guide's sections follow its overview in the sidebar, so previous and next walk the
@@ -51,7 +53,7 @@ const outline = headings.filter((h) => h.depth === 2 || h.depth === 3)
 const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
 ---
 
-<Base locale={locale} path={path} title={title} description={description}>
+<Base locale={locale} path={path} title={title} description={description} noindex={noindex}>
   <details class="docs-local" data-pagefind-ignore>
     <summary>{current?.label ?? title}</summary>
     <nav aria-label={title}>
