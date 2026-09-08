@@ -340,6 +340,7 @@ export const en = {
     /** Every section with a page of its own: what the sidebar, the h1 and the title show. */
     sections,
     note: `Rendered from [AUTHORING.md](guideSource) at commit ${facts.pinnedCommit}. The package is imported here by its ${facts.nextVersion} name, \`typeshade\`.`,
+    noteUntranslated: `Rendered from [AUTHORING.md](guideSource) at commit ${facts.pinnedCommit}. The package is imported here by its ${facts.nextVersion} name, \`typeshade\`.`,
   },
   notFound: {
     title: 'Page not found, TypeShade',

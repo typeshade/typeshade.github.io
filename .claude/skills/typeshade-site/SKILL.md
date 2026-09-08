@@ -76,6 +76,19 @@ one. Rules:
 - 합쇼체 throughout. No 해요체, no 반말, no exclamation marks.
 - UI labels are short nouns: 가이드, 예제, 빠른 시작, 작성 가이드, 검증 방식, 소개, 참고.
 
+## The Korean guide
+
+The authoring guide's Korean is not in the dictionary: it is `content/guide/ko/<section>.md`,
+one file per section of the pinned AUTHORING.md, with front matter `id`, `source` (the sha256
+of the English body it was translated from) and `sourceLine`. The build refuses a file whose
+`source` is not the pinned section's hash, so moving the pin means translating the changed
+sections again and recording the new hash. `bun run check:guide` checks the rest: the fenced
+code blocks byte for byte, every inline code span the same number of times, the numerals, the
+link targets, the heading count, and the Korean rules above. Translate meaning first with
+`content/guide/GLOSSARY.md` as the term list, and add to the glossary any term you decide on.
+Nothing about the reference's body is translated; a Korean reference page is Korean chrome
+around the compiler's own JSDoc.
+
 ## Length budget
 
 A translated label may render no wider than about 1.35 times the English label, so a

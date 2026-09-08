@@ -163,7 +163,7 @@ scroller. The guide links into the reference the way MDN links a function's firs
 first inline code on a guide page that is exactly a public export's name becomes a link to
 that export's page (`src/lib/remark-api-links.mjs`, over the guide's markdown only). A
 reference page records its kind for the search index, so a result reads "abs (function)". On a
-Korean page the chrome is Korean and the body English, as on the guide; the note above the
+Korean page the chrome is Korean and the body English; the note above the
 body says so. The contract between the generator and the page is `src/lib/api-types.ts`, and
 the words around it are `docs.api` in every dictionary, with a name and a sentence for every
 category the extractor defines.
@@ -179,6 +179,15 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - English is the source text, in `src/i18n/en.ts`. Every other language is a translation of
   it: `src/i18n/ko.ts` is typed against the English object, so a string missing in one
   language fails the type check.
+- The authoring guide is translated by hand, one file per section of AUTHORING.md under
+  `content/guide/<locale>/`, from the English at the pinned commit. Each file's front matter
+  records the sha256 of the English body it was translated from; when the pin moves and a
+  section changes, the build stops and names the section, so a translation cannot fall behind
+  its source unnoticed. `scripts/check-guide-translations.ts` holds a translation to the
+  English's code blocks, code spans, numerals, links and headings, and to the Korean rules
+  below. `content/guide/GLOSSARY.md` fixes the Korean for each English term. A section
+  without a file is shown in English under a note that says so. The reference's body stays
+  English on every locale.
 - English lives at `/`, other languages under their code (`/ko/`). Route files in
   `src/pages` and `src/pages/ko` are one line each; the page itself is a component in
   `src/components/pages` that takes a locale.

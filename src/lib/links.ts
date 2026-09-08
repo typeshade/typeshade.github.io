@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { apiCategories, apiSlugByName } from './api-nav.ts'
 import { facts } from './examples.ts'
+import { translationDir } from './guide-translations.ts'
 import { apiCategoryCopy, copyFor, localePath, type Locale } from '../i18n/index.ts'
 
 export interface Destination {
@@ -83,6 +84,11 @@ export function editCopy(locale: Locale, key?: string): string {
 /** The line a guide section starts on in the vendored AUTHORING.md, on GitHub. */
 export function editGuide(sourceLine: number): string {
   return `${links.guideSource.href}#L${sourceLine}`
+}
+
+/** A translated guide section's file in this repository, on GitHub. */
+export function editGuideTranslation(locale: Locale, id: string): string {
+  return `${siteRepo}/blob/main/${translationDir(locale)}/${id}.md`
 }
 
 /** The header's three links in one locale. GitHub is an icon beside them. */

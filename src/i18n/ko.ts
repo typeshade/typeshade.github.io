@@ -454,7 +454,8 @@ export const ko: Copy = {
     contents: '목차',
     sectionTitle: (title: string) => `${title}, TypeShade 작성 가이드`,
     sections,
-    note: `커밋 ${facts.pinnedCommit}의 [AUTHORING.md](guideSource)를 그대로 옮긴 것으로, 본문은 아직 영어입니다. 패키지는 ${facts.nextVersion}에서 쓸 \`typeshade\`라는 이름으로 가져옵니다.`,
+    note: `커밋 ${facts.pinnedCommit}의 [AUTHORING.md](guideSource)를 한국어로 옮긴 것입니다. 패키지는 ${facts.nextVersion}에서 쓸 \`typeshade\`라는 이름으로 가져옵니다.`,
+    noteUntranslated: `커밋 ${facts.pinnedCommit}의 [AUTHORING.md](guideSource)를 그대로 옮긴 것으로, 이 절의 본문은 아직 영어입니다. 패키지는 ${facts.nextVersion}에서 쓸 \`typeshade\`라는 이름으로 가져옵니다.`,
   },
   notFound: {
     title: '페이지를 찾을 수 없음, TypeShade',

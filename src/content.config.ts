@@ -8,6 +8,7 @@ import { defineCollection } from 'astro:content'
 import type { Loader } from 'astro/loaders'
 import { z } from 'astro/zod'
 import { GUIDE_FILE, guideSections } from './lib/guide.ts'
+import { guideTranslations, translationDir } from './lib/guide-translations.ts'
 import { apiLoader } from './lib/api-loader.ts'
 
 const SECTIONS_MIN = 10
@@ -29,9 +30,33 @@ const authoring: Loader = {
   },
 }
 
+// A translation of the guide: the same section ids, the body from content/guide/<locale>/.
+// The reader (src/lib/guide-translations.ts) refuses a file whose recorded English hash is
+// not the pinned section's, so a stale translation stops the build. A section with no file is
+// shown in English on that locale, under the note that says so.
+const translated = (locale: string): Loader => ({
+  name: `authoring-guide-${locale}`,
+  load: async ({ store, renderMarkdown, logger }) => {
+    const entries = guideTranslations(locale)
+    store.clear()
+    for (const t of entries.values()) {
+      const fileURL = pathToFileURL(path.resolve(process.cwd(), t.file))
+      const data = { order: t.order, sourceLine: t.sourceLine, source: t.source }
+      store.set({ id: t.id, data, body: t.body, rendered: await renderMarkdown(t.body, { fileURL }) })
+    }
+    const missing = guideSections.filter((s) => !entries.has(s.id)).map((s) => s.id)
+    if (missing.length) logger.warn(`${locale}: ${missing.length} section(s) without a translation, shown in English: ${missing.join(', ')}`)
+    logger.info(`${entries.size} sections from ${translationDir(locale)}`)
+  },
+})
+
 export const collections = {
   // The API reference: one entry per public export, markdown fields rendered to HTML.
   api: defineCollection({ loader: apiLoader() }),
+  guideKo: defineCollection({
+    loader: translated('ko'),
+    schema: z.object({ order: z.number(), sourceLine: z.number(), source: z.string() }),
+  }),
   guide: defineCollection({
     loader: authoring,
     schema: z.object({

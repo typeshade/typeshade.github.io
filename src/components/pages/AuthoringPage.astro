@@ -1,13 +1,14 @@
 ---
-// One section of the authoring guide, rendered from the compiler's AUTHORING.md at the
-// pinned commit. The body is English on every locale; the title, the description and the rest
-// of the chrome come from the language's own guide.sections map. The section's own heading is
-// dropped from the body, because the page's h1 carries it.
+// One section of the authoring guide. The English body is the compiler's AUTHORING.md at the
+// pinned commit. Another language shows its own translation from content/guide/<locale>/ when
+// the section has one, and the English body under a note that says so when it does not. The
+// title, the description and the chrome come from the language's guide.sections map. The
+// section's own heading is dropped from the body, because the page's h1 carries it.
 import { getEntry, render } from 'astro:content'
 import Docs from '../../layouts/Docs.astro'
 import Rich from '../Rich.astro'
 import { assertGuideSections, copyFor, guideSection, type Locale } from '../../i18n/index.ts'
-import { editGuide, links } from '../../lib/links.ts'
+import { editGuide, editGuideTranslation, links } from '../../lib/links.ts'
 
 interface Props {
   locale: Locale
@@ -18,10 +19,12 @@ const { locale, section } = Astro.props
 const g = copyFor(locale).guide
 const entry = await getEntry('guide', section)
 if (!entry) throw new Error(`[guide] AUTHORING.md has no section '${section}'`)
-const { Content, headings } = await render(entry)
+const translated = locale === 'ko' ? await getEntry('guideKo', section) : undefined
+const source = translated ?? entry
+const { Content, headings } = await render(source)
 // The cross-links the remark plugin adds name the English reference; a Korean page keeps the
 // reader in Korean chrome by prefixing them in the rendered HTML.
-const localized = locale === 'en' ? null : (entry.rendered?.html ?? '').replace(/href="\/api\//g, `href="/${locale}/api/`)
+const localized = locale === 'en' ? null : (source.rendered?.html ?? '').replace(/href="\/api\//g, `href="/${locale}/api/`)
 
 // Every section is named and described in every language, and no language names one the
 // guide has dropped. A build stops here with the id that is missing or stale.
@@ -29,6 +32,7 @@ assertGuideSections()
 const overview = entry.id === 'overview'
 const named = overview ? undefined : guideSection(locale, entry.id)
 const title = named?.title ?? ''
+const note = translated || locale === 'en' ? g.note : g.noteUntranslated
 ---
 
 <Docs
@@ -37,10 +41,10 @@ const title = named?.title ?? ''
   title={overview ? g.title : g.sectionTitle(title)}
   description={overview ? g.description : named!.description}
   headings={headings}
-  editHref={editGuide(entry.data.sourceLine)}
-  bodyLang="en"
+  editHref={translated ? editGuideTranslation(locale, entry.id) : editGuide(entry.data.sourceLine)}
+  bodyLang={translated ? locale : 'en'}
 >
-  <p class="guide-note" lang={locale} data-pagefind-ignore><Rich text={g.note} locale={locale} /></p>
+  <p class="guide-note" lang={locale} data-pagefind-ignore><Rich text={note} locale={locale} /></p>
   {!overview && <h1>{title}</h1>}
   {localized === null ? <Content /> : <Fragment set:html={localized} />}
 </Docs>
