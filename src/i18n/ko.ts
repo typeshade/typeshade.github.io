@@ -209,7 +209,7 @@ export const ko: Copy = {
       before: '',
       accent: 'TypeShade',
       after: '',
-      subtitle: 'TypeScript 셰이더 라이브러리',
+      subtitle: '검증 가능한 TypeScript 셰이더 라이브러리',
       tagline: `셰이더를 TypeScript로 한 번 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 모듈을 CPU에서 배정밀도로 돌려, 컴파일러가 낸 결과를 그 값과 맞춰 볼 수 있습니다.`,
       getStarted: '시작하기',
       why: '왜 TypeShade인가',

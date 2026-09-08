@@ -174,7 +174,7 @@ export const en = {
       before: '',
       accent: 'TypeShade',
       after: '',
-      subtitle: 'TypeScript shader library',
+      subtitle: 'The verifiable TypeScript shader library',
       tagline: `A TypeScript library that writes a shader once and emits WGSL and ${glsl}. The same module runs on the CPU in double precision, so the compiler's output can be checked.`,
       getStarted: 'Get started',
       why: 'Why TypeShade',

@@ -2,6 +2,6 @@
 import { en } from '../i18n/en.ts'
 
 export const heroCopy = {
-  h1: 'TypeScript shader library',
+  h1: 'The verifiable TypeScript shader library',
   sub: en.front.hero.tagline,
 } as const

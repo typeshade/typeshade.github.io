@@ -44,8 +44,8 @@ enforces the parts that can be checked mechanically and runs at the start of eve
   frame every page. Under 48rem the header's links, the language menu and the dark-mode switch
   sit in a panel behind a menu button.
 - The front page is centred on a 960px measure: the name as the headline in the accent colour,
-  the category line under it (TypeScript shader library, the way react.dev sets its one line
-  under "React"), one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
+  the category line under it ("The verifiable TypeScript shader library", the way react.dev
+  sets its one line under "React" and vuejs.org attaches "Progressive"), one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
   it emits, three short points. Under 40rem the three links are a grid, Get started across the
   top; the two code frames stack under 48rem. The layout follows vuejs.org's front page.
 - Every other page is one content column, 740px, left-aligned, with code blocks and figures at

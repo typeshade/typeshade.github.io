@@ -15,7 +15,7 @@ one design document; this skill is the working procedure on top of it.
 The site follows the shapes readers already know, and nothing else:
 
 - **Front page**: vuejs.org, with react.dev's headline: the name in the accent colour, the
-  category line under it (TypeScript shader library), one sentence, three buttons (Get
+  category line under it (The verifiable TypeScript shader library), one sentence, three buttons (Get
   started, Why TypeShade, Examples), the live shader, three short
   points, one line on the release state. No lists of features, no long prose.
 - **Header**: VitePress. Name on the left; Guide, API and Examples; then a language menu (globe
