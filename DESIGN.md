@@ -95,3 +95,4 @@ llms.txt. Headings are single nouns or short noun phrases: Motivation, Checks, Q
 - `src/lib/examples.ts`: every number, and that the pinned compiler still matches the copy.
 - `src/pages/llms.txt.ts`: every numeral in `/llms.txt` exists in `facts`.
 - `scripts/artifacts.mjs`: og.png, the icons and the stills match their committed hashes.
+- `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).

@@ -16,7 +16,8 @@
     "capture:og": "OG_REBASELINE=1 astro build && bun scripts/capture-og.ts",
     "capture": "bun run build:icons && bun run capture:stills && bun run capture:og",
     "qa:links": "node scripts/check-http-links.mjs dist",
-    "qa:seo": "node scripts/check-seo.mjs dist"
+    "qa:seo": "node scripts/check-seo.mjs dist",
+    "qa:openseo": "bun scripts/openseo-audit.mts dist"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -29,7 +30,11 @@
   },
   "devDependencies": {
     "@webgpu/types": "^0.1.72",
-    "typescript": "^5.6.3"
+    "fast-xml-parser": "^5.4.1",
+    "htmlparser2": "^10.1.0",
+    "robots-parser": "^3.0.1",
+    "typescript": "^5.6.3",
+    "zod": "^4.1.12"
   },
   "engines": {
     "node": ">=22"

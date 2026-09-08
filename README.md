@@ -59,5 +59,12 @@ PLAYWRIGHT_CHROMIUM=/path/to/chrome \
 - `bun run qa:links` resolves every off-site URL in `dist/`. A 404 or 410 fails the deploy;
   a 403, 429 or timeout only warns, because a rate-limited runner cannot tell a dead URL from a
   live one.
+- `bun run qa:seo` reads every page in `dist/`: title and description lengths, canonical and
+  sitemap agreement, alternates, one `h1`, `alt` on every image, `noindex` on the 404 only, and
+  no internal link without a trailing slash.
+- `bun run qa:openseo` crawls `dist/` with the site-audit engine of
+  [OpenSEO](https://github.com/every-app/open-seo), checked out at a pinned commit under
+  `node_modules/.cache`, serving the files the way GitHub Pages does. A warning or critical
+  issue fails the deploy.
 
 `DESIGN.md` is the one document about how the page is written and designed.

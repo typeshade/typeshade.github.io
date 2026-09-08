@@ -7,8 +7,11 @@ import path from 'node:path'
 
 const dist = process.argv[2] ?? 'dist'
 const SITE = 'https://typeshade.dev'
+// The same bounds OpenSEO's page reporters use (scripts/openseo-audit.mts runs those too).
 const TITLE_MAX = 60
+const TITLE_MIN = 10
 const DESCRIPTION_MAX = 160
+const DESCRIPTION_MIN = 70
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -43,8 +46,10 @@ for (const file of pages) {
 
   if (!title) fail('no title')
   else if (title.length > TITLE_MAX) fail(`title is ${title.length} characters, over ${TITLE_MAX}`)
+  else if (title.length < TITLE_MIN) fail(`title is ${title.length} characters, under ${TITLE_MIN}`)
   if (!description) fail('no description')
   else if (description.length > DESCRIPTION_MAX) fail(`description is ${description.length} characters, over ${DESCRIPTION_MAX}`)
+  else if (!isNotFound && description.length < DESCRIPTION_MIN) fail(`description is ${description.length} characters, under ${DESCRIPTION_MIN}`)
   if (!canonical) fail('no canonical')
   else if (!isNotFound && !canonical.endsWith('/')) fail(`canonical ${canonical} does not end in a slash`)
   if (ogTitle !== title) fail(`og:title "${ogTitle}" differs from the title`)

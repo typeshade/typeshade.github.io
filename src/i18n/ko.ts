@@ -121,7 +121,7 @@ export const ko: Copy = {
 
   checks: {
     title: 'TypeShade 검증: CPU 오라클, 컴파일 게이트, 골든 파일',
-    description: 'TypeShade의 CI가 푸시마다 실행하는 것: CPU 오라클, Tint와 WebGL2에서 도는 컴파일 게이트, 골든 파일.',
+    description: 'TypeShade의 CI가 푸시마다 실행하는 것: f64 CPU 오라클, Tint와 실제 WebGL2 컨텍스트에서 도는 컴파일 게이트, 출력마다의 골든 파일.',
     h1: '검증',
     intro: '저장소의 CI는 푸시와 풀 리퀘스트마다 [CI 워크플로](ciGates)에서 다음을 실행합니다.',
     items: [
@@ -151,7 +151,7 @@ export const ko: Copy = {
 
   examples: {
     title: `TypeShade 예제 ${facts.examples}개, GLSL 출력, 에뮬레이션 f64`,
-    description: `TypeShade 예제 ${facts.examples}개, gradient 패스의 ${glsl} 출력, 에뮬레이션 배정밀도 데모.`,
+    description: `TypeShade 예제 ${facts.examples}개와 출력을 인쇄하는 명령, gradient 패스의 ${glsl} 출력, 에뮬레이션 배정밀도의 딥 줌 데모.`,
     h1: '예제',
     intro: `저장소에는 실행 가능한 예제가 ${facts.examples}개 있습니다. 지도 관련 패스, ShaderToy 시절의 화면 공간 효과, 에뮬레이션 배정밀도 계열, 컴퓨트 커널 하나를 다룹니다. 그중 ${facts.bothTargets}개가 한 소스에서 WGSL과 ${glsl}을 모두 냅니다. 컴퓨트 커널은 ${glsl}로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL과 리플렉션만 내고, WebGL2 경로는 선택형 에뮬레이션입니다. ${facts.fp64Examples}개가 에뮬레이션 배정밀도를 씁니다. 렌더링 가능한 예제는 [examples/index.ts](examplesIndex)에서 export되며, [예제 디렉터리](examplesDir)에서 둘러볼 수 있습니다.`,
     printIntro: '아래 첫 번째 명령은 모든 예제의 WGSL, GLSL, 리플렉션을 인쇄하고, 두 번째는 id로 하나만 인쇄합니다.',
