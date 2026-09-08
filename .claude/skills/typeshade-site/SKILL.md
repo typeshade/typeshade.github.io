@@ -112,6 +112,13 @@ widen the layout.
 - `src/i18n/en.ts`, `src/i18n/ko.ts`, `src/i18n/index.ts`.
 - `src/lib/remark-package-name.mjs`: the guide's package name and links. An environment
   variable keeps the name the pinned compiler reads.
+- `src/lib/api.ts`, `src/lib/api-types.ts`, `src/lib/api-nav.ts`, `src/lib/api-loader.ts`: the
+  reference's data, its contract, its categories and pager order, and the content collection.
+  `bun run check:api` prints the categories and their counts and fails on a missing
+  description or a slug two exports share.
+- `src/lib/remark-api-links.mjs`: the first mention of an export's name in inline code on a
+  guide page, as a link to its reference page.
+- `src/components/pages/ApiReferencePage.astro`, `ApiIndexPage.astro`, `ApiCategoryPage.astro`.
 - `src/lib/guide.ts`, `src/content.config.ts`: AUTHORING.md cut into sections. Each section's
   title and description live in `guide.sections` in every dictionary; English derives them
   from the file, Korean writes them.

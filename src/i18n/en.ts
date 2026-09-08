@@ -1,6 +1,7 @@
 // English copy: the source text every translation follows. Every number comes from the
 // build (src/lib/examples.ts). Inline links are written as [text](key), where key names a
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
+import { API_CATEGORIES } from '../lib/api.ts'
 import { exampleFile, facts, hero, registryBlurbs } from '../lib/examples.ts'
 import { guideSections } from '../lib/guide.ts'
 import { typedError } from '../lib/typed-error.ts'
@@ -28,6 +29,12 @@ const sections: Record<string, { title: string; description: string }> = Object.
     }),
 )
 
+// The reference's categories, named and described where the entries are read, so the index
+// pages cannot drift from the categories the entries sit in. Korean writes its own.
+const apiCategories: Record<string, { name: string; summary: string }> = Object.fromEntries(
+  API_CATEGORIES.map((c) => [c.slug, { name: c.name, summary: c.summary }]),
+)
+
 export const en = {
   lang: 'en',
   /** How this locale names itself, shown in the language switch of other locales. */
@@ -41,7 +48,10 @@ export const en = {
   },
 
   nav: {
+    /** The accessible name of the header's own navigation, which a screen reader reads out. */
+    primary: 'Primary',
     guide: 'Guide',
+    api: 'API',
     examples: 'Examples',
     github: 'GitHub',
     llms: 'llms.txt',
@@ -89,10 +99,12 @@ export const en = {
       title: 'TypeShade API reference',
       description: 'Every public export of TypeShade on its own page: syntax, parameters, return value, examples and which targets support it.',
       h1: 'API reference',
-      intro: `Every export of the package, generated from the compiler at commit ${facts.pinnedCommit}. One page per function, type, interface and class.`,
+      intro: `Every export of the typeshade package, generated from the compiler at commit ${facts.pinnedCommit}. One page per function, type, interface and class.`,
       reference: 'Reference',
       breadcrumbs: 'Breadcrumbs',
       pageTitle: (name: string) => `${name}, TypeShade API reference`,
+      categoryTitle: (name: string) => `${name} in the TypeShade API reference`,
+      categoryDescription: (name: string, summary: string) => `${name} in the TypeShade API reference. ${summary}`,
       pageDescription: (name: string, kind: string, category: string, summary: string) => `${name}, a ${kind.toLowerCase()} in ${category}. ${summary}`,
       kindLine: (kind: string, category: string) => `${kind} in ${category}`,
       note: `The signature, the description and the examples come from the compiler's own source at commit ${facts.pinnedCommit}.`,
@@ -114,15 +126,16 @@ export const en = {
       source: 'Source',
       optional: 'optional',
       readonly: 'read only',
+      deprecated: 'deprecated',
       previewNote: 'Template preview. The words on this page are a fixture; the compiler supplies the real ones.',
-      undocumented: 'No description in the source yet.',
       line: (n: number) => `line ${n}`,
       atCommit: (sha: string) => `at commit ${sha}`,
       members: (n: number) => `${n} members`,
+      kindMeta: 'Kind',
       kinds: { function: 'Function', constant: 'Constant', interface: 'Interface', type: 'Type', class: 'Class' },
       targetNames: { wgsl: 'WGSL (WebGPU)', glsl: `${glsl} (WebGL2)`, cpu: 'CPU oracle' },
       support: { native: 'Supported', emulated: 'Emulated', stub: 'Stub', none: 'Not supported', 'n/a': 'Does not apply' },
-      categories: {} as Record<string, { name: string; summary: string }>,
+      categories: apiCategories,
     },
   },
   footer: {
@@ -147,6 +160,9 @@ export const en = {
       none: `${title} shader, written in TypeScript and compiled by TypeShade, rendered at build time.`,
     }),
   },
+
+  /** The copy button Expressive Code puts on every code block (ec.config.mjs). */
+  code: { copy: 'Copy to clipboard', copied: 'Copied' },
 
   install: { label: 'Submodule command' },
   diagnostic: {
@@ -196,7 +212,7 @@ export const en = {
     highlights: [
       {
         h: 'One source, two targets',
-        p: `One typed module emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file.`,
+        p: `One typed module emits WGSL for WebGPU through [\`emitModule()\`](apiEmitModule) and ${glsl} for WebGL2 through [\`emitGlslModule()\`](apiEmitGlsl). ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file.`,
       },
       {
         h: 'Checked against the CPU',
@@ -204,7 +220,7 @@ export const en = {
       },
       {
         h: 'Typed in the editor',
-        p: `A misspelt uniform field or a wrong-typed return is a TypeScript error in the editor. \`reflect()\` reads bind groups and ${facts.layoutStandards.join(' and ')} layouts from the same intermediate representation.`,
+        p: `A misspelt uniform field or a wrong-typed return is a TypeScript error in the editor. [\`reflect()\`](apiReflect) reads bind groups and ${facts.layoutStandards.join(' and ')} layouts from the same intermediate representation.`,
       },
     ],
   },
@@ -213,9 +229,9 @@ export const en = {
     description: 'Add TypeShade as a git submodule and follow the fragment stage of the gradient example to the WGSL it emits, with a note on the pre-release status.',
     h1: 'Quick start',
     installH: 'Install',
-      p1: `The package ships TypeScript source, so your build needs a toolchain that compiles it. This is the fragment stage of the gradient example, ${hero.authoredLines} lines as authored in \`${hero.file}\`:`,
+      p1: `The package ships TypeScript source, so your build needs a toolchain that compiles it. This is the fragment stage of the gradient example, declared with [\`fn\`](apiFn), ${hero.authoredLines} lines as authored in \`${hero.file}\`:`,
       p2: 'It emits this WGSL entry point:',
-      p3: `The ${glsl} stage for the same function, and the uniform layout [reflect()](reflectApi) recovers for it, are on the [examples page](examples). The [authoring guide](guide) covers the rest of the surface.`,
+      p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [authoring guide](guide) covers the rest of the surface.`,
     status: {
       h: 'Status',
       p: `Pre-release. The repository is at version ${facts.mirrorVersion}; ${facts.nextVersion} is the release the npm name [typeshade](npm) is reserved for, and the manifest and the imports are renamed at that tag. Issues are welcome; pull requests cannot be merged yet, because changes land upstream and this tree is fast-forwarded from there. [Watch releases](releases) to hear about ${facts.nextVersion}.`,
@@ -277,7 +293,7 @@ export const en = {
     authorTime: {
       h: 'At author time',
       p: 'The uniform block is declared once, and every field read is typed against that declaration. Misspell one and TypeScript says so in the editor, before a string reaches a GPU.',
-      caption: `The wrong read on line ${err.wrongLine}, the diagnostic it produces, and the ${std} layout [reflect()](reflectApi) recovers for the block it reads from: ${err.layout.size} bytes over ${err.layout.fields.length} fields. The gap after the first field is alignment.`,
+      caption: `The wrong read on line ${err.wrongLine}, the diagnostic it produces, and the ${std} layout [\`reflect()\`](apiReflect) recovers for the block it reads from: ${err.layout.size} bytes over ${err.layout.fields.length} fields. The gap after the first field is alignment.`,
     },
   },
 
@@ -296,7 +312,7 @@ export const en = {
     glsl: {
       h: `The gradient pass in ${glsl}`,
       p1: `The front page shows the fragment stage of \`${hero.file}\` and the WGSL entry point it emits. The same function emits this ${glsl} \`main\`:`,
-      p2: `The whole module is ${hero.emit.wgslLines} lines of WGSL; the GLSL vertex stage is ${hero.emit.glslVertexLines} lines and the fragment stage ${hero.emit.glslFragmentLines}. Uniform types, byte offsets, bind-group entries and entry signatures come from [reflect()](reflectApi), which reads the same intermediate representation and stays off the emit path, so a host can pack its uniform buffer from that layout. The [checks page](checks) shows the reflected layout of a uniform block beside the diagnostic for a misspelt field.`,
+      p2: `The whole module is ${hero.emit.wgslLines} lines of WGSL; the GLSL vertex stage is ${hero.emit.glslVertexLines} lines and the fragment stage ${hero.emit.glslFragmentLines}. Uniform types, byte offsets, bind-group entries and entry signatures come from [\`reflect()\`](apiReflect), which reads the same intermediate representation and stays off the emit path, so a host can pack its uniform buffer from that layout. The [checks page](checks) shows the reflected layout of a uniform block beside the diagnostic for a misspelt field.`,
     },
     f64: {
       h: 'Emulated double precision',

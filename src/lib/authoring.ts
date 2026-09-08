@@ -35,13 +35,17 @@ export function titleOf(heading: string): string {
 }
 
 /** Markdown to one line of prose: no code marks, no links, no asides, no dashes. */
-function plain(markdown: string): string {
+export function plain(markdown: string): string {
   return markdown
-    // Odd parts are code spans, where brackets and parentheses are part of the code.
+    // Odd parts are code spans, where brackets, parentheses and stars are part of the code:
+    // `Math.*` keeps its star, and only the prose around it loses its emphasis marks.
     .split(/(`[^`]*`)/)
-    .map((part, i) => (i % 2 === 1 ? part.replace(/`/g, '') : part.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[[\]]/g, '')))
+    .map((part, i) =>
+      i % 2 === 1
+        ? part.replace(/`/g, '')
+        : part.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[[\]]/g, '').replace(/\*+/g, ''),
+    )
     .join('')
-    .replace(/\*+/g, '')
     .replace(ISSUE, '')
     .replace(/\s+/g, ' ')
     // An aside the sentence reads without: a pair of dashes, or brackets around more than a

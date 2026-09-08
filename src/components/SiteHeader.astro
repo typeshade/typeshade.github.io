@@ -34,7 +34,7 @@ const ordered = [...languages.filter((l) => l.current), ...others]
     </a>
 
     <div class="site-bar">
-      <nav class="site-nav" aria-label="Primary">
+      <nav class="site-nav" aria-label={t.nav.primary}>
         {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
       </nav>
       <div class="site-tools">

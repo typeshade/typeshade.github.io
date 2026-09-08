@@ -17,7 +17,7 @@ const TITLE = 'typed-error-shader.ts'
 
 <div data-diagnostic>
   <CodeFrame label={t.frameLabel}>
-    <Code code={snippet} lang="ts" title={TITLE} meta={`{${wrongLine}}`} />
+    <Code code={snippet} lang="ts" title={TITLE} meta={`{${wrongLine}}`} locale={locale} />
   </CodeFrame>
   <p class="diagnostic">
     <b>{t.error(diagnostic.code, diagnostic.line, diagnostic.column)}</b> {diagnostic.message}

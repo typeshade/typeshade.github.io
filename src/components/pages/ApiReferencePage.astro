@@ -7,9 +7,12 @@
 // pinned commit; the words around it come from the dictionary (docs.api).
 import { Code } from 'astro-expressive-code/components'
 import Docs, { type Heading } from '../../layouts/Docs.astro'
+import ApiType from '../ApiType.astro'
 import Rich from '../Rich.astro'
+import { PACKAGE_NAME } from '../../lib/api.ts'
 import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { apiSiblings } from '../../lib/api-nav.ts'
 import { facts } from '../../lib/examples.ts'
 import { slugify } from '../../lib/slug.ts'
 
@@ -21,15 +24,55 @@ interface Props {
   path: string
 }
 const { locale, entry, path } = Astro.props
-const html = entry.html
+// Markdown is rendered once, so its links name the English reference; a Korean page keeps
+// the reader in Korean chrome by prefixing them.
+const localize = (s: string | undefined): string => (!s ? '' : locale === 'en' ? s : s.replace(/href="\/api\//g, `href="/${locale}/api/`))
+const raw = entry.html
+const html = {
+  summary: localize(raw.summary),
+  description: localize(raw.description),
+  parameters: raw.parameters.map(localize),
+  returns: localize(raw.returns),
+  exceptions: raw.exceptions.map(localize),
+  examples: raw.examples.map(localize),
+  targets: raw.targets.map(localize),
+  members: raw.members.map(localize),
+}
+assertApiCategories()
 const t = copyFor(locale)
 const a = t.docs.api
-const category = a.categories[entry.category.slug] ?? { name: entry.category.name, summary: entry.category.summary }
+const category = apiCategoryCopy(locale, entry.category.slug)
 const callable = entry.kind === 'function' || entry.kind === 'constant'
 const heading = callable && entry.signatures.length > 0 ? `${entry.name}()` : entry.name
 const title = a.pageTitle(entry.name)
-const description = locale === 'en' ? entry.summary : a.pageDescription(entry.name, a.kinds[entry.kind], category.name, entry.summary)
+// The meta description. A JSDoc summary of one short sentence is under the 70 characters the
+// SEO checks want, so the category's own sentence fills it out, and a long one is cut at 160.
+const META_MIN = 70
+const META_MAX = 160
+const composed = a.pageDescription(entry.name, a.kinds[entry.kind], category.name, entry.summary)
+const filled = composed.length < META_MIN ? `${composed} ${category.summary}` : composed
+const description = filled.length <= META_MAX ? filled : `${filled.slice(0, META_MAX - 1).replace(/\s+\S*$/, '')}…`
+// The line a reader types before using any of this. Every entry is a named export of the
+// package's barrel, and a type is imported as one.
+const typeOnly = entry.kind === 'interface' || entry.kind === 'type'
+const importLine = `import ${typeOnly ? 'type ' : ''}{ ${entry.name} } from '${PACKAGE_NAME}'`
 const sourceHref = `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/${entry.source.file}#L${entry.source.line}`
+// Previous and next walk this category alphabetically, then carry on into the next category,
+// the way the sidebar lists them. The pages of the reference are not in the sidebar's flat
+// list until their category is open, so the page hands the pager both ends itself.
+const siblings = apiSiblings(entry.slug)
+const page = (slug: string): string => localePath(locale, `/api/${slug}/`)
+const previous = siblings.previous
+  ? { label: siblings.previous.name, href: page(siblings.previous.slug) }
+  : { label: category.name, href: page(entry.category.slug) }
+const next = siblings.next
+  ? { label: siblings.next.name, href: page(siblings.next.slug) }
+  : siblings.nextCategory
+    ? { label: apiCategoryCopy(locale, siblings.nextCategory.category.slug).name, href: page(siblings.nextCategory.category.slug) }
+    : undefined
+// What a search result calls the page: the name with its kind, so a hit reads abs (function).
+// Pagefind reads one key from one attribute, so the kind itself is recorded on the kind line.
+const meta = `title:${entry.name} (${a.kinds[entry.kind].toLowerCase()})`
 
 const withHtml = entry.members.map((m, i) => ({ ...m, html: html.members[i] ?? '' }))
 const properties = withHtml.filter((m) => m.kind === 'property')
@@ -52,32 +95,53 @@ const sections = [
   { id: 'see-also', label: a.seeAlso, show: entry.seeAlso.length > 0 },
   { id: 'source', label: a.source, show: true },
 ].filter((s) => s.show)
-const headings: Heading[] = [
-  ...sections.map((s) => ({ depth: 2, slug: s.id, text: s.label })),
-  ...entry.examples.map((e) => ({ depth: 3, slug: `example-${slugify(e.title)}`, text: e.title })),
-]
+// The outline follows the page: each example sits under the Examples heading it belongs to.
+const headings: Heading[] = sections.flatMap((s) => [
+  { depth: 2, slug: s.id, text: s.label },
+  ...(s.id === 'examples' ? entry.examples.map((e) => ({ depth: 3, slug: `example-${slugify(e.title)}`, text: e.title })) : []),
+])
+// A guide section is named the way the sidebar names it, so a Korean page reads Korean here.
+const guideLabel = (link: { label: string; href: string }): string => {
+  const id = /\/guide\/authoring\/([^/]+)\//.exec(link.href)?.[1]
+  if (!id) return t.docs.authoringGuide
+  return t.guide.sections[id]?.title ?? link.label
+}
 const supportLabel = (s: string) => a.support[s as keyof typeof a.support] ?? s
 const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames] ?? s
 ---
 
-<Docs locale={locale} path={path} title={title} description={description} headings={headings} editHref={sourceHref} bodyLang="en" noindex={entry.preview === true}>
+<Docs
+  locale={locale}
+  path={path}
+  title={title}
+  description={description}
+  headings={headings}
+  editHref={sourceHref}
+  bodyLang="en"
+  noindex={entry.preview === true}
+  openCategory={entry.category.slug}
+  previous={previous}
+  next={next}
+  meta={meta}
+>
   {entry.preview && <p class="api-preview" lang={locale}>{a.previewNote}</p>}
   <nav class="api-crumbs" aria-label={a.breadcrumbs} lang={locale}>
     <a href={localePath(locale, '/api/')}>{a.reference}</a>
     <span aria-hidden="true">›</span>
     <a href={localePath(locale, `/api/${entry.category.slug}/`)}>{category.name}</a>
   </nav>
-  <h1><code>{heading}</code></h1>
-  <p class="api-kind" lang={locale}>{a.kindLine(a.kinds[entry.kind], category.name)}</p>
-  <p class="api-summary"><Fragment set:html={html.summary} /></p>
+  <h1><code>{heading}</code>{entry.deprecated && <span class="api-optional" lang={locale}>{a.deprecated}</span>}</h1>
+  <p class="api-kind" lang={locale} data-pagefind-meta={`${a.kindMeta}:${a.kinds[entry.kind]}`}>{a.kindLine(a.kinds[entry.kind], category.name)}</p>
+  <p class="api-summary">{entry.summary}</p>
+  <p class="api-import"><code>{importLine}</code></p>
   <p class="guide-note" lang={locale}><Rich text={a.note} locale={locale} /></p>
 
   {sections.some((s) => s.id === 'syntax') && (
     <section>
       <h2 id="syntax" lang={locale}>{a.syntax}</h2>
       {entry.signatures.length > 0
-        ? <Code code={entry.signatures.map((s) => s.text).join('\n')} lang="ts" />
-        : <Code code={entry.declaration} lang="ts" />}
+        ? <Code code={entry.signatures.map((s) => s.text).join('\n')} lang="ts" locale={locale} wrap />
+        : <Code code={entry.declaration} lang="ts" locale={locale} wrap />}
     </section>
   )}
 
@@ -87,8 +151,8 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
       <dl class="api-list">
         {entry.parameters.map((p, i) => (
           <>
-            <dt><code>{p.name}</code>{p.optional && <span class="api-optional" lang={locale}>{a.optional}</span>} <code class="api-type">{p.type}</code></dt>
-            <dd>{html.parameters[i] ? <Fragment set:html={html.parameters[i]} /> : <span class="api-empty" lang={locale}>{a.undocumented}</span>}</dd>
+            <dt><code>{p.name}</code>{p.optional && <span class="api-optional" lang={locale}>{a.optional}</span>} <ApiType locale={locale} text={p.type} self={entry.name} /></dt>
+            {html.parameters[i] && <dd><Fragment set:html={html.parameters[i]} /></dd>}
           </>
         ))}
       </dl>
@@ -98,7 +162,7 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
   {entry.returns && (
     <section>
       <h2 id="return-value" lang={locale}>{a.returnValue}</h2>
-      <p><code class="api-type">{entry.returns.type}</code></p>
+      <p><ApiType locale={locale} text={entry.returns.type} self={entry.name} /></p>
       {html.returns && <Fragment set:html={html.returns} />}
     </section>
   )}
@@ -131,7 +195,7 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
         <section>
           <h3 id={`example-${slugify(e.title)}`}>{e.title}</h3>
           {html.examples[i] && <Fragment set:html={html.examples[i]} />}
-          <Code code={e.code} lang={e.lang ?? 'ts'} />
+          <Code code={e.code} lang={e.lang ?? 'ts'} locale={locale} />
         </section>
       ))}
     </section>
@@ -161,8 +225,8 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
       <dl class="api-list">
         {constructors.map((m) => (
           <>
-            <dt><code>{m.type}</code></dt>
-            <dd>{m.html && <Fragment set:html={m.html} />}</dd>
+            <dt><code>{m.type}</code>{m.deprecated && <span class="api-optional" lang={locale}>{a.deprecated}</span>}</dt>
+            {m.html && <dd><Fragment set:html={m.html} /></dd>}
           </>
         ))}
       </dl>
@@ -175,8 +239,8 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
       <dl class="api-list">
         {properties.map((m) => (
           <>
-            <dt><code>{m.name}</code>{m.optional && <span class="api-optional" lang={locale}>{a.optional}</span>}{m.readonly && <span class="api-optional" lang={locale}>{a.readonly}</span>} <code class="api-type">{m.type}</code></dt>
-            <dd>{m.html ? <Fragment set:html={m.html} /> : <span class="api-empty" lang={locale}>{a.undocumented}</span>}</dd>
+            <dt><code>{m.name}</code>{m.optional && <span class="api-optional" lang={locale}>{a.optional}</span>}{m.readonly && <span class="api-optional" lang={locale}>{a.readonly}</span>}{m.deprecated && <span class="api-optional" lang={locale}>{a.deprecated}</span>} <ApiType locale={locale} text={m.type} self={entry.name} /></dt>
+            {m.html && <dd><Fragment set:html={m.html} /></dd>}
           </>
         ))}
       </dl>
@@ -189,8 +253,8 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
       <dl class="api-list">
         {methods.map((m) => (
           <>
-            <dt><code>{m.name}</code> <code class="api-type">{m.type}</code></dt>
-            <dd>{m.html ? <Fragment set:html={m.html} /> : <span class="api-empty" lang={locale}>{a.undocumented}</span>}</dd>
+            <dt><code>{m.name}</code>{m.deprecated && <span class="api-optional" lang={locale}>{a.deprecated}</span>} <ApiType locale={locale} text={m.type} self={entry.name} /></dt>
+            {m.html && <dd><Fragment set:html={m.html} /></dd>}
           </>
         ))}
       </dl>
@@ -200,7 +264,7 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
   {entry.guideSections.length > 0 && (
     <section lang={locale}>
       <h2 id="in-the-guide">{a.inGuide}</h2>
-      <ul>{entry.guideSections.map((l) => <li><a href={localePath(locale, l.href)}>{l.label}</a></li>)}</ul>
+      <ul>{entry.guideSections.map((l) => <li><a href={localePath(locale, l.href)}>{guideLabel(l)}</a></li>)}</ul>
     </section>
   )}
 

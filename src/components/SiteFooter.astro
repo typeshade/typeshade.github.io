@@ -3,7 +3,7 @@
 // was built from.
 import Rich from './Rich.astro'
 import { facts } from '../lib/examples.ts'
-import { links, sidebar } from '../lib/links.ts'
+import { docsPages, links } from '../lib/links.ts'
 import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts'
 
 interface Props {
@@ -15,7 +15,11 @@ const t = copyFor(locale)
 const columns = [
   {
     h: t.footer.docs,
-    items: [...sidebar(locale).flatMap((g) => g.items), { label: t.footer.readme, href: links.docs.href }],
+    items: [
+      ...docsPages(locale),
+      { label: t.docs.api.h1, href: localePath(locale, links.api.href) },
+      { label: t.footer.readme, href: links.docs.href },
+    ],
   },
   {
     h: t.footer.project,

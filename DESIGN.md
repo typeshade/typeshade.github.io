@@ -87,6 +87,13 @@ why lives on its own page.
     on both backends, the typed diagnostic) and `/guide/examples/`, which opens with a table of
     every example in the compiler's registry, grouped by category, each row linking to its
     source file at the pinned commit and naming the targets it emits.
+- `/api/…`: the API reference, on the same documentation layout. `/api/` lists the categories with
+  the number of exports in each and one line on what each holds; `/api/<category>/` lists that
+  category's exports alphabetically with the sentence each opens with; `/api/<export>/` is one
+  page per public export. A category's slug and an export's slug share the space under `/api/`,
+  so the build asserts that no category takes a page an export needs (the Reflection category
+  is `/api/reflection-api/`, because the compiler exports an interface called Reflection).
+  Previous and next walk a category alphabetically and carry on into the next category.
 - The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect.
 
 Search is Pagefind. The build runs it over `dist/` after Astro, so `dist/pagefind/` holds the
@@ -98,8 +105,8 @@ per `html lang`, so a Korean page is searched in Korean. The magnifier in the he
 dialog that loads the index on its first open, and Pagefind's UI is dressed in the site's
 tokens through the CSS variables its stylesheet reads.
 
-The header is the one every library site has: the name on the left; Guide and Examples; then
-search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
+The header is the one every library site has: the name on the left; Guide, API and Examples;
+then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 columns (Documentation, Project, Languages), then the licence, the copyright and the commit the
 page was built from. Headings are single nouns or short noun phrases: Motivation, Verification, Quick
 start.
@@ -141,10 +148,23 @@ nothing to show:
 | Specifications | In the guide: the guide sections that mention the name | `src/lib/authoring.ts` |
 | Source | file, line and commit on GitHub | the declaration |
 
-The sidebar shows the category index pages under a Reference group and, on a page of the
-reference, that category's members under it. On a Korean page the chrome is Korean and the
-body English, as on the guide; the note above the body says so. The contract between the
-generator and the page is `src/lib/api-types.ts`.
+Under the summary every page prints the line a reader imports the export with, built from the
+barrel and the release name (`import { emitModule } from 'typeshade'`), and a type is imported
+as a type. A parameter, a return value and a property show their type as a link to the page of
+every name in it that has one.
+
+The sidebar's fourth group, Reference, opens with the reference's own index and then lists the
+category index pages; on a page of one
+category, that category's members follow it one level in, so the sidebar never carries every
+export at once, and the page a reader is on is scrolled into view inside the sidebar's own
+scroller. The guide links into the reference the way MDN links a function's first mention: the
+first inline code on a guide page that is exactly a public export's name becomes a link to
+that export's page (`src/lib/remark-api-links.mjs`, over the guide's markdown only). A
+reference page records its kind for the search index, so a result reads "abs (function)". On a
+Korean page the chrome is Korean and the body English, as on the guide; the note above the
+body says so. The contract between the generator and the page is `src/lib/api-types.ts`, and
+the words around it are `docs.api` in every dictionary, with a name and a sentence for every
+category the extractor defines.
 
 ## Languages
 
@@ -181,4 +201,7 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - `src/lib/examples.ts`: every number, and that the pinned compiler still matches the copy.
 - `src/pages/llms.txt.ts`: every numeral in `/llms.txt` exists in `facts`.
 - `scripts/artifacts.mjs`: og.png, the icons and the stills match their committed hashes.
+- `scripts/check-api.ts` (`bun run check:api`): the reference data read from the compiler, before it
+  reaches a page. A missing description, a slug two exports share, an export with no category, or a
+  text that names a consumer fails; a `{@link}` target the barrel does not export is a warning.
 - `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).

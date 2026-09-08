@@ -6,10 +6,11 @@
   "description": "typeshade.dev, the TypeShade website",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
+    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && bun scripts/check-api.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
     "preview": "astro preview",
     "check:style": "node scripts/check-style.mjs",
     "check:copy": "bun scripts/check-copy.ts",
+    "check:api": "bun scripts/check-api.ts",
     "check:types": "tsc --noEmit -p tsconfig.json",
     "build:icons": "bun scripts/build-icons.ts",
     "build:fonts": "python3 scripts/build-fonts.py",

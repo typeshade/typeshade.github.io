@@ -54,11 +54,11 @@ const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(
     <p><Rich text={f.code.p} locale={locale} /></p>
     <div class="code-pair">
       <CodeFrame label={t.codeLabels.authored}>
-        <Code code={hero.authored} lang="ts" title={hero.file} />
+        <Code code={hero.authored} lang="ts" title={hero.file} locale={locale} />
       </CodeFrame>
       <CodeFrame label={t.codeLabels.wgsl}>
         {/* The emitted WGSL has no file of its own, so the title bar names the language. */}
-        <Code code={hero.wgsl} lang="wgsl" title="WGSL" />
+        <Code code={hero.wgsl} lang="wgsl" title="WGSL" locale={locale} />
       </CodeFrame>
     </div>
     <p class="front-code-more"><Rich text={f.code.more} locale={locale} /></p>

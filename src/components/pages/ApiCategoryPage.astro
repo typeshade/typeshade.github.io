@@ -1,0 +1,58 @@
+---
+// One category of the reference: every export in it, alphabetically, with its kind and the
+// sentence its own JSDoc opens with. MDN's landing page for a group of interfaces has the
+// same shape. The sidebar opens this category, so the members are in reach from here on.
+import Docs from '../../layouts/Docs.astro'
+import Rich from '../Rich.astro'
+import { apiCategories, apiCategory } from '../../lib/api-nav.ts'
+import { editCopy, links } from '../../lib/links.ts'
+import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
+
+interface Props {
+  locale: Locale
+  /** The category's slug, for example 'authoring'. */
+  slug: string
+}
+const { locale, slug } = Astro.props
+assertApiCategories()
+const t = copyFor(locale)
+const a = t.docs.api
+const named = apiCategoryCopy(locale, slug)
+const { members } = apiCategory(slug)
+const all = apiCategories()
+const at = all.findIndex((c) => c.category.slug === slug)
+const previous = at > 0 ? all[at - 1]!.category.slug : undefined
+const first = members[0]
+---
+
+<Docs
+  locale={locale}
+  path={`/api/${slug}/`}
+  title={a.categoryTitle(named.name)}
+  description={a.categoryDescription(named.name, named.summary)}
+  editHref={editCopy(locale)}
+  openCategory={slug}
+  previous={previous
+    ? { label: apiCategoryCopy(locale, previous).name, href: localePath(locale, `/api/${previous}/`) }
+    : { label: a.h1, href: localePath(locale, links.api.href) }}
+  next={first ? { label: first.name, href: localePath(locale, `/api/${first.slug}/`) } : undefined}
+>
+  <nav class="api-crumbs" aria-label={a.breadcrumbs} lang={locale}>
+    <a href={localePath(locale, links.api.href)}>{a.reference}</a>
+  </nav>
+  <h1 lang={locale}>{named.name}</h1>
+  <p class="api-kind" lang={locale}>{a.members(members.length)}</p>
+  <p class="api-summary" lang={locale}>{named.summary}</p>
+  <p class="guide-note" lang={locale}><Rich text={a.note} locale={locale} /></p>
+  <dl class="api-list api-index">
+    {members.map((m) => (
+      <>
+        <dt>
+          <a href={localePath(locale, `/api/${m.slug}/`)}><code>{m.name}</code></a>
+          <span class="api-type" lang={locale}>{a.kinds[m.kind]}</span>
+        </dt>
+        <dd lang="en">{m.summary}</dd>
+      </>
+    ))}
+  </dl>
+</Docs>
