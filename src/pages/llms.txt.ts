@@ -23,6 +23,7 @@ const absolute = (href: string) => (href.startsWith('/') ? `https://typeshade.de
 
 const table = [
   { dest: links.motivation, note: 'why one source for two shader languages' },
+  { dest: links.quickStart, note: 'the submodule command, a complete shader file and the WGSL it emits' },
   { dest: links.checks, note: 'what CI runs on every push' },
   { dest: links.examples, note: `the ${facts.examples} examples, the GLSL emit and the emulated-double demo` },
   { dest: links.guide, note: 'the authoring guide' },
@@ -32,7 +33,7 @@ const table = [
     note: 'mirror; pull requests cannot be merged there yet; consume as a git submodule, its root is the package',
   },
   { dest: links.docs, note: "the repository's README" },
-  { dest: links.npm, note: '' },
+  { dest: links.npm, note: 'the reserved package name; not published yet' },
   { dest: links.commit, note: 'the commit every number below was measured at' },
 ] as const
 
@@ -42,7 +43,7 @@ const body = `# TypeShade
 
 ## Links
 
-${table.map((r) => `- ${r.dest.label}${r.note ? ` (${r.note})` : ''}: ${absolute(r.dest.href)}`).join('\n')}
+${table.map((r) => `- [${r.dest.label}](${absolute(r.dest.href)}): ${r.note}`).join('\n')}
 
 ## Measured at build time from the compiler pinned at ${facts.pinnedCommit}
 

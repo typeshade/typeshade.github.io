@@ -1,12 +1,13 @@
 ---
-// The submodule command, the authored fragment, the WGSL it emits, and the status note.
+// The submodule command, a complete runnable file (import to emit call), the WGSL it
+// emits, and the status note.
 import { Code } from 'astro-expressive-code/components'
 import Docs from '../../layouts/Docs.astro'
 import CodeFrame from '../CodeFrame.astro'
 import InstallCommand from '../InstallCommand.astro'
 import Rich from '../Rich.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
-import { hero } from '../../lib/examples.ts'
+import { hero, quickStartFile } from '../../lib/examples.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { slugify } from '../../lib/slug.ts'
 
@@ -19,13 +20,13 @@ const q = t.quickStart
 const headings = [q.installH, q.status.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 ---
 
-<Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description} headings={headings} editHref={editCopy(locale)}>
+<Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description} headings={headings} editHref={editCopy(locale, 'quickStart')}>
   <h1>{q.h1}</h1>
   <h2 id={slugify(q.installH)}>{q.installH}</h2>
   <InstallCommand locale={locale} />
   <p><Rich text={q.p1} locale={locale} /></p>
-  <CodeFrame label={t.codeLabels.authored}>
-    <Code code={hero.authored} lang="ts" title={hero.file} locale={locale} />
+  <CodeFrame label={t.codeLabels.quickStartFile}>
+    <Code code={quickStartFile.code} lang="ts" title="shader.ts" locale={locale} />
   </CodeFrame>
   <p>{q.p2}</p>
   <CodeFrame label={t.codeLabels.wgsl}>

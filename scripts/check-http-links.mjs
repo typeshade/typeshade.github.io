@@ -3,7 +3,7 @@
 // URL from a live one. A run in which every link warned exits 2, because it learned nothing.
 //
 // Usage: node scripts/check-http-links.mjs [dist-dir]
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 const dist = process.argv[2] ?? 'dist'
@@ -40,7 +40,16 @@ for (const file of files) {
 const urls = [...found.keys()].sort()
 console.log(`${urls.length} unique off-site URLs in ${dist}/`)
 
+// A link into this repository's own files on main (the edit links) resolves once the branch
+// merges; the file's presence in the working tree is the check, so a file this branch adds
+// never fails the build before it lands, and a link to a file that does not exist still does.
+const OWN_FILES = 'https://github.com/typeshade/typeshade.github.io/blob/main/'
+
 async function probe(url) {
+  if (url.startsWith(OWN_FILES)) {
+    const file = decodeURIComponent(url.slice(OWN_FILES.length).split('#')[0])
+    return existsSync(file) ? { verdict: 'ok', status: 200 } : { verdict: 'BROKEN', status: 404, note: 'no such file in this repository' }
+  }
   for (const method of ['HEAD', 'GET']) {
     const ac = new AbortController()
     const timer = setTimeout(() => ac.abort(), TIMEOUT_MS)

@@ -7,6 +7,7 @@ import Rich from '../Rich.astro'
 import { apiCategories, apiCategory } from '../../lib/api-nav.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { facts } from '../../lib/examples.ts'
 
 interface Props {
   locale: Locale
@@ -36,6 +37,11 @@ const first = members[0]
     ? { label: apiCategoryCopy(locale, previous).name, href: localePath(locale, `/api/${previous}/`) }
     : { label: a.h1, href: localePath(locale, links.api.href) }}
   next={first ? { label: first.name, href: localePath(locale, `/api/${first.slug}/`) } : undefined}
+  breadcrumbs={[
+    { name: a.reference, href: links.api.href },
+    { name: named.name, href: `/api/${slug}/` },
+  ]}
+  dateModified={facts.pinnedDate}
 >
   <nav class="api-crumbs" aria-label={a.breadcrumbs} lang={locale}>
     <a href={localePath(locale, links.api.href)}>{a.reference}</a>

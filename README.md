@@ -28,7 +28,7 @@ asks you to update the copy.
 | `/api/` | the API reference's index: every category with the number of exports in it |
 | `/api/<category>/` | one category's index: every export in it, alphabetically, with its summary |
 | `/api/<export>/` | one public export, on MDN's page shape. Generated from the compiler's own source at the pinned commit (`src/lib/api.ts`), so the reference moves only when the submodule does. `bun run check:api` prints the categories and their counts and fails on an export with no documentation or a slug that its name and kind did not ask for |
-| `/ko/…` | the same pages in Korean; the authoring guide's body stays English. See DESIGN.md, Languages |
+| `/ko/…` | the same pages in Korean. The authoring guide's sections are translated by hand in `content/guide/ko/`, one file per section, each recording the hash of the English it was translated from; a section without a file shows the English body under a note. See DESIGN.md, Languages |
 | `/motivation/`, `/checks/`, `/examples/`, `/guide/` | the first routes; they redirect |
 | `/404.html` | not found |
 | `/llms.txt` | a plain-text summary generated from the same records as the page |
@@ -71,6 +71,7 @@ PLAYWRIGHT_CHROMIUM=/path/to/chrome \
   export with no documentation, a slug two exports share or that its name and kind did not
   ask for, an export with no category, a category with no exports, a Targets table under its
   floor, or a text that names a consumer fails it. The build runs it after `check:copy`.
+- `bun run check:guide` runs after it: every translated guide section against its English source at the pinned commit (the same code blocks, code spans, numerals, links and headings; Korean register and the translation tells), and the build stops if a file was translated from an older English (its recorded hash no longer matches).
 - `bun run check:copy` runs next. Every translated string is compared with its English one:
   the same numerals, link keys and code spans; no label wider than about 1.35 times the
   English label it replaces; and none of the translation tells the

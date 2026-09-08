@@ -46,7 +46,9 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - The front page is centred on a 960px measure: the name as the headline in the accent colour,
   the category line under it ("The verifiable TypeScript shader library", the way react.dev
   sets its one line under "React" and vuejs.org attaches "Progressive"), one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
-  it emits, three short points. Under 40rem the three links are a grid, Get started across the
+  it emits, three short points. Get started is the one filled button (accent background, the
+  way vuejs.org fills its own Get Started); Why TypeShade and Examples stay the plain surface
+  button. Under 40rem the three links are a grid, Get started across the
   top; the two code frames stack under 48rem. The layout follows vuejs.org's front page.
 - Every other page is one content column, 740px, left-aligned, with code blocks and figures at
   the same width. Sections are 48 to 56px apart.
@@ -161,7 +163,7 @@ scroller. The guide links into the reference the way MDN links a function's firs
 first inline code on a guide page that is exactly a public export's name becomes a link to
 that export's page (`src/lib/remark-api-links.mjs`, over the guide's markdown only). A
 reference page records its kind for the search index, so a result reads "abs (function)". On a
-Korean page the chrome is Korean and the body English, as on the guide; the note above the
+Korean page the chrome is Korean and the body English; the note above the
 body says so. The contract between the generator and the page is `src/lib/api-types.ts`, and
 the words around it are `docs.api` in every dictionary, with a name and a sentence for every
 category the extractor defines.
@@ -177,6 +179,15 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - English is the source text, in `src/i18n/en.ts`. Every other language is a translation of
   it: `src/i18n/ko.ts` is typed against the English object, so a string missing in one
   language fails the type check.
+- The authoring guide is translated by hand, one file per section of AUTHORING.md under
+  `content/guide/<locale>/`, from the English at the pinned commit. Each file's front matter
+  records the sha256 of the English body it was translated from; when the pin moves and a
+  section changes, the build stops and names the section, so a translation cannot fall behind
+  its source unnoticed. `scripts/check-guide-translations.ts` holds a translation to the
+  English's code blocks, code spans, numerals, links and headings, and to the Korean rules
+  below. `content/guide/GLOSSARY.md` fixes the Korean for each English term. A section
+  without a file is shown in English under a note that says so. The reference's body stays
+  English on every locale.
 - English lives at `/`, other languages under their code (`/ko/`). Route files in
   `src/pages` and `src/pages/ko` are one line each; the page itself is a component in
   `src/components/pages` that takes a locale.
@@ -186,7 +197,9 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - Numbers are interpolated from `facts` in every language. Captions, accessible names, table
   headers and code-frame labels are in the dictionary too.
 - Every page links its other languages in the header and carries `hreflang` alternates.
-  `/llms.txt`, `/404` and the social card are English only.
+  `/llms.txt` and the social card are English only. GitHub Pages serves one 404 page, in
+  English; a missing path under `/ko/` is sent on to `/ko/404/`, a Korean page with Korean
+  chrome. Both are noindex and out of the sitemap.
 - Korean text is set in IBM Plex Sans KR, the Korean companion to Plex Sans, at 400 and 600,
   subset to the 2,350 KS X 1001 syllables plus every character the copy uses (about 110 KB a
   weight, loaded on Korean pages only). `bun run build:fonts` regenerates the subset and its

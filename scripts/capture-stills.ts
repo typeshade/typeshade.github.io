@@ -1,11 +1,13 @@
-// public/stills/<example>.png: one rendered frame per example the page mounts, captured from
-// the built page in a headless browser. The page shows these under each canvas, so a browser
-// with no GPU API, a crawler or a social preview still sees the shader.
+// public/stills/<example>.webp: one rendered frame per example the page mounts, captured from
+// the built page in a headless browser, then re-encoded to WebP (quality 82) with sharp. The
+// page shows these under each canvas, so a browser with no GPU API, a crawler or a social
+// preview still sees the shader.
 //
 // Run: bun run capture:stills  (builds with STILLS_REBASELINE=1 first, then runs this)
 import { existsSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import sharp from 'sharp'
 import { launchChromium } from './playwright.mjs'
 import { STILLS, writeHashed } from './artifacts.mjs'
 import { serveDist } from './serve-dist.mjs'
@@ -50,8 +52,9 @@ try {
     const png = (await frame.screenshot({ type: 'png' })) as Buffer
     const width = png.readUInt32BE(16)
     const height = png.readUInt32BE(20)
-    const digest = writeHashed(root, `stills/${id}.png`, png)
-    console.log(`public/stills/${id}.png  ${width} x ${height}  ${png.length} B  ${backend}  sha256 ${digest.slice(0, 16)}`)
+    const webp = await sharp(png).webp({ quality: 82 }).toBuffer()
+    const digest = writeHashed(root, `stills/${id}.webp`, webp)
+    console.log(`public/stills/${id}.webp  ${width} x ${height}  ${webp.length} B  ${backend}  sha256 ${digest.slice(0, 16)}`)
   }
 } finally {
   await browser.close()

@@ -7,6 +7,7 @@ import Docs from '../../layouts/Docs.astro'
 import { apiCategories } from '../../lib/api-nav.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { facts } from '../../lib/examples.ts'
 
 interface Props {
   locale: Locale
@@ -31,6 +32,8 @@ const categories = apiCategories().map(({ category, members }) => ({
   description={a.description}
   editHref={editCopy(locale)}
   label={a.h1}
+  breadcrumbs={[{ name: a.reference, href: links.api.href }]}
+  dateModified={facts.pinnedDate}
 >
   <h1>{a.h1}</h1>
   <p class="api-summary">{a.intro}</p>

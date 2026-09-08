@@ -1,19 +1,24 @@
 ---
+// The not-found page. GitHub Pages serves the root 404.html for every missing path, so that
+// page is English and, when the missing path is under /ko/, sends the reader on to /ko/404/,
+// a Korean page with Korean chrome. Both pages are noindex and out of the sitemap.
 import Base from '../../layouts/Base.astro'
 import Rich from '../Rich.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 
 interface Props {
   locale: Locale
 }
 const { locale } = Astro.props
-const n = copyFor(locale).notFound
+const t = copyFor(locale).notFound
+const path = locale === 'en' ? '/404.html' : localePath(locale, '/404/')
 ---
 
-<Base locale={locale} path="/404.html" title={n.title} description={n.description} noAlternates noindex>
+<Base locale={locale} path={path} title={t.title} description={t.description} noAlternates noindex>
+  {locale === 'en' && <script is:inline>if (location.pathname.startsWith('/ko/')) location.replace('/ko/404/' + location.search)</script>}
   <article class="wrap doc">
-    <h1>{n.h1}</h1>
-    <p>{n.p}</p>
-    <p><Rich text={n.links} locale={locale} /></p>
+    <h1>{t.h1}</h1>
+    <p>{t.p}</p>
+    <p><Rich text={t.links} locale={locale} /></p>
   </article>
 </Base>

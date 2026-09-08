@@ -18,7 +18,7 @@ const c = copyFor(locale).checks
 const headings = [c.ciH, c.pairH, c.authorTime.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 ---
 
-<Docs locale={locale} path={links.checks.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale)}>
+<Docs locale={locale} path={links.checks.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'checks')}>
     <h1>{c.h1}</h1>
     <h2 id={slugify(c.ciH)}>{c.ciH}</h2>
     <p><Rich text={c.intro} locale={locale} /></p>

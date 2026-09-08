@@ -624,6 +624,9 @@ function declarationText(decl: ts.Declaration): string {
 interface Extracted {
   readonly entry: ApiEntry
   readonly unresolved: readonly string[]
+  /** The entry's `@see` targets alone, kept apart from `entry.seeAlso` (which also holds
+   *  `{@link}` targets) so `symmetrizeSeeTags` knows which links to add a back-link for. */
+  readonly seeTagLinks: readonly ApiLink[]
 }
 
 let cache: readonly ApiEntry[] | null = null
@@ -707,13 +710,34 @@ function build(): Built {
 
   const entries: ApiEntry[] = []
   const unresolved: string[] = []
+  const seeTagLinksByEntry: { readonly entry: ApiEntry; readonly links: readonly ApiLink[] }[] = []
   for (const symbol of symbols) {
     const extracted = extract({ ...symbol, checker, root, tables, slugOf })
     entries.push(extracted.entry)
     unresolved.push(...extracted.unresolved)
+    seeTagLinksByEntry.push({ entry: extracted.entry, links: extracted.seeTagLinks })
   }
   assertCategories(entries)
+  symmetrizeSeeTags(entries, seeTagLinksByEntry)
   return { entries, unresolved }
+}
+
+/** `@see` is written by hand on one side of a pair, so a page it names does not automatically
+ *  name it back. A reader who follows `@see` to the target page should still find a way back
+ *  to where they started, so the target's See also gets the missing link added here.
+ *  `{@link}` targets are left one-directional: those sit inside a sentence that already reads
+ *  in one direction, and forcing a matching sentence onto the other page would misrepresent it. */
+function symmetrizeSeeTags(entries: readonly ApiEntry[], seeTagLinksByEntry: readonly { readonly entry: ApiEntry; readonly links: readonly ApiLink[] }[]): void {
+  const bySlug = new Map(entries.map((e) => [e.slug, e]))
+  for (const { entry: source, links } of seeTagLinksByEntry) {
+    for (const link of links) {
+      const targetSlug = link.href.replace(/^\/api\//, '').replace(/\/$/, '')
+      const target = bySlug.get(targetSlug)
+      if (!target || target === source) continue
+      const already = target.seeAlso.some((l) => l.href === `/api/${source.slug}/`)
+      if (!already) (target.seeAlso as ApiLink[]).push({ label: source.name, href: `/api/${source.slug}/` })
+    }
+  }
 }
 
 interface ExtractInput {
@@ -810,6 +834,7 @@ function extract(input: ExtractInput): Extracted {
     : ''
   const returns: ApiReturn | null = signature ? { type: returnType, description: md(returnTag?.text ?? '') } : null
 
+  const seeTagLinks = seeTags(parsed, slugOf)
   const entry: ApiEntry = {
     name,
     slug,
@@ -827,10 +852,10 @@ function extract(input: ExtractInput): Extracted {
     targets: targetsOf({ name, file, decls, kind, parameters, tables }),
     members: membersOf(decl, name, md),
     guideSections: guideLinksFor(name),
-    seeAlso: [...links, ...seeTags(parsed, slugOf)],
+    seeAlso: [...links, ...seeTagLinks],
     source: { file, line: lineOf(decl) },
   }
-  return { entry, unresolved }
+  return { entry, unresolved, seeTagLinks }
 }
 
 function lineOf(decl: ts.Declaration): number {

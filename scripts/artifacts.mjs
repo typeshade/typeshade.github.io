@@ -20,7 +20,7 @@ export const ARTIFACTS = [
   { file: 'apple-touch-icon.png', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
   { file: 'mask-icon.svg', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
   ...STILLS.map(({ id }) => ({
-    file: `stills/${id}.png`,
+    file: `stills/${id}.webp`,
     env: 'STILLS_REBASELINE',
     regenerate: 'bun run capture:stills',
   })),

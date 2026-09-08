@@ -38,7 +38,7 @@ const [{ discoverUrls, parseRobotsTxt }, { crawlPage }, { runPageReporters }, { 
   engine('shared/audit-issues.ts'),
 ])
 
-const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml', '.txt': 'text/plain; charset=utf-8', '.png': 'image/png', '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' }
+const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml', '.txt': 'text/plain; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp', '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' }
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://x')
   let file = path.join(dist, decodeURIComponent(url.pathname))

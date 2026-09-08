@@ -4,17 +4,20 @@
 // code block and a heading are left alone; and once per name per page, so a section reads as
 // prose and not as a list of links.
 //
-// Only the guide is linked. Its sections are rendered from the vendored AUTHORING.md, which
-// the loader names through the fileURL option (src/content.config.ts); the reference's own
-// markdown comes through the same pipeline with no file and is left as it is.
+// Only the guide is linked: the sections rendered from the vendored AUTHORING.md and their
+// translations under content/guide/<locale>/, which the loaders name through the fileURL
+// option (src/content.config.ts). The reference's own markdown comes through the same
+// pipeline with no file and is left as it is.
 import { SKIP, visit } from 'unist-util-visit'
 import { apiSlugByName } from './api-nav.ts'
 
 const GUIDE = 'AUTHORING.md'
+const TRANSLATION = /[\\/]content[\\/]guide[\\/][^\\/]+[\\/][^\\/]+\.md$/
 
 export default function remarkApiLinks() {
   return (tree, file) => {
-    if (!String(file?.path ?? '').endsWith(GUIDE)) return
+    const filePath = String(file?.path ?? '')
+    if (!filePath.endsWith(GUIDE) && !TRANSLATION.test(filePath)) return
     const slugs = apiSlugByName()
     const linked = new Set()
     // A link into the reference the page already carries counts as the name's one mention:
