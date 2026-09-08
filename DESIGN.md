@@ -186,8 +186,14 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   its source unnoticed. `scripts/check-guide-translations.ts` holds a translation to the
   English's code blocks, code spans, numerals, links and headings, and to the Korean rules
   below. `content/guide/GLOSSARY.md` fixes the Korean for each English term. A section
-  without a file is shown in English under a note that says so. The reference's body stays
-  English on every locale.
+  without a file is shown in English under a note that says so; the note means the
+  translation is not there yet, never that a section is kept in English on purpose. Every
+  section is translated. What stays English is a word or a cell: code blocks, identifiers
+  and option values in code spans, a table cell that is only code, and the words the
+  glossary lists under "영어로 두는 낱말" (the ones Korean developers say in English, such
+  as fail closed, gather and scatter), glossed once at first use. The check refuses the
+  Korean substitutes the glossary names for them. The reference's body stays English on
+  every locale.
 - English lives at `/`, other languages under their code (`/ko/`). Route files in
   `src/pages` and `src/pages/ko` are one line each; the page itself is a component in
   `src/components/pages` that takes a locale.

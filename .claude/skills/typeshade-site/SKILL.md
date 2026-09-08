@@ -75,6 +75,16 @@ one. Rules:
   two sentences. Prefer verbs to nominalisations.
 - 합쇼체 throughout. No 해요체, no 반말, no exclamation marks.
 - UI labels are short nouns: 가이드, 예제, 빠른 시작, 작성 가이드, 검증 방식, 소개, 참고.
+- What stays English is a word or a cell, never a page: code blocks; identifiers, option
+  values, extension strings and error codes inside code spans; a table cell that is only
+  code; and the words in the glossary's "영어로 두는 낱말" list (fail closed, gather, scatter,
+  ladder, tier), which Korean developers say in English. Gloss such a word once at first use,
+  then write it as it is. Table headings, explanatory cells and every sentence are Korean.
+  A page with no translation shows the English under a note, and that note means "not yet",
+  never "left in English on purpose": every section of the guide is translated. The Korean
+  sites readers respect (ko.vuejs.org, ko.react.dev, MDN 한국어) translate their reference
+  pages too and leave only identifiers in English; a page left in English is one nobody has
+  translated yet.
 
 ## The Korean guide
 

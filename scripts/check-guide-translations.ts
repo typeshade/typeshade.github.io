@@ -10,7 +10,7 @@
 //   3. No prose paragraph left in English.
 import { guideSections } from '../src/lib/guide.ts'
 import { guideTranslations, GUIDE_TRANSLATIONS_DIR } from '../src/lib/guide-translations.ts'
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 const SPAN_MAX = 120
@@ -35,6 +35,30 @@ const spans = (s: string): Map<string, number> => {
 const numerals = (s: string): string => (strip(s).match(/(?<![A-Za-z\d.`])\d+(?:\.\d+)*(?![A-Za-z\d])/g) ?? []).sort().join(' ')
 const linkTargets = (s: string): string => [...strip(s).matchAll(/\]\(([^)]+)\)/g)].map((m) => m[1]).sort().join(' ')
 const headings = (s: string): number => (strip(s).match(/^#{2,6}\s/gm) ?? []).length
+const tableRows = (s: string): string[][] => strip(s).split('\n').filter((l) => /^\|.*\|\s*$/.test(l) && !/^\|[\s:|-]+\|\s*$/.test(l)).map((l) => l.trim().slice(1, -1).split('|').map((c) => c.trim()))
+const CODE_ONLY_CELL = /^(?:`[^`]+`(?:\s*(?:,|\/|and|or)\s*)?)+$/
+// The glossary's "영어로 두는 낱말" table: its third column lists the Korean substitutes a
+// translation must not use for a word that stays English.
+function forbiddenSubstitutes(): string[] {
+  const file = path.resolve(process.cwd(), GUIDE_TRANSLATIONS_DIR, 'GLOSSARY.md')
+  if (!existsSync(file)) return []
+  const text = readFileSync(file, 'utf8')
+  const start = text.indexOf('## 영어로 두는 낱말')
+  if (start < 0) return []
+  const rest = text.slice(start)
+  const end = rest.indexOf('\n## ', 1)
+  const section = end < 0 ? rest : rest.slice(0, end)
+  const out: string[] = []
+  for (const row of tableRows(section).slice(1)) {
+    const cell = row[2] ?? ''
+    for (const raw of cell.split(/[,、·]/)) {
+      const w = raw.replace(/\([^)]*\)/g, '').trim()
+      if (w) out.push(w)
+    }
+  }
+  return out
+}
+const FORBIDDEN = forbiddenSubstitutes()
 
 const KO_TELLS: Array<{ name: string; re: RegExp; max: number }> = [
   { name: 'A-1 "~에 대해" three or more times', re: /에 대해/g, max: 2 },
@@ -98,6 +122,12 @@ for (const locale of locales) {
     const badClose = marks.match(/\*\*[^*\n]+[^\p{L}\p{N}\s]\*\*(?=[\p{L}\p{N}])/gu) ?? []
     const badOpen = marks.match(/[\p{L}\p{N}]\*\*`[^`\n]+`\*\*/gu) ?? []
     if (badClose.length || badOpen.length) push(`bold markers CommonMark cannot parse: ${[...badClose, ...badOpen].slice(0, 3).join(' | ')}`)
+    // Tables: the same rows, and a cell that is only code in English is the same cell in the
+    // translation (an identifier column stays as it is; the reader pastes it).
+    const er = tableRows(en), kr = tableRows(ko)
+    if (er.length !== kr.length) push(`table rows: ${er.length} in English, ${kr.length} in the translation`)
+    else er.forEach((row, i) => row.forEach((cell, j) => { if (CODE_ONLY_CELL.test(cell) && kr[i][j] !== cell) push(`table cell ${cell} (row ${i + 1}) must stay as it is; the translation has ${kr[i][j] ?? '(nothing)'}`) }))
+    if (locale === 'ko') for (const w of FORBIDDEN) if (prose.includes(w)) push(`"${w}" replaces a word the glossary keeps in English (GLOSSARY.md, 영어로 두는 낱말)`)
     const latin = prose.split(/\n\s*\n/).filter((p) => p.trim() && !/^[#>|+*-]/.test(p.trim()) && !/[가-힣]/.test(p) && (p.match(/[A-Za-z]{3,}/g) ?? []).length >= 4)
     if (latin.length) push(`${latin.length} prose paragraph(s) left in English: ${latin[0].trim().slice(0, 60)}`)
   }
