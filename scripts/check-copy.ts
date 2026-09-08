@@ -4,7 +4,9 @@
 //      from a measured fact or point somewhere else.
 //   2. A label (an English string of 40 characters or fewer) rendered no wider than about
 //      1.35 times the English one, estimated from per-script advance widths, so a
-//      translation cannot reflow the header, the buttons or a table.
+//      translation cannot reflow the header, the buttons or a table. The front page's
+//      headline is measured as a whole: its widest line against the widest English line,
+//      since a translation may split the two lines differently.
 //   3. The translation tells the im-not-ai rulebook (github.com/epoko77-ai/im-not-ai,
 //      quick-rules A, C, D, H) makes countable: translationese particles, double passives,
 //      signature phrases, stacked sentence-initial conjunctions, commas after connective
@@ -57,6 +59,15 @@ const KO_TELLS: Array<{ name: string; re: RegExp; max: number }> = [
   { name: 'H-3 "이는" opening, three or more', re: /(?:^|\. )이는 /g, max: 2 },
 ]
 
+// The headline is set in lines of its own (front.hero.before, accent, after), and Korean
+// puts the head noun last, so the lines split differently. The rule is the widest line.
+const HERO_LINE = /^front\.hero\.(before|accent|after)$/
+function heroWidth(a: Record<string, unknown>, b: Record<string, unknown>, locale: Locale): void {
+  const widest = (o: Record<string, unknown>) => Math.max(...['before', 'accent', 'after'].map((k) => (typeof o[k] === 'string' ? width(o[k] as string) : 0)))
+  const enW = widest(a), otherW = widest(b)
+  if (otherW / enW > WIDTH_RATIO_MAX && otherW - enW > 2) problems.push({ path: 'front.hero', what: `headline line about ${(otherW / enW).toFixed(2)} times as wide as the widest English line (${locale})` })
+}
+
 function sameEndingStreak(s: string): number {
   const sentences = s.split(/[.!?]\s+/).map((t) => t.trim()).filter((t) => /[가-힣]$/.test(t))
   let best = 0, run = 0, last = ''
@@ -76,7 +87,7 @@ function walk(a: unknown, b: unknown, locale: Locale, path: string): void {
     if (!same(numerals(a), numerals(b))) problems.push({ path, what: `numerals differ: en ${numerals(a).join(' ')} / ${locale} ${numerals(b).join(' ')}` })
     if (!same(linkKeys(a), linkKeys(b))) problems.push({ path, what: `link keys differ: en ${linkKeys(a).join(' ')} / ${locale} ${linkKeys(b).join(' ')}` })
     if (!same(codeSpans(a), codeSpans(b))) problems.push({ path, what: `code spans differ: en ${codeSpans(a).join(' ')} / ${locale} ${codeSpans(b).join(' ')}` })
-    if (a.length <= LABEL_MAX_CHARS && a.length > 0) {
+    if (a.length <= LABEL_MAX_CHARS && a.length > 0 && !HERO_LINE.test(path)) {
       const ratio = width(b) / width(a)
       if (ratio > WIDTH_RATIO_MAX && width(b) - width(a) > 2) problems.push({ path, what: `label about ${ratio.toFixed(2)} times as wide as the English "${a}": "${b}"` })
     }
@@ -98,6 +109,7 @@ function walk(a: unknown, b: unknown, locale: Locale, path: string): void {
     return
   }
   if (a && typeof a === 'object' && b && typeof b === 'object') {
+    if (path === 'front.hero') heroWidth(a as Record<string, unknown>, b as Record<string, unknown>, locale)
     for (const key of Object.keys(a)) walk((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], locale, path ? `${path}.${key}` : key)
   }
 }
