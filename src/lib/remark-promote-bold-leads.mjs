@@ -68,8 +68,8 @@ export default function remarkPromoteBoldLeads() {
     if (!isGuideFile(filePath)) return
     if (hasOutlineHeading(tree)) return
 
-    // A bare paragraph opening with a bold run, wherever it sits: before-after's section
-    // headers ("**Calling another function**", alone), and the callouts in the guide's own
+    // A bare paragraph opening with a bold run, wherever it sits: a section whose
+    // headers are bold lines ("**Calling another function**", alone), and the callouts in the guide's own
     // opening blockquote ("**Import paths.** Author from…"). A list item's own lead paragraph
     // is handled separately below, so the list stays intact until the whole item is rebuilt.
     visit(tree, 'paragraph', (node, index, parent) => {

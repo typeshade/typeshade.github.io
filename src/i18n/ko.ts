@@ -14,57 +14,65 @@ const split = facts.splitLabels ?? ['f32', 'f64']
 // 작성 가이드의 절마다 한국어 제목과 설명. 키는 로더가 제목에서 만든 id입니다. 본문은
 // 영어 원문 그대로이므로, 사이드바와 페이지 제목과 설명만 한국어로 둡니다.
 const sections: Record<string, { title: string; description: string }> = {
-  'the-authoring-surface': {
-    title: '작성 API',
-    description: '함수는 전부 fn으로 씁니다. 평범한 헬퍼든 @vertex, @fragment, @compute 진입점이든 같은 함수 하나로 선언하며, 진입점 전용 헬퍼는 따로 없고 반환 타입도 본문에서 그대로 추론됩니다.',
+  'your-first-shader': {
+    title: '첫 셰이더',
+    description: `TypeScript로 진입점 두 개짜리 셰이더 모듈을 쓰고 WGSL과 ${glsl}로 출력합니다. 어느 호출이 어느 문자열을 냈는지도 알게 됩니다.`,
   },
   'values-and-mutation': {
     title: '값과 변경',
-    description: '중간 값은 모두 평범한 const로 씁니다. 나중에 그 값을 바꾸면 이미터가 자동으로 WGSL var로 바꾸고, 그렇지 않은 값은 공유되는 let나 인라인 식으로 남아 마커가 필요 없습니다.',
+    description: '중간 값을 쓰고 필요한 곳에만 타입을 붙이며, 그 값을 바꾸고, 어떤 값이 자기 이름을 따로 가져야 하는지 가립니다.',
+  },
+  'functions-and-entry-points': {
+    title: '함수와 진입점',
+    description: '헬퍼를 선언해 다른 함수에서 부르고, 어느 스테이지든 진입점을 쓰고, 그것들을 담는 모듈을 선언합니다.',
   },
   'control-flow': {
     title: '제어 흐름',
-    description: 'If, elif, else의 본문은 인자를 받지 않는 클로저이며 그 코드는 그때 열려 있는 가장 안쪽 스코프로 들어가고, Loop는 같은 방식으로 C 스타일 for문을 제공합니다.',
+    description: '셰이더 본문 안에서 분기하고 반복하고 디스패치하며, 문장 형태와 값 형태를 구분합니다.',
   },
-  'sot-helpers': {
-    title: '레이아웃 선언',
-    description: '버텍스와 유니폼 레이아웃은 예전에 최대 네 곳에 손으로 적고 서로 맞춰야 했고, 그 어긋남이 폴리곤 슬롯 버그 계열의 원인이었습니다. SoT 헬퍼는 레이아웃을 한 번만 선언하고 나머지를 이끌어 냅니다.',
+  'layouts-and-resources': {
+    title: '레이아웃과 리소스',
+    description: '버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고 그 선언 하나에서 모든 필드를 읽습니다.',
   },
-  'before-after': {
-    title: '전과 후',
-    description: '작성 API가 걷어낸 절차를 짝으로 보여 줍니다. 손으로 맞추던 예전 코드와 선언 한 번으로 끝나는 지금 코드를 나란히 놓아, 무엇이 사라졌는지 절마다 한눈에 비교해 볼 수 있습니다.',
+  'emitting-and-reflection': {
+    title: '출력과 리플렉션',
+    description: '모듈을 WGSL로, GLSL 두 스테이지로, 또는 호스트가 조합하는 조각으로 바꾸고, 호스트가 바인딩에 쓰는 파이프라인 메타데이터를 읽습니다.',
+  },
+  'the-cpu-oracle': {
+    title: 'CPU 오라클',
+    description: '모듈을 CPU에서 배정밀도로 실행하고, 거기서 나온 숫자를 GPU가 낸 값과 비교합니다.',
   },
   diagnostics: {
     title: '진단',
-    description: '작성 실수는 안정된 코드와 한 줄 힌트가 붙은 ShaderDslError로 드러나며, validate()를 부르면 어긋난 규칙을 처음 하나만이 아니라 전부 모아 한 번에 보고합니다.',
-  },
-  fp64: {
-    title: 'fp64',
-    description: 'GPU에는 f64가 없습니다. 합치지 않고 나란히 둔 f32 두 개를 이어 붙여 f64를 흉내 내며, f32 지수 범위에서 가수 48비트 정도를 냅니다. 작성 문법은 f32를 쓸 때와 똑같고 선언한 타입만 다릅니다.',
-  },
-  'production-emit': {
-    title: '프로덕션 출력',
-    description: '번들러는 모듈을 감싼 JS만 줄이고 gl.shaderSource에 넘기는 셰이더 문자열 자체는 건드리지 않으며, 이름 뭉개기와 압축과 난독화는 별도 서브패스에 얹는 선택형 플러그인입니다.',
-  },
-  'glsl-float-precision': {
-    title: 'GLSL 부동소수점 정밀도',
-    description: `${glsl} 백엔드는 기본으로 highp 정밀도를 냅니다. 빌드 시점 옵션을 주면 좁은 범위로도 충분한 셰이더에 한해 mediump로 낮춰 대역폭과 전력을 아낄 수 있습니다.`,
-  },
-  'capabilities-extensions': {
-    title: '기능과 확장',
-    description: '모듈은 출력에 필요한 GPU 기능을 중립적인 id로 선언하고 EXT_나 OVR_ 같은 확장 문자열을 직접 적지 않으며, 그 기능을 지원하지 않는 백엔드는 컴파일 시점에 닫힌 채로 실패합니다.',
+    description: '코드가 붙은 오류를 읽고 그 코드로 분기하며, 모듈의 모든 실패를 보고서 하나로 받고, 오류가 난 TypeScript 줄을 출력합니다.',
   },
   'conditional-programs': {
     title: '조건부 프로그램',
-    description: '기능에 따라 달라지는 부분은 함수 매개변수로 받아 평범한 if로 가르며, 모듈은 그저 하나의 자바스크립트 값이라 프리프로세서 없이도 그 갈래를 다룰 수 있고 쓰이지 않는 갈래는 아예 만들어지지 않습니다.',
+    description: '소스 하나에서 여러 프로그램 중 무엇을 만들지 정하고, 배리언트가 상수 하나로 끝나는 경우를 가려내며, 선택을 호스트에 넘깁니다.',
+  },
+  'capabilities-extensions': {
+    title: '기능과 확장',
+    description: '모듈에 필요한 GPU 기능을 선언하고, 대상마다 그 기능이 무엇을 요구하는지 읽고, 출력 전에 부팅된 장치를 그 선언과 대조합니다.',
+  },
+  fp64: {
+    title: 'fp64',
+    description: '셰이더 안에 배정밀도 값을 선언하고, 어떤 연산을 지원하는지 알고, 에뮬레이션에 필요한 가드 텍스처를 바인딩합니다.',
+  },
+  'glsl-float-precision': {
+    title: 'GLSL 부동소수점 정밀도',
+    description: 'GLSL 스테이지를 언제 mediump로 출력할지, 그 옵션 하나가 출력된 소스에서 무엇을 바꾸고 무엇을 그대로 두는지 압니다.',
+  },
+  'production-emit': {
+    title: '프로덕션 출력',
+    description: '배포 시점 변환을 출력 호출 하나로 조합하고, 이름이 바뀐 텍스트로 돌아온 드라이버 로그를 읽습니다.',
+  },
+  'raw-statements': {
+    title: '원시 문장',
+    description: '손으로 쓴 문장을 모듈에 끼워 넣고, 그 문장이 대상마다 무엇을 치르게 하는지 압니다.',
   },
   'migrating-a-glsl-shader': {
     title: 'GLSL 셰이더 옮기기',
-    description: '자주 쓰는 GLSL 구문을 DSL 표기와 WGSL 결과로 옮긴 표이며, 낯선 이름 아래 묻혀 있던 탓에 실제 마이그레이션에서 적어도 한 번씩 다시 손으로 풀었던 문제를 이 표 하나로 줄여 줍니다.',
-  },
-  'quick-reference': {
-    title: '빠른 참조',
-    description: '작성 API 전체를 표 하나로 정리했습니다. 왼쪽 칸에 필요한 일이 적혀 있고 오른쪽 칸에 그 일을 쓰는 호출이 적혀 있어, 절을 다시 읽지 않고도 이름이 가물거릴 때 바로 찾아볼 수 있습니다.',
+    description: '눈앞의 GLSL 구문을 DSL에서 어떻게 쓰는지 찾고, 그 표기가 대상마다 무엇으로 바뀌는지 봅니다.',
   },
 }
 

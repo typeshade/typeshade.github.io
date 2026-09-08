@@ -13,24 +13,19 @@ const split = facts.splitLabels ?? ['f32', 'f64']
 
 // A title and a description for every section of the authoring guide, keyed by the id the
 // loader takes from its heading. English reads both off the section itself, so this map
-// cannot drift from the file the pages are rendered from. Two sections open with a table or
-// with pairs of code blocks and have no sentence to take, so they are described here.
+// cannot drift from the file the pages are rendered from. Every section opens with a
+// sentence that says what the reader can do after it; the loader takes that sentence as the
+// description. The entries here replace the ones the loader had to cut short (a page
+// description is plain text, so they carry no markdown code marks, the way describe() in
+// src/lib/authoring.ts strips them from a derived one).
 const written: Record<string, string> = {
-  'before-after': 'The ceremony the authoring surface removed, in pairs: the old hand-synced code beside the one-declaration form that took its place.',
-  'quick-reference': 'One table for the whole authoring surface: what you need in the left column, and the call that writes it in the right.',
-  // The remaining entries replace a derived description that opened with a code fragment or
-  // read as a truncated sentence (the SEO review, onpage, guide section descriptions). A page
-  // description is plain text, so these carry no markdown code marks, the way describe() in
-  // src/lib/authoring.ts strips them from a derived one.
-  'the-authoring-surface': 'The fn helper authors every function in a module: a plain helper and a vertex, fragment or compute entry point all use the same call.',
-  'values-and-mutation': 'Every intermediate value is a plain JavaScript const. The emit pass decides whether it becomes an inlined expression, a shared let or a var.',
-  'control-flow': 'If, elif and else take zero-argument closures that author statements into the innermost active scope, and Loop gives the C-style for loop the same way.',
-  diagnostics: 'Every authoring mistake surfaces as a coded ShaderDslError with a stable code and a one-line hint, and validate() reports every failing rule at once.',
-  'production-emit': 'A bundler minifies the JavaScript around a module but leaves the shader text alone: mangling, minifying and obfuscating it are opt-in plugins.',
-  'capabilities-extensions': 'A module declares the GPU features its emit needs by a neutral capability id instead of a raw extension string, so an unsupported one fails closed.',
-  'conditional-programs': 'A shader that must vary by feature takes the varying part as a function parameter and a plain if, since the module is only a JavaScript value.',
-  'glsl-float-precision': `The ${glsl} backend emits highp float precision by default; a build-time option drops it to mediump for shaders where the narrower range is safe.`,
-  'migrating-a-glsl-shader': 'A table maps common GLSL constructs to their DSL spelling and WGSL result, for a migration that keeps re-solving problems filed under unfamiliar names.',
+  'your-first-shader': `After this page you have a two-entry shader module written in TypeScript, emitted as WGSL and as ${glsl}, and you know which call produced each string.`,
+  'functions-and-entry-points': 'After this page you can declare a helper, call it from another function, write an entry point for any stage, and collect them in the module that carries them.',
+  'emitting-and-reflection': 'After this page you can turn a module into WGSL, into both GLSL stages or into a fragment a host composes, and read the pipeline metadata a host binds from.',
+  diagnostics: 'After this page you can read a coded error, branch on its code, get every failure in a module in one report, and print the TypeScript line an error came from.',
+  'conditional-programs': 'After this page you can decide which of several programs to build from one source, tell when a variant is one constant instead, and hand the choice to the host.',
+  'capabilities-extensions': 'After this page you can declare the GPU features a module needs, read what each costs on each target, and check a booted device against them before it emits.',
+  'glsl-float-precision': 'After this page you know when to emit a GLSL stage at mediump, what that one option changes in the emitted source, and what it leaves alone.',
 }
 const sections: Record<string, { title: string; description: string }> = Object.fromEntries(
   guideSections
