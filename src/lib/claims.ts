@@ -13,8 +13,11 @@ export const claims: readonly Claim[] = [
     text: `${facts.bothTargets} of the ${facts.examples} examples emit WGSL and ${facts.glslTarget} from one source.`,
     source: links.examplesIndex,
   },
-  { text: `${facts.testFiles} test files in the pinned compiler.`, source: links.goldens },
+  { text: `${facts.testFiles} test files.`, source: links.goldens },
   { text: `${facts.runtimeDeps} runtime dependencies.`, source: links.packageJson },
-  { text: 'Every shader variant X-GIS ships is compiled by Tint in CI.', source: links.wgslGate },
-  { text: `Every ${facts.glslTarget} variant X-GIS ships is compiled on a real WebGL2 context in CI.`, source: links.glslGate },
+  {
+    text: `On every push, Tint compiles every WGSL emit and a real WebGL2 context links every renderable example's ${facts.glslTarget}.`,
+    source: links.compileGate,
+  },
+  { text: 'A CPU oracle executes the same source in double precision.', source: links.oracle },
 ]

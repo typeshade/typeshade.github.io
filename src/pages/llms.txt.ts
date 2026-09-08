@@ -11,17 +11,16 @@ const summary = [
   `${facts.glslTarget} for WebGL2. A CPU f64 oracle executes the same source in double precision so the`,
   `two outputs can be checked. A wrong field is a TypeScript error at author time; reflect() recovers`,
   `${facts.layoutStandards.join(' and ')} layouts so no byte offset is hand-derived; emulated fp64 uses the`,
-  `same syntax as f32. It has ${facts.runtimeDeps} runtime dependencies, is ${facts.license} licensed, and runs in`,
-  `production inside the X-GIS globe engine as ${facts.packageName}. Version ${facts.nextVersion} is not`,
-  `published yet and the npm name typeshade is reserved, so start from the read-only mirror and the`,
-  `authoring guide.`,
+  `same syntax as f32. It has ${facts.runtimeDeps} runtime dependencies and is ${facts.license} licensed. Its own`,
+  `CI compiles every WGSL emit on Tint and links every renderable example on WebGL2, on every push.`,
+  `Version ${facts.nextVersion} is not published yet and the npm name typeshade is reserved, so start from`,
+  `the read-only mirror and the authoring guide.`,
 ].join(' ')
 
 const table = [
   { dest: links.guide, note: 'the authoring guide' },
   { dest: links.mirror, note: 'read-only mirror; consume as a git submodule, its root is the package' },
-  { dest: links.xgisSource, note: 'source of truth; issues and pull requests go here' },
-  { dest: links.docs, note: '' },
+  { dest: links.docs, note: "the repository's README" },
   { dest: links.npm, note: '' },
   { dest: links.commit, note: 'the commit every number below was measured at' },
 ] as const

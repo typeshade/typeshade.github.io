@@ -1,6 +1,7 @@
 ---
 // The same gradient source mounted twice: left through the WebGPU path, right forced onto
 // WebGL2. Captions are written from the backend that actually drew each frame.
+import { facts } from '../../lib/examples.ts'
 import { links } from '../../lib/links.ts'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import type { CanvasText } from '../ShaderCanvas.astro'
@@ -21,8 +22,10 @@ const glCaption: CanvasText = {
 
 const checks = [
   { text: 'A CPU oracle executes the authored module in double precision, from the same source the emitters read.', source: links.oracle },
-  { text: 'Tint compiles the WGSL for every shader variant the X-GIS globe engine emits, on every commit.', source: links.wgslGate },
-  { text: 'A real WebGL2 context compiles and links every GLSL ES 3.00 variant, on every commit.', source: links.glslGate },
+  {
+    text: `The compile gate emits every registered example, hands each WGSL emit to Tint, and compiles and links both ${facts.glslTarget} stages of every renderable example on a real WebGL2 context. It feeds each compiler a broken shader first, so a check that cannot fail cannot pass.`,
+    source: links.compileGate,
+  },
   { text: 'Golden files diff every emit byte for byte.', source: links.goldens },
 ]
 ---
@@ -51,9 +54,9 @@ const checks = [
       }
     </ul>
     <p class="meta mt-6">
-      No pixel comparison between the two backends is committed yet, so none is claimed here. The compile gates run
-      in <a class="link" href={links.ciGates.href}>{links.ciGates.label}</a> of the X-GIS repository, which is where
-      development happens today.
+      These run in the repository's own CI on every push and pull request; see{' '}
+      <a class="link" href={links.ciGates.href}>{links.ciGates.label}</a>. No pixel comparison between the two
+      backends is committed yet, so none is claimed here.
     </p>
   </div>
 </section>

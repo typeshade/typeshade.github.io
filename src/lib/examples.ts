@@ -89,17 +89,17 @@ function pinnedCommit(): string {
 }
 
 const pkg = JSON.parse(readFileSync(path.join(vendorRoot, 'package.json'), 'utf8')) as {
-  name: string
   version: string
   license: string
   dependencies?: unknown
   peerDependencies?: unknown
-  devDependencies?: unknown
+  optionalDependencies?: unknown
 }
 
-/** Zero is derived from the absence of every dependency field in the mirror's package.json. */
+/** Zero is derived from the absence of the three fields that put code into a consumer's install.
+ *  devDependencies is the compiler's own CI toolchain and never reaches an install. */
 function runtimeDeps(): number {
-  const declared = (['dependencies', 'peerDependencies', 'devDependencies'] as const).filter((f) => f in pkg)
+  const declared = (['dependencies', 'peerDependencies', 'optionalDependencies'] as const).filter((f) => f in pkg)
   if (declared.length > 0) {
     throw new Error(`[examples] the mirror's package.json now declares ${declared.join(', ')}; update the copy`)
   }
@@ -159,7 +159,6 @@ export const facts = {
   fp64Examples: examples.filter((e) => e.id.startsWith('fp64')).length,
   testFiles: testFiles.length,
   pinnedCommit: pinnedCommit(),
-  packageName: pkg.name,
   license: pkg.license,
   glslTarget: glslTarget(),
   layoutStandards: layoutStandards(),
@@ -186,7 +185,7 @@ export const facts = {
 
 // The copy was written against these values at this commit. A change here is a copy
 // decision, so the build stops and asks for one.
-const pinned = { commit: '29c9614', examples: 36, bothTargets: 35, testFiles: 146 }
+const pinned = { commit: 'd894fc0', examples: 36, bothTargets: 35, testFiles: 146 }
 const drift: string[] = []
 if (facts.pinnedCommit === pinned.commit) {
   if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
