@@ -206,7 +206,7 @@ export const ko: Copy = {
 
   front: {
     hero: {
-      before: 'WGSL과 GLSL을 함께 내는',
+      before: 'WGSL과 GLSL을 모두 만드는',
       accent: 'TypeScript 셰이더 라이브러리',
       after: '',
       tagline: `셰이더를 TypeScript로 한 번 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 모듈을 CPU에서 배정밀도로 돌려, 컴파일러가 낸 결과를 그 값과 맞춰 볼 수 있습니다.`,
