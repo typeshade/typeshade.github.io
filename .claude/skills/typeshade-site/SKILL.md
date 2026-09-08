@@ -27,6 +27,10 @@ The site follows the shapes readers already know, and nothing else:
   lives under `/guide/`; the authoring guide is one page per section of AUTHORING.md.
 - **Footer**: vuejs.org. A site map in three columns, then the licence, the copyright and the
   commit the page was built from.
+- **Search**: Pagefind, the way VitePress sites carry a search box. `bun run build` writes the
+  index into `dist/pagefind/` after Astro, so search works on the built site and not on `astro
+  dev`. The `data-pagefind-body` and `data-pagefind-ignore` attributes in `Base.astro` and
+  `Docs.astro` are part of the layout: the document is indexed, the chrome is not.
 
 If a change would give the site a shape none of those references has, it is wrong; find the
 reference first. If a page can show something, it shows it; it never sends the reader to a
@@ -96,6 +100,10 @@ widen the layout.
 - `src/components/SiteHeader.astro`, `SiteFooter.astro`.
 - `src/lib/links.ts`: every destination, `navLinks`, `sidebar`.
 - `src/i18n/en.ts`, `src/i18n/ko.ts`, `src/i18n/index.ts`.
-- `src/lib/remark-package-name.mjs`: the guide's package name and links.
+- `src/lib/remark-package-name.mjs`: the guide's package name and links. An environment
+  variable keeps the name the pinned compiler reads.
+- `src/lib/guide.ts`, `src/content.config.ts`: AUTHORING.md cut into sections. Each section's
+  title and description live in `guide.sections` in every dictionary; English derives them
+  from the file, Korean writes them.
 - `scripts/check-style.mjs`, `scripts/check-copy.ts`, `scripts/check-seo.mjs`,
   `scripts/openseo-audit.mts`.

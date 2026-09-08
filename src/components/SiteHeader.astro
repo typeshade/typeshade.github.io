@@ -1,8 +1,9 @@
 ---
-// The bar at the top of every page: the mark and the name; Guide and Examples; then the
-// language menu, the dark-mode switch and GitHub as icons. Under 48rem everything but the
-// name sits in a panel behind a menu button. Both menus are details elements; only the
-// dark-mode switch needs a script (in Base.astro).
+// The bar at the top of every page: the mark and the name; Guide and Examples; then search,
+// the language menu, the dark-mode switch and GitHub as icons. Under 48rem everything but the
+// name sits in a panel behind a menu button. Both menus are details elements; the dark-mode
+// switch and the search dialog need the scripts in Base.astro. The bar is out of the search
+// index, so a hit is a hit in the page's own text.
 import { MARK } from '../lib/mark.ts'
 import { links, navLinks } from '../lib/links.ts'
 import { facts } from '../lib/examples.ts'
@@ -23,7 +24,7 @@ const others = languages.filter((l) => !l.current)
 const ordered = [...languages.filter((l) => l.current), ...others]
 ---
 
-<header class="site-header">
+<header class="site-header" data-pagefind-ignore>
   <div class="site-header-in">
     <a class="site-name" href={localePath(locale, '/')}>
       <svg viewBox={MARK.viewBox} aria-hidden="true" focusable="false">
@@ -37,6 +38,10 @@ const ordered = [...languages.filter((l) => l.current), ...others]
         {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
       </nav>
       <div class="site-tools">
+        <button class="site-search" type="button" aria-label={t.nav.search} data-search-open>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" /><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m16.2 16.2 4 4" /></svg>
+          <span class="site-search-label">{t.nav.search}</span>
+        </button>
         <details class="site-menu-drop site-version">
           <summary aria-label={`${t.nav.version} ${facts.mirrorVersion}`}>
             <span>v{facts.mirrorVersion}</span>
@@ -59,7 +64,7 @@ const ordered = [...languages.filter((l) => l.current), ...others]
             {ordered.map((l) => (
               <li>
                 {l.current ? (
-                  <span class="site-drop-current" lang={l.locale}>
+                  <span class="site-drop-current" aria-current="true" lang={l.locale}>
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4 10-10" /></svg>
                     {l.label}
                   </span>
@@ -87,13 +92,22 @@ const ordered = [...languages.filter((l) => l.current), ...others]
         <span class="site-menu-bar"></span>
       </summary>
       <div class="site-screen">
+        <button class="site-screen-search" type="button" aria-label={t.nav.search} data-search-open>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" /><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m16.2 16.2 4 4" /></svg>
+          <span>{t.nav.search}</span>
+        </button>
         <nav aria-label={t.nav.menu}>
           {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
           <a href={links.mirror.href}>{t.nav.github}</a>
         </nav>
         <div class="site-screen-row">
           <span>{t.nav.version}</span>
-          <span class="site-screen-langs">v{facts.mirrorVersion} <a href={links.releases.href}>{t.nav.releases}</a></span>
+          <span class="site-screen-langs">
+            v{facts.mirrorVersion}
+            <a href={links.releases.href}>{t.nav.releases}</a>
+            <a href={links.changelog.href}>{t.nav.changelog}</a>
+            <a href={links.commit.href} aria-label={`${t.nav.commit} ${facts.pinnedCommit}`}>{facts.pinnedCommit}</a>
+          </span>
         </div>
         <div class="site-screen-row">
           <span>{t.nav.languages}</span>

@@ -2,16 +2,14 @@
 // pre-release scope. The site imports it by its release name everywhere, so the rendered
 // guide does too, in prose, inline code and code blocks alike. Links into the repository
 // become permalinks at that commit; a link to the upstream API site, which does not exist
-// here, keeps its text and loses its link.
+// here, keeps its text and loses its link. An environment variable the compiler reads keeps
+// the name it is spelt with at that commit, since that is the name that works.
 import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { visit } from 'unist-util-visit'
 
 const FROM = '@xgis/shader-dsl'
 const TO = 'typeshade'
-// The same name as an environment variable spells it, as in XGIS_SHADER_DSL_TRACE.
-const FROM_ENV = FROM.replace(/^@/, '').replace(/[^A-Za-z0-9]+/g, '_').toUpperCase()
-const TO_ENV = TO.toUpperCase()
 // Every section landed with an issue in the compiler's tracker, and its number is written
 // into headings, prose and code comments alike. The site has no tracker to send a reader
 // to, so the number goes wherever it appears.
@@ -25,7 +23,7 @@ export default function remarkPackageName() {
   return (tree) => {
     visit(tree, (node, index, parent) => {
       if (node.type === 'text' || node.type === 'inlineCode' || node.type === 'code') {
-        node.value = node.value.split(FROM).join(TO).split(FROM_ENV).join(TO_ENV).replace(ISSUE, '')
+        node.value = node.value.split(FROM).join(TO).replace(ISSUE, '')
       }
       if (node.type === 'link' && !/^(https?:|#|mailto:)/.test(node.url)) {
         if (node.url.startsWith('/')) {

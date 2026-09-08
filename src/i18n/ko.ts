@@ -11,6 +11,63 @@ const err = typedError()
 const std = facts.layoutStandards[0]
 const split = facts.splitLabels ?? ['f32', 'f64']
 
+// 작성 가이드의 절마다 한국어 제목과 설명. 키는 로더가 제목에서 만든 id입니다. 본문은
+// 영어 원문 그대로이므로, 사이드바와 페이지 제목과 설명만 한국어로 둡니다.
+const sections: Record<string, { title: string; description: string }> = {
+  'the-authoring-surface': {
+    title: '작성 API',
+    description: '모듈의 함수는 모두 fn으로 씁니다. 평범한 헬퍼도, @vertex와 @fragment와 @compute 진입점도 같은 함수 하나로 선언합니다.',
+  },
+  'values-and-mutation': {
+    title: '값과 변경',
+    description: '중간 값은 평범한 JS const로 씁니다. Let(...)이나 Var(...)로 감쌀 일은 없고, 값을 바꿀 때만 assign을 부릅니다.',
+  },
+  'control-flow': {
+    title: '제어 흐름',
+    description: 'If, elif, else의 본문은 인자를 받지 않는 클로저입니다. 클로저 안에 쓴 코드는 그때 열려 있는 가장 안쪽 스코프로 들어갑니다.',
+  },
+  'sot-helpers': {
+    title: '레이아웃 선언',
+    description: '버텍스와 유니폼 레이아웃을 예전에는 최대 네 곳에 손으로 적고 서로 맞춰야 했습니다. 폴리곤 슬롯이 어긋나던 버그가 거기서 나왔습니다.',
+  },
+  'before-after': {
+    title: '전과 후',
+    description: '작성 API가 걷어낸 절차를 짝으로 보여 줍니다. 손으로 맞추던 예전 코드와, 선언 한 번으로 끝나는 지금 코드를 나란히 놓았습니다.',
+  },
+  diagnostics: {
+    title: '진단',
+    description: '작성하다 낸 실수는 코드가 붙은 오류로 드러나고, 오류마다 한 줄짜리 힌트가 따라옵니다. 속을 알 수 없는 문자열은 나오지 않습니다.',
+  },
+  fp64: {
+    title: 'fp64',
+    description: 'GPU에는 f64가 없습니다. 합치지 않고 나란히 든 f32 두 개로 f64를 에뮬레이션해서, f32 지수 범위에서 가수 48비트 정도를 씁니다.',
+  },
+  'production-emit': {
+    title: '프로덕션 출력',
+    description: '번들러는 JS만 줄입니다. gl.shaderSource나 createShaderModule에 넘기는 셰이더 문자열에는 손대지 않습니다.',
+  },
+  'glsl-float-precision': {
+    title: 'GLSL 부동소수점 정밀도',
+    description: 'GLSL ES 3.00 백엔드는 precision highp float을 냅니다. mediump로 충분한 자리에 highp를 쓰면 모바일 GPU가 대역폭과 전력을 더 씁니다.',
+  },
+  'capabilities-extensions': {
+    title: '기능과 확장',
+    description: '모듈은 출력에 필요한 GPU 기능을 중립적인 id로 선언합니다. EXT_나 OVR_ 같은 확장 이름을 그대로 적는 자리는 없습니다.',
+  },
+  'conditional-programs': {
+    title: '조건부 프로그램',
+    description: '기능에 따라 달라져야 하는 셰이더는, GLSL 코드베이스라면 #define과 #ifdef 사다리를 꺼내 들던 자리입니다. 여기서는 그 자리를 다르게 씁니다.',
+  },
+  'migrating-a-glsl-shader': {
+    title: 'GLSL 셰이더 옮기기',
+    description: '§1부터 §11까지는 새로 쓰는 사람을 위한 순서입니다. 이 절은 옮겨 오는 사람이 실제로 묻는 질문, 내 GLSL이 하던 일을 여기서 어떻게 쓰는지에 답합니다.',
+  },
+  'quick-reference': {
+    title: '빠른 참조',
+    description: '작성 API 전체를 표 하나로 정리했습니다. 왼쪽 칸에 필요한 일이 적혀 있고, 오른쪽 칸에 그 일을 쓰는 호출이 적혀 있습니다.',
+  },
+}
+
 export const ko: Copy = {
   lang: 'ko',
   name: '한국어',
@@ -30,6 +87,21 @@ export const ko: Copy = {
     languages: '언어',
     theme: '다크 모드 전환',
     menu: '메뉴',
+    search: '검색',
+    searchUnavailable: '검색은 빌드된 사이트에서 쓸 수 있습니다',
+    searchUi: {
+      placeholder: '검색',
+      clear_search: '지우기',
+      load_more: '결과 더 보기',
+      search_label: '이 사이트에서 검색',
+      filters_label: '필터',
+      zero_results: '[SEARCH_TERM] 검색 결과가 없습니다',
+      many_results: '[SEARCH_TERM] 검색 결과 [COUNT]개',
+      one_result: '[SEARCH_TERM] 검색 결과 [COUNT]개',
+      alt_search: '[SEARCH_TERM] 검색 결과가 없어 [DIFFERENT_TERM] 결과를 보여 줍니다',
+      search_suggestion: '[SEARCH_TERM] 검색 결과가 없습니다. 다음 검색어를 눌러 보십시오',
+      searching: '[SEARCH_TERM] 검색 중',
+    },
     version: '버전',
     prerelease: `출시 전, 다음은 ${facts.nextVersion}`,
     releases: '릴리스',
@@ -112,7 +184,7 @@ export const ko: Copy = {
       reduced: '한 프레임만 그린 Metaballs. 시스템이 움직임 줄이기를 켜 두었습니다.',
     },
     code: {
-      h: '한 번만 씁니다',
+      h: '작성한 프래그먼트와 그 WGSL 출력',
       p: `gradient 예제의 프래그먼트 단계를 쓴 그대로 ${hero.authoredLines}줄, 그리고 거기서 나오는 WGSL 진입점입니다. ${glsl} 단계도 같은 함수에서 나옵니다.`,
       more: '[빠른 시작](quickStart)',
     },
@@ -141,7 +213,7 @@ export const ko: Copy = {
       p3: `같은 함수의 ${glsl} 단계와, [reflect()](reflectApi)가 복원한 유니폼 레이아웃은 [예제 페이지](examples)에 있습니다. 나머지 API는 [작성 가이드](guide)를 보면 됩니다.`,
     status: {
       h: '상태',
-      p: `정식 출시 전입니다. 저장소는 ${facts.mirrorVersion} 버전이고, npm 이름 [typeshade](npm)는 ${facts.nextVersion} 출시용으로 잡아 두었습니다. 매니페스트와 import 이름은 그 태그에서 바뀝니다. 이슈는 환영합니다. 다만 변경은 업스트림에 먼저 들어가고 이 트리는 거기서 fast-forward되기 때문에, 풀 리퀘스트는 아직 머지할 수 없습니다. ${facts.nextVersion} 소식은 [릴리스 구독](releases)으로 받을 수 있습니다.`,
+      p: `정식 출시 전입니다. 저장소는 ${facts.mirrorVersion} 버전이고, npm 이름 [typeshade](npm)는 ${facts.nextVersion} 출시용으로 잡아 두었습니다. 매니페스트와 import 이름은 그 태그에서 바뀝니다. 이슈는 환영합니다. 다만 변경은 업스트림에 먼저 들어가고 이 트리는 그것을 fast-forward로 따라가기 때문에, 풀 리퀘스트는 아직 머지할 수 없습니다. ${facts.nextVersion} 소식은 [릴리스 구독](releases)으로 받을 수 있습니다.`,
     },
   },
   motivation: {
@@ -208,7 +280,7 @@ export const ko: Copy = {
     title: `TypeShade 예제 ${facts.examples}개, GLSL 출력, 에뮬레이션 f64`,
     description: `TypeShade 예제 ${facts.examples}개와 출력을 인쇄하는 명령, gradient 패스의 ${glsl} 출력, 에뮬레이션 배정밀도의 딥 줌 데모.`,
     h1: '예제',
-    intro: `저장소에는 실행할 수 있는 예제가 ${facts.examples}개 있습니다. 지도용 패스, ShaderToy 시절의 화면 공간 효과, 에뮬레이션 배정밀도 계열, 컴퓨트 커널 하나를 다룹니다. 그중 ${facts.bothTargets}개는 한 소스에서 WGSL과 ${glsl}을 모두 냅니다. 컴퓨트 커널은 ${glsl}으로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL과 리플렉션만 내고, WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다. ${facts.fp64Examples}개는 에뮬레이션 배정밀도를 씁니다. 렌더링 가능한 예제는 [examples/index.ts](examplesIndex)에서 export하고, [예제 디렉터리](examplesDir)에서 둘러볼 수 있습니다.`,
+    intro: `저장소에는 실행할 수 있는 예제가 ${facts.examples}개 있습니다. 지도용 패스, ShaderToy 시절의 화면 공간 효과, 에뮬레이션 배정밀도 계열, 컴퓨트 커널 하나를 다룹니다. 그중 ${facts.bothTargets}개는 한 소스에서 WGSL과 ${glsl}을 모두 냅니다. 컴퓨트 커널은 ${glsl}으로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL과 리플렉션만 내고, WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다. ${facts.fp64Examples}개는 에뮬레이션 배정밀도를 씁니다. 렌더링 가능한 예제는 [examples/index.ts](examplesIndex)가 내보내고, [예제 디렉터리](examplesDir)에서 둘러볼 수 있습니다.`,
     categories: { cartographic: '지도', generic: '화면 공간', compute: '컴퓨트' },
     columns: { example: '예제', category: '분류', targets: '출력', blurb: '설명' },
     targets: { both: `WGSL과 ${glsl}`, wgsl: 'WGSL' },
@@ -270,8 +342,8 @@ export const ko: Copy = {
     description: 'TypeShade의 작성 API를 절마다 설명합니다. 값, 제어 흐름, 레이아웃, 진단, 에뮬레이션 f64, 프로덕션 출력, GLSL 셰이더 옮기기.',
     contents: '목차',
     sectionTitle: (title: string) => `${title}, TypeShade 작성 가이드`,
-    sectionSummary: (title: string) => `TypeShade 작성 가이드의 ${title} 절입니다. 본문은 고정 커밋의 AUTHORING.md에서 그대로 가져온 영어 원문이고, 다른 화면은 한국어입니다.`,
-    note: `커밋 ${facts.pinnedCommit}의 [AUTHORING.md](guideSource)를 그대로 옮긴 것으로, 본문은 아직 영어입니다. 패키지는 ${facts.nextVersion}에서 쓸 이름인 \`typeshade\`로 import합니다.`,
+    sections,
+    note: `커밋 ${facts.pinnedCommit}의 [AUTHORING.md](guideSource)를 그대로 옮긴 것으로, 본문은 아직 영어입니다. 패키지는 ${facts.nextVersion}에서 쓸 \`typeshade\`라는 이름으로 가져옵니다.`,
   },
   notFound: {
     title: '페이지를 찾을 수 없음, TypeShade',

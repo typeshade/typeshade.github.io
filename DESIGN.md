@@ -79,7 +79,8 @@ why lives on its own page.
     headings and stores one entry per section, so the guide is one page per section:
     `/guide/authoring/` is the overview and `/guide/authoring/<section>/` the rest, in the
     file's order, which the sidebar and the pager follow. The package name is shown as its
-    release name. No page sends a reader to GitHub for something the site can show; the edit
+    release name; an environment variable keeps its real name, the one the pinned compiler
+    reads. No page sends a reader to GitHub for something the site can show; the edit
     link points at the section's line in AUTHORING.md.
   - Project: `/guide/checks/` (the oracle, the compile gate, the golden files, the same pass
     on both backends, the typed diagnostic) and `/guide/examples/`, which opens with a table of
@@ -87,8 +88,17 @@ why lives on its own page.
     source file at the pinned commit and naming the targets it emits.
 - The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect.
 
+Search is Pagefind. The build runs it over `dist/` after Astro, so `dist/pagefind/` holds the
+index and the search UI, and nothing about them is committed. The index is built from the
+document itself: the article on a documentation page and the main element on the front page
+carry `data-pagefind-body`, and the header, the footer, the sidebar, the docs bar, the
+outline, the pager and the edit link carry `data-pagefind-ignore`. Pagefind keeps one index
+per `html lang`, so a Korean page is searched in Korean. The magnifier in the header opens a
+dialog that loads the index on its first open, and Pagefind's UI is dressed in the site's
+tokens through the CSS variables its stylesheet reads.
+
 The header is the one every library site has: the name on the left; Guide and Examples; then
-a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
+search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 columns (Documentation, Project, Languages), then the licence, the copyright and the commit the
 page was built from. Headings are single nouns or short noun phrases: Motivation, Verification, Quick
 start.

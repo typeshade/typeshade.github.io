@@ -16,9 +16,14 @@ interface Props {
   noAlternates?: boolean
   /** Keep the page out of search indexes (the 404). */
   noindex?: boolean
+  /** The page's own text is in main, so the site search indexes main. Docs pages mark their
+   *  article instead, which leaves the sidebar and the pager out of the index. */
+  searchable?: boolean
+  /** What a search result calls this page, where its h1 is set in pieces. */
+  searchTitle?: string
 }
 
-const { locale, path, noAlternates = false, noindex = false } = Astro.props
+const { locale, path, noAlternates = false, noindex = false, searchable = false, searchTitle } = Astro.props
 const t = copyFor(locale)
 const title = Astro.props.title ?? t.meta.title
 const description = Astro.props.description ?? t.meta.description
@@ -103,10 +108,56 @@ const jsonLd = {
   <body>
     <a class="skip" href="#main">{t.skip}</a>
     <SiteHeader locale={locale} path={path} />
-    <main id="main" tabindex="-1">
+    <main
+      id="main"
+      tabindex="-1"
+      data-pagefind-body={searchable ? '' : undefined}
+      data-pagefind-meta={searchable && searchTitle ? `title:${searchTitle}` : undefined}
+    >
       <slot />
     </main>
     <SiteFooter locale={locale} path={path} />
+    <dialog class="search-dialog" aria-label={t.nav.search} data-pagefind-ignore>
+      <div id="search"></div>
+      <p class="search-note" hidden>{t.nav.searchUnavailable}</p>
+    </dialog>
+    <script is:inline define:vars={{ translations: t.nav.searchUi }}>
+      // Pagefind's index and its UI are written into dist/pagefind/ by the build. They load
+      // when the dialog first opens, so a page that is only read pays nothing for them. A dev
+      // server has no index, and the dialog says so.
+      const dialog = document.querySelector('.search-dialog')
+      const note = dialog.querySelector('.search-note')
+      let started = false
+      const asset = (tag, attrs) => new Promise((resolve, reject) => {
+        const el = Object.assign(document.createElement(tag), attrs)
+        el.addEventListener('load', resolve)
+        el.addEventListener('error', reject)
+        document.head.append(el)
+      })
+      async function mount() {
+        if (started) return
+        started = true
+        try {
+          await asset('link', { rel: 'stylesheet', href: '/pagefind/pagefind-ui.css' })
+          await asset('script', { src: '/pagefind/pagefind-ui.js' })
+          new PagefindUI({ element: '#search', showSubResults: true, showImages: false, translations })
+        } catch {
+          note.hidden = false
+        }
+      }
+      async function openSearch() {
+        for (const d of document.querySelectorAll('details[open]')) d.open = false
+        if (!dialog.open) dialog.showModal()
+        await mount()
+        dialog.querySelector('input')?.focus()
+      }
+      for (const b of document.querySelectorAll('[data-search-open]')) b.addEventListener('click', openSearch)
+      // A click on the backdrop lands on the dialog itself; Escape is the dialog's own.
+      dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close() })
+      addEventListener('keydown', (e) => {
+        if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openSearch() }
+      })
+    </script>
     <script is:inline>
       for (const b of document.querySelectorAll('[data-theme-toggle]')) b.addEventListener('click', () => {
         const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches

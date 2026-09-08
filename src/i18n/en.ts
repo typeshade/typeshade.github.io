@@ -2,12 +2,31 @@
 // build (src/lib/examples.ts). Inline links are written as [text](key), where key names a
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
 import { exampleFile, facts, hero, registryBlurbs } from '../lib/examples.ts'
+import { guideSections } from '../lib/guide.ts'
 import { typedError } from '../lib/typed-error.ts'
 
 const glsl = facts.glslTarget
 const err = typedError()
 const std = facts.layoutStandards[0]
 const split = facts.splitLabels ?? ['f32', 'f64']
+
+// A title and a description for every section of the authoring guide, keyed by the id the
+// loader takes from its heading. English reads both off the section itself, so this map
+// cannot drift from the file the pages are rendered from. Two sections open with a table or
+// with pairs of code blocks and have no sentence to take, so they are described here.
+const written: Record<string, string> = {
+  'before-after': 'The ceremony the authoring surface removed, in pairs: the old hand-synced code beside the one-declaration form that took its place.',
+  'quick-reference': 'One table for the whole authoring surface: what you need in the left column, and the call that writes it in the right.',
+}
+const sections: Record<string, { title: string; description: string }> = Object.fromEntries(
+  guideSections
+    .filter((s) => s.id !== 'overview')
+    .map((s) => {
+      const description = s.description ?? written[s.id]
+      if (!description) throw new Error(`[guide] section '${s.id}' has no prose to describe it; write one in src/i18n/en.ts`)
+      return [s.id, { title: s.title, description }]
+    }),
+)
 
 export const en = {
   lang: 'en',
@@ -29,6 +48,23 @@ export const en = {
     languages: 'Languages',
     theme: 'Toggle dark mode',
     menu: 'Menu',
+    search: 'Search',
+    /** Astro's dev server has no index; only a build writes dist/pagefind/. */
+    searchUnavailable: 'Search is available on the built site',
+    /** Pagefind's own UI strings. [SEARCH_TERM] and [COUNT] are its placeholders. */
+    searchUi: {
+      placeholder: 'Search',
+      clear_search: 'Clear',
+      load_more: 'Load more results',
+      search_label: 'Search this site',
+      filters_label: 'Filters',
+      zero_results: 'No results for [SEARCH_TERM]',
+      many_results: '[COUNT] results for [SEARCH_TERM]',
+      one_result: '[COUNT] result for [SEARCH_TERM]',
+      alt_search: 'No results for [SEARCH_TERM]. Showing results for [DIFFERENT_TERM]',
+      search_suggestion: 'No results for [SEARCH_TERM]. Try one of these searches:',
+      searching: 'Searching for [SEARCH_TERM]',
+    },
     version: 'Version',
     prerelease: `Pre-release; ${facts.nextVersion} is next`,
     releases: 'Releases',
@@ -112,7 +148,7 @@ export const en = {
       reduced: 'Metaballs, drawn as one frame, since this system asks for reduced motion.',
     },
     code: {
-      h: 'Write it once',
+      h: 'The authored fragment and its WGSL',
       p: `The fragment stage of the gradient example as written, ${hero.authoredLines} lines, and the WGSL entry point it emits. The ${glsl} stage comes from the same function.`,
       more: '[Quick start](quickStart)',
     },
@@ -234,9 +270,10 @@ export const en = {
     title: 'TypeShade authoring guide: writing shaders in TypeScript',
     description: 'The authoring surface of TypeShade, section by section: values, control flow, layouts, diagnostics, emulated f64, production emit and migrating a GLSL shader.',
     contents: 'Contents',
-    /** A section's page title and, where its prose gives no description, its description. */
+    /** A section's page title, from the title in `sections`. */
     sectionTitle: (title: string) => `${title}, TypeShade authoring guide`,
-    sectionSummary: (title: string) => `${title}, a section of the TypeShade authoring guide for writing shaders in TypeScript for WebGPU and WebGL2.`,
+    /** Every section with a page of its own: what the sidebar, the h1 and the title show. */
+    sections,
     note: `Rendered from [AUTHORING.md](guideSource) at commit ${facts.pinnedCommit}. The package is imported here by its ${facts.nextVersion} name, \`typeshade\`.`,
   },
   notFound: {

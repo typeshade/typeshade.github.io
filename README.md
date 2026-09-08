@@ -46,6 +46,11 @@ shader changes:
 | `bun run capture` | all three, in that order |
 | `bun run build:fonts` | `ibm-plex-sans-kr-400.woff2`, `-600.woff2` and their sidecar: IBM Plex Sans KR subset to the KS X 1001 syllables plus every character the translated copy uses. Needs `pip install fonttools brotli`. The build fails if the Korean copy uses a character the subset lacks |
 
+`bun run build` ends by running [Pagefind](https://pagefind.app) over `dist/`, which writes
+the search index and the search UI into `dist/pagefind/`. It runs on every build, in CI too,
+so none of it is committed. Pagefind reads the elements marked `data-pagefind-body` in the
+layouts and keeps one index per `html lang`.
+
 The capture scripts use Playwright, which is not a dependency of this site. Point them at an
 installation:
 
