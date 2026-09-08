@@ -27,6 +27,7 @@ export const links = {
   commit: { label: facts.pinnedCommit, href: `${mirror}/tree/${facts.pinnedCommit}` },
   releases: { label: 'Watch releases', href: `${mirror}/releases` },
   license: { label: 'MIT License', href: at('LICENSE') },
+  changelog: { label: 'Changelog', href: at('CHANGELOG.md') },
 
   examplesIndex: { label: 'examples/index.ts', href: at('examples/index.ts') },
   examplesDir: { label: 'the examples directory', href: `${mirror}/tree/${facts.pinnedCommit}/examples` },

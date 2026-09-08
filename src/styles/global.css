@@ -203,21 +203,22 @@ body {
 .site-nav a:hover { color: var(--color-text-1) }
 .site-tools { display: flex; align-items: center; gap: 4px; padding-inline-start: 20px; border-inline-start: 1px solid var(--color-line-1) }
 .icon { inline-size: 20px; block-size: 20px; flex: none }
-.site-lang { position: relative }
-.site-lang summary {
+.site-menu-drop { position: relative }
+.site-menu-drop summary {
   list-style: none; display: inline-flex; align-items: center; gap: 6px; block-size: 36px; padding-inline: 8px;
   border-radius: var(--radius-sm); font-size: var(--text-meta); font-weight: 500; color: var(--color-text-2); cursor: pointer;
 }
-.site-lang summary::-webkit-details-marker { display: none }
-.site-lang summary:hover, .site-lang[open] summary { color: var(--color-text-1) }
-.site-lang .chevron { inline-size: 14px; block-size: 14px }
-.site-lang-list {
+.site-menu-drop summary::-webkit-details-marker { display: none }
+.site-menu-drop summary:hover, .site-menu-drop[open] summary { color: var(--color-text-1) }
+.site-menu-drop .chevron { inline-size: 14px; block-size: 14px }
+.site-version summary { font-variant-numeric: tabular-nums }
+.site-drop-list {
   position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 6px); z-index: 40; min-inline-size: 140px;
   padding: 6px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-ground);
   box-shadow: 0 6px 24px rgb(0 0 0 / 0.08);
 }
-.site-lang-list a { display: block; padding: 8px 10px; border-radius: var(--radius-sm); font-size: var(--text-meta); color: var(--color-text-2); text-decoration: none }
-.site-lang-list a:hover { background: var(--color-surface-1); color: var(--color-text-1) }
+.site-drop-list a { display: block; white-space: nowrap; padding: 8px 10px; border-radius: var(--radius-sm); font-size: var(--text-meta); color: var(--color-text-2); text-decoration: none }
+.site-drop-list a:hover { background: var(--color-surface-1); color: var(--color-text-1) }
 .site-theme, .site-social {
   display: inline-flex; align-items: center; justify-content: center; inline-size: 36px; block-size: 36px;
   border: 0; border-radius: var(--radius-sm); background: none; color: var(--color-text-2); cursor: pointer;

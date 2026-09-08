@@ -84,7 +84,23 @@ columns (Documentation, Project, Languages), then the licence, the copyright and
 page was built from. Headings are single nouns or short noun phrases: Motivation, Checks, Quick
 start.
 
+## Versions
+
+The header carries the repository's version as a menu (v0.0.1: Releases, Changelog, the pinned
+commit), the way VitePress sites do. The site documents one version, the one vendored at the
+pinned commit, and every number on it is measured there. When 0.1.0 ships and a later version
+diverges, older documentation moves under a path prefix (`/v0.1/guide/…`, the convention
+PixiJS uses with `/8.x/`), the unprefixed path stays the latest, and the version menu lists the
+versions. Vue's separate host per major (v2.vuejs.org) needs a domain per version and is not the
+plan.
+
 ## Languages
+
+Each language lives under a path prefix (`/ko/…`), the convention MDN, MS Learn, the Astro docs
+and VitePress sites use; English, the source, has none. The header's language menu (globe
+icon, the current language, the others in a list) switches to the same page in the other
+language, and every page declares its alternates with `hreflang`. A host per language
+(ko.vuejs.org) needs DNS per language and is not the plan.
 
 - English is the source text, in `src/i18n/en.ts`. Every other language is a translation of
   it: `src/i18n/ko.ts` is typed against the English object, so a string missing in one

@@ -5,6 +5,7 @@
 // dark-mode switch needs a script (in Base.astro).
 import { MARK } from '../lib/mark.ts'
 import { links, navLinks } from '../lib/links.ts'
+import { facts } from '../lib/examples.ts'
 import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts'
 
 interface Props {
@@ -33,13 +34,24 @@ const others = languages.filter((l) => !l.current)
         {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
       </nav>
       <div class="site-tools">
-        <details class="site-lang">
+        <details class="site-menu-drop site-version">
+          <summary aria-label={`${t.nav.version} ${facts.mirrorVersion}`}>
+            <span>v{facts.mirrorVersion}</span>
+            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
+          </summary>
+          <ul class="site-drop-list">
+            <li><a href={links.releases.href}>{t.nav.releases}</a></li>
+            <li><a href={links.changelog.href}>{t.nav.changelog}</a></li>
+            <li><a href={links.commit.href}>{t.nav.commit} {facts.pinnedCommit}</a></li>
+          </ul>
+        </details>
+        <details class="site-menu-drop site-lang">
           <summary aria-label={t.nav.languages}>
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm7.93 9h-3.02a15.7 15.7 0 0 0-1.3-5.36A8.03 8.03 0 0 1 19.93 11ZM12 4.07c.9 1.2 1.9 3.5 2.2 6.93H9.8c.3-3.43 1.3-5.73 2.2-6.93ZM4.07 13h3.02c.14 1.98.6 3.8 1.3 5.36A8.03 8.03 0 0 1 4.07 13Zm3.02-2H4.07a8.03 8.03 0 0 1 4.32-5.36A15.7 15.7 0 0 0 7.09 11ZM12 19.93c-.9-1.2-1.9-3.5-2.2-6.93h4.4c-.3 3.43-1.3 5.73-2.2 6.93Zm3.61-1.57c.7-1.56 1.16-3.38 1.3-5.36h3.02a8.03 8.03 0 0 1-4.32 5.36Z" /></svg>
             <span class="site-lang-current">{t.name}</span>
             <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
           </summary>
-          <ul class="site-lang-list">
+          <ul class="site-drop-list">
             {others.map((l) => <li><a href={l.href} hreflang={l.locale} lang={l.locale}>{l.label}</a></li>)}
           </ul>
         </details>
@@ -64,6 +76,10 @@ const others = languages.filter((l) => !l.current)
           {navLinks(locale).map((l) => <a href={l.href}>{l.label}</a>)}
           <a href={links.mirror.href}>{t.nav.github}</a>
         </nav>
+        <div class="site-screen-row">
+          <span>{t.nav.version}</span>
+          <span class="site-screen-langs">v{facts.mirrorVersion} <a href={links.releases.href}>{t.nav.releases}</a></span>
+        </div>
         <div class="site-screen-row">
           <span>{t.nav.languages}</span>
           <span class="site-screen-langs">{others.map((l) => <a href={l.href} hreflang={l.locale} lang={l.locale}>{l.label}</a>)}</span>

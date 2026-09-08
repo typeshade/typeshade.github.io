@@ -30,6 +30,10 @@ export const ko: Copy = {
     languages: '언어',
     theme: '다크 모드 전환',
     menu: '메뉴',
+    version: '버전',
+    releases: '릴리스',
+    commit: '고정 커밋',
+    changelog: '변경 이력',
   },
   docs: {
     introduction: '소개',

@@ -29,6 +29,10 @@ export const en = {
     languages: 'Languages',
     theme: 'Toggle dark mode',
     menu: 'Menu',
+    version: 'Version',
+    releases: 'Releases',
+    commit: 'Pinned commit',
+    changelog: 'Changelog',
   },
   docs: {
     introduction: 'Introduction',
