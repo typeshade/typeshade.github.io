@@ -206,7 +206,7 @@ export const ko: Copy = {
 
   front: {
     hero: {
-      before: 'WGSL과 GLSL을 모두 만드는',
+      before: '',
       accent: 'TypeScript 셰이더 라이브러리',
       after: '',
       subtitle: 'TypeShade for Shader DSL',
