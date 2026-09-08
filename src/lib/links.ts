@@ -28,11 +28,9 @@ export const links = {
   },
   /** Nav, hero secondary, §adopt, footer. */
   mirror: { label: 'GitHub', href: mirror },
-  docs: { label: 'Docs', href: 'https://x-gis.github.io/X-GIS/shader-dsl/' },
-  xgisSource: {
-    label: 'X-GIS source',
-    href: 'https://github.com/X-GIS/X-GIS/tree/main/shader-dsl',
-  },
+  /** Nav, footer, /llms.txt. The mirror's own README at the pinned commit — the package
+   *  documents itself, so `Docs` cannot point at a site this project does not publish. */
+  docs: { label: 'Docs', href: `${mirror}/blob/${facts.pinnedCommit}/README.md` },
   /** The link text carries the package's actual state — deck §7, MSG §8. */
   npm: {
     label: `npm typeshade — reserved for ${facts.nextVersion}`,
@@ -48,7 +46,8 @@ export const links = {
   // that are built in different steps. Mirror routes are permalinks at the pinned commit,
   // so a route can never resolve to a file the page's numbers were not measured from.
   // IA §4.2: where a rail chip and a later CTA point into the same area they carry DIFFERENT
-  // URLs (chip → the gate spec; §agree's CTA → the `playground/e2e` directory).
+  // URLs (chip → the gate's source; §agree's CTA → the workflow that runs it). Where a chip
+  // and a ladder rung point at the SAME file they share ONE record, so they carry one wording.
   /** `RAIL.CHIP` 1 — the registry the example counts were measured over. */
   examplesIndex: {
     label: 'examples/index.ts',
@@ -65,16 +64,13 @@ export const links = {
     label: 'package.json',
     href: `${mirror}/blob/${facts.pinnedCommit}/package.json`,
   },
-  /** `RAIL.CHIP` 4 and later `B2.LADDER` ② — X-GIS's CI, not the mirror's: the mirror's root
-   *  holds no workflow file (IA X4), which is why the compile claims name X-GIS. */
-  wgslGate: {
-    label: '_wgsl-compile-gate.spec.ts',
-    href: 'https://github.com/X-GIS/X-GIS/blob/main/playground/e2e/_wgsl-compile-gate.spec.ts',
-  },
-  /** `RAIL.CHIP` 5 and later `B2.LADDER` ③. */
-  glslGate: {
-    label: '_glsl-compile-gate.spec.ts',
-    href: 'https://github.com/X-GIS/X-GIS/blob/main/playground/e2e/_glsl-compile-gate.spec.ts',
+  /** `RAIL.CHIP` 4 and later `B2.LADDER` ② — ONE gate, ONE record: it emits every registered
+   *  example, compiles each WGSL emit on Tint and links both GLSL ES 3.00 stages on a real
+   *  WebGL2 context, so a second wording for a second half would be a second wording for the
+   *  same file (R-15). It is the MIRROR's own gate, run by the mirror's own CI. */
+  compileGate: {
+    label: 'scripts/compile-gate.ts',
+    href: `${mirror}/blob/${facts.pinnedCommit}/scripts/compile-gate.ts`,
   },
 
   // ── Step 5's destinations. Each is a route a block's own proof rests on, and each carries
@@ -90,11 +86,12 @@ export const links = {
     label: 'See the examples',
     href: `${mirror}/tree/${facts.pinnedCommit}/examples`,
   },
-  /** §agree's CTA — the ONE file that wires BOTH compile gates into CI. The `playground/e2e`
-   *  directory is forbidden as a destination (454 entries, deck §5). */
+  /** §agree's CTA — the file that runs the gate above on every push and pull request. A
+   *  different destination from `compileGate` (the gate's source), so the two wordings stay
+   *  injective; the Actions tab is not a destination here, because a run list is not a claim. */
   ciGates: {
-    label: 'Read the CI gates',
-    href: 'https://github.com/X-GIS/X-GIS/blob/main/.github/workflows/test.yml',
+    label: 'Read the CI workflow',
+    href: `${mirror}/blob/${facts.pinnedCommit}/.github/workflows/ci.yml`,
   },
   /** §types has NO CTA button (design §0, X7): `reflect()` in its body is an inline link, and
    *  this record is that link. The link text is the function call itself. */

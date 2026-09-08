@@ -121,19 +121,21 @@ function pinnedCommit(): string {
 }
 
 const pkg = JSON.parse(readFileSync(path.join(vendorRoot, 'package.json'), 'utf8')) as {
-  name: string
   version: string
   license: string
   dependencies?: unknown
   peerDependencies?: unknown
-  devDependencies?: unknown
+  optionalDependencies?: unknown
 }
 
-/** `0 runtime dependencies` is derived from the ABSENCE of all three dependency fields, which
- *  is the claim the rail chip and §adopt make word for word. If the mirror ever declares one,
- *  the number stops being derivable and the build says so instead of printing a stale 0. */
+/** `0 runtime dependencies` is derived from the ABSENCE of the three fields that put code into
+ *  a consumer's install — `dependencies`, `peerDependencies`, `optionalDependencies` — which is
+ *  the claim the rail chip and §adopt make word for word. `devDependencies` is deliberately NOT
+ *  one of them: the mirror carries its own CI toolchain, and a tool that never reaches an
+ *  install is not a runtime dependency. If the mirror ever declares one of the three, the
+ *  number stops being derivable and the build says so instead of printing a stale 0. */
 function runtimeDeps(): number {
-  const declared = (['dependencies', 'peerDependencies', 'devDependencies'] as const).filter(
+  const declared = (['dependencies', 'peerDependencies', 'optionalDependencies'] as const).filter(
     (f) => f in pkg,
   )
   if (declared.length > 0) {
@@ -228,7 +230,6 @@ export const facts = {
   testFiles: testFiles.length,
   srcLocRounded: `${Math.round(srcLoc / 1000)}k`,
   pinnedCommit: pinnedCommit(),
-  packageName: pkg.name,
   license: pkg.license,
   /** `GLSL ES 3.00`, read from the emitter's own `#version` line. */
   glslTarget: glslTarget(),

@@ -7,18 +7,21 @@
 // agent reading the text file and a visitor reading the page cannot be told different numbers.
 //
 // Every value is a build-time measurement from the pinned mirror: `35 of 36` is a loop over
-// the registry running both emitters, `146` a walk of the package root, `0` the ABSENCE of all
-// three dependency fields. None of the three is typed here.
-import { facts } from './examples.ts'
-import { links, type Destination } from './links.ts'
+// the registry running both emitters, `146` a walk of the package root, `0` the ABSENCE of the
+// three dependency fields that install code. None of the three is typed here.
+//
+// Chips 4 and 5 name a MECHANISM rather than a number, and each shares its record with the
+// ladder rung that carries the same claim in §agree — one destination, one wording (R-15).
+import { facts } from "./examples.ts";
+import { links, type Destination } from "./links.ts";
 
 export interface RailClaim {
   /** Line 1 — the value or the name, set in accent mono where it is a numeral. */
-  readonly value: string
+  readonly value: string;
   /** The rest of the sentence, including its leading space. */
-  readonly rest: string
+  readonly rest: string;
   /** The route that proves it. */
-  readonly route: Destination
+  readonly route: Destination;
 }
 
 export const railClaims: readonly RailClaim[] = [
@@ -29,7 +32,7 @@ export const railClaims: readonly RailClaim[] = [
   },
   {
     value: `${facts.testFiles}`,
-    rest: ' test files in the pinned mirror.',
+    rest: " test files in the pinned mirror.",
     route: links.goldens,
   },
   {
@@ -38,13 +41,13 @@ export const railClaims: readonly RailClaim[] = [
     route: links.packageJson,
   },
   {
-    value: 'WGSL → Tint',
-    rest: ' — every shader variant X-GIS emits, in CI.',
-    route: links.wgslGate,
+    value: "Tint · WebGL2",
+    rest: " — every WGSL emit compiles on Tint, and every renderable example links on WebGL2, on every push.",
+    route: links.compileGate,
   },
   {
-    value: `${facts.glslTarget} → WebGL2`,
-    rest: ' — every shader variant X-GIS emits, in CI.',
-    route: links.glslGate,
+    value: "CPU f64 oracle",
+    rest: " — executes the same source in double precision.",
+    route: links.oracle,
   },
-]
+];

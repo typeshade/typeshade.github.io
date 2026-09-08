@@ -17,8 +17,11 @@ import { links } from '../lib/links.ts'
 
 const rungs = [
   { claim: 'CPU f64 oracle — the same source executed in f64 on a CPU', route: links.oracle },
-  { claim: 'Tint (WebGPU) compiles every emitted variant, in CI', route: links.wgslGate },
-  { claim: 'WebGL2 compiles every emitted variant, in CI', route: links.glslGate },
+  {
+    claim: 'Tint compiles every WGSL emit; WebGL2 links every renderable example, on every push',
+    route: links.compileGate,
+  },
+  { claim: 'Every emit is diffed against a committed file', route: links.goldens },
 ]
 ---
 

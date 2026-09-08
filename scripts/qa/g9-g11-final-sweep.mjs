@@ -1,6 +1,7 @@
-// Final QA-auditor pass: G9 (forbidden-word / token sweep) + G11 (R-12/13/14/15, host-name
-// count, honesty sweep). Read-only — operates on the already-built dist/ directory plus one
-// Playwright page load (for CDP accessible names, R-15). Does not touch source files.
+// Final QA-auditor pass: G9 (forbidden-word / token sweep, including the decoupling sweep
+// below) + G11 (R-12/13/14/15, host-name count, honesty sweep). Read-only — operates on the
+// already-built dist/ directory plus one Playwright page load (for CDP accessible names,
+// R-15). Does not touch source files.
 //
 // Usage: node scripts/qa/g9-g11-final-sweep.mjs <dist-dir> <port>
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
@@ -27,6 +28,8 @@ function walk(dir) {
 
 const indexHtml = readFileSync(join(dist, 'index.html'), 'utf8')
 const notFoundHtml = existsSync(join(dist, '404.html')) ? readFileSync(join(dist, '404.html'), 'utf8') : ''
+const llmsPath = join(dist, 'llms.txt')
+const llmsTxt = existsSync(llmsPath) ? readFileSync(llmsPath, 'utf8') : ''
 const cssFiles = walk(join(dist, '_astro')).filter((f) => f.endsWith('.css'))
 const emittedCss = cssFiles.map((f) => readFileSync(f, 'utf8')).join('\n')
 
@@ -89,6 +92,32 @@ for (const term of FORBIDDEN_SIMPLE) {
 {
   const m = indexBody.match(/(?<![\d.])1\.0(?![\d.])/)
   say(!m, 'forbidden bare "1.0"', m ? `near: ...${indexBody.slice(Math.max(0, m.index - 40), m.index + 40)}...` : undefined)
+}
+
+// Decoupling sweep (deck §9 forbidden words, deck §11 honesty sweep — owner decision
+// 2026-09-07). This library names NO consumer and links into no consumer's repository: the
+// MapLibre <-> deck.gl shape, where the library never advertises who ships it. So `X-GIS`,
+// `x-gis` and `xgis` must occur ZERO times in the three published documents.
+//
+// The RAW file is what is counted, deliberately — NOT the script/style-stripped body used by
+// the greps above. A consumer's name reaches a reader through an `href` and through a
+// `<meta content=…>` social card exactly as it does through visible text, and both of those
+// live outside `indexBody`. `x-?gis` covers `X-GIS`, `x-gis`, `xgis` and `@xgis/…` alike.
+{
+  const CONSUMER = /x-?gis/gi
+  for (const [name, text] of [
+    ['index.html', indexHtml],
+    ['404.html', notFoundHtml],
+    ['llms.txt', llmsTxt],
+  ]) {
+    const hits = [...text.matchAll(CONSUMER)].map((m) => m[0])
+    const forms = [...new Set(hits.map((h) => h.toLowerCase()))].join(', ')
+    say(
+      hits.length === 0,
+      `decoupling: /x-?gis/i = 0 in ${name}`,
+      hits.length ? `${hits.length} hits (${forms})` : undefined,
+    )
+  }
 }
 
 console.log('\n=== G9 — emitted CSS token checks ===')
@@ -157,8 +186,7 @@ console.log('\n=== G11 — R-12/13/14 + honesty sweep + host-name count ===')
 // the same value (proxy for "appears in facts with the same value": facts values are what
 // index.html renders — see design §10 provenance note).
 {
-  const llmsPath = join(dist, 'llms.txt')
-  const llms = existsSync(llmsPath) ? readFileSync(llmsPath, 'utf8') : ''
+  const llms = llmsTxt
   say(!!llms, 'R-14 llms.txt exists in dist/')
   // Numerals: integers, decimals, and version-like tokens (0.1.0), excluding the commit hash
   // (29c9614 — alphanumeric, checked separately) and byte-offset lists already covered by

@@ -6,13 +6,19 @@
 // because a summary with none is the one control on the page that never answers a pointer.
 //
 // R-17 constrains the body: static text until an `agreement.json` exists, and the only
-// numerals permitted in it are the ones with a §4.3 slot row.
+// numerals permitted in it are the ones with a §4.3 slot row — so the target name is
+// interpolated from `facts` rather than typed, like every other numeral on the page.
+import { facts } from '../lib/examples.ts'
+
 const BODY =
   'The oracle executes the authored module on a CPU in double precision, from the same ' +
-  'source the emitters read. The two compile gates run in the X-GIS globe engine’s CI: ' +
-  'one creates a shader module for every variant that engine emits, the other links each one ' +
-  'on a real WebGL2 context. The goldens diff every emit byte for byte against a committed ' +
-  'file. No pixel comparison between the two backends is committed yet, so none is printed here.'
+  'source the emitters read. The compile gate emits every registered example, creates a ' +
+  'shader module from each WGSL emit on Tint, and compiles and links both ' +
+  `${facts.glslTarget} stages of every renderable example on a real WebGL2 context; it ` +
+  'proves that instrument on a deliberately broken shader before it trusts a pass. The ' +
+  'goldens diff every emit byte for ' +
+  'byte against a committed file. No pixel comparison between the two backends is committed ' +
+  'yet, so none is printed here.'
 ---
 
 {/* Server-rendered OPEN: the panel is evidence, and with no JS it must be readable and
