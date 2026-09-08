@@ -174,6 +174,7 @@ export const en = {
       before: '',
       accent: 'Typed shaders',
       after: 'for WebGPU and WebGL2',
+      subtitle: 'TypeShade for Shader DSL',
       tagline: `A TypeScript library that writes a shader once and emits WGSL and ${glsl}. The same module runs on the CPU in double precision, so the compiler's output can be checked.`,
       getStarted: 'Get started',
       why: 'Why TypeShade',

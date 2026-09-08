@@ -43,8 +43,8 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - A full-width header bar (56px, one rule under it) and a full-width footer on a soft ground
   frame every page. Under 48rem the header's links, the language menu and the dark-mode switch
   sit in a panel behind a menu button.
-- The front page is centred on a 960px measure: the headline in two lines, one sentence, three
-  links, a pill with the release state, the live shader, the authored fragment beside the WGSL
+- The front page is centred on a 960px measure: the headline in two lines, the product line
+  under it in small muted text, one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
   it emits, three short points. Under 40rem the three links are a grid, Get started across the
   top; the two code frames stack under 48rem. The layout follows vuejs.org's front page.
 - Every other page is one content column, 740px, left-aligned, with code blocks and figures at

@@ -30,6 +30,7 @@ const headline = [h.before, h.accent, h.after].filter(Boolean).join(' ')
       <span class="hero-line accent">{h.accent}</span>
       {h.after && <span class="hero-line">{h.after}</span>}
     </h1>
+    <p class="hero-subtitle">{h.subtitle}</p>
     <p class="hero-tagline">{h.tagline}</p>
     <p class="hero-actions">
       <a class="button" href={localePath(locale, links.quickStart.href)}>

@@ -383,6 +383,8 @@ body > main { flex: 1 }
 .hero-line { display: block; inline-size: fit-content; margin-inline: auto; text-wrap: balance }
 .hero-title .accent { color: var(--color-accent) }
 :lang(ko) .hero-title { font-weight: 600; letter-spacing: -0.01em }
+/* The product line under the headline, small and in the muted text colour */
+.hero-subtitle { margin: 14px 0 0; font-size: 1rem; font-weight: 500; color: var(--color-text-3) }
 .hero-tagline {
   max-inline-size: 720px; margin: 20px auto 32px;
   font-size: 1.125rem; line-height: 1.5; color: var(--color-text-2);
