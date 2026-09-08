@@ -2,6 +2,6 @@
 import { en } from '../i18n/en.ts'
 
 export const heroCopy = {
-  h1: 'Typed shaders for WebGPU and WebGL2',
+  h1: 'TypeScript shader library',
   sub: en.front.hero.tagline,
 } as const

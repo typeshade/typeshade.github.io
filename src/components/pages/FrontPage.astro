@@ -20,7 +20,7 @@ const t = copyFor(locale)
 const f = t.front
 const h = f.hero
 // The headline is set in pieces, so a search result is given the whole line.
-const headline = [h.before, h.accent, h.after].filter(Boolean).join(' ')
+const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(' ')
 ---
 
 <Base locale={locale} path="/" searchable searchTitle={headline}>

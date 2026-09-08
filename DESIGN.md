@@ -43,8 +43,9 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - A full-width header bar (56px, one rule under it) and a full-width footer on a soft ground
   frame every page. Under 48rem the header's links, the language menu and the dark-mode switch
   sit in a panel behind a menu button.
-- The front page is centred on a 960px measure: the headline in two lines, the product line
-  under it in small muted text, one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
+- The front page is centred on a 960px measure: the name as the headline in the accent colour,
+  the category line under it (TypeScript shader library, the way react.dev sets its one line
+  under "React"), one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
   it emits, three short points. Under 40rem the three links are a grid, Get started across the
   top; the two code frames stack under 48rem. The layout follows vuejs.org's front page.
 - Every other page is one content column, 740px, left-aligned, with code blocks and figures at
@@ -61,7 +62,7 @@ The front page answers "what is it" in about 350 words, the length of comparable
 front pages (htmx, esbuild, wgpu, TypeGPU are 250 to 350). Everything that explains how or
 why lives on its own page.
 
-- `/`: the headline, one sentence, three links (Get started, Why TypeShade, Examples), a
+- `/`: the name, the category line, one sentence, three links (Get started, Why TypeShade, Examples), a
   bordered pill with the release state that links to the quick start, the live metaballs
   shader, the fragment stage of the gradient example beside the WGSL it emits, and three
   points.

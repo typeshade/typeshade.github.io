@@ -14,17 +14,27 @@ one design document; this skill is the working procedure on top of it.
 
 The site follows the shapes readers already know, and nothing else:
 
-- **Front page**: vuejs.org. A centred two-line headline with the accent on one line, one
-  sentence, three buttons (Get started, Why TypeShade, Examples), the live shader, three short
+- **Front page**: vuejs.org, with react.dev's headline: the name in the accent colour, the
+  category line under it (TypeScript shader library), one sentence, three buttons (Get
+  started, Why TypeShade, Examples), the live shader, three short
   points, one line on the release state. No lists of features, no long prose.
-- **Header**: VitePress. Name on the left; Guide and Examples; then a language menu (globe
+- **Header**: VitePress. Name on the left; Guide, API and Examples; then a language menu (globe
   icon, current language, list of the others), a dark-mode switch (sun or moon), GitHub as an
   icon. Under 48rem, a menu button and a panel with the same items.
-- **Docs**: VitePress. Sidebar on the left in three groups (Introduction, Authoring,
-  Project), the document in the middle at 740px, an outline of the page's own headings on the
+- **Docs**: VitePress. Sidebar on the left in four groups (Introduction, Authoring, Project,
+  Reference), the document in the middle at 740px, an outline of the page's own headings on the
   right on wide screens, an "Edit this page" link and previous and next at the bottom. Under
-  64rem the sidebar is a bar under the header that names the current page. Every document
-  lives under `/guide/`; the authoring guide is one page per section of AUTHORING.md.
+  64rem the sidebar is a bar under the header that names the current page. The guide lives
+  under `/guide/`, one page per section of AUTHORING.md; the reference lives under `/api/`.
+- **Reference**: MDN. `/api/` lists the categories, `/api/<category>/` the exports in one of
+  them, `/api/<export>/` is the page for one export. A page keeps MDN's order and leaves out
+  a section it has nothing for: Syntax, Parameters, Return value, Exceptions, Description,
+  Examples, Targets (MDN's compatibility table), Constructor, Instance properties, Instance
+  methods, In the guide, See also, Source. Nothing on those pages is written by hand: the text
+  is the compiler's own JSDoc at the pinned commit, read by `src/lib/api.ts`. A wrong sentence
+  is fixed upstream and arrives at the next pin, never by editing the site. What the site does
+  write is the words around it, `docs.api` in every dictionary, including a name and a
+  sentence for every category (`docs.api.categories`, keyed by the extractor's slug).
 - **Footer**: vuejs.org. A site map in three columns, then the licence, the copyright and the
   commit the page was built from.
 - **Search**: Pagefind, the way VitePress sites carry a search box. `bun run build` writes the
