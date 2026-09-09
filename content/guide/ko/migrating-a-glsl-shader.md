@@ -1,7 +1,7 @@
 ---
 id: migrating-a-glsl-shader
-source: 032080cd71b94b8ef7ddf335a0ed3d8d721c7f1d4fcebfac70034728d35297c1
-sourceLine: 2557
+source: 1237c505d6cb1995bb61c9d18c80b91c924bd86bfa30d68020d9bd87fbc83726
+sourceLine: 2559
 ---
 
 이 페이지를 다 읽으면 눈앞의 GLSL 구성 요소를 두고 DSL에서 어떻게 표기하는지 찾아본 다음,
@@ -65,7 +65,7 @@ WGSL의 어휘이며, 닫힌 유니온 타입인 `WgslBuiltinName`으로 타입�
 | `gl_FrontFacing` | `builtin('front_facing', boolT)` | |
 | `gl_FragDepth` | 반환 속성으로 쓰는 `builtin('frag_depth', f32T)` | |
 | `gl_PointSize` and `gl_PointCoord` | 두 생성기 모두 지원하지 않음 | 포인트 크기 상한은 벤더마다 다르며, WebGPU의 점 프리미티브는 항상 한 픽셀입니다. 버텍스 스테이지에서 인스턴스 쿼드를 확장하고 모서리 uv를 `@location(n)`으로 보간하십시오 |
-| float `mod(x, y)` | 독립 함수 `mod()` | 이는 floor-mod입니다. `.mod()`와 `%`는 trunc-mod로, WGSL의 의미론이며 이제 GLSL에서도 이식 가능하게 표기할 수 있습니다. 음수 피연산자에서 어떤 의미를 원하는지에 따라 골라 쓰면 됩니다 |
+| float `mod(x, y)` | 독립 함수 `mod()` | 이는 floor-mod입니다. `.mod()`와 `%`는 trunc-mod로, WGSL의 의미론이며 GLSL에서도 이식 가능하게 표기할 수 있습니다. 음수 피연산자에서 어떤 의미를 원하는지에 따라 골라 쓰면 됩니다 |
 
 프래그먼트 스테이지는 버텍스 스테이지가 쓰는 것과 같은 `position` 내장값을 통해
 프레임버퍼 좌표를 읽습니다.
@@ -121,7 +121,7 @@ camera.field.u_matrix // emits `u_matrix` on GLSL, `u_camera.u_matrix` on WGSL
 이 페이지의 어떤 내용도 GLSL 생성기가 표현할 수 있는 범위를 좁히지 않습니다. 중립
 이름은 어디까지나 표기법일 뿐이며, 그 뒤에 있는 규칙 몇 가지는 오히려 WebGL2 출력을
 더 명확하게 정의하려고 존재합니다. `round`는 `roundEven`을 생성하고, float `%`는
-GLSL ES 3.00이 실제로 컴파일하는 trunc-mod를 생성합니다.
+GLSL ES 3.00이 컴파일하는 trunc-mod를 생성합니다.
 
 중립 표면이 다루지 못하는 GLSL 구성 요소에는 [`rawStmt`](/guide/authoring/raw-statements/)가
 있어 한 타깃만을 위한 페이로드를 받으며, `fn()` 본문 안에서는 `b.raw`가 같은 페이로드를

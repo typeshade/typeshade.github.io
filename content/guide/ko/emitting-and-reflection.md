@@ -1,6 +1,6 @@
 ---
 id: emitting-and-reflection
-source: 4f056d658b096a0352dcbec1924819c9ab35b0bc4f9af7d86c0742acdef752f5
+source: 9ee5a392833eca0692209ee0db2d05d77b5172d3a7d819223cafa256eb7e07db
 sourceLine: 1083
 ---
 
@@ -156,9 +156,9 @@ reach.bindings // Set { 'U' }, the binding names that stage reads
 reach.fns // the call-graph closure from those entries, the entries included
 ```
 
-`owner`는 그 리소스를 누가 소유하는지 나타냅니다. 우리가 바인딩을 선언하고 호스트가 이
-리플렉션을 바탕으로 그것을 할당하면 `'module'`이고, 주변 렌더러가 그것을 소유하고 그
-레이아웃의 근거가 되면 `'host'`입니다. 어느 쪽이든 목록은 완전한 채로 남습니다. 호스트는
+`owner`는 그 리소스를 누가 소유하는지 나타냅니다. 모듈이 바인딩을 선언하고 호스트가 이
+리플렉션을 바탕으로 그것을 할당하면 `'module'`이고, 파이프라인을 소유한 호스트가 그것을
+선언하고 그 레이아웃의 근거가 되면 `'host'`입니다. 어느 쪽이든 목록은 완전한 채로 남습니다. 호스트는
 자신이 소유한 바인딩에 대해서도 여전히 알아야 하기 때문입니다. `resourceKind`는 무엇을
 만들어야 하는지 나타내고, 텍스처 항목은 뷰와 샘플 타입에 필요한 두 축인 `textureDim`과
 `textureElem`도 함께 지니는데, 이는 [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)가
@@ -168,6 +168,6 @@ WebGPU 바인드 그룹 레이아웃 항목이 요구하는 가시성 마스크�
 
 바인드 그룹에는 직접 선언한 바인딩뿐 아니라 하향 변환이 끼워 넣는 바인딩도 들어갑니다.
 [fp64](/guide/authoring/fp64/) 하향 변환은 에뮬레이션 헬퍼가 그 텍스처를 읽는 모듈에 `_fp64`라는
-이름의 가드 텍스처를 추가하는데, 이 리플렉션을 바탕으로 바인딩하는 호스트는 그런 사실을
-모른 채로도 그것을 바인딩하게 됩니다. 생성 시점에 넘길 것과 같은 `fp64Flavor`를 `reflect`에도
+이름의 텍스처 바인딩을, 즉 그 페이지가 설명하는 가드 텍스처를 추가하는데, 이 리플렉션을
+바탕으로 바인딩하는 호스트는 그런 사실을 모른 채로도 그것을 바인딩하게 됩니다. 생성 시점에 넘길 것과 같은 `fp64Flavor`를 `reflect`에도
 넘겨서, 리플렉션이 실제로 실행될 프로그램을 기술하도록 해야 합니다.

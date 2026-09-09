@@ -1,7 +1,7 @@
 ---
 id: values-and-mutation
-source: 74f64a4d6ddc6db4ecedff56b7365c58c655e3157d305ae5a954eb708c220fba
-sourceLine: 322
+source: 89f4a325c1d6696f50016f7e50d7680463c5d90df66e46a8ed551447ff6101e4
+sourceLine: 323
 ---
 
 이 절을 다 읽고 나면 중간값을 작성하고, 코드에 타입이 필요한 자리에 타입을 지정하고, 값을
@@ -72,9 +72,8 @@ const hits = Var('hits', u32T) // var hits: u32;
 ### assign으로 변경하기
 
 JavaScript는 `=` 연산자를 오버로드할 수 없으므로, 변경은 값을 쓰는 대상의 메서드로
-존재합니다. `.assign(v)`가 그 유일한 메서드입니다. 독립 함수 `assign(x, v)`는 없고, 노드에는
-복합 대입 메서드도 없습니다. `add`는 순수 표현식이므로 `x += v`는 `x.assign(x.add(v))`로
-씁니다.
+존재합니다. `.assign(v)`가 그 유일한 메서드이고, 노드에는 복합 대입 메서드도 없습니다.
+`add`는 순수 표현식이므로 `x += v`는 `x.assign(x.add(v))`로 씁니다.
 
 ```ts
 const min_dist = f32(1e10) // a plain const…
