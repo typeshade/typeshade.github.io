@@ -20,19 +20,19 @@ const sections: Record<string, { title: string; description: string }> = {
   },
   'values-and-mutation': {
     title: '값과 변경',
-    description: '중간 값을 쓰고 필요한 곳에만 타입을 붙이며, 그 값을 바꾸고, 어떤 값이 자기 이름을 따로 가져야 하는지 가립니다.',
+    description: '중간 값을 쓰고 필요한 곳에만 타입을 붙이며, 그 값을 바꾸고, 어떤 값이 자기 이름을 따로 가져야 하는지 가리는 법을 익힙니다.',
   },
   'functions-and-entry-points': {
     title: '함수와 진입점',
-    description: '헬퍼를 선언해 다른 함수에서 부르고, 어느 스테이지든 진입점을 쓰고, 그것들을 담는 모듈을 선언합니다.',
+    description: '헬퍼 함수를 선언해 다른 함수에서 부르고, 어느 스테이지든 진입점을 쓰고, 그 함수들을 모두 담는 모듈을 선언하는 법을 익힙니다.',
   },
   'control-flow': {
     title: '제어 흐름',
-    description: '셰이더 본문 안에서 분기하고 반복하고 디스패치하며, 문장 형태와 값 형태를 구분합니다.',
+    description: '셰이더 본문 안에서 분기하고 반복하고 디스패치하는 법을 익히고, 문장 형태의 제어 흐름과 값 형태의 제어 흐름을 서로 구분합니다.',
   },
   'layouts-and-resources': {
     title: '레이아웃과 리소스',
-    description: '버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고 그 선언 하나에서 모든 필드를 읽습니다.',
+    description: '버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고, 그 선언 하나에서 모든 필드를 읽어 두 타깃에 그대로 쓰는 법을 익힙니다.',
   },
   'emitting-and-reflection': {
     title: '출력과 리플렉션',
@@ -40,7 +40,7 @@ const sections: Record<string, { title: string; description: string }> = {
   },
   'the-cpu-oracle': {
     title: 'CPU 오라클',
-    description: '모듈을 CPU에서 배정밀도로 실행하고, 거기서 나온 숫자를 GPU가 낸 값과 비교합니다.',
+    description: '모듈을 CPU에서 배정밀도로 실행하고, 거기서 나온 숫자를 GPU가 낸 값과 비교해 컴파일러의 출력을 검증하는 법을 익힙니다.',
   },
   diagnostics: {
     title: '진단',
@@ -56,7 +56,7 @@ const sections: Record<string, { title: string; description: string }> = {
   },
   fp64: {
     title: 'fp64',
-    description: '셰이더 안에 배정밀도 값을 선언하고, 어떤 연산을 지원하는지 알고, 에뮬레이션에 필요한 가드 텍스처를 바인딩합니다.',
+    description: '셰이더 안에 배정밀도 값을 선언하고, f64가 지원하는 연산이 무엇인지 알고, 에뮬레이션에 필요한 가드 텍스처를 바인딩하는 법을 익힙니다.',
   },
   'glsl-float-precision': {
     title: 'GLSL 부동소수점 정밀도',
@@ -64,15 +64,15 @@ const sections: Record<string, { title: string; description: string }> = {
   },
   'production-emit': {
     title: '프로덕션 출력',
-    description: '배포 시점 변환을 출력 호출 하나로 조합하고, 이름이 바뀐 텍스트로 돌아온 드라이버 로그를 읽습니다.',
+    description: '배포 시점 변환을 출력 호출 하나로 조합하고, 이름이 바뀐 셰이더 텍스트로 돌아온 드라이버 로그를 원래 이름으로 되돌려 읽습니다.',
   },
   'raw-statements': {
     title: '원시 문장',
-    description: '손으로 쓴 문장을 모듈에 끼워 넣고, 그 문장이 대상마다 무엇을 치르게 하는지 압니다.',
+    description: '손으로 쓴 문장을 모듈에 그대로 끼워 넣는 법과, 그 문장이 WGSL과 GLSL 각 타깃에서 무엇을 포기하게 하는지 알아봅니다.',
   },
   'migrating-a-glsl-shader': {
     title: 'GLSL 셰이더 옮기기',
-    description: '눈앞의 GLSL 구문을 DSL에서 어떻게 쓰는지 찾고, 그 표기가 대상마다 무엇으로 바뀌는지 봅니다.',
+    description: '눈앞의 GLSL 구문을 DSL에서 어떻게 쓰는지 표에서 찾고, 그 표기가 WGSL과 GLSL 각 타깃에서 무엇으로 바뀌는지 확인합니다.',
   },
 }
 

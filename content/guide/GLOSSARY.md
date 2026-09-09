@@ -63,8 +63,10 @@ JavaScript, GPU, CPU, IR, f32, f64, std140은 로마자 그대로 씁니다.
 | NEAREST (texture filter mode) | NEAREST | GL 계열 텍스처 필터링 모드의 이름. WGSL/GLSL 코드에 실제로 등장하는 상수 이름과 같은 성격이라 번역하지 않고 로마자 그대로 둡니다. |
 | neutral id (capability) | 중립 id | `enables`에 적는, 특정 백엔드의 `EXT_*`/`OVR_*` 문자열이 아니라 두 타깃 모두에 통하는 기능 이름. 리플렉션이 돌려주는 id도 같은 뜻으로 "중립"이라 부릅니다. |
 | tier (portable kernel) | 등급 | "portable kernel tier", "gather-only tier"처럼 어떤 조건을 만족해야 들어가는 커널의 부류를 가리킵니다. |
-| gather-only | 수집 전용 | 이식 가능한 컴퓨트 커널이 지켜야 하는 모양으로, 여러 위치를 읽기만 하고 자기 스레드 몫에 정확히 한 번만 쓰는 것을 가리킵니다. "gather-only pass"도 같은 말로 옮깁니다. |
-| scatter write | 흩어 쓰기 | 커널이 자기 스레드가 맡은 위치가 아닌 다른 위치에 쓰는 것. gather-only 등급에서 금지됩니다. |
+| gather-only | gather 전용 | 이식 가능한 컴퓨트 커널이 지켜야 하는 모양으로, 여러 위치를 읽기만 하고 자기 스레드 몫에 정확히 한 번만 쓰는 것을 가리킵니다. "gather-only pass"도 같은 말로 옮깁니다. "gather" 자체는 아래 "영어로 두는 낱말" 표를 따라 번역하지 않고 그대로 씁니다. |
+| scatter write | scatter 쓰기 | 커널이 자기 스레드가 맡은 위치가 아닌 다른 위치에 쓰는 것. gather 전용 등급에서 금지됩니다. "scatter"는 아래 "영어로 두는 낱말" 표를 따라 번역하지 않고 그대로 씁니다. |
+| lane (f32 lane) | 레인 | f64 값의 hi/lo 쌍이나 비트캐스트 정수처럼, f32 슬롯 하나가 나르는 값 한 조각을 가리킵니다. |
+| matrix (variant space) | 행렬 | `variantFamily`의 축이 만드는 조합 전체, 즉 축 공간을 가리킵니다. "매트릭스"로 음차하지 않고 "행렬"로 통일합니다. |
 | single-view / multiview (rendering) | 단일 뷰 / 멀티뷰 | `multiview` 확장이 실제로 여러 시점을 한 번에 그리는 렌더링을 가리킬 때 쓰는 말. 코드 식별자 `multiview`는 번역하지 않고 그대로 둡니다. |
 | capability gate | 기능 게이트 | 모듈이 선언한 `enables` id가 실제로 지원되는지 걸러 내는 컴파일 단계. |
 | dispatch uniform | 디스패치 유니폼 | 이식 가능한 컴퓨트 커널의 첫 번째 `uniform` 바인딩으로, 호출 횟수와 출력 그리드 크기 등 디스패치 정보를 담습니다. |
@@ -91,6 +93,7 @@ JavaScript, GPU, CPU, IR, f32, f64, std140은 로마자 그대로 씁니다.
 | driver log | 드라이버 로그 | GPU 드라이버가 컴파일 오류 등에 대해 돌려주는 원문 메시지. `decodeShaderLog`가 되돌리는 대상입니다. |
 | decode (driver log) | 디코딩 | `mangle`이 바꾼 이름을 드라이버 로그 안에서 다시 작성 시점 이름으로 되돌리는 것. 이미 한국어 개발 문서에서 쓰는 음차입니다. |
 | statement form | 문 형태 | `If`·`Loop`처럼 본문에 코드를 쌓아 올리고 값을 돌려주지 않는 형태. 이미 고정한 "raw 문"의 "문"과 짝을 맞췄습니다. |
+| spelling (raw statement) | 표기 | `rawStmt`/`b.raw`에 넘기는 `{ wgsl, glsl }` 페이로드에서, 타깃 하나에 해당하는 실제 텍스트 한 쪽. `production-emit.md`가 이름 표기에 쓴 "표기"를 그대로 이어받아, 같은 raw 문이 타깃마다 다른 문자열로 나가는 것을 가리킵니다. |
 | value form | 값 형태 | `when`·`matchEnum`처럼 내부에서 같은 분기를 만들고 그 결과를 값으로 돌려주는 형태. statement form과 대비되는 개념입니다. |
 | accumulator | 누산기 | `reduce`가 루프를 도는 동안 갱신해 나가는 값. 한국어 컴퓨터과학 문서에서 이미 쓰는 번역어입니다. |
 | axis (variant) | 축 | `variantFamily`가 갈라지는 기준 하나(예: `quality: ['low', 'high']`). 여러 축이 모여 축 공간을 이룹니다. |
@@ -101,6 +104,13 @@ JavaScript, GPU, CPU, IR, f32, f64, std140은 로마자 그대로 씁니다.
 | writer (backend) | 생성기 | 모듈을 건드려 WGSL/GLSL 텍스트를 만들어 내는 백엔드 쪽 구성 요소를 가리킵니다. "백엔드"(표준 용어) 자체가 아니라 그 백엔드가 실제로 생성 작업을 하는 부분을 가리킬 때 씁니다. |
 | colour attachment | 색상 어태치먼트 | 텍스처를 렌더 패스의 출력 대상으로 붙이는 것. 한국어 WebGPU/그래픽스 문서에서 "어태치먼트"가 이미 음차로 쓰입니다. |
 | framebuffer | 프레임버퍼 | WebGL의 FBO(Framebuffer Object)를 가리키는 한국어 그래픽스 용어. 약어 FBO 대신 풀어서 씁니다. |
+| mangling | 맹글링 | `mangle()`이 식별자 이름을 base-52 짧은 이름으로 바꾸는 처리. C++ name mangling처럼 한국어 컴파일러 문서에서 이미 음차로 쓰는 말입니다. |
+| helper (function) | 헬퍼 (함수) | 진입점이 호출하는, 진입점이 아닌 함수. 한국어 개발 문서에서 이미 "헬퍼 함수"로 굳어진 말입니다. |
+| call site | 호출 지점 | 어떤 함수가 실제로 불리는 코드 위치 하나. "call graph"(호출 그래프)와 짝을 이룹니다. |
+| forward prototype | 전방 선언 | GLSL에서 함수 정의보다 앞서 그 시그니처만 미리 적어 두는 선언. `prune()`이 다루는 대상이며, `production-emit.md`에서 이미 이렇게 옮겼습니다. |
+| do-not-optimize flag | 최적화 금지 플래그 | f64 하향 변환이 자신이 끼워 넣는 에뮬레이션 라이브러리의 헬퍼에 찍어 두는 표시로, `inline()`의 `opaque` 옵션이 다루는 대상입니다. |
+| bucket (semantic diff) | 버킷 | `semanticDiff`가 두 모듈의 차이를 담아 분류하는 그릇 하나. 한국어 개발 문서에서 분류 단위를 가리킬 때 이미 음차로 쓰는 말입니다. |
+| parity gate | 패리티 게이트 | dev 모듈과 prod 모듈의 차이 가운데 선언한 파이프라인으로 설명되지 않는 나머지만 남았는지 검사하는 CI 게이트. |
 
 ## 로마자 그대로 쓰는 용어
 
