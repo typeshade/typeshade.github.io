@@ -17,7 +17,7 @@ const DESCRIPTION_MIN = 70
 const DESCRIPTION_MAX = 160
 
 export interface AuthoringSection {
-  /** The route segment, from the heading: 'sot-helpers', 'quick-reference'. */
+  /** The route segment, from the heading: 'control-flow', 'raw-statements'. */
   readonly id: string
   readonly title: string
   readonly order: number
