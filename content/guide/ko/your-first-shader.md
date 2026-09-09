@@ -1,6 +1,6 @@
 ---
 id: your-first-shader
-source: ba028f0599bef0502373f0ff31a6b6af83a7923dc2516017ede7a25a8c82e2e3
+source: c49f95f4da58d020cd07c3fed3933a8f0267a7c0d120c6d03353c8e96e66a89e
 sourceLine: 127
 ---
 
@@ -146,7 +146,8 @@ fn fs(vo: VsOut) -> @location(0) vec4<f32> {
 
 GLSL ES 3.00은 한 번에 스테이지 하나씩 컴파일하고 소스마다 자신만의 `main`을 가지므로, GLSL은
 스테이지마다 문자열 하나로 돌아옵니다. `emitGlslStages(gradient)`는 모듈을 한 번 하향
-변환하여 `{ vertex, fragment }`를 돌려줍니다:
+변환하여 `{ vertex, fragment }`를 돌려주는데, 이 하향 변환은 타깃이 표현할 수 있는 형태로
+IR을 다시 쓰는 패스입니다:
 
 ```glsl
 #version 300 es

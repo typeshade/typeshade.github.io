@@ -1,6 +1,15 @@
+<p align="center">
+  <a href="https://typeshade.dev/">
+    <img height="112" src="https://typeshade.dev/favicon.svg" alt="TypeShade">
+  </a>
+</p>
+
 # typeshade.dev
 
-The TypeShade website. Astro, deployed to GitHub Pages by `.github/workflows/deploy.yml`.
+The website for [TypeShade](https://github.com/typeshade/typeshade), the TypeScript shader
+library that emits WGSL for WebGPU and GLSL ES 3.00 for WebGL2. It holds the guide, the API
+reference and the examples, in English and Korean. Astro, deployed to GitHub Pages by
+`.github/workflows/deploy.yml`.
 
 The compiler is vendored at `vendor/shader-dsl` as a git submodule of
 [typeshade/typeshade](https://github.com/typeshade/typeshade). Every code sample and every
