@@ -16,15 +16,30 @@ The compiler is vendored at `vendor/shader-dsl` as a git submodule of
 number on the page is computed from that checkout at build time (`src/lib/examples.ts`), and
 the shaders on the page are emitted from it (`src/lib/hero-shader.ts`).
 
+The official author surface on `main` is file-level `"use typeshade"`. `fn()` remains the IR
+equality oracle. Pin target after PR #5:
+
+- compiler: `f2ed88be618a8c5d22b9bcc0d7493681227e6240`
+- land commit: `2605a270bd6b12b554e1aa96f00e1112549856e0`
+
 ```bash
 git clone --recurse-submodules https://github.com/typeshade/typeshade.github.io
 bun install
 bun run dev
 ```
 
-To move the pinned compiler forward: `git -C vendor/shader-dsl pull origin main`, then commit
-the submodule pointer. If a measured number changes, `src/lib/examples.ts` stops the build and
-asks you to update the copy.
+To move the pinned compiler forward:
+
+```bash
+git -C vendor/shader-dsl fetch origin
+git -C vendor/shader-dsl checkout f2ed88be618a8c5d22b9bcc0d7493681227e6240
+git add vendor/shader-dsl
+git commit -m "chore: pin compiler to use-typeshade main"
+```
+
+If a measured number changes, `src/lib/examples.ts` stops the build and asks you to update
+the copy. Do not rewrite guide Korean hashes in the same commit as the pin unless
+`AUTHORING.md` headings changed.
 
 ## Routes
 
