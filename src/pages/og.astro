@@ -19,9 +19,7 @@ import { MARK } from '../lib/mark.ts'
     <div class="og-card" data-og-card>
       <div class="og-text">
         <div class="og-wordmark">
-          <svg viewBox={MARK.viewBox} aria-hidden="true" focusable="false">
-            <path d={MARK.d} fill="none" stroke="currentColor" stroke-width={MARK.strokeWidth} stroke-linecap="round" stroke-linejoin="round"></path>
-          </svg>
+          <img src={MARK.src} alt="" width="48" height="48" />
           TypeShade
         </div>
         <h1 class="og-h1">{heroCopy.h1}</h1>
@@ -44,7 +42,7 @@ import { MARK } from '../lib/mark.ts'
   }
   .og-text { display: flex; flex-direction: column; justify-content: center; padding: 64px 48px 64px 72px }
   .og-wordmark { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600 }
-  .og-wordmark svg { inline-size: 26px; block-size: 26px }
+  .og-wordmark img { inline-size: 32px; block-size: 32px; border-radius: 7px }
   .og-h1 { margin-block-start: 36px; font-size: 54px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; max-inline-size: 11em }
   .og-sub { margin-block-start: 20px; font-size: 22px; line-height: 1.45; color: #454545; max-inline-size: 22em }
   .og-domain { margin-block-start: 36px; font-family: var(--font-mono); font-size: 18px; color: #6b6b6b }

@@ -29,9 +29,7 @@ const ordered = [...languages.filter((l) => l.current), ...others]
 <header class="site-header" data-pagefind-ignore>
   <div class="site-header-in">
     <a class="site-name" href={localePath(locale, '/')}>
-      <svg viewBox={MARK.viewBox} aria-hidden="true" focusable="false">
-        <path d={MARK.d} fill="none" stroke="currentColor" stroke-width={MARK.strokeWidth} stroke-linecap="round" stroke-linejoin="round"></path>
-      </svg>
+      <img src={MARK.src} alt="" width="28" height="28" />
       TypeShade
     </a>
 
