@@ -15,16 +15,22 @@ interface Props {
 }
 const { locale } = Astro.props
 const t = copyFor(locale)
-const q = t.quickStart
+const q = t.quickStart as typeof t.quickStart & { p0?: string }
 const headings = [q.installH, q.status.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const p0 =
+  q.p0 ??
+  (locale === 'ko'
+    ? '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래 삼각형은 `fn()`과 같은 IR입니다.'
+    : 'A file that starts with `"use typeshade"` is a shader compilation unit. The triangle below lowers to the same IR as `fn()`.')
+const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
 ---
 
 <Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description} headings={headings} editHref={editCopy(locale, 'quickStart')}>
   <h1>{q.h1}</h1>
   <h2 id={slugify(q.installH)}>{q.installH}</h2>
   <InstallCommand locale={locale} />
-  <p><Rich text={q.p0} locale={locale} /></p>
-  <CodeFrame label={t.codeLabels.useTypeshade}>
+  <p><Rich text={p0} locale={locale} /></p>
+  <CodeFrame label={useLabel}>
     <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} />
   </CodeFrame>
   <p><Rich text={q.p1} locale={locale} /></p>
