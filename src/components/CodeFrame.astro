@@ -3,11 +3,11 @@
 // there, added at build time to the rendered string.
 interface Props {
   /** Names the content, for example "Authored fragment, gradient-pass.ts". */
-  label: string
+  label?: string
 }
-const { label } = Astro.props
+const label = Astro.props.label ?? ''
 
-const escape = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
+const escape = (s: string): string => s.replace(/&/g, '&').replace(/</g, '<').replace(/"/g, '"')
 
 const rendered = await Astro.slots.render('default')
 if (!rendered.includes('<pre')) throw new Error(`[CodeFrame] '${label}' rendered no <pre>`)
