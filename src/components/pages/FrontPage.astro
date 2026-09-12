@@ -1,8 +1,4 @@
 ---
-// The front page in one locale: the headline, its three links and the pre-release pill, the
-// live shader, the authored fragment beside the WGSL it emits, and three short points. Every
-// number is read at build time from the compiler vendored at vendor/shader-dsl; the words
-// come from src/i18n.
 import { Code } from 'astro-expressive-code/components'
 import Base from '../../layouts/Base.astro'
 import CodeFrame from '../CodeFrame.astro'
@@ -10,6 +6,7 @@ import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { hero } from '../../lib/examples.ts'
+import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
 import { links } from '../../lib/links.ts'
 
 interface Props {
@@ -19,7 +16,6 @@ const { locale } = Astro.props
 const t = copyFor(locale)
 const f = t.front
 const h = f.hero
-// The headline is set in pieces, so a search result is given the whole line.
 const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(' ')
 ---
 
@@ -53,11 +49,10 @@ const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(
     <h2>{f.code.h}</h2>
     <p><Rich text={f.code.p} locale={locale} /></p>
     <div class="code-pair">
-      <CodeFrame label={t.codeLabels.authored}>
-        <Code code={hero.authored} lang="ts" title={hero.file} locale={locale} />
+      <CodeFrame label={t.codeLabels.useTypeshade}>
+        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} />
       </CodeFrame>
       <CodeFrame label={t.codeLabels.wgsl}>
-        {/* The emitted WGSL has no file of its own, so the title bar names the language. */}
         <Code code={hero.wgsl} lang="wgsl" title="WGSL" locale={locale} />
       </CodeFrame>
     </div>

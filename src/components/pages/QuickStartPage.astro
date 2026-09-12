@@ -1,6 +1,4 @@
 ---
-// The submodule command, a complete runnable file (import to emit call), the WGSL it
-// emits, and the status note.
 import { Code } from 'astro-expressive-code/components'
 import Docs from '../../layouts/Docs.astro'
 import CodeFrame from '../CodeFrame.astro'
@@ -8,6 +6,7 @@ import InstallCommand from '../InstallCommand.astro'
 import Rich from '../Rich.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
 import { hero, quickStartFile } from '../../lib/examples.ts'
+import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { slugify } from '../../lib/slug.ts'
 
@@ -24,6 +23,10 @@ const headings = [q.installH, q.status.h].map((h) => ({ depth: 2, slug: slugify(
   <h1>{q.h1}</h1>
   <h2 id={slugify(q.installH)}>{q.installH}</h2>
   <InstallCommand locale={locale} />
+  <p><Rich text={q.p0} locale={locale} /></p>
+  <CodeFrame label={t.codeLabels.useTypeshade}>
+    <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} />
+  </CodeFrame>
   <p><Rich text={q.p1} locale={locale} /></p>
   <CodeFrame label={t.codeLabels.quickStartFile}>
     <Code code={quickStartFile.code} lang="ts" title="shader.ts" locale={locale} />
