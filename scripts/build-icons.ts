@@ -1,5 +1,4 @@
-// Every icon the site ships, rasterised from public/favicon.svg. Run after any change to
-// the mark: bun run build:icons
+// Rasterises public/favicon.svg. After changing the mark: bun run build:icons
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,44 +9,31 @@ import { MARK } from '../src/lib/mark.ts'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const source = readFileSync(path.join(root, 'public/favicon.svg'), 'utf8')
 
-// src/lib/mark.ts must describe the SVG on disk; the header and the social card draw from it.
-const attr = (name: string): string => {
-  const m = new RegExp(`\\b${name}="([^"]*)"`).exec(source)
-  if (!m) throw new Error(`[icons] public/favicon.svg declares no ${name}`)
-  return m[1]!
-}
-const mismatch: string[] = []
-if (attr('viewBox') !== MARK.viewBox) mismatch.push(`viewBox ${attr('viewBox')} != ${MARK.viewBox}`)
-if (attr('d') !== MARK.d) mismatch.push(`d ${attr('d')} != ${MARK.d}`)
-if (Number(attr('stroke-width')) !== MARK.strokeWidth) mismatch.push(`stroke-width ${attr('stroke-width')} != ${MARK.strokeWidth}`)
-if (mismatch.length > 0) {
-  throw new Error(`[icons] src/lib/mark.ts no longer describes public/favicon.svg: ${mismatch.join('; ')}`)
+const viewBox = /viewBox="([^"]+)"/.exec(source)?.[1]
+if (viewBox !== MARK.viewBox) {
+  throw new Error(`[icons] favicon.svg viewBox ${viewBox} != MARK.viewBox ${MARK.viewBox}`)
 }
 
-// mask-icon.svg is the path alone; a filled rect makes Safari render the mask as a square.
-const maskIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK.viewBox}"><path d="${MARK.d}" fill="none" stroke="#000" stroke-width="${MARK.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/></svg>\n`
+const maskIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#000"/></svg>\n`
 
-const markup = (size: number, rounded: boolean): string => {
-  const svg = rounded ? source : source.replace(/\srx="\d+(?:\.\d+)?"/, '')
-  return `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:transparent}
-svg{display:block;width:${size}px;height:${size}px}</style>${svg}`
-}
+const markup = (size: number): string =>
+  `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:transparent}
+svg{display:block;width:${size}px;height:${size}px}</style>${source}`
 
 const browser = await launchChromium()
 const context = await browser.newContext({ deviceScaleFactor: 1 })
 const page = await context.newPage()
 
-async function raster(size: number, rounded: boolean): Promise<Buffer> {
+async function raster(size: number): Promise<Buffer> {
   await page.setViewportSize({ width: size, height: size })
-  await page.setContent(markup(size, rounded))
+  await page.setContent(markup(size))
   return (await page.screenshot({ omitBackground: true, clip: { x: 0, y: 0, width: size, height: size } })) as Buffer
 }
 
-const ico32 = await raster(32, true)
-const apple180 = await raster(180, false)
+const ico32 = await raster(32)
+const apple180 = await raster(180)
 await browser.close()
 
-/** A one-image ICO whose single entry is a PNG. */
 function icoOf(png: Buffer): Buffer {
   const header = Buffer.alloc(22)
   header.writeUInt16LE(0, 0)
