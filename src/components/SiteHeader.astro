@@ -22,3 +22,12 @@ const languages = locales.map((l) => ({ locale: l, href: localePath(l, target), 
 const others = languages.filter((l) => !l.current)
 const ordered = [...languages.filter((l) => l.current), ...others]
 ---
+
+<header class="site-header" data-pagefind-ignore>
+  <div class="site-header-in">
+    <a class="site-name" href={localePath(locale, '/')}>
+      <img src={MARK.src} alt="" width="28" height="28" />
+      TypeShade
+    </a>
+  </div>
+</header>
