@@ -9,6 +9,7 @@ import remarkApiLinks from './src/lib/remark-api-links.mjs'
 import remarkDocTables from './src/lib/remark-doc-tables.mjs'
 import remarkPackageName from './src/lib/remark-package-name.mjs'
 import remarkPromoteBoldLeads from './src/lib/remark-promote-bold-leads.mjs'
+import typeshadeSyntax from './src/lib/typeshade-syntax.mjs'
 import { verifyArtifacts } from './scripts/artifacts.mjs'
 import { verifyKoreanFonts } from './scripts/fonts.mjs'
 
@@ -51,7 +52,11 @@ export default defineConfig({
         },
       },
     },
-    expressiveCode(), // options in ec.config.mjs
+    expressiveCode({
+      // TypeShade source intentionally remains `.ts`. Extend Shiki's TypeScript grammar
+      // instead of inventing a second user-facing language identifier.
+      shiki: { langs: [typeshadeSyntax] },
+    }),
     sitemap({
       filter: (page) => !['/og', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide', '/ko/404'].includes(new URL(page).pathname.replace(/\/$/, '')),
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
