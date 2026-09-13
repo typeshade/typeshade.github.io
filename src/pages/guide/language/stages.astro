@@ -6,14 +6,14 @@ interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade 셰이더 스테이지', description: 'compute, vertex, fragment entry point를 작성하는 방법.', h1: 'Shader stages: GPU 실행 지점을 명시하기',
+  title: 'TypeShade 셰이더 스테이지', description: 'compute, vertex, fragment entry point를 TypeShade에서 작성하고 명시적인 builtin parameter로 GPU 실행 지점을 선언하는 방법.', h1: 'Shader stages: GPU 실행 지점을 명시하기',
   intro: 'TypeShade의 entry point는 class가 아니라 top-level exported function입니다. decorator가 함수의 shader stage와 필요한 metadata를 표시합니다.',
   compute: '1. Compute', computeP: '`@compute`는 workgroup 크기를 함께 표현합니다. `global_invocation_id` 같은 compute builtin은 암시적 전역 변수가 아니라 명시적인 함수 parameter로 받습니다.',
   graphics: '2. Vertex와 fragment', graphicsP: '`@vertex`와 `@fragment`는 그래픽스 pipeline의 entry point를 표현합니다. 입력과 출력은 TypeShade value type과 명시적인 builtin parameter로 선언합니다.',
   helper: '3. Helper function', helperP: 'decorator가 없는 함수는 entry가 아니라 helper입니다. entry point를 class method로 만들거나 `this`를 pipeline 객체로 취급하지 않습니다.',
   next: '언어 개요로 돌아가기', href: '/ko/guide/language/'
 } : {
-  title: 'TypeShade shader stages', description: 'Write compute, vertex and fragment entry points.', h1: 'Shader stages: explicit GPU entry points',
+  title: 'TypeShade shader stages', description: 'Write compute, vertex and fragment entry points with explicit builtins and stage metadata in TypeShade.', h1: 'Shader stages: explicit GPU entry points',
   intro: 'TypeShade entry points are top-level exported functions. A decorator marks the shader stage and any stage-specific metadata.',
   compute: '1. Compute', computeP: '`@compute` carries the workgroup size. A compute builtin such as `global_invocation_id` is an explicit function parameter, not an injected global.',
   graphics: '2. Vertex and fragment', graphicsP: '`@vertex` and `@fragment` describe graphics-pipeline entry points. Inputs, outputs and builtins are expressed explicitly in the function signature.',
