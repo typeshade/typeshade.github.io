@@ -16,40 +16,43 @@ const t = copyFor(locale)
 const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
 const content = locale === 'ko'
   ? {
-      eyebrow: 'TypeScript로 작성하는 셰이더 언어',
+      eyebrow: 'TypeScript 개발 경험으로 작성하는 셰이더 언어',
       title: 'TypeShade',
-      subtitle: '`use typeshade`로 시작하세요.',
-      tagline: 'TypeScript의 익숙한 개발 경험 위에서 TypeShade만의 타입과 셰이더 의미론으로 프로그램을 작성하고, 하나의 소스에서 WGSL과 GLSL ES 3.00을 생성합니다.',
-      getStarted: '시작하기',
-      learn: '학습하기',
-      language: '언어 가이드',
-      examples: '예제',
-      codeH: 'TypeShade는 여기서 시작합니다',
-      codeP: '파일 수준의 `"use typeshade"` 지시어가 일반 TypeScript와 TypeShade 셰이더 소스의 경계를 만듭니다.',
+      subtitle: '`"use typeshade"`에서 시작하세요.',
+      tagline: 'TypeScript의 익숙한 타입, 함수, 모듈과 에디터 경험을 바탕으로 TypeShade만의 GPU 타입과 셰이더 의미론을 사용합니다. 하나의 소스에서 WGSL과 GLSL ES 3.00을 생성합니다.',
+      getStarted: '5분 만에 시작',
+      learn: '왜 TypeShade인가',
+      language: '언어 배우기',
+      examples: '예제 보기',
+      flowH: 'TypeShade는 이렇게 동작합니다',
+      flowP: 'TypeScript 파일에 `"use typeshade"`를 선언하면 일반 애플리케이션 코드와 TypeShade 언어의 경계가 생깁니다.',
+      codeH: '첫 번째 TypeShade 프로그램',
+      codeP: '작성하는 코드는 TypeScript처럼 보이지만, 컴파일러는 TypeShade의 타입과 GPU 의미론을 적용해 호스트가 사용할 셰이더를 생성합니다.',
       highlights: [
-        ['TypeScript의 개발 경험', '에디터에서 타입, 모듈, 함수와 제어 흐름을 사용하면서 셰이더 코드에 필요한 제약을 정적으로 확인합니다.'],
-        ['TypeShade의 고유한 의미론', '`use typeshade`는 단순한 주석이 아닙니다. 컴파일러가 해당 파일을 TypeShade 프로그램으로 해석하도록 선택하는 언어 경계입니다.'],
-        ['소스는 하나, 출력은 호스트에 맞게', '같은 TypeShade 소스를 WGSL(WebGPU) 또는 GLSL ES 3.00(WebGL2)으로 내보냅니다. TypeShade 런타임은 필요하지 않습니다.'],
+        ['TypeScript에서 출발합니다', '타입 주석, 함수, 모듈과 제어 흐름처럼 익숙한 언어 개념을 유지하면서 셰이더에 필요한 규칙은 정적으로 확인합니다.'],
+        ['`use typeshade`가 언어 경계입니다', '`"use typeshade"`는 주석이나 런타임 호출이 아닙니다. 해당 파일을 TypeShade 프로그램으로 선택하고 TypeShade의 셰이더 의미론을 적용하는 언어 지시어입니다.'],
+        ['GPU에 맞는 출력으로 내려갑니다', '같은 TypeShade 소스에서 WebGPU용 WGSL 또는 WebGL2용 GLSL ES 3.00을 생성합니다. 애플리케이션에 TypeShade 런타임을 배포할 필요가 없습니다.'],
       ],
     }
   : {
-      eyebrow: 'A shader language built around TypeScript',
+      eyebrow: 'A shader language built around the TypeScript experience',
       title: 'TypeShade',
       subtitle: 'Start with `"use typeshade"`.',
-      tagline: 'Write shader programs with TypeScript tooling and TypeShade semantics, then emit WGSL or GLSL ES 3.00 from the same source.',
-      getStarted: 'Get started',
-      learn: 'Learn',
-      language: 'Language',
-      examples: 'Examples',
-      codeH: 'This is the TypeShade authoring surface',
-      codeP: 'The file-level `"use typeshade"` directive creates the boundary between ordinary TypeScript and TypeShade shader semantics.',
+      tagline: 'Keep the TypeScript authoring experience—types, functions, modules and editor feedback—while writing with TypeShade GPU types and shader semantics. Emit WGSL or GLSL ES 3.00 from one source.',
+      getStarted: 'Start in 5 minutes',
+      learn: 'Why TypeShade',
+      language: 'Learn the language',
+      examples: 'Explore examples',
+      flowH: 'From TypeScript to a shader',
+      flowP: 'A file-level `"use typeshade"` directive creates the boundary between ordinary application code and the TypeShade language.',
+      codeH: 'Your first TypeShade program',
+      codeP: 'The source looks familiar to a TypeScript developer. The compiler applies TypeShade types and GPU semantics, then produces shader code the host can consume.',
       highlights: [
-        ['TypeScript developer experience', 'Use familiar types, modules, functions and control flow while shader-specific constraints are checked statically in the editor.'],
-        ['TypeShade semantics', '`use typeshade` is more than a comment. It opts the file into TypeShade program semantics and its compilation model.'],
-        ['One source, host-ready output', 'Emit WGSL for WebGPU or GLSL ES 3.00 for WebGL2 from the same TypeShade source. There is no TypeShade runtime.'],
+        ['Start from TypeScript', 'Keep familiar concepts such as type annotations, functions, modules and control flow while shader-specific constraints are checked statically.'],
+        ['`use typeshade` is the language boundary', '`"use typeshade"` is not a comment or a runtime call. It opts the file into TypeShade program semantics and its compilation model.'],
+        ['Lower to host-ready GPU code', 'Emit WGSL for WebGPU or GLSL ES 3.00 for WebGL2 from the same TypeShade source. There is no TypeShade runtime to ship with the application.'],
       ],
     }
----
 
 <Base locale={locale} path="/" searchable searchTitle={content.title}>
   <section class="hero">
@@ -73,8 +76,19 @@ const content = locale === 'ko'
   </section>
 
   <section class="wide front-code">
-    <h2>{content.codeH}</h2>
-    <p>{content.codeP}</p>
+    <h2>{content.flowH}</h2>
+    <p>{content.flowP}</p>
+    <div class="authoring-flow" aria-label="TypeShade compilation flow">
+      <span>TypeScript authoring</span>
+      <span aria-hidden="true">→</span>
+      <code>"use typeshade"</code>
+      <span aria-hidden="true">→</span>
+      <span>TypeShade semantics</span>
+      <span aria-hidden="true">→</span>
+      <span>shared IR</span>
+      <span aria-hidden="true">→</span>
+      <span>WGSL / GLSL ES 3.00</span>
+    </div>
     <div class="code-pair">
       <CodeFrame label={useLabel}>
         <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} />
