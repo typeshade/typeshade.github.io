@@ -12,7 +12,7 @@ sourceLine: 1
 
 셰이더는 TypeScript로 작성한 타입이 지정된 표현식과 문장입니다. 표현식을 만들 때마다 연산과 피연산자를 기록하는 작은 타입 객체인 노드가 생깁니다. 이 노드의 그래프가 중간 표현, 즉 IR이며 패키지가 컴파일하는 대상입니다. 셰이더 텍스트를 직접 조립하지 않으므로 잘못된 타입이나 필드 이름은 에디터에서 TypeScript 오류로 확인할 수 있습니다.
 
-TypeShade의 공식 작성 방식은 일반적인 `.ts` 파일에서 첫 문장으로 `"use typeshade";`를 쓰는 것입니다. 별도의 파일 확장자나 별도의 편집 모드가 필요하지 않으며, TypeScript의 타입 검사와 개발 도구를 유지하면서 GPU 실행에 필요한 의미와 제약을 추가합니다.
+TypeShade의 공식 작성 방식은 일반적인 `.ts` 파일에서 첫 문장으로 `"use typeshade";`를 쓰는 것입니다. 별도의 파일 확장자나 별도의 편집 모드가 필요하지 않으며, TypeScript의 타입 검사와 개발 도구를 유지하면서 GPU 실행에 필요한 의미와 제약을 추가합니다. 기존 EDSL 표면을 사용하는 경우에는 `@xgis/shader-dsl` 패키지에서 같은 IR 작성 기능을 가져올 수 있습니다.
 
 구조를 만드는 두 호출은 `fn`과 `module`입니다. `fn`은 함수의 매개변수와 본문을 선언하고, 진입점이면 실행 스테이지도 지정합니다. `module`은 함수와 구조체, 리소스, 상수를 하나의 모듈 값으로 묶습니다.
 
@@ -38,7 +38,7 @@ const cpu = compileModule(m) // cpu.fns.ring_mask([0.3, 0.4], 0.5) === 0
 const meta = reflect(m) // bind groups, layouts, entry signatures
 ```
 
-`emitModule(m)`은 다음과 같은 WGSL을 만듭니다.
+`emitModule(m)`은 WGSL을 생성합니다.
 
 ```wgsl
 fn ring_mask(uv: vec2<f32>, radius: f32) -> f32 {
@@ -64,3 +64,21 @@ import { ioStruct, uniformStruct, structDecl, builtin, location, storageBuffer, 
 각 페이지는 학습 순서대로 하나의 주제를 다룹니다. 처음에는 순서대로 읽는 것이 가장 빠르고, 이후에는 필요한 페이지를 바로 찾아볼 수 있습니다. TypeScript나 웹 플랫폼 개념이 낯설다면 관련 개념을 먼저 이해한 뒤 TypeShade가 GPU를 위해 어떻게 제한하고 확장하는지 확인하십시오.
 
 이 가이드는 `"use typeshade"`로 시작하는 실제 작성 경험을 먼저 익히고, 그 다음 함수와 값, 리소스, 제어 흐름, 생성과 리플렉션 같은 컴파일러 세부 사항으로 내려가도록 구성되어 있습니다. 기존 GLSL을 옮기는 경우에는 GLSL 셰이더 옮기기 페이지에서 시작해 필요한 개념으로 거슬러 올라가면 됩니다.
+
+다음 페이지는 작성 순서에 맞춰 구성되어 있습니다.
+
+- [첫 셰이더](/guide/authoring/your-first-shader/)
+- [값과 변경](/guide/authoring/values-and-mutation/)
+- [함수와 진입점](/guide/authoring/functions-and-entry-points/)
+- [제어 흐름](/guide/authoring/control-flow/)
+- [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)
+- [생성과 리플렉션](/guide/authoring/emitting-and-reflection/)
+- [CPU 오라클](/guide/authoring/the-cpu-oracle/)
+- [진단](/guide/authoring/diagnostics/)
+- [조건부 프로그램](/guide/authoring/conditional-programs/)
+- [Capability와 확장](/guide/authoring/capabilities-extensions/)
+- [fp64](/guide/authoring/fp64/)
+- [GLSL 부동소수점 정밀도](/guide/authoring/glsl-float-precision/)
+- [배포용 생성](/guide/authoring/production-emit/)
+- [Raw statements](/guide/authoring/raw-statements/)
+- [GLSL 셰이더 옮기기](/guide/authoring/migrating-a-glsl-shader/)
