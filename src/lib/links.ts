@@ -15,18 +15,19 @@ export interface Destination {
 
 const mirror = facts.mirrorUrl
 const at = (file: string): string => `${mirror}/blob/${facts.pinnedCommit}/${file}`
-// This site's own repository, for the "edit this page" link every documentation site carries.
 const siteRepo = 'https://github.com/typeshade/typeshade.github.io'
 
 export const links = {
   home: { label: 'TypeShade', href: '/' },
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Quick start', href: '/guide/quick-start/' },
-  guide: { label: 'Language guide', href: '/guide/authoring/' },
+  guide: { label: 'Language guide', href: '/guide/language/' },
+  legacyAuthoring: { label: 'Compiler authoring guide', href: '/guide/authoring/' },
   checks: { label: 'Verification', href: '/guide/checks/' },
   examples: { label: 'Examples', href: '/guide/examples/' },
   api: { label: 'API reference', href: '/api/' },
   guideSource: { label: 'AUTHORING.md', href: at('AUTHORING.md') },
+  surfaceSource: { label: 'use-typeshade-surface.md', href: at('docs/use-typeshade-surface.md') },
   mirror: { label: 'GitHub', href: mirror },
   docs: { label: 'README', href: at('README.md') },
   npm: { label: 'typeshade', href: 'https://www.npmjs.com/package/typeshade' },
@@ -56,7 +57,6 @@ export const links = {
 
 const i18nSourceByLocale = new Map<Locale, string>()
 
-/** The dictionary file's own text, read once per locale so an edit link can find a key's line. */
 function i18nSource(locale: Locale): string {
   const cached = i18nSourceByLocale.get(locale)
   if (cached !== undefined) return cached
@@ -65,8 +65,6 @@ function i18nSource(locale: Locale): string {
   return text
 }
 
-/** The line a top-level dictionary key starts on, 1-based. Fails the build if the key moves
- *  out of the top level or a call site misspells it, so the link can never go stale. */
 function dictionaryLine(locale: Locale, key: string): number {
   const lines = i18nSource(locale).split('\n')
   const at = lines.findIndex((l) => l.startsWith(`  ${key}: {`) || l.startsWith(`  ${key}: `))
@@ -74,24 +72,19 @@ function dictionaryLine(locale: Locale, key: string): number {
   return at + 1
 }
 
-/** The file a hand-written page is written in, on GitHub. The copy is the page. Passing the
- *  page's own top-level dictionary key points the link at that key's line in the file. */
 export function editCopy(locale: Locale, key?: string): string {
   const at = key === undefined ? '' : `#L${dictionaryLine(locale, key)}`
   return `${siteRepo}/blob/main/src/i18n/${locale}.ts${at}`
 }
 
-/** The line a guide section starts on in the vendored AUTHORING.md, on GitHub. */
 export function editGuide(sourceLine: number): string {
   return `${links.guideSource.href}#L${sourceLine}`
 }
 
-/** A translated guide section's file in this repository, on GitHub. */
 export function editGuideTranslation(locale: Locale, id: string): string {
   return `${siteRepo}/blob/main/${translationDir(locale)}/${id}.md`
 }
 
-/** The primary header links put language learning first, followed by reference and examples. */
 export function navLinks(locale: Locale): readonly Destination[] {
   const labels = locale === 'ko'
     ? { learn: '학습', language: '언어', api: 'API', examples: '예제' }
@@ -104,16 +97,12 @@ export function navLinks(locale: Locale): readonly Destination[] {
   ]
 }
 
-/** The page one public export is documented on, for a link in the copy. A name the compiler
- *  no longer exports fails the build. */
 export function apiPage(name: string): string {
   const slug = apiSlugByName().get(name)
   if (!slug) throw new Error(`[links] the copy links to '${name}', which the compiler does not export`)
   return `/api/${slug}/`
 }
 
-/** The five hand-written documentation pages, in the sidebar's order. The footer lists them
- *  beside the reference; the sidebar puts them in its first three groups. */
 export function docsPages(locale: Locale): readonly Destination[] {
   const d = copyFor(locale).docs
   const page = (key: 'motivation' | 'quickStart' | 'guide' | 'checks' | 'examples') => localePath(locale, links[key].href)
@@ -126,18 +115,9 @@ export function docsPages(locale: Locale): readonly Destination[] {
   ]
 }
 
-/** A sidebar link. An item one level in (a member of the open category) has depth 1. */
-export interface SidebarItem extends Destination {
-  readonly depth?: number
-}
+export interface SidebarItem extends Destination { readonly depth?: number }
+export interface SidebarGroup { readonly title: string; readonly items: readonly SidebarItem[] }
 
-export interface SidebarGroup {
-  readonly title: string
-  readonly items: readonly SidebarItem[]
-}
-
-/** The docs sidebar in one locale: learning first, then language, project internals and the
- *  generated reference. Reference opens with its own index and lists category pages after it. */
 export function sidebar(locale: Locale, sections: readonly Destination[] = [], openCategory?: string): readonly SidebarGroup[] {
   const d = copyFor(locale).docs
   const pages = docsPages(locale)
