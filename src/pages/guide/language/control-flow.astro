@@ -6,24 +6,27 @@ interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade 제어 흐름', description: '조건문과 반복문처럼 TypeScript에서 익숙한 제어 흐름을 GPU에서 컴파일 가능한 TypeShade 실행 모델로 작성하는 방법.', h1: 'Control flow: 익숙한 흐름, 명시적인 GPU 실행',
-  intro: 'TypeShade는 조건문과 반복문의 TypeScript 표면을 활용하지만, 코드는 GPU에서 실행됩니다. 따라서 동적 JavaScript 동작보다 컴파일 가능한 정적 계산을 중심으로 작성해야 합니다.',
-  branch: '1. 조건 분기', branchP: 'if/else는 계산 경로를 표현합니다. 분기 안에서도 TypeShade가 이해하는 값과 resource만 사용합니다.',
-  loop: '2. 반복', loopP: '반복문은 GPU에서 컴파일 가능한 형태로 사용합니다. 배열 길이나 런타임 객체를 기준으로 동적으로 실행 구조를 바꾸는 JavaScript 패턴은 피합니다.',
-  boundary: '3. JavaScript와의 경계', boundaryItems: ['동적 배열 메서드로 실행 길이를 바꾸는 패턴은 사용하지 않습니다.', '클로저와 일반 runtime 객체에 의존하지 않습니다.', '조건과 반복은 GPU에서 계산 가능한 값과 범위로 제한합니다.'],
+  title: 'TypeShade 제어 흐름', description: 'TypeScript에서 익숙한 조건문과 반복문의 개념을 TypeShade의 GPU 실행 모델로 연결하는 방법.', h1: 'Control flow: 익숙한 흐름, 명시적인 GPU 실행',
+  intro: 'TypeShade는 TypeScript의 조건문과 반복문 표면을 활용하지만, 코드는 GPU에서 실행됩니다. 따라서 JavaScript runtime의 동적 동작이 아니라 컴파일 가능한 계산을 기준으로 제어 흐름을 이해해야 합니다.',
+  ts: '1. TypeScript의 흐름에서 출발하기', tsP: 'if/else와 for 같은 구문은 익숙하지만, TypeShade에서는 각 조건식과 반복식이 GPU 코드로 낮아질 수 있어야 합니다. 문법이 같다는 것이 JavaScript runtime semantics 전체를 가져온다는 뜻은 아닙니다.',
+  branch: '2. 조건 분기', branchP: 'if/else는 계산 경로를 표현합니다. 분기 안에서도 TypeShade가 이해하는 값과 resource만 사용합니다.',
+  loop: '3. 반복', loopP: '반복문은 GPU에서 컴파일 가능한 형태로 사용합니다. 배열 길이나 런타임 객체를 기준으로 동적으로 실행 구조를 바꾸는 JavaScript 패턴은 피합니다.',
+  boundary: '4. JavaScript와의 경계', boundaryItems: ['동적 배열 메서드로 실행 길이를 바꾸는 패턴은 사용하지 않습니다.', '클로저와 일반 runtime 객체에 의존하지 않습니다.', '조건과 반복은 GPU에서 계산 가능한 값과 범위로 제한합니다.', 'TypeScript에서 유효한 제어 흐름이라고 해서 TypeShade shader semantics에서도 자동으로 유효한 것은 아닙니다.'],
   next: '다음: GPU types', href: '/ko/guide/language/gpu-types/'
 } : {
-  title: 'TypeShade control flow', description: 'How familiar TypeScript conditionals and loops map to statically compilable GPU execution in TypeShade shaders.', h1: 'Control flow: familiar syntax, explicit GPU execution',
-  intro: 'TypeShade uses familiar conditional and loop syntax, but the code executes on the GPU. Prefer statically compilable computation over dynamic JavaScript behavior.',
-  branch: '1. Branching', branchP: 'Use if/else to express calculation paths. Inside a branch, keep values and resources within the TypeShade GPU model.',
-  loop: '2. Loops', loopP: 'Use loops in forms the compiler can lower to GPU code. Avoid JavaScript patterns that dynamically change execution structure from runtime objects or array methods.',
-  boundary: '3. Where JavaScript control flow stops', boundaryItems: ['Do not use dynamic array methods to determine execution length.', 'Do not rely on closures or general runtime objects.', 'Keep conditions and loop ranges based on GPU-compilable values.'],
+  title: 'TypeShade control flow', description: 'How familiar TypeScript conditionals and loops map to the TypeShade GPU execution model.', h1: 'Control flow: familiar syntax, explicit GPU execution',
+  intro: 'TypeShade uses familiar TypeScript conditional and loop syntax, but the code executes on the GPU. Understand control flow in terms of compilable computation, not the full dynamic behavior of the JavaScript runtime.',
+  ts: '1. Start from the TypeScript control-flow model', tsP: 'Syntax such as if/else and for is familiar, but every condition and loop in TypeShade must be lowerable to GPU code. Matching syntax does not imply that all JavaScript runtime semantics are available.',
+  branch: '2. Branching', branchP: 'Use if/else to express calculation paths. Inside a branch, keep values and resources within the TypeShade GPU model.',
+  loop: '3. Loops', loopP: 'Use loops in forms the compiler can lower to GPU code. Avoid JavaScript patterns that dynamically change execution structure from runtime objects or array methods.',
+  boundary: '4. Where JavaScript control flow stops', boundaryItems: ['Do not use dynamic array methods to determine execution length.', 'Do not rely on closures or general runtime objects.', 'Keep conditions and loop ranges based on GPU-compilable values.', 'A control-flow pattern valid in TypeScript is not automatically valid under TypeShade shader semantics.'],
   next: 'Next: GPU types', href: '/guide/language/gpu-types/'
 }
-const headings = [['branch',content.branch],['loop',content.loop],['boundary',content.boundary]].map(([slug,text]) => ({depth:2,slug,text}))
+const headings = [['ts',content.ts],['branch',content.branch],['loop',content.loop],['boundary',content.boundary]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
 <Docs locale={locale} path="/guide/language/control-flow/" title={content.title} description={content.description} headings={headings}>
   <h1>{content.h1}</h1><p>{content.intro}</p>
+  <h2 id="ts">{content.ts}</h2><p>{content.tsP}</p>
   <h2 id="branch">{content.branch}</h2><p>{content.branchP}</p>
   <pre><code>{`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  if (camera.pos.x > 0) {\n    pixels[gid.x] = 1\n  } else {\n    pixels[gid.x] = 0\n  }\n}`}</code></pre>
   <h2 id="loop">{content.loop}</h2><p>{content.loopP}</p>
