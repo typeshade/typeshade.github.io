@@ -6,7 +6,7 @@
   "description": "typeshade.dev, the TypeShade website",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && bun scripts/check-guide-translations.ts && bun scripts/check-api.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
+    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && bun scripts/check-guide-translations.ts && node scripts/patch-vendor-api.mjs && bun scripts/check-api.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
     "preview": "astro preview",
     "check:style": "node scripts/check-style.mjs",
     "check:copy": "bun scripts/check-copy.ts",
