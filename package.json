@@ -6,7 +6,7 @@
   "description": "typeshade.dev, the TypeShade website",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && bun scripts/check-guide-translations.ts && node scripts/patch-vendor-api.mjs && bun scripts/check-api.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
+    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && bun scripts/check-guide-translations.ts && node scripts/patch-vendor-api.mjs && node scripts/patch-api-categories.mjs && bun scripts/check-api.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
     "preview": "astro preview",
     "check:style": "node scripts/check-style.mjs",
     "check:copy": "bun scripts/check-copy.ts",
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
-    "@fontsource-variable/ibm-plex-sans": "5.3.0",
+    "@fontsource-variable/ibm-plex-sans": "5.3.2",
     "@fontsource/ibm-plex-mono": "5.3.0",
     "@tailwindcss/vite": "^4.3.2",
     "astro": "^6.4.8",
