@@ -17,6 +17,7 @@ interface Props {
 const { locale } = Astro.props
 const t = copyFor(locale)
 const e = t.examples
+const ko = locale === 'ko'
 
 const deepZoom: CanvasText = {
   neutral: e.f64.caption,
@@ -26,10 +27,22 @@ const deepZoom: CanvasText = {
 }
 const headings = [e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 
-// The gallery: every example in the registry, in its order, grouped by category. A title
-// links to the file at the pinned commit, the targets column reads the same GLSL emission
-// the count on this page is measured from, and the description comes from the dictionary,
-// so the column is in the reader's language like the rest of the page.
+const learningPath = ko
+  ? [
+      { title: '1. 첫 shader', text: '"use typeshade" 파일의 기본 형태와 shader entry를 먼저 익힙니다.', href: links.quickStart.href, label: 'Quick start' },
+      { title: '2. 값과 타입', text: 'TypeScript의 type/class가 GPU value layout으로 어떻게 내려가는지 봅니다.', href: links.languageTypes.href, label: 'Types' },
+      { title: '3. 계산을 함수로', text: 'helper function과 stage entry를 조합해 실제 shader 계산을 구성합니다.', href: links.languageFunctions.href, label: 'Functions' },
+      { title: '4. GPU 데이터', text: 'vector, matrix, array와 host-owned resource를 연결합니다.', href: links.languageResources.href, label: 'Resources' },
+      { title: '5. 실제 예제', text: '저장소의 예제를 읽으며 여러 개념을 하나의 shader로 조합합니다.', href: links.examplesDir.href, label: 'Source examples' },
+    ]
+  : [
+      { title: '1. First shader', text: 'Start with the shape of a "use typeshade" file and its shader entries.', href: links.quickStart.href, label: 'Quick start' },
+      { title: '2. Values and types', text: 'See how TypeScript type aliases and classes become GPU value layouts.', href: links.languageTypes.href, label: 'Types' },
+      { title: '3. Compose functions', text: 'Combine helper functions with stage entries to build shader calculations.', href: links.languageFunctions.href, label: 'Functions' },
+      { title: '4. GPU data', text: 'Connect vectors, matrices, arrays, and host-owned shader resources.', href: links.languageResources.href, label: 'Resources' },
+      { title: '5. Real examples', text: 'Read the repository examples and combine the language pieces into complete shaders.', href: links.examplesDir.href, label: 'Source examples' },
+    ]
+
 const order = ['cartographic', 'generic', 'compute'] as const
 const blurbs = checkedBlurbs(e.blurbs)
 const rows = examples.map((x) => ({
@@ -46,50 +59,29 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
 <Docs locale={locale} path={links.examples.href} title={e.title} description={e.description} headings={headings} editHref={editCopy(locale, 'examples')}>
     <h1>{e.h1}</h1>
     <p><Rich text={e.intro} locale={locale} /></p>
-    <p class="example-table-caption">{e.tableCaption}</p>
 
+    <section class="learning-path">
+      <h2>{ko ? '예제로 배우는 순서' : 'Learn TypeShade by building'}</h2>
+      <p>{ko ? '각 단계는 Language Guide의 한 개념을 실제 shader 작성으로 연결합니다.' : 'Each step connects one Language Guide concept to actually writing a shader.'}</p>
+      <ol>
+        {learningPath.map((step) => (
+          <li>
+            <strong>{step.title}</strong>
+            <p>{step.text}</p>
+            <a href={step.href}>{step.label} →</a>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <p class="example-table-caption">{e.tableCaption}</p>
     <table class="example-table" role="table">
-      <thead role="rowgroup">
-        <tr role="row">
-          <th role="columnheader" scope="col">{e.columns.example}</th>
-          <th role="columnheader" scope="col">{e.columns.category}</th>
-          <th role="columnheader" scope="col">{e.columns.blurb}</th>
-        </tr>
-      </thead>
-      {groups.map((group) => (
-        <tbody role="rowgroup">
-          {group.map((row) => (
-            <tr role="row">
-              <th role="rowheader" scope="row">
-                <a href={row.href}>{row.title}</a>
-                {row.wgslOnly && <span class="example-wgsl-only">{e.wgslOnly}</span>}
-              </th>
-              <td role="cell">{row.category}</td>
-              <td role="cell"><Rich text={row.blurb} locale={locale} /></td>
-            </tr>
-          ))}
-        </tbody>
-      ))}
+      <thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">{e.columns.example}</th><th role="columnheader" scope="col">{e.columns.category}</th><th role="columnheader" scope="col">{e.columns.blurb}</th></tr></thead>
+      {groups.map((group) => <tbody role="rowgroup">{group.map((row) => <tr role="row"><th role="rowheader" scope="row"><a href={row.href}>{row.title}</a>{row.wgslOnly && <span class="example-wgsl-only">{e.wgslOnly}</span>}</th><td role="cell">{row.category}</td><td role="cell"><Rich text={row.blurb} locale={locale} /></td></tr>)}</tbody>)}
     </table>
 
     <p>{e.printIntro}</p>
-    <CodeFrame label={t.codeLabels.print}>
-      <Code code={printCommands} lang="bash" locale={locale} />
-    </CodeFrame>
-
-    <section>
-      <h2 id={slugify(e.glsl.h)}>{e.glsl.h}</h2>
-      <p><Rich text={e.glsl.p1} locale={locale} /></p>
-      <CodeFrame label={t.codeLabels.glsl}>
-        <Code code={hero.glsl} lang="glsl" locale={locale} />
-      </CodeFrame>
-      <p><Rich text={e.glsl.p2} locale={locale} /></p>
-    </section>
-
-    <section>
-      <h2 id={slugify(e.f64.h)}>{e.f64.h}</h2>
-      <p><Rich text={e.f64.p1} locale={locale} /></p>
-      <p><Rich text={e.f64.p2} locale={locale} /></p>
-      <ShaderCanvas locale={locale} example="fp64-deep-zoom" aspect="3/1" still split caption={deepZoom} />
-    </section>
+    <CodeFrame label={t.codeLabels.print}><Code code={printCommands} lang="bash" locale={locale} /></CodeFrame>
+    <section><h2 id={slugify(e.glsl.h)}>{e.glsl.h}</h2><p><Rich text={e.glsl.p1} locale={locale} /></p><CodeFrame label={t.codeLabels.glsl}><Code code={hero.glsl} lang="glsl" locale={locale} /></CodeFrame><p><Rich text={e.glsl.p2} locale={locale} /></p></section>
+    <section><h2 id={slugify(e.f64.h)}>{e.f64.h}</h2><p><Rich text={e.f64.p1} locale={locale} /></p><p><Rich text={e.f64.p2} locale={locale} /></p><ShaderCanvas locale={locale} example="fp64-deep-zoom" aspect="3/1" still split caption={deepZoom} /></section>
 </Docs>
