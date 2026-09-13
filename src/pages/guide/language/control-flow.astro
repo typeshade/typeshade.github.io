@@ -1,5 +1,6 @@
 ---
 import Docs from '../../../layouts/Docs.astro'
+import TypeShadeCode from '../../../components/TypeShadeCode.astro'
 import { type Locale } from '../../../i18n/index.ts'
 
 interface Props { locale: Locale }
@@ -28,9 +29,9 @@ const headings = [['ts',content.ts],['branch',content.branch],['loop',content.lo
   <h1>{content.h1}</h1><p>{content.intro}</p>
   <h2 id="ts">{content.ts}</h2><p>{content.tsP}</p>
   <h2 id="branch">{content.branch}</h2><p>{content.branchP}</p>
-  <pre><code>{`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  if (camera.pos.x > 0) {\n    pixels[gid.x] = 1\n  } else {\n    pixels[gid.x] = 0\n  }\n}`}</code></pre>
+  <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  if (camera.pos.x > 0) {\n    pixels[gid.x] = 1\n  } else {\n    pixels[gid.x] = 0\n  }\n}`} />
   <h2 id="loop">{content.loop}</h2><p>{content.loopP}</p>
-  <pre><code>{`for (let i = 0; i < 4; i++) {\n  pixels[i] = pixels[i] + camera.pos.x\n}`}</code></pre>
+  <TypeShadeCode code={`for (let i = 0; i < 4; i++) {\n  pixels[i] = pixels[i] + camera.pos.x\n}`} />
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
   <p><a href={content.href}>{content.next}</a></p>
 </Docs>
