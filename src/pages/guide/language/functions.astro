@@ -10,14 +10,14 @@ const content = ko ? {
   intro: '함수는 TypeShade authoring의 기본 단위입니다. decorator가 없는 top-level function은 helper이고, stage decorator와 export를 가진 function은 shader entry가 됩니다.',
   helper: '1. Helper function', helperP: '일반적인 계산은 함수로 분리할 수 있습니다. helper는 pipeline entry가 아니며 stage decorator를 붙이지 않습니다.',
   entry: '2. Entry function', entryP: 'shader stage는 top-level exported function에 decorator를 붙여 선언합니다. 함수 본문은 TypeShade의 GPU 실행 모델 안에서 해석됩니다.',
-  boundary: '3. JavaScript 함수와 다른 점', boundaryItems: ['동적 객체나 일반 JavaScript runtime API를 전제로 하지 않습니다.', 'entry point는 class method가 아니라 top-level function입니다.', 'stage builtin은 해당 stage에서만 의미가 있습니다.'],
+  boundary: '3. JavaScript 함수와 다른 점', boundaryItems: ['동적 객체나 일반 JavaScript runtime API를 전제로 하지 않습니다.', 'entry point는 class method가 아니라 top-level function입니다.', 'stage builtin은 해당 stage의 명시적인 함수 parameter로 받습니다.'],
   next: '다음: Control flow', href: '/ko/guide/language/control-flow/'
 } : {
   title: 'TypeShade functions', description: 'How TypeScript function syntax becomes TypeShade helpers and shader entries.', h1: 'Functions: from TypeScript functions to shader entries',
   intro: 'Functions are the basic authoring unit in TypeShade. A top-level function without a stage decorator is a helper; an exported function with a stage decorator becomes a shader entry.',
   helper: '1. Helper functions', helperP: 'Keep reusable calculations in functions without stage decorators. A helper is not a pipeline entry point.',
   entry: '2. Entry functions', entryP: 'Declare a shader stage by decorating a top-level exported function. Its body is interpreted within the TypeShade GPU execution model.',
-  boundary: '3. Where JavaScript functions stop', boundaryItems: ['Do not assume arbitrary JavaScript runtime APIs or dynamic objects.', 'Entry points are top-level functions, not class methods.', 'Stage builtins only have meaning in their matching stage.'],
+  boundary: '3. Where JavaScript functions stop', boundaryItems: ['Do not assume arbitrary JavaScript runtime APIs or dynamic objects.', 'Entry points are top-level functions, not class methods.', 'Stage builtins are explicit function parameters; TypeShade does not inject implicit builtin globals.'],
   next: 'Next: Control flow', href: '/guide/language/control-flow/'
 }
 const headings = [['helper',content.helper],['entry',content.entry],['boundary',content.boundary]].map(([slug,text]) => ({depth:2,slug,text}))
@@ -27,7 +27,7 @@ const headings = [['helper',content.helper],['entry',content.entry],['boundary',
   <h2 id="helper">{content.helper}</h2><p>{content.helperP}</p>
   <pre><code>{`function addBias(value: f32): f32 {\n  return value + 0.5\n}`}</code></pre>
   <h2 id="entry">{content.entry}</h2><p>{content.entryP}</p>
-  <pre><code>{`@compute([64, 1, 1])\nexport function paint() {\n  pixels[gid.x] = addBias(camera.pos.x)\n}`}</code></pre>
+  <pre><code>{`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = addBias(camera.pos.x)\n}`}</code></pre>
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
   <p><a href={content.href}>{content.next}</a></p>
 </Docs>
