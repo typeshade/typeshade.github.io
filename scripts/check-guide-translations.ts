@@ -23,8 +23,6 @@ const problems: Problem[] = []
 
 const blocks = (s: string): string[] => [...s.matchAll(/```[\s\S]*?```/g)].map((m) => m[0].trim())
 const strip = (s: string): string => s.replace(/```[\s\S]*?```/g, '')
-// A span may break across a line in the source; single newlines inside prose are spaces. A
-// run longer than SPAN_MAX is a stray backtick, and is ignored on both sides.
 const spans = (s: string): Map<string, number> => {
   const m = new Map<string, number>()
   for (const x of strip(s).replace(/\n(?!\n)/g, ' ').matchAll(/`([^`]+)`/g)) {
@@ -39,8 +37,6 @@ const linkTargets = (s: string): string => [...strip(s).matchAll(/\]\(([^)]+)\)/
 const headings = (s: string): number => (strip(s).match(/^#{2,6}\s/gm) ?? []).length
 const tableRows = (s: string): string[][] => strip(s).split('\n').filter((l) => /^\|.*\|\s*$/.test(l) && !/^\|[\s:|-]+\|\s*$/.test(l)).map((l) => l.trim().slice(1, -1).split('|').map((c) => c.trim()))
 const CODE_ONLY_CELL = /^(?:`[^`]+`(?:\s*(?:,|\/|and|or)\s*)?)+$/
-// The glossary's "영어로 두는 낱말" table: its third column lists the Korean substitutes a
-// translation must not use for a word that stays English.
 function forbiddenSubstitutes(): string[] {
   const file = path.resolve(process.cwd(), GUIDE_TRANSLATIONS_DIR, 'GLOSSARY.md')
   if (!existsSync(file)) return []
@@ -77,7 +73,9 @@ const KO_TELLS: Array<{ name: string; re: RegExp; max: number }> = [
 
 function sameEndingStreak(prose: string): number {
   const sentences = prose.split(/(?<=[.!?])\s+/).map((t) => t.trim().replace(/[.!?]$/, '')).filter((t) => /[가-힣]$/.test(t))
-  let best = 0, run = 0, last = ''
+  let best = 0
+  let run = 0
+  let last = ''
   for (const t of sentences) {
     const end = t.slice(-3)
     run = end === last ? run + 1 : 1
@@ -97,10 +95,17 @@ for (const locale of locales) {
     const en = english.get(t.id)!
     const ko = t.body
     const push = (what: string) => problems.push({ file: t.file, what })
-    const eb = blocks(en), kb = blocks(ko)
-    if (eb.length !== kb.length) push(`code blocks: ${eb.length} in English, ${kb.length} in the translation`)
-    else eb.forEach((b, i) => { if (b !== kb[i]) push(`code block ${i + 1} differs from the English`) })
-    const es = spans(en), ks = spans(ko)
+    const eb = blocks(en)
+    const kb = blocks(ko)
+    if (eb.length !== kb.length) {
+      push(`code blocks: ${eb.length} in English, ${kb.length} in the translation`)
+    } else {
+      eb.forEach((b, i) => {
+        if (b !== kb[i]) push(`code block ${i + 1} differs from the English`)
+      })
+    }
+    const es = spans(en)
+    const ks = spans(ko)
     for (const [k, n] of es) if ((ks.get(k) ?? 0) < n) push(`code span \`${k}\` appears ${n} time(s) in English, ${ks.get(k) ?? 0} in the translation`)
     if (numerals(en) !== numerals(ko)) push(`numerals differ: English [${numerals(en)}], translation [${numerals(ko)}]`)
     if (linkTargets(en) !== linkTargets(ko)) push(`link targets differ: English [${linkTargets(en)}], translation [${linkTargets(ko)}]`)
@@ -116,19 +121,23 @@ for (const locale of locales) {
       if (/해요|어요|예요/.test(prose)) push('해요체 in prose')
     }
     if (/!/.test(prose.replace(/!=/g, ''))) push('an exclamation mark in prose')
-    // CommonMark reads a closing ** only when no punctuation precedes it or nothing letter-like
-    // follows it, and an opening ** only when no punctuation follows it or nothing letter-like
-    // precedes it. English writes **`code`** and a space; a translation that glues a particle to
-    // it (**`FnHandle`**입니다) prints the asterisks. Drop the emphasis or put a space.
     const marks = strip(ko)
     const badClose = marks.match(/\*\*[^*\n]+[^\p{L}\p{N}\s]\*\*(?=[\p{L}\p{N}])/gu) ?? []
     const badOpen = marks.match(/[\p{L}\p{N}]\*\*`[^`\n]+`\*\*/gu) ?? []
     if (badClose.length || badOpen.length) push(`bold markers CommonMark cannot parse: ${[...badClose, ...badOpen].slice(0, 3).join(' | ')}`)
-    // Tables: the same rows, and a cell that is only code in English is the same cell in the
-    // translation (an identifier column stays as it is; the reader pastes it).
-    const er = tableRows(en), kr = tableRows(ko)
-    if (er.length !== kr.length) push(`table rows: ${er.length} in English, ${kr.length} in the translation`)
-    else er.forEach((row, i) => row.forEach((cell, j) => { if (CODE_ONLY_CELL.test(cell) && kr[i][j] !== cell) push(`table cell ${cell} (row ${i + 1}) must stay as it is; the translation has ${kr[i][j] ?? '(nothing)'}` }))
+    const er = tableRows(en)
+    const kr = tableRows(ko)
+    if (er.length !== kr.length) {
+      push(`table rows: ${er.length} in English, ${kr.length} in the translation`)
+    } else {
+      er.forEach((row, i) => {
+        row.forEach((cell, j) => {
+          if (CODE_ONLY_CELL.test(cell) && kr[i][j] !== cell) {
+            push(`table cell ${cell} (row ${i + 1}) must stay as it is; the translation has ${kr[i][j] ?? '(nothing)'}`)
+          }
+        })
+      })
+    }
     if (locale === 'ko') for (const w of FORBIDDEN) if (prose.includes(w)) push(`"${w}" replaces a word the glossary keeps in English (GLOSSARY.md, 영어로 두는 낱말)`)
     const latin = prose.split(/\n\s*\n/).filter((p) => p.trim() && !/^[#>|+*-]/.test(p.trim()) && !/[가-힣]/.test(p) && (p.match(/[A-Za-z]{3,}/g) ?? []).length >= 4)
     if (latin.length) push(`${latin.length} prose paragraph(s) left in English: ${latin[0].trim().slice(0, 60)}`)
