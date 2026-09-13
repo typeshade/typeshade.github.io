@@ -6,7 +6,7 @@ interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade GPU 타입', description: '스칼라, 벡터, 행렬과 배열을 TypeShade GPU 값으로 이해하고 TypeScript 타입 표면과 연결하는 방법.', h1: 'GPU types: TypeScript 표면에서 GPU 값으로',
+  title: 'TypeShade GPU 타입', description: '스칼라, 벡터, 행렬과 배열을 TypeShade GPU 값으로 이해하고 TypeScript 타입 표면과 연결하는 방법을 단계별로 배우는 안내입니다.', h1: 'GPU types: TypeScript 표면에서 GPU 값으로',
   intro: 'TypeShade의 타입은 TypeScript 표면을 사용하지만 대상은 GPU 값입니다. API reference와 함께 scalar, vector, matrix, array 같은 GPU 타입의 의미를 익히세요.',
   scalar: '1. Scalar', scalarP: '단일 숫자 값은 GPU scalar 타입으로 표현합니다. 리소스와 struct field의 타입을 명시할 때 사용합니다.',
   vector: '2. Vector', vectorP: 'vec2, vec3, vec4는 여러 scalar 값을 하나의 GPU 값으로 묶습니다. shader 계산과 vertex/fragment 데이터에서 자주 사용합니다.',
