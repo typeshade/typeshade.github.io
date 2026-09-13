@@ -85,7 +85,7 @@ emitted.add(data.id)
   >
     <img
       src={`/stills/${stillId ?? data.id}.webp`}
-      alt=""
+      alt={aria.none}
       loading={eager ? 'eager' : 'lazy'}
       fetchpriority={eager ? 'high' : undefined}
       decoding="async"
