@@ -12,32 +12,53 @@ const { locale } = Astro.props
 const content = locale === 'ko'
   ? {
       title: 'TypeShade란 무엇인가',
-      description: 'TypeScript의 개발 경험을 유지하면서 셰이더 프로그램을 작성하도록 설계된 TypeShade 언어와 `use typeshade`의 의미를 설명합니다.',
+      description: 'TypeScript의 개발 경험에서 출발해 셰이더 언어로 확장되는 TypeShade와 `use typeshade`의 의미를 설명합니다.',
       h1: 'TypeScript에서 시작하는 셰이더 언어',
       sections: [
-        ['TypeShade는 무엇을 바꾸나요?', 'TypeShade는 TypeScript 코드를 그대로 셰이더로 실행하는 런타임이 아닙니다. TypeScript 파일의 익숙한 문법과 도구 경험을 출발점으로 삼고, GPU 프로그램에 필요한 타입과 의미론을 가진 별도의 컴파일 언어로 해석합니다.'],
-        ['`use typeshade`는 언어 경계입니다', '`"use typeshade"`는 TypeShade 프로그램임을 선언하는 파일 수준 지시어입니다. 이 선언이 있는 파일에서는 컴파일러가 TypeShade의 셰이더 의미론을 적용합니다. 따라서 이 한 줄을 이해하는 것이 TypeShade를 이해하는 첫 단계입니다.'],
-        ['TypeScript와 무엇이 같은가요?', 'TypeShade가 TypeScript 개발자에게 익숙하게 느껴지는 이유는 함수, 타입 주석, 모듈, 표현식과 제어 흐름 같은 언어 개념을 공유하기 때문입니다. 하지만 이름이 같다고 해서 TypeScript의 모든 기능을 그대로 사용할 수 있다는 뜻은 아닙니다. 지원되는 기능과 셰이더에서 의미가 달라지는 기능은 언어 가이드에서 명시적으로 설명합니다.'],
-        ['무엇이 셰이더답게 달라지나요?', 'GPU 실행 모델에는 CPU 프로그램과 다른 제약이 있습니다. 값의 종류, 리소스와 레이아웃, 엔트리 포인트, 타깃별 기능과 출력 규칙이 그 예입니다. TypeShade의 목적은 이런 제약을 문자열을 직접 작성할 때보다 앞 단계에서 드러내는 것입니다.'],
-        ['컴파일 결과는 무엇인가요?', 'TypeShade 소스는 중간 표현으로 내려간 뒤 호스트가 사용할 셰이더 소스로 출력됩니다. 현재 WebGPU에는 WGSL을, WebGL2에는 GLSL ES 3.00을 생성합니다. TypeShade 런타임을 브라우저에 배포하는 방식이 아니라 컴파일된 결과를 호스트가 소비하는 방식입니다.'],
-        ['어디서부터 배우면 되나요?', '처음이라면 Quick start에서 실제 파일 하나를 만든 다음 Language guide에서 타입, 값과 표현식, 함수, 제어 흐름, 셰이더 의미론을 순서대로 읽는 것을 권합니다. 컴파일러 내부 동작과 검증 방법은 그 다음에 Concepts와 Verification에서 확인할 수 있습니다.'],
+        ['TypeShade는 무엇을 바꾸나요?', 'TypeShade는 TypeScript 코드를 GPU에서 그대로 실행하는 런타임이 아닙니다. TypeScript의 익숙한 문법과 개발 도구를 출발점으로 삼고, GPU 프로그램에 필요한 타입과 의미론을 가진 별도의 컴파일 언어로 해석합니다.'],
+        ['`use typeshade`는 언어 경계입니다', '`"use typeshade"`는 파일 수준에서 TypeShade 프로그램임을 선언합니다. 이 한 줄을 기준으로 컴파일러는 일반 애플리케이션 코드와 다른 TypeShade 셰이더 의미론을 적용합니다. 따라서 TypeShade를 처음 배울 때 가장 먼저 이해해야 하는 문법입니다.'],
+        ['TypeScript에서 무엇이 그대로 익숙한가요?', '함수, 타입 주석, 모듈, 표현식과 제어 흐름처럼 이미 알고 있는 언어 개념이 TypeShade의 작성 경험을 구성합니다. 하지만 TypeScript의 모든 기능을 그대로 실행할 수 있다는 뜻은 아닙니다. TypeShade는 GPU 실행 모델에 맞지 않는 기능을 제한하고, 차이가 있는 곳을 정적 진단으로 드러냅니다.'],
+        ['TypeScript와 TypeShade의 차이는 어디에 있나요?', 'TypeScript가 일반 프로그램의 타입과 실행을 설명한다면 TypeShade는 GPU 프로그램의 값, 벡터와 행렬, 리소스, 엔트리 포인트, 타깃별 제약까지 설명합니다. 같은 `function`이나 `if`를 보더라도 최종 프로그램은 GPU의 실행 모델을 따라야 합니다.'],
+        ['컴파일 결과는 무엇인가요?', 'TypeShade 소스는 하나의 중간 표현으로 내려간 뒤 호스트가 사용할 셰이더 소스로 출력됩니다. 현재 WebGPU에는 WGSL을, WebGL2에는 GLSL ES 3.00을 생성합니다. 애플리케이션에는 TypeShade 런타임을 배포하지 않고 생성된 결과를 호스트가 소비합니다.'],
+        ['어디서부터 배우면 되나요?', '처음이라면 Quick start에서 `"use typeshade"` 파일 하나를 만든 다음 Language guide에서 타입, 값과 표현식, 함수, 제어 흐름과 GPU 의미론을 순서대로 배우세요. 이미 컴파일러를 이해하고 있다면 그 다음에 Verification과 API reference로 내려가면 됩니다.'],
+      ],
+      familiarH: 'TypeScript 지식이 출발점이 됩니다',
+      familiarP: 'TypeShade는 익숙한 언어 개념을 버리지 않습니다. 대신 GPU에서 의미가 달라지는 지점을 명확하게 구분합니다.',
+      rows: [
+        ['함수', '함수 선언과 호출', '셰이더 함수와 엔트리 포인트 규칙이 추가됩니다.'],
+        ['타입', '타입 주석과 추론', 'GPU-native 타입과 벡터·행렬 타입이 추가됩니다.'],
+        ['모듈', 'import / export', '셰이더 컴파일 단위와 출력 가능한 모듈 규칙이 적용됩니다.'],
+        ['제어 흐름', 'if / for 등의 문법', 'GPU 실행 모델과 타깃 제약을 만족해야 합니다.'],
+        ['실행', 'JavaScript 런타임', '컴파일 결과를 WebGPU/WebGL2 호스트가 실행합니다.'],
       ],
     }
   : {
       title: 'What is TypeShade?',
-      description: 'Learn the TypeShade language, the `use typeshade` boundary, and how TypeScript authoring becomes compiled shader code.',
+      description: 'Learn TypeShade as a shader language: start from TypeScript concepts, cross the `use typeshade` boundary, and compile to host-ready GPU code.',
       h1: 'A shader language that starts in TypeScript',
       sections: [
         ['What does TypeShade change?', 'TypeShade is not a runtime that executes ordinary TypeScript on the GPU. It starts from familiar TypeScript syntax and tooling, then interprets the file as a separate shader language with its own types and semantics.'],
-        ['`use typeshade` is the language boundary', 'The file-level `"use typeshade"` directive declares a TypeShade program. Once present, the compiler applies TypeShade shader semantics to the file. Understanding this boundary is the first step to understanding the language.'],
-        ['What stays familiar from TypeScript?', 'Functions, type annotations, modules, expressions and control flow give TypeShade a familiar authoring surface. That does not mean every TypeScript feature is available unchanged. The language guide calls out supported features and places where shader semantics differ.'],
-        ['What makes it a shader language?', 'GPU programs have constraints that ordinary CPU programs do not. Values, resources and layouts, entry points, target capabilities and output rules all matter. TypeShade makes those constraints part of the authoring and diagnostic experience instead of leaving them to generated strings.'],
-        ['What does the compiler produce?', 'TypeShade source is lowered to an intermediate representation and then emitted as host-consumable shader source. The current targets are WGSL for WebGPU and GLSL ES 3.00 for WebGL2. There is no TypeShade runtime to ship with the application.'],
-        ['Where should you go next?', 'Start with Quick start to build one real file. Then use the Language guide to learn types, values and expressions, functions, control flow and shader semantics. Compiler internals and verification belong later in Concepts and Verification.'],
+        ['`use typeshade` is the language boundary', 'The file-level `"use typeshade"` directive declares a TypeShade program. Once present, the compiler applies TypeShade shader semantics instead of treating the file as ordinary application code. Understanding this line is the first step to understanding the language.'],
+        ['What stays familiar from TypeScript?', 'Functions, type annotations, modules, expressions and control flow form the familiar authoring surface. That does not mean every TypeScript feature is available unchanged. TypeShade deliberately constrains features that do not map cleanly to the GPU execution model and reports those constraints statically.'],
+        ['Where does TypeScript end and TypeShade begin?', 'TypeScript describes general-purpose program types and execution. TypeShade additionally describes GPU values, vectors and matrices, resources, entry points, target capabilities and shader-specific restrictions. A familiar `function` or `if` still has to make sense for the target GPU program.'],
+        ['What does the compiler produce?', 'TypeShade source is lowered to one intermediate representation and then emitted as host-consumable shader source. The current targets are WGSL for WebGPU and GLSL ES 3.00 for WebGL2. There is no TypeShade runtime to ship with the application.'],
+        ['Where should you go next?', 'Start with Quick start and make one real `"use typeshade"` file. Then use the Language guide to learn types, values and expressions, functions, control flow and GPU semantics. Move to Verification and the API reference once you know the authoring model.'],
+      ],
+      familiarH: 'Your TypeScript knowledge is the starting point',
+      familiarP: 'TypeShade keeps familiar language concepts, then makes the GPU-specific differences explicit instead of hiding them in generated shader strings.',
+      rows: [
+        ['Functions', 'Declarations and calls', 'Shader functions and entry-point rules are added.'],
+        ['Types', 'Annotations and inference', 'GPU-native values plus vector and matrix types are added.'],
+        ['Modules', 'import / export', 'Shader compilation-unit and emit rules apply.'],
+        ['Control flow', 'if / for and related syntax', 'The program must satisfy GPU execution and target constraints.'],
+        ['Execution', 'JavaScript runtime', 'The host executes generated code through WebGPU or WebGL2.'],
       ],
     }
 const sections = content.sections.map(([h, p]) => ({ h, p, slug: h.toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/^-|-$/g, '') }))
-const headings = sections.map((s) => ({ depth: 2, slug: s.slug, text: s.h }))
+const headings = [
+  ...sections.map((s) => ({ depth: 2, slug: s.slug, text: s.h })),
+  { depth: 2, slug: 'from-typescript', text: content.familiarH },
+]
 ---
 
 <Docs locale={locale} path={links.motivation.href} title={content.title} description={content.description} headings={headings}>
@@ -48,4 +69,27 @@ const headings = sections.map((s) => ({ depth: 2, slug: s.slug, text: s.h }))
       <p>{s.p}</p>
     </Fragment>
   ))}
+
+  <h2 id="from-typescript">{content.familiarH}</h2>
+  <p>{content.familiarP}</p>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>{locale === 'ko' ? '개념' : 'Concept'}</th>
+          <th>{locale === 'ko' ? 'TypeScript에서 익숙한 부분' : 'Familiar from TypeScript'}</th>
+          <th>{locale === 'ko' ? 'TypeShade에서 추가되는 의미' : 'TypeShade adds'}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {content.rows.map(([concept, familiar, addition]) => (
+          <tr>
+            <td><strong>{concept}</strong></td>
+            <td>{familiar}</td>
+            <td>{addition}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
 </Docs>
