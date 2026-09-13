@@ -31,6 +31,13 @@ const content = locale === 'ko'
         ['제어 흐름', 'if / for 등의 문법', 'GPU 실행 모델과 타깃 제약을 만족해야 합니다.'],
         ['실행', 'JavaScript 런타임', '컴파일 결과를 WebGPU/WebGL2 호스트가 실행합니다.'],
       ],
+      furtherH: 'TypeScript와 JavaScript를 함께 참고하세요',
+      furtherP: 'TypeShade 문서는 언어의 차이를 설명하는 데 집중합니다. 익숙하지 않은 TypeScript 또는 JavaScript 개념은 원문 문서를 함께 보면 더 빠르게 배울 수 있습니다.',
+      further: [
+        ['TypeScript Handbook — Everyday Types', 'https://www.typescriptlang.org/docs/handbook/2/everyday-types.html', '타입 주석, union, literal 등 TypeScript 타입의 기본 개념'],
+        ['TypeScript Handbook — Functions', 'https://www.typescriptlang.org/docs/handbook/2/functions.html', '함수 선언, 매개변수, 반환 타입과 호출 규칙'],
+        ['MDN — JavaScript Guide', 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide', 'JavaScript의 표현식, 제어 흐름, 함수와 모듈에 대한 언어 배경'],
+      ],
     }
   : {
       title: 'What is TypeShade?',
@@ -53,11 +60,19 @@ const content = locale === 'ko'
         ['Control flow', 'if / for and related syntax', 'The program must satisfy GPU execution and target constraints.'],
         ['Execution', 'JavaScript runtime', 'The host executes generated code through WebGPU or WebGL2.'],
       ],
+      furtherH: 'Keep the TypeScript and JavaScript references nearby',
+      furtherP: 'TypeShade documentation focuses on what is different. When a TypeScript or JavaScript concept is new to you, use the language references below as the background layer.',
+      further: [
+        ['TypeScript Handbook — Everyday Types', 'https://www.typescriptlang.org/docs/handbook/2/everyday-types.html', 'Types, annotations, unions and other everyday TypeScript concepts'],
+        ['TypeScript Handbook — Functions', 'https://www.typescriptlang.org/docs/handbook/2/functions.html', 'Function declarations, parameters, return types and calls'],
+        ['MDN — JavaScript Guide', 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide', 'The JavaScript background for expressions, control flow, functions and modules'],
+      ],
     }
 const sections = content.sections.map(([h, p]) => ({ h, p, slug: h.toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/^-|-$/g, '') }))
 const headings = [
   ...sections.map((s) => ({ depth: 2, slug: s.slug, text: s.h })),
   { depth: 2, slug: 'from-typescript', text: content.familiarH },
+  { depth: 2, slug: 'further-reading', text: content.furtherH },
 ]
 ---
 
@@ -92,4 +107,12 @@ const headings = [
       </tbody>
     </table>
   </div>
+
+  <h2 id="further-reading">{content.furtherH}</h2>
+  <p>{content.furtherP}</p>
+  <ul>
+    {content.further.map(([label, href, description]) => (
+      <li><a href={href} target="_blank" rel="noreferrer">{label}</a> — {description}</li>
+    ))}
+  </ul>
 </Docs>
