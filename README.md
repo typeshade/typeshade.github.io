@@ -38,11 +38,12 @@ Start with the documentation site:
 
 - [Introduction](https://typeshade.dev/guide/introduction/)
 - [Quick start](https://typeshade.dev/guide/quick-start/)
-- [Authoring / language guide](https://typeshade.dev/guide/authoring/)
+- [Language guide](https://typeshade.dev/guide/language/)
 - [API reference](https://typeshade.dev/api/)
 - [Examples](https://typeshade.dev/guide/examples/)
+- [Compiler internals](https://typeshade.dev/guide/internals/)
 
-The important concept to understand first is **`"use typeshade"`**. It is the boundary between ordinary TypeScript and TypeShade's shader authoring semantics.
+The important concept to understand first is **`"use typeshade"`**. It is the boundary between ordinary TypeScript and TypeShade's shader authoring semantics. The language guide teaches that authoring surface first; compiler internals explain how the implementation lowers and verifies it.
 
 ## Repository layout
 
