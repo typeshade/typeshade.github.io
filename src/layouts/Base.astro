@@ -12,21 +12,11 @@ interface Props {
   path: string
   title?: string
   description?: string
-  /** A page that exists in one locale only (the 404) lists no alternates. */
   noAlternates?: boolean
-  /** Keep the page out of search indexes (the 404). */
   noindex?: boolean
-  /** The page's own text is in main, so the site search indexes main. Docs pages mark their
-   *  article instead, which leaves the sidebar and the pager out of the index. */
   searchable?: boolean
-  /** What a search result calls this page, where its h1 is set in pieces. */
   searchTitle?: string
-  /** Root first, the trail the page already shows on screen (a docs page's breadcrumb nav,
-   *  or the guide's own Guide › Authoring › section shape). A locale-neutral href per item;
-   *  omitted on a page with no such trail, so it carries no BreadcrumbList. */
   breadcrumbs?: readonly { name: string; href: string }[]
-  /** The pinned commit's date (facts.pinnedDate), for WebPage.dateModified. Only the guide
-   *  and the reference are generated from that commit; a hand-written page omits it. */
   dateModified?: string
 }
 
@@ -266,7 +256,7 @@ const jsonLd = {
           const focusable = [...panel.querySelectorAll('summary, a[href], button:not([disabled])')].filter((el) => el.offsetParent !== null)
           if (focusable.length === 0) return
           const first = focusable[0]
-          const last = focusable[last]
+          const last = focusable[focusable.length - 1]
           if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
           else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
         })
