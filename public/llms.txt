@@ -1,0 +1,71 @@
+# TypeShade
+
+TypeShade is a shader language built around the TypeScript authoring experience. A TypeShade source file starts with `"use typeshade"` and uses TypeScript-shaped syntax to describe GPU programs.
+
+## Start here
+
+- [Introduction](/guide/introduction/): understand the TypeScript-to-TypeShade model.
+- [Quick start](/guide/quick-start/): write your first TypeShade shader.
+- [Language guide](/guide/language/): learn the language surface.
+- [Types](/guide/language/types/): TypeScript types and TypeShade GPU value layout.
+- [Functions](/guide/language/functions/): functions, parameters, returns, and shader entry points.
+- [Control flow](/guide/language/control-flow/): expressions and supported control flow.
+- [GPU types](/guide/language/gpu-types/): scalars, vectors, matrices, and arrays.
+- [Resources](/guide/language/resources/): uniforms, storage resources, and declarations.
+- [Shader stages](/guide/language/stages/): compute, vertex, and fragment entry points.
+- [Examples](/guide/examples/): complete examples and generated shader output.
+
+## Authoring model
+
+TypeShade keeps the TypeScript-shaped authoring model while adding shader-specific semantics. The language boundary is explicit:
+
+```ts
+"use typeshade"
+```
+
+Shader inputs are explicit function parameters. Builtins are not injected as implicit globals:
+
+```ts
+@compute([64, 1, 1])
+export function paint(
+  @builtin("global_invocation_id") gid: vec3u
+) {
+  const i = gid.x
+  pixels[i] = pixels[i] + camera.pos.x
+}
+```
+
+GPU resources are declared explicitly:
+
+```ts
+declare const camera: uniform<Camera>
+declare let pixels: storage<array<f32>>
+```
+
+## TypeScript context
+
+When learning TypeShade, the following TypeScript concepts are useful background:
+
+- types and type aliases
+- functions and parameters
+- classes and fields
+- modules and exports
+- expressions and control flow
+
+TypeShade documentation explains where these concepts remain familiar and where GPU-specific rules apply.
+
+## Compiler and internals
+
+- [Compiler internals](/guide/internals/): compiler architecture and the internal authoring reference.
+- [TypeShade surface specification](https://github.com/typeshade/typeshade/blob/main/docs/use-typeshade-surface.md): source-level language surface and lowering model.
+- [TypeShade compiler](https://github.com/typeshade/typeshade): implementation and tests.
+
+## Generated targets
+
+TypeShade lowers its language representation to host-consumable shader source, including WGSL and GLSL ES 3.00. TypeShade does not require a runtime library in the generated shader itself; the host application consumes the generated shader source.
+
+## Documentation principle
+
+Prefer the user-facing language guide before reading compiler internals. The intended learning path is:
+
+TypeScript concepts → `"use typeshade"` → TypeShade language → GPU concepts → examples → compiler internals.
