@@ -6,10 +6,10 @@
 
 # typeshade.dev
 
-The website for [TypeShade](https://github.com/typeshade/typeshade), the TypeScript shader
-library that emits WGSL for WebGPU and GLSL ES 3.00 for WebGL2. It holds the guide, the API
-reference and the examples, in English and Korean. Astro, deployed to GitHub Pages by
-`.github/workflows/deploy.yml`.
+The website for [TypeShade](https://github.com/typeshade/typeshade). The official surface is
+a TypeScript file that starts with `"use typeshade"`; the compiler emits WGSL for WebGPU and
+GLSL ES 3.00 for WebGL2. The site holds the guide, the API reference and the examples, in
+English and Korean. Astro, deployed to GitHub Pages by `.github/workflows/deploy.yml`.
 
 The compiler is vendored at `vendor/shader-dsl` as a git submodule of
 [typeshade/typeshade](https://github.com/typeshade/typeshade). Every code sample and every
@@ -19,7 +19,7 @@ the shaders on the page are emitted from it (`src/lib/hero-shader.ts`).
 The official author surface on `main` is file-level `"use typeshade"`. `fn()` remains the IR
 equality oracle. Pin target after PR #5:
 
-- compiler: `f2ed88be618a8c5d22b9bcc0d7493681227e6240`
+- compiler: `ab53ce15f9700f0ff11002035a44f43365dd5833`
 - land commit: `2605a270bd6b12b554e1aa96f00e1112549856e0`
 
 ```bash
@@ -32,7 +32,7 @@ To move the pinned compiler forward:
 
 ```bash
 git -C vendor/shader-dsl fetch origin
-git -C vendor/shader-dsl checkout f2ed88be618a8c5d22b9bcc0d7493681227e6240
+git -C vendor/shader-dsl checkout ab53ce15f9700f0ff11002035a44f43365dd5833
 git add vendor/shader-dsl
 git commit -m "chore: pin compiler to use-typeshade main"
 ```
