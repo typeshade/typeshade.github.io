@@ -2,7 +2,6 @@
 import { Code } from 'astro-expressive-code/components'
 import Base from '../../layouts/Base.astro'
 import CodeFrame from '../CodeFrame.astro'
-import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts'
@@ -14,41 +13,68 @@ interface Props {
 }
 const { locale } = Astro.props
 const t = copyFor(locale)
-const f = t.front
-const h = f.hero
-const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(' ')
 const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
+const content = locale === 'ko'
+  ? {
+      eyebrow: 'TypeScript로 작성하는 셰이더 언어',
+      title: 'TypeShade',
+      subtitle: '`use typeshade`로 시작하세요.',
+      tagline: 'TypeScript의 익숙한 개발 경험 위에서 TypeShade만의 타입과 셰이더 의미론으로 프로그램을 작성하고, 하나의 소스에서 WGSL과 GLSL ES 3.00을 생성합니다.',
+      getStarted: '시작하기',
+      learn: '학습하기',
+      language: '언어 가이드',
+      examples: '예제',
+      codeH: 'TypeShade는 여기서 시작합니다',
+      codeP: '파일 수준의 `"use typeshade"` 지시어가 일반 TypeScript와 TypeShade 셰이더 소스의 경계를 만듭니다.',
+      highlights: [
+        ['TypeScript의 개발 경험', '에디터에서 타입, 모듈, 함수와 제어 흐름을 사용하면서 셰이더 코드에 필요한 제약을 정적으로 확인합니다.'],
+        ['TypeShade의 고유한 의미론', '`use typeshade`는 단순한 주석이 아닙니다. 컴파일러가 해당 파일을 TypeShade 프로그램으로 해석하도록 선택하는 언어 경계입니다.'],
+        ['소스는 하나, 출력은 호스트에 맞게', '같은 TypeShade 소스를 WGSL(WebGPU) 또는 GLSL ES 3.00(WebGL2)으로 내보냅니다. TypeShade 런타임은 필요하지 않습니다.'],
+      ],
+    }
+  : {
+      eyebrow: 'A shader language built around TypeScript',
+      title: 'TypeShade',
+      subtitle: 'Start with `"use typeshade"`.',
+      tagline: 'Write shader programs with TypeScript tooling and TypeShade semantics, then emit WGSL or GLSL ES 3.00 from the same source.',
+      getStarted: 'Get started',
+      learn: 'Learn',
+      language: 'Language',
+      examples: 'Examples',
+      codeH: 'This is the TypeShade authoring surface',
+      codeP: 'The file-level `"use typeshade"` directive creates the boundary between ordinary TypeScript and TypeShade shader semantics.',
+      highlights: [
+        ['TypeScript developer experience', 'Use familiar types, modules, functions and control flow while shader-specific constraints are checked statically in the editor.'],
+        ['TypeShade semantics', '`use typeshade` is more than a comment. It opts the file into TypeShade program semantics and its compilation model.'],
+        ['One source, host-ready output', 'Emit WGSL for WebGPU or GLSL ES 3.00 for WebGL2 from the same TypeShade source. There is no TypeShade runtime.'],
+      ],
+    }
 ---
 
-<Base locale={locale} path="/" searchable searchTitle={headline}>
+<Base locale={locale} path="/" searchable searchTitle={content.title}>
   <section class="hero">
-    <h1 class="hero-title">
-      {h.before && <span class="hero-line">{h.before}</span>}
-      <span class="hero-line accent">{h.accent}</span>
-      {h.after && <span class="hero-line">{h.after}</span>}
-    </h1>
-    <p class="hero-subtitle">{h.subtitle}</p>
-    <p class="hero-tagline">{h.tagline}</p>
+    <p class="hero-eyebrow">{content.eyebrow}</p>
+    <h1 class="hero-title"><span class="hero-line accent">{content.title}</span></h1>
+    <p class="hero-subtitle">{content.subtitle}</p>
+    <p class="hero-tagline">{content.tagline}</p>
     <p class="hero-actions">
       <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
-        {h.getStarted}
+        {content.getStarted}
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z" /></svg>
       </a>
-      <a class="button" href={localePath(locale, links.motivation.href)}>{h.why}</a>
-      <a class="button" href={localePath(locale, links.examples.href)}>{h.examples}</a>
-    </p>
-    <p class="hero-prerelease">
-      <a href={localePath(locale, links.quickStart.href)}>{h.prerelease}</a>
+      <a class="button" href={localePath(locale, links.motivation.href)}>{content.learn}</a>
+      <a class="button" href={localePath(locale, links.guide.href)}>{content.language}</a>
+      <a class="button" href={localePath(locale, links.examples.href)}>{content.examples}</a>
     </p>
   </section>
 
   <section class="wide demo">
-    <ShaderCanvas locale={locale} example="metaballs" aspect="3/1" eager caption={f.metaballs} />
+    <ShaderCanvas locale={locale} example="metaballs" aspect="3/1" eager caption={t.front.metaballs} />
   </section>
 
   <section class="wide front-code">
-    <h2>{f.code.h}</h2>
-    <p><Rich text={f.code.p} locale={locale} /></p>
+    <h2>{content.codeH}</h2>
+    <p>{content.codeP}</p>
     <div class="code-pair">
       <CodeFrame label={useLabel}>
         <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} />
@@ -57,14 +83,13 @@ const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
         <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" locale={locale} />
       </CodeFrame>
     </div>
-    <p class="front-code-more"><Rich text={f.code.more} locale={locale} /></p>
   </section>
 
   <section class="wide highlights">
-    {f.highlights.map((item) => (
+    {content.highlights.map(([heading, body]) => (
       <div class="highlight">
-        <h2>{item.h}</h2>
-        <p><Rich text={item.p} locale={locale} /></p>
+        <h2>{heading}</h2>
+        <p>{body}</p>
       </div>
     ))}
   </section>
