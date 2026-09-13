@@ -1,0 +1,36 @@
+---
+import Docs from '../../../layouts/Docs.astro'
+import { type Locale } from '../../../i18n/index.ts'
+
+interface Props { locale: Locale }
+const { locale } = Astro.props
+const ko = locale === 'ko'
+const content = ko ? {
+  title: 'TypeShade 리소스', description: '호스트가 채우는 uniform과 storage resource를 선언하는 방법.', h1: 'Resources: GPU와 호스트 사이의 경계',
+  intro: 'TypeShade resource는 셰이더가 소유하는 JavaScript 객체가 아니라 호스트가 채우는 binding slot입니다. 제품 코드에서는 `declare`를 사용해 이 경계를 명시합니다.',
+  decl: '1. declare로 resource 선언', declP: 'initializer 없이 resource의 타입과 접근 권한을 선언합니다.',
+  access: '2. const와 let은 접근 권한을 나타냅니다', accessP: 'uniform은 읽기 전용이므로 `declare const`만 허용됩니다. storage는 `const`면 read-only, `let`이면 read-write입니다.',
+  slots: '3. binding 순서와 호스트 계약', slotsP: 'resource slot은 파일의 declare 순서와 연결됩니다. 실제 binding 번호를 코드에 흩뿌리기보다 컴파일러와 호스트의 reflection 결과를 계약으로 사용하는 방향이 기본입니다.',
+  invalid: '4. 자주 하는 실수', invalidItems: ['`declare const x: f32`처럼 storage space 없이 선언하지 않습니다.', '`declare let x: uniform<T>`는 허용되지 않습니다.', 'read-only resource에 대입하지 않습니다.', 'resource를 class의 bind group처럼 모델링하지 않습니다.'],
+  next: '다음: Shader stages', href: '/ko/guide/language/stages/'
+} : {
+  title: 'TypeShade resources', description: 'Declare host-owned uniform and storage resources.', h1: 'Resources: the boundary between host and GPU',
+  intro: 'A TypeShade resource is a host-filled binding slot, not a JavaScript object owned by the shader. Product code makes that boundary explicit with `declare`.',
+  decl: '1. Declare resources with `declare`', declP: 'Declare the resource type and access mode without an initializer.',
+  access: '2. const and let express access', accessP: 'Uniform resources are read-only and therefore use `declare const`. Storage resources are read-only with `const` and read-write with `let`.',
+  slots: '3. Resource slots are a host contract', slotsP: 'Resource slots follow declaration order in the file. Keep binding details as part of the compiler/host reflection contract instead of scattering binding numbers through shader code.',
+  invalid: '4. Common mistakes', invalidItems: ['Do not declare `declare const x: f32`; a resource needs a space such as `uniform<T>` or `storage<T>`.', 'Do not use `declare let x: uniform<T>`.', 'Do not assign to a read-only resource.', 'Do not model a resource as a class or bind-group instance.'],
+  next: 'Next: Shader stages', href: '/guide/language/stages/'
+}
+const headings = [['decl',content.decl],['access',content.access],['slots',content.slots],['invalid',content.invalid]].map(([slug,text]) => ({depth:2,slug,text}))
+---
+<Docs locale={locale} path="/guide/language/resources/" title={content.title} description={content.description} headings={headings}>
+  <h1>{content.h1}</h1><p>{content.intro}</p>
+  <h2 id="decl">{content.decl}</h2><p>{content.declP}</p>
+  <pre><code>{`declare const camera: uniform<Camera>\ndeclare const src: storage<f32>\ndeclare let pixels: storage<f32>`}</code></pre>
+  <h2 id="access">{content.access}</h2><p>{content.accessP}</p>
+  <div class="table-scroll"><table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td><code>declare const x: uniform&lt;T&gt;</code></td><td>uniform</td><td>read</td></tr><tr><td><code>declare const x: storage&lt;T&gt;</code></td><td>storage</td><td>read</td></tr><tr><td><code>declare let x: storage&lt;T&gt;</code></td><td>storage</td><td>read_write</td></tr></tbody></table></div>
+  <h2 id="slots">{content.slots}</h2><p>{content.slotsP}</p>
+  <h2 id="invalid">{content.invalid}</h2><ul>{content.invalidItems.map((item) => <li>{item}</li>)}</ul>
+  <p><a href={content.href}>{content.next}</a></p>
+</Docs>
