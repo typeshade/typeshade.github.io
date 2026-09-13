@@ -6,7 +6,7 @@
 //      the English present the same number of times; the same numerals; the same link targets;
 //      the same number of headings.
 //   2. Korean prose in 합쇼체 with no exclamation marks, none of the countable translation
-//      tells the im-not-ai rulebook lists, and no six sentences in a row on the same ending.
+//      tells the im-not-ai rulebook lists, and no five sentences in a row on the same ending.
 //   3. No prose paragraph left in English.
 import { guideSections } from '../src/lib/guide.ts'
 import { guideTranslations, GUIDE_TRANSLATIONS_DIR } from '../src/lib/guide-translations.ts'
@@ -14,9 +14,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 const SPAN_MAX = 120
-// Formal Korean documentation naturally repeats -습니다/-합니다. Five consecutive matches
-// produce false positives, so E-2 flags only longer runs that are more likely to be mechanical.
-const SAME_ENDING_STREAK = 6
+const SAME_ENDING_STREAK = 5
 
 type Problem = { file: string; what: string }
 const problems: Problem[] = []
@@ -73,9 +71,7 @@ const KO_TELLS: Array<{ name: string; re: RegExp; max: number }> = [
 
 function sameEndingStreak(prose: string): number {
   const sentences = prose.split(/(?<=[.!?])\s+/).map((t) => t.trim().replace(/[.!?]$/, '')).filter((t) => /[가-힣]$/.test(t))
-  let best = 0
-  let run = 0
-  let last = ''
+  let best = 0, run = 0, last = ''
   for (const t of sentences) {
     const end = t.slice(-3)
     run = end === last ? run + 1 : 1
@@ -95,17 +91,10 @@ for (const locale of locales) {
     const en = english.get(t.id)!
     const ko = t.body
     const push = (what: string) => problems.push({ file: t.file, what })
-    const eb = blocks(en)
-    const kb = blocks(ko)
-    if (eb.length !== kb.length) {
-      push(`code blocks: ${eb.length} in English, ${kb.length} in the translation`)
-    } else {
-      eb.forEach((b, i) => {
-        if (b !== kb[i]) push(`code block ${i + 1} differs from the English`)
-      })
-    }
-    const es = spans(en)
-    const ks = spans(ko)
+    const eb = blocks(en), kb = blocks(ko)
+    if (eb.length !== kb.length) push(`code blocks: ${eb.length} in English, ${kb.length} in the translation`)
+    else eb.forEach((b, i) => { if (b !== kb[i]) push(`code block ${i + 1} differs from the English`) })
+    const es = spans(en), ks = spans(ko)
     for (const [k, n] of es) if ((ks.get(k) ?? 0) < n) push(`code span \`${k}\` appears ${n} time(s) in English, ${ks.get(k) ?? 0} in the translation`)
     if (numerals(en) !== numerals(ko)) push(`numerals differ: English [${numerals(en)}], translation [${numerals(ko)}]`)
     if (linkTargets(en) !== linkTargets(ko)) push(`link targets differ: English [${linkTargets(en)}], translation [${linkTargets(ko)}]`)
@@ -125,19 +114,9 @@ for (const locale of locales) {
     const badClose = marks.match(/\*\*[^*\n]+[^\p{L}\p{N}\s]\*\*(?=[\p{L}\p{N}])/gu) ?? []
     const badOpen = marks.match(/[\p{L}\p{N}]\*\*`[^`\n]+`\*\*/gu) ?? []
     if (badClose.length || badOpen.length) push(`bold markers CommonMark cannot parse: ${[...badClose, ...badOpen].slice(0, 3).join(' | ')}`)
-    const er = tableRows(en)
-    const kr = tableRows(ko)
-    if (er.length !== kr.length) {
-      push(`table rows: ${er.length} in English, ${kr.length} in the translation`)
-    } else {
-      er.forEach((row, i) => {
-        row.forEach((cell, j) => {
-          if (CODE_ONLY_CELL.test(cell) && kr[i][j] !== cell) {
-            push(`table cell ${cell} (row ${i + 1}) must stay as it is; the translation has ${kr[i][j] ?? '(nothing)'}`)
-          }
-        })
-      })
-    }
+    const er = tableRows(en), kr = tableRows(ko)
+    if (er.length !== kr.length) push(`table rows: ${er.length} in English, ${kr.length} in the translation`)
+    else er.forEach((row, i) => row.forEach((cell, j) => { if (CODE_ONLY_CELL.test(cell) && kr[i][j] !== cell) push(`table cell ${cell} (row ${i + 1}) must stay as it is; the translation has ${kr[i][j] ?? '(nothing)'}`) }))
     if (locale === 'ko') for (const w of FORBIDDEN) if (prose.includes(w)) push(`"${w}" replaces a word the glossary keeps in English (GLOSSARY.md, 영어로 두는 낱말)`)
     const latin = prose.split(/\n\s*\n/).filter((p) => p.trim() && !/^[#>|+*-]/.test(p.trim()) && !/[가-힣]/.test(p) && (p.match(/[A-Za-z]{3,}/g) ?? []).length >= 4)
     if (latin.length) push(`${latin.length} prose paragraph(s) left in English: ${latin[0].trim().slice(0, 60)}`)
