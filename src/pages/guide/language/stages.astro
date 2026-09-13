@@ -1,0 +1,34 @@
+---
+import Docs from '../../../layouts/Docs.astro'
+import { type Locale } from '../../../i18n/index.ts'
+
+interface Props { locale: Locale }
+const { locale } = Astro.props
+const ko = locale === 'ko'
+const content = ko ? {
+  title: 'TypeShade 셰이더 스테이지', description: 'compute, vertex, fragment entry point를 작성하는 방법.', h1: 'Shader stages: GPU 실행 지점을 명시하기',
+  intro: 'TypeShade의 entry point는 class가 아니라 top-level exported function입니다. decorator가 함수의 shader stage와 필요한 metadata를 표시합니다.',
+  compute: '1. Compute', computeP: '`@compute`는 workgroup 크기를 함께 표현합니다. `gid` 같은 compute builtin은 해당 stage의 body에서만 의미가 있습니다.',
+  graphics: '2. Vertex와 fragment', graphicsP: '`@vertex`와 `@fragment`는 그래픽스 pipeline의 entry point를 표현합니다. 입력과 출력은 TypeShade value type으로 명시합니다.',
+  helper: '3. Helper function', helperP: 'decorator가 없는 함수는 entry가 아니라 helper입니다. entry point를 class method로 만들거나 `this`를 pipeline 객체로 취급하지 않습니다.',
+  next: '언어 개요로 돌아가기', href: '/ko/guide/language/'
+} : {
+  title: 'TypeShade shader stages', description: 'Write compute, vertex and fragment entry points.', h1: 'Shader stages: explicit GPU entry points',
+  intro: 'TypeShade entry points are top-level exported functions. A decorator marks the shader stage and any stage-specific metadata.',
+  compute: '1. Compute', computeP: '`@compute` carries the workgroup size. Builtins such as `gid` are meaningful only inside the matching stage body.',
+  graphics: '2. Vertex and fragment', graphicsP: '`@vertex` and `@fragment` describe graphics-pipeline entry points. Their inputs and outputs are expressed as TypeShade value types.',
+  helper: '3. Helper functions', helperP: 'An undecorated function is a helper, not an entry point. Do not put entry points on classes or treat `this` as a pipeline object.',
+  next: 'Back to the language overview', href: '/guide/language/'
+}
+const headings = [['compute',content.compute],['graphics',content.graphics],['helper',content.helper]].map(([slug,text]) => ({depth:2,slug,text}))
+---
+<Docs locale={locale} path="/guide/language/stages/" title={content.title} description={content.description} headings={headings}>
+  <h1>{content.h1}</h1><p>{content.intro}</p>
+  <h2 id="compute">{content.compute}</h2><p>{content.computeP}</p>
+  <pre><code>{`@compute([64, 1, 1])\nexport function paint() {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}`}</code></pre>
+  <h2 id="graphics">{content.graphics}</h2><p>{content.graphicsP}</p>
+  <pre><code>{`@vertex\nexport function vs(vin: VsIn): vec4 {\n  return camera.view * vec4(vin.position, 1)\n}\n\n@fragment\nexport function fs(): vec4 {\n  return vec4(1, 0, 0, 1)\n}`}</code></pre>
+  <h2 id="helper">{content.helper}</h2><p>{content.helperP}</p>
+  <pre><code>{`function saturate(x: f32): f32 {\n  return clamp(x, 0.0, 1.0)\n}`}</code></pre>
+  <p><a href={content.href}>{content.next}</a></p>
+</Docs>
