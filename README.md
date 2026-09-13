@@ -22,15 +22,15 @@ The compiler lowers the source to an intermediate representation and emits shade
 
 ## Why TypeShade?
 
-Shader authoring should keep the parts developers already know from TypeScript—types, editor feedback, modules and familiar control flow—while making GPU-specific rules explicit.
+Shader authoring should keep the parts developers already know from TypeScript: types, editor feedback, modules, and familiar control flow, while making GPU-specific rules explicit.
 
 TypeShade is designed around that boundary:
 
-- **TypeScript authoring** — write shader code in a familiar editor environment.
-- **TypeShade semantics** — `"use typeshade"` marks the file as a shader compilation unit rather than ordinary application code.
-- **Static diagnostics** — invalid shader operations are reported before the host runs the program.
-- **Multiple targets** — one source model can emit WGSL or GLSL for the supported hosts.
-- **No runtime layer** — the host consumes the emitted shader source directly.
+- **TypeScript authoring:** write shader code in a familiar editor environment.
+- **TypeShade semantics:** `"use typeshade"` marks the file as a shader compilation unit instead of ordinary application code.
+- **Static diagnostics:** invalid shader operations are reported before the host runs the program.
+- **Multiple targets:** one source model can emit WGSL or GLSL for the supported hosts.
+- **No runtime layer:** the host consumes the emitted shader source directly.
 
 ## Learn
 
@@ -49,7 +49,7 @@ The important concept to understand first is **`"use typeshade"`**. It is the bo
 | Path | Purpose |
 | --- | --- |
 | `typeshade/` | TypeShade compiler and language implementation |
-| `typeshade.github.io/` | Documentation site, examples and generated reference |
+| `typeshade.github.io/` | Documentation site, examples, and generated reference |
 | `.github/` | CI and repository automation |
 
 The documentation site is built with Astro and deployed to GitHub Pages. The compiler is vendored as a git submodule so examples and generated API documentation can be checked against a pinned compiler revision.
@@ -63,7 +63,7 @@ bun install
 bun run dev
 ```
 
-The production build verifies generated artifacts, documentation consistency, links and SEO before deployment. See `DESIGN.md` for the site's writing and design rules and `.claude/skills/typeshade-site/SKILL.md` for the site maintenance workflow.
+The production build verifies generated artifacts, documentation consistency, links, and SEO before deployment. See `DESIGN.md` for the site's writing and design rules and `.claude/skills/typeshade-site/SKILL.md` for the site maintenance workflow.
 
 ## Status
 
