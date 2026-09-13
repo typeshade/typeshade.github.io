@@ -20,9 +20,9 @@ const siteRepo = 'https://github.com/typeshade/typeshade.github.io'
 
 export const links = {
   home: { label: 'TypeShade', href: '/' },
-  motivation: { label: 'Why TypeShade', href: '/guide/introduction/' },
+  motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Quick start', href: '/guide/quick-start/' },
-  guide: { label: 'Authoring guide', href: '/guide/authoring/' },
+  guide: { label: 'Language guide', href: '/guide/authoring/' },
   checks: { label: 'Verification', href: '/guide/checks/' },
   examples: { label: 'Examples', href: '/guide/examples/' },
   api: { label: 'API reference', href: '/api/' },
@@ -91,13 +91,18 @@ export function editGuideTranslation(locale: Locale, id: string): string {
   return `${siteRepo}/blob/main/${translationDir(locale)}/${id}.md`
 }
 
-/** The header's three links in one locale. GitHub is an icon beside them. */
+/** The primary header links: learn the language first, then reach the generated reference
+ *  and examples. The language guide is deliberately a first-class destination rather than
+ *  hiding behind the generic "Guide" label. */
 export function navLinks(locale: Locale): readonly Destination[] {
-  const t = copyFor(locale).nav
+  const labels = locale === 'ko'
+    ? { learn: '학습', language: '언어', api: 'API', examples: '예제' }
+    : { learn: 'Learn', language: 'Language', api: 'API', examples: 'Examples' }
   return [
-    { label: t.guide, href: localePath(locale, links.motivation.href) },
-    { label: t.api, href: localePath(locale, links.api.href) },
-    { label: t.examples, href: localePath(locale, links.examples.href) },
+    { label: labels.learn, href: localePath(locale, links.motivation.href) },
+    { label: labels.language, href: localePath(locale, links.guide.href) },
+    { label: labels.api, href: localePath(locale, links.api.href) },
+    { label: labels.examples, href: localePath(locale, links.examples.href) },
   ]
 }
 
