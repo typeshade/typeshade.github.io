@@ -90,6 +90,7 @@ const content = locale === 'ko'
       <span>WGSL / GLSL ES 3.00</span>
     </div>
     <div class="code-pair">
+      {/* Code receives only props supported by astro-expressive-code. */}
       <CodeFrame label={useLabel}>
         <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" />
       </CodeFrame>
