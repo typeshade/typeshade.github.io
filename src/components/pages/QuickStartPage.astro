@@ -17,7 +17,8 @@ const { locale } = Astro.props
 const t = copyFor(locale)
 const q = t.quickStart as typeof t.quickStart & { p0?: string }
 const hostH = locale === 'ko' ? '호스트 애플리케이션에 연결하기' : 'Connect it to the host application'
-const headings = [q.installH, hostH, q.status.h, locale === 'ko' ? '다음 학습' : 'What to learn next'].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const boundaryH = locale === 'ko' ? 'TypeShade와 호스트의 경계' : 'The TypeShade / host boundary'
+const headings = [q.installH, boundaryH, hostH, q.status.h, locale === 'ko' ? '다음 학습' : 'What to learn next'].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 const p0 =
   q.p0 ??
   (locale === 'ko'
@@ -43,6 +44,19 @@ const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
     <Code code={hero.wgsl} lang="wgsl" locale={locale} />
   </CodeFrame>
   <p><Rich text={q.p3} locale={locale} /></p>
+  <section>
+    <h2 id={slugify(boundaryH)}>{boundaryH}</h2>
+    <p>
+      {locale === 'ko'
+        ? 'TypeShade 코드는 TypeScript처럼 작성하지만, `"use typeshade"`가 붙은 파일에서는 셰이더 언어 규칙이 적용됩니다. TypeScript 타입과 문법은 authoring surface를 만들고, TypeShade의 GPU 타입·리소스·shader stage 규칙이 실제 셰이더 의미를 결정합니다.'
+        : 'TypeShade source is authored with TypeScript syntax, but a file marked with `"use typeshade"` follows the shader language rules. TypeScript types and syntax form the authoring surface; TypeShade GPU types, resources and shader-stage rules define the shader semantics.'}
+    </p>
+    <ul>
+      <li>{locale === 'ko' ? '`"use typeshade"`가 언어 경계를 선언합니다.' : '`"use typeshade"` declares the language boundary.'}</li>
+      <li>{locale === 'ko' ? 'entry point의 GPU 입력은 `@builtin(...)` 같은 명시적인 매개변수로 표현합니다.' : 'GPU entry inputs are explicit parameters such as `@builtin(...)`, not hidden globals.'}</li>
+      <li>{locale === 'ko' ? '`uniform<T>`와 `storage<T>` 같은 리소스 타입은 GPU 리소스의 의미를 표현합니다.' : 'Resource types such as `uniform<T>` and `storage<T>` express GPU resource semantics.'}</li>
+    </ul>
+  </section>
   <section>
     <h2 id={slugify(hostH)}>{hostH}</h2>
     <p>
