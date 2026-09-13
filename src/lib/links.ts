@@ -91,8 +91,7 @@ export function editGuideTranslation(locale: Locale, id: string): string {
   return `${siteRepo}/blob/main/${translationDir(locale)}/${id}.md`
 }
 
-/** The primary header links: learn the language first, then reach the generated reference
- *  and examples. The language guide is a primary destination, not a generic "Guide" label. */
+/** The primary header links put language learning first, followed by reference and examples. */
 export function navLinks(locale: Locale): readonly Destination[] {
   const labels = locale === 'ko'
     ? { learn: '학습', language: '언어', api: 'API', examples: '예제' }
