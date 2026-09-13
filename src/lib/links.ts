@@ -138,16 +138,14 @@ export interface SidebarGroup {
   readonly items: readonly SidebarItem[]
 }
 
-/** The docs sidebar in one locale: four groups. The guide's sections follow its overview, in
- *  the file's order, so previous and next walk the whole guide. Reference opens with the
- *  reference's own index and lists the category index pages after it; on a page of one
- *  category, that category's members follow it one level in, so the sidebar never carries
- *  every export at once. */
+/** The docs sidebar in one locale: learning first, then language, project internals and the
+ *  generated reference. Reference opens with its own index and lists category pages after it. */
 export function sidebar(locale: Locale, sections: readonly Destination[] = [], openCategory?: string): readonly SidebarGroup[] {
   const d = copyFor(locale).docs
   const pages = docsPages(locale)
-  // The reference's front door is in the list, so it is the page after the guide's last one
-  // and it carries aria-current when a reader is on it.
+  const labels = locale === 'ko'
+    ? { learn: '학습', language: '언어', project: '프로젝트' }
+    : { learn: 'Learn', language: 'Language', project: 'Project' }
   const reference: SidebarItem[] = [{ label: d.api.h1, href: localePath(locale, links.api.href) }]
   for (const { category, members } of apiCategories()) {
     reference.push({ label: apiCategoryCopy(locale, category.slug).name, href: localePath(locale, `/api/${category.slug}/`) })
@@ -155,9 +153,9 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     for (const m of members) reference.push({ label: m.name, href: localePath(locale, `/api/${m.slug}/`), depth: 1 })
   }
   return [
-    { title: d.introduction, items: pages.slice(0, 2) },
-    { title: d.authoring, items: [pages[2]!, ...sections] },
-    { title: d.project, items: pages.slice(3) },
+    { title: labels.learn, items: pages.slice(0, 2) },
+    { title: labels.language, items: [pages[2]!, ...sections] },
+    { title: labels.project, items: pages.slice(3) },
     { title: d.api.reference, items: reference },
   ]
 }
