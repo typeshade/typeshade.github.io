@@ -16,12 +16,12 @@ interface Props {
 const { locale } = Astro.props
 const t = copyFor(locale)
 const q = t.quickStart as typeof t.quickStart & { p0?: string }
-const headings = [q.installH, q.status.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const headings = [q.installH, q.status.h, locale === 'ko' ? '다음 학습' : 'What to learn next'].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 const p0 =
   q.p0 ??
   (locale === 'ko'
-    ? '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래 삼각형은 `fn()`과 같은 IR입니다.'
-    : 'A file that starts with `"use typeshade"` is a shader compilation unit. The triangle below lowers to the same IR as `fn()`.')
+    ? '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래 예제는 TypeShade의 실제 authoring surface입니다.'
+    : 'A file that starts with `"use typeshade"` is a shader compilation unit. The example below is the TypeShade authoring surface.')
 const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
 ---
 
@@ -45,5 +45,24 @@ const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
   <section>
     <h2 id={slugify(q.status.h)}>{q.status.h}</h2>
     <p><Rich text={q.status.p} locale={locale} /></p>
+  </section>
+  <section>
+    <h2 id={slugify(locale === 'ko' ? '다음 학습' : 'What to learn next')}>
+      {locale === 'ko' ? '다음 학습' : 'What to learn next'}
+    </h2>
+    <p>
+      {locale === 'ko'
+        ? '이제 TypeScript에서 익숙한 개념을 TypeShade의 GPU 의미로 연결해 보세요.'
+        : 'Now connect familiar TypeScript concepts to their TypeShade GPU meaning.'}
+    </p>
+    <ul>
+      <li><a href={locale === 'ko' ? '/ko/guide/language/types/' : links.languageTypes.href}>{locale === 'ko' ? 'Types — 타입과 GPU struct' : 'Types — value shapes and GPU structs'}</a></li>
+      <li><a href={locale === 'ko' ? '/ko/guide/language/functions/' : links.languageFunctions.href}>{locale === 'ko' ? 'Functions — helper와 entry point' : 'Functions — helpers and entry points'}</a></li>
+      <li><a href={locale === 'ko' ? '/ko/guide/language/control-flow/' : links.languageControlFlow.href}>{locale === 'ko' ? 'Control flow — GPU 실행 흐름' : 'Control flow — GPU execution'}</a></li>
+      <li><a href={locale === 'ko' ? '/ko/guide/language/gpu-types/' : links.languageGpuTypes.href}>{locale === 'ko' ? 'GPU types — scalar, vector, matrix, array' : 'GPU types — scalars, vectors, matrices and arrays'}</a></li>
+      <li><a href={locale === 'ko' ? '/ko/guide/language/resources/' : links.languageResources.href}>{locale === 'ko' ? 'Resources — uniform과 storage' : 'Resources — uniform and storage'}</a></li>
+      <li><a href={locale === 'ko' ? '/ko/guide/language/stages/' : links.languageStages.href}>{locale === 'ko' ? 'Shader stages — compute, vertex, fragment' : 'Shader stages — compute, vertex and fragment'}</a></li>
+    </ul>
+    <p><a href={locale === 'ko' ? '/ko/guide/language/' : links.guide.href}>{locale === 'ko' ? '전체 Language Guide 보기 →' : 'Read the full Language Guide →'}</a></p>
   </section>
 </Docs>
