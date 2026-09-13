@@ -1,5 +1,5 @@
 ---
-// One section of the authoring guide. The English body is the compiler's AUTHORING.md at the
+// One section of the compiler's internal guide. The English body is the compiler's AUTHORING.md at the
 // pinned commit. Another language shows its own translation from content/guide/<locale>/ when
 // the section has one, and the English body under a note that says so when it does not. The
 // title, the description and the chrome come from the language's guide.sections map. The
@@ -13,7 +13,7 @@ import { facts } from '../../lib/examples.ts'
 
 interface Props {
   locale: Locale
-  /** The entry's id. 'overview' is the guide's own page, at /guide/authoring/. */
+  /** The entry's id. 'overview' is the internal guide's own page. */
   section: string
 }
 const { locale, section } = Astro.props
@@ -35,17 +35,17 @@ const overview = entry.id === 'overview'
 const named = overview ? undefined : guideSection(locale, entry.id)
 const title = named?.title ?? ''
 const note = translated || locale === 'en' ? g.note : g.noteUntranslated
-// Guide › Authoring guide › section, the trail the sidebar's own groups already carry.
+// Guide › Compiler internals › section, keeping the compiler reference visibly below the language guide.
 const breadcrumbs = [
   { name: t.nav.guide, href: links.motivation.href },
-  { name: t.docs.authoringGuide, href: links.guide.href },
-  ...(overview ? [] : [{ name: title, href: `/guide/authoring/${entry.id}/` }]),
+  { name: locale === 'ko' ? '컴파일러 내부 구조' : 'Compiler internals', href: links.internals.href },
+  ...(overview ? [] : [{ name: title, href: `/guide/internals/${entry.id}/` }]),
 ]
 ---
 
 <Docs
   locale={locale}
-  path={overview ? links.guide.href : `/guide/authoring/${entry.id}/`}
+  path={overview ? links.internals.href : `/guide/internals/${entry.id}/`}
   title={overview ? g.title : g.sectionTitle(title)}
   description={overview ? g.description : named!.description}
   headings={headings}
