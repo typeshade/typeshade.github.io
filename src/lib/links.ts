@@ -22,6 +22,9 @@ export const links = {
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Quick start', href: '/guide/quick-start/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
+  languageTypes: { label: 'Types', href: '/guide/language/types/' },
+  languageResources: { label: 'Resources', href: '/guide/language/resources/' },
+  languageStages: { label: 'Shader stages', href: '/guide/language/stages/' },
   legacyAuthoring: { label: 'Compiler authoring guide', href: '/guide/authoring/' },
   checks: { label: 'Verification', href: '/guide/checks/' },
   examples: { label: 'Examples', href: '/guide/examples/' },
@@ -124,6 +127,13 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
   const labels = locale === 'ko'
     ? { learn: '학습', language: '언어', project: '프로젝트' }
     : { learn: 'Learn', language: 'Language', project: 'Project' }
+  const languagePages: SidebarItem[] = [
+    pages[2]!,
+    { label: locale === 'ko' ? '타입' : 'Types', href: localePath(locale, links.languageTypes.href), depth: 1 },
+    { label: locale === 'ko' ? '리소스' : 'Resources', href: localePath(locale, links.languageResources.href), depth: 1 },
+    { label: locale === 'ko' ? '셰이더 스테이지' : 'Shader stages', href: localePath(locale, links.languageStages.href), depth: 1 },
+    ...sections,
+  ]
   const reference: SidebarItem[] = [{ label: d.api.h1, href: localePath(locale, links.api.href) }]
   for (const { category, members } of apiCategories()) {
     reference.push({ label: apiCategoryCopy(locale, category.slug).name, href: localePath(locale, `/api/${category.slug}/`) })
@@ -132,7 +142,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
   }
   return [
     { title: labels.learn, items: pages.slice(0, 2) },
-    { title: labels.language, items: [pages[2]!, ...sections] },
+    { title: labels.language, items: languagePages },
     { title: labels.project, items: pages.slice(3) },
     { title: d.api.reference, items: reference },
   ]
