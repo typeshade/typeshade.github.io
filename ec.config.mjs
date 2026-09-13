@@ -8,6 +8,7 @@
 // repeated below and bun scripts/check-copy.ts fails the build when they drift from the
 // dictionary they belong to (copy.code).
 import { pluginFramesTexts } from 'expressive-code'
+import typeshadeSyntax from './src/lib/typeshade-syntax.mjs'
 
 /** The copy button's two strings per locale, checked against the dictionary by check-copy. */
 export const codeUiTexts = {
@@ -22,6 +23,9 @@ export default {
   themes: ['github-light', 'github-dark'],
   themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
   defaultLocale: 'en',
+  shiki: {
+    langs: [typeshadeSyntax],
+  },
   // The github themes bring their own frame colours: a light background equal to the page
   // ground (so a frame reads as a bare 1px border, not a surface) and an orange active-tab
   // indicator outside the site's two-colour palette (accent blue, diagnostic red). Both are
