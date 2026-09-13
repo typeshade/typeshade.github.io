@@ -5,7 +5,7 @@ import CodeFrame from '../CodeFrame.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { hero } from '../../lib/examples.ts'
+import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts'
 import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
 import { links } from '../../lib/links.ts'
 
@@ -17,6 +17,7 @@ const t = copyFor(locale)
 const f = t.front
 const h = f.hero
 const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(' ')
+const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
 ---
 
 <Base locale={locale} path="/" searchable searchTitle={headline}>
@@ -49,11 +50,11 @@ const headline = [h.before, h.accent, h.after, h.subtitle].filter(Boolean).join(
     <h2>{f.code.h}</h2>
     <p><Rich text={f.code.p} locale={locale} /></p>
     <div class="code-pair">
-      <CodeFrame label={t.codeLabels.useTypeshade}>
+      <CodeFrame label={useLabel}>
         <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} />
       </CodeFrame>
       <CodeFrame label={t.codeLabels.wgsl}>
-        <Code code={hero.wgsl} lang="wgsl" title="WGSL" locale={locale} />
+        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" locale={locale} />
       </CodeFrame>
     </div>
     <p class="front-code-more"><Rich text={f.code.more} locale={locale} /></p>
