@@ -1,40 +1,109 @@
 ---
 import Docs from '../../../layouts/Docs.astro'
+import TypeShadeCode from '../../../components/TypeShadeCode.astro'
 import { type Locale } from '../../../i18n/index.ts'
 
 interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade 함수', description: 'TypeScript 함수의 매개변수와 반환 타입 개념을 TypeShade의 helper와 shader entry로 연결하는 방법.', h1: 'Functions: TypeScript 함수에서 shader entry로',
-  intro: '함수는 TypeShade authoring의 기본 단위입니다. TypeScript처럼 매개변수와 반환 타입으로 값의 흐름을 표현하고, TypeShade에서는 top-level export와 stage decorator가 pipeline entry라는 추가 의미를 만듭니다.',
-  ts: '1. TypeScript 함수에서 출발하기', tsP: '함수의 매개변수와 반환 타입은 TypeShade에서도 중요한 타입 경계입니다. 다만 함수 본문은 일반 JavaScript runtime이 아니라 GPU 실행 모델 안에서 해석됩니다.',
-  helper: '2. Helper function', helperP: '일반적인 계산은 함수로 분리할 수 있습니다. helper는 pipeline entry가 아니며 stage decorator를 붙이지 않습니다.',
-  entry: '3. Entry function', entryP: 'shader stage는 top-level exported function에 decorator를 붙여 선언합니다. 함수 본문은 TypeShade의 GPU 실행 모델 안에서 해석됩니다.',
-  builtin: '4. Builtin은 명시적인 parameter', builtinP: 'GPU 입력은 숨겨진 전역 변수가 아니라 함수 매개변수로 선언합니다. 이렇게 하면 entry의 입력 계약이 함수 시그니처에 드러납니다.',
-  boundary: '5. JavaScript 함수와 다른 점', boundaryItems: ['동적 객체나 일반 JavaScript runtime API를 전제로 하지 않습니다.', 'entry point는 class method가 아니라 top-level function입니다.', 'stage builtin은 해당 stage의 명시적인 함수 parameter로 받습니다.', '함수 시그니처에 적힌 타입은 shader type checking의 대상입니다.'],
+  title: 'TypeShade 함수', description: 'TypeScript 함수에서 출발해 TypeShade helper, shader entry, parameter, return type, builtin과 stage metadata를 이해하는 상세 가이드.', h1: 'Functions: TypeScript 함수에서 GPU 함수로',
+  intro: 'TypeShade에서 함수는 계산을 이름 붙이고 입력과 출력을 명확하게 만드는 기본 단위입니다. TypeScript에서 함수를 읽는 방법을 그대로 출발점으로 삼되, `"use typeshade"` 파일에서는 함수가 GPU IR로 내려갈 수 있는 계산이어야 한다는 차이를 이해해야 합니다.',
+  anatomy: '1. 함수의 구조', anatomyP: '함수는 이름, parameter 목록, return type, body로 구성됩니다. TypeShade는 이 익숙한 구조를 유지하면서 parameter와 return type에 GPU 의미를 부여합니다.',
+  params: '2. Parameter와 return type', paramsP: 'parameter는 함수가 읽는 입력이고 return type은 계산 결과의 GPU value shape를 설명합니다. 타입은 단순한 문서가 아니라 컴파일러가 표현식의 유효성을 판단하는 정보입니다.',
+  helper: '3. Helper function', helperP: 'stage decorator가 없는 top-level function은 다른 shader 함수에서 호출할 수 있는 helper입니다. 반복되는 계산을 이름 있는 함수로 분리하면 shader를 읽고 검증하기 쉬워집니다.',
+  call: '4. 함수 호출', callP: '함수 호출은 일반적인 TypeScript 호출처럼 보이지만 호출 대상과 argument는 TypeShade의 GPU 타입 체계 안에 있어야 합니다. 일반 JavaScript API를 호출한다고 생각하면 안 됩니다.',
+  entry: '5. Shader entry function', entryP: 'pipeline이 실행을 시작하는 함수는 top-level `export function`에 stage decorator를 붙여 선언합니다. `@compute`, `@vertex`, `@fragment`가 각각 GPU 실행 단계와 연결됩니다.',
+  builtin: '6. Builtin은 parameter로 받습니다', builtinP: 'GPU가 제공하는 stage input은 숨겨진 전역 변수가 아니라 함수 signature에 명시합니다. 이렇게 하면 함수의 입력이 코드만 읽어도 드러나고 helper와 entry의 경계도 분명해집니다.',
+  compute: '7. Compute entry를 읽는 법', computeP: '`@compute([64, 1, 1])`는 workgroup 크기를 선언하고, `gid`는 `global_invocation_id` builtin을 받는 parameter입니다. `gid.x`를 통해 현재 invocation의 x 좌표를 읽습니다.',
+  graphics: '8. Vertex와 fragment entry', graphicsP: 'vertex와 fragment도 같은 함수 모델을 사용합니다. stage decorator가 실행 단계를 결정하고 parameter와 return type이 pipeline interface를 설명합니다.',
+  scope: '9. 함수와 scope', scopeP: '함수 안의 local variable은 호출마다 계산되는 값입니다. resource나 stage builtin처럼 함수 바깥에서 제공되는 값과 local 값을 구분해서 읽어야 합니다.',
+  boundary: '10. TypeScript 함수와의 차이', boundaryItems: ['임의의 JavaScript runtime API를 호출하지 않습니다.', '동적 객체 생성과 일반적인 runtime side effect를 shader 계산으로 가정하지 않습니다.', 'entry point는 class method가 아니라 top-level exported function입니다.', 'builtin은 implicit global이 아니라 명시적인 parameter입니다.', 'parameter와 return type은 GPU value semantics에 맞아야 합니다.'],
+  example: '11. 작은 함수에서 실제 entry까지', exampleP: '아래 예제는 helper가 계산을 담당하고 entry가 builtin과 resource를 연결하는 전형적인 구조입니다.',
   next: '다음: Control flow', href: '/ko/guide/language/control-flow/'
 } : {
-  title: 'TypeShade functions', description: 'How TypeScript function parameters and return types map to TypeShade helpers and shader entries with explicit stage builtins.', h1: 'Functions: from TypeScript functions to shader entries',
-  intro: 'Functions are the basic authoring unit in TypeShade. Like TypeScript, parameters and return types describe value flow. TypeShade adds pipeline meaning through top-level exports and stage decorators.',
-  ts: '1. Start from the TypeScript function model', tsP: 'Function parameters and return types are important type boundaries in TypeShade too. The function body, however, is interpreted in the GPU execution model rather than against arbitrary JavaScript runtime APIs.',
-  helper: '2. Helper functions', helperP: 'Keep reusable calculations in functions without stage decorators. A helper is not a pipeline entry point.',
-  entry: '3. Entry functions', entryP: 'Declare a shader stage by decorating a top-level exported function. Its body is interpreted within the TypeShade GPU execution model.',
-  builtin: '4. Builtins are explicit parameters', builtinP: 'GPU inputs are declared as function parameters instead of hidden global variables. The entry signature therefore exposes its input contract directly.',
-  boundary: '5. Where JavaScript functions stop', boundaryItems: ['Do not assume arbitrary JavaScript runtime APIs or dynamic objects.', 'Entry points are top-level functions, not class methods.', 'Stage builtins are explicit function parameters; TypeShade does not inject implicit builtin globals.', 'Types written in the function signature participate in shader type checking.'],
+  title: 'TypeShade functions', description: 'A detailed guide to TypeShade functions: TypeScript-style parameters and returns, helpers, shader entries, stages and explicit builtins.', h1: 'Functions: from TypeScript functions to GPU functions',
+  intro: 'Functions are the basic unit for naming computation and making inputs and outputs explicit. TypeShade keeps the TypeScript function shape, but every function in a `"use typeshade"` file must describe computation that can be lowered to GPU IR.',
+  anatomy: '1. Anatomy of a function', anatomyP: 'A function has a name, parameter list, return type and body. TypeShade keeps that familiar structure while giving parameters and return values GPU semantics.',
+  params: '2. Parameters and return types', paramsP: 'A parameter is an input to the function and the return type describes the shape of its result. Types are part of compilation: they tell the compiler which values and operations are valid.',
+  helper: '3. Helper functions', helperP: 'A top-level function without a stage decorator is a helper. Helpers let you name repeated calculations and keep shader entries focused on pipeline inputs, resources and outputs.',
+  call: '4. Calling a function', callP: 'A call looks like an ordinary TypeScript call, but its callee and arguments must stay inside the TypeShade GPU type model. Do not treat the shader as a place to call arbitrary JavaScript APIs.',
+  entry: '5. Shader entry functions', entryP: 'A pipeline entry is declared as a top-level exported function with a stage decorator. `@compute`, `@vertex` and `@fragment` attach the function to a GPU execution stage.',
+  builtin: '6. Builtins are parameters', builtinP: 'GPU-provided stage inputs are explicit function parameters, not hidden global variables. Reading the signature tells you exactly which external inputs the entry expects.',
+  compute: '7. Reading a compute entry', computeP: '`@compute([64, 1, 1])` declares the workgroup size. `gid` is a parameter receiving the `global_invocation_id` builtin, and `gid.x` reads the current invocation’s x coordinate.',
+  graphics: '8. Vertex and fragment entries', graphicsP: 'Graphics stages use the same function model. The decorator selects the stage, while parameters and the return type describe the pipeline interface.',
+  scope: '9. Functions and scope', scopeP: 'Local variables belong to the current function invocation. Keep them conceptually separate from resources and builtin inputs supplied by the shader interface.',
+  boundary: '10. Where TypeScript functions stop', boundaryItems: ['Do not call arbitrary JavaScript runtime APIs.', 'Do not assume dynamic object creation or general runtime side effects can become shader computation.', 'Entry points are top-level exported functions, not class methods.', 'Builtins are explicit parameters, not implicit globals.', 'Parameters and return types must have valid GPU value semantics.'],
+  example: '11. From a small helper to a real entry', exampleP: 'The example below keeps reusable math in a helper and lets the entry connect the builtin input and resources.',
   next: 'Next: Control flow', href: '/guide/language/control-flow/'
 }
-const headings = [['ts',content.ts],['helper',content.helper],['entry',content.entry],['builtin',content.builtin],['boundary',content.boundary]].map(([slug,text]) => ({depth:2,slug,text}))
+const headings = [['anatomy',content.anatomy],['params',content.params],['helper',content.helper],['call',content.call],['entry',content.entry],['builtin',content.builtin],['compute',content.compute],['graphics',content.graphics],['scope',content.scope],['boundary',content.boundary],['example',content.example]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
+
 <Docs locale={locale} path="/guide/language/functions/" title={content.title} description={content.description} headings={headings}>
-  <h1>{content.h1}</h1><p>{content.intro}</p>
-  <h2 id="ts">{content.ts}</h2><p>{content.tsP}</p>
-  <pre><code>{`function addBias(value: f32): f32 {\n  return value + 0.5\n}`}</code></pre>
-  <h2 id="helper">{content.helper}</h2><p>{content.helperP}</p>
-  <h2 id="entry">{content.entry}</h2><p>{content.entryP}</p>
-  <pre><code>{`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = addBias(camera.pos.x)\n}`}</code></pre>
-  <h2 id="builtin">{content.builtin}</h2><p>{content.builtinP}</p>
-  <pre><code>{`@vertex\nexport function vs(@builtin("vertex_index") vid: u32): vec4 {\n  return positions[vid]\n}`}</code></pre>
-  <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
+  <h1>{content.h1}</h1>
+  <p>{content.intro}</p>
+
+  <h2 id="anatomy">{content.anatomy}</h2>
+  <p>{content.anatomyP}</p>
+  <TypeShadeCode code={`function addBias(value: f32): f32 {\n  return value + 0.5\n}`} />
+  <p>{ko ? <>여기서 <code>value</code>는 입력 parameter이고 <code>f32</code>는 입력과 결과의 GPU 타입입니다. <code>return</code>은 함수가 계산한 값을 호출자에게 돌려줍니다.</> : <>Here <code>value</code> is the input parameter, <code>f32</code> is the GPU type of both the input and result, and <code>return</code> produces the value for the caller.</>}</p>
+
+  <h2 id="params">{content.params}</h2>
+  <p>{content.paramsP}</p>
+  <TypeShadeCode code={`function mix(a: vec4, b: vec4, amount: f32): vec4 {\n  return a + (b - a) * amount\n}`} />
+  <div class="table-scroll"><table><thead><tr><th>{ko ? '부분' : 'Part'}</th><th>{ko ? '역할' : 'Role'}</th></tr></thead><tbody>
+    <tr><td><code>a</code>, <code>b</code></td><td>{ko ? 'GPU 입력 값입니다.' : 'GPU input values.'}</td></tr>
+    <tr><td><code>amount: f32</code></td><td>{ko ? '스칼라 입력이며 컴파일러가 연산 타입을 확인합니다.' : 'A scalar input whose type participates in expression checking.'}</td></tr>
+    <tr><td><code>: vec4</code></td><td>{ko ? '호출자에게 반환할 GPU 값의 shape입니다.' : 'The GPU value shape returned to the caller.'}</td></tr>
+  </tbody></table></div>
+
+  <h2 id="helper">{content.helper}</h2>
+  <p>{content.helperP}</p>
+  <TypeShadeCode code={`function saturate(x: f32): f32 {\n  return clamp(x, 0.0, 1.0)\n}\n\nfunction remap(x: f32): f32 {\n  return saturate(x * 2.0 - 1.0)\n}`} />
+  <p>{ko ? 'helper는 pipeline entry가 아니므로 stage decorator가 없습니다. 이 구조는 계산을 작은 단위로 나누고 entry의 역할을 읽기 쉽게 만듭니다.' : 'A helper has no stage decorator because it is not a pipeline entry. This keeps reusable math separate from the pipeline interface.'}</p>
+
+  <h2 id="call">{content.call}</h2>
+  <p>{content.callP}</p>
+  <TypeShadeCode code={`function addBias(value: f32): f32 {\n  return value + 0.5\n}\n\nfunction shade(value: f32): f32 {\n  const biased = addBias(value)\n  return clamp(biased, 0.0, 1.0)\n}`} />
+  <p>{ko ? '호출은 일반 함수 호출처럼 보이지만, `addBias`의 입력과 반환값은 TypeShade가 이해하는 GPU 타입이어야 합니다.' : 'The call looks like a normal function call, but both the argument and the result must be values supported by the TypeShade GPU model.'}</p>
+
+  <h2 id="entry">{content.entry}</h2>
+  <p>{content.entryP}</p>
+  <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = addBias(camera.pos.x)\n}`} />
+  <p>{ko ? '`export`는 TypeScript module 개념과 함께 entry를 compiler가 발견할 수 있게 합니다. stage decorator는 그 exported function이 어느 pipeline stage인지 추가로 설명합니다.' : '`export` keeps the familiar module surface and exposes the function to the compiler as an entry candidate. The stage decorator adds the GPU-specific stage information.'}</p>
+
+  <h2 id="builtin">{content.builtin}</h2>
+  <p>{content.builtinP}</p>
+  <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(\n  @builtin("global_invocation_id") gid: vec3u\n) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}`} />
+  <div class="table-scroll"><table><thead><tr><th>{ko ? '표현' : 'Form'}</th><th>{ko ? '의미' : 'Meaning'}</th></tr></thead><tbody>
+    <tr><td><code>@builtin("global_invocation_id")</code></td><td>{ko ? 'GPU가 제공하는 compute 입력을 지정합니다.' : 'Selects the GPU-provided compute input.'}</td></tr>
+    <tr><td><code>gid: vec3u</code></td><td>{ko ? '그 입력의 TypeShade 타입과 local 이름입니다.' : 'The TypeShade type and local name for that input.'}</td></tr>
+    <tr><td><code>gid.x</code></td><td>{ko ? '현재 invocation의 x component를 읽습니다.' : 'Reads the x component for the current invocation.'}</td></tr>
+  </tbody></table></div>
+
+  <h2 id="compute">{content.compute}</h2>
+  <p>{content.computeP}</p>
+  <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}`} />
+  <p>{ko ? '이 함수를 읽을 때는 먼저 stage와 workgroup 크기를 보고, 다음으로 parameter를 통해 어떤 GPU 입력이 들어오는지 확인한 뒤 body에서 계산을 따라가면 됩니다.' : 'When reading this function, first identify the stage and workgroup size, then inspect the parameters for external GPU inputs, and finally follow the body’s calculation.'}</p>
+
+  <h2 id="graphics">{content.graphics}</h2>
+  <p>{content.graphicsP}</p>
+  <TypeShadeCode code={`@vertex\nexport function vs(\n  @builtin("vertex_index") vid: u32,\n  vin: VsIn\n): vec4 {\n  return camera.view * vec4(vin.position, 1)\n}\n\n@fragment\nexport function fs(@builtin("position") pid: vec4): vec4 {\n  return vec4(pid.x, 0, 0, 1)\n}`} />
+  <p>{ko ? 'vertex의 `vid`와 `vin`은 서로 다른 입력입니다. 하나는 GPU builtin이고 다른 하나는 사용자 정의 struct 입력입니다. fragment의 `pid` 역시 signature에 명시되어 있으므로 함수만 읽어도 필요한 입력을 알 수 있습니다.' : 'The vertex function has two different inputs: `vid` is a GPU builtin and `vin` is a user-defined struct. The fragment function makes its builtin input explicit as well, so the signature documents the stage interface.'}</p>
+
+  <h2 id="scope">{content.scope}</h2>
+  <p>{content.scopeP}</p>
+  <TypeShadeCode code={`function exposure(color: vec3, amount: f32): vec3 {\n  const factor = amount + 1.0\n  return color * factor\n}`} />
+  <p>{ko ? '`factor`는 함수 안에서만 존재하는 local value입니다. 반대로 `camera`나 `pixels` 같은 resource는 host와 연결된 shader interface이며, builtin parameter는 GPU stage가 제공하는 입력입니다.' : '`factor` is a local value scoped to the function. Resources such as `camera` and `pixels` belong to the host-facing shader interface, while builtin parameters are inputs supplied by the GPU stage.'}</p>
+
+  <h2 id="boundary">{content.boundary}</h2>
+  <ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
+
+  <h2 id="example">{content.example}</h2>
+  <p>{content.exampleP}</p>
+  <TypeShadeCode code={`"use typeshade"\n\nfunction addBias(value: f32): f32 {\n  return value + 0.5\n}\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const value = camera.pos.x\n  pixels[gid.x] = addBias(value)\n}`} />
+  <p>{ko ? '이 예제의 핵심은 함수 자체보다 경계입니다. `addBias`는 재사용 가능한 계산이고, `paint`는 stage와 builtin을 선언하면서 실제 GPU invocation과 resource를 연결합니다.' : 'The important distinction is the boundary: `addBias` is reusable computation, while `paint` connects the stage, builtin input and resources to an actual GPU invocation.'}</p>
+
   <p><a href={content.href}>{content.next}</a></p>
 </Docs>
