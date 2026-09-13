@@ -6,9 +6,9 @@ import { facts } from '../lib/examples.ts'
 import { links } from '../lib/links.ts'
 
 const summary = [
-  `TypeShade is a TypeScript library for writing shaders.`,
-  `You author one typed module, and one intermediate representation emits WGSL for WebGPU and`,
-  `${facts.glslTarget} for WebGL2. The same module also compiles to a CPU function that runs in double`,
+  `TypeShade compiles TypeScript files that start with "use typeshade".`,
+  `One intermediate representation emits WGSL for WebGPU and`,
+  `${facts.glslTarget} for WebGL2. The same source also compiles to a CPU function that runs in double`,
   `precision, and the test suite checks the compiler's algebra against it. A misspelt uniform field is`,
   `a TypeScript error at author time; reflect() recovers`,
   `${facts.layoutStandards.join(' and ')} layouts, so a host packs its uniform buffer from the compiler's`,
