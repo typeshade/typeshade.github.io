@@ -1,0 +1,38 @@
+---
+import Docs from '../../../layouts/Docs.astro'
+import { type Locale } from '../../../i18n/index.ts'
+
+interface Props { locale: Locale }
+const { locale } = Astro.props
+const ko = locale === 'ko'
+const content = ko ? {
+  title: 'TypeShade GPU 타입', description: '스칼라, 벡터, 행렬과 배열을 TypeShade에서 이해하는 방법.', h1: 'GPU types: TypeScript 표면에서 GPU 값으로',
+  intro: 'TypeShade의 타입은 TypeScript 표면을 사용하지만 대상은 GPU 값입니다. API reference와 함께 scalar, vector, matrix, array 같은 GPU 타입의 의미를 익히세요.',
+  scalar: '1. Scalar', scalarP: '단일 숫자 값은 GPU scalar 타입으로 표현합니다. 리소스와 struct field의 타입을 명시할 때 사용합니다.',
+  vector: '2. Vector', vectorP: 'vec2, vec3, vec4는 여러 scalar 값을 하나의 GPU 값으로 묶습니다. shader 계산과 vertex/fragment 데이터에서 자주 사용합니다.',
+  matrix: '3. Matrix', matrixP: 'mat4 같은 matrix 타입은 변환 계산에 사용합니다. TypeScript 객체가 아니라 GPU arithmetic value입니다.',
+  arrays: '4. Arrays', arraysP: 'array는 여러 GPU 값을 하나의 타입으로 표현합니다. resource element type과 함께 사용하면 host가 제공하는 buffer shape를 명확하게 설명할 수 있습니다.',
+  next: '다음: Resources', href: '/ko/guide/language/resources/'
+} : {
+  title: 'TypeShade GPU types', description: 'How scalars, vectors, matrices and arrays work as TypeShade GPU values.', h1: 'GPU types: from TypeScript syntax to GPU values',
+  intro: 'TypeShade uses TypeScript syntax while targeting GPU values. Use the API reference alongside this guide to understand scalar, vector, matrix and array types.',
+  scalar: '1. Scalars', scalarP: 'Single numeric values are represented as GPU scalar types and can be used in resource and struct field declarations.',
+  vector: '2. Vectors', vectorP: 'vec2, vec3 and vec4 group scalar values into a GPU value. They are common in shader calculations and stage inputs.',
+  matrix: '3. Matrices', matrixP: 'Types such as mat4 represent GPU arithmetic values used for transforms. They are not JavaScript objects.',
+  arrays: '4. Arrays', arraysP: 'array represents a sequence of GPU values. Combined with a resource element type, it describes the shape of host-provided buffer data.',
+  next: 'Next: Resources', href: '/guide/language/resources/'
+}
+const headings = [['scalar',content.scalar],['vector',content.vector],['matrix',content.matrix],['arrays',content.arrays]].map(([slug,text]) => ({depth:2,slug,text}))
+---
+<Docs locale={locale} path="/guide/language/gpu-types/" title={content.title} description={content.description} headings={headings}>
+  <h1>{content.h1}</h1><p>{content.intro}</p>
+  <h2 id="scalar">{content.scalar}</h2><p>{content.scalarP}</p>
+  <pre><code>{`let value: f32 = 1`}</code></pre>
+  <h2 id="vector">{content.vector}</h2><p>{content.vectorP}</p>
+  <pre><code>{`const uv: vec2 = vec2(0.5, 0.5)\nconst color: vec4 = vec4(1, 0, 0, 1)`}</code></pre>
+  <h2 id="matrix">{content.matrix}</h2><p>{content.matrixP}</p>
+  <pre><code>{`type Camera = {\n  view: mat4\n}`}</code></pre>
+  <h2 id="arrays">{content.arrays}</h2><p>{content.arraysP}</p>
+  <pre><code>{`declare let pixels: storage<array<f32>>`}</code></pre>
+  <p><a href={content.href}>{content.next}</a></p>
+</Docs>
