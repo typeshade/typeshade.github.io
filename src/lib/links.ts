@@ -92,8 +92,7 @@ export function editGuideTranslation(locale: Locale, id: string): string {
 }
 
 /** The primary header links: learn the language first, then reach the generated reference
- *  and examples. The language guide is deliberately a first-class destination rather than
- *  hiding behind the generic "Guide" label. */
+ *  and examples. The language guide is a primary destination, not a generic "Guide" label. */
 export function navLinks(locale: Locale): readonly Destination[] {
   const labels = locale === 'ko'
     ? { learn: '학습', language: '언어', api: 'API', examples: '예제' }
