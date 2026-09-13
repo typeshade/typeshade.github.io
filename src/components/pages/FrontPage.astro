@@ -63,7 +63,7 @@ const content = locale === 'ko'
     <p class="hero-actions">
       <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
         {content.getStarted}
-        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z" /></svg>
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 2.847 2.828 10.975-11z" /></svg>
       </a>
       <a class="button" href={localePath(locale, links.motivation.href)}>{content.learn}</a>
       <a class="button" href={localePath(locale, links.guide.href)}>{content.language}</a>
@@ -91,10 +91,10 @@ const content = locale === 'ko'
     </div>
     <div class="code-pair">
       <CodeFrame label={useLabel}>
-        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} />
+        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" />
       </CodeFrame>
       <CodeFrame label={t.codeLabels.wgsl}>
-        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" locale={locale} />
+        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" />
       </CodeFrame>
     </div>
   </section>
