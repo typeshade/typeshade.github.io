@@ -16,7 +16,8 @@ interface Props {
 const { locale } = Astro.props
 const t = copyFor(locale)
 const q = t.quickStart as typeof t.quickStart & { p0?: string }
-const headings = [q.installH, q.status.h, locale === 'ko' ? '다음 학습' : 'What to learn next'].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const hostH = locale === 'ko' ? '호스트 애플리케이션에 연결하기' : 'Connect it to the host application'
+const headings = [q.installH, hostH, q.status.h, locale === 'ko' ? '다음 학습' : 'What to learn next'].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 const p0 =
   q.p0 ??
   (locale === 'ko'
@@ -42,6 +43,31 @@ const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
     <Code code={hero.wgsl} lang="wgsl" locale={locale} />
   </CodeFrame>
   <p><Rich text={q.p3} locale={locale} /></p>
+  <section>
+    <h2 id={slugify(hostH)}>{hostH}</h2>
+    <p>
+      {locale === 'ko'
+        ? 'TypeShade는 렌더링 런타임이 아닙니다. TypeScript에서 셰이더를 작성하고 컴파일한 뒤, 호스트 애플리케이션이 생성된 WGSL 또는 GLSL ES 3.00 문자열을 WebGPU나 WebGL2에 넘깁니다.'
+        : 'TypeShade is not the rendering runtime. Write and compile the shader in TypeScript, then let the host application pass the generated WGSL or GLSL ES 3.00 source to WebGPU or WebGL2.'}
+    </p>
+    <CodeFrame label={locale === 'ko' ? '호스트가 WGSL을 소비하는 위치' : 'Where the host consumes WGSL'}>
+      <Code code={`const shaderCode = /* WGSL emitted from the TypeShade module */
+const shaderModule = device.createShaderModule({ code: shaderCode })
+
+const pipeline = device.createComputePipeline({
+  layout: 'auto',
+  compute: {
+    module: shaderModule,
+    entryPoint: 'paint',
+  },
+})`} lang="ts" title="webgpu.ts" locale={locale} />
+    </CodeFrame>
+    <p>
+      {locale === 'ko'
+        ? 'TypeShade가 담당하는 것은 언어 의미와 셰이더 코드 생성입니다. device, pipeline, bind group, buffer, texture, command encoder 같은 GPU 런타임 객체의 생성과 수명 관리는 호스트가 담당합니다.'
+        : 'TypeShade owns the language semantics and shader emission. The host owns runtime objects and their lifetimes, including the device, pipeline, bind groups, buffers, textures and command encoders.'}
+    </p>
+  </section>
   <section>
     <h2 id={slugify(q.status.h)}>{q.status.h}</h2>
     <p><Rich text={q.status.p} locale={locale} /></p>
