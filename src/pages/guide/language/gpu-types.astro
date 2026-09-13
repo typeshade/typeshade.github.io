@@ -6,28 +6,31 @@ interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade GPU 타입', description: '스칼라, 벡터, 행렬과 배열을 TypeShade GPU 값으로 이해하고 TypeScript 타입 표면과 연결하는 방법을 단계별로 배우는 안내입니다.', h1: 'GPU types: TypeScript 표면에서 GPU 값으로',
-  intro: 'TypeShade의 타입은 TypeScript 표면을 사용하지만 대상은 GPU 값입니다. API reference와 함께 scalar, vector, matrix, array 같은 GPU 타입의 의미를 익히세요.',
-  scalar: '1. Scalar', scalarP: '단일 숫자 값은 GPU scalar 타입으로 표현합니다. 리소스와 struct field의 타입을 명시할 때 사용합니다.',
-  vector: '2. Vector', vectorP: 'vec2, vec3, vec4는 여러 scalar 값을 하나의 GPU 값으로 묶습니다. shader 계산과 vertex/fragment 데이터에서 자주 사용합니다.',
-  matrix: '3. Matrix', matrixP: 'mat4 같은 matrix 타입은 변환 계산에 사용합니다. TypeScript 객체가 아니라 GPU arithmetic value입니다.',
-  arrays: '4. Arrays', arraysP: 'array는 여러 GPU 값을 하나의 타입으로 표현합니다. resource element type과 함께 사용하면 host가 제공하는 buffer shape를 명확하게 설명할 수 있습니다.',
+  title: 'TypeShade GPU 타입', description: 'TypeScript의 타입 표면과 TypeShade의 scalar, vector, matrix, array GPU 값을 연결하는 방법을 설명합니다.', h1: 'GPU types: TypeScript 표면에서 GPU 값으로',
+  intro: 'TypeShade의 타입은 TypeScript 문법으로 작성하지만 TypeScript의 모든 런타임 값 타입을 그대로 가져오지는 않습니다. 이 페이지에서는 GPU에서 실제 계산되는 값의 종류를 중심으로 봅니다.',
+  mapping: '1. TypeScript 타입과 GPU 타입의 관계', mappingP: 'TypeScript의 `number`처럼 넓은 런타임 타입을 그대로 shader 값으로 취급하기보다 `f32`, `i32`, `u32`처럼 GPU 표현을 명시합니다. `vec*`, `mat*`도 JavaScript 객체가 아니라 GPU arithmetic value입니다.',
+  scalar: '2. Scalar', scalarP: '단일 숫자 값은 GPU scalar 타입으로 표현합니다. 리소스와 struct field의 타입을 명시할 때 사용합니다.',
+  vector: '3. Vector', vectorP: 'vec2, vec3, vec4는 여러 scalar 값을 하나의 GPU 값으로 묶습니다. shader 계산과 vertex/fragment 데이터에서 자주 사용합니다.',
+  matrix: '4. Matrix', matrixP: 'mat4 같은 matrix 타입은 변환 계산에 사용합니다. TypeScript 객체가 아니라 GPU arithmetic value입니다.',
+  arrays: '5. Arrays', arraysP: 'array는 여러 GPU 값을 하나의 타입으로 표현합니다. resource element type과 함께 사용하면 host가 제공하는 buffer shape를 명확하게 설명할 수 있습니다.',
   next: '다음: Resources', href: '/ko/guide/language/resources/'
 } : {
-  title: 'TypeShade GPU types', description: 'How scalars, vectors, matrices and arrays work as TypeShade GPU values alongside familiar TypeScript syntax.', h1: 'GPU types: from TypeScript syntax to GPU values',
-  intro: 'TypeShade uses TypeScript syntax while targeting GPU values. Use the API reference alongside this guide to understand scalar, vector, matrix and array types.',
-  scalar: '1. Scalars', scalarP: 'Single numeric values are represented as GPU scalar types and can be used in resource and struct field declarations.',
-  vector: '2. Vectors', vectorP: 'vec2, vec3 and vec4 group scalar values into a GPU value. They are common in shader calculations and stage inputs.',
-  matrix: '3. Matrices', matrixP: 'Types such as mat4 represent GPU arithmetic values used for transforms. They are not JavaScript objects.',
-  arrays: '4. Arrays', arraysP: 'array represents a sequence of GPU values. Combined with a resource element type, it describes the shape of host-provided buffer data.',
+  title: 'TypeShade GPU types', description: 'How TypeScript type syntax maps to TypeShade scalar, vector, matrix and array GPU values.', h1: 'GPU types: from TypeScript syntax to GPU values',
+  intro: 'TypeShade uses TypeScript syntax but does not inherit every JavaScript runtime value type as a shader value. This page focuses on the values that are actually represented and computed on the GPU.',
+  mapping: '1. TypeScript types and GPU types', mappingP: 'Instead of treating a broad runtime type such as `number` as a shader value, TypeShade uses explicit GPU representations such as `f32`, `i32` and `u32`. `vec*` and `mat*` are GPU arithmetic values, not JavaScript objects.',
+  scalar: '2. Scalars', scalarP: 'Single numeric values are represented as GPU scalar types and can be used in resource and struct field declarations.',
+  vector: '3. Vectors', vectorP: 'vec2, vec3 and vec4 group scalar values into a GPU value. They are common in shader calculations and stage inputs.',
+  matrix: '4. Matrices', matrixP: 'Types such as mat4 represent GPU arithmetic values used for transforms. They are not JavaScript objects.',
+  arrays: '5. Arrays', arraysP: 'array represents a sequence of GPU values. Combined with a resource element type, it describes the shape of host-provided buffer data.',
   next: 'Next: Resources', href: '/guide/language/resources/'
 }
-const headings = [['scalar',content.scalar],['vector',content.vector],['matrix',content.matrix],['arrays',content.arrays]].map(([slug,text]) => ({depth:2,slug,text}))
+const headings = [['mapping',content.mapping],['scalar',content.scalar],['vector',content.vector],['matrix',content.matrix],['arrays',content.arrays]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
 <Docs locale={locale} path="/guide/language/gpu-types/" title={content.title} description={content.description} headings={headings}>
   <h1>{content.h1}</h1><p>{content.intro}</p>
+  <h2 id="mapping">{content.mapping}</h2><p>{content.mappingP}</p>
+  <pre><code>{`// TypeScript surface, GPU-specific value types\nlet value: f32 = 1\nlet index: u32 = 0\nlet direction: vec3 = vec3(0, 1, 0)`}</code></pre>
   <h2 id="scalar">{content.scalar}</h2><p>{content.scalarP}</p>
-  <pre><code>{`let value: f32 = 1`}</code></pre>
   <h2 id="vector">{content.vector}</h2><p>{content.vectorP}</p>
   <pre><code>{`const uv: vec2 = vec2(0.5, 0.5)\nconst color: vec4 = vec4(1, 0, 0, 1)`}</code></pre>
   <h2 id="matrix">{content.matrix}</h2><p>{content.matrixP}</p>
