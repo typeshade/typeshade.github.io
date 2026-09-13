@@ -42,10 +42,6 @@ const canonical = localeUrl(site, locale, path)
 const ogImage = new URL('/og.png', site).toString()
 const alternates = noAlternates ? [] : locales.map((l) => ({ lang: l, href: localeUrl(site, l, path) }))
 
-// One Organization node carries the facts every other node points back to: the WebSite it
-// publishes, the SoftwareSourceCode it wrote. The WebSite and SoftwareSourceCode nodes share
-// their @id across every page, so their description and inLanguage stay fixed to the source
-// locale and the full locale list. The same @id needs one description, not one per page.
 const organizationId = `${site.origin}/#organization`
 const breadcrumbId = `${canonical}#breadcrumb`
 const jsonLd = {
@@ -115,7 +111,6 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <script is:inline>
-      // A remembered dark-mode choice, applied before the first paint. With none, the page follows the system.
       try { const t = localStorage.getItem('theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t } catch {}
     </script>
     <title>{title}</title>
@@ -172,9 +167,6 @@ const jsonLd = {
       <p class="search-note" hidden>{t.nav.searchUnavailable}</p>
     </dialog>
     <script is:inline define:vars={{ translations: t.nav.searchUi }}>
-      // Pagefind's index and its UI are written into dist/pagefind/ by the build. They load
-      // when the dialog first opens, so a page that is only read pays nothing for them. A dev
-      // server has no index, and the dialog says so.
       const dialog = document.querySelector('.search-dialog')
       const note = dialog.querySelector('.search-note')
       let started = false
@@ -203,26 +195,35 @@ const jsonLd = {
       }
       for (const b of document.querySelectorAll('[data-search-open]')) b.addEventListener('click', openSearch)
       dialog.querySelector('[data-search-close]')?.addEventListener('click', () => dialog.close())
-      // A click on the backdrop lands on the dialog itself; Escape is the dialog's own, but a
-      // phone has no Escape key, so the close button above is the button that always works.
       dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close() })
       addEventListener('keydown', (e) => {
         if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openSearch() }
       })
     </script>
     <script is:inline>
+      function themeIsDark() {
+        return document.documentElement.dataset.theme
+          ? document.documentElement.dataset.theme === 'dark'
+          : matchMedia('(prefers-color-scheme: dark)').matches
+      }
+      function syncThemeButtons() {
+        const dark = themeIsDark()
+        for (const b of document.querySelectorAll('[data-theme-toggle]')) {
+          b.setAttribute('aria-pressed', dark ? 'true' : 'false')
+        }
+      }
+      syncThemeButtons()
       for (const b of document.querySelectorAll('[data-theme-toggle]')) b.addEventListener('click', () => {
-        const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches
-        const next = dark ? 'light' : 'dark'
+        const next = themeIsDark() ? 'light' : 'dark'
         document.documentElement.dataset.theme = next
         try { localStorage.setItem('theme', next) } catch {}
+        syncThemeButtons()
+      })
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (!document.documentElement.dataset.theme) syncThemeButtons()
       })
     </script>
     <script is:inline>
-      // The header's own menus: the version and language dropdowns, and the phone panel, are
-      // all <details>. This keeps only one open at a time, closes the dropdowns on Escape and
-      // an outside click, and gives the phone panel a scroll lock and a focus trap, since it
-      // is a full-screen overlay and its close control (the summary itself) must stay put.
       const drops = [...document.querySelectorAll('.site-menu-drop')]
       const panel = document.querySelector('.site-menu')
       const all = panel ? [...drops, panel] : drops
@@ -265,7 +266,7 @@ const jsonLd = {
           const focusable = [...panel.querySelectorAll('summary, a[href], button:not([disabled])')].filter((el) => el.offsetParent !== null)
           if (focusable.length === 0) return
           const first = focusable[0]
-          const last = focusable[focusable.length - 1]
+          const last = focusable[last]
           if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
           else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
         })
