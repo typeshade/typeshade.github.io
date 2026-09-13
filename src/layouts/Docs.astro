@@ -16,7 +16,7 @@ export interface Heading {
 }
 
 interface Props {
-  locale: Locale
+  locale?: Locale
   /** The locale-neutral route, for example '/guide/checks/'. */
   path: string
   title: string
@@ -24,7 +24,7 @@ interface Props {
   /** Headings for the outline; the shallowest level sits at the margin. */
   headings?: readonly Heading[]
   /** Where the page's text is written, on GitHub. */
-  editHref: string
+  editHref?: string
   /** The document is in another language than the page's chrome. */
   bodyLang?: string
   /** Keep the page out of search indexes (a template preview). */
@@ -43,7 +43,7 @@ interface Props {
   /** The pinned commit's date, for Base's WebPage.dateModified. */
   dateModified?: string
 }
-const { locale, path, title, description, headings = [], editHref, bodyLang, noindex = false, openCategory, label, meta, breadcrumbs, dateModified } = Astro.props
+const { locale = 'en', path, title, description, headings = [], editHref = '#', bodyLang, noindex = false, openCategory, label, meta, breadcrumbs, dateModified } = Astro.props
 const d = copyFor(locale).docs
 
 // The guide's sections follow its overview in the sidebar, so previous and next walk the
@@ -122,9 +122,6 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
     )}
   </div>
   <script is:inline>
-    // The reference opens a category of up to 88 members in the sidebar, so the page a reader
-    // is on can sit below the fold of that list. Bring it into view inside the sidebar's own
-    // scroller, the way VitePress does, without moving the page.
     ;(() => {
       const box = document.querySelector('.docs-sidebar-in')
       const here = box?.querySelector('a[aria-current="page"]')
@@ -132,9 +129,6 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
       const top = here.offsetTop
       if (top > box.clientHeight - 48) box.scrollTop = top - box.clientHeight / 2
     })()
-
-    // A permalink beside every h2 and h3 in the document, shown on hover or focus, the way
-    // VitePress marks a heading a reader can link to directly.
     ;(() => {
       const content = document.querySelector('.docs-content')
       if (!content) return
@@ -144,17 +138,11 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
         a.className = 'header-anchor'
         a.href = `#${h.id}`
         a.setAttribute('aria-label', label)
-        // The mark is chrome on top of the heading, not part of it: out of the search index,
-        // the way the sidebar and the outline already stay out (data-pagefind-ignore).
         a.setAttribute('data-pagefind-ignore', '')
         a.textContent = '#'
         h.append(a)
       })
     })()
-
-    // The outline marks the heading currently in view, the way the sidebar marks the current
-    // page. A heading counts as current once it has crossed a line near the top of the
-    // viewport; the last one that has is the one on screen.
     ;(() => {
       const links = Array.from(document.querySelectorAll('.docs-outline a[href^="#"], .docs-toc a[href^="#"]'))
       if (links.length === 0) return
@@ -165,7 +153,6 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
         if (h) byId.set(a, h)
       })
       if (byId.size === 0) return
-
       const mark = (id) => {
         links.forEach((a) => {
           if (a.getAttribute('href') === `#${id}`) a.setAttribute('aria-current', 'location')
@@ -190,8 +177,6 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
       update()
       window.addEventListener('scroll', onScroll, { passive: true })
       window.addEventListener('resize', onScroll)
-
-      // The phone panel is a reader's whole viewport; collapse it once a section is chosen.
       const toc = document.querySelector('.docs-toc')
       if (toc) links.forEach((a) => a.addEventListener('click', () => { toc.open = false }))
     })()
