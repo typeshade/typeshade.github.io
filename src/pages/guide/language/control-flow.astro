@@ -6,14 +6,14 @@ interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade 제어 흐름', description: '조건문, 반복문 등 TypeScript에서 익숙한 제어 흐름을 GPU 코드로 이해하는 방법.', h1: 'Control flow: 익숙한 흐름, 명시적인 GPU 실행',
+  title: 'TypeShade 제어 흐름', description: '조건문과 반복문처럼 TypeScript에서 익숙한 제어 흐름을 GPU에서 컴파일 가능한 TypeShade 실행 모델로 작성하는 방법.', h1: 'Control flow: 익숙한 흐름, 명시적인 GPU 실행',
   intro: 'TypeShade는 조건문과 반복문의 TypeScript 표면을 활용하지만, 코드는 GPU에서 실행됩니다. 따라서 동적 JavaScript 동작보다 컴파일 가능한 정적 계산을 중심으로 작성해야 합니다.',
   branch: '1. 조건 분기', branchP: 'if/else는 계산 경로를 표현합니다. 분기 안에서도 TypeShade가 이해하는 값과 resource만 사용합니다.',
   loop: '2. 반복', loopP: '반복문은 GPU에서 컴파일 가능한 형태로 사용합니다. 배열 길이나 런타임 객체를 기준으로 동적으로 실행 구조를 바꾸는 JavaScript 패턴은 피합니다.',
   boundary: '3. JavaScript와의 경계', boundaryItems: ['동적 배열 메서드로 실행 길이를 바꾸는 패턴은 사용하지 않습니다.', '클로저와 일반 runtime 객체에 의존하지 않습니다.', '조건과 반복은 GPU에서 계산 가능한 값과 범위로 제한합니다.'],
   next: '다음: GPU types', href: '/ko/guide/language/gpu-types/'
 } : {
-  title: 'TypeShade control flow', description: 'How familiar TypeScript control flow maps to explicit GPU execution.', h1: 'Control flow: familiar syntax, explicit GPU execution',
+  title: 'TypeShade control flow', description: 'How familiar TypeScript conditionals and loops map to statically compilable GPU execution in TypeShade shaders.', h1: 'Control flow: familiar syntax, explicit GPU execution',
   intro: 'TypeShade uses familiar conditional and loop syntax, but the code executes on the GPU. Prefer statically compilable computation over dynamic JavaScript behavior.',
   branch: '1. Branching', branchP: 'Use if/else to express calculation paths. Inside a branch, keep values and resources within the TypeShade GPU model.',
   loop: '2. Loops', loopP: 'Use loops in forms the compiler can lower to GPU code. Avoid JavaScript patterns that dynamically change execution structure from runtime objects or array methods.',
