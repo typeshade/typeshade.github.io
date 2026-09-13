@@ -144,7 +144,7 @@ export const ko: Copy = {
 
   meta: {
     title: 'TypeShade, 검증 가능한 TypeScript 셰이더 라이브러리',
-    description: `TypeScript로 셰이더를 한 번 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 모듈이 CPU에서 f64로 실행되어 출력을 대조할 수 있습니다.`,
+    description: `파일 맨 위에 \`"use typeshade"\`를 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 소스가 CPU에서 f64로 실행되어 출력을 대조할 수 있습니다.`,
     ogAlt: 'TypeShade: WebGPU와 WebGL2를 위한 하나의 셰이더 소스. 렌더링된 metaballs 셰이더.',
   },
 
@@ -308,7 +308,7 @@ export const ko: Copy = {
       accent: 'TypeShade',
       after: '',
       subtitle: '검증 가능한 TypeScript 셰이더 라이브러리',
-      tagline: `TypeScript로 셰이더를 한 번 쓰면 TypeShade가 WebGPU용 WGSL과 WebGL2용 ${glsl}을 냅니다. 같은 모듈을 CPU에서 배정밀도로 실행해 기준값을 얻고, 컴파일러가 낸 결과를 그 값과 맞춰 봅니다.`,
+      tagline: `파일 맨 위에 \`"use typeshade"\`를 씁니다. TypeShade가 WebGPU용 WGSL과 WebGL2용 ${glsl}을 냅니다. 같은 소스를 CPU에서 배정밀도로 실행해 기준값을 얻고, 컴파일러가 낸 결과를 그 값과 맞춰 봅니다.`,
       getStarted: '시작하기',
       why: '왜 TypeShade인가',
       examples: '예제',
@@ -329,7 +329,7 @@ export const ko: Copy = {
     highlights: [
       {
         h: '소스 하나, 출력 둘',
-        p: `타입이 있는 모듈 하나에서 WebGPU용 WGSL은 [\`emitModule()\`](apiEmitModule)로, WebGL2용 ${glsl}은 [\`emitGlslModule()\`](apiEmitGlsl)로 나옵니다. 저장소의 예제 ${facts.examples}개 가운데 ${facts.bothTargets}개가 파일 하나로 두 출력을 다 냅니다.`,
+        p: `\`"use typeshade"\`로 시작하는 파일에서 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 저장소의 예제 ${facts.examples}개 가운데 ${facts.bothTargets}개가 파일 하나로 두 출력을 다 냅니다. 갤러리는 그래프 호출 [\`emitModule()\`](apiEmitModule)과 [\`emitGlslModule()\`](apiEmitGlsl)을 그대로 씁니다.`,
       },
       {
         h: 'CPU 결과와 대조',
@@ -343,10 +343,11 @@ export const ko: Copy = {
   },
   quickStart: {
     title: 'TypeShade 빠른 시작: 설치와 첫 셰이더',
-    description: 'TypeShade를 git 서브모듈로 추가한 뒤, 완전한 파일 하나인 gradient 예제를 실행해 WGSL이 나오는 과정을 확인합니다. 출시 전 상태도 함께 적었습니다.',
+    description: 'TypeShade를 git 서브모듈로 추가한 뒤, `"use typeshade"`로 시작하는 파일을 컴파일합니다. 출시 전 상태도 함께 적었습니다.',
     h1: '빠른 시작',
     installH: '설치',
-      p1: `패키지에는 TypeScript 소스가 그대로 들어 있어서, 빌드 쪽에 이를 컴파일할 도구가 있어야 합니다. 아래는 완전한 파일 하나입니다. gradient 예제의 유니폼 블록과 두 단계를 [\`fn\`](apiFn)으로 선언하고 [\`module()\`](apiModule)로 묶었으며, import 문부터 WGSL을 내보내는 호출까지 ${quickStartFile.lines}줄입니다.`,
+      p0: '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래 삼각형이 공식 표면입니다.',
+      p1: `갤러리용 그래프 API도 그대로 있습니다. 같은 패스를 [\`fn\`](apiFn)과 [\`module()\`](apiModule)로 쓴 파일입니다. import 문부터 WGSL을 내보내는 호출까지 ${quickStartFile.lines}줄입니다.`,
       p2: '실행하면 두 단계의 WGSL이 함께 나옵니다. 프래그먼트 진입점은 여기 있습니다.',
       p3: `같은 함수의 ${glsl} 단계와, [\`reflect()\`](apiReflect)가 복원한 유니폼 레이아웃은 [예제 페이지](examples)에 있습니다. 나머지 API는 [작성 가이드](guide)를 보면 됩니다.`,
     status: {
@@ -373,7 +374,7 @@ export const ko: Copy = {
       },
       {
         h: 'TypeShade가 하는 일',
-        p: 'README는 TypeShade를 "타입 검사기와 최적화기, 린트 패스, 파이프라인 리플렉션을 갖춘 TSL(three.js Shading Language) 스타일 그래프"로 소개합니다. 소스는 하나로 둡니다. 모듈이 타입 있는 TypeScript라서 잘못 쓴 필드나 틀린 반환 타입은 편집기에서 잡힙니다. 중간 표현 하나가 두 언어를 모두 내고, 같은 모듈이 CPU에서 배정밀도로 실행되므로 백엔드가 낸 결과를 같은 소스로 계산한 기준값과 맞춰 볼 수 있습니다. 푸시마다 무엇을 실행하는지는 [검증 페이지](checks)에 있습니다.',
+        p: '공식 표면은 \`"use typeshade"\`로 시작하는 TypeScript 파일입니다. 잘못 쓴 필드나 틀린 반환 타입은 편집기에서 잡힙니다. 중간 표현 하나가 두 언어를 모두 내고, 같은 소스가 CPU에서 배정밀도로 실행되므로 백엔드가 낸 결과를 같은 소스로 계산한 기준값과 맞춰 볼 수 있습니다. 푸시마다 무엇을 실행하는지는 [검증 페이지](checks)에 있습니다. 갤러리용 그래프 API는 그대로 둡니다.',
       },
       {
         h: '하지 않는 일',
@@ -464,7 +465,7 @@ export const ko: Copy = {
     printIntro: '저장소를 받아 둔 디렉터리에서 실행합니다. 첫 번째 명령은 모든 예제의 WGSL, GLSL, 리플렉션을 출력하고, 두 번째는 id로 하나만 출력합니다.',
     glsl: {
       h: `gradient 패스의 ${glsl} 출력`,
-      p1: `첫 페이지에는 \`${hero.file}\`의 프래그먼트 단계와 거기서 나오는 WGSL 진입점이 있습니다. 같은 함수에서 이 ${glsl} \`main\`이 나옵니다.`,
+      p1: `첫 페이지에는 \`"use typeshade"\`로 시작하는 파일이 있습니다. 갤러리 패스 \`${hero.file}\`는 이 ${glsl} \`main\`을 그대로 냅니다.`,
       p2: `모듈 전체는 WGSL로 ${hero.emit.wgslLines}줄이고, GLSL은 버텍스 단계 ${hero.emit.glslVertexLines}줄, 프래그먼트 단계 ${hero.emit.glslFragmentLines}줄입니다. 유니폼 타입, 바이트 오프셋, 바인드 그룹 항목, 진입점 시그니처는 [\`reflect()\`](apiReflect)에서 나옵니다. reflect()는 같은 중간 표현을 읽지만 출력 경로에는 관여하지 않으므로, 호스트는 그 레이아웃대로 유니폼 버퍼를 채우면 됩니다. [검증 페이지](checks)에는 유니폼 블록의 복원된 레이아웃이 잘못 쓴 필드의 진단과 나란히 있습니다.`,
     },
     f64: {
