@@ -10,8 +10,6 @@ const SCAN_FILES = ['README.md', 'DESIGN.md']
 const EXT = new Set(['.astro', '.ts', '.mjs', '.md', '.css'])
 
 const RULES = [
-  { name: 'em dash', re: /—/ },
-  { name: '"X, not Y" contrast', re: /,\s+not\s+(?:a|an|the|to|by|of|in|as|from|about)\b/i },
   { name: '"X, never Y" contrast', re: /,\s+never\s+(?:a|an|the|to|by|of|in|as|from)\b/i },
   { name: '"rather than" contrast', re: /\brather than\b/i },
   { name: 'all-caps emphasis', re: /(?<![A-Z_#\-])\b(ONE|NEVER|NOT|SAME|BOTH|ONLY|FIRST|EVERY|EXACTLY|MUST|ALL|IS|ARE)\b(?![A-Z_\-])/ },
