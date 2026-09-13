@@ -115,7 +115,7 @@ export function docsPages(locale: Locale): readonly Destination[] {
   return [
     { label: d.why, href: page('motivation') },
     { label: d.quickStart, href: page('quickStart') },
-    { label: d.authoringGuide, href: page('guide') },
+    { label: d.languageGuide ?? (locale === 'ko' ? '언어 가이드' : 'Language guide'), href: page('guide') },
     { label: d.checks, href: page('checks') },
     { label: d.examples, href: page('examples') },
   ]
