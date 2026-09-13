@@ -1,0 +1,37 @@
+---
+import Docs from '../../../layouts/Docs.astro'
+import { type Locale } from '../../../i18n/index.ts'
+
+interface Props { locale: Locale }
+const { locale } = Astro.props
+const ko = locale === 'ko'
+const content = ko ? {
+  title: 'TypeShade 타입', description: 'TypeShade에서 GPU 값을 표현하고 필드 레이아웃을 정의하는 방법.', h1: 'Types: TypeScript 타입에서 GPU 값으로',
+  intro: 'TypeShade의 타입은 TypeScript의 익숙한 표면을 사용하지만, 최종 의미는 GPU 값과 레이아웃을 향합니다. 타입 별칭은 평범한 값 구조에, class는 필드 metadata가 필요한 GPU struct에 사용합니다.',
+  alias: '1. 타입 별칭은 plain data에 사용', aliasP: '필드에 decorator가 필요 없다면 type alias가 가장 단순한 표현입니다.',
+  struct: '2. class는 GPU struct', structP: 'class는 JavaScript 객체를 만드는 런타임 클래스가 아닙니다. TypeShade에서는 GPU struct와 필드 metadata를 표현하는 authoring surface입니다.',
+  attrs: '3. 필드 decorator는 레이아웃을 설명', attrsP: '현재 surface에서 `@location`, `@builtin`, `@align`, `@size`, `@offset`, `@interpolate`, `@ignore`를 class field에 사용할 수 있습니다.',
+  boundary: '4. TypeScript의 class와 다른 점', boundaryItems: ['`new`로 GPU struct를 생성하지 않습니다.', '`extends`와 일반적인 상속 모델을 사용하지 않습니다.', 'entry point를 class method로 만들지 않습니다.', '필드 metadata가 필요하지 않다면 type alias가 더 명확합니다.'],
+  next: '다음: Resources', href: '/ko/guide/language/resources/'
+} : {
+  title: 'TypeShade types', description: 'How TypeShade represents GPU values and field layout.', h1: 'Types: from TypeScript types to GPU values',
+  intro: 'TypeShade keeps TypeScript’s familiar type syntax, but its target is a GPU value model. Use type aliases for plain value shapes and classes when GPU field metadata is required.',
+  alias: '1. Use type aliases for plain data', aliasP: 'When fields do not need decorators, a type alias is the smallest representation.',
+  struct: '2. A class is a GPU struct', structP: 'A TypeShade class is not a JavaScript runtime object. It is an authoring surface for a GPU struct and its field metadata.',
+  attrs: '3. Field decorators describe layout', attrsP: 'The current surface supports `@location`, `@builtin`, `@align`, `@size`, `@offset`, `@interpolate`, and `@ignore` on class fields.',
+  boundary: '4. Where TypeScript classes stop', boundaryItems: ['Do not construct GPU structs with `new`.', 'Do not use `extends` as a GPU inheritance model.', 'Do not make shader entry points class methods.', 'Prefer a type alias when field metadata is unnecessary.'],
+  next: 'Next: Resources', href: '/guide/language/resources/'
+}
+const headings = [['alias',content.alias],['struct',content.struct],['attrs',content.attrs],['boundary',content.boundary]].map(([slug,text]) => ({depth:2,slug,text}))
+---
+<Docs locale={locale} path="/guide/language/types/" title={content.title} description={content.description} headings={headings}>
+  <h1>{content.h1}</h1><p>{content.intro}</p>
+  <h2 id="alias">{content.alias}</h2><p>{content.aliasP}</p>
+  <pre><code>{`type Camera = {\n  view: mat4\n  pos: vec3\n}`}</code></pre>
+  <h2 id="struct">{content.struct}</h2><p>{content.structP}</p>
+  <pre><code>{`class VsIn {\n  position: vec3\n  uv: vec2\n}`}</code></pre>
+  <h2 id="attrs">{content.attrs}</h2><p>{content.attrsP}</p>
+  <pre><code>{`class VsIn {\n  @location(0) position: vec3\n  @location(1) @interpolate("linear") uv: vec2\n}`}</code></pre>
+  <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
+  <p><a href={content.href}>{content.next}</a></p>
+</Docs>
