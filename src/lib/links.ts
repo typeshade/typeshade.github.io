@@ -29,6 +29,7 @@ export const links = {
   languageResources: { label: 'Resources', href: '/guide/language/resources/' },
   languageStages: { label: 'Shader stages', href: '/guide/language/stages/' },
   legacyAuthoring: { label: 'Compiler authoring guide', href: '/guide/authoring/' },
+  internals: { label: 'Compiler internals', href: '/guide/internals/' },
   checks: { label: 'Verification', href: '/guide/checks/' },
   examples: { label: 'Examples', href: '/guide/examples/' },
   api: { label: 'API reference', href: '/api/' },
@@ -111,13 +112,14 @@ export function apiPage(name: string): string {
 
 export function docsPages(locale: Locale): readonly Destination[] {
   const d = copyFor(locale).docs
-  const page = (key: 'motivation' | 'quickStart' | 'guide' | 'checks' | 'examples') => localePath(locale, links[key].href)
+  const page = (key: 'motivation' | 'quickStart' | 'guide' | 'checks' | 'examples' | 'internals') => localePath(locale, links[key].href)
   return [
     { label: d.why, href: page('motivation') },
     { label: d.quickStart, href: page('quickStart') },
     { label: locale === 'ko' ? '언어 가이드' : 'Language guide', href: page('guide') },
     { label: d.checks, href: page('checks') },
     { label: d.examples, href: page('examples') },
+    { label: locale === 'ko' ? '컴파일러 내부 구조' : 'Compiler internals', href: page('internals') },
   ]
 }
 
