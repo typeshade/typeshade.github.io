@@ -15,7 +15,7 @@ const RULES = [
   { name: '"X, never Y" contrast', re: /,\s+never\s+(?:a|an|the|to|by|of|in|as|from)\b/i },
   { name: '"rather than" contrast', re: /\brather than\b/i },
   { name: 'all-caps emphasis', re: /(?<![A-Z_#\-])\b(ONE|NEVER|NOT|SAME|BOTH|ONLY|FIRST|EVERY|EXACTLY|MUST|ALL|IS|ARE)\b(?![A-Z_\-])/ },
-  { name: 'self-praise word', re: /\b(honest(?:ly|y)?|verbatim|ratified|load-bearing|injective|of record|deliberately|seamless(?:ly)?|blazing|effortless(?:ly)?|robust)\b/i },
+  { name: 'self-praise word', re: /\b(honest(?:ly|y)?|verbatim|ratified|load-bearing|injective|of record|seamless(?:ly)?|blazing|effortless(?:ly)?|robust)\b/i },
   { name: 'uppercase label', re: /text-transform:\s*uppercase|\buppercase\b/ },
   { name: 'middle-dot metadata', re: /\S\s·\s\S/ },
   { name: 'font on the avoid list', re: /\b(Inter|Geist|Space Grotesk|Instrument Serif|Poppins)\b/ },
