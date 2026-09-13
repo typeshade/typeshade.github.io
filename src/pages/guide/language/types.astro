@@ -6,7 +6,7 @@ interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade 타입', description: 'TypeShade에서 GPU 값을 표현하고 필드 레이아웃을 정의하는 방법.', h1: 'Types: TypeScript 타입에서 GPU 값으로',
+  title: 'TypeShade 타입', description: 'TypeShade에서 GPU 값을 표현하고 필드 레이아웃과 metadata를 정의하는 방법을 TypeScript 타입과 비교해 설명합니다.', h1: 'Types: TypeScript 타입에서 GPU 값으로',
   intro: 'TypeShade의 타입은 TypeScript의 익숙한 표면을 사용하지만, 최종 의미는 GPU 값과 레이아웃을 향합니다. 타입 별칭은 평범한 값 구조에, class는 필드 metadata가 필요한 GPU struct에 사용합니다.',
   alias: '1. 타입 별칭은 plain data에 사용', aliasP: '필드에 decorator가 필요 없다면 type alias가 가장 단순한 표현입니다.',
   struct: '2. class는 GPU struct', structP: 'class는 JavaScript 객체를 만드는 런타임 클래스가 아닙니다. TypeShade에서는 GPU struct와 필드 metadata를 표현하는 authoring surface입니다.',
@@ -14,7 +14,7 @@ const content = ko ? {
   boundary: '4. TypeScript의 class와 다른 점', boundaryItems: ['`new`로 GPU struct를 생성하지 않습니다.', '`extends`와 일반적인 상속 모델을 사용하지 않습니다.', 'entry point를 class method로 만들지 않습니다.', '필드 metadata가 필요하지 않다면 type alias가 더 명확합니다.'],
   next: '다음: Resources', href: '/ko/guide/language/resources/'
 } : {
-  title: 'TypeShade types', description: 'How TypeShade represents GPU values and field layout.', h1: 'Types: from TypeScript types to GPU values',
+  title: 'TypeShade types', description: 'How TypeShade represents GPU values, field layout and metadata using familiar TypeScript type syntax and classes.', h1: 'Types: from TypeScript types to GPU values',
   intro: 'TypeShade keeps TypeScript’s familiar type syntax, but its target is a GPU value model. Use type aliases for plain value shapes and classes when GPU field metadata is required.',
   alias: '1. Use type aliases for plain data', aliasP: 'When fields do not need decorators, a type alias is the smallest representation.',
   struct: '2. A class is a GPU struct', structP: 'A TypeShade class is not a JavaScript runtime object. It is an authoring surface for a GPU struct and its field metadata.',
