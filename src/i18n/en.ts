@@ -51,7 +51,7 @@ export const en = {
 
   meta: {
     title: 'TypeShade: typed shaders in TypeScript for WebGPU and WebGL2',
-    description: `Write a shader once in TypeScript and emit WGSL for WebGPU and ${glsl} for WebGL2. The same module runs on the CPU in f64, so its output can be checked.`,
+    description: `Start a file with \`"use typeshade"\` and emit WGSL for WebGPU and ${glsl} for WebGL2. The same source runs on the CPU in f64, so its output can be checked.`,
     ogAlt: 'TypeShade: one shader source for WebGPU and WebGL2, with a rendered metaballs shader.',
   },
 
@@ -219,7 +219,7 @@ export const en = {
       accent: 'TypeShade',
       after: '',
       subtitle: 'The verifiable TypeScript shader library',
-      tagline: `Write a shader once in TypeScript, and TypeShade emits WGSL for WebGPU and ${glsl} for WebGL2. The same module runs on the CPU in double precision, so the compiler's output can be checked.`,
+      tagline: `Start a file with \`"use typeshade"\`. TypeShade emits WGSL for WebGPU and ${glsl} for WebGL2. The same source runs on the CPU in double precision, so the compiler's output can be checked.`,
       getStarted: 'Get started',
       why: 'Why TypeShade',
       examples: 'Examples',
@@ -240,7 +240,7 @@ export const en = {
     highlights: [
       {
         h: 'One source, two targets',
-        p: `One typed module emits WGSL for WebGPU through [\`emitModule()\`](apiEmitModule) and ${glsl} for WebGL2 through [\`emitGlslModule()\`](apiEmitGlsl). ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file.`,
+        p: `A file that starts with \`"use typeshade"\` emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file. The graph calls [\`emitModule()\`](apiEmitModule) and [\`emitGlslModule()\`](apiEmitGlsl) remain for the gallery.`,
       },
       {
         h: 'Checked against the CPU',
@@ -254,10 +254,11 @@ export const en = {
   },
   quickStart: {
     title: 'TypeShade quick start: install and a first shader',
-    description: 'Add TypeShade as a git submodule and run a complete file, the gradient example, to the WGSL it emits, with a note on the pre-release status.',
+    description: 'Add TypeShade as a git submodule and compile a file that starts with `"use typeshade"`, with a note on the pre-release status.',
     h1: 'Quick start',
     installH: 'Install',
-      p1: `The package ships TypeScript source, so your build needs a toolchain that compiles it. Here is a complete file: the gradient example's uniform block and both stages, declared with [\`fn\`](apiFn) and built with [\`module()\`](apiModule), ${quickStartFile.lines} lines from the import line to a call that emits WGSL:`,
+      p0: 'A file that starts with `"use typeshade"` is a shader compilation unit. The triangle below is the official surface.',
+      p1: `The graph API is still there for the gallery. The same pass declared with [\`fn\`](apiFn) and [\`module()\`](apiModule), ${quickStartFile.lines} lines from the import line to a call that emits WGSL:`,
       p2: 'Running it emits WGSL for both stages. Here is the fragment entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [authoring guide](guide) covers the rest of the surface.`,
     status: {
@@ -284,7 +285,7 @@ export const en = {
       },
       {
         h: 'What TypeShade does',
-        p: 'The README describes TypeShade as "a TSL-style (three.js Shading Language) graph with a real type checker, an optimizer, a lint pass, and pipeline reflection." It keeps one source: the module is typed TypeScript, so a misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same module compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. [Verification](checks) says what runs on every push.',
+        p: 'The official surface is a TypeScript file that starts with \`"use typeshade"\`. A misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same source compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. [Verification](checks) says what runs on every push. The graph API remains for the gallery.',
       },
       {
         h: 'What it does not do',
@@ -340,7 +341,7 @@ export const en = {
     printIntro: 'From a checkout of the repository, the first command prints WGSL, GLSL and reflection for every example; the second does one by id.',
     glsl: {
       h: `The gradient pass in ${glsl}`,
-      p1: `The front page shows the fragment stage of \`${hero.file}\` and the WGSL entry point it emits. The same function emits this ${glsl} \`main\`:`,
+      p1: `The front page shows a file that starts with \`"use typeshade"\`. The gallery pass \`${hero.file}\` still emits this ${glsl} \`main\`:`,
       p2: `The whole module is ${hero.emit.wgslLines} lines of WGSL; the GLSL vertex stage is ${hero.emit.glslVertexLines} lines and the fragment stage ${hero.emit.glslFragmentLines}. Uniform types, byte offsets, bind-group entries and entry signatures come from [\`reflect()\`](apiReflect), which reads the same intermediate representation and stays off the emit path, so a host can pack its uniform buffer from that layout. [Verification](checks) shows the reflected layout of a uniform block beside the diagnostic for a misspelt field.`,
     },
     f64: {
