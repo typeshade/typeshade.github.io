@@ -299,6 +299,7 @@ export const ko: Copy = {
     wgsl: 'WGSL로 나온 프래그먼트 진입점',
     glsl: `${glsl}으로 나온 프래그먼트 main`,
     print: '예제의 WGSL, GLSL, 리플렉션을 출력하는 명령',
+    useTypeshade: 'hello.shade.ts',
   },
 
   front: {
@@ -321,8 +322,8 @@ export const ko: Copy = {
       reduced: '한 프레임만 그린 Metaballs. 시스템이 움직임 줄이기를 켜 두었습니다.',
     },
     code: {
-      h: '작성한 프래그먼트와 그 WGSL 출력',
-      p: `gradient 예제의 프래그먼트 단계를 쓴 그대로 ${hero.authoredLines}줄, 그리고 거기서 나오는 WGSL 진입점입니다. ${glsl} 단계도 같은 함수에서 나옵니다.`,
+      h: '작성한 파일과 그 WGSL',
+      p: '`"use typeshade"`로 시작하는 파일과, 그 파일이 내보내는 WGSL입니다.',
       more: '[빠른 시작](quickStart)',
     },
     highlights: [
