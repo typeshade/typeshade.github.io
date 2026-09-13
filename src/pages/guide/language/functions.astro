@@ -6,28 +6,35 @@ interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade 함수', description: 'TypeScript 함수 문법을 TypeShade의 helper와 shader entry로 확장하고 명시적인 stage builtin parameter를 사용하는 방법.', h1: 'Functions: TypeScript 함수에서 shader entry로',
-  intro: '함수는 TypeShade authoring의 기본 단위입니다. decorator가 없는 top-level function은 helper이고, stage decorator와 export를 가진 function은 shader entry가 됩니다.',
-  helper: '1. Helper function', helperP: '일반적인 계산은 함수로 분리할 수 있습니다. helper는 pipeline entry가 아니며 stage decorator를 붙이지 않습니다.',
-  entry: '2. Entry function', entryP: 'shader stage는 top-level exported function에 decorator를 붙여 선언합니다. 함수 본문은 TypeShade의 GPU 실행 모델 안에서 해석됩니다.',
-  boundary: '3. JavaScript 함수와 다른 점', boundaryItems: ['동적 객체나 일반 JavaScript runtime API를 전제로 하지 않습니다.', 'entry point는 class method가 아니라 top-level function입니다.', 'stage builtin은 해당 stage의 명시적인 함수 parameter로 받습니다.'],
+  title: 'TypeShade 함수', description: 'TypeScript 함수의 매개변수와 반환 타입 개념을 TypeShade의 helper와 shader entry로 연결하는 방법.', h1: 'Functions: TypeScript 함수에서 shader entry로',
+  intro: '함수는 TypeShade authoring의 기본 단위입니다. TypeScript처럼 매개변수와 반환 타입으로 값의 흐름을 표현하고, TypeShade에서는 top-level export와 stage decorator가 pipeline entry라는 추가 의미를 만듭니다.',
+  ts: '1. TypeScript 함수에서 출발하기', tsP: '함수의 매개변수와 반환 타입은 TypeShade에서도 중요한 타입 경계입니다. 다만 함수 본문은 일반 JavaScript runtime이 아니라 GPU 실행 모델 안에서 해석됩니다.',
+  helper: '2. Helper function', helperP: '일반적인 계산은 함수로 분리할 수 있습니다. helper는 pipeline entry가 아니며 stage decorator를 붙이지 않습니다.',
+  entry: '3. Entry function', entryP: 'shader stage는 top-level exported function에 decorator를 붙여 선언합니다. 함수 본문은 TypeShade의 GPU 실행 모델 안에서 해석됩니다.',
+  builtin: '4. Builtin은 명시적인 parameter', builtinP: 'GPU 입력은 숨겨진 전역 변수가 아니라 함수 매개변수로 선언합니다. 이렇게 하면 entry의 입력 계약이 함수 시그니처에 드러납니다.',
+  boundary: '5. JavaScript 함수와 다른 점', boundaryItems: ['동적 객체나 일반 JavaScript runtime API를 전제로 하지 않습니다.', 'entry point는 class method가 아니라 top-level function입니다.', 'stage builtin은 해당 stage의 명시적인 함수 parameter로 받습니다.', '함수 시그니처에 적힌 타입은 shader type checking의 대상입니다.'],
   next: '다음: Control flow', href: '/ko/guide/language/control-flow/'
 } : {
-  title: 'TypeShade functions', description: 'How TypeScript function syntax becomes TypeShade helpers and shader entries with explicit stage builtin parameters.', h1: 'Functions: from TypeScript functions to shader entries',
-  intro: 'Functions are the basic authoring unit in TypeShade. A top-level function without a stage decorator is a helper; an exported function with a stage decorator becomes a shader entry.',
-  helper: '1. Helper functions', helperP: 'Keep reusable calculations in functions without stage decorators. A helper is not a pipeline entry point.',
-  entry: '2. Entry functions', entryP: 'Declare a shader stage by decorating a top-level exported function. Its body is interpreted within the TypeShade GPU execution model.',
-  boundary: '3. Where JavaScript functions stop', boundaryItems: ['Do not assume arbitrary JavaScript runtime APIs or dynamic objects.', 'Entry points are top-level functions, not class methods.', 'Stage builtins are explicit function parameters; TypeShade does not inject implicit builtin globals.'],
+  title: 'TypeShade functions', description: 'How TypeScript function parameters and return types map to TypeShade helpers and shader entries with explicit stage builtins.', h1: 'Functions: from TypeScript functions to shader entries',
+  intro: 'Functions are the basic authoring unit in TypeShade. Like TypeScript, parameters and return types describe value flow. TypeShade adds pipeline meaning through top-level exports and stage decorators.',
+  ts: '1. Start from the TypeScript function model', tsP: 'Function parameters and return types are important type boundaries in TypeShade too. The function body, however, is interpreted in the GPU execution model rather than against arbitrary JavaScript runtime APIs.',
+  helper: '2. Helper functions', helperP: 'Keep reusable calculations in functions without stage decorators. A helper is not a pipeline entry point.',
+  entry: '3. Entry functions', entryP: 'Declare a shader stage by decorating a top-level exported function. Its body is interpreted within the TypeShade GPU execution model.',
+  builtin: '4. Builtins are explicit parameters', builtinP: 'GPU inputs are declared as function parameters instead of hidden global variables. The entry signature therefore exposes its input contract directly.',
+  boundary: '5. Where JavaScript functions stop', boundaryItems: ['Do not assume arbitrary JavaScript runtime APIs or dynamic objects.', 'Entry points are top-level functions, not class methods.', 'Stage builtins are explicit function parameters; TypeShade does not inject implicit builtin globals.', 'Types written in the function signature participate in shader type checking.'],
   next: 'Next: Control flow', href: '/guide/language/control-flow/'
 }
-const headings = [['helper',content.helper],['entry',content.entry],['boundary',content.boundary]].map(([slug,text]) => ({depth:2,slug,text}))
+const headings = [['ts',content.ts],['helper',content.helper],['entry',content.entry],['builtin',content.builtin],['boundary',content.boundary]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
 <Docs locale={locale} path="/guide/language/functions/" title={content.title} description={content.description} headings={headings}>
   <h1>{content.h1}</h1><p>{content.intro}</p>
-  <h2 id="helper">{content.helper}</h2><p>{content.helperP}</p>
+  <h2 id="ts">{content.ts}</h2><p>{content.tsP}</p>
   <pre><code>{`function addBias(value: f32): f32 {\n  return value + 0.5\n}`}</code></pre>
+  <h2 id="helper">{content.helper}</h2><p>{content.helperP}</p>
   <h2 id="entry">{content.entry}</h2><p>{content.entryP}</p>
   <pre><code>{`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = addBias(camera.pos.x)\n}`}</code></pre>
+  <h2 id="builtin">{content.builtin}</h2><p>{content.builtinP}</p>
+  <pre><code>{`@vertex\nexport function vs(@builtin("vertex_index") vid: u32): vec4 {\n  return positions[vid]\n}`}</code></pre>
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
   <p><a href={content.href}>{content.next}</a></p>
 </Docs>
