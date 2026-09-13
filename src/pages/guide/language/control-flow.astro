@@ -25,7 +25,7 @@ const headings = [['branch',content.branch],['loop',content.loop],['boundary',co
 <Docs locale={locale} path="/guide/language/control-flow/" title={content.title} description={content.description} headings={headings}>
   <h1>{content.h1}</h1><p>{content.intro}</p>
   <h2 id="branch">{content.branch}</h2><p>{content.branchP}</p>
-  <pre><code>{`if (camera.pos.x > 0) {\n  pixels[gid.x] = 1\n} else {\n  pixels[gid.x] = 0\n}`}</code></pre>
+  <pre><code>{`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  if (camera.pos.x > 0) {\n    pixels[gid.x] = 1\n  } else {\n    pixels[gid.x] = 0\n  }\n}`}</code></pre>
   <h2 id="loop">{content.loop}</h2><p>{content.loopP}</p>
   <pre><code>{`for (let i = 0; i < 4; i++) {\n  pixels[i] = pixels[i] + camera.pos.x\n}`}</code></pre>
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
