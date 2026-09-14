@@ -25,7 +25,10 @@
 //  16. the URL fragment carries the source and the options into a second tab
 //  17. raising the resolution changes the grid the fragment entry runs over and leaves the
 //      box it is drawn in the size it was
-//  18. changing the resolution under a running draw retires it and gives the button back
+//  18. changing the resolution under a running draw retires it: the result reported is the
+//      new grid's, and the old draw's never lands
+//  19. the source and the result columns are one height, and the canvas is on the first
+//      screen beside the code, not below the reflection
 //
 // Hover over a name a user declared is the one thing the language service at the current pin
 // has no answer for: it returns nothing for `vs` and `fs`. That check arrives with the
@@ -250,9 +253,10 @@ async function checkRoute(browser, origin, route) {
 
       // And the canvas: the vertex entry for three corners, then one fragment call per pixel
       // the triangle covers, with every varying interpolated from what the vertex entry
-      // returned. A triangle covers some of the canvas and not all of it.
-      await page.click('[data-draw-cpu]')
-      await page.waitForTimeout(1_500)
+      // returned. A triangle covers some of the canvas and not all of it. The canvas follows
+      // the source, so choosing the example is what drew it; a draw deletes the count when it
+      // starts and writes it when it ends, so a count present means this draw is done.
+      await page.waitForFunction(() => document.querySelector('[data-canvas-note]').dataset.px !== undefined, null, { timeout: 15_000 })
       const drawn = await page.evaluate(() => {
         const node = document.querySelector('[data-canvas]')
         const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
@@ -315,42 +319,52 @@ async function checkRoute(browser, origin, route) {
       // they scatter the old picture over the new canvas, and if the draw never settles the
       // button never comes back. This starts one, moves the control under it, and checks that
       // the page lands somewhere a reader can act from.
+      // Choosing a size starts a draw at it. 1536 is 36 tiles and most of a second, so the
+      // switch to 192 lands while it is well under way; the 192 draw then runs and reports.
       await page.selectOption('[data-resolution]', '1536')
-      await page.waitForTimeout(200)
-      await page.evaluate(() => { delete document.querySelector('[data-canvas-note]').dataset.px })
-      await page.click('[data-draw-cpu]')
-      await page.waitForTimeout(250)
+      await page.waitForTimeout(150)
       await page.selectOption('[data-resolution]', '192')
-      let cameBack = true
-      try {
-        await page.waitForSelector('[data-draw-cpu]:not([disabled])', { timeout: 20_000 })
-      } catch {
-        cameBack = false
-        problems.push('a draw retired by a resolution change never released the draw button')
-      }
-      // The button coming back is not the proof: a draw that is never retired also ends on its
-      // own and releases it. Nor are stale pixels, since by now the tiles that would overlap a
-      // 192 canvas are the ones already finished and the rest fall outside it and are clipped.
-      // What only a retired draw does is stay quiet: reporting a result is the last thing a
-      // draw does, so a count here is a draw for a grid of 1536 announcing itself over a
-      // canvas of 192. Both are read anyway, since a stale pixel is still wrong if it appears.
-      await page.waitForTimeout(1_500)
+      await page.waitForFunction(() => document.querySelector('[data-canvas-note]').dataset.px !== undefined, null, { timeout: 15_000 })
+      // The 192 count is in. Now the wait that finds the bug: long enough for the 1536 draw
+      // to have finished if it was never retired, in which case its settle overwrites the
+      // count with its own 753992 and its tiles land on a canvas a quarter of their size.
+      // Retired, it stays quiet, and the count is the 192 draw's and nothing else's.
+      await page.waitForTimeout(3_000)
       const retired = await page.evaluate(() => {
         const node = document.querySelector('[data-canvas]')
-        const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
-        let opaque = 0
-        for (let i = 3; i < data.length; i += 4) if (data[i] > 0) opaque += 1
-        return { grid: node.width, opaque, reported: document.querySelector('[data-canvas-note]').dataset.px ?? 'none' }
+        const note = document.querySelector('[data-canvas-note]')
+        return { grid: node.width, reported: Number(note.dataset.px), button: document.querySelector('[data-draw-cpu]').disabled ? 'disabled' : 'enabled' }
       })
       if (retired.grid !== 192) problems.push(`after retiring a draw the grid is ${retired.grid} and not the 192 that was chosen`)
-      if (retired.reported !== 'none') {
-        problems.push(`a draw retired by a resolution change still reported ${retired.reported} px against the canvas that replaced it`)
+      if (retired.reported !== drawn.opaque) {
+        problems.push(`after switching from 1536 to 192 the count is ${retired.reported}, not the ${drawn.opaque} a 192 draw covers: the retired draw reported over it`)
       }
-      if (retired.opaque > 0) {
-        problems.push(`a retired draw painted ${retired.opaque} px onto the canvas that replaced it`)
-      }
-      console.log(`  retired mid-draw: grid ${retired.grid}, reported ${retired.reported}, ${retired.opaque} stale px, button ${cameBack ? 'released' : 'stuck'}`)
+      if (retired.button !== 'enabled') problems.push('the draw button is not available after a retired draw')
+      console.log(`  retired mid-draw: grid ${retired.grid}, reported ${retired.reported} px, button ${retired.button}`)
       await page.waitForTimeout(AFTER_EDIT)
+
+      // ── the shape of the page ────────────────────────────────────────────────────────────
+      // The source and the result are the two things a reader looks between, so the columns
+      // that hold them end on the same line, and the canvas is beside the code on the first
+      // screen and not under the reflection two screens down. Measured in document space, so
+      // it does not matter what the clicks above scrolled to.
+      const shape = await page.evaluate(() => {
+        const box = (selector) => {
+          const rect = document.querySelector(selector).getBoundingClientRect()
+          return { top: Math.round(rect.top + window.scrollY), bottom: Math.round(rect.bottom + window.scrollY), height: Math.round(rect.height) }
+        }
+        return { source: box('.source-pane'), result: box('.result-column'), canvas: box('[data-canvas]'), editor: box('[data-editor]'), viewport: window.innerHeight }
+      })
+      if (Math.abs(shape.source.height - shape.result.height) > 1) {
+        problems.push(`the source column is ${shape.source.height}px tall and the result column ${shape.result.height}px`)
+      }
+      if (shape.canvas.bottom > shape.viewport) {
+        problems.push(`the canvas ends at ${shape.canvas.bottom}px, below the first ${shape.viewport}px screen`)
+      }
+      if (shape.canvas.top > shape.editor.top + 40) {
+        problems.push(`the canvas starts at ${shape.canvas.top}px, well below the editor at ${shape.editor.top}px: it is not beside the code`)
+      }
+      console.log(`  shape: columns ${shape.source.height} and ${shape.result.height} px, canvas ends at ${shape.canvas.bottom} of ${shape.viewport}`)
 
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)

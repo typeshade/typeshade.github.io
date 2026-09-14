@@ -330,6 +330,7 @@ export const ko: Copy = {
     cpuNoResources: 'CPU 오라클은 진입점 인자만 받습니다. 유니폼이나 스토리지 바인딩을 읽는 진입점은 아직 여기서 실행할 수 없습니다.',
     canvas: 'CPU 캔버스',
     draw: 'CPU로 그리기',
+    stop: '중지',
     canvasIdle: '프래그먼트 진입점을 픽셀마다 한 번씩, GPU 없이 실행합니다.',
     resolution: '해상도',
     canvasTooBig: '이 브라우저는 이만큼 큰 캔버스를 할당하지 못해 이 해상도로는 그릴 수 없습니다. 더 작은 값을 고르세요.',

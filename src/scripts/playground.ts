@@ -89,6 +89,7 @@ interface PlaygroundCopy {
   readonly cpuFailed: string;
   readonly canvas: string;
   readonly draw: string;
+  readonly stop: string;
   readonly canvasIdle: string;
   readonly canvasNeedsVertex: string;
   readonly canvasProgress: string;
@@ -522,7 +523,7 @@ function mount(root: HTMLElement): void {
         entries.some((entry) => entry.stage === 'vertex' && (entry.io?.inputs ?? []).some((f) => f.builtin === 'vertex_index')) &&
         entries.some((entry) => entry.stage === 'fragment');
       moduleDrawable = drawable;
-      drawCpu.disabled = !drawable || !canvasFits;
+      syncDrawButton();
       if (canvasNote instanceof HTMLElement) {
         canvasNote.textContent = !drawable ? copy.canvasNeedsVertex : canvasFits ? copy.canvasIdle : copy.canvasTooBig;
       }
@@ -718,7 +719,31 @@ function mount(root: HTMLElement): void {
     }
   };
   /** Set while a draw is in flight, so a second press does not race the first. */
-  let drawing = false;
+  /** The job whose draw owns the button and the note, or 0 when none is running. A number and
+   *  not a flag, so a draw that was superseded by the next one can tell that its finish is no
+   *  longer its to perform. */
+  let drawing = 0;
+  /** The button reads Stop while a draw runs and Draw otherwise, and is only ever disabled
+   *  when there is nothing a press could do. */
+  const syncDrawButton = (): void => {
+    if (!(drawCpu instanceof HTMLButtonElement)) return;
+    if (drawing !== 0) {
+      drawCpu.textContent = copy.stop;
+      drawCpu.disabled = false;
+      return;
+    }
+    drawCpu.textContent = copy.draw;
+    drawCpu.disabled = !moduleDrawable || !canvasFits;
+  };
+  /** Ends the running draw where it is. Moving `job` retires it at every worker and at the
+   *  page; clearing `drawing` first makes its own finish a no-op, so the button and the note
+   *  are this press's to set and not the retired draw's. */
+  const stopDrawing = (): void => {
+    job += 1;
+    drawing = 0;
+    syncDrawButton();
+    if (canvasNote instanceof HTMLElement) canvasNote.textContent = copy.canvasIdle;
+  };
 
   /** Hand the page back to the browser without the nested-setTimeout clamp, which is about
    *  4ms a turn and would cost more than the drawing between two of them. A MessageChannel
@@ -793,24 +818,27 @@ function mount(root: HTMLElement): void {
   };
 
   const drawOnCpu = (): void => {
-    if (!(canvas instanceof HTMLCanvasElement) || !(canvasNote instanceof HTMLElement) || drawing) return;
+    if (!(canvas instanceof HTMLCanvasElement) || !(canvasNote instanceof HTMLElement)) return;
     const context = canvas.getContext('2d');
     const plan = rasterPlan();
     if (!compiled || !context || !plan) {
       canvasNote.textContent = copy.canvasNeedsVertex;
       return;
     }
+    // Raising the job retires whatever draw is still running; taking `drawing` makes that
+    // draw's finish a no-op, so the button stays Stop across the handover.
     job += 1;
     const mine = job;
-    drawing = true;
-    if (drawCpu instanceof HTMLButtonElement) drawCpu.disabled = true;
+    drawing = mine;
+    syncDrawButton();
     context.clearRect(0, 0, plan.width, plan.height);
     delete canvasNote.dataset.px;
     delete canvasNote.dataset.workers;
 
     const finish = (): void => {
-      drawing = false;
-      if (drawCpu instanceof HTMLButtonElement) drawCpu.disabled = !moduleDrawable || !canvasFits;
+      if (drawing !== mine) return;
+      drawing = 0;
+      syncDrawButton();
     };
 
     if (typeof Worker !== 'function') {
@@ -1108,6 +1136,11 @@ function mount(root: HTMLElement): void {
       if (emitted.wgsl) root.classList.add('has-output');
       paintOutput();
       paintReflection();
+      // The canvas and the return values follow the source. The oracle's calls are
+      // microseconds, and a draw at the sizes the page opens with is under half a second, so
+      // neither is worth a button press; the buttons re-run with edited arguments and redraw.
+      evaluateOnCpu();
+      if (moduleDrawable && canvasFits) drawOnCpu();
     } catch (error) {
       status.textContent = copy.errors;
       root.classList.add('has-errors');
@@ -1189,10 +1222,12 @@ function mount(root: HTMLElement): void {
       const surface = canvas.getContext('2d');
       surface?.clearRect(0, 0, side, side);
       canvasFits = holdsItsPixels(canvas, surface);
-      if (drawCpu instanceof HTMLButtonElement) drawCpu.disabled = !moduleDrawable || !canvasFits;
+      drawing = 0;
+      syncDrawButton();
       if (canvasNote instanceof HTMLElement) {
         canvasNote.textContent = !moduleDrawable ? copy.canvasNeedsVertex : canvasFits ? copy.canvasIdle : copy.canvasTooBig;
       }
+      if (moduleDrawable && canvasFits) drawOnCpu();
     });
   }
 
@@ -1322,7 +1357,12 @@ function mount(root: HTMLElement): void {
       });
       run.addEventListener('click', render);
       if (runCpu instanceof HTMLButtonElement) runCpu.addEventListener('click', evaluateOnCpu);
-      if (drawCpu instanceof HTMLButtonElement) drawCpu.addEventListener('click', drawOnCpu);
+      if (drawCpu instanceof HTMLButtonElement) {
+        drawCpu.addEventListener('click', () => {
+          if (drawing !== 0) stopDrawing();
+          else drawOnCpu();
+        });
+      }
       tabs.forEach((tab, index) => {
         tab.addEventListener('click', () => selectTarget((tab.dataset.target ?? 'wgsl') as Target));
         tab.addEventListener('keydown', (event) => {

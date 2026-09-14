@@ -257,6 +257,7 @@ export const en = {
     cpuNoResources: 'The CPU oracle takes entry arguments only, so an entry that reads a uniform or a storage binding cannot run here yet.',
     canvas: 'CPU canvas',
     draw: 'Draw on the CPU',
+    stop: 'Stop',
     canvasIdle: 'Run the fragment entry once per pixel, with no GPU.',
     resolution: 'Resolution',
     canvasTooBig: 'This browser will not back a canvas this large, so nothing can be drawn at this resolution. Choose a smaller one.',
