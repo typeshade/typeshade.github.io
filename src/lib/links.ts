@@ -135,7 +135,11 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
   return { label: labels[key], href: localePath(locale, links[key].href) }
 }
 
-export interface SidebarItem extends Destination { readonly depth?: number }
+export interface SidebarItem extends Destination {
+  readonly depth?: number
+  /** The label is an export's name, set in the code font. */
+  readonly code?: boolean
+}
 export interface SidebarGroup { readonly title: string; readonly items: readonly SidebarItem[] }
 
 /** The sidebar's groups. The reference lists its categories and opens the members of the one
@@ -160,7 +164,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
   for (const { category, members } of apiCategories()) {
     reference.push({ label: apiCategoryCopy(locale, category.slug).name, href: localePath(locale, `/api/${category.slug}/`) })
     if (category.slug !== openCategory) continue
-    for (const m of members) reference.push({ label: m.name, href: localePath(locale, `/api/${m.slug}/`), depth: 1 })
+    for (const m of members) reference.push({ label: m.name, href: localePath(locale, `/api/${m.slug}/`), depth: 1, code: true })
   }
   reference.push(page('internals'))
   if (path?.startsWith(links.internals.href)) for (const s of sections) reference.push({ ...s, depth: 1 })

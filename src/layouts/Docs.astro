@@ -76,7 +76,7 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
       {groups.map((g) => (
         <div class="docs-group">
           <p class="docs-group-title">{g.title}</p>
-          <ul>{g.items.map((i) => <li class={i.depth ? `depth-${i.depth}` : undefined}><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
+          <ul>{g.items.map((i) => <li class:list={[i.depth ? `depth-${i.depth}` : undefined, i.code ? 'code' : undefined]}><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
         </div>
       ))}
     </nav>
@@ -95,7 +95,7 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
         {groups.map((g) => (
           <div class="docs-group">
             <p class="docs-group-title">{g.title}</p>
-            <ul>{g.items.map((i) => <li class={i.depth ? `depth-${i.depth}` : undefined}><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
+            <ul>{g.items.map((i) => <li class:list={[i.depth ? `depth-${i.depth}` : undefined, i.code ? 'code' : undefined]}><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
           </div>
         ))}
       </nav>
