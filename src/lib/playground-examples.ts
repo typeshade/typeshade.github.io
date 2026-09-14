@@ -23,6 +23,7 @@ export const playgroundExampleIds = [
   'hello-vsin',
   'hello-uniform',
   'hello-camera',
+  'compute-reduction-twin',
 ] as const;
 
 export type PlaygroundExampleId = (typeof playgroundExampleIds)[number];

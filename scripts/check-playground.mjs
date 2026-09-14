@@ -15,8 +15,10 @@
 //   8. the example picker replaces the source
 //   9. a source the compiler has no rule for reports a diagnostic that carries a position,
 //      and the panes go empty
-//  10. `vec` offers vec4 in the completion list
-//  11. the URL fragment carries the edited source into a second tab
+//  10. an unclosed call reports a parse error and the panes stay empty
+//  11. the compute example reports the language service's one known false positive
+//  12. `vec` offers vec4 in the completion list
+//  13. the URL fragment carries the edited source into a second tab
 //
 // Hover over a name a user declared is the one thing the language service at the current pin
 // has no answer for: it returns nothing for `vs` and `fs`. That check arrives with the
@@ -90,8 +92,16 @@ const brightness = (colour) => {
 // Every expression here depends on a runtime input, so the optimizer cannot fold it away and
 // `parens: 'minimal'` has parentheses left to drop. The default sample folds to constants.
 const UNFOLDABLE = `"use typeshade"
-class VsOut { @builtin("position") pos: vec4 @location(0) uv: vec2 }
-class Color { @location(0) color: vec4 }
+
+class VsOut {
+  @builtin("position") pos: vec4
+  @location(0) uv: vec2
+}
+
+class Color {
+  @location(0) color: vec4
+}
+
 @fragment
 export function fs(v: VsOut): Color {
   const a = v.uv.x * 2. + v.uv.y * 3. - 1.
@@ -249,6 +259,11 @@ async function checkRoute(browser, origin, route) {
       // `parens` needs a source the optimizer cannot fold flat.
       await typeSource(page, UNFOLDABLE)
       const parensFull = await wgslPane(page)
+      if (!/fn\s/.test(parensFull)) {
+        // Without this the next comparison reads as the option failing when the source is
+        // what failed to compile.
+        problems.push(`the parentheses source did not compile, so the option could not be checked:\n    ${parensFull.slice(0, 200)}`)
+      }
       await setOption(page, '[data-opt-parens]', 'minimal')
       const parensMinimal = await wgslPane(page)
       if (parensMinimal.length >= parensFull.length) {
@@ -283,6 +298,36 @@ async function checkRoute(browser, origin, route) {
       else if (!/^\d+:\d+\s/.test(rows[0])) problems.push(`a diagnostic row carries no position: ${rows[0]}`)
       const emptied = await wgslPane(page)
       if (/@vertex|@fragment|fn\s/.test(emptied)) problems.push(`a source that does not compile still filled the WGSL pane:\n    ${emptied.slice(0, 160)}`)
+
+      // ── an unclosed call ────────────────────────────────────────────────────────────────
+      // The compiler reports this as a parse error now (TS8030) and emits nothing for the
+      // file, where it used to report a return-type mismatch and emit WGSL anyway.
+      await typeSource(page, sample.replace('return { color: vec4(1., 0., 0., 1.) }', 'return vec4(3.14'))
+      const parseRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
+      if (parseRows.length === 0) problems.push('an unclosed call reported no diagnostic')
+      const afterParse = await wgslPane(page)
+      if (/@vertex|@fragment|fn\s/.test(afterParse)) {
+        problems.push(`an unclosed call still filled the WGSL pane:\n    ${afterParse.slice(0, 160)}`)
+      }
+
+      // ── the compute example ─────────────────────────────────────────────────────────────
+      // The language service reports TS2542 on this example's `output[idx] = sum`: the
+      // ambient `array<T>` index signature is read-only, while a `declare let` storage
+      // binding is writable in TypeShade. `compile()` accepts the file, the compiler's own
+      // corpus ships it, and the other five examples are clean, so this is the service's
+      // ambient declaration and not the source. It is pinned here so the Playground is not
+      // quietly working around it; when the ambient type gains a writable form this check
+      // becomes "the reflection names @compute and the GLSL tabs say it has none".
+      await page.selectOption('[data-example]', 'compute-reduction-twin')
+      await page.waitForTimeout(AFTER_EDIT)
+      const computeRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
+      if (computeRows.length !== 1 || !computeRows[0].includes('only permits reading')) {
+        problems.push(
+          `the compute example no longer reports the known TS2542 false positive, so this check wants updating:\n    ${computeRows.join(' / ').slice(0, 240)}`,
+        )
+      }
+      await page.selectOption('[data-example]', 'hello')
+      await page.waitForTimeout(AFTER_EDIT)
 
       // ── completion ──────────────────────────────────────────────────────────────────────
       await typeSource(page, sample)

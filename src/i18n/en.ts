@@ -275,6 +275,10 @@ export const en = {
         title: 'Uniform struct',
         description: 'A uniform struct whose byte layout the reflection pane lays out field by field.',
       },
+      'compute-reduction-twin': {
+        title: 'Compute reduction',
+        description: 'A compute entry that folds eight values from a storage buffer into one, with a workgroup size of 64.',
+      },
     },
     copy: 'Copy',
     copied: 'Copied',

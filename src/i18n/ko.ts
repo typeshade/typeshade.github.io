@@ -346,6 +346,10 @@ export const ko: Copy = {
         title: '유니폼 구조체',
         description: '유니폼 구조체 하나의 바이트 레이아웃을 리플렉션 패널이 필드마다 펼쳐 보여 줍니다.',
       },
+      'compute-reduction-twin': {
+        title: '컴퓨트 리덕션',
+        description: '스토리지 버퍼의 값 여덟 개를 하나로 접는 컴퓨트 진입점입니다. 워크그룹 크기는 64입니다.',
+      },
     },
     copy: '복사',
     copied: '복사됨',
