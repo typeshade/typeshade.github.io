@@ -159,6 +159,9 @@
 }
 :lang(ko) h1, :lang(ko) h2, :lang(ko) h3, :lang(ko) h4 { letter-spacing: -0.005em; line-height: 1.35 }
 :lang(ko) .figure-caption, :lang(ko) .site-nav, :lang(ko) .site-map { line-height: 1.65 }
+/* IBM Plex Sans KR only ships 400 and 600, so the button's 500 falls back to 400 for Hangul
+   while Latin renders true 500; land both scripts on 600 instead. */
+:lang(ko) .button { font-weight: 600 }
 
 /* Base */
 html { background: var(--color-ground) }
