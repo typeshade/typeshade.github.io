@@ -25,8 +25,8 @@ export function fs(): Color {
 }
 `
 const labels = locale === 'ko'
-  ? { run: '컴파일', reset: '예제 복원', editor: 'TypeShade 소스', output: 'WGSL 출력', diagnostics: '진단', idle: '컴파일 대기 중', ready: '컴파일 성공', errors: '컴파일 오류', help: '브라우저에서 TypeShade 컴파일러를 실행합니다.' }
-  : { run: 'Compile', reset: 'Reset example', editor: 'TypeShade source', output: 'WGSL output', diagnostics: 'Diagnostics', idle: 'Ready to compile', ready: 'Compiled successfully', errors: 'Compile errors', help: 'The TypeShade source compiler runs in your browser.' }
+  ? { run: '컴파일', reset: '예제 복원', editor: 'TypeShade 소스', output: 'WGSL 출력', diagnostics: '진단', idle: '컴파일 대기 중', ready: '컴파일 성공', errors: '컴파일 오류', help: 'Monaco 기반 TypeScript 편집기에서 TypeShade를 작성합니다.' }
+  : { run: 'Compile', reset: 'Reset example', editor: 'TypeShade source', output: 'WGSL output', diagnostics: 'Diagnostics', idle: 'Ready to compile', ready: 'Compiled successfully', errors: 'Compile errors', help: 'Author TypeShade in a Monaco-based TypeScript editor.' }
 ---
 
 <section class="ts-playground" data-playground>
@@ -37,7 +37,7 @@ const labels = locale === 'ko'
   <div class="playground-grid">
     <section class="pane source-pane">
       <div class="pane-title"><span>{labels.editor}</span><kbd>TS</kbd></div>
-      <textarea data-editor spellcheck="false" aria-label={labels.editor}>{sample}</textarea>
+      <div class="editor-host" data-editor aria-label={labels.editor}></div>
     </section>
     <section class="pane output-pane">
       <div class="pane-title"><span>{labels.output}</span><span data-status>{labels.idle}</span></div>
@@ -49,25 +49,34 @@ const labels = locale === 'ko'
 
 <script define:vars={{ sample, locale }}>
   import { compileTsSource } from '../../vendor/shader-dsl/src/index.ts'
+
   const root = document.querySelector('[data-playground]')
+
   if (root instanceof HTMLElement) {
-    const editor = root.querySelector('[data-editor]')
+    const editorHost = root.querySelector('[data-editor]')
     const output = root.querySelector('[data-output]')
     const diagnostics = root.querySelector('[data-diagnostics]')
     const status = root.querySelector('[data-status]')
     const run = root.querySelector('[data-run]')
     const reset = root.querySelector('[data-reset]')
-    if (editor instanceof HTMLTextAreaElement && output instanceof HTMLElement && diagnostics instanceof HTMLElement && status instanceof HTMLElement && run instanceof HTMLButtonElement && reset instanceof HTMLButtonElement) {
+
+    if (editorHost instanceof HTMLElement && output instanceof HTMLElement && diagnostics instanceof HTMLElement && status instanceof HTMLElement && run instanceof HTMLButtonElement && reset instanceof HTMLButtonElement) {
       const copy = locale === 'ko'
-        ? { ready: '컴파일 성공', errors: '컴파일 오류', idle: '컴파일 대기 중', noOutput: '출력이 없습니다.', directive: '"use typeshade" 지시어가 필요합니다.' }
-        : { ready: 'Compiled successfully', errors: 'Compile errors', idle: 'Ready to compile', noOutput: 'No WGSL output.', directive: 'The "use typeshade" directive is required.' }
+        ? { ready: '컴파일 성공', errors: '컴파일 오류', idle: '컴파일 대기 중', loading: '편집기 불러오는 중…', noOutput: '출력이 없습니다.', directive: '"use typeshade" 지시어가 필요합니다.' }
+        : { ready: 'Compiled successfully', errors: 'Compile errors', idle: 'Ready to compile', loading: 'Loading editor…', noOutput: 'No WGSL output.', directive: 'The "use typeshade" directive is required.' }
+
+      let editor: any
+      let model: any
+
       const render = () => {
+        if (!editor) return
         status.textContent = copy.idle
         output.textContent = ''
         diagnostics.textContent = ''
         root.classList.remove('has-errors', 'has-output')
         try {
-          const result = compileTsSource(editor.value, { fileName: 'hello.shade.ts', requireDirective: true })
+          const source = editor.getValue()
+          const result = compileTsSource(source, { fileName: 'hello.shade.ts', requireDirective: true })
           const messages = [...result.diagnostics]
           if (!result.hasDirective && messages.length === 0) messages.push({ message: copy.directive, line: 1, character: 1, category: 'error' })
           if (messages.length > 0) {
@@ -88,11 +97,101 @@ const labels = locale === 'ko'
           diagnostics.textContent = error instanceof Error ? error.message : String(error)
         }
       }
-      let timer
-      editor.addEventListener('input', () => { window.clearTimeout(timer); timer = window.setTimeout(render, 350) })
-      run.addEventListener('click', render)
-      reset.addEventListener('click', () => { editor.value = sample; render(); editor.focus() })
-      render()
+
+      const loadMonaco = () => new Promise<any>((resolve, reject) => {
+        const w = window as any
+        if (w.monaco) {
+          resolve(w.monaco)
+          return
+        }
+        const existing = document.querySelector('script[data-monaco-loader]')
+        const start = () => {
+          const amdRequire = w.require
+          if (typeof amdRequire !== 'function') {
+            reject(new Error('Monaco loader did not initialize.'))
+            return
+          }
+          amdRequire.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } })
+          w.MonacoEnvironment = {
+            getWorkerUrl: (_moduleId: string, label: string) => {
+              const worker = label === 'typescript' || label === 'javascript' ? 'language/typescript/tsWorker.js' : 'base/worker/workerMain.js'
+              const base = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/'
+              const source = `self.MonacoEnvironment={baseUrl:${JSON.stringify(base)}};importScripts(${JSON.stringify(base + worker)});`
+              return `data:text/javascript;charset=utf-8,${encodeURIComponent(source)}`
+            },
+          }
+          amdRequire(['vs/editor/editor.main'], () => resolve(w.monaco), reject)
+        }
+        if (existing) {
+          existing.addEventListener('load', start, { once: true })
+          start()
+          return
+        }
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js'
+        script.async = true
+        script.dataset.monacoLoader = 'true'
+        script.addEventListener('load', start, { once: true })
+        script.addEventListener('error', () => reject(new Error('Unable to load Monaco editor.')), { once: true })
+        document.head.appendChild(script)
+      })
+
+      status.textContent = copy.loading
+      loadMonaco().then((monaco) => {
+        monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+          target: monaco.languages.typescript.ScriptTarget.ES2022,
+          module: monaco.languages.typescript.ModuleKind.ESNext,
+          moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+          allowNonTsExtensions: true,
+          experimentalDecorators: true,
+          strict: true,
+        })
+        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+          noSemanticValidation: false,
+          noSyntaxValidation: false,
+        })
+        monaco.languages.typescript.typescriptDefaults.addExtraLib(`
+          declare type vec4 = { x: number; y: number; z: number; w: number }
+          declare type u32 = number
+          declare function vec4(x: number, y: number, z: number, w: number): vec4
+          declare function builtin(name: string): PropertyDecorator
+          declare function location(index: number): PropertyDecorator
+          declare const vertex: MethodDecorator
+          declare const fragment: MethodDecorator
+        `, 'file:///types/typeshade.d.ts')
+
+        model = monaco.editor.createModel(sample, 'typescript', monaco.Uri.parse('file:///hello.shade.ts'))
+        editor = monaco.editor.create(editorHost, {
+          model,
+          automaticLayout: true,
+          minimap: { enabled: false },
+          fontSize: 13,
+          lineHeight: 21,
+          tabSize: 2,
+          insertSpaces: true,
+          wordWrap: 'off',
+          scrollBeyondLastLine: false,
+          padding: { top: 14, bottom: 14 },
+          suggest: { showMethods: true, showFunctions: true, showTypes: true, showWords: true },
+          quickSuggestions: true,
+          roundedSelection: false,
+        })
+        editor.onDidChangeModelContent(() => {
+          window.clearTimeout(editor.__typeshadeTimer)
+          editor.__typeshadeTimer = window.setTimeout(render, 350)
+        })
+        run.addEventListener('click', render)
+        reset.addEventListener('click', () => {
+          editor.setValue(sample)
+          render()
+          editor.focus()
+        })
+        render()
+      }).catch((error) => {
+        status.textContent = copy.errors
+        root.classList.add('has-errors')
+        diagnostics.textContent = error instanceof Error ? error.message : String(error)
+      })
     }
   }
 </script>
@@ -111,9 +210,8 @@ const labels = locale === 'ko'
   .source-pane { border-bottom: 1px solid var(--color-line-1); }
   .pane-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; color: var(--color-text-2); font-size: .75rem; font-weight: 500; background: var(--color-surface-2); }
   .pane-title kbd, .pane-title [data-status] { color: var(--color-text-3); font: 500 .6875rem/1.3 var(--font-mono); }
-  textarea, pre { box-sizing: border-box; width: 100%; min-height: 480px; margin: 0; border: 0; border-radius: 0; background: var(--color-ground); color: var(--color-text-1); font: 400 .8125rem/1.65 var(--font-mono); tab-size: 2; }
-  textarea { display: block; resize: vertical; padding: 16px; outline: 0; }
-  textarea:focus { box-shadow: inset 0 0 0 2px var(--color-accent); }
+  .editor-host, pre { box-sizing: border-box; width: 100%; min-height: 480px; margin: 0; border: 0; border-radius: 0; background: var(--color-ground); color: var(--color-text-1); font: 400 .8125rem/1.65 var(--font-mono); }
+  .editor-host { overflow: hidden; }
   pre { padding: 16px; overflow: auto; white-space: pre; }
   .diagnostics { min-height: 96px; padding: 12px 16px; border-top: 1px solid var(--color-line-1); background: var(--color-surface-1); }
   .diagnostics-title { margin-bottom: 6px; color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
