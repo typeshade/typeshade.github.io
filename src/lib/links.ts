@@ -65,7 +65,6 @@ export const links = {
 } as const satisfies Record<string, Destination>
 
 const i18nSourceByLocale = new Map<Locale, string>()
-
 function i18nSource(locale: Locale): string {
   const cached = i18nSourceByLocale.get(locale)
   if (cached !== undefined) return cached
@@ -73,26 +72,18 @@ function i18nSource(locale: Locale): string {
   i18nSourceByLocale.set(locale, text)
   return text
 }
-
 function dictionaryLine(locale: Locale, key: string): number {
   const lines = i18nSource(locale).split('\n')
   const at = lines.findIndex((l) => l.startsWith(`  ${key}: {`) || l.startsWith(`  ${key}: `))
   if (at < 0) throw new Error(`[links] '${key}' is not a top-level key of src/i18n/${locale}.ts`)
   return at + 1
 }
-
 export function editCopy(locale: Locale, key?: string): string {
   const at = key === undefined ? '' : `#L${dictionaryLine(locale, key)}`
   return `${siteRepo}/blob/main/src/i18n/${locale}.ts${at}`
 }
-
-export function editGuide(sourceLine: number): string {
-  return `${links.guideSource.href}#L${sourceLine}`
-}
-
-export function editGuideTranslation(locale: Locale, id: string): string {
-  return `${siteRepo}/blob/main/${translationDir(locale)}/${id}.md`
-}
+export function editGuide(sourceLine: number): string { return `${links.guideSource.href}#L${sourceLine}` }
+export function editGuideTranslation(locale: Locale, id: string): string { return `${siteRepo}/blob/main/${translationDir(locale)}/${id}.md` }
 
 export function navLinks(locale: Locale): readonly Destination[] {
   const labels = locale === 'ko'
@@ -119,7 +110,6 @@ export function docsPages(locale: Locale): readonly Destination[] {
   return [
     { label: d.why, href: page('motivation') },
     { label: d.quickStart, href: page('quickStart') },
-    { label: locale === 'ko' ? 'Playground' : 'Playground', href: localePath(locale, links.playground.href) },
     { label: locale === 'ko' ? '언어 가이드' : 'Language guide', href: page('guide') },
     { label: d.checks, href: page('checks') },
     { label: d.examples, href: page('examples') },
@@ -137,7 +127,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     ? { learn: '학습', language: '언어', project: '프로젝트' }
     : { learn: 'Learn', language: 'Language', project: 'Project' }
   const languagePages: SidebarItem[] = [
-    pages[3]!,
+    pages[2]!,
     { label: locale === 'ko' ? '타입' : 'Types', href: localePath(locale, links.languageTypes.href), depth: 1 },
     { label: locale === 'ko' ? '함수' : 'Functions', href: localePath(locale, links.languageFunctions.href), depth: 1 },
     { label: locale === 'ko' ? '제어 흐름' : 'Control flow', href: localePath(locale, links.languageControlFlow.href), depth: 1 },
@@ -153,9 +143,9 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     for (const m of members) reference.push({ label: m.name, href: localePath(locale, `/api/${m.slug}/`), depth: 1 })
   }
   return [
-    { title: labels.learn, items: pages.slice(0, 3) },
+    { title: labels.learn, items: [...pages.slice(0, 2), { label: 'Playground', href: localePath(locale, links.playground.href) }] },
     { title: labels.language, items: languagePages },
-    { title: labels.project, items: pages.slice(4) },
+    { title: labels.project, items: pages.slice(3) },
     { title: d.api.reference, items: reference },
   ]
 }
