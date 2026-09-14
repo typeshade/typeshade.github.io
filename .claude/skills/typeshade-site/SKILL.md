@@ -27,11 +27,11 @@ The site follows the shapes readers already know, and nothing else:
   Examples, Reference, Project), the document in the middle at 740px, an outline of the page's
   own headings on the right on wide screens, an "Edit this page" link and previous and next at
   the bottom, which follow the sidebar's order. Under 64rem the sidebar is a bar under the
-  header that names the current page. The guide lives under `/guide/`: the language guide and
-  its topics, written in the dictionaries, and the compiler internals under
-  `/guide/internals/`, one page per section of AUTHORING.md. The reference lives under
-  `/api/`; its sidebar group closes with Compiler internals, whose sections open one level in
-  only on their own pages, and Language service.
+  header that names the current page. Every guide page lives under `/guide/` and is written in
+  the dictionaries, except the compiler internals under `/guide/internals/`, one page per
+  section of AUTHORING.md. The reference lives under `/api/`; its sidebar group closes with
+  Compiler internals, whose sections open one level in only on their own pages, and Language
+  service.
 - **Reference**: MDN. `/api/` lists the categories, `/api/<category>/` the exports in one of
   them, `/api/<export>/` is the page for one export. A page keeps MDN's order and leaves out
   a section it has nothing for: Syntax, Parameters, Return value, Exceptions, Description,
