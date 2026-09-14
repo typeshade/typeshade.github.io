@@ -26,7 +26,10 @@ const table = [
   { dest: links.quickStart, note: 'the submodule command, a complete shader file and the WGSL it emits' },
   { dest: links.checks, note: 'what CI runs on every push' },
   { dest: links.examples, note: `the ${facts.examples} examples, the GLSL emit and the emulated-double demo` },
-  { dest: links.guide, note: 'the authoring guide' },
+  { dest: links.guide, note: 'the language guide and its topics' },
+  { dest: links.concepts, note: 'where the TypeScript you know sits in a WebGPU program' },
+  { dest: links.internals, note: 'the compiler internals, one page per section of AUTHORING.md' },
+  { dest: links.languageService, note: 'the editor-neutral language service behind the Playground, for language servers and editor extensions' },
   { dest: links.api, note: 'the API reference, one page per public export' },
   {
     dest: links.mirror,

@@ -6,6 +6,7 @@ TypeShade is a shader language built around the TypeScript authoring experience.
 
 - [Introduction](/guide/introduction/): understand the TypeScript-to-TypeShade model.
 - [Quick start](/guide/quick-start/): write your first TypeShade shader.
+- [TypeScript and WebGPU concepts](/guide/typescript-and-webgpu/): where the TypeScript you know sits in a WebGPU program.
 - [Language guide](/guide/language/): learn the language surface.
 - [Types](/guide/language/types/): TypeScript types and TypeShade GPU value layout.
 - [Functions](/guide/language/functions/): functions, parameters, returns, and shader entry points.
@@ -57,6 +58,7 @@ TypeShade documentation explains where these concepts remain familiar and where 
 ## Compiler and internals
 
 - [Compiler internals](/guide/internals/): compiler architecture and the internal authoring reference.
+- [Language service](/guide/language-service/): the editor-neutral layer behind the Playground, for language servers and editor extensions.
 - [TypeShade surface specification](https://github.com/typeshade/typeshade/blob/main/docs/use-typeshade-surface.md): source-level language surface and lowering model.
 - [TypeShade compiler](https://github.com/typeshade/typeshade): implementation and tests.
 
