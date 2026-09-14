@@ -48,7 +48,8 @@ const labels = locale === 'ko'
 </section>
 
 <script define:vars={{ sample, locale }}>
-  import { compileTsSource, TypeshadeLanguageService } from '../../vendor/shader-dsl/src/index.ts'
+  import { compileTsSource } from '../../vendor/shader-dsl/src/index.ts'
+  import { TypeshadeLanguageService } from '../../vendor/shader-dsl/src/language-service.ts'
 
   const root = document.querySelector('[data-playground]')
   const languageService = new TypeshadeLanguageService({ fileName: 'hello.shade.ts' })
