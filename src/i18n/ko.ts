@@ -332,6 +332,7 @@ export const ko: Copy = {
     draw: 'CPU로 그리기',
     canvasIdle: '프래그먼트 진입점을 픽셀마다 한 번씩, GPU 없이 실행합니다.',
     resolution: '해상도',
+    canvasTooBig: '이 브라우저는 이만큼 큰 캔버스를 할당하지 못해 이 해상도로는 그릴 수 없습니다. 더 작은 값을 고르세요.',
     canvasProgress: '타일 {done}/{total}, 실행 {running}, 대기 {waiting}',
     canvasDrawn: '{px}픽셀, {ms} ms, 워커 {workers}개',
     canvasNeedsVertex: '그리려면 vertex_index로 도는 버텍스 진입점과 프래그먼트 진입점이 함께 있어야 합니다. 이 모듈에는 그 짝이 없어 덮을 삼각형이 없습니다.',

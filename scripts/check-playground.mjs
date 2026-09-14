@@ -22,7 +22,10 @@
 //  13. an unclosed call reports a parse error and the panes stay empty
 //  14. the compute example reports the language service's one known false positive
 //  15. `vec` offers vec4 in the completion list
-//  16. the URL fragment carries the source and the options into a second tab carries the edited source into a second tab
+//  16. the URL fragment carries the source and the options into a second tab
+//  17. raising the resolution changes the grid the fragment entry runs over and leaves the
+//      box it is drawn in the size it was
+//  18. changing the resolution under a running draw retires it and gives the button back
 //
 // Hover over a name a user declared is the one thing the language service at the current pin
 // has no answer for: it returns nothing for `vs` and `fs`. That check arrives with the
@@ -281,6 +284,74 @@ async function checkRoute(browser, origin, route) {
         problems.push(`the CPU canvas is not interpolating: ${drawn.colours} colour(s) across ${drawn.opaque} pixels`)
       }
       console.log(`  canvas: ${drawn.opaque} of ${drawn.total} px, ${drawn.colours} colours, ${canvasNote.workers} worker(s)`)
+
+      // ── the grid moves, the box stays ────────────────────────────────────────────────────
+      // Raising the resolution buys pixels and not room. The canvas element's width and
+      // height are its backing store; the size it is shown at comes from the stylesheet, so
+      // the pane does not resize under a reader who is changing the control.
+      const canvasSize = () =>
+        page.evaluate(() => {
+          const node = document.querySelector('[data-canvas]')
+          return { box: Math.round(node.getBoundingClientRect().width), grid: node.width }
+        })
+      const smallGrid = await canvasSize()
+      await page.selectOption('[data-resolution]', '768')
+      await page.waitForTimeout(250)
+      const bigGrid = await canvasSize()
+      if (bigGrid.grid !== 768) problems.push(`choosing 768 left the canvas grid at ${bigGrid.grid}`)
+      if (smallGrid.grid === bigGrid.grid) problems.push('the resolution picker did not change the grid')
+      if (smallGrid.box !== bigGrid.box) {
+        problems.push(
+          `the canvas box moved with the resolution: ${smallGrid.box}px at ${smallGrid.grid}, ${bigGrid.box}px at ${bigGrid.grid}`,
+        )
+      }
+      if (bigGrid.box === 0) problems.push('the canvas is not being shown at any size')
+      console.log(`  resolution: grid ${smallGrid.grid} to ${bigGrid.grid}, box held at ${bigGrid.box} px`)
+
+      // ── a draw retired by the control that started it ────────────────────────────────────
+      // A draw is planned against one grid, and at the larger sizes it runs for seconds, so
+      // changing the resolution while one is running is a normal thing to do and not an edge
+      // case. The tiles in flight carry the old grid's coordinates; if they are not dropped
+      // they scatter the old picture over the new canvas, and if the draw never settles the
+      // button never comes back. This starts one, moves the control under it, and checks that
+      // the page lands somewhere a reader can act from.
+      await page.selectOption('[data-resolution]', '1536')
+      await page.waitForTimeout(200)
+      await page.evaluate(() => { delete document.querySelector('[data-canvas-note]').dataset.px })
+      await page.click('[data-draw-cpu]')
+      await page.waitForTimeout(250)
+      await page.selectOption('[data-resolution]', '192')
+      let cameBack = true
+      try {
+        await page.waitForSelector('[data-draw-cpu]:not([disabled])', { timeout: 20_000 })
+      } catch {
+        cameBack = false
+        problems.push('a draw retired by a resolution change never released the draw button')
+      }
+      // The button coming back is not the proof: a draw that is never retired also ends on its
+      // own and releases it. Nor are stale pixels, since by now the tiles that would overlap a
+      // 192 canvas are the ones already finished and the rest fall outside it and are clipped.
+      // What only a retired draw does is stay quiet: reporting a result is the last thing a
+      // draw does, so a count here is a draw for a grid of 1536 announcing itself over a
+      // canvas of 192. Both are read anyway, since a stale pixel is still wrong if it appears.
+      await page.waitForTimeout(1_500)
+      const retired = await page.evaluate(() => {
+        const node = document.querySelector('[data-canvas]')
+        const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
+        let opaque = 0
+        for (let i = 3; i < data.length; i += 4) if (data[i] > 0) opaque += 1
+        return { grid: node.width, opaque, reported: document.querySelector('[data-canvas-note]').dataset.px ?? 'none' }
+      })
+      if (retired.grid !== 192) problems.push(`after retiring a draw the grid is ${retired.grid} and not the 192 that was chosen`)
+      if (retired.reported !== 'none') {
+        problems.push(`a draw retired by a resolution change still reported ${retired.reported} px against the canvas that replaced it`)
+      }
+      if (retired.opaque > 0) {
+        problems.push(`a retired draw painted ${retired.opaque} px onto the canvas that replaced it`)
+      }
+      console.log(`  retired mid-draw: grid ${retired.grid}, reported ${retired.reported}, ${retired.opaque} stale px, button ${cameBack ? 'released' : 'stuck'}`)
+      await page.waitForTimeout(AFTER_EDIT)
+
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)
 

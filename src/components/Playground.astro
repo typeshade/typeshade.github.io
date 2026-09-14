@@ -65,6 +65,7 @@ const runtimeCopy = {
   draw: t.draw,
   canvasIdle: t.canvasIdle,
   canvasNeedsVertex: t.canvasNeedsVertex,
+  canvasTooBig: t.canvasTooBig,
   canvasProgress: t.canvasProgress,
   resolution: t.resolution,
   canvasDrawn: t.canvasDrawn,
@@ -168,9 +169,14 @@ const runtimeCopy = {
         <span data-canvas-note>{t.canvasIdle}</span>
         <label for="playground-resolution">{t.resolution}</label>
         <select id="playground-resolution" data-resolution>
-          <option value="192" selected>192</option>
-          <option value="384">384</option>
-          <option value="768">768</option>
+          <option value="64">64 × 64</option>
+          <option value="128">128 × 128</option>
+          <option value="192" selected>192 × 192</option>
+          <option value="384">384 × 384</option>
+          <option value="768">768 × 768</option>
+          <option value="1536">1536 × 1536</option>
+          <option value="3840">3840 × 3840 (4K)</option>
+          <option value="7680">7680 × 7680 (8K)</option>
         </select>
         <button type="button" data-draw-cpu disabled>{t.draw}</button>
       </div>
@@ -254,7 +260,10 @@ const runtimeCopy = {
   .canvas-meta button:hover:not(:disabled) { background: var(--color-surface-1); }
   .canvas-meta button:disabled { opacity: .5; cursor: default; }
   .canvas-host { display: flex; justify-content: center; padding: 16px; background: var(--color-ground); }
-  .canvas-host canvas { max-width: 100%; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); image-rendering: pixelated; }
+  /* The box stays this size at every resolution, so raising the grid buys detail and does
+     not move the layout. `pixelated` is what makes the low end worth offering: at 64 the
+     reader sees the fragment entry run once per visible block. */
+  .canvas-host canvas { width: min(320px, 100%); height: auto; aspect-ratio: 1; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); image-rendering: pixelated; }
   .reflection { padding: 14px 16px; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
   .reflection :global(.group-title) { margin: 0 0 8px; color: var(--color-text-3); font: 600 .6875rem/1.3 var(--font-sans); letter-spacing: .06em; }
   .reflection :global(.group + .group) { margin-top: 20px; }

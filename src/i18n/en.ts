@@ -259,6 +259,7 @@ export const en = {
     draw: 'Draw on the CPU',
     canvasIdle: 'Run the fragment entry once per pixel, with no GPU.',
     resolution: 'Resolution',
+    canvasTooBig: 'This browser will not back a canvas this large, so nothing can be drawn at this resolution. Choose a smaller one.',
     canvasProgress: '{done}/{total} tiles, {running} running, {waiting} waiting',
     canvasDrawn: '{px} px in {ms} ms on {workers} worker(s)',
     canvasNeedsVertex: 'Drawing needs a vertex entry driven by vertex_index and a fragment entry. This module has no such pair, so there is no triangle to cover.',
