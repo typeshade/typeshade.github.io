@@ -23,6 +23,10 @@ import type { ShaderLayout, UniformField } from './shader-runtime.ts'
 /** The uniform fields the runtime fills every frame. A sample declares the ones it reads and
  *  leaves out the rest; a page shows no control for any of them.
  *
+ *  `mouse` here is a `vec2` and is not the `mouse` control of src/lib/shader-runtime.ts, which
+ *  is the registry examples' `vec4` of [x, y, down, used]. A registry example routed through
+ *  this contract is refused for that reason, and never packed into the wrong bytes.
+ *
  *  - `time`: seconds since the canvas mounted, as an `f32`.
  *  - `resolution`: the drawing buffer's size in device pixels, as a `vec2`.
  *  - `mouse`: the pointer over the canvas in 0 to 1, origin at the bottom left, which is the
@@ -80,10 +84,18 @@ export function reservedValue(
 
 export type SampleShape = 'fragment' | 'module'
 
+/** The source with comments and string bodies blanked, for a test that reads code alone. A
+ *  sample that says `// the @vertex half is written for you` is still a fragment sample. */
+const codeOnly = (source: string): string =>
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/.*$/gm, ' ')
+    .replace(/(['"`])(?:[^\\]|\\.)*?\1/g, '""')
+
 /** Which shape a sample is. The test is the `@vertex` decorator, which is how the compiler
  *  finds the entry point too. */
 export const sampleShape = (source: string): SampleShape =>
-  /@vertex\b/.test(source) ? 'module' : 'fragment'
+  /@vertex\b/.test(codeOnly(source)) ? 'module' : 'fragment'
 
 /** The vertex half a fragment sample is compiled behind: the fullscreen triangle every Book
  *  of Shaders page draws on, and the varying it hands the fragment stage. Three vertices at
@@ -114,7 +126,10 @@ export function composeSource(source: string): { readonly text: string; readonly
   const body = source.replace(/^\s*(['"])use typeshade\1\s*\n?/, '')
   const head =
     sampleShape(body) === 'module' ? `${DIRECTIVE}\n\n` : `${DIRECTIVE}\n\n${FRAGMENT_PRELUDE}\n`
-  return { text: head + body, offset: head.split('\n').length - 1 }
+  // A sample that carries the directive itself loses those lines here, so the reader's first
+  // line sits that much higher in the composed text and a diagnostic has to come back further.
+  const dropped = source.split('\n').length - body.split('\n').length
+  return { text: head + body, offset: head.split('\n').length - 1 - dropped }
 }
 
 // ── Controls ────────────────────────────────────────────────────────────────
@@ -144,7 +159,11 @@ export interface ControlProp {
 export type ControlProps = Readonly<Record<string, ControlProp>>
 
 /** One control on the page, and where it writes. `offset` is the field's std140 byte offset
- *  as `reflect()` reported it, and `scalar` is how the packer writes those bytes. */
+ *  as `reflect()` reported it, and `scalar` is how the packer writes those bytes.
+ *
+ *  A control is only ever as fresh as the reflection it came from. A consumer that writes by
+ *  `offset` re-reads the controls after every compile; one that writes by name can keep the
+ *  values it has. */
 export interface LiveControl {
   readonly field: string
   readonly kind: ControlKind
@@ -161,15 +180,18 @@ export interface LiveControl {
 }
 
 /** The field types a control can be generated for, and what a page gives each one when the
- *  author says nothing. A float runs 0 to 1 in 500 steps, an integer 0 to 16 by one, a flag
- *  starts off, a pad sits in the middle of its square and a colour starts white. */
+ *  author says nothing. A float runs 0 to 1 in 500 steps, an integer 0 to 16 by one, a pad
+ *  sits in the middle of its square and a colour starts white.
+ *
+ *  `bool` is absent on purpose. WGSL forbids it in the uniform address space, so a module
+ *  that declares one compiles here and is refused by the device; a flag is a `u32` with
+ *  `toggle: true`, which is what ControlProp.toggle is for. */
 const DEFAULTS: Readonly<
   Record<string, { kind: ControlKind; scalar: LiveControl['scalar']; n: number; min: number; max: number; step: number; value: number }>
 > = {
   f32: { kind: 'slider', scalar: 'f32', n: 1, min: 0, max: 1, step: 0.002, value: 0.5 },
   i32: { kind: 'stepper', scalar: 'i32', n: 1, min: 0, max: 16, step: 1, value: 0 },
   u32: { kind: 'stepper', scalar: 'u32', n: 1, min: 0, max: 16, step: 1, value: 0 },
-  bool: { kind: 'checkbox', scalar: 'bool', n: 1, min: 0, max: 1, step: 1, value: 0 },
   'vec2<f32>': { kind: 'pad', scalar: 'f32', n: 2, min: 0, max: 1, step: 0.002, value: 0.5 },
   'vec3<f32>': { kind: 'slider', scalar: 'f32', n: 3, min: 0, max: 1, step: 0.002, value: 0.5 },
   'vec4<f32>': { kind: 'slider', scalar: 'f32', n: 4, min: 0, max: 1, step: 0.002, value: 0.5 },
@@ -286,11 +308,74 @@ export function layoutFor(id: string, reflection: ShaderReflection): ShaderLayou
     block: block?.name ?? '',
     group: uniformEntry?.group ?? 0,
     binding: uniformEntry?.binding ?? 0,
+    instance: uniformEntry?.name ?? '',
     fields: (block?.fields ?? []).map((f) => ({ name: f.name, type: f.type, offset: f.offset })),
     vertexEntry: entry('vertex'),
     fragmentEntry: entry('fragment'),
     textures,
   }
+}
+
+// ── The GLSL uniform block ──────────────────────────────────────────────────
+//
+// A workaround, and it is here so there is one place to delete it from.
+//
+// The compiler at the pinned commit works out which bindings a stage reaches by walking the
+// function bodies (`reachFrom` in src/core/passes/stage-bindings.ts). For a module built by
+// the TypeScript front end that walk finds nothing: `collectFnRefs` returns an empty variable
+// set for a body that plainly reads `u.time`. The GLSL backend then decides the binding is
+// unreachable and emits no block for it, so the fragment reads `u.time` from a `u` nothing
+// declared and the shader does not link. WGSL is unaffected, and so is the front page, whose
+// examples are built with `fn()` and reach the binding the walk expects.
+//
+// Until the pin moves, the block is written here from the layout `reflect()` reported, which
+// is the same layout the packer writes into. scripts/check-live.mjs opens a page with
+// `?forcegl2=1` so a build cannot go green with a fallback that does not link. When a
+// re-pinned compiler emits the block itself, `declaresBlock` sees it and this does nothing.
+
+/** GLSL ES 3.00 spellings of the field types a live sample can declare. */
+const GLSL_TYPE: Readonly<Record<string, string>> = {
+  f32: 'float',
+  i32: 'int',
+  u32: 'uint',
+  'vec2<f32>': 'vec2',
+  'vec3<f32>': 'vec3',
+  'vec4<f32>': 'vec4',
+  'vec2<i32>': 'ivec2',
+  'vec3<i32>': 'ivec3',
+  'vec4<i32>': 'ivec4',
+  'vec2<u32>': 'uvec2',
+  'vec3<u32>': 'uvec3',
+  'vec4<u32>': 'uvec4',
+}
+
+const declaresBlock = (glsl: string, block: string): boolean =>
+  new RegExp(`uniform\\s+${block}\\b`).test(glsl)
+
+/** The `layout(std140) uniform` declaration for one module's block. std140 places the fields
+ *  from their order alone, which is the order the reflected offsets were computed in, so the
+ *  bytes the packer writes land where the shader reads them. */
+export function glslUniformBlock(layout: ShaderLayout, instance: string): string {
+  const fields = layout.fields.map((f) => {
+    const type = GLSL_TYPE[f.type]
+    if (!type) throw new Error(`[live-shader] no GLSL ES 3.00 spelling for '${f.name}: ${f.type}'`)
+    return `  ${type} ${f.name};`
+  })
+  return `layout(std140) uniform ${layout.block} {\n${fields.join('\n')}\n} ${instance};\n`
+}
+
+/** One emitted GLSL stage, with the block declared when the stage reads it and the backend
+ *  left it out. A stage that never names the binding is returned as it came. */
+export function withUniformBlock(glsl: string, layout: ShaderLayout, instance: string): string {
+  if (layout.size === 0 || instance === '') return glsl
+  if (declaresBlock(glsl, layout.block)) return glsl
+  if (!new RegExp(`\\b${instance}\\.`).test(glsl)) return glsl
+  // After the precision lines, which every emitted stage opens with.
+  const lines = glsl.split('\n')
+  let at = lines.findIndex((line) => line.startsWith('#version'))
+  while (at + 1 < lines.length && /^\s*(precision|#)/.test(lines[at + 1] ?? '')) at++
+  lines.splice(at + 1, 0, '', glslUniformBlock(layout, instance).trimEnd())
+  return lines.join('\n')
 }
 
 // ── Packing ─────────────────────────────────────────────────────────────────
@@ -311,7 +396,8 @@ export function clamp(control: LiveControl, index: number, raw: number): number 
   const step = control.step[index] ?? 0
   if (!Number.isFinite(raw)) return min
   const held = Math.min(max, Math.max(min, raw))
-  if (control.scalar !== 'f32') return Math.round(held)
-  if (!(step > 0)) return held
-  return Math.round((held - min) / step) * step + min
+  const stepped = step > 0 ? Math.round((held - min) / step) * step + min : held
+  // A range whose span is not a whole number of steps would otherwise round past its own end.
+  const inside = Math.min(max, Math.max(min, stepped))
+  return control.scalar === 'f32' ? inside : Math.round(inside)
 }

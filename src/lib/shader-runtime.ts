@@ -59,6 +59,9 @@ export interface ShaderLayout {
   readonly block: string
   readonly group: number
   readonly binding: number
+  /** The name the shader reads the block through (`u` in `u.time`). GLSL needs it to write
+   *  the block's declaration; WGSL carries it in the emitted source already. */
+  readonly instance?: string
   readonly fields: readonly UniformField[]
   /** WGSL entry points. GLSL ES 3.00 always emits `main`. */
   readonly vertexEntry: string
@@ -121,6 +124,10 @@ export interface MountOptions {
   readonly still?: boolean
   /** The mount's own per-state strings and the elements they are written into. */
   readonly labels?: MountLabels
+  /** Draw only when asked. The observers and the swap path stay, and `redraw()` is what puts
+   *  a frame up. A live example sets this when the reader asked for less motion: the canvas
+   *  still follows a control they move, and nothing runs between their moves. */
+  readonly onDemand?: boolean
   /** Keep drawing under `prefers-reduced-motion: reduce` instead of taking the one-frame
    *  path, and leave the clock to the host. A live example sets this: it pins its own clock
    *  through `uniformValues` when a reader asks for less motion, and the loop is what redraws
@@ -145,6 +152,8 @@ export interface MountedShader {
    *  leaves the last good frame on screen and resolves false. A live example recompiles this
    *  way on every edit. */
   swap(next: ShaderData): Promise<boolean>
+  /** Draw one frame now, at the clock the loop is on. What an `onDemand` mount runs on. */
+  redraw(): void
   /** The bytes the packer last wrote into the uniform buffer, copied. Empty when the module
    *  binds no block. scripts/check-live.mjs reads it to see a control reach the shader. */
   uniformBytes(): Float32Array
@@ -287,6 +296,10 @@ function sharedDevice(): Promise<GPUDevice | null> {
     return device
   })()
   devicePromise = pending
+  // A failed request must not be remembered: the next mount asks again.
+  void pending.catch(() => {
+    if (devicePromise === pending) devicePromise = null
+  })
   return pending
 }
 
@@ -320,15 +333,32 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
   const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, depth: false })
   if (!gl) throw new Error('no WebGL2 context')
 
-  const vs = compile(gl, gl.VERTEX_SHADER, data.vertex)
-  const fs = compile(gl, gl.FRAGMENT_SHADER, data.fragment)
-  const prog = gl.createProgram()
-  if (!prog) throw new Error('createProgram failed')
-  gl.attachShader(prog, vs)
-  gl.attachShader(prog, fs)
-  gl.linkProgram(prog)
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    throw new Error(gl.getProgramInfoLog(prog) || 'GLSL link failed')
+  // Every object made from here is dropped if a later step throws: a live example rebuilds
+  // its pass on every edit, and a leaked program per failed edit is a leak per keystroke.
+  const built: { vs?: WebGLShader; fs?: WebGLShader; prog?: WebGLProgram } = {}
+  const abandon = (error: unknown): never => {
+    if (built.prog) gl.deleteProgram(built.prog)
+    if (built.vs) gl.deleteShader(built.vs)
+    if (built.fs) gl.deleteShader(built.fs)
+    throw error
+  }
+  let vs: WebGLShader
+  let fs: WebGLShader
+  let prog: WebGLProgram
+  try {
+    vs = built.vs = compile(gl, gl.VERTEX_SHADER, data.vertex)
+    fs = built.fs = compile(gl, gl.FRAGMENT_SHADER, data.fragment)
+    const created = gl.createProgram()
+    if (!created) throw new Error('createProgram failed')
+    prog = built.prog = created
+    gl.attachShader(prog, vs)
+    gl.attachShader(prog, fs)
+    gl.linkProgram(prog)
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      throw new Error(gl.getProgramInfoLog(prog) || 'GLSL link failed')
+    }
+  } catch (error) {
+    return abandon(error)
   }
   gl.useProgram(prog)
 
@@ -336,7 +366,7 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
   if (state.data) {
     // GLSL binds the block by the struct name reflect() reported, see ShaderLayout.block.
     const idx = gl.getUniformBlockIndex(prog, data.layout.block)
-    if (idx === gl.INVALID_INDEX) throw new Error(`no uniform block '${data.layout.block}'`)
+    if (idx === gl.INVALID_INDEX) abandon(new Error(`no uniform block '${data.layout.block}'`))
     ubo = gl.createBuffer()
     gl.bindBuffer(gl.UNIFORM_BUFFER, ubo)
     gl.bufferData(gl.UNIFORM_BUFFER, state.byteLength, gl.DYNAMIC_DRAW)
@@ -415,25 +445,54 @@ async function createWebGpuPass(
   // costs nothing here.
   ctx.configure({ device, format, alphaMode: 'premultiplied' })
 
-  device.pushErrorScope('validation')
-  const shaderModule = device.createShaderModule({ code: data.wgsl })
-  const err = (await shaderModule.getCompilationInfo()).messages.find((m) => m.type === 'error')
-  if (err) {
-    void device.popErrorScope()
-    throw new Error(`WGSL: ${err.message}`)
+  // The bind group layout is written from the module's own reflection instead of asked of
+  // the pipeline. `layout: 'auto'` reports only the bindings the shader reads, so an edit
+  // that stops reading the uniform block takes binding 0 out of the layout, every
+  // setBindGroup after it is invalid, and the canvas freezes on the old frame while the
+  // device reports errors nothing here can catch.
+  const visibility = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT
+  const layoutEntries: GPUBindGroupLayoutEntry[] = []
+  if (state.byteLength > 0) {
+    layoutEntries.push({ binding: data.layout.binding, visibility, buffer: { type: 'uniform' } })
   }
-  const pipeline = device.createRenderPipeline({
-    layout: 'auto',
-    vertex: { module: shaderModule, entryPoint: data.layout.vertexEntry },
-    fragment: {
-      module: shaderModule,
-      entryPoint: data.layout.fragmentEntry,
-      targets: [{ format }],
-    },
-    primitive: { topology: 'triangle-list' },
-  })
-  const pipeErr = await device.popErrorScope()
-  if (pipeErr) throw new Error(`WebGPU pipeline: ${pipeErr.message}`)
+  for (const t of data.layout.textures) {
+    layoutEntries.push({ binding: t.binding, visibility, texture: { sampleType: 'float' } })
+  }
+
+  let pipeline: GPURenderPipeline | null = null
+  let groupLayout: GPUBindGroupLayout | null = null
+  let failure: unknown = null
+  device.pushErrorScope('validation')
+  try {
+    const shaderModule = device.createShaderModule({ code: data.wgsl })
+    const err = (await shaderModule.getCompilationInfo()).messages.find((m) => m.type === 'error')
+    if (err) throw new Error(`WGSL: ${err.message}`)
+    groupLayout = layoutEntries.length > 0 ? device.createBindGroupLayout({ entries: layoutEntries }) : null
+    const empty = device.createBindGroupLayout({ entries: [] })
+    const bindGroupLayouts = Array.from({ length: data.layout.group + 1 }, (_, i) =>
+      i === data.layout.group && groupLayout ? groupLayout : empty,
+    )
+    pipeline = device.createRenderPipeline({
+      layout: groupLayout ? device.createPipelineLayout({ bindGroupLayouts }) : 'auto',
+      vertex: { module: shaderModule, entryPoint: data.layout.vertexEntry },
+      fragment: {
+        module: shaderModule,
+        entryPoint: data.layout.fragmentEntry,
+        targets: [{ format }],
+      },
+      primitive: { topology: 'triangle-list' },
+    })
+  } catch (error) {
+    failure = error
+  }
+  // The scope belongs to a device every canvas on the page shares, so it is popped on every
+  // path out of here; an unbalanced stack hands one canvas another one's error. The thrown
+  // reason wins over the scoped one, because it is the one that says what went wrong.
+  const scoped = await device.popErrorScope()
+  if (failure) throw failure
+  if (scoped) throw new Error(`WebGPU pipeline: ${scoped.message}`)
+  if (!pipeline) throw new Error('WebGPU pipeline: not built')
+  const built = pipeline
 
   const entries: GPUBindGroupEntry[] = []
   const uniBuf =
@@ -455,10 +514,7 @@ async function createWebGpuPass(
     guardTextures.push(tex)
     entries.push({ binding: t.binding, resource: tex.createView() })
   }
-  const bindGroup =
-    entries.length > 0
-      ? device.createBindGroup({ layout: pipeline.getBindGroupLayout(data.layout.group), entries })
-      : null
+  const bindGroup = groupLayout && entries.length > 0 ? device.createBindGroup({ layout: groupLayout, entries }) : null
 
   let disposed = false
   return {
@@ -476,7 +532,7 @@ async function createWebGpuPass(
           },
         ],
       })
-      pass.setPipeline(pipeline)
+      pass.setPipeline(built)
       if (bindGroup) pass.setBindGroup(data.layout.group, bindGroup)
       pass.draw(3)
       pass.end()
@@ -585,7 +641,7 @@ export async function mountShader(
   /** The packed bytes, copied, so a reader of the handle cannot write into the frame. */
   const uniformBytes = (): Float32Array => (state.data ? state.data.slice() : new Float32Array(0))
 
-  const handle = (stop: () => void, swap: MountedShader['swap']): MountedShader => {
+  const handle = (stop: () => void, swap: MountedShader['swap'], redraw: () => void): MountedShader => {
     const mounted: MountedShader = {
       get backend() {
         return qa.backend
@@ -594,6 +650,7 @@ export async function mountShader(
         return qa.frames
       },
       swap,
+      redraw,
       uniformBytes,
       stop,
     }
@@ -602,7 +659,7 @@ export async function mountShader(
     canvas.__shader = mounted
     return mounted
   }
-  if (!pass) return handle(() => {}, async () => false)
+  if (!pass) return handle(() => {}, async () => false, () => {})
   let live = pass
 
   let stopped = false
@@ -625,15 +682,30 @@ export async function mountShader(
         built.dispose(false)
         return false
       }
-      drawOnce(built, frame, seconds)
+      try {
+        drawOnce(built, frame, seconds)
+      } catch (error) {
+        // The new pass is bound but cannot draw. Drop it and leave the old one running.
+        built.dispose(false)
+        throw error
+      }
       const previous = live
       live = built
       state = frame
       previous.dispose(false)
-      built.onLost(stop)
       return true
     } catch {
       return false
+    }
+  }
+
+  /** Draw one frame at the clock the loop is on. */
+  const redraw = (): void => {
+    if (stopped) return
+    try {
+      drawOnce(live, state, seconds)
+    } catch {
+      stop()
     }
   }
 
@@ -641,10 +713,11 @@ export async function mountShader(
   // either, since a resize redraw would be frame two .
   if (still) {
     return handle(() => {
+      if (stopped) return
       stopped = true
       live.dispose(true)
       degrade()
-    }, swap)
+    }, swap, redraw)
   }
 
   const tick = (now: number): void => {
@@ -674,19 +747,25 @@ export async function mountShader(
     if (stopped) return
     stopped = true
     pause()
-    io.disconnect()
-    ro.disconnect()
+    // `swap` hands `stop` to a pass before the observers below exist on the still path, so
+    // the teardown asks whether each one was ever installed.
+    io?.disconnect()
+    ro?.disconnect()
     document.removeEventListener('visibilitychange', sync)
     live.dispose(true)
     degrade()
   }
+  const onDemand = opts.onDemand === true
   const sync = (): void => {
     if (stopped) return
+    if (onDemand) return
     if (visible && !document.hidden) start()
     else pause()
   }
 
-  const io = new IntersectionObserver((entries) => {
+  let io: IntersectionObserver | undefined
+  let ro: ResizeObserver | undefined
+  io = new IntersectionObserver((entries) => {
     visible = entries[0]?.isIntersecting ?? true
     sync()
   })
@@ -694,19 +773,17 @@ export async function mountShader(
   document.addEventListener('visibilitychange', sync)
   // The drawing buffer follows the CSS box from here instead of a per-frame layout read. A
   // paused canvas needs the extra redraw to look right; a running one gets one anyway.
-  const ro = new ResizeObserver(() => {
+  ro = new ResizeObserver(() => {
     if (stopped) return
     const changed = state.resize()
     if (!changed || running) return
-    try {
-      drawOnce(live, state, seconds)
-    } catch {
-      stop()
-    }
+    redraw()
   })
   ro.observe(canvas)
   live.onLost(stop)
 
   sync()
-  return handle(stop, swap)
+  // An on-demand mount still owes the page its first frame; the loop is what it does without.
+  if (onDemand) redraw()
+  return handle(stop, swap, redraw)
 }

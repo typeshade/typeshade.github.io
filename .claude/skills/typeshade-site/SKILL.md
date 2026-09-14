@@ -127,17 +127,21 @@ this is the working procedure.
    from the dictionary. A prop for a field the module has no uniform for fails the build, and
    so does a field type no control covers. An `f32` is a slider, an `i32` or `u32` a stepper
    (`toggle: true` for a checkbox), a `vec2` a pad, a `vec3` or `vec4` a colour picker with
-   `color: true`.
+   `color: true`. There is no `bool` control: WGSL forbids `bool` in a uniform block.
 4. Put `title` and `caption` in both dictionaries, and add the example's heading to the page's
    `headings` array so the outline on the right lists it.
 5. Add `{ id: '<id>', live: true, page: '<route>' }` to `STILLS` in `scripts/artifacts.mjs`,
    then `bun run capture:stills` and commit the `.webp` and its `.sha256`. The still is what a
    browser with no WebGPU and no WebGL2 shows, and the build refuses a still whose hash moved.
-6. `bun run build`, then `bun run check:live`. The check needs a browser:
+6. `bun run build`, then `bun run check:live`. It opens the page on WebGPU and again with
+   `?forcegl2=1`, because the WebGL2 half is a second emitted program and a page that only
+   ever ran on WebGPU can ship one that does not link. The check needs a browser:
    `PLAYWRIGHT_CHROMIUM` points at one outside the project, and `LIVE_GPU_OPTIONAL=1` lets a
    runner with no software rasteriser pass on the checks that need no frame.
 7. Screenshot the page at 390 and 1440 in both languages and both themes, with one control
-   moved. A Korean control label that wraps to a second line is a label to shorten.
+   moved. A Korean control label that wraps to a second line is a label to shorten. Look at
+   the canvas too: a frame that is mostly black reads as a broken canvas, so mix two colours
+   instead of fading one to nothing.
 
 Leave `src/lib/live-shader-contract.ts` alone unless the contract itself is changing: the
 Playground's live canvas reads it too, and DESIGN.md restates it.

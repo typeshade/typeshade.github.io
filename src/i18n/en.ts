@@ -282,39 +282,34 @@ export const en = {
   /** The copy button Expressive Code puts on every code block (ec.config.mjs). */
 
   /** The chrome around a live example (src/components/LiveShader.astro). The sample's own
-   *  code is not copy: it stays on the page that shows it. */
+   *  code is not copy: it stays on the page that shows it, and so does its file name. */
   live: {
     file: 'live.shade.ts',
     edit: 'Edit',
     reset: 'Reset',
     editorAria: 'Editable shader source',
-    hint: 'Edit the code and the canvas follows.',
-    compiling: 'Compiling',
     loading: 'Loading the compiler',
-    clean: 'No diagnostics',
     keptFrame: 'The canvas holds the last frame that compiled.',
-    controls: 'Controls',
+    noFrame: 'The canvas could not run this program, so it is holding the last frame that ran.',
     /** Named for the reserved fields this sample declares, so the note describes the file
      *  above it. The list goes last, in code font, so no language has to bend a word around
      *  whichever name lands at the end. */
-    reserved: (fields: string) => `The page fills these every frame, so they carry no control: ${fields}.`,
+    reserved: (fields: string) => `Filled by the page every frame, with no control: ${fields}.`,
     mouseUnits: '`mouse` runs 0 to 1 over the canvas from the bottom left, the space `uv` is in.',
     backend: {
-      neutral: 'The canvas picks a backend when the page loads.',
       webgpu: 'Running on WebGPU.',
       webgl2: `Running on WebGL2, from the emitted ${glsl}.`,
-      none: `This browser has no WebGPU and no WebGL2. The frame above was drawn at build time, and the WGSL and ${glsl} the sample emits are under Emitted output.`,
+      none: `This browser has no WebGPU and no WebGL2, so the frame above was drawn at build time.`,
     },
     output: 'Emitted output',
+    outputNote: 'The whole module the compiler saw. The page added the vertex entry and the `VsOut` struct it returns; the rest is the file above.',
     wgsl: 'WGSL',
     glslVertex: `${glsl} vertex`,
     glslFragment: `${glsl} fragment`,
     uniforms: 'Uniform block',
-    noUniforms: 'This sample binds no uniform block.',
     field: 'Field',
     type: 'Type',
     offset: 'Offset',
-    entries: 'Entry points',
     lineAt: 'line {line}',
     /** The names of a vector control's components, for its accessible name. */
     component: ['x', 'y', 'z', 'w'],
@@ -449,13 +444,13 @@ export const en = {
       p2: 'Running it emits WGSL for both stages. Here is the fragment entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [language guide](guide) covers the rest of the surface.`,
     live: {
-      h: 'Live example',
-      p: 'The file below is compiled in this page. It declares its own uniform block, takes `uv` in 0 to 1 and returns the colour of one pixel; the fullscreen triangle that calls it is supplied by the page. Edit a line and the canvas follows on the next keystroke, and what the compiler emitted for it is under Emitted output.',
-      title: 'Stripes',
-      caption: 'A sine wave across the canvas, from the file above.',
-      speed: 'wave travel per second',
-      bands: 'stripes across the canvas',
-      tint: 'stripe colour',
+      h: 'A sine wave',
+      p: '`sin` turns the x coordinate into a wave, and `time` scrolls it. That is the whole file below, and it runs here: edit a line and the canvas follows on the next keystroke.',
+      title: 'Sine stripes',
+      caption: 'A sine wave across the canvas, mixed between two colours.',
+      bands: 'waves across the canvas',
+      low: 'trough colour',
+      high: 'crest colour',
     },
     status: {
       h: 'Status',
@@ -831,12 +826,12 @@ export const en = {
         matrixP: 'Types such as mat4 represent GPU arithmetic values used for transforms. They are not JavaScript objects.',
         arrays: '5. Arrays',
         arraysP: 'array represents a sequence of GPU values. Combined with a resource element type, it describes the shape of host-provided buffer data.',
-        live: '6. Live example',
-        liveP: 'Every line of the entry below names a GPU type. `vec2` carries the position, `f32` carries the distance and the radius, `vec3` carries the colour. The pad moves the `vec2`, the slider moves the `f32` and the picker writes the three channels of the `vec3`, so each type is the thing under a control.',
+        live: '6. A disc from three types',
+        liveP: 'The entry below names a GPU type on every line: `vec2` for the position, `f32` for the distance and the radius, `vec3` for the colour. Drag inside the square, move the slider, pick a colour.',
         liveTitle: 'Disc',
         liveCaption: 'A disc placed by a vec2, sized by an f32 and coloured by a vec3.',
-        liveCenter: 'position in uv space',
-        liveRadius: 'radius in uv units',
+        liveCenter: 'centre, in uv space',
+        liveRadius: 'radius, in uv units',
         liveTint: 'disc colour',
         next: 'Next: Resources'
       },

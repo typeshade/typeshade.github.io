@@ -7,12 +7,18 @@
 // the platform's text field, so the caret, the selection handles and the keyboard are the
 // ones the reader already knows. A Korean reader types through an input method, and an input
 // method composes into a real text field without help: nothing here writes to the textarea's
-// value, so composition is left alone and only the layer underneath is redrawn.
+// value while it is composing, so composition is left alone and only the layer underneath is
+// redrawn.
 //
-// The alignment rule: the textarea never draws text of its own (the text is transparent, the
-// caret is not), so it has to sit exactly over the highlighted lines. The metrics are
-// measured off the rendered block instead of restated, so Expressive Code's own padding and
-// font stay the single source.
+// The alignment rule. The textarea never draws text of its own (the text is transparent, the
+// caret is not), so it has to sit exactly over the highlighted lines, at every scroll offset.
+// It is therefore placed over the block's non-scrolling wrapper and is the only thing on the
+// page that scrolls: the highlighted layer is translated to follow it. Putting the overlay
+// inside the scroller instead moves it twice, once with the scroller and once with its own
+// content, which pulls the caret away from the glyph by the scroll distance.
+//
+// The metrics are measured off the rendered block, so Expressive Code's own padding and font
+// stay the single source, and they are measured again whenever the box or the fonts change.
 
 import { highlight } from './live-shader-highlight.ts'
 
@@ -23,8 +29,6 @@ export interface LiveEditor {
   focus(index?: number): void
   /** Move the caret to a line and column, both one-based, for a diagnostic a reader clicks. */
   goTo(line: number, character: number): void
-  /** Redo the measurement after the block has changed size. */
-  measure(): void
   destroy(): void
 }
 
@@ -38,9 +42,15 @@ export interface EditorOptions {
 
 const TAB = '  '
 
-/** Put the editor on one Expressive Code block. `pre` is the block's own scroller and `code`
- *  the element holding its lines. */
-export function mountEditor(pre: HTMLElement, code: HTMLElement, source: string, opts: EditorOptions): LiveEditor {
+/** Put the editor on one Expressive Code block. `pre` is the block's scroller, `code` the
+ *  element holding its lines, and `host` the non-scrolling box the overlay sits in. */
+export function mountEditor(
+  host: HTMLElement,
+  pre: HTMLElement,
+  code: HTMLElement,
+  source: string,
+  opts: EditorOptions,
+): LiveEditor {
   const area = document.createElement('textarea')
   area.className = 'live-input'
   area.value = source
@@ -51,17 +61,23 @@ export function mountEditor(pre: HTMLElement, code: HTMLElement, source: string,
   area.setAttribute('aria-label', opts.ariaLabel)
   area.setAttribute('data-live-input', '')
 
-  // The block scrolls through the textarea from here: two scrollers over the same text would
-  // drift apart the moment either one of them moved.
-  const scrolled = pre
-  scrolled.style.overflow = 'hidden'
-  scrolled.style.position = 'relative'
-  scrolled.appendChild(area)
+  // The block stops scrolling and the textarea takes over; the lines are moved to follow it.
+  const preOverflow = pre.style.overflow
+  pre.style.overflow = 'hidden'
+  host.appendChild(area)
+
+  const follow = (): void => {
+    code.style.transform = `translate(${-area.scrollLeft}px, ${-area.scrollTop}px)`
+  }
 
   const measure = (): void => {
+    // The offset of the first rendered line inside the block, which is whatever padding
+    // Expressive Code's stylesheet put there. Measured with the layer at rest.
+    const previous = code.style.transform
+    code.style.transform = ''
     const anchor = code.querySelector<HTMLElement>('.ec-line .code') ?? code
     const style = getComputedStyle(anchor)
-    const preBox = pre.getBoundingClientRect()
+    const hostBox = host.getBoundingClientRect()
     const anchorBox = anchor.getBoundingClientRect()
     area.style.font = style.font
     area.style.fontFamily = style.fontFamily
@@ -69,16 +85,10 @@ export function mountEditor(pre: HTMLElement, code: HTMLElement, source: string,
     area.style.lineHeight = style.lineHeight
     area.style.letterSpacing = style.letterSpacing
     area.style.tabSize = style.tabSize
-    // The offset of the first rendered line inside the block, which is whatever padding
-    // Expressive Code's stylesheet put there.
-    area.style.paddingTop = `${anchorBox.top - preBox.top + pre.scrollTop}px`
-    area.style.paddingLeft = `${anchorBox.left - preBox.left + pre.scrollLeft}px`
-    area.style.height = `${pre.scrollHeight}px`
-  }
-
-  const syncScroll = (): void => {
-    pre.scrollTop = area.scrollTop
-    pre.scrollLeft = area.scrollLeft
+    area.style.paddingTop = `${anchorBox.top - hostBox.top}px`
+    area.style.paddingLeft = `${anchorBox.left - hostBox.left}px`
+    code.style.transform = previous
+    follow()
   }
 
   /** Redraw the layer under the caret, then let the page know. The copy button carries the
@@ -88,33 +98,45 @@ export function mountEditor(pre: HTMLElement, code: HTMLElement, source: string,
     const copy = pre.parentElement?.querySelector<HTMLElement>('.copy button')
     if (copy) copy.dataset.code = area.value
     measure()
-    syncScroll()
     opts.onInput(area.value)
   }
 
+  /** Put text in at the caret without losing the field's own undo history, which assigning
+   *  to `value` throws away. */
+  const insert = (text: string): void => {
+    if (!document.execCommand('insertText', false, text)) {
+      const { selectionStart, selectionEnd, value } = area
+      area.value = value.slice(0, selectionStart) + text + value.slice(selectionEnd)
+      area.selectionStart = area.selectionEnd = selectionStart + text.length
+    }
+  }
+
   const onInput = (): void => paint()
-  const onScroll = (): void => syncScroll()
+  const onScroll = (): void => follow()
   const onCompositionStart = (): void => opts.onComposing(true)
   const onCompositionEnd = (): void => {
     opts.onComposing(false)
     paint()
   }
-  /** Tab indents instead of leaving the editor. Escape puts the tab key back, so a reader on
-   *  a keyboard can always walk past the block. */
+  /** Tab indents. Escape hands the tab key back for one press, so a reader on a keyboard can
+   *  always walk past the block, and Shift+Tab always leaves. */
   let tabEscapes = false
   const onKeyDown = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') {
       tabEscapes = true
       return
     }
-    if (e.key !== 'Tab' || tabEscapes) {
+    if (e.key !== 'Tab') {
+      // A modifier on its own is not the reader giving up on the escape hatch.
+      if (e.key !== 'Shift' && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Meta') tabEscapes = false
+      return
+    }
+    if (tabEscapes || e.shiftKey) {
       tabEscapes = false
       return
     }
     e.preventDefault()
-    const { selectionStart, selectionEnd, value } = area
-    area.value = value.slice(0, selectionStart) + TAB + value.slice(selectionEnd)
-    area.selectionStart = area.selectionEnd = selectionStart + TAB.length
+    insert(TAB)
     paint()
   }
 
@@ -123,6 +145,11 @@ export function mountEditor(pre: HTMLElement, code: HTMLElement, source: string,
   area.addEventListener('keydown', onKeyDown)
   area.addEventListener('compositionstart', onCompositionStart)
   area.addEventListener('compositionend', onCompositionEnd)
+  // The box moves with the window and the metrics move with the fonts, and the overlay has to
+  // be measured again for both.
+  const boxes = new ResizeObserver(() => measure())
+  boxes.observe(host)
+  void document.fonts?.ready.then(() => measure())
   measure()
 
   /** The character offset of a one-based line and column. */
@@ -140,19 +167,19 @@ export function mountEditor(pre: HTMLElement, code: HTMLElement, source: string,
       if (index !== undefined) area.selectionStart = area.selectionEnd = index
     },
     goTo(line, character) {
-      const at = offsetOf(line, character)
       area.focus()
-      area.selectionStart = area.selectionEnd = at
+      area.selectionStart = area.selectionEnd = offsetOf(line, character)
     },
-    measure,
     destroy() {
+      boxes.disconnect()
       area.removeEventListener('input', onInput)
       area.removeEventListener('scroll', onScroll)
       area.removeEventListener('keydown', onKeyDown)
       area.removeEventListener('compositionstart', onCompositionStart)
       area.removeEventListener('compositionend', onCompositionEnd)
       area.remove()
-      scrolled.style.overflow = ''
+      code.style.transform = ''
+      pre.style.overflow = preOverflow
     },
   }
 }

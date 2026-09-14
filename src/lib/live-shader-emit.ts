@@ -12,6 +12,7 @@ import { compile, reflect } from '../../vendor/shader-dsl/src/index.ts'
 import {
   composeSource,
   controlsFor,
+  withUniformBlock,
   isControllable,
   isReserved,
   layoutFor,
@@ -48,10 +49,19 @@ export interface LiveShaderPayload {
  *  each uniform field; a prop for a field the module has no uniform for stops the build. */
 export function liveShader(id: string, title: string, source: string, props: ControlProps = {}): LiveShaderPayload {
   const { text, offset } = composeSource(source)
-  const result = compile(text)
+  // compile() throws on a module the validator rejects instead of reporting it, and the most
+  // common authoring mistake (a path that falls through without a return) is one of those.
+  let result: ReturnType<typeof compile>
+  try {
+    result = compile(text)
+  } catch (error) {
+    throw new Error(
+      `[live-shader] '${id}' does not compile: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
   const errors = result.diagnostics.filter((d) => d.category === 'error')
   if (errors.length > 0) {
-    const lines = errors.map((e) => `  line ${e.line - offset}: ${e.message}`).join('\n')
+    const lines = errors.map((e) => `  line ${Math.max(1, e.line - offset)}: ${e.message}`).join('\n')
     throw new Error(`[live-shader] '${id}' does not compile:\n${lines}`)
   }
   if (!result.wgsl) throw new Error(`[live-shader] '${id}' emitted no WGSL`)
@@ -91,12 +101,22 @@ export function liveShader(id: string, title: string, source: string, props: Con
   }
 
   const controls = controlsFor(layout, props)
+  const instance = layout.instance ?? ''
+  const vertex = withUniformBlock(result.glsl.vertex, layout, instance)
+  const fragment = withUniformBlock(result.glsl.fragment, layout, instance)
+  // A stage that reads the block and still has no declaration for it would not link, and the
+  // page would report a browser with no WebGL2 to a reader who has one.
+  for (const [stage, text2] of [['vertex', vertex], ['fragment', fragment]] as const) {
+    if (layout.size > 0 && new RegExp(`\\b${instance}\\.`).test(text2) && !text2.includes(`uniform ${layout.block}`)) {
+      throw new Error(`[live-shader] '${id}' emits a GLSL ${stage} stage that reads ${instance} and declares no block for it`)
+    }
+  }
   const data: ShaderData = {
     id,
     title,
     wgsl: result.wgsl,
-    vertex: result.glsl.vertex,
-    fragment: result.glsl.fragment,
+    vertex,
+    fragment,
     layout,
     // Every field of a live example is filled through MountOptions.uniformValues, so the
     // build-time control table the front page uses stays empty here.
@@ -113,7 +133,7 @@ export function liveShader(id: string, title: string, source: string, props: Con
     props,
     reserved: layout.fields.filter((f) => isReserved(f.name)).map((f) => f.name),
     wgsl: result.wgsl,
-    glsl: result.glsl,
+    glsl: { vertex, fragment },
     entries: reflection.entries.map((e) => ({ name: e.name, stage: e.stage })),
   }
 }

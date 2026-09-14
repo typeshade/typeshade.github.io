@@ -24,13 +24,19 @@ import { serveDist } from './serve-dist.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
-/** One live example per page, in both languages. */
+/** One live example per page, in both languages, and one of them forced onto the fallback.
+ *  The WebGL2 half is a second emitted program from the same source, and a page that only
+ *  ever ran on WebGPU can ship one that does not link. */
 const ROUTES = [
   { route: '/guide/quick-start/', id: 'quick-start-stripes' },
+  { route: '/guide/quick-start/?forcegl2=1', id: 'quick-start-stripes', backend: 'webgl2' },
   { route: '/ko/guide/language/gpu-types/', id: 'gpu-types-disc' },
 ]
 /** A script larger than this is the compiler; nothing else the site ships comes close. */
 const SMALL_SCRIPT = 200_000
+/** What a page carrying a live example may fetch before the first edit, in total, so a
+ *  compiler split into several smaller chunks cannot slip past the rule above. */
+const INITIAL_BUDGET = 120_000
 const TIMEOUT = Number(process.env.LIVE_TIMEOUT ?? 30_000)
 const GPU_OPTIONAL = process.env.LIVE_GPU_OPTIONAL === '1'
 /** The clock the frames are compared at. Pinning it makes two frames of one program equal. */
@@ -43,7 +49,7 @@ if (!existsSync(dist)) {
 
 const bytesDiffer = (a, b) => a.length !== b.length || !a.equals(b)
 
-async function checkRoute(browser, origin, { route, id }) {
+async function checkRoute(browser, origin, { route, id, backend: expected }) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 1200 } })
   const problems = []
   const pageErrors = []
@@ -84,8 +90,11 @@ async function checkRoute(browser, origin, { route, id }) {
     await page.waitForTimeout(1500)
     const backend = await canvas.getAttribute('data-backend')
     mounted = backend === 'webgpu' || backend === 'webgl2'
+    if (expected && mounted && backend !== expected) {
+      problems.push(`this route asks for ${expected} and drew on ${backend}`)
+    }
     if (!mounted) {
-      const note = (await figure.locator('[data-live-status]').innerText()).trim()
+      const note = (await figure.locator('figcaption').innerText()).trim()
       const still = await figure.locator('.figure-frame img').count()
       if (note.length === 0) problems.push('no backend drew and the fallback note is empty')
       if (still === 0) problems.push('no backend drew and there is no still image under the canvas')
@@ -101,6 +110,9 @@ async function checkRoute(browser, origin, { route, id }) {
     }
     const initial = scripts.reduce((sum, s) => sum + s.length, 0)
     const initialCount = scripts.length
+    if (initial > INITIAL_BUDGET) {
+      problems.push(`the page fetched ${initial} bytes of script before any edit, over the ${INITIAL_BUDGET} byte budget`)
+    }
 
     // 3. The editor opens where the reader reaches for the code, and an edit recompiles.
     await figure.locator('[data-live-code] pre').click()
@@ -171,6 +183,11 @@ async function checkRoute(browser, origin, { route, id }) {
     console.log(`  initial JavaScript: ${initial} bytes over ${initialCount} script(s)`)
     console.log(`  compiler chunk on first edit: ${compiler} bytes`)
     if (mounted) console.log(`  frame: ${framePixels} bytes of PNG per canvas screenshot`)
+  } catch (error) {
+    // A step that timed out says so as this route's problem, with anything the page threw,
+    // which is usually the reason. The other routes still run.
+    problems.push(`${error instanceof Error ? error.message.split('\n')[0] : String(error)}`)
+    if (pageErrors.length > 0) problems.push(`the page threw:\n    ${pageErrors.join('\n    ')}`)
   } finally {
     await page.close()
   }

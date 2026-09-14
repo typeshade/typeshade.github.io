@@ -10,6 +10,7 @@ import {
   isControllable,
   isReserved,
   layoutFor,
+  withUniformBlock,
   RESERVED_UNIFORMS,
   type ControlProps,
   type LiveControl,
@@ -17,13 +18,32 @@ import {
 import type { ShaderData } from '../lib/shader-runtime.ts'
 
 /** One message under the canvas. `line` and `character` are one-based and already moved back
- *  into the reader's own text, so they point at what the editor is showing. */
+ *  into the reader's own text. `located` is false for a message about the whole module, which
+ *  has no line behind it; a page that printed one would send the reader to the wrong place. */
 export interface LiveDiagnostic {
   readonly message: string
   readonly line: number
   readonly character: number
+  readonly located: boolean
   readonly category: 'error' | 'warning' | 'message'
 }
+
+// The compiler at the pinned commit still prints the mirror's own name in a module-level
+// diagnostic ("shader-dsl [SD0020]: ..."), and the site spells it by its release name
+// everywhere else. src/lib/remark-package-name.mjs does the same rename over the guide's
+// markdown; this is the runtime half, for text the build never sees.
+const MIRROR_NAME = /@xgis\/shader-dsl|\bshader-dsl\b/g
+const RELEASE_NAME = 'typeshade'
+const renamed = (message: string): string => message.replace(MIRROR_NAME, RELEASE_NAME)
+
+/** A message with no line behind it. */
+const unlocated = (message: string, category: LiveDiagnostic['category'] = 'error'): LiveDiagnostic => ({
+  message: renamed(message),
+  line: 1,
+  character: 1,
+  located: false,
+  category,
+})
 
 export interface LiveCompileResult {
   readonly diagnostics: readonly LiveDiagnostic[]
@@ -46,47 +66,29 @@ export function compileLive(
   try {
     result = compile(text)
   } catch (error) {
-    return {
-      diagnostics: [
-        {
-          message: error instanceof Error ? error.message : String(error),
-          line: 1,
-          character: 1,
-          category: 'error',
-        },
-      ],
-    }
+    return { diagnostics: [unlocated(error instanceof Error ? error.message : String(error))] }
   }
 
   const diagnostics: LiveDiagnostic[] = result.diagnostics.map((d) => ({
-    message: d.message,
+    message: renamed(d.message),
     line: Math.max(1, d.line - offset),
     character: d.character,
+    // A diagnostic whose line falls inside the prelude belongs to the module and not to a
+    // line the reader can see.
+    located: d.line - offset >= 1,
     category: d.category,
   }))
   const failed = diagnostics.some((d) => d.category === 'error')
   if (failed) return { diagnostics }
   if (!result.wgsl || !result.glsl) {
-    return {
-      diagnostics: [...diagnostics, { message: 'no shader was emitted', line: 1, character: 1, category: 'error' }],
-    }
+    return { diagnostics: [...diagnostics, unlocated('no shader was emitted')] }
   }
 
   let layout
   try {
     layout = layoutFor(id, reflect(result.module))
   } catch (error) {
-    return {
-      diagnostics: [
-        ...diagnostics,
-        {
-          message: error instanceof Error ? error.message : String(error),
-          line: 1,
-          character: 1,
-          category: 'error',
-        },
-      ],
-    }
+    return { diagnostics: [...diagnostics, unlocated(error instanceof Error ? error.message : String(error))] }
   }
 
   // A reserved field the reader has re-typed with the wrong type would be filled with numbers
@@ -96,12 +98,9 @@ export function compileLive(
       return {
         diagnostics: [
           ...diagnostics,
-          {
-            message: `'${field.name}' is filled by the page as ${RESERVED_UNIFORMS[field.name]}, and this declares it as ${field.type}`,
-            line: 1,
-            character: 1,
-            category: 'error',
-          },
+          unlocated(
+            `'${field.name}' is filled by the page as ${RESERVED_UNIFORMS[field.name]}, and this declares it as ${field.type}`,
+          ),
         ],
       }
     }
@@ -112,20 +111,15 @@ export function compileLive(
     id,
     title,
     wgsl: result.wgsl,
-    vertex: result.glsl.vertex,
-    fragment: result.glsl.fragment,
+    vertex: withUniformBlock(result.glsl.vertex, layout, layout.instance ?? ''),
+    fragment: withUniformBlock(result.glsl.fragment, layout, layout.instance ?? ''),
     layout,
     controls: {},
   }
   return {
     diagnostics: [
       ...diagnostics,
-      ...uncontrolled.map((f) => ({
-        message: `'${f.name}: ${f.type}' has no control, so it stays at zero`,
-        line: 1,
-        character: 1,
-        category: 'warning' as const,
-      })),
+      ...uncontrolled.map((f) => unlocated(`'${f.name}: ${f.type}' has no control, so it stays at zero`, 'warning')),
     ],
     data,
     controls: controlsFor(layout, props),

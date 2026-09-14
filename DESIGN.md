@@ -239,12 +239,21 @@ Every other uniform field becomes one control, by its type:
 | --- | --- | --- |
 | `f32` | slider | 0 to 1, step 0.002 |
 | `i32`, `u32` | stepper, or a checkbox with `toggle: true` | 0 to 16, step 1 |
-| `bool` | checkbox | off. WGSL has no `bool` in a uniform block, so a flag a WebGPU device accepts is a `u32` with `toggle: true` |
 | `vec2<f32>` | two-axis pad | 0 to 1 per axis |
 | `vec3<f32>`, `vec4<f32>` | one slider per component, or a colour picker with `color: true` | 0 to 1 per channel |
 
 A field of any other type stops the build, so a page cannot ship a uniform it leaves at zero
-without saying so.
+without saying so. `bool` is one of them: WGSL forbids it in the uniform address space, so a
+flag is a `u32` with `toggle: true`.
+
+One thing the page writes for the compiler. At the pinned commit the GLSL backend works out
+which bindings a stage reaches by walking the function bodies, and for a module built by the
+TypeScript front end that walk finds nothing, so the emitted GLSL reads `u.time` from a `u` it
+never declared and the fallback does not link. The block is written from the reflected layout
+instead (`glslUniformBlock` in the contract), the build refuses a stage that reads the binding
+and declares no block, and `check-live` opens a page with `?forcegl2=1` so the fallback is
+exercised on every run. The front page is unaffected: its examples are built with `fn()` and
+reach the binding the walk expects.
 
 A sample is a whole file, the way a Book of Shaders page shows a whole `.frag` and an MDN
 example shows something that runs: every name in front of the reader is declared in front of
@@ -286,8 +295,9 @@ What the page carries and when:
 - One WebGPU device serves every canvas on the page. Only a canvas in view draws, and a
   hidden tab draws nothing.
 - A compile with an error keeps the last frame that worked and says so under the canvas.
-- Under `prefers-reduced-motion: reduce` the clock is pinned and the canvas still redraws, so
-  a control the reader moves still changes the picture.
+- Under `prefers-reduced-motion: reduce` there is no frame loop at all: the clock is pinned
+  and the canvas draws when a control moves or the box changes size, so a reader who asked for
+  less motion still sees their own change and nothing between them.
 - Without WebGPU and without WebGL2 the canvas stays empty over its build-time still, and the
   note under it says which browser feature is missing.
 
