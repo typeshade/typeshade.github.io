@@ -28,8 +28,10 @@
 //  17. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
 //  18. the compute example is clean, and the store into its writable array reaches the WGSL
 //  19. hover over the entry point's parameter answers with its TypeShade type
-//  20. `vec` offers vec4 in the completion list
-//  21. the URL fragment carries the edited source and the options into a second tab
+//  20. hover over a local bound to a numeric literal answers f32, the type the compiler gave
+//      it, and not the `number` TypeScript infers for it
+//  21. `vec` offers vec4 in the completion list
+//  22. the URL fragment carries the edited source and the options into a second tab
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -568,6 +570,59 @@ async function checkRoute(browser, origin, route) {
           problems.push(`hovering the parameter did not answer with its TypeShade type:\n    ${quickInfo.slice(0, 200)}`)
         }
         await page.keyboard.press('Escape')
+      }
+
+      // ── hover over a local ──────────────────────────────────────────────────────────────
+      // The other half of what the Playground was reported for: `let x = 1.` hovered as plain
+      // `number`. The ambient GPU scalars brand `number` optionally, so TypeScript infers
+      // `number` for a local bound to a numeric literal where the front end lowered an `f32`,
+      // and the editor showed the inference. typeshade/typeshade#51 answers every name the
+      // document declares off the compiler's own symbol table instead, so the local now hovers
+      // as `let k: f32`. The check above asks about a parameter, which carries a written
+      // annotation TypeScript could read on its own. A literal-bound local carries none, so
+      // `f32` here can only have come from the compiler.
+      // Monaco's provider stays registered beside the page's and still stacks its own `number`
+      // answer in the same widget, which is a bug of the page's own and filed as one; what is
+      // read here is the widget a reader sees, and the compiler's line has to be in it.
+      const withLocal = sample
+        .replace('let x = -0.8', 'let k = 1.\n  let x = -0.8')
+        .replace('vec4(x, y, 0., 1.)', 'vec4(x, y, 0., k)')
+      if (!withLocal.includes('let k = 1.') || !withLocal.includes('vec4(x, y, 0., k)')) {
+        problems.push('the sample no longer has the vertex entry this check adds a local to, so hover had no local to ask about')
+      } else {
+        await typeSource(page, withLocal)
+        // The type comes off the front end's own run, so a source it refused would fall back
+        // to TypeScript and hover `number` for a reason that is not the service's fault.
+        const localRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
+        if (localRows.length > 0) {
+          problems.push(`declaring a local reported ${localRows.length} diagnostic(s):\n    ${localRows.join('\n    ')}`)
+        }
+        const hoveredLocal = await page.evaluate(async () => {
+          const editor = window.monaco.editor.getEditors()[0]
+          const model = editor.getModel()
+          const at = model.getLinesContent().findIndex((line) => line.includes('let k = 1.'))
+          if (at < 0) return null
+          const declared = model.getLineContent(at + 1).indexOf('k = 1.')
+          if (declared < 0) return null
+          // On the name itself, where a reader's pointer is. One column further is the space
+          // after it, and the compiler answers a position that lands on whitespace from
+          // TypeScript's quick info, which is the `number` this check exists to refuse. The
+          // parameter above survives that column only because the next character there is `:`.
+          editor.setPosition({ lineNumber: at + 1, column: declared + 1 })
+          editor.focus()
+          await editor.getAction('editor.action.showHover')?.run()
+          return true
+        })
+        if (hoveredLocal === null) problems.push('the editor is not holding the local this check declared')
+        else {
+          await page.waitForSelector('.monaco-hover', { timeout: 4_000 }).catch(() => {})
+          const localInfo = await page.evaluate(() => document.querySelector('.monaco-hover')?.innerText.replace(/\s+/g, ' ').trim() ?? '')
+          if (!localInfo.includes('k: f32')) {
+            problems.push(`hovering a local bound to a numeric literal did not answer with f32:\n    ${localInfo.slice(0, 200)}`)
+          }
+          await page.keyboard.press('Escape')
+        }
+        await typeSource(page, sample)
       }
 
       // ── completion ──────────────────────────────────────────────────────────────────────

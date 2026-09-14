@@ -293,7 +293,7 @@ export const facts = {
 // compared at whatever commit is pinned now, so the pin that changes one stops the build and
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
-const pinned = { commit: '3c0a2d7', examples: 36, bothTargets: 35, testFiles: 146 }
+const pinned = { commit: 'a2240e0', examples: 36, bothTargets: 35, testFiles: 229 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
 if (facts.bothTargets !== pinned.bothTargets) drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`)
