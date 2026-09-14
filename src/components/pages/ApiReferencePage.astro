@@ -11,7 +11,7 @@ import ApiType from '../ApiType.astro'
 import Rich from '../Rich.astro'
 import { PACKAGE_NAME } from '../../lib/api.ts'
 import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts'
-import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { apiCategoryCopy, assertApiCategories, copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts'
 import { apiSiblings } from '../../lib/api-nav.ts'
 import { facts } from '../../lib/examples.ts'
 import { links } from '../../lib/links.ts'
@@ -54,7 +54,7 @@ const title = a.pageTitle(heading, a.kinds[entry.kind], category.name)
 // falling to the word-boundary cut on almost every page, which a flat 100 did (the SEO review,
 // onpage, Korean description cutoff and mid-sentence cuts).
 const META_MIN = 70
-const META_MAX = locale === 'ko' ? 140 : 160
+const META_MAX = localeSettings[locale].metaDescriptionMax
 const composed = a.pageDescription(entry.name, a.kinds[entry.kind], category.name, entry.summary)
 const filled = composed.length < META_MIN ? `${composed} ${category.summary}` : composed
 // A cut lands at the end of a sentence (. ! ?) or a clause (, ; :) when one leaves enough

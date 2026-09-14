@@ -10,6 +10,25 @@ export const locales = ['en', 'ko'] as const
 export type Locale = (typeof locales)[number]
 export const defaultLocale: Locale = 'en'
 
+/** Locale behaviour that is not copy: the things a page needs to know about a locale beyond
+ *  its strings, so no file but this one names a locale literal to decide how it behaves. */
+export interface LocaleSettings {
+  /** og:locale and og:locale:alternate. */
+  readonly ogLocale: string
+  /** Extra fonts this locale's pages preload, beyond the Latin font every page preloads. */
+  readonly fontPreloads: readonly string[]
+  /** The meta description's character budget (src/components/pages/ApiReferencePage.astro). */
+  readonly metaDescriptionMax: number
+  /** The content collection (src/content.config.ts) this locale's guide translation lives in,
+   *  when it has one. A locale with no collection shows the English guide body. */
+  readonly guideCollection?: 'guideKo'
+}
+
+export const localeSettings: Record<Locale, LocaleSettings> = {
+  en: { ogLocale: 'en_US', fontPreloads: [], metaDescriptionMax: 160 },
+  ko: { ogLocale: 'ko_KR', fontPreloads: ['/fonts/ibm-plex-sans-kr-400.woff2'], metaDescriptionMax: 140, guideCollection: 'guideKo' },
+}
+
 export type Copy = typeof en
 
 export const copies: Record<Locale, Copy> = { en, ko }
@@ -18,6 +37,9 @@ export const copyFor = (locale: Locale): Copy => copies[locale]
 
 /** The path of a locale-neutral route ('/', '/checks/') in a given locale. */
 export function localePath(locale: Locale, path: string): string {
+  // A URL with a scheme is not a page of this site (the examples directory on GitHub, say); it
+  // has no locale to carry.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return path
   // Pages end in a slash, which is the URL GitHub Pages serves them at; files keep their name.
   const p = path.endsWith('/') || /\.[a-z0-9]+$/i.test(path) ? path : `${path}/`
   return locale === defaultLocale ? p : `/${locale}${p}`

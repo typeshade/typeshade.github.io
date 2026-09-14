@@ -1,62 +1,13 @@
 ---
 import Docs from '../../layouts/Docs.astro'
 import TypeShadeCode from '../TypeShadeCode.astro'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import Rich from '../Rich.astro'
-import { type Locale } from '../../i18n/index.ts'
-import { links } from '../../lib/links.ts'
+import { editCopy, links } from '../../lib/links.ts'
 
 interface Props { locale: Locale }
 const { locale } = Astro.props
-const ko = locale === 'ko'
-const content = ko ? {
-  title: 'TypeShade 언어 가이드',
-  description: 'TypeScript 개발자가 TypeShade의 문법과 GPU 의미론을 예제와 함께 단계적으로 배우고, JavaScript와 달라지는 실행 규칙까지 이해하는 언어 가이드입니다.',
-  h1: 'TypeShade 언어 가이드',
-  intro: 'TypeShade를 문법 목록으로 외우기보다, 이미 알고 있는 TypeScript 개념에서 출발해 GPU에서 그 개념이 어떻게 달라지는지 이해하세요. 각 항목은 문법, 의미, 작은 예제, 실제 shader에서의 사용 순서로 읽는 것을 권장합니다.',
-  boundaryH: '1. 먼저 `use typeshade`를 이해하기',
-  boundaryP: '`"use typeshade"`는 단순한 문자열이 아니라 파일의 언어 경계를 선언합니다. 이 파일에서는 TypeScript의 익숙한 작성 표면을 사용하면서도 TypeShade의 타입, resource, stage, builtin 규칙을 적용합니다.',
-  syntaxH: '2. TypeScript 문법은 출발점입니다',
-  syntaxP: '변수, 함수, type alias, class, 조건문, 반복문 같은 표면은 TypeScript 개발자에게 익숙합니다. 그러나 shader는 JavaScript 프로그램처럼 실행되지 않습니다. 컴파일러가 GPU 코드로 내릴 수 있는 값과 연산만 TypeShade 프로그램의 의미를 가집니다.',
-  gpuH: '3. GPU 개념은 소스에 드러납니다',
-  gpuP: 'TypeShade의 중요한 차이는 GPU 인터페이스를 숨기지 않는다는 점입니다. resource는 `declare`로, stage는 decorator가 붙은 top-level function으로, builtin 입력은 `@builtin(...)` parameter로 표현합니다.',
-  functionH: '4. 함수는 값의 흐름을 설명합니다',
-  functionP: 'TypeScript에서 parameter와 return type이 함수의 계약을 설명하듯 TypeShade에서도 함수 시그니처가 값의 흐름을 설명합니다. 여기에 stage와 builtin이라는 shader-specific 의미가 추가됩니다.',
-  resourceH: '5. Resource는 호스트와의 경계입니다',
-  resourceP: '`uniform<T>`와 `storage<T>`는 JavaScript 객체가 아니라 호스트가 제공하는 GPU resource입니다. `declare`는 shader가 그 값을 생성하지 않는다는 사실을 코드에 남깁니다.',
-  stageH: '6. Entry function은 pipeline의 시작점입니다',
-  stageP: '`@vertex`, `@fragment`, `@compute`는 함수가 어느 shader stage의 entry인지 선언합니다. builtin은 자동으로 생기는 전역 변수가 아니라 entry parameter로 받아야 합니다.',
-  completeH: '7. 하나의 shader로 합쳐 보기',
-  completeP: '아래 코드를 한 줄씩 읽어 보세요. language directive에서 시작해 GPU struct, resource, compute stage, builtin parameter가 하나의 프로그램 계약으로 연결됩니다.',
-  tsH: '8. TypeScript에서 가져온 것과 바뀐 것',
-  refsH: '9. 다음에 읽을 자료',
-  refsP: 'TypeShade의 개념을 처음 배울 때는 TypeScript의 타입과 함수 문서를 함께 읽고, JavaScript의 실행 모델을 확인한 뒤 GPU 개념으로 넘어가면 이해가 빠릅니다.',
-  nextH: '10. 학습 순서',
-  nextP: 'Quick start에서 실행 가능한 첫 파일을 만든 뒤 Types → Functions → Control flow → GPU types → Resources → Shader stages 순서로 확장하세요.',
-} : {
-  title: 'TypeShade language guide',
-  description: 'A progressive guide to TypeShade syntax and GPU semantics for TypeScript developers, with examples and concept mapping.',
-  h1: 'TypeShade language guide',
-  intro: 'Do not learn TypeShade as a list of syntax forms. Start from TypeScript concepts you already know, then learn what changes when the same idea must execute on a GPU. Each topic moves from syntax to meaning, a small example, and a real shader use.',
-  boundaryH: '1. Start with `use typeshade`',
-  boundaryP: '`"use typeshade"` is a language boundary, not just a string literal. Inside the file, TypeScript-like authoring is combined with TypeShade rules for types, resources, stages and builtin inputs.',
-  syntaxH: '2. TypeScript syntax is the starting point',
-  syntaxP: 'Variables, functions, type aliases, classes, conditionals and loops provide a familiar authoring surface. A shader does not execute like a JavaScript program, though. A construct has TypeShade meaning only when the compiler can lower its values and operations to GPU code.',
-  gpuH: '3. GPU concepts stay visible in the source',
-  gpuP: 'TypeShade makes the GPU interface explicit. Resources use `declare`, stages use decorated top-level functions, and builtin inputs are declared as `@builtin(...)` parameters.',
-  functionH: '4. Functions describe value flow',
-  functionP: 'As in TypeScript, parameters and return types describe a function contract. TypeShade adds shader-specific meaning through stages and builtin inputs.',
-  resourceH: '5. Resources form the host boundary',
-  resourceP: '`uniform<T>` and `storage<T>` are GPU resources supplied by the host, not JavaScript objects created by the shader. `declare` records that ownership boundary in source.',
-  stageH: '6. Entry functions start a pipeline stage',
-  stageP: '`@vertex`, `@fragment` and `@compute` declare which shader stage owns an entry function. Builtins are explicit parameters instead of automatically injected globals.',
-  completeH: '7. Put the pieces together',
-  completeP: 'Read the following example from top to bottom. The language directive, GPU struct, resources, compute stage and builtin parameter form one explicit program contract.',
-  tsH: '8. What TypeScript gives you, and what changes',
-  refsH: '9. Further reading',
-  refsP: 'When learning a TypeShade concept, read the matching TypeScript type or function documentation, check the JavaScript execution model, and then connect it to the GPU concept.',
-  nextH: '10. Learning path',
-  nextP: 'Build a first file in Quick start, then expand through Types → Functions → Control flow → GPU types → Resources → Shader stages.',
-}
+const content = copyFor(locale).language.overview
 const headings = [
   ['boundary', content.boundaryH], ['syntax', content.syntaxH], ['gpu', content.gpuH], ['functions', content.functionH],
   ['resources', content.resourceH], ['stages', content.stageH], ['complete', content.completeH], ['typescript', content.tsH],
@@ -64,38 +15,35 @@ const headings = [
 ].map(([slug, text]) => ({ depth: 2, slug, text: text.replace(/`/g, '') }))
 ---
 
-<Docs locale={locale} path="/guide/language/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/components/pages/LanguagePage.astro">
+<Docs locale={locale} path="/guide/language/" title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'language')}>
   <h1>{content.h1}</h1>
   <p>{content.intro}</p>
 
   <h2 id="boundary"><Rich text={content.boundaryH} locale={locale} /></h2>
   <p><Rich text={content.boundaryP} locale={locale} /></p>
   <TypeShadeCode code={'"use typeshade"'} lang="ts" />
-  <p>{ko ? '파일의 첫 directive를 보면 이 코드가 일반 TypeScript 모듈과 같은 방식으로 해석되지 않는다는 것을 알 수 있습니다.' : 'The first directive tells you that this file is not interpreted as an ordinary TypeScript module.'}</p>
+  <p>{content.boundaryNote}</p>
 
   <h2 id="syntax">{content.syntaxH}</h2>
   <p>{content.syntaxP}</p>
-  <table><thead><tr><th>{ko ? 'TypeScript 개념' : 'TypeScript concept'}</th><th>TypeShade</th><th>{ko ? '달라지는 의미' : 'What changes'}</th></tr></thead><tbody>
-    <tr><td data-label={ko ? 'TypeScript 개념' : 'TypeScript concept'}>function</td><td data-label="TypeShade">helper / entry</td><td data-label={ko ? '달라지는 의미' : 'What changes'}>{ko ? 'GPU에서 실행 가능한 함수가 됩니다.' : 'The body must be GPU-lowerable.'}</td></tr>
-    <tr><td data-label={ko ? 'TypeScript 개념' : 'TypeScript concept'}>type</td><td data-label="TypeShade">GPU value shape</td><td data-label={ko ? '달라지는 의미' : 'What changes'}>{ko ? '허용되는 GPU 값과 layout을 기준으로 검사합니다.' : 'The shape is checked against GPU value semantics.'}</td></tr>
-    <tr><td data-label={ko ? 'TypeScript 개념' : 'TypeScript concept'}>class</td><td data-label="TypeShade">GPU struct</td><td data-label={ko ? '달라지는 의미' : 'What changes'}>{ko ? 'runtime object가 아니라 데이터 layout을 표현합니다.' : 'It describes data layout, not a runtime object.'}</td></tr>
-    <tr><td data-label={ko ? 'TypeScript 개념' : 'TypeScript concept'}>if / for</td><td data-label="TypeShade">GPU control flow</td><td data-label={ko ? '달라지는 의미' : 'What changes'}>{ko ? 'JavaScript runtime 전체가 아니라 컴파일 가능한 흐름입니다.' : 'The flow must compile to GPU execution.'}</td></tr>
+  <table><thead><tr><th>{content.syntaxTableHeader1}</th><th>TypeShade</th><th>{content.syntaxTableHeader3}</th></tr></thead><tbody>
+    {content.syntaxTableRows.map(([concept, typeshade, changes]) => <tr><td data-label={content.syntaxTableHeader1}>{concept}</td><td data-label="TypeShade">{typeshade}</td><td data-label={content.syntaxTableHeader3}>{changes}</td></tr>)}
   </tbody></table>
 
   <h2 id="gpu">{content.gpuH}</h2>
   <p><Rich text={content.gpuP} locale={locale} /></p>
   <TypeShadeCode code={'declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}'} lang="ts" title="compute.ts" />
-  <p><Rich text={ko ? '여기서 `camera`와 `pixels`는 shader가 생성하지 않습니다. `gid` 역시 전역 변수로 주입되지 않고 함수 입력으로 선언됩니다.' : 'The shader does not create `camera` or `pixels`. `gid` is not injected as a global either; it is declared as an input to the function.'} locale={locale} /></p>
+  <p><Rich text={content.gpuNote} locale={locale} /></p>
 
   <h2 id="functions">{content.functionH}</h2>
   <p>{content.functionP}</p>
   <TypeShadeCode code={'function addBias(value: f32): f32 {\n  return value + 0.5\n}\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = addBias(camera.pos.x)\n}'} lang="ts" title="helper + entry" />
-  <p><Rich text={ko ? '`addBias`는 재사용 가능한 helper이고 `paint`는 compute entry입니다. 같은 함수 문법을 사용하지만 pipeline에서의 역할은 다릅니다.' : '`addBias` is a reusable helper; `paint` is a compute entry. They share function syntax but have different roles in the pipeline.'} locale={locale} /></p>
+  <p><Rich text={content.functionNote} locale={locale} /></p>
 
   <h2 id="resources">{content.resourceH}</h2>
   <p><Rich text={content.resourceP} locale={locale} /></p>
   <TypeShadeCode code={'declare const camera: uniform<Camera>\ndeclare const source: storage<f32>\ndeclare let pixels: storage<f32>'} lang="ts" title="resources" />
-  <p><Rich text={ko ? '`const`와 `let`은 여기서 단순한 변수 스타일이 아니라 resource 접근 모드와 연결됩니다.' : '`const` and `let` are not just local-variable style here; they participate in the resource access model.'} locale={locale} /></p>
+  <p><Rich text={content.resourceNote} locale={locale} /></p>
 
   <h2 id="stages">{content.stageH}</h2>
   <p><Rich text={content.stageP} locale={locale} /></p>
@@ -112,7 +60,7 @@ const headings = [
     <tr><td data-label="TypeScript">class</td><td data-label="TypeShade">GPU struct and field metadata.</td></tr>
     <tr><td data-label="TypeScript">number</td><td data-label="TypeShade">Use explicit GPU numeric types such as <code>f32</code>, <code>i32</code>, <code>u32</code>.</td></tr>
   </tbody></table>
-  <p>{ko ? '즉 TypeShade는 TypeScript 문법을 복제하는 언어가 아니라 TypeScript의 authoring 경험을 GPU 언어의 의미론에 연결하는 언어입니다.' : 'TypeShade is therefore not a copy of TypeScript syntax. It connects the TypeScript authoring experience to a GPU language model.'}</p>
+  <p>{content.tsNote}</p>
 
   <h2 id="references">{content.refsH}</h2>
   <p>{content.refsP}</p>
@@ -124,5 +72,5 @@ const headings = [
   </ul>
 
   <h2 id="next">{content.nextH}</h2>
-  <p>{content.nextP} <a href={ko ? '/ko/guide/quick-start/' : links.quickStart.href}>{ko ? 'Quick start' : 'Quick start'}</a></p>
+  <p>{content.nextP} <a href={localePath(locale, links.quickStart.href)}>{content.nextLink}</a></p>
 </Docs>

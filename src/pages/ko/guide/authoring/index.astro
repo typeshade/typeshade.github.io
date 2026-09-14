@@ -1,3 +1,5 @@
 ---
-return Astro.redirect('/ko/guide/internals/')
+import { localePath } from '../../../../i18n/index.ts'
+import { links } from '../../../../lib/links.ts'
+return Astro.redirect(localePath('ko', links.internals.href))
 ---
