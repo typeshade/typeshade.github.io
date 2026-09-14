@@ -19,8 +19,6 @@
   --color-surface-3: #e4e4df;
   --color-accent: #3178c6;
   --color-diag: #b3261e;
-  /* The edge shadow that shows a table has more of itself to one side. */
-  --color-shade: rgb(0 0 0 / 0.2);
 
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -73,7 +71,6 @@
     --color-text-3: #8f8f8f;
     --color-accent: #7ab8f5;
     --color-diag: #ff8a80;
-    --color-shade: rgb(0 0 0 / 0.55);
 }
 :root[data-theme='light'] { color-scheme: light }
 @media (prefers-color-scheme: dark) {
@@ -89,7 +86,6 @@
     --color-text-3: #8f8f8f;
     --color-accent: #7ab8f5;
     --color-diag: #ff8a80;
-    --color-shade: rgb(0 0 0 / 0.55);
   }
 }
 
@@ -563,24 +559,10 @@ body > main { flex: 1 }
 
 /* The rendered guide: tables scroll inside themselves, quotes get a rule, the contents list
    sits above the document's own headings */
-/* A table wider than the column scrolls inside itself. The two covers scroll with the
-   content and the two shadows stay at the edges, so a shadow shows on the side that still
-   has table left, and neither shows when the whole table fits. Each shadow is a linear band
-   the full height of the table, which reads at the same strength whatever the table's
-   height, unlike an ellipse that would fade out before a tall table's lower rows. */
 .doc table {
   display: block; overflow-x: auto; margin-block-start: 18px; border-collapse: collapse;
   font-size: var(--text-meta); line-height: var(--text-meta--line-height);
   background-color: var(--color-ground);
-  background-image:
-    linear-gradient(to right, var(--color-ground), transparent),
-    linear-gradient(to left, var(--color-ground), transparent),
-    linear-gradient(to right, var(--color-shade), transparent),
-    linear-gradient(to left, var(--color-shade), transparent);
-  background-position: 0 0, 100% 0, 0 0, 100% 0;
-  background-size: 28px 100%, 28px 100%, 14px 100%, 14px 100%;
-  background-repeat: no-repeat;
-  background-attachment: local, local, scroll, scroll;
   scrollbar-width: thin;
   scrollbar-color: var(--color-line-2) transparent;
 }
@@ -597,7 +579,7 @@ body > main { flex: 1 }
    own targets table keep their own, purpose-built mobile layout instead. */
 @media (max-width: 44.999rem) {
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) {
-    display: block; overflow-x: visible; background-image: none;
+    display: block; overflow-x: visible;
   }
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) tbody { display: block }
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) thead { display: none }
@@ -622,26 +604,6 @@ body > main { flex: 1 }
 .doc .expressive-code { margin-block-start: 18px }
 .figure .expressive-code { margin-block-start: 0 }
 .expressive-code pre[tabindex]:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--ring) }
-/* A code frame wider than itself scrolls inside its own pre (Expressive Code's own
-   overflow-x), with an overlay scrollbar that leaves no mark at rest: the same two-cover,
-   two-shadow trick as .doc table, so a shadow shows on the side that still has code, and
-   neither shows once the pre is scrolled to that edge or never overflowed at all. Each
-   shadow is a linear band the full height of the pre, which reads at the same strength
-   whatever the pre's height. The !important pins are needed because Expressive Code's own
-   stylesheet sets `background` (a shorthand, so it touches every property below) on this
-   exact selector, and that stylesheet loads after this one: on a tied specificity, the
-   later declaration wins. */
-.expressive-code .frame pre {
-  background-image:
-    linear-gradient(to right, var(--code-background), transparent),
-    linear-gradient(to left, var(--code-background), transparent),
-    linear-gradient(to right, var(--color-shade), transparent),
-    linear-gradient(to left, var(--color-shade), transparent) !important;
-  background-position: 0 0, 100% 0, 0 0, 100% 0 !important;
-  background-size: 28px 100%, 28px 100%, 14px 100%, 14px 100% !important;
-  background-repeat: no-repeat !important;
-  background-attachment: local, local, scroll, scroll !important;
-}
 /* Without hover the copy button stays on screen, so a code frame opens with an empty band
    and the first line starts below the button instead of under it. The button sits at the
    same height inside the code area in every non-terminal frame, titled or not, because the
