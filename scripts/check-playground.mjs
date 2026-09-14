@@ -16,11 +16,8 @@
 //   PLAYGROUND_MONACO_VIA_NODE=1  Node fetches the exact URLs the page asks the CDN for and
 //                                 hands them back, for a sandbox whose browser has no route
 //                                 out while Node has one. A wrong URL still fails, since it
-//                                 is the page's own request that is fetched. Interception
-//                                 reaches the page and misses a worker's own importScripts,
-//                                 so Monaco's TypeScript worker stays down under it and the
-//                                 error it raises is reported without failing the run. Check
-//                                 3 holds either way: it reads the setting, not the worker.
+//                                 is the page's own request that is fetched, a worker's own
+//                                 importScripts included.
 //   PLAYGROUND_CDN_OPTIONAL=1     a CDN that neither can reach passes with a warning.
 //
 // Run: bun run check:playground (after a build, which writes dist/)
@@ -38,8 +35,6 @@ const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000)
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1'
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
 const SETTLE = Number(process.env.PLAYGROUND_SETTLE ?? 3_000)
-// The one error PLAYGROUND_MONACO_VIA_NODE causes on its own; see the note at the top.
-const WORKER_IMPORT_FAILURE = /importScripts|\[object ErrorEvent\]/
 
 if (!existsSync(dist)) {
   console.error('[playground] dist/ does not exist. Run `bun run build` first.')
@@ -122,9 +117,7 @@ async function checkRoute(browser, origin, route) {
       console.log(`  WGSL: ${output.split('\n').length} lines, ${output.length} characters`)
     }
 
-    const workerErrors = VIA_NODE ? pageErrors.filter((m) => WORKER_IMPORT_FAILURE.test(m)) : []
-    const realErrors = pageErrors.filter((m) => !workerErrors.includes(m))
-    if (workerErrors.length > 0) console.log(`  note: ${workerErrors.length} worker error(s) the Node fetch cannot serve, ignored: ${workerErrors[0].slice(0, 90)}`)
+    const realErrors = pageErrors
     if (realErrors.length > 0) problems.push(`the page threw ${realErrors.length} uncaught error(s):\n    ${realErrors.join('\n    ')}`)
 
     // A failure that is only the CDN leaves the page's own script clean.

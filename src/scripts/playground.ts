@@ -68,15 +68,24 @@ const toDisplayPosition = (position: TypeshadePosition): string => `${position.l
 // `/editor/editor.main.js` onto it, and a trailing slash would make that a doubled separator
 // the CDN answers with a 400.
 const MONACO_VERSION = '0.52.2'
-const MONACO_VS = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min/vs`
+const MONACO_MIN = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min`
+const MONACO_VS = `${MONACO_MIN}/vs`
 
-function monacoWorkerUrl(label: string): string {
-  const worker = label === 'typescript' || label === 'javascript' ? 'language/typescript/tsWorker.js' : 'base/worker/workerMain.js'
+function monacoWorkerUrl(_label: string): string {
   // A worker script fetched straight from the CDN is cross-origin, so each worker is a small
-  // same-origin data: module that points Monaco's own baseUrl back at the CDN.
+  // same-origin shim that names Monaco's own baseUrl and pulls the real worker in from there.
+  //
+  // Every label loads the same bootstrap. workerMain.js carries the AMD loader and reads the
+  // module to run from the message Monaco sends it, so it serves the TypeScript worker and
+  // the plain editor worker alike. Importing language/typescript/tsWorker.js directly, as
+  // this did, hands the worker an AMD module with no loader under it, and the browser reports
+  // that as the script failing to load; the CDN serves that file, so it read as a network
+  // problem and was not one.
+  //
+  // baseUrl is the directory above vs, since the paths workerMain.js resolves start with vs/.
   const source =
-    `self.MonacoEnvironment={baseUrl:${JSON.stringify(`${MONACO_VS}/`)}};` +
-    `importScripts(${JSON.stringify(`${MONACO_VS}/${worker}`)});`
+    `self.MonacoEnvironment={baseUrl:${JSON.stringify(`${MONACO_MIN}/`)}};` +
+    `importScripts(${JSON.stringify(`${MONACO_VS}/base/worker/workerMain.js`)});`
   return `data:text/javascript;charset=utf-8,${encodeURIComponent(source)}`
 }
 
