@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 
 /** One still per mount, with the page it is captured from. A mount forced onto WebGL2 gets
- *  its own file, so the image under it is a frame that backend drew. */
+ * its own file, so the image under it is a frame that backend drew. */
 export const STILLS = [
   { id: 'metaballs', example: 'metaballs', page: '/' },
   { id: 'gradient', example: 'gradient', page: '/guide/checks/', backend: 'webgpu' },
@@ -16,9 +16,7 @@ export const STILLS = [
 
 export const ARTIFACTS = [
   { file: 'og.png', env: 'OG_REBASELINE', regenerate: 'bun run capture:og' },
-  { file: 'favicon.ico', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
-  { file: 'apple-touch-icon.png', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
-  { file: 'mask-icon.svg', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
+  { file: 'favicon.svg', env: 'ICONS_REBASELINE', regenerate: 'bun run build:icons' },
   ...STILLS.map(({ id }) => ({
     file: `stills/${id}.webp`,
     env: 'STILLS_REBASELINE',
