@@ -6,6 +6,7 @@
 import {
   TypeshadeLanguageService,
   compile,
+  compileModule,
   compileTsSource,
   emitGlslStages,
   emitModule,
@@ -74,6 +75,10 @@ interface PlaygroundCopy {
   readonly noEntryPoints: string;
   readonly requiredFeatures: string;
   readonly cpuFailed: string;
+  readonly canvas: string;
+  readonly draw: string;
+  readonly canvasIdle: string;
+  readonly canvasNeedsVertex: string;
   readonly args: string;
   readonly argsInvalid: string;
   readonly cpuNoResources: string;
@@ -105,6 +110,9 @@ interface ReflectedField {
 interface ReflectedEntry {
   readonly name: string;
   readonly stage: string;
+  /** The DECLARED parameter types, one per parameter. A struct parameter is one entry here
+   *  and several in `io.inputs`, which is what `entryArguments` reconciles. */
+  readonly inputs?: readonly string[];
   readonly io?: { readonly inputs?: readonly ReflectedField[]; readonly outputs?: readonly ReflectedField[]; };
 }
 
@@ -117,6 +125,27 @@ function zeroFor(type: string | undefined): { ok: true; value: unknown; } | { ok
   const vec = /^vec([234])</.exec(type);
   if (vec) return { ok: true, value: Array.from({ length: Number(vec[1]) }, () => 0) };
   return { ok: false };
+}
+
+/** The arguments the lowered entry function takes, which is not one per reflected input: a
+ *  struct parameter is declared once and reflected as its fields. Handing the flattened list
+ *  over leaves the struct's own fields undefined, and every component the entry computes from
+ *  them comes back NaN. That reads like a shader returning nothing, when what is wrong is the
+ *  call. `valueAt` is asked for the flattened values in order. */
+function entryArguments(
+  entry: ReflectedEntry,
+  structs: readonly { readonly name: string; readonly fields: readonly { readonly name: string; }[]; }[],
+  valueAt: (index: number) => unknown,
+): unknown[] {
+  let next = 0;
+  return (entry.inputs ?? []).map((key) => {
+    const named = /^struct:(.+)$/.exec(key);
+    if (!named) return valueAt(next++);
+    const declared = structs.find((candidate) => candidate.name === named[1]);
+    const built: Record<string, unknown> = {};
+    for (const field of declared?.fields ?? []) built[field.name] = valueAt(next++);
+    return built;
+  });
 }
 
 /** How the zero of a type reads in an argument field, and how what is typed back reads as a
@@ -446,6 +475,9 @@ function mount(root: HTMLElement): void {
   const precisionPicker = root.querySelector('[data-opt-precision]');
   const minifyToggle = root.querySelector('[data-opt-minify]');
   const levelNote = root.querySelector('[data-level-note]');
+  const canvas = root.querySelector('[data-canvas]');
+  const canvasNote = root.querySelector('[data-canvas-note]');
+  const drawCpu = root.querySelector('[data-draw-cpu]');
   if (
     !(examplePicker instanceof HTMLSelectElement) ||
     !(exampleNote instanceof HTMLElement) ||
@@ -491,6 +523,14 @@ function mount(root: HTMLElement): void {
     if (!(reflectionPane instanceof HTMLElement)) return;
     reflectionPane.textContent = '';
     if (runCpu instanceof HTMLButtonElement) runCpu.disabled = entries.length === 0;
+    if (drawCpu instanceof HTMLButtonElement) {
+      const drawable =
+        entries.some((entry) => entry.stage === 'vertex' && (entry.io?.inputs ?? []).some((f) => f.builtin === 'vertex_index')) &&
+        entries.some((entry) => entry.stage === 'fragment');
+      drawCpu.disabled = !drawable;
+      if (canvasNote instanceof HTMLElement) canvasNote.textContent = drawable ? copy.canvasIdle : copy.canvasNeedsVertex;
+      if (canvas instanceof HTMLCanvasElement) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
     const entryGroup = el('div', 'group');
     entryGroup.append(el('p', 'group-title', copy.entryPoints));
@@ -599,7 +639,7 @@ function mount(root: HTMLElement): void {
         continue;
       }
       try {
-        const value = compiled.eval(entry.name, args);
+        const value = compiled.eval(entry.name, entryArguments(entry, compiled.module.structs, (i) => args[i]));
         const shownArgs = inputs.map((f, i) => `${f.name ?? `arg${i}`} = ${formatValue(args[i])}`).join(', ');
         target.textContent = shownArgs ? `${formatValue(value)}   (${shownArgs})` : formatValue(value);
         target.className = 'io-value';
@@ -620,6 +660,102 @@ function mount(root: HTMLElement): void {
   /** Puts the selected target in the output pane, plain first and coloured once Monaco has
    *  tokenised it. The plain text lands synchronously, so the pane reads correctly to a screen
    *  reader and to anything measuring it even when the colouring is slow or unavailable. */
+  /** Draws the module the way the pipeline would, with the CPU oracle standing in for both
+   *  stages: the vertex entry runs for indices 0, 1 and 2, its clip positions become a
+   *  triangle in pixels, and every pixel the triangle covers runs the fragment entry once,
+   *  with `@builtin(position)` set to that pixel's centre and every `@location` varying
+   *  interpolated across the three vertices. Nothing here is a stand-in for a varying: the
+   *  values are the ones the vertex entry returned.
+   *
+   *  `compiled.eval` recompiles the module on every call, which at one call per pixel is
+   *  seconds of work, so the module is compiled once here and its functions called directly. */
+  const drawOnCpu = (): void => {
+    if (!(canvas instanceof HTMLCanvasElement) || !(canvasNote instanceof HTMLElement)) return;
+    const context = canvas.getContext('2d');
+    const vertexEntry = entries.find((entry) => entry.stage === 'vertex');
+    const fragmentEntry = entries.find((entry) => entry.stage === 'fragment');
+    const indexField = vertexEntry?.io?.inputs?.find((field) => field.builtin === 'vertex_index');
+    const positionOut = vertexEntry?.io?.outputs?.find((field) => field.builtin === 'position');
+    if (!compiled || !context || !vertexEntry || !fragmentEntry || !indexField || !positionOut?.name) {
+      canvasNote.textContent = copy.canvasNeedsVertex;
+      return;
+    }
+    const width = canvas.width;
+    const height = canvas.height;
+    context.clearRect(0, 0, width, height);
+    const started = performance.now();
+    try {
+      const cpu = compileModule(compiled.module, { gpuStubs: true });
+      const structs = compiled.module.structs;
+      const vertexFlat = vertexEntry.io?.inputs ?? [];
+      // The three corners, from the entry itself.
+      const corners = [0, 1, 2].map((index) =>
+        cpu.fns[vertexEntry.name](
+          ...(entryArguments(vertexEntry, structs, (at) => {
+            const field = vertexFlat[at];
+            if (field === indexField) return index;
+            const zero = zeroFor(field?.type);
+            return zero.ok ? zero.value : 0;
+          }) as never[]),
+        ) as Record<string, unknown>,
+      );
+      const clip = corners.map((corner) => corner[positionOut.name as string] as number[]);
+      // Clip space to pixels: divide by w, then the viewport transform, which flips y.
+      const screen = clip.map(([x, y, , w]) => [((x / w) * 0.5 + 0.5) * width, (1 - ((y / w) * 0.5 + 0.5)) * height]);
+      const [a, b, c] = screen;
+      const area = (b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1]);
+      if (!Number.isFinite(area) || area === 0) {
+        canvasNote.textContent = copy.canvasNeedsVertex;
+        return;
+      }
+      const fragmentFlat = fragmentEntry.io?.inputs ?? [];
+      const vertexOuts = vertexEntry.io?.outputs ?? [];
+      const colourField = fragmentEntry.io?.outputs?.[0]?.name;
+      const image = context.createImageData(width, height);
+      const pixels = image.data;
+      let covered = 0;
+      for (let py = 0; py < height; py += 1) {
+        for (let px = 0; px < width; px += 1) {
+          const x = px + 0.5;
+          const y = py + 0.5;
+          const w0 = ((b[0] - x) * (c[1] - y) - (c[0] - x) * (b[1] - y)) / area;
+          const w1 = ((c[0] - x) * (a[1] - y) - (a[0] - x) * (c[1] - y)) / area;
+          const w2 = 1 - w0 - w1;
+          if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+          covered += 1;
+          const values = fragmentFlat.map((field) => {
+            if (field.builtin === 'position') return [x, y, 0, 1];
+            const from = vertexOuts.find((candidate) => candidate.name === field.name);
+            if (!from?.name) {
+              const zero = zeroFor(field.type);
+              return zero.ok ? zero.value : 0;
+            }
+            const at = corners.map((corner) => corner[from.name as string]);
+            if (Array.isArray(at[0])) {
+              return (at[0] as number[]).map((_, k) => w0 * (at[0] as number[])[k] + w1 * (at[1] as number[])[k] + w2 * (at[2] as number[])[k]);
+            }
+            return w0 * (at[0] as number) + w1 * (at[1] as number) + w2 * (at[2] as number);
+          });
+          const returned = cpu.fns[fragmentEntry.name](
+            ...(entryArguments(fragmentEntry, structs, (at) => values[at]) as never[]),
+          );
+          const colour = (colourField ? (returned as Record<string, unknown>)[colourField] : returned) as number[];
+          if (!Array.isArray(colour)) continue;
+          const offset = (py * width + px) * 4;
+          for (let channel = 0; channel < 3; channel += 1) {
+            const value = colour[channel];
+            pixels[offset + channel] = Number.isFinite(value) ? Math.round(Math.max(0, Math.min(1, value)) * 255) : 0;
+          }
+          pixels[offset + 3] = Number.isFinite(colour[3]) ? Math.round(Math.max(0, Math.min(1, colour[3])) * 255) : 255;
+        }
+      }
+      context.putImageData(image, 0, 0);
+      canvasNote.textContent = `${covered} px, ${Math.round(performance.now() - started)} ms`;
+    } catch (error) {
+      canvasNote.textContent = error instanceof Error ? error.message : copy.cpuFailed;
+    }
+  };
+
   const paintOutput = (): void => {
     const token = ++painted;
     const source = emitted[target];
@@ -951,6 +1087,7 @@ function mount(root: HTMLElement): void {
       });
       run.addEventListener('click', render);
       if (runCpu instanceof HTMLButtonElement) runCpu.addEventListener('click', evaluateOnCpu);
+      if (drawCpu instanceof HTMLButtonElement) drawCpu.addEventListener('click', drawOnCpu);
       tabs.forEach((tab, index) => {
         tab.addEventListener('click', () => selectTarget((tab.dataset.target ?? 'wgsl') as Target));
         tab.addEventListener('keydown', (event) => {

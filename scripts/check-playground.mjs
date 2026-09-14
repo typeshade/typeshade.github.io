@@ -11,15 +11,17 @@
 //   5. the reflection pane names the sample's entry points, and running them on the CPU
 //      oracle fills in what each one returns
 //   6. the arguments are a form: the vertex entry run at another index returns another corner
-//   7. the emit options reach the panes: the level, minify, parens and the GLSL precision
-//   8. dark mode reaches the editor: its background is dark
-//   9. the example picker replaces the source
-//  10. a source the compiler has no rule for reports a diagnostic that carries a position,
+//   7. an entry declaring a struct parameter is called with the struct, not with its fields
+//   8. the CPU canvas rasterises the module: a triangle, one fragment call per pixel
+//   9. the emit options reach the panes: the level, minify, parens and the GLSL precision
+//  10. dark mode reaches the editor: its background is dark
+//  11. the example picker replaces the source
+//  12. a source the compiler has no rule for reports a diagnostic that carries a position,
 //      and the panes go empty
-//  11. an unclosed call reports a parse error and the panes stay empty
-//  12. the compute example reports the language service's one known false positive
-//  13. `vec` offers vec4 in the completion list
-//  14. the URL fragment carries the source and the options into a second tab carries the edited source into a second tab
+//  13. an unclosed call reports a parse error and the panes stay empty
+//  14. the compute example reports the language service's one known false positive
+//  15. `vec` offers vec4 in the completion list
+//  16. the URL fragment carries the source and the options into a second tab carries the edited source into a second tab
 //
 // Hover over a name a user declared is the one thing the language service at the current pin
 // has no answer for: it returns nothing for `vs` and `fs`. That check arrives with the
@@ -227,6 +229,45 @@ async function checkRoute(browser, origin, route) {
       await page.fill('[data-arg="vs/i"]', '0')
       await page.click('[data-run-cpu]')
       await page.waitForTimeout(400)
+
+      // ── the struct parameter, and the canvas ────────────────────────────────────────────
+      // hello-vsout's `fs(v: VsOut)` declares a single struct parameter that reflection
+      // reports as two fields. Handing the two over leaves the struct undefined and every
+      // component computed from it comes back NaN, which is what this shipped as.
+      await page.selectOption('[data-example]', 'hello-vsout')
+      await page.waitForTimeout(AFTER_EDIT)
+      await page.fill('[data-arg="fs/uv"]', '0.3, 0.7')
+      await page.click('[data-run-cpu]')
+      await page.waitForTimeout(500)
+      const structRun = (await page.innerText('[data-reflection]')).trim()
+      if (!structRun.includes('[0.3, 0.7, 0.2, 1]')) {
+        problems.push(`an entry declaring a struct parameter was not called with the struct:\n    ${structRun.slice(0, 300)}`)
+      }
+
+      // And the canvas: the vertex entry for three corners, then one fragment call per pixel
+      // the triangle covers, with every varying interpolated from what the vertex entry
+      // returned. A triangle covers some of the canvas and not all of it.
+      await page.click('[data-draw-cpu]')
+      await page.waitForTimeout(1_500)
+      const drawn = await page.evaluate(() => {
+        const node = document.querySelector('[data-canvas]')
+        const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
+        let opaque = 0
+        const colours = new Set()
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] > 0) { opaque += 1; colours.add(`${data[i]},${data[i + 1]},${data[i + 2]}`) }
+        }
+        return { opaque, colours: colours.size, total: node.width * node.height }
+      })
+      if (drawn.opaque === 0) problems.push('the CPU canvas drew nothing')
+      else if (drawn.opaque >= drawn.total) problems.push(`the CPU canvas covered every pixel, so it drew no triangle: ${drawn.opaque}/${drawn.total}`)
+      // This example's fragment entry paints its varyings, so every covered pixel differs.
+      else if (drawn.colours < drawn.opaque / 2) {
+        problems.push(`the CPU canvas is not interpolating: ${drawn.colours} colour(s) across ${drawn.opaque} pixels`)
+      }
+      console.log(`  canvas: ${drawn.opaque} of ${drawn.total} px, ${drawn.colours} colours`)
+      await page.selectOption('[data-example]', 'hello')
+      await page.waitForTimeout(AFTER_EDIT)
 
       // The GLSL tabs carry the other two files the compiler emits from the same module.
       for (const [tab, wanted] of [['glslVertex', 'void main'], ['glslFragment', 'void main']]) {

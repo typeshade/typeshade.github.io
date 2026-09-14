@@ -252,6 +252,10 @@ export const en = {
     args: 'Arguments',
     argsInvalid: 'That argument is not a number or a list of numbers.',
     cpuNoResources: 'The CPU oracle takes entry arguments only, so an entry that reads a uniform or a storage binding cannot run here yet.',
+    canvas: 'CPU canvas',
+    draw: 'Draw on the CPU',
+    canvasIdle: 'Run the fragment entry once per pixel, with no GPU.',
+    canvasNeedsVertex: 'Drawing needs a vertex entry driven by vertex_index and a fragment entry. This module has no such pair, so there is no triangle to cover.',
     cpuFailed: 'The CPU oracle could not run this entry point.',
     entryCount: (n: number) => (n === 1 ? '1 entry point' : `${n} entry points`),
     // The example picker. Each example is one of the compiler's own .shade.ts files, named
