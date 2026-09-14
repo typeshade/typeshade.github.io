@@ -2,6 +2,7 @@
 import { Code } from 'astro-expressive-code/components'
 import Docs from '../../layouts/Docs.astro'
 import CodeFrame from '../CodeFrame.astro'
+import LiveShader from '../LiveShader.astro'
 import InstallCommand from '../InstallCommand.astro'
 import Rich from '../Rich.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
@@ -17,9 +18,33 @@ const { locale } = Astro.props
 const t = copyFor(locale)
 const q = t.quickStart as typeof t.quickStart & { p0?: string }
 const host = t.quickStart.host
-const headings = [q.installH, host.boundaryH, host.hostH, q.status.h, host.nextLearnH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const headings = [q.installH, q.live.h, host.boundaryH, host.hostH, q.status.h, host.nextLearnH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 const p0 = q.p0 ?? host.p0
 const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
+
+// The live example's sample: a whole file, the way a Book of Shaders page shows a whole
+// .frag. <LiveShader> supplies the vertex half and nothing else, so every name here is
+// declared here (DESIGN.md, Live examples). Code is not copy, so it stays on this page.
+const stripes = `"use typeshade"
+
+const TAU: f32 = 6.2831853
+
+class Uniforms {
+  time: f32
+  bands: f32
+  low: vec3
+  high: vec3
+}
+
+declare const u: uniform<Uniforms>
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  const phase = (uv.x * u.bands + u.time) * TAU
+  const wave = sin(phase) * 0.5 + 0.5
+  return vec4(mix(u.low, u.high, wave), 1.)
+}
+`
 ---
 
 <Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description} headings={headings} editHref={editCopy(locale, 'quickStart')}>
@@ -30,6 +55,24 @@ const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
   <CodeFrame label={useLabel}>
     <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} />
   </CodeFrame>
+  <section>
+    <h2 id={slugify(q.live.h)}>{q.live.h}</h2>
+    <p><Rich text={q.live.p} locale={locale} /></p>
+    <LiveShader
+      locale={locale}
+      id="quick-start-stripes"
+      title={q.live.title}
+      code={stripes}
+      caption={q.live.caption}
+      file="stripes.shade.ts"
+      aspect="3/1"
+      controls={{
+        bands: { label: q.live.bands, min: 1, max: 24, step: 1, value: 6 },
+        low: { label: q.live.low, color: true, value: [0.149, 0.141, 0.912] },
+        high: { label: q.live.high, color: true, value: [1, 0.833, 0.224] },
+      }}
+    />
+  </section>
   <p><Rich text={q.p1} locale={locale} /></p>
   <CodeFrame label={t.codeLabels.quickStartFile}>
     <Code code={quickStartFile.code} lang="ts" title="shader.ts" locale={locale} />
