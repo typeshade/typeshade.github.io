@@ -1,7 +1,7 @@
 // The Playground, opened in a browser against the built site. A build that emits a page whose
 // script throws on its first line is still a green build, which is how the Playground shipped
 // two empty panes: the editor never mounted and nothing said so. This opens dist/ on loopback,
-// loads the page the way a reader does, and checks the four things that were wrong.
+// loads the page the way a reader does, and checks what the list below names.
 //
 //   1. the page's own script runs: no uncaught error reaches `pageerror`
 //   2. Monaco mounts: `.monaco-editor` appears
@@ -20,8 +20,8 @@
 //  12. a vector times a scalar compiles: nothing is reported and the broadcast reaches the WGSL
 //  13. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
 //  14. the compute example is clean, and the store into its writable array reaches the WGSL
-//  15. `vec` offers vec4 in the completion list
-//  16. hover over a name the source declares answers with the TypeShade types
+//  15. hover over a name the source declares answers with the TypeShade types
+//  16. `vec` offers vec4 in the completion list
 //  17. the URL fragment carries the edited source and the options into a second tab
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
