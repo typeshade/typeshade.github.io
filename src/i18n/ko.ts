@@ -367,6 +367,10 @@ export const ko: Copy = {
         title: '유니폼 구조체',
         description: '유니폼 구조체 하나의 바이트 레이아웃을 리플렉션 패널이 필드마다 펼쳐 보여 줍니다.',
       },
+      'hello-uniform-struct': {
+        title: '두 타깃의 유니폼 구조체',
+        description: `진입점 두 곳이 함께 읽는 유니폼 구조체입니다. ${std} 블록으로 놓이므로 ${glsl}로도 출력되고 링크됩니다.`,
+      },
       'compute-reduction-twin': {
         title: '컴퓨트 리덕션',
         description: '스토리지 버퍼의 값 여덟 개를 하나로 접는 컴퓨트 진입점입니다. 워크그룹 크기는 64입니다.',

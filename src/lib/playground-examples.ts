@@ -23,6 +23,7 @@ export const playgroundExampleIds = [
   'hello-vsin',
   'hello-uniform',
   'hello-camera',
+  'hello-uniform-struct',
   'compute-reduction-twin',
 ] as const;
 
