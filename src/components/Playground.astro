@@ -26,7 +26,7 @@ export function fs(): Color {
 `
 const labels = locale === 'ko'
   ? { run: '컴파일', reset: '예제 복원', editor: 'TypeShade 소스', output: 'WGSL 출력', diagnostics: '진단', idle: '컴파일 대기 중', ready: '컴파일 성공', errors: '컴파일 오류', help: 'Monaco 기반 TypeScript 편집기에서 TypeShade를 작성합니다.' }
-  : { run: 'Compile', reset: 'Reset example', editor: 'TypeShade source', output: 'WGSL output', diagnostics: 'Diagnostics', idle: 'Ready to compile', ready: 'Compiled successfully', errors: 'Compile errors', help: 'Author TypeShade in a Monaco-based TypeScript editor.' }
+  : { run: 'Compile', reset: 'Reset example', editor: 'TypeShade source', output: 'WGSL output', diagnostics: '진단', idle: 'Ready to compile', ready: 'Compiled successfully', errors: 'Compile errors', help: 'Author TypeShade in a Monaco-based TypeScript editor.' }
 ---
 
 <section class="ts-playground" data-playground>
@@ -62,27 +62,53 @@ const labels = locale === 'ko'
 
     if (editorHost instanceof HTMLElement && output instanceof HTMLElement && diagnostics instanceof HTMLElement && status instanceof HTMLElement && run instanceof HTMLButtonElement && reset instanceof HTMLButtonElement) {
       const copy = locale === 'ko'
-        ? { ready: '컴파일 성공', errors: '컴파일 오류', idle: '컴파일 대기 중', loading: '편집기 불러오는 중…', noOutput: '출력이 없습니다.', directive: '"use typeshade" 지시어가 필요합니다.' }
-        : { ready: 'Compiled successfully', errors: 'Compile errors', idle: 'Ready to compile', loading: 'Loading editor…', noOutput: 'No WGSL output.', directive: 'The "use typeshade" directive is required.' }
+        ? { ready: '컴파일 성공', errors: '컴파일 오류', idle: '컴파일 대기 중', loading: '편집기 불러오는 중…', noOutput: '출력이 없습니다.', directive: '"use typeshade" 지시어가 필요합니다.', position: '클립 공간의 vertex position', vertexIndex: '현재 vertex index', instanceIndex: '현재 instance index', location: 'fragment 입출력 location', vec4: '4차원 GPU 벡터', u32: '부호 없는 32비트 정수', vertex: 'vertex shader 진입점', fragment: 'fragment shader 진입점' }
+        : { ready: 'Compiled successfully', errors: 'Compile errors', idle: 'Ready to compile', loading: 'Loading editor…', noOutput: 'No WGSL output.', directive: 'The "use typeshade" directive is required.', position: 'Clip-space vertex position', vertexIndex: 'Current vertex index', instanceIndex: 'Current instance index', location: 'Fragment input/output location', vec4: '4-component GPU vector', u32: 'Unsigned 32-bit integer', vertex: 'Vertex shader entry point', fragment: 'Fragment shader entry point' }
+
+      const builtinSuggestions = [
+        ['position', copy.position],
+        ['vertex_index', copy.vertexIndex],
+        ['instance_index', copy.instanceIndex],
+      ]
+      const typeSuggestions = [
+        ['vec2', '2-component GPU vector'],
+        ['vec3', '3-component GPU vector'],
+        ['vec4', copy.vec4],
+        ['u32', copy.u32],
+        ['i32', 'Signed 32-bit integer'],
+        ['f32', '32-bit floating-point number'],
+      ]
 
       let editor: any
       let model: any
+      let monacoApi: any
+      let typeLib: any
 
       const render = () => {
-        if (!editor) return
+        if (!editor || !model || !monacoApi) return
         status.textContent = copy.idle
         output.textContent = ''
         diagnostics.textContent = ''
         root.classList.remove('has-errors', 'has-output')
+        monacoApi.editor.setModelMarkers(model, 'typeshade-compiler', [])
         try {
           const source = editor.getValue()
           const result = compileTsSource(source, { fileName: 'hello.shade.ts', requireDirective: true })
           const messages = [...result.diagnostics]
           if (!result.hasDirective && messages.length === 0) messages.push({ message: copy.directive, line: 1, character: 1, category: 'error' })
+          const markers = messages.map((d: any) => ({
+            startLineNumber: Math.max(1, d.line ?? 1),
+            startColumn: Math.max(1, d.character ?? 1),
+            endLineNumber: Math.max(1, d.line ?? 1),
+            endColumn: Math.max(2, (d.character ?? 1) + 1),
+            message: d.message,
+            severity: String(d.category).toLowerCase() === 'warning' ? monacoApi.MarkerSeverity.Warning : monacoApi.MarkerSeverity.Error,
+          }))
+          monacoApi.editor.setModelMarkers(model, 'typeshade-compiler', markers)
           if (messages.length > 0) {
             status.textContent = copy.errors
             root.classList.add('has-errors')
-            diagnostics.textContent = messages.map((d) => `${d.category.toUpperCase()} ${d.line}:${d.character} ${d.message}`).join('\n')
+            diagnostics.textContent = messages.map((d: any) => `${String(d.category).toUpperCase()} ${d.line}:${d.character} ${d.message}`).join('\n')
           } else {
             status.textContent = copy.ready
             diagnostics.textContent = '✓'
@@ -138,6 +164,7 @@ const labels = locale === 'ko'
 
       status.textContent = copy.loading
       loadMonaco().then((monaco) => {
+        monacoApi = monaco
         monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
           target: monaco.languages.typescript.ScriptTarget.ES2022,
           module: monaco.languages.typescript.ModuleKind.ESNext,
@@ -146,13 +173,16 @@ const labels = locale === 'ko'
           experimentalDecorators: true,
           strict: true,
         })
-        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-          noSemanticValidation: false,
-          noSyntaxValidation: false,
-        })
-        monaco.languages.typescript.typescriptDefaults.addExtraLib(`
+        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({ noSemanticValidation: false, noSyntaxValidation: false })
+        typeLib = monaco.languages.typescript.typescriptDefaults.addExtraLib(`
+          declare type vec2 = { x: number; y: number }
+          declare type vec3 = { x: number; y: number; z: number }
           declare type vec4 = { x: number; y: number; z: number; w: number }
           declare type u32 = number
+          declare type i32 = number
+          declare type f32 = number
+          declare function vec2(x: number, y: number): vec2
+          declare function vec3(x: number, y: number, z: number): vec3
           declare function vec4(x: number, y: number, z: number, w: number): vec4
           declare function builtin(name: string): PropertyDecorator
           declare function location(index: number): PropertyDecorator
@@ -176,6 +206,39 @@ const labels = locale === 'ko'
           quickSuggestions: true,
           roundedSelection: false,
         })
+
+        monaco.languages.registerCompletionItemProvider('typescript', {
+          triggerCharacters: ['@', '"', ':'],
+          provideCompletionItems: (currentModel: any, position: any) => {
+            if (currentModel.uri.toString() !== model.uri.toString()) return { suggestions: [] }
+            const line = currentModel.getLineContent(position.lineNumber).slice(0, position.column - 1)
+            const inBuiltin = /@builtin\("[^"]*$/.test(line)
+            const inType = /:\s*[A-Za-z0-9_]*$/.test(line)
+            const inDecorator = /(^|\s)@[A-Za-z]*$/.test(line)
+            const range = new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column)
+            if (inBuiltin) return { suggestions: builtinSuggestions.map(([label, detail]) => ({ label, kind: monaco.languages.CompletionItemKind.EnumMember, insertText: label + '"', detail, range })) }
+            if (inType) return { suggestions: typeSuggestions.map(([label, detail]) => ({ label, kind: monaco.languages.CompletionItemKind.TypeParameter, insertText: label, detail, range })) }
+            if (inDecorator) return { suggestions: ['builtin', 'location', 'vertex', 'fragment'].map((label) => ({ label, kind: monaco.languages.CompletionItemKind.Keyword, insertText: label, detail: label === 'vertex' ? copy.vertex : label === 'fragment' ? copy.fragment : `@${label}`, range })) }
+            return { suggestions: [] }
+          },
+        })
+
+        monaco.languages.registerHoverProvider('typescript', {
+          provideHover: (currentModel: any, position: any) => {
+            if (currentModel.uri.toString() !== model.uri.toString()) return null
+            const word = currentModel.getWordAtPosition(position)
+            if (!word) return null
+            const docs: Record<string, string> = {
+              vec2: typeSuggestions[0][1], vec3: typeSuggestions[1][1], vec4: copy.vec4, u32: copy.u32,
+              i32: 'Signed 32-bit integer', f32: '32-bit floating-point number',
+              position: copy.position, vertex_index: copy.vertexIndex, instance_index: copy.instanceIndex,
+              vertex: copy.vertex, fragment: copy.fragment, builtin: '@builtin(name) declares a GPU builtin binding.', location: '@location(index) declares a GPU location binding.',
+            }
+            const doc = docs[word.word]
+            return doc ? { contents: [{ value: `**${word.word}**` }, { value: doc }] } : null
+          },
+        })
+
         editor.onDidChangeModelContent(() => {
           window.clearTimeout(editor.__typeshadeTimer)
           editor.__typeshadeTimer = window.setTimeout(render, 350)
