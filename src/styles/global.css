@@ -440,7 +440,7 @@ body > main { flex: 1 }
 }
 /* On a phone the three links are a grid: Get started across the top, the other two under it.
    From 40rem they sit on one line, as they do on vuejs.org. */
-.hero-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.hero-actions { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 12px }
 .hero-actions > :first-child { grid-column: 1 / -1 }
 .hero-actions .button { justify-content: center }
 .button {
