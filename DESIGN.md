@@ -185,6 +185,117 @@ body says so. The contract between the generator and the page is `src/lib/api-ty
 the words around it are `docs.api` in every dictionary, with a name and a sentence for every
 category the extractor defines.
 
+## Live examples
+
+A guide or concept page can carry a shader the reader edits. The model is
+[The Book of Shaders](https://thebookofshaders.com/): working code, a canvas that renders it,
+and a control for every number behind it, so the prose explains what the reader is looking at.
+`<LiveShader>` (`src/components/LiveShader.astro`) is that block. The Playground stays the
+place to write a whole file; a live example is one sample on one page.
+
+Putting one on a page:
+
+```astro
+<LiveShader
+  locale={locale}
+  id="quick-start-stripes"
+  title={q.live.title}
+  code={stripes}
+  caption={q.live.caption}
+  file="stripes.shade.ts"
+  aspect="3/1"
+  controls={{
+    speed: { label: q.live.speed, min: 0, max: 4, step: 0.01, value: 1 },
+    tint: { label: q.live.tint, color: true, value: [0.19, 0.47, 0.78] },
+  }}
+/>
+```
+
+- `id` names the example. It is the id of its still (`public/stills/<id>.webp`, listed in
+  `scripts/artifacts.mjs`) and of its inlined payload, so it is unique across the site.
+- `title` and `caption` are copy and live in the dictionaries. The sample's code is not copy:
+  it sits in the page component, the way the other code samples on a language page do, and so
+  is `file`, the name over the block.
+- `controls` gives one uniform field a range, a step, a default and a label. The label is
+  copy and comes from the dictionary; the page prints the field's own name in code beside it.
+  A prop for a field the module does not declare fails the build.
+- The build compiles the sample (`src/lib/live-shader-emit.ts`) and inlines the WGSL, both
+  GLSL ES 3.00 stages, the reflected layout and the controls. A sample the compiler reports
+  an error on fails the build.
+
+Three uniform field names are reserved and filled by the runtime every frame, so they get no
+control. A sample declares the ones it reads and leaves out the rest, and the note under the
+controls names the ones it declared:
+
+| Field | Type | What it holds |
+| --- | --- | --- |
+| `time` | `f32` | seconds since the canvas started |
+| `resolution` | `vec2` | the drawing buffer in device pixels |
+| `mouse` | `vec2` | the pointer over the canvas, 0 to 1, origin at the bottom left, the space the `uv` parameter is in. A canvas the pointer has not touched holds (0.5, 0.5) |
+
+Every other uniform field becomes one control, by its type:
+
+| Field type | Control | Default range |
+| --- | --- | --- |
+| `f32` | slider | 0 to 1, step 0.002 |
+| `i32`, `u32` | stepper, or a checkbox with `toggle: true` | 0 to 16, step 1 |
+| `bool` | checkbox | off. WGSL has no `bool` in a uniform block, so a flag a WebGPU device accepts is a `u32` with `toggle: true` |
+| `vec2<f32>` | two-axis pad | 0 to 1 per axis |
+| `vec3<f32>`, `vec4<f32>` | one slider per component, or a colour picker with `color: true` | 0 to 1 per channel |
+
+A field of any other type stops the build, so a page cannot ship a uniform it leaves at zero
+without saying so.
+
+A sample is a whole file, the way a Book of Shaders page shows a whole `.frag` and an MDN
+example shows something that runs: every name in front of the reader is declared in front of
+the reader. The one thing a page supplies is the vertex half, which is what glslCanvas
+supplies there. A sample that declares no `@vertex` entry is compiled behind a fullscreen
+triangle and the `uv` it hands the fragment stage; a sample that declares both stages is
+compiled as written. A diagnostic's line is moved back into the reader's own text before the
+page prints it.
+
+So a fragment sample reads the way a GLSL or WGSL author expects:
+
+| GLSL | TypeShade |
+| --- | --- |
+| `uniform vec2 u_resolution;` | `class Uniforms { resolution: vec2 }` and `declare const u: uniform<Uniforms>` |
+| `void main() {` | `@fragment` and `export function main(@location(0) uv: vec2): vec4 {` |
+| `vec2 st = gl_FragCoord.xy / u_resolution;` | `uv` is already 0 to 1 |
+| `gl_FragColor = vec4(c, 1.0);` | `return vec4(c, 1.)` |
+
+`uv` arrives as a `@location(0)` parameter and not as the fragment position, because the two
+backends disagree about that builtin: WGSL counts y down from the top and GLSL's
+`gl_FragCoord` counts it up from the bottom, so a shader that read it would render upside down
+on one of them. The varying is written once in the vertex half and linked by name on both.
+
+The prelude, the reserved names, the control table and the packing rules are all in one
+module, `src/lib/live-shader-contract.ts`, which imports nothing from the compiler and touches
+no DOM. The Playground's live canvas reads the same module, so the two surfaces cannot
+disagree about what a uniform field means.
+
+What the page carries and when:
+
+- The compiler is not in a page's initial JavaScript. The block ships the highlighted source
+  through Expressive Code, the emitted output under a disclosure, and about 10 KB gzipped of
+  script. The compiler (about a megabyte gzipped, the same chunk the Playground loads) is
+  imported on the reader's first edit and shared by every example on the page.
+- The editor is a transparent `<textarea>` over the block Expressive Code rendered, and an
+  edited line is coloured by `src/scripts/live-shader-highlight.ts` into the same markup. A
+  text field is what a phone keyboard and a Korean input method already know, and it costs a
+  few kilobytes where CodeMirror 6 measured 133 KB gzipped. Monaco stays in the Playground.
+- One WebGPU device serves every canvas on the page. Only a canvas in view draws, and a
+  hidden tab draws nothing.
+- A compile with an error keeps the last frame that worked and says so under the canvas.
+- Under `prefers-reduced-motion: reduce` the clock is pinned and the canvas still redraws, so
+  a control the reader moves still changes the picture.
+- Without WebGPU and without WebGL2 the canvas stays empty over its build-time still, and the
+  note under it says which browser feature is missing.
+
+`scripts/check-live.mjs` (`bun run check:live`) opens a page with one in Chromium and checks
+the four things: the canvas mounts or the fallback shows, no large script is fetched before
+the first edit, an edit recompiles into the canvas or into diagnostics, and a moved control
+reaches both the packed uniform bytes and the rendered frame.
+
 ## Languages
 
 Each language lives under a path prefix (`/ko/…`), the convention MDN, MS Learn, the Astro docs
@@ -247,4 +358,5 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - `scripts/check-api.ts` (`bun run check:api`): the reference data read from the compiler, before it
   reaches a page. A missing description, a slug two exports share, an export with no category, or a
   text that names a consumer fails; a `{@link}` target the barrel does not export is a warning.
+- `scripts/check-live.mjs` (`bun run check:live`), after the build: a live example in a real browser (Live examples).
 - `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).

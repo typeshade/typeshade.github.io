@@ -280,6 +280,46 @@ export const en = {
   },
 
   /** The copy button Expressive Code puts on every code block (ec.config.mjs). */
+
+  /** The chrome around a live example (src/components/LiveShader.astro). The sample's own
+   *  code is not copy: it stays on the page that shows it. */
+  live: {
+    file: 'live.shade.ts',
+    edit: 'Edit',
+    reset: 'Reset',
+    editorAria: 'Editable shader source',
+    hint: 'Edit the code and the canvas follows.',
+    compiling: 'Compiling',
+    loading: 'Loading the compiler',
+    clean: 'No diagnostics',
+    keptFrame: 'The canvas holds the last frame that compiled.',
+    controls: 'Controls',
+    /** Named for the reserved fields this sample declares, so the note describes the file
+     *  above it. The list goes last, in code font, so no language has to bend a word around
+     *  whichever name lands at the end. */
+    reserved: (fields: string) => `The page fills these every frame, so they carry no control: ${fields}.`,
+    mouseUnits: '`mouse` runs 0 to 1 over the canvas from the bottom left, the space `uv` is in.',
+    backend: {
+      neutral: 'The canvas picks a backend when the page loads.',
+      webgpu: 'Running on WebGPU.',
+      webgl2: `Running on WebGL2, from the emitted ${glsl}.`,
+      none: `This browser has no WebGPU and no WebGL2. The frame above was drawn at build time, and the WGSL and ${glsl} the sample emits are under Emitted output.`,
+    },
+    output: 'Emitted output',
+    wgsl: 'WGSL',
+    glslVertex: `${glsl} vertex`,
+    glslFragment: `${glsl} fragment`,
+    uniforms: 'Uniform block',
+    noUniforms: 'This sample binds no uniform block.',
+    field: 'Field',
+    type: 'Type',
+    offset: 'Offset',
+    entries: 'Entry points',
+    lineAt: 'line {line}',
+    /** The names of a vector control's components, for its accessible name. */
+    component: ['x', 'y', 'z', 'w'],
+  },
+
   code: { copy: 'Copy to clipboard', copied: 'Copied' },
 
   install: { label: 'Submodule command' },
@@ -408,6 +448,15 @@ export const en = {
       p1: `TypeShade also has a function-based authoring surface: the same pass declared with [\`fn\`](apiFn) and [\`module()\`](apiModule) instead of classes, ${quickStartFile.lines} lines from the import line to a call that emits WGSL:`,
       p2: 'Running it emits WGSL for both stages. Here is the fragment entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [language guide](guide) covers the rest of the surface.`,
+    live: {
+      h: 'Live example',
+      p: 'The file below is compiled in this page. It declares its own uniform block, takes `uv` in 0 to 1 and returns the colour of one pixel; the fullscreen triangle that calls it is supplied by the page. Edit a line and the canvas follows on the next keystroke, and what the compiler emitted for it is under Emitted output.',
+      title: 'Stripes',
+      caption: 'A sine wave across the canvas, from the file above.',
+      speed: 'wave travel per second',
+      bands: 'stripes across the canvas',
+      tint: 'stripe colour',
+    },
     status: {
       h: 'Status',
       p: `Pre-release. The repository is at version ${facts.mirrorVersion}; ${facts.nextVersion} is the release the npm name [typeshade](npm) is reserved for, and the manifest and the imports are renamed at that tag. Until then this is a mirror: the import above resolves at \`${quickStartFile.importPath}\`, inside the submodule itself. Issues are welcome; pull requests cannot be merged yet, because changes land upstream and this tree is fast-forwarded from there. [Watch releases](releases) to hear about ${facts.nextVersion}.`,
@@ -782,6 +831,13 @@ export const en = {
         matrixP: 'Types such as mat4 represent GPU arithmetic values used for transforms. They are not JavaScript objects.',
         arrays: '5. Arrays',
         arraysP: 'array represents a sequence of GPU values. Combined with a resource element type, it describes the shape of host-provided buffer data.',
+        live: '6. Live example',
+        liveP: 'Every line of the entry below names a GPU type. `vec2` carries the position, `f32` carries the distance and the radius, `vec3` carries the colour. The pad moves the `vec2`, the slider moves the `f32` and the picker writes the three channels of the `vec3`, so each type is the thing under a control.',
+        liveTitle: 'Disc',
+        liveCaption: 'A disc placed by a vec2, sized by an f32 and coloured by a vec3.',
+        liveCenter: 'position in uv space',
+        liveRadius: 'radius in uv units',
+        liveTint: 'disc colour',
         next: 'Next: Resources'
       },
       resources: {

@@ -3,6 +3,7 @@
 // src/i18n/ko.ts); the code samples are not copy, so they stay here.
 import Docs from '../../layouts/Docs.astro'
 import TypeShadeCode from '../TypeShadeCode.astro'
+import LiveShader from '../LiveShader.astro'
 import Rich from '../Rich.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
@@ -12,7 +13,29 @@ const { locale } = Astro.props
 const content = copyFor(locale).language.topics.gpuTypes
 const headings = [
   ['mapping', content.mapping], ['scalar', content.scalar], ['vector', content.vector], ['matrix', content.matrix], ['arrays', content.arrays],
+  ['live', content.live],
 ].map(([slug, text]) => ({ depth: 2, slug, text }))
+
+// The live example's sample: a whole file. <LiveShader> supplies the vertex half and nothing
+// else (DESIGN.md, Live examples). Every line of the entry names a GPU type, which is what
+// this page is about. Code is not copy, so it stays here.
+const disc = `class Uniforms {
+  resolution: vec2
+  center: vec2
+  radius: f32
+  tint: vec3
+}
+
+declare const u: uniform<Uniforms>
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  const aspect: vec2 = vec2(u.resolution.x / u.resolution.y, 1.)
+  const d: f32 = length((uv - u.center) * aspect)
+  const disc: f32 = 1. - smoothstep(u.radius - 0.004, u.radius + 0.004, d)
+  return vec4(u.tint * vec3(disc), 1.)
+}
+`
 ---
 
 <Docs locale={locale} path={links.languageGpuTypes.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'language')}>
@@ -26,5 +49,20 @@ const headings = [
   <TypeShadeCode code={`type Camera = {\n  view: mat4\n}`} />
   <h2 id="arrays">{content.arrays}</h2><p>{content.arraysP}</p>
   <TypeShadeCode code={`declare let pixels: storage<array<f32>>`} />
+  <h2 id="live">{content.live}</h2><p><Rich text={content.liveP} locale={locale} /></p>
+  <LiveShader
+    locale={locale}
+    id="gpu-types-disc"
+    title={content.liveTitle}
+    code={disc}
+    caption={content.liveCaption}
+    file="disc.shade.ts"
+    aspect="2/1"
+    controls={{
+      center: { label: content.liveCenter, min: 0, max: 1, step: 0.002, value: [0.5, 0.5] },
+      radius: { label: content.liveRadius, min: 0.02, max: 0.45, step: 0.002, value: 0.2 },
+      tint: { label: content.liveTint, color: true, value: [0.19, 0.47, 0.78] },
+    }}
+  />
   <p><a href={localePath(locale, links.languageResources.href)}>{content.next}</a></p>
 </Docs>

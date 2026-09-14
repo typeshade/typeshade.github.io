@@ -121,6 +121,16 @@ export interface MountOptions {
   readonly still?: boolean
   /** The mount's own per-state strings and the elements they are written into. */
   readonly labels?: MountLabels
+  /** Keep drawing under `prefers-reduced-motion: reduce` instead of taking the one-frame
+   *  path, and leave the clock to the host. A live example sets this: it pins its own clock
+   *  through `uniformValues` when a reader asks for less motion, and the loop is what redraws
+   *  the canvas when they move a control. */
+  readonly interactive?: boolean
+  /** A value for one uniform field this frame, or null to leave the field to `data.controls`.
+   *  Read once per field per frame, before the controls. A live example (LiveShader.astro)
+   *  drives every field through this, the reserved three included, so its controls can move
+   *  while the shader runs; the front page passes nothing and keeps the packer it had. */
+  readonly uniformValues?: (name: string, seconds: number) => readonly number[] | null
 }
 
 export interface MountedShader {
@@ -130,6 +140,14 @@ export interface MountedShader {
   readonly backend: Backend
   /** Frames drawn since mount. Exactly 1, and final, on the still path. */
   readonly frames: number
+  /** Run a newly emitted program on the same canvas and the same backend. The pass that is
+   *  drawing stays up until the new one has drawn a frame, so a program that fails to build
+   *  leaves the last good frame on screen and resolves false. A live example recompiles this
+   *  way on every edit. */
+  swap(next: ShaderData): Promise<boolean>
+  /** The bytes the packer last wrote into the uniform buffer, copied. Empty when the module
+   *  binds no block. scripts/check-live.mjs reads it to see a control reach the shader. */
+  uniformBytes(): Float32Array
   stop(): void
 }
 
@@ -157,10 +175,34 @@ interface FrameState {
   pack(seconds: number): void
 }
 
-function createFrameState(canvas: HTMLCanvasElement, data: ShaderData): FrameState {
+function createFrameState(
+  canvas: HTMLCanvasElement,
+  data: ShaderData,
+  override?: MountOptions['uniformValues'],
+): FrameState {
   const { layout, controls } = data
   const byteLength = layout.size
   const buf = byteLength > 0 ? new Float32Array(byteLength / 4) : null
+  // std140 gives an i32, a u32 and a bool four bytes each, and the shader reads those bytes
+  // as an integer. Writing 3 through the float view would hand it the bit pattern of 3.0, so
+  // an integer field is written through a view of its own over the same buffer.
+  const ints = buf ? new Int32Array(buf.buffer) : null
+  const uints = buf ? new Uint32Array(buf.buffer) : null
+
+  /** Write one field's numbers at its std140 offset, under the field's own type. */
+  const write = (field: UniformField, v: readonly number[]): void => {
+    const base = field.offset / 4
+    if (!buf) return
+    if (field.type === 'i32' || field.type === 'bool') {
+      for (let k = 0; k < v.length; k++) ints![base + k] = Math.round(v[k] ?? 0)
+      return
+    }
+    if (field.type === 'u32') {
+      for (let k = 0; k < v.length; k++) uints![base + k] = Math.max(0, Math.round(v[k] ?? 0))
+      return
+    }
+    buf.set(v, base)
+  }
 
   /** The live value of a `slider`/`toggle` field by name, `logmag1d` reads its `magField`. */
   const sliderValue = (field: string): number => {
@@ -206,8 +248,8 @@ function createFrameState(canvas: HTMLCanvasElement, data: ShaderData): FrameSta
     pack(seconds: number): void {
       if (!buf) return
       for (const f of layout.fields) {
-        const v = valueFor(f.name, seconds)
-        if (v) buf.set(v, f.offset / 4)
+        const v = override?.(f.name, seconds) ?? valueFor(f.name, seconds)
+        if (v) write(f, v)
       }
     },
   }
@@ -218,9 +260,44 @@ function createFrameState(canvas: HTMLCanvasElement, data: ShaderData): FrameSta
 /** One compiled, bound, ready-to-draw fullscreen pass. */
 interface Pass {
   draw(): void
-  dispose(): void
+  /** Drop this pass's own objects. `release` also gives up the canvas's rendering context,
+   *  which is what puts the canvas back to transparent; a swap passes false, so the frame the
+   *  old pass drew stays on screen until the new pass draws over it. */
+  dispose(release: boolean): void
   /** Register a handler for device/context loss, the loop stops and the canvas goes clear. */
   onLost(handler: () => void): void
+}
+
+// One WebGPU device for the whole page. A guide page mounts several canvases and a live
+// example rebuilds its pipeline on every edit; a device per pass would ask the driver for a
+// new one each time. The promise is cached, and a lost device clears the cache so the next
+// mount asks for a fresh one.
+let devicePromise: Promise<GPUDevice | null> | null = null
+
+function sharedDevice(): Promise<GPUDevice | null> {
+  if (devicePromise) return devicePromise
+  const pending = (async (): Promise<GPUDevice | null> => {
+    if (typeof navigator === 'undefined' || !('gpu' in navigator)) return null
+    const adapter = await navigator.gpu.requestAdapter()
+    if (!adapter) return null
+    const device = await adapter.requestDevice()
+    void device.lost.then(() => {
+      if (devicePromise === pending) devicePromise = null
+    })
+    return device
+  })()
+  devicePromise = pending
+  return pending
+}
+
+// Building a pipeline reads an error scope off the device, and an error scope is a stack the
+// whole device shares. Two mounts building at once would pop each other's scope, so building
+// runs one at a time.
+let buildQueue: Promise<unknown> = Promise.resolve()
+function serialize<T>(build: () => Promise<T>): Promise<T> {
+  const next = buildQueue.then(build, build)
+  buildQueue = next.catch(() => {})
+  return next
 }
 
 const WHITE_TEXEL = new Uint8Array([255, 255, 255, 255])
@@ -285,7 +362,8 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
   })
   gl.activeTexture(gl.TEXTURE0)
 
-  gl.bindVertexArray(gl.createVertexArray())
+  const vao = gl.createVertexArray()
+  gl.bindVertexArray(vao)
 
   return {
     draw(): void {
@@ -298,16 +376,20 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
       gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     },
-    dispose(): void {
-      // Clear before tearing down, so a stopped mount shows the still image beneath it.
-      gl.clearColor(0, 0, 0, 0)
-      gl.clear(gl.COLOR_BUFFER_BIT)
+    dispose(release: boolean): void {
+      // Clear before tearing down, so a stopped mount shows the still image beneath it. A
+      // swap keeps the frame: the new pass is about to draw over it.
+      if (release) {
+        gl.clearColor(0, 0, 0, 0)
+        gl.clear(gl.COLOR_BUFFER_BIT)
+      }
       for (const t of guards) gl.deleteTexture(t)
       if (ubo) gl.deleteBuffer(ubo)
+      if (vao) gl.deleteVertexArray(vao)
       gl.deleteProgram(prog)
       gl.deleteShader(vs)
       gl.deleteShader(fs)
-      gl.getExtension('WEBGL_lose_context')?.loseContext()
+      if (release) gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
     onLost(handler): void {
       canvas.addEventListener('webglcontextlost', (e) => {
@@ -323,14 +405,14 @@ async function createWebGpuPass(
   data: ShaderData,
   state: FrameState,
 ): Promise<Pass> {
-  if (typeof navigator === 'undefined' || !('gpu' in navigator)) throw new Error('no navigator.gpu')
-  const adapter = await navigator.gpu.requestAdapter()
-  if (!adapter) throw new Error('no WebGPU adapter')
-  const device = await adapter.requestDevice()
+  const device = await sharedDevice()
+  if (!device) throw new Error('no WebGPU device')
   const ctx = canvas.getContext('webgpu')
   if (!ctx) throw new Error('no WebGPU canvas context')
   const format = navigator.gpu.getPreferredCanvasFormat()
   // premultiplied + a transparent clear, for the same reason WebGL2 asks for alpha:true.
+  // Configuring a canvas that is already configured for this device is a no-op, so a swap
+  // costs nothing here.
   ctx.configure({ device, format, alphaMode: 'premultiplied' })
 
   device.pushErrorScope('validation')
@@ -338,7 +420,6 @@ async function createWebGpuPass(
   const err = (await shaderModule.getCompilationInfo()).messages.find((m) => m.type === 'error')
   if (err) {
     void device.popErrorScope()
-    device.destroy()
     throw new Error(`WGSL: ${err.message}`)
   }
   const pipeline = device.createRenderPipeline({
@@ -352,10 +433,7 @@ async function createWebGpuPass(
     primitive: { topology: 'triangle-list' },
   })
   const pipeErr = await device.popErrorScope()
-  if (pipeErr) {
-    device.destroy()
-    throw new Error(`WebGPU pipeline: ${pipeErr.message}`)
-  }
+  if (pipeErr) throw new Error(`WebGPU pipeline: ${pipeErr.message}`)
 
   const entries: GPUBindGroupEntry[] = []
   const uniBuf =
@@ -366,6 +444,7 @@ async function createWebGpuPass(
         })
       : null
   if (uniBuf) entries.push({ binding: data.layout.binding, resource: { buffer: uniBuf } })
+  const guardTextures: GPUTexture[] = []
   for (const t of data.layout.textures) {
     const tex = device.createTexture({
       size: [1, 1],
@@ -373,6 +452,7 @@ async function createWebGpuPass(
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     })
     device.queue.writeTexture({ texture: tex }, WHITE_TEXEL, {}, [1, 1])
+    guardTextures.push(tex)
     entries.push({ binding: t.binding, resource: tex.createView() })
   }
   const bindGroup =
@@ -402,12 +482,14 @@ async function createWebGpuPass(
       pass.end()
       device.queue.submit([encoder.finish()])
     },
-    dispose(): void {
+    dispose(release: boolean): void {
       disposed = true
-      // `unconfigure()` is what clears the canvas to transparent; destroying the device on
-      // its own leaves the last presented frame on screen.
-      ctx.unconfigure()
-      device.destroy()
+      uniBuf?.destroy()
+      for (const t of guardTextures) t.destroy()
+      // `unconfigure()` is what clears the canvas to transparent. A swap keeps the canvas
+      // configured, so the frame this pass drew stays up until the new pass draws. The device
+      // is shared by every mount on the page and outlives all of them.
+      if (release) ctx.unconfigure()
     },
     onLost(handler): void {
       void device.lost.then(() => {
@@ -442,8 +524,8 @@ export async function mountShader(
   data: ShaderData,
   opts: MountOptions = {},
 ): Promise<MountedShader> {
-  const state = createFrameState(canvas, data)
-  const still = opts.still === true || prefersReducedMotion()
+  let state = createFrameState(canvas, data, opts.uniformValues)
+  const still = opts.still === true || (prefersReducedMotion() && opts.interactive !== true)
   const skipWebGpu = opts.forceWebGl2 === true || forceGl2FromUrl()
   state.resize()
 
@@ -459,30 +541,28 @@ export async function mountShader(
   const qa = { backend: 'none' as Backend, frames: 0 }
   /** Draw one frame at `seconds`, counting it. The first call is also the backend's audition:
    *  a pass that compiled but cannot draw throws here and the next backend gets its turn. */
-  const drawOnce = (pass: Pass, seconds: number): void => {
-    state.pack(seconds)
+  const drawOnce = (pass: Pass, frame: FrameState, seconds: number): void => {
+    frame.pack(seconds)
     pass.draw()
     qa.frames++
   }
 
+  /** Build one pass for `d` on one backend. Building is queued across the page, because the
+   *  WebGPU error scope it reads belongs to the device every mount shares. */
+  const build = (backend: 'webgpu' | 'webgl2', d: ShaderData, frame: FrameState): Promise<Pass> =>
+    serialize(async () =>
+      backend === 'webgpu' ? await createWebGpuPass(canvas, d, frame) : createWebGl2Pass(canvas, d, frame),
+    )
+
   let pass: Pass | null = null
-  if (!skipWebGpu) {
+  const order: readonly ('webgpu' | 'webgl2')[] = skipWebGpu ? ['webgl2'] : ['webgpu', 'webgl2']
+  for (const backend of order) {
     try {
-      const p = await createWebGpuPass(canvas, data, state)
-      drawOnce(p, still ? STILL_SECONDS : 0)
+      const p = await build(backend, data, state)
+      drawOnce(p, state, still ? STILL_SECONDS : 0)
       pass = p
-      qa.backend = 'webgpu'
-    } catch {
-      pass = null
-      qa.frames = 0
-    }
-  }
-  if (!pass) {
-    try {
-      const p = createWebGl2Pass(canvas, data, state)
-      drawOnce(p, still ? STILL_SECONDS : 0)
-      pass = p
-      qa.backend = 'webgl2'
+      qa.backend = backend
+      break
     } catch {
       pass = null
       qa.frames = 0
@@ -502,7 +582,10 @@ export async function mountShader(
     applyLabels('none')
   }
 
-  const handle = (stop: () => void): MountedShader => {
+  /** The packed bytes, copied, so a reader of the handle cannot write into the frame. */
+  const uniformBytes = (): Float32Array => (state.data ? state.data.slice() : new Float32Array(0))
+
+  const handle = (stop: () => void, swap: MountedShader['swap']): MountedShader => {
     const mounted: MountedShader = {
       get backend() {
         return qa.backend
@@ -510,6 +593,8 @@ export async function mountShader(
       get frames() {
         return qa.frames
       },
+      swap,
+      uniformBytes,
       stop,
     }
     // The per-element handle is the census source , so the runtime parks it rather
@@ -517,16 +602,8 @@ export async function mountShader(
     canvas.__shader = mounted
     return mounted
   }
-  if (!pass) return handle(() => {})
-  const live = pass
-  // Still: one frame is drawn and that is the whole contract, no loop, and no observers
-  // either, since a resize redraw would be frame two .
-  if (still) {
-    return handle(() => {
-      live.dispose()
-      degrade()
-    })
-  }
+  if (!pass) return handle(() => {}, async () => false)
+  let live = pass
 
   let stopped = false
   let raf = 0
@@ -535,6 +612,41 @@ export async function mountShader(
   let seconds = 0
   let last = 0
 
+  /** Put a newly emitted program on the canvas. The pass that is drawing is disposed after
+   *  the new one has drawn, and only its own objects go: the canvas keeps its context, so a
+   *  program that fails to build leaves the frame on screen and this answers false. */
+  const swap = async (next: ShaderData): Promise<boolean> => {
+    if (stopped || qa.backend === 'none') return false
+    const frame = createFrameState(canvas, next, opts.uniformValues)
+    frame.resize()
+    try {
+      const built = await build(qa.backend, next, frame)
+      if (stopped) {
+        built.dispose(false)
+        return false
+      }
+      drawOnce(built, frame, seconds)
+      const previous = live
+      live = built
+      state = frame
+      previous.dispose(false)
+      built.onLost(stop)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  // Still: one frame is drawn and that is the whole contract, no loop, and no observers
+  // either, since a resize redraw would be frame two .
+  if (still) {
+    return handle(() => {
+      stopped = true
+      live.dispose(true)
+      degrade()
+    }, swap)
+  }
+
   const tick = (now: number): void => {
     raf = requestAnimationFrame(tick)
     seconds += (now - last) / 1000
@@ -542,7 +654,7 @@ export async function mountShader(
     // A driver that fails mid-flight must not spray the console: stop, go transparent, and
     // relabel, `stop()` does all three.
     try {
-      drawOnce(live, seconds)
+      drawOnce(live, state, seconds)
     } catch {
       stop()
     }
@@ -565,7 +677,7 @@ export async function mountShader(
     io.disconnect()
     ro.disconnect()
     document.removeEventListener('visibilitychange', sync)
-    live.dispose()
+    live.dispose(true)
     degrade()
   }
   const sync = (): void => {
@@ -587,7 +699,7 @@ export async function mountShader(
     const changed = state.resize()
     if (!changed || running) return
     try {
-      drawOnce(live, seconds)
+      drawOnce(live, state, seconds)
     } catch {
       stop()
     }
@@ -596,5 +708,5 @@ export async function mountShader(
   live.onLost(stop)
 
   sync()
-  return handle(stop)
+  return handle(stop, swap)
 }
