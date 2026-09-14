@@ -17,16 +17,12 @@
 //   9. the emit options reach the panes: the level, minify, parens and the GLSL precision
 //  10. dark mode reaches the editor: its background is dark
 //  11. the example picker replaces the source
-//  12. a source the compiler has no rule for reports a diagnostic that carries a position,
-//      and the panes go empty
-//  13. an unclosed call reports a parse error and the panes stay empty
-//  14. the compute example reports the language service's one known false positive
+//  12. a vector times a scalar compiles: nothing is reported and the broadcast reaches the WGSL
+//  13. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
+//  14. the compute example is clean, and the store into its writable array reaches the WGSL
 //  15. `vec` offers vec4 in the completion list
-//  16. the URL fragment carries the source and the options into a second tab carries the edited source into a second tab
-//
-// Hover over a name a user declared is the one thing the language service at the current pin
-// has no answer for: it returns nothing for `vs` and `fs`. That check arrives with the
-// service swap.
+//  16. hover over a name the source declares answers with the TypeShade types
+//  17. the URL fragment carries the edited source and the options into a second tab
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -362,50 +358,103 @@ async function checkRoute(browser, origin, route) {
       await page.waitForTimeout(AFTER_EDIT)
       const sample = await sourceOf(page)
 
-      // ── a rule the compiler does not have yet: a vector times a scalar ──────────────────
-      // typeshade/typeshade#19 adds the broadcast and is merged upstream, past this pin. At
-      // the re-pin that carries it this check inverts: the source compiles, the diagnostics
-      // list stays empty, and the WGSL pane fills. Change it then to assert that, so the
-      // Playground is held to what the compiler does and not to what it used to do.
+      // ── a vector times a scalar ─────────────────────────────────────────────────────────
+      // typeshade/typeshade#19 broadcasts a vector against a scalar, so `vec4(…) * 2.` is a
+      // rule the compiler has. It reported an error here until this pin, which is half of
+      // what the Playground was reported broken for, so what is checked is the whole way
+      // through: the language service says nothing, and the scalar reaches the emitted
+      // multiply instead of the edit being dropped on the floor.
       await typeSource(page, sample.replace('vec4(1., 0., 0., 1.) }', 'vec4(1., 0., 0., 1.) * 2. }'))
       const rows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
-      if (rows.length === 0) problems.push('a vector times a scalar reported no diagnostic')
-      else if (!/^\d+:\d+\s/.test(rows[0])) problems.push(`a diagnostic row carries no position: ${rows[0]}`)
-      const emptied = await wgslPane(page)
-      if (/@vertex|@fragment|fn\s/.test(emptied)) problems.push(`a source that does not compile still filled the WGSL pane:\n    ${emptied.slice(0, 160)}`)
+      if (rows.length > 0) problems.push(`a vector times a scalar reported ${rows.length} diagnostic(s):\n    ${rows.join('\n    ')}`)
+      const broadcast = await wgslPane(page)
+      if (!/@vertex|@fragment|fn\s/.test(broadcast)) {
+        problems.push(`a vector times a scalar left the WGSL pane without WGSL:\n    ${broadcast.slice(0, 200)}`)
+      } else if (!/vec4<f32>\(1\.0, 0\.0, 0\.0, 1\.0\) \* 2\.0/.test(broadcast)) {
+        problems.push(`the broadcast did not reach the emitted WGSL:\n    ${broadcast.slice(-200)}`)
+      }
 
       // ── an unclosed call ────────────────────────────────────────────────────────────────
       // The compiler reports this as a parse error now (TS8030) and emits nothing for the
-      // file, where it used to report a return-type mismatch and emit WGSL anyway.
+      // file, where it used to report a return-type mismatch and emit WGSL anyway. This is
+      // the one check on a source that does not compile, now that a vector times a scalar
+      // does, so it also carries what that check used to hold: a row a reader can click,
+      // which is a row that carries a position.
       await typeSource(page, sample.replace('return { color: vec4(1., 0., 0., 1.) }', 'return vec4(3.14'))
       const parseRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
       if (parseRows.length === 0) problems.push('an unclosed call reported no diagnostic')
+      else if (!/^\d+:\d+\s/.test(parseRows[0])) problems.push(`a diagnostic row carries no position: ${parseRows[0]}`)
       const afterParse = await wgslPane(page)
       if (/@vertex|@fragment|fn\s/.test(afterParse)) {
         problems.push(`an unclosed call still filled the WGSL pane:\n    ${afterParse.slice(0, 160)}`)
       }
 
       // ── the compute example ─────────────────────────────────────────────────────────────
-      // The language service reports TS2542 on this example's `output[idx] = sum`: the
-      // ambient `array<T>` index signature is read-only, while a `declare let` storage
-      // binding is writable in TypeShade. `compile()` accepts the file, the compiler's own
-      // corpus ships it, and the other five examples are clean, so this is the service's
-      // ambient declaration and not the source. It is pinned here so the Playground is not
-      // quietly working around it; when the ambient type gains a writable form this check
-      // becomes "the reflection names @compute and the GLSL tabs say it has none".
+      // The language service used to report TS2542 on this example's `output[idx] = sum`,
+      // because the ambient `array<T>` index signature was read-only while a `declare let`
+      // storage binding is writable in TypeShade. typeshade/typeshade#39 drops the readonly,
+      // so the example is clean, which is the other half of what the Playground was reported
+      // broken for. The store is followed all the way into the WGSL so a service that goes
+      // quiet by dropping the assignment would still fail here. GLSL ES 3.00 has no compute
+      // stage, so its tabs say the module has none instead of holding a shader.
       await page.selectOption('[data-example]', 'compute-reduction-twin')
       await page.waitForTimeout(AFTER_EDIT)
       const computeRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
-      if (computeRows.length !== 1 || !computeRows[0].includes('only permits reading')) {
-        problems.push(
-          `the compute example no longer reports the known TS2542 false positive, so this check wants updating:\n    ${computeRows.join(' / ').slice(0, 240)}`,
-        )
+      if (computeRows.length > 0) {
+        problems.push(`the compute example reported ${computeRows.length} diagnostic(s):\n    ${computeRows.join('\n    ')}`)
       }
+      const computeWgsl = await wgslPane(page)
+      for (const wanted of ['@compute @workgroup_size(64)', 'fn reduce_windows', 'output[idx] = sum;']) {
+        if (!computeWgsl.includes(wanted)) {
+          problems.push(`the compute example's WGSL is missing ${wanted}:\n    ${computeWgsl.slice(0, 300)}`)
+        }
+      }
+      const computeReflection = (await page.innerText('[data-reflection]')).trim()
+      if (!computeReflection.includes('@compute')) {
+        problems.push(`the reflection pane does not name the compute entry point:\n    ${computeReflection.slice(0, 240)}`)
+      }
+      // The words are translated, so what is read is that the tab holds a sentence and not a
+      // shader: no #version line, no main.
+      for (const tab of ['glslVertex', 'glslFragment']) {
+        await page.click(`[data-target="${tab}"]`)
+        await page.waitForTimeout(250)
+        const glsl = (await page.innerText('[data-output]')).trim()
+        if (glsl.length === 0) problems.push(`the ${tab} tab says nothing about a compute module having no GLSL stage`)
+        else if (glsl.includes('#version') || glsl.includes('void main')) {
+          problems.push(`the ${tab} tab holds a shader for a compute module:\n    ${glsl.slice(0, 160)}`)
+        }
+      }
+      await page.click('[data-target="wgsl"]')
+      await page.waitForTimeout(250)
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)
 
-      // ── completion ──────────────────────────────────────────────────────────────────────
+      // ── hover ───────────────────────────────────────────────────────────────────────────
+      // The service had no answer for a name the source declares when the Playground shipped,
+      // so this check waited for it. It answers now, and what it answers with is the point:
+      // the parameter's TypeShade type, where TypeScript alone would say `number`.
       await typeSource(page, sample)
+      const hovered = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        const model = editor.getModel()
+        const at = model.getLinesContent().findIndex((line) => line.includes('export function vs('))
+        if (at < 0) return null
+        editor.setPosition({ lineNumber: at + 1, column: model.getLineContent(at + 1).indexOf('vs(') + 2 })
+        editor.focus()
+        await editor.getAction('editor.action.showHover')?.run()
+        return true
+      })
+      if (hovered === null) problems.push('the sample no longer declares vs(), so hover had nothing to ask about')
+      else {
+        await page.waitForSelector('.monaco-hover', { timeout: 4_000 }).catch(() => {})
+        const quickInfo = await page.evaluate(() => document.querySelector('.monaco-hover')?.innerText.replace(/\s+/g, ' ').trim() ?? '')
+        if (!quickInfo.includes('vs(i: u32): Clip')) {
+          problems.push(`hovering vs() did not answer with its TypeShade signature:\n    ${quickInfo.slice(0, 200)}`)
+        }
+        await page.keyboard.press('Escape')
+      }
+
+      // ── completion ──────────────────────────────────────────────────────────────────────
       await page.evaluate(() => {
         const editor = window.monaco.editor.getEditors()[0]
         const at = editor.getModel().getLinesContent().findIndex((line) => line.includes('return { color:'))
