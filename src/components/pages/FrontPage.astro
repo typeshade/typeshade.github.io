@@ -114,10 +114,10 @@ const content = locale === 'ko'
     <div class="code-pair">
       {/* Code receives only props supported by astro-expressive-code. */}
       <CodeFrame label={useLabel}>
-        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" />
+        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" wrap />
       </CodeFrame>
       <CodeFrame label={t.codeLabels.wgsl}>
-        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" />
+        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" wrap />
       </CodeFrame>
     </div>
   </section>

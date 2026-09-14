@@ -558,10 +558,9 @@ body > main { flex: 1 }
    sits above the document's own headings */
 /* A table wider than the column scrolls inside itself. The two covers scroll with the
    content and the two shadows stay at the edges, so a shadow shows on the side that still
-   has table left, and neither shows when the whole table fits. Each shadow is a short tile
-   that repeats down the table. An ellipse sized to the whole height of a tall, many-row
-   table fades to nothing within the first screenful, so the row a reader actually scrolls to
-   would show no shadow at all. */
+   has table left, and neither shows when the whole table fits. Each shadow is a linear band
+   the full height of the table, which reads at the same strength whatever the table's
+   height, unlike an ellipse that would fade out before a tall table's lower rows. */
 .doc table {
   display: block; overflow-x: auto; margin-block-start: 18px; border-collapse: collapse;
   font-size: var(--text-meta); line-height: var(--text-meta--line-height);
@@ -569,11 +568,11 @@ body > main { flex: 1 }
   background-image:
     linear-gradient(to right, var(--color-ground), transparent),
     linear-gradient(to left, var(--color-ground), transparent),
-    radial-gradient(farthest-side at 0 50%, var(--color-shade), transparent),
-    radial-gradient(farthest-side at 100% 50%, var(--color-shade), transparent);
+    linear-gradient(to right, var(--color-shade), transparent),
+    linear-gradient(to left, var(--color-shade), transparent);
   background-position: 0 0, 100% 0, 0 0, 100% 0;
-  background-size: 28px 100%, 28px 100%, 14px 120px, 14px 120px;
-  background-repeat: no-repeat, no-repeat, repeat-y, repeat-y;
+  background-size: 28px 100%, 28px 100%, 14px 100%, 14px 100%;
+  background-repeat: no-repeat;
   background-attachment: local, local, scroll, scroll;
   scrollbar-width: thin;
   scrollbar-color: var(--color-line-2) transparent;
@@ -619,19 +618,21 @@ body > main { flex: 1 }
 /* A code frame wider than itself scrolls inside its own pre (Expressive Code's own
    overflow-x), with an overlay scrollbar that leaves no mark at rest: the same two-cover,
    two-shadow trick as .doc table, so a shadow shows on the side that still has code, and
-   neither shows once the pre is scrolled to that edge or never overflowed at all. The
-   !important pins are needed because Expressive Code's own stylesheet sets `background` (a
-   shorthand, so it touches every property below) on this exact selector, and that
-   stylesheet loads after this one: on a tied specificity, the later declaration wins. */
+   neither shows once the pre is scrolled to that edge or never overflowed at all. Each
+   shadow is a linear band the full height of the pre, which reads at the same strength
+   whatever the pre's height. The !important pins are needed because Expressive Code's own
+   stylesheet sets `background` (a shorthand, so it touches every property below) on this
+   exact selector, and that stylesheet loads after this one: on a tied specificity, the
+   later declaration wins. */
 .expressive-code .frame pre {
   background-image:
     linear-gradient(to right, var(--code-background), transparent),
     linear-gradient(to left, var(--code-background), transparent),
-    radial-gradient(farthest-side at 0 50%, var(--color-shade), transparent),
-    radial-gradient(farthest-side at 100% 50%, var(--color-shade), transparent) !important;
+    linear-gradient(to right, var(--color-shade), transparent),
+    linear-gradient(to left, var(--color-shade), transparent) !important;
   background-position: 0 0, 100% 0, 0 0, 100% 0 !important;
-  background-size: 28px 100%, 28px 100%, 14px 120px, 14px 120px !important;
-  background-repeat: no-repeat, no-repeat, repeat-y, repeat-y !important;
+  background-size: 28px 100%, 28px 100%, 14px 100%, 14px 100% !important;
+  background-repeat: no-repeat !important;
   background-attachment: local, local, scroll, scroll !important;
 }
 /* Without hover the copy button stays on screen, so a code frame opens with an empty band
