@@ -1,0 +1,60 @@
+// One raster worker. It compiles the module it is handed to the CPU oracle once, then draws
+// whatever bands the page asks it for, a pixel at a time, and sends each one back the moment
+// it is finished so the canvas fills in as the work lands.
+//
+// It imports `core/oracle.ts` and not the package barrel. The barrel re-exports the whole
+// front end, which carries the TypeScript compiler; the oracle reaches none of it, so each
+// worker's chunk is the CPU backend and the shared raster code, and not another megabyte of
+// parser. The module arrives already compiled, as IR, which is plain data and crosses
+// postMessage by structured clone.
+import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
+import {
+  cornersOf,
+  drawBand,
+  type Corners,
+  type CpuFunctions,
+  type RasterPlan,
+  type RasterReply,
+  type RasterRequest,
+} from './playground-raster.ts';
+
+let job = -1;
+let plan: RasterPlan | undefined;
+let corners: Corners | undefined;
+let cpu: CpuFunctions | undefined;
+
+const reply = (message: RasterReply, transfer?: Transferable[]): void => {
+  (self as unknown as Worker).postMessage(message, transfer ?? []);
+};
+
+self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
+  const request = event.data;
+
+  if (request.kind === 'prepare') {
+    job = request.job;
+    plan = request.plan;
+    try {
+      // Compiled once per module, never per band and never per pixel. `evalEntry` in the
+      // compiler compiles on every call, which at one call per pixel is a compile per pixel.
+      cpu = compileModule(request.module as never, { gpuStubs: true }).fns as CpuFunctions;
+      corners = cornersOf(cpu, plan);
+      if (!corners) {
+        reply({ kind: 'failed', job, message: 'no triangle' });
+        return;
+      }
+      reply({ kind: 'ready', job });
+    } catch (error) {
+      reply({ kind: 'failed', job, message: error instanceof Error ? error.message : String(error) });
+    }
+    return;
+  }
+
+  // A band for a job this worker has moved past, or was never prepared for, is dropped.
+  if (request.job !== job || !plan || !corners || !cpu) return;
+  try {
+    const { pixels, covered } = drawBand(cpu, plan, corners, request.y0, request.y1);
+    reply({ kind: 'band', job, y0: request.y0, y1: request.y1, covered, pixels }, [pixels.buffer]);
+  } catch (error) {
+    reply({ kind: 'failed', job, message: error instanceof Error ? error.message : String(error) });
+  }
+});

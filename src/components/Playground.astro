@@ -65,6 +65,9 @@ const runtimeCopy = {
   draw: t.draw,
   canvasIdle: t.canvasIdle,
   canvasNeedsVertex: t.canvasNeedsVertex,
+  canvasProgress: t.canvasProgress,
+  resolution: t.resolution,
+  canvasDrawn: t.canvasDrawn,
   args: t.args,
   argsInvalid: t.argsInvalid,
   cpuNoResources: t.cpuNoResources,
@@ -161,7 +164,16 @@ const runtimeCopy = {
   <section class="pane canvas-pane">
     <div class="pane-title">
       <span>{t.canvas}</span>
-      <div class="canvas-meta"><span data-canvas-note>{t.canvasIdle}</span><button type="button" data-draw-cpu disabled>{t.draw}</button></div>
+      <div class="canvas-meta">
+        <span data-canvas-note>{t.canvasIdle}</span>
+        <label for="playground-resolution">{t.resolution}</label>
+        <select id="playground-resolution" data-resolution>
+          <option value="192" selected>192</option>
+          <option value="384">384</option>
+          <option value="768">768</option>
+        </select>
+        <button type="button" data-draw-cpu disabled>{t.draw}</button>
+      </div>
     </div>
     <div class="canvas-host"><canvas data-canvas width="192" height="192" aria-label={t.canvas}></canvas></div>
   </section>
@@ -236,6 +248,8 @@ const runtimeCopy = {
   .canvas-pane { border-top: 1px solid var(--color-line-1); }
   .canvas-meta { display: flex; align-items: center; gap: 10px; }
   .canvas-meta [data-canvas-note] { color: var(--color-text-3); font: 400 .6875rem/1.3 var(--font-mono); }
+  .canvas-meta label { color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
+  .canvas-meta select { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 3px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.3 var(--font-mono); }
   .canvas-meta button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
   .canvas-meta button:hover:not(:disabled) { background: var(--color-surface-1); }
   .canvas-meta button:disabled { opacity: .5; cursor: default; }

@@ -12,7 +12,8 @@
 //      oracle fills in what each one returns
 //   6. the arguments are a form: the vertex entry run at another index returns another corner
 //   7. an entry declaring a struct parameter is called with the struct, not with its fields
-//   8. the CPU canvas rasterises the module: a triangle, one fragment call per pixel
+//   8. the CPU canvas rasterises the module: a triangle, one fragment call per pixel, drawn
+//      by a pool of workers that says how many of them there were
 //   9. the emit options reach the panes: the level, minify, parens and the GLSL precision
 //  10. dark mode reaches the editor: its background is dark
 //  11. the example picker replaces the source
@@ -259,13 +260,27 @@ async function checkRoute(browser, origin, route) {
         }
         return { opaque, colours: colours.size, total: node.width * node.height }
       })
+      // The note names how many workers drew it. The pool is sized from the cores the
+      // browser admits to, so the number is whatever this runner has, and 1 means the
+      // main-thread fallback ran instead.
+      // The note's words are translated, so what is read here are the numbers it carries as
+      // data. 1 worker means the main-thread fallback drew it instead of the pool.
+      const canvasNote = await page.evaluate(() => {
+        const node = document.querySelector('[data-canvas-note]')
+        return { text: node.textContent.trim(), px: Number(node.dataset.px), workers: Number(node.dataset.workers) }
+      })
+      if (!Number.isFinite(canvasNote.workers) || canvasNote.workers < 1) {
+        problems.push(`the CPU canvas did not report what drew it: "${canvasNote.text}"`)
+      } else if (canvasNote.px !== drawn.opaque) {
+        problems.push(`the canvas says it covered ${canvasNote.px} px and ${drawn.opaque} are painted`)
+      }
       if (drawn.opaque === 0) problems.push('the CPU canvas drew nothing')
       else if (drawn.opaque >= drawn.total) problems.push(`the CPU canvas covered every pixel, so it drew no triangle: ${drawn.opaque}/${drawn.total}`)
       // This example's fragment entry paints its varyings, so every covered pixel differs.
       else if (drawn.colours < drawn.opaque / 2) {
         problems.push(`the CPU canvas is not interpolating: ${drawn.colours} colour(s) across ${drawn.opaque} pixels`)
       }
-      console.log(`  canvas: ${drawn.opaque} of ${drawn.total} px, ${drawn.colours} colours`)
+      console.log(`  canvas: ${drawn.opaque} of ${drawn.total} px, ${drawn.colours} colours, ${canvasNote.workers} worker(s)`)
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)
 

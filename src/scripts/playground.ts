@@ -22,6 +22,18 @@ import {
 } from '../../vendor/shader-dsl/src/index.ts';
 // The ship-time plugins live on their own subpath, the one a host imports for a release build.
 import { minify } from '../../vendor/shader-dsl/src/emit-prod.ts';
+import {
+  cornersOf,
+  drawBand,
+  entryArguments,
+  zeroFor,
+  type CpuFunctions,
+  type RasterPlan,
+  type RasterReply,
+  type RasterRequest,
+  type ReflectedEntry,
+  type ReflectedField,
+} from './playground-raster.ts';
 
 /** One example as the page carries it: the source from the vendored file, the words from i18n. */
 interface PlaygroundExample {
@@ -79,6 +91,9 @@ interface PlaygroundCopy {
   readonly draw: string;
   readonly canvasIdle: string;
   readonly canvasNeedsVertex: string;
+  readonly canvasProgress: string;
+  readonly canvasDrawn: string;
+  readonly resolution: string;
   readonly args: string;
   readonly argsInvalid: string;
   readonly cpuNoResources: string;
@@ -97,56 +112,6 @@ const TARGET_LANGUAGE: Readonly<Record<Target, string>> = { wgsl: 'wgsl', glslVe
 // What reflect() recovers from the compiled module, shaped for the pane. Names and types in
 // here come from the source in the editor, so every one of them reaches the page as text on a
 // node and none of it is ever written as markup.
-
-/** One parameter or result of an entry point, as reflect() reports it. */
-interface ReflectedField {
-  readonly name?: string;
-  readonly type?: string;
-  readonly builtin?: string;
-  readonly location?: number;
-}
-
-/** One entry point of the module. */
-interface ReflectedEntry {
-  readonly name: string;
-  readonly stage: string;
-  /** The DECLARED parameter types, one per parameter. A struct parameter is one entry here
-   *  and several in `io.inputs`, which is what `entryArguments` reconciles. */
-  readonly inputs?: readonly string[];
-  readonly io?: { readonly inputs?: readonly ReflectedField[]; readonly outputs?: readonly ReflectedField[]; };
-}
-
-/** The zero of a reflected type, for calling an entry point with something valid. A type this
- *  has no case for (a struct, say) cannot be synthesised, and that entry point is left alone. */
-function zeroFor(type: string | undefined): { ok: true; value: unknown; } | { ok: false; } {
-  if (!type) return { ok: false };
-  if (type === 'bool') return { ok: true, value: false };
-  if (/^[uif](?:8|16|32|64)$/.test(type)) return { ok: true, value: 0 };
-  const vec = /^vec([234])</.exec(type);
-  if (vec) return { ok: true, value: Array.from({ length: Number(vec[1]) }, () => 0) };
-  return { ok: false };
-}
-
-/** The arguments the lowered entry function takes, which is not one per reflected input: a
- *  struct parameter is declared once and reflected as its fields. Handing the flattened list
- *  over leaves the struct's own fields undefined, and every component the entry computes from
- *  them comes back NaN. That reads like a shader returning nothing, when what is wrong is the
- *  call. `valueAt` is asked for the flattened values in order. */
-function entryArguments(
-  entry: ReflectedEntry,
-  structs: readonly { readonly name: string; readonly fields: readonly { readonly name: string; }[]; }[],
-  valueAt: (index: number) => unknown,
-): unknown[] {
-  let next = 0;
-  return (entry.inputs ?? []).map((key) => {
-    const named = /^struct:(.+)$/.exec(key);
-    if (!named) return valueAt(next++);
-    const declared = structs.find((candidate) => candidate.name === named[1]);
-    const built: Record<string, unknown> = {};
-    for (const field of declared?.fields ?? []) built[field.name] = valueAt(next++);
-    return built;
-  });
-}
 
 /** How the zero of a type reads in an argument field, and how what is typed back reads as a
  *  value. A vector is a comma-separated list, which is how the source spells one too. */
@@ -478,6 +443,7 @@ function mount(root: HTMLElement): void {
   const canvas = root.querySelector('[data-canvas]');
   const canvasNote = root.querySelector('[data-canvas-note]');
   const drawCpu = root.querySelector('[data-draw-cpu]');
+  const resolutionPicker = root.querySelector('[data-resolution]');
   if (
     !(examplePicker instanceof HTMLSelectElement) ||
     !(exampleNote instanceof HTMLElement) ||
@@ -530,6 +496,7 @@ function mount(root: HTMLElement): void {
       drawCpu.disabled = !drawable;
       if (canvasNote instanceof HTMLElement) canvasNote.textContent = drawable ? copy.canvasIdle : copy.canvasNeedsVertex;
       if (canvas instanceof HTMLCanvasElement) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+      if (drawable) window.setTimeout(openPool, 0);
     }
 
     const entryGroup = el('div', 'group');
@@ -660,100 +627,191 @@ function mount(root: HTMLElement): void {
   /** Puts the selected target in the output pane, plain first and coloured once Monaco has
    *  tokenised it. The plain text lands synchronously, so the pane reads correctly to a screen
    *  reader and to anything measuring it even when the colouring is slow or unavailable. */
-  /** Draws the module the way the pipeline would, with the CPU oracle standing in for both
-   *  stages: the vertex entry runs for indices 0, 1 and 2, its clip positions become a
-   *  triangle in pixels, and every pixel the triangle covers runs the fragment entry once,
-   *  with `@builtin(position)` set to that pixel's centre and every `@location` varying
-   *  interpolated across the three vertices. Nothing here is a stand-in for a varying: the
-   *  values are the ones the vertex entry returned.
-   *
-   *  `compiled.eval` recompiles the module on every call, which at one call per pixel is
-   *  seconds of work, so the module is compiled once here and its functions called directly. */
+  // ── The canvas, drawn by a pool of workers ──────────────────────────────────────────────
+  // The pipeline, walked with the CPU oracle standing in for both stages: the vertex entry
+  // runs for indices 0, 1 and 2, its clip positions become a triangle in pixels, and every
+  // pixel that triangle covers runs the fragment entry once, with `@builtin(position)` set to
+  // that pixel's centre and every `@location` varying interpolated across the three vertices.
+  // No varying is a stand-in: the values are the ones the vertex entry returned.
+  //
+  // The canvas is cut into bands and the bands go through a queue, so the work is neither one
+  // blocking pass nor a fixed slice per worker: a worker that finishes its band takes the next
+  // one waiting, which is what keeps them busy when a triangle covers the middle of the canvas
+  // and none of the top. Each band is painted the moment it arrives, so the picture fills in.
+  const BAND_ROWS = 8;
+  /** One worker per core the browser admits to, and a ceiling so a 64-thread machine does not
+   *  open 64 workers to draw a triangle. */
+  const poolSize = (): number => Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 8));
+
+  let job = 0;
+  let pool: Worker[] = [];
+  /** Opening a worker costs more than drawing this canvas once does, so the pool is opened as
+   *  soon as a module that can be drawn compiles and the button press finds it already there.
+   *  On this machine starting four workers is 130 ms; drawing 192 by 192 once is 34. */
+  const openPool = (): boolean => {
+    if (typeof Worker !== 'function') return false;
+    try {
+      while (pool.length < poolSize()) {
+        pool.push(new Worker(new URL('./playground-raster-worker.ts', import.meta.url), { type: 'module' }));
+      }
+      return true;
+    } catch {
+      for (const worker of pool) worker.terminate();
+      pool = [];
+      return false;
+    }
+  };
+  /** Set while a draw is in flight, so a second press does not race the first. */
+  let drawing = false;
+
+  /** Hand the page back to the browser without the nested-setTimeout clamp, which is about
+   *  4ms a turn and would cost more than the drawing between two of them. A MessageChannel
+   *  posts a real task with no floor. */
+  const yieldToPage = (): Promise<void> =>
+    new Promise((resume) => {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = () => { resume(); };
+      channel.port2.postMessage(undefined);
+    });
+
+  const fillNumbers = (text: string, values: Record<string, string | number>): string =>
+    text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole));
+
+  const rasterPlan = (): RasterPlan | undefined => {
+    if (!compiled || !(canvas instanceof HTMLCanvasElement)) return undefined;
+    const vertex = entries.find((entry) => entry.stage === 'vertex');
+    const fragment = entries.find((entry) => entry.stage === 'fragment');
+    if (!vertex || !fragment) return undefined;
+    if (!(vertex.io?.inputs ?? []).some((field) => field.builtin === 'vertex_index')) return undefined;
+    if (!vertex.io?.outputs?.some((field) => field.builtin === 'position')) return undefined;
+    return {
+      width: canvas.width,
+      height: canvas.height,
+      vertex,
+      fragment,
+      structs: compiled.module.structs.map((struct) => ({ name: struct.name, fields: struct.fields.map((f) => ({ name: f.name })) })),
+    };
+  };
+
+  /** The fallback for a browser with no worker, and for one whose worker fails to start: the
+   *  same bands, on this thread, yielding between them so the page still repaints. */
+  const drawHere = async (plan: RasterPlan, context: CanvasRenderingContext2D, mine: number): Promise<void> => {
+    const cpu = compileModule(compiled!.module, { gpuStubs: true }).fns as CpuFunctions;
+    const corners = cornersOf(cpu, plan);
+    if (!corners) throw new Error('no triangle');
+    const started = performance.now();
+    let covered = 0;
+    const bands = Math.ceil(plan.height / BAND_ROWS);
+    for (let band = 0; band < bands; band += 1) {
+      if (mine !== job) return;
+      const y0 = band * BAND_ROWS;
+      const y1 = Math.min(plan.height, y0 + BAND_ROWS);
+      const drawn = drawBand(cpu, plan, corners, y0, y1);
+      covered += drawn.covered;
+      context.putImageData(new ImageData(drawn.pixels, plan.width, y1 - y0), 0, y0);
+      if (canvasNote instanceof HTMLElement) {
+        canvasNote.textContent = fillNumbers(copy.canvasProgress, { done: band + 1, total: bands, running: 1, waiting: bands - band - 1 });
+      }
+      await yieldToPage();
+    }
+    if (canvasNote instanceof HTMLElement) {
+      canvasNote.textContent = fillNumbers(copy.canvasDrawn, { px: covered, ms: Math.round(performance.now() - started), workers: 1 });
+      canvasNote.dataset.px = String(covered);
+      canvasNote.dataset.workers = '1';
+    }
+  };
+
   const drawOnCpu = (): void => {
-    if (!(canvas instanceof HTMLCanvasElement) || !(canvasNote instanceof HTMLElement)) return;
+    if (!(canvas instanceof HTMLCanvasElement) || !(canvasNote instanceof HTMLElement) || drawing) return;
     const context = canvas.getContext('2d');
-    const vertexEntry = entries.find((entry) => entry.stage === 'vertex');
-    const fragmentEntry = entries.find((entry) => entry.stage === 'fragment');
-    const indexField = vertexEntry?.io?.inputs?.find((field) => field.builtin === 'vertex_index');
-    const positionOut = vertexEntry?.io?.outputs?.find((field) => field.builtin === 'position');
-    if (!compiled || !context || !vertexEntry || !fragmentEntry || !indexField || !positionOut?.name) {
+    const plan = rasterPlan();
+    if (!compiled || !context || !plan) {
       canvasNote.textContent = copy.canvasNeedsVertex;
       return;
     }
-    const width = canvas.width;
-    const height = canvas.height;
-    context.clearRect(0, 0, width, height);
+    job += 1;
+    const mine = job;
+    drawing = true;
+    if (drawCpu instanceof HTMLButtonElement) drawCpu.disabled = true;
+    context.clearRect(0, 0, plan.width, plan.height);
+    delete canvasNote.dataset.px;
+    delete canvasNote.dataset.workers;
+
+    const finish = (): void => {
+      drawing = false;
+      if (drawCpu instanceof HTMLButtonElement) drawCpu.disabled = false;
+    };
+
+    if (typeof Worker !== 'function') {
+      void drawHere(plan, context, mine).catch((error) => {
+        canvasNote.textContent = error instanceof Error ? error.message : copy.cpuFailed;
+      }).finally(finish);
+      return;
+    }
+
+    if (!openPool()) {
+      void drawHere(plan, context, mine).catch(() => { canvasNote.textContent = copy.cpuFailed; }).finally(finish);
+      return;
+    }
+
+    // The queue every worker pulls from, and the counters the note reads.
+    const queue: number[] = [];
+    for (let y0 = 0; y0 < plan.height; y0 += BAND_ROWS) queue.push(y0);
+    const total = queue.length;
+    let done = 0;
+    let running = 0;
+    let covered = 0;
+    let settled = 0;
     const started = performance.now();
-    try {
-      const cpu = compileModule(compiled.module, { gpuStubs: true });
-      const structs = compiled.module.structs;
-      const vertexFlat = vertexEntry.io?.inputs ?? [];
-      // The three corners, from the entry itself.
-      const corners = [0, 1, 2].map((index) =>
-        cpu.fns[vertexEntry.name](
-          ...(entryArguments(vertexEntry, structs, (at) => {
-            const field = vertexFlat[at];
-            if (field === indexField) return index;
-            const zero = zeroFor(field?.type);
-            return zero.ok ? zero.value : 0;
-          }) as never[]),
-        ) as Record<string, unknown>,
-      );
-      const clip = corners.map((corner) => corner[positionOut.name as string] as number[]);
-      // Clip space to pixels: divide by w, then the viewport transform, which flips y.
-      const screen = clip.map(([x, y, , w]) => [((x / w) * 0.5 + 0.5) * width, (1 - ((y / w) * 0.5 + 0.5)) * height]);
-      const [a, b, c] = screen;
-      const area = (b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1]);
-      if (!Number.isFinite(area) || area === 0) {
-        canvasNote.textContent = copy.canvasNeedsVertex;
+    const module = compiled.module;
+
+    const say = (): void => {
+      canvasNote.textContent = fillNumbers(copy.canvasProgress, { done, total, running, waiting: queue.length });
+    };
+
+    const handOut = (worker: Worker): void => {
+      const y0 = queue.shift();
+      if (y0 === undefined) {
+        settled += 1;
+        if (settled === pool.length && running === 0) {
+          canvasNote.textContent = fillNumbers(copy.canvasDrawn, { px: covered, ms: Math.round(performance.now() - started), workers: pool.length });
+          canvasNote.dataset.px = String(covered);
+          canvasNote.dataset.workers = String(pool.length);
+          finish();
+        }
         return;
       }
-      const fragmentFlat = fragmentEntry.io?.inputs ?? [];
-      const vertexOuts = vertexEntry.io?.outputs ?? [];
-      const colourField = fragmentEntry.io?.outputs?.[0]?.name;
-      const image = context.createImageData(width, height);
-      const pixels = image.data;
-      let covered = 0;
-      for (let py = 0; py < height; py += 1) {
-        for (let px = 0; px < width; px += 1) {
-          const x = px + 0.5;
-          const y = py + 0.5;
-          const w0 = ((b[0] - x) * (c[1] - y) - (c[0] - x) * (b[1] - y)) / area;
-          const w1 = ((c[0] - x) * (a[1] - y) - (a[0] - x) * (c[1] - y)) / area;
-          const w2 = 1 - w0 - w1;
-          if (w0 < 0 || w1 < 0 || w2 < 0) continue;
-          covered += 1;
-          const values = fragmentFlat.map((field) => {
-            if (field.builtin === 'position') return [x, y, 0, 1];
-            const from = vertexOuts.find((candidate) => candidate.name === field.name);
-            if (!from?.name) {
-              const zero = zeroFor(field.type);
-              return zero.ok ? zero.value : 0;
-            }
-            const at = corners.map((corner) => corner[from.name as string]);
-            if (Array.isArray(at[0])) {
-              return (at[0] as number[]).map((_, k) => w0 * (at[0] as number[])[k] + w1 * (at[1] as number[])[k] + w2 * (at[2] as number[])[k]);
-            }
-            return w0 * (at[0] as number) + w1 * (at[1] as number) + w2 * (at[2] as number);
-          });
-          const returned = cpu.fns[fragmentEntry.name](
-            ...(entryArguments(fragmentEntry, structs, (at) => values[at]) as never[]),
-          );
-          const colour = (colourField ? (returned as Record<string, unknown>)[colourField] : returned) as number[];
-          if (!Array.isArray(colour)) continue;
-          const offset = (py * width + px) * 4;
-          for (let channel = 0; channel < 3; channel += 1) {
-            const value = colour[channel];
-            pixels[offset + channel] = Number.isFinite(value) ? Math.round(Math.max(0, Math.min(1, value)) * 255) : 0;
-          }
-          pixels[offset + 3] = Number.isFinite(colour[3]) ? Math.round(Math.max(0, Math.min(1, colour[3])) * 255) : 255;
+      running += 1;
+      say();
+      worker.postMessage({ kind: 'band', job: mine, y0, y1: Math.min(plan.height, y0 + BAND_ROWS) } satisfies RasterRequest);
+    };
+
+    for (const worker of pool) {
+      worker.onmessage = (event: MessageEvent<RasterReply>) => {
+        const message = event.data;
+        if (message.job !== mine) return;
+        if (message.kind === 'ready') { handOut(worker); return; }
+        if (message.kind === 'failed') {
+          canvasNote.textContent = message.message === 'no triangle' ? copy.canvasNeedsVertex : message.message;
+          finish();
+          return;
         }
-      }
-      context.putImageData(image, 0, 0);
-      canvasNote.textContent = `${covered} px, ${Math.round(performance.now() - started)} ms`;
-    } catch (error) {
-      canvasNote.textContent = error instanceof Error ? error.message : copy.cpuFailed;
+        running -= 1;
+        done += 1;
+        covered += message.covered;
+        context.putImageData(new ImageData(message.pixels, plan.width, message.y1 - message.y0), 0, message.y0);
+        say();
+        handOut(worker);
+      };
+      worker.onerror = () => {
+        // A worker that cannot start at all leaves the drawing to this thread.
+        for (const other of pool) other.terminate();
+        pool = [];
+        void drawHere(plan, context, mine).catch(() => { canvasNote.textContent = copy.cpuFailed; }).finally(finish);
+      };
+      worker.postMessage({ kind: 'prepare', job: mine, module, plan } satisfies RasterRequest);
     }
+    say();
   };
 
   const paintOutput = (): void => {
@@ -959,6 +1017,19 @@ function mount(root: HTMLElement): void {
   };
   for (const control of [levelPicker, parensPicker, precisionPicker, minifyToggle]) {
     control.addEventListener('change', applyOptions);
+  }
+
+  // A bigger canvas is where the pool earns its keep: the bands are the same size, so four
+  // times the pixels is four times the queue and the same four workers draining it.
+  if (resolutionPicker instanceof HTMLSelectElement && canvas instanceof HTMLCanvasElement) {
+    resolutionPicker.addEventListener('change', () => {
+      const side = Number(resolutionPicker.value);
+      if (!Number.isFinite(side)) return;
+      canvas.width = side;
+      canvas.height = side;
+      canvas.getContext('2d')?.clearRect(0, 0, side, side);
+      if (canvasNote instanceof HTMLElement) canvasNote.textContent = copy.canvasIdle;
+    });
   }
 
   /** What the page opens with: the source in the link, else the example the link names, else
