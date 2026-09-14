@@ -115,6 +115,14 @@ JavaScript, GPU, CPU, IR, f32, f64, std140은 로마자 그대로 씁니다.
 | compound update / compound assignment | 복합 대입 | `.addAssign`, `.subAssign`, `.mulAssign`, `.divAssign`처럼 산술과 대입을 한 번에 하는 메서드. 이미 고정한 "대입"(assign)에 "복합"을 붙였습니다. |
 | free-function form (`sub(1, x)`) | 독립 함수 버전 | `add`/`sub`/`mul`/`div`를 메서드가 아니라 함수로 부르는 형태로, 왼쪽 피연산자가 리터럴일 때 씁니다(`f32(1).sub(x)` 대신 `sub(1, x)`). 위 "free (function)" 행과 같은 개념입니다. |
 | zero (낱말로 적은 zero) | 영 | 영어 원문이 숫자 `0`이 아니라 낱말 zero로 적은 자리("a nonzero start")는 "영이 아닌 값"처럼 낱말로 옮깁니다. 숫자로 적으면 `check:guide`의 숫자 대조가 어긋납니다. |
+| language service | 언어 서비스 | 편집기(Playground의 Monaco, 뒤에 올 LSP 서버와 VS Code 확장)가 컴파일러에 진단·완성·호버 등을 물어보는 편집기 중립 계층. 사이트의 `/guide/language-service/` 페이지와 `src/i18n`의 `languageService` 사전이 쓰는 이름입니다. |
+| completion | 자동 완성 | 편집기가 커서 위치에서 제안하는 후보 목록. VS Code 한국어 UI의 표기를 따릅니다. "완성"만 쓰면 뜻이 흐려져 "자동 완성"으로 통일합니다. |
+| hover | 호버 | 커서를 올리면 뜨는 설명 상자. VS Code 한국어 UI가 그대로 음차합니다. |
+| signature help | 시그니처 도움말 | 함수 호출을 적는 동안 매개변수 목록을 보여 주는 기능. VS Code 한국어 UI의 표기입니다. |
+| document symbol | 심볼 | 편집기의 개요(outline)에 나오는 선언 목록. "심벌"이 아니라 VS Code 한국어 UI의 "심볼"로 씁니다. |
+| semantic tokens | 시맨틱 토큰 | 문법이 아니라 의미로 색을 정하는 토큰 정보. LSP 용어를 그대로 음차합니다. |
+| ambient declarations | 앰비언트 선언 | 실제 파일 없이 프로그램에 깔리는 `.d.ts` 선언(`SHADE_DTS`). TypeScript 한국어 문서가 쓰는 음차입니다. |
+| front end (compiler) | 프런트엔드 | 소스를 읽어 IR로 내리는 컴파일러의 앞부분. 백엔드(표준 용어)와 짝을 이루며, 외래어 표기법에 따라 "프론트엔드"가 아니라 "프런트엔드"로 적습니다. |
 
 ## 로마자 그대로 쓰는 용어
 
