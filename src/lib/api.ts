@@ -63,6 +63,7 @@ export const API_CATEGORIES: readonly ApiCategory[] = [
   { slug: 'variants', name: 'Variants', summary: 'Feature axes as one family of modules, compiled and linked point by point.' },
   { slug: 'backends', name: 'Backends', summary: 'The backend contract, the capability model and the registry that spells an intrinsic.' },
   { slug: 'tooling', name: 'Tooling', summary: 'Registry generation, semantic comparison, emit identity and size measurement.' },
+  { slug: 'editor', name: 'Editor', summary: 'What an editor asks the compiler for: diagnostics, completion and hover, at a source position.' },
 ]
 const categoryBySlug = new Map(API_CATEGORIES.map((c) => [c.slug, c]))
 
@@ -102,7 +103,10 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/core/measure.ts': 'tooling',
   'src/core/semantic-diff.ts': 'tooling',
   'src/core/emit-identity.ts': 'tooling',
+  'src/language-service.ts': 'editor',
 }
+// The language service is one file today and a directory once it grows; both sit in Editor.
+const EDITOR_DIR = 'src/language-service/'
 const NODE_FILE = 'src/core/ir/node.ts'
 // src/core/ir/node.ts, by export. The literal makers and the constructors that take a type are
 // values; the plumbing under them is IR; the call-shaped surface is the builtins.
@@ -506,6 +510,7 @@ function kindOf(decl: ts.Declaration, callable: boolean): ApiKind {
 
 /** The category a name belongs to: the file it is declared in, and for node.ts the export. */
 function categoryOf(name: string, file: string, decl: ts.Declaration): string | undefined {
+  if (file.startsWith(EDITOR_DIR)) return 'editor'
   if (file !== NODE_FILE) return CATEGORY_BY_FILE[file]
   if (NODE_IR.has(name)) return 'ir'
   if (NODE_VALUES.has(name)) return 'values'

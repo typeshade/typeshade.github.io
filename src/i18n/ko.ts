@@ -135,6 +135,10 @@ const apiCategories: Record<string, { name: string; summary: string }> = {
     name: '도구',
     summary: '레지스트리 생성과 의미 비교, 출력 동일성 확인, 크기 측정에 쓰는 도구를 모았습니다.',
   },
+  editor: {
+    name: '편집기',
+    summary: '편집기가 컴파일러에 묻는 것을 모았습니다. 소스 위치를 주면 진단과 자동 완성, 호버 설명이 나옵니다.',
+  },
 }
 
 export const ko: Copy = {
@@ -256,6 +260,26 @@ export const ko: Copy = {
       categories: apiCategories,
     },
   },
+  playground: {
+    h1: 'Playground',
+    intro: 'TypeShade TypeScript 파일을 작성하고 브라우저에서 컴파일한 뒤, 나온 WGSL과 진단을 확인하십시오.',
+    fileName: 'hello.shade.ts',
+    help: 'Monaco 편집기에서 TypeShade를 작성하고 여기서 컴파일합니다.',
+    run: '컴파일',
+    reset: '예제 복원',
+    editor: 'TypeShade 소스',
+    output: 'WGSL 출력',
+    diagnostics: '진단',
+    idle: '컴파일 대기 중',
+    ready: '컴파일 성공',
+    errors: '컴파일 오류',
+    loading: '편집기를 불러옵니다',
+    clean: '진단 없음.',
+    noOutput: 'WGSL 출력이 없습니다.',
+    directive: '파일 맨 위에 "use typeshade" 지시어를 쓰면 컴파일합니다.',
+    unavailable: '편집기를 불러오지 못했습니다. 연결을 확인하고 페이지를 새로 고치십시오.',
+  },
+
   footer: {
     docs: '문서',
     project: '프로젝트',

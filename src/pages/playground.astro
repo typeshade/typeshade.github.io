@@ -2,6 +2,7 @@
 import Playground from '../components/Playground.astro'
 import Base from '../layouts/Base.astro'
 import { copyFor, localePath, type Locale } from '../i18n/index.ts'
+import { links } from '../lib/links.ts'
 
 const locale = 'en' as Locale
 const t = copyFor(locale)
@@ -11,11 +12,11 @@ const t = copyFor(locale)
   <main class="playground-page">
     <header class="playground-intro">
       <p class="eyebrow">TypeShade</p>
-      <h1>Playground</h1>
-      <p>Write a TypeShade TypeScript file, compile it in your browser, and inspect the generated WGSL and diagnostics.</p>
+      <h1>{t.playground.h1}</h1>
+      <p>{t.playground.intro}</p>
       <p class="playground-links">
-        <a href={localePath(locale, '/guide/quick-start/')}>{t.docs.quickStart}</a>
-        <a href={localePath(locale, '/guide/language/')}>{t.docs.language}</a>
+        <a href={localePath(locale, links.quickStart.href)}>{t.docs.quickStart}</a>
+        <a href={localePath(locale, links.guide.href)}>{t.docs.authoringGuide}</a>
       </p>
     </header>
     <Playground locale={locale} />
