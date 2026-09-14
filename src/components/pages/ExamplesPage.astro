@@ -26,7 +26,7 @@ const deepZoom: CanvasText = {
 }
 const headings = [e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 
-const learningPath = e.path.steps.map((step) => ({ ...step, href: localePath(locale, links[step.linkKey as keyof typeof links].href) }))
+const learningPath = e.path.steps.map((step) => ({ ...step, href: localePath(locale, links[step.linkKey].href) }))
 
 const order = ['cartographic', 'generic', 'compute'] as const
 const blurbs = checkedBlurbs(e.blurbs)

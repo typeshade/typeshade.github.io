@@ -4,6 +4,7 @@
 import { API_CATEGORIES } from '../lib/api.ts'
 import { exampleFile, facts, hero, quickStartFile, registryBlurbs } from '../lib/examples.ts'
 import { guideSections } from '../lib/guide.ts'
+import type { LinkKey } from '../lib/links.ts'
 import { typedError } from '../lib/typed-error.ts'
 
 const glsl = facts.glslTarget
@@ -42,6 +43,21 @@ const sections: Record<string, { title: string; description: string }> = Object.
 const apiCategories: Record<string, { name: string; summary: string }> = Object.fromEntries(
   API_CATEGORIES.map((c) => [c.slug, { name: c.name, summary: c.summary }]),
 )
+
+// Two lists of copy carry a link as a key of src/lib/links.ts, so the locale prefix and the
+// pinned commit stay in one place. The two functions are identities: the parameter types the
+// list where it is written, so a key no record has is a type error here, before the page
+// that renders it is built. ko.ts is typed against the same shapes.
+interface NextLink {
+  readonly linkKey: LinkKey
+  readonly label: string
+}
+interface PathStep extends NextLink {
+  readonly title: string
+  readonly text: string
+}
+const nextLinks = (items: readonly NextLink[]): readonly NextLink[] => items
+const pathSteps = (items: readonly PathStep[]): readonly PathStep[] => items
 
 export const en = {
   lang: 'en',
@@ -270,7 +286,7 @@ export const en = {
       eyebrow: 'A shader language built around the TypeScript experience',
       title: 'TypeShade',
       subtitle: 'Start with `"use typeshade"`.',
-      tagline: 'Keep the TypeScript authoring experience—types, functions, modules and editor feedback—while writing with TypeShade GPU types and shader semantics. Emit WGSL or GLSL ES 3.00 from one source.',
+      tagline: 'Keep the TypeScript authoring experience: types, functions, modules and editor feedback. Write with TypeShade GPU types and shader semantics, and emit WGSL or GLSL ES 3.00 from one source.',
       getStarted: 'Use TypeShade',
       playground: 'Write in the Playground',
       learn: 'Why TypeShade',
@@ -350,15 +366,15 @@ export const en = {
       hostP1: 'TypeShade is not the rendering runtime. Write and compile the shader in TypeScript, then let the host application pass the generated WGSL or GLSL ES 3.00 source to WebGPU or WebGL2.',
       hostP2: 'TypeShade owns the language semantics and shader emission. The host owns runtime objects and their lifetimes, including the device, pipeline, bind groups, buffers, textures and command encoders.',
       nextLearnP: 'Now connect familiar TypeScript concepts to their TypeShade GPU meaning.',
-      nextLinks: [
-        { linkKey: 'languageTypes', label: 'Types — value shapes and GPU structs' },
-        { linkKey: 'languageFunctions', label: 'Functions — helpers and entry points' },
-        { linkKey: 'languageControlFlow', label: 'Control flow — GPU execution' },
-        { linkKey: 'languageGpuTypes', label: 'GPU types — scalars, vectors, matrices and arrays' },
-        { linkKey: 'languageResources', label: 'Resources — uniform and storage' },
-        { linkKey: 'languageStages', label: 'Shader stages — compute, vertex and fragment' }
-      ],
-      nextLearnAllLink: 'Read the full Language Guide →'
+      nextLinks: nextLinks([
+        { linkKey: 'languageTypes', label: 'Types: value shapes and GPU structs' },
+        { linkKey: 'languageFunctions', label: 'Functions: helpers and entry points' },
+        { linkKey: 'languageControlFlow', label: 'Control flow: GPU execution' },
+        { linkKey: 'languageGpuTypes', label: 'GPU types: scalars, vectors, matrices and arrays' },
+        { linkKey: 'languageResources', label: 'Resources: uniform and storage' },
+        { linkKey: 'languageStages', label: 'Shader stages: compute, vertex and fragment' }
+      ]),
+      nextLearnAllLink: 'Read the full Language Guide'
     },
     title: 'TypeShade quick start: install and a first shader',
     description: 'Add TypeShade as a git submodule and compile a file that starts with "use typeshade", with a note on the pre-release status.',
@@ -468,7 +484,7 @@ export const en = {
     path: {
       h: 'Learn TypeShade by building',
       p: 'Each step connects one Language Guide concept to actually writing a shader.',
-      steps: [
+      steps: pathSteps([
         {
           title: '1. First shader',
           text: 'Start with the shape of a "use typeshade" file and its shader entries.',
@@ -499,7 +515,7 @@ export const en = {
           label: 'Source examples',
           linkKey: 'examplesDir'
         }
-      ]
+      ])
     },
     title: `TypeShade examples: ${facts.examples} shaders, GLSL emit, emulated f64`,
     description: `The ${facts.examples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
@@ -580,7 +596,7 @@ export const en = {
       refsH: '9. Further reading',
       refsP: 'When learning a TypeShade concept, read the matching TypeScript type or function documentation, check the JavaScript execution model, and then connect it to the GPU concept.',
       nextH: '10. Learning path',
-      nextP: 'Build a first file in Quick start, then expand through Types → Functions → Control flow → GPU types → Resources → Shader stages.',
+      nextP: 'Build a first file in Quick start, then expand through Types, Functions, Control flow, GPU types, Resources and Shader stages, in that order.',
       nextLink: 'Quick start'
     },
     topics: {

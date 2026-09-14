@@ -41,14 +41,14 @@ const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
   <p><Rich text={q.p3} locale={locale} /></p>
   <section>
     <h2 id={slugify(host.boundaryH)}>{host.boundaryH}</h2>
-    <p>{host.boundaryP}</p>
+    <p><Rich text={host.boundaryP} locale={locale} /></p>
     <ul>
-      {host.boundaryBullets.map((bullet) => <li>{bullet}</li>)}
+      {host.boundaryBullets.map((bullet) => <li><Rich text={bullet} locale={locale} /></li>)}
     </ul>
   </section>
   <section>
     <h2 id={slugify(host.hostH)}>{host.hostH}</h2>
-    <p>{host.hostP1}</p>
+    <p><Rich text={host.hostP1} locale={locale} /></p>
     <CodeFrame label={host.hostWgslLabel}>
       <Code code={`const shaderCode = /* WGSL emitted from the TypeShade module */
 const shaderModule = device.createShaderModule({ code: shaderCode })
@@ -61,7 +61,7 @@ const pipeline = device.createComputePipeline({
   },
 })`} lang="ts" title="webgpu.ts" locale={locale} />
     </CodeFrame>
-    <p>{host.hostP2}</p>
+    <p><Rich text={host.hostP2} locale={locale} /></p>
   </section>
   <section>
     <h2 id={slugify(q.status.h)}>{q.status.h}</h2>
@@ -76,7 +76,7 @@ const pipeline = device.createComputePipeline({
     </p>
     <ul>
       {host.nextLinks.map(({ linkKey, label }) => (
-        <li><a href={localePath(locale, links[linkKey as keyof typeof links].href)}>{label}</a></li>
+        <li><a href={localePath(locale, links[linkKey].href)}>{label}</a></li>
       ))}
     </ul>
     <p><a href={localePath(locale, links.guide.href)}>{host.nextLearnAllLink}</a></p>

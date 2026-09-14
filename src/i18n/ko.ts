@@ -435,14 +435,14 @@ export const ko: Copy = {
       hostP2: 'TypeShade가 담당하는 것은 언어 의미와 셰이더 코드 생성입니다. device, pipeline, bind group, buffer, texture, command encoder 같은 GPU 런타임 객체의 생성과 수명 관리는 호스트가 담당합니다.',
       nextLearnP: '이제 TypeScript에서 익숙한 개념을 TypeShade의 GPU 의미로 연결해 보세요.',
       nextLinks: [
-        { linkKey: 'languageTypes', label: 'Types — 타입과 GPU struct' },
-        { linkKey: 'languageFunctions', label: 'Functions — helper와 entry point' },
-        { linkKey: 'languageControlFlow', label: 'Control flow — GPU 실행 흐름' },
-        { linkKey: 'languageGpuTypes', label: 'GPU types — scalar, vector, matrix, array' },
-        { linkKey: 'languageResources', label: 'Resources — uniform과 storage' },
-        { linkKey: 'languageStages', label: 'Shader stages — compute, vertex, fragment' }
+        { linkKey: 'languageTypes', label: 'Types: 타입과 GPU struct' },
+        { linkKey: 'languageFunctions', label: 'Functions: helper와 entry point' },
+        { linkKey: 'languageControlFlow', label: 'Control flow: GPU 실행 흐름' },
+        { linkKey: 'languageGpuTypes', label: 'GPU types: scalar, vector, matrix, array' },
+        { linkKey: 'languageResources', label: 'Resources: uniform과 storage' },
+        { linkKey: 'languageStages', label: 'Shader stages: compute, vertex, fragment' }
       ],
-      nextLearnAllLink: '전체 Language Guide 보기 →'
+      nextLearnAllLink: '전체 Language Guide 보기'
     },
     title: 'TypeShade 빠른 시작: 설치와 첫 셰이더',
     description: 'TypeShade를 git 서브모듈로 추가한 뒤, "use typeshade"로 시작하는 파일을 컴파일합니다. 출시 전 상태도 함께 적었습니다.',
@@ -694,7 +694,7 @@ export const ko: Copy = {
       refsH: '9. 다음에 읽을 자료',
       refsP: 'TypeShade의 개념을 처음 배울 때는 TypeScript의 타입과 함수 문서를 함께 읽고, JavaScript의 실행 모델을 확인한 뒤 GPU 개념으로 넘어가면 이해가 빠릅니다.',
       nextH: '10. 학습 순서',
-      nextP: 'Quick start에서 실행 가능한 첫 파일을 만든 뒤 Types → Functions → Control flow → GPU types → Resources → Shader stages 순서로 확장하세요.',
+      nextP: 'Quick start에서 실행 가능한 첫 파일을 만든 뒤 Types, Functions, Control flow, GPU types, Resources, Shader stages 순서로 확장하세요.',
       nextLink: 'Quick start'
     },
     topics: {

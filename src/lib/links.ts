@@ -59,6 +59,10 @@ export const links = {
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
 
+/** The name of a destination above. Copy that carries a link as a key (src/i18n/en.ts) is
+ *  typed with this, so a key no record has is a type error and not a crash at build time. */
+export type LinkKey = keyof typeof links
+
 const i18nSourceByLocale = new Map<Locale, string>()
 function i18nSource(locale: Locale): string {
   const cached = i18nSourceByLocale.get(locale)
