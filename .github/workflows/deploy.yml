@@ -32,6 +32,12 @@ jobs:
       # The build runs scripts/check-style.mjs, check-copy.ts and check-api.ts first; see
       # DESIGN.md.
       - run: bun run build
+      # The Playground is the one page whose worth is that it runs: it is a compiler behind an
+      # editor, and a build stays green while the page throws on its first line. Chromium opens
+      # dist/ and checks it. Monaco itself comes from jsdelivr, so a runner with no route there
+      # reports that on its own; see the note at the top of scripts/check-playground.mjs.
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run check:playground
       # The translations are typed against the English copy; a missing string fails here.
       - run: bun run check:types
       # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
