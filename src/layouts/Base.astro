@@ -18,9 +18,12 @@ interface Props {
   searchTitle?: string
   breadcrumbs?: readonly { name: string; href: string }[]
   dateModified?: string
+  /** Overrides the language switcher's target per locale, already a real href, for a page
+   *  (the 404) whose own path isn't a page that exists in every language. */
+  switchTarget?: Partial<Record<Locale, string>>
 }
 
-const { locale, path, noAlternates = false, noindex = false, searchable = false, searchTitle, breadcrumbs, dateModified } = Astro.props
+const { locale, path, noAlternates = false, noindex = false, searchable = false, searchTitle, breadcrumbs, dateModified, switchTarget } = Astro.props
 const t = copyFor(locale)
 const siteDescription = copyFor(defaultLocale).meta.description
 const title = Astro.props.title ?? t.meta.title
@@ -136,7 +139,7 @@ const jsonLd = {
   </head>
   <body>
     <a class="skip" href="#main">{t.skip}</a>
-    <SiteHeader locale={locale} path={path} />
+    <SiteHeader locale={locale} path={path} switchTarget={switchTarget} />
     <main
       id="main"
       tabindex="-1"
@@ -145,7 +148,7 @@ const jsonLd = {
     >
       <slot />
     </main>
-    <SiteFooter locale={locale} path={path} />
+    <SiteFooter locale={locale} path={path} switchTarget={switchTarget} />
     <dialog class="search-dialog" aria-label={t.nav.search} data-pagefind-ignore>
       <div class="search-dialog-bar">
         <button class="search-dialog-close" type="button" aria-label={t.nav.close} data-search-close>

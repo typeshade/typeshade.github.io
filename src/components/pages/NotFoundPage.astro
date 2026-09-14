@@ -12,9 +12,13 @@ interface Props {
 const { locale } = Astro.props
 const t = copyFor(locale).notFound
 const path = locale === 'en' ? '/404.html' : '/404/'
+// The language switcher needs each locale's real 404 page, not path localized generically:
+// English has no /404/ route (only the root /404.html GitHub Pages serves), and localizing
+// the neutral path naively would send the switcher there.
+const switchTarget = { en: '/404.html', ko: '/ko/404/' }
 ---
 
-<Base locale={locale} path={path} title={t.title} description={t.description} noAlternates noindex>
+<Base locale={locale} path={path} switchTarget={switchTarget} title={t.title} description={t.description} noAlternates noindex>
   {locale === 'en' && <script is:inline>if (location.pathname.startsWith('/ko/')) location.replace('/ko/404/' + location.search)</script>}
   <article class="wrap doc">
     <h1>{t.h1}</h1>
