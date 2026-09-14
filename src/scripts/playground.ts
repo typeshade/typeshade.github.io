@@ -5,7 +5,9 @@
 // carry arrive here as data attributes instead.
 import {
   TypeshadeLanguageService,
+  compile,
   compileTsSource,
+  reflect,
   type TypeshadeCompletionItem,
   type TypeshadeDiagnostic,
   type TypeshadePosition,
@@ -23,6 +25,95 @@ interface PlaygroundCopy {
   readonly noOutput: string
   readonly directive: string
   readonly unavailable: string
+  readonly entryPoints: string
+  readonly resources: string
+  readonly inputs: string
+  readonly outputs: string
+  readonly returns: string
+  readonly runCpu: string
+  readonly running: string
+  readonly cpuIdle: string
+  readonly noResources: string
+  readonly noEntryPoints: string
+  readonly requiredFeatures: string
+  readonly cpuFailed: string
+  readonly entryCountOne: string
+  readonly noGlsl: string
+}
+
+/** The files the compiler emits, one per tab over the output pane. */
+type Target = 'wgsl' | 'glslVertex' | 'glslFragment'
+
+// Monaco ships a WGSL grammar. It ships none for GLSL, and GLSL ES 3.00 is close enough to C
+// for Monaco's C++ tokenizer to colour its keywords, types, numbers and `#version` line.
+const TARGET_LANGUAGE: Readonly<Record<Target, string>> = { wgsl: 'wgsl', glslVertex: 'cpp', glslFragment: 'cpp' }
+
+// ── Reflection ─────────────────────────────────────────────────────────────────────────────
+// What reflect() recovers from the compiled module, shaped for the pane. Names and types in
+// here come from the source in the editor, so every one of them reaches the page as text on a
+// node and none of it is ever written as markup.
+
+/** One parameter or result of an entry point, as reflect() reports it. */
+interface ReflectedField {
+  readonly name?: string
+  readonly type?: string
+  readonly builtin?: string
+  readonly location?: number
+}
+
+/** One entry point of the module. */
+interface ReflectedEntry {
+  readonly name: string
+  readonly stage: string
+  readonly io?: { readonly inputs?: readonly ReflectedField[]; readonly outputs?: readonly ReflectedField[] }
+}
+
+/** The zero of a reflected type, for calling an entry point with something valid. A type this
+ *  has no case for (a struct, say) cannot be synthesised, and that entry point is left alone. */
+function zeroFor(type: string | undefined): { ok: true; value: unknown } | { ok: false } {
+  if (!type) return { ok: false }
+  if (type === 'bool') return { ok: true, value: false }
+  if (/^[uif](?:8|16|32|64)$/.test(type)) return { ok: true, value: 0 }
+  const vec = /^vec([234])</.exec(type)
+  if (vec) return { ok: true, value: Array.from({ length: Number(vec[1]) }, () => 0) }
+  return { ok: false }
+}
+
+/** How a field reads on one line: `name: type` and the attribute that placed it, when it has one. */
+function fieldLabel(field: ReflectedField): { text: string; attr: string } {
+  const text = field.name && field.type ? `${field.name}: ${field.type}` : (field.type ?? field.name ?? '')
+  if (field.builtin) return { text, attr: `@builtin(${field.builtin})` }
+  if (typeof field.location === 'number') return { text, attr: `@location(${field.location})` }
+  return { text, attr: '' }
+}
+
+/** A returned value as the pane prints it: arrays inline, everything else as JSON. */
+function formatValue(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map((v) => formatValue(v)).join(', ')}]`
+  if (value && typeof value === 'object') {
+    return `{ ${Object.entries(value).map(([k, v]) => `${k}: ${formatValue(v)}`).join(', ')} }`
+  }
+  return typeof value === 'number' ? String(Number(value.toFixed(6))) : JSON.stringify(value) ?? String(value)
+}
+
+function el(tag: string, className?: string, text?: string): HTMLElement {
+  const node = document.createElement(tag)
+  if (className) node.className = className
+  if (text !== undefined) node.textContent = text
+  return node
+}
+
+/** One `label   value` line. */
+function ioRow(label: string, text: string, attr = '', valueClass = 'io-value'): HTMLElement {
+  const row = el('div', 'io-row')
+  row.append(el('span', 'io-label', label))
+  const value = el('span', valueClass, text)
+  if (attr) {
+    value.append(document.createTextNode('  '))
+    value.append(el('span', 'attr', attr))
+  }
+  row.append(value)
+  return row
 }
 
 /** Monaco's one-based cursor position. */
@@ -67,9 +158,6 @@ const toDisplayPosition = (position: TypeshadePosition): string => `${position.l
 // is the directory the loader knows as `vs`, with no trailing slash: the loader joins
 // `/editor/editor.main.js` onto it, and a trailing slash would make that a doubled separator
 // the CDN answers with a 400.
-// The output pane is WGSL. Monaco ships a grammar for it among its basic languages, so the
-// pane is coloured by the same editor and the same theme as the source beside it.
-const WGSL_LANGUAGE = 'wgsl'
 const MONACO_VERSION = '0.52.2'
 const MONACO_MIN = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min`
 const MONACO_VS = `${MONACO_MIN}/vs`
@@ -177,28 +265,140 @@ function mount(root: HTMLElement): void {
   const copy = JSON.parse(root.dataset.copy ?? '{}') as PlaygroundCopy
   const fileName = copy.fileName || 'hello.shade.ts'
   const languageService = new TypeshadeLanguageService({ fileName })
+  const reflectionPane = root.querySelector('[data-reflection]')
+  const runCpu = root.querySelector('[data-run-cpu]')
 
   let editor: any
   let model: any
   let monacoApi: any
   let timer = 0
   let painted = 0
-  let shown = ''
+  // What the compiler last emitted, by target, and which tab is showing.
+  let emitted: Partial<Record<Target, string>> = {}
+  let target: Target = 'wgsl'
+  // The last good compile, kept so the CPU button can call into it without compiling again.
+  let compiled: ReturnType<typeof compile> | undefined
+  let reflection: ReturnType<typeof reflect> | undefined
+  let entries: readonly ReflectedEntry[] = []
 
-  /** Puts WGSL in the output pane, plain first and coloured once Monaco has tokenised it.
-   *  The plain text lands synchronously, so the pane reads correctly to a screen reader and
-   *  to anything measuring it even when the colouring is slow or unavailable. */
-  const paintOutput = (wgsl: string): void => {
-    shown = wgsl
+  /** Draws the reflection pane for the module that just compiled. */
+  const paintReflection = (): void => {
+    if (!(reflectionPane instanceof HTMLElement)) return
+    reflectionPane.textContent = ''
+    if (runCpu instanceof HTMLButtonElement) runCpu.disabled = entries.length === 0
+
+    const entryGroup = el('div', 'group')
+    entryGroup.append(el('p', 'group-title', copy.entryPoints))
+    if (entries.length === 0) {
+      entryGroup.append(el('p', 'empty', copy.noEntryPoints))
+    }
+    for (const entry of entries) {
+      const box = el('div', 'entry')
+      const head = el('div', 'entry-head')
+      head.append(el('span', 'stage', `@${entry.stage}`))
+      head.append(el('span', 'entry-name', entry.name))
+      box.append(head)
+      for (const field of entry.io?.inputs ?? []) {
+        const { text, attr } = fieldLabel(field)
+        box.append(ioRow(copy.inputs, text, attr))
+      }
+      for (const field of entry.io?.outputs ?? []) {
+        const { text, attr } = fieldLabel(field)
+        box.append(ioRow(copy.outputs, text, attr))
+      }
+      const returns = ioRow(copy.returns, copy.cpuIdle, '', 'io-value empty')
+      returns.dataset.returns = entry.name
+      box.append(returns)
+      entryGroup.append(box)
+    }
+    reflectionPane.append(entryGroup)
+
+    // Resources, and the features the module asks the device for, each only when it has any.
+    const resources = reflection
+      ? [
+          ...reflection.bindGroups.flatMap((group) =>
+            (group.entries ?? []).map((entry) => ({ label: `@group(${group.group ?? 0})`, text: `${entry.name}: ${entry.resourceKind}` })),
+          ),
+          ...reflection.overrides.map((o) => ({ label: 'override', text: String(o.name ?? o) })),
+        ]
+      : []
+    const resourceGroup = el('div', 'group')
+    resourceGroup.append(el('p', 'group-title', copy.resources))
+    if (resources.length === 0) resourceGroup.append(el('p', 'empty', copy.noResources))
+    else for (const r of resources) resourceGroup.append(ioRow(r.label, r.text))
+    reflectionPane.append(resourceGroup)
+
+    const features: readonly string[] = reflection?.requiredFeatures ?? []
+    if (features.length > 0) {
+      const featureGroup = el('div', 'group')
+      featureGroup.append(el('p', 'group-title', copy.requiredFeatures))
+      for (const f of features) featureGroup.append(ioRow('', String(f)))
+      reflectionPane.append(featureGroup)
+    }
+  }
+
+  /** Runs every entry point on the CPU oracle and writes what each returned. */
+  const evaluateOnCpu = (): void => {
+    if (!compiled || !(reflectionPane instanceof HTMLElement)) return
+    for (const entry of entries) {
+      const slot = reflectionPane.querySelector(`[data-returns="${CSS.escape(entry.name)}"] .io-value`)
+      const target = slot instanceof HTMLElement ? slot : reflectionPane.querySelector(`[data-returns="${CSS.escape(entry.name)}"]`)?.lastElementChild
+      if (!(target instanceof HTMLElement)) continue
+      const args: unknown[] = []
+      let callable = true
+      for (const field of entry.io?.inputs ?? []) {
+        const zero = zeroFor(field.type)
+        if (!zero.ok) { callable = false; break }
+        args.push(zero.value)
+      }
+      if (!callable) {
+        target.textContent = copy.cpuFailed
+        target.className = 'io-value empty'
+        continue
+      }
+      try {
+        const value = compiled.eval(entry.name, args)
+        const shownArgs = (entry.io?.inputs ?? []).map((f, i) => `${f.name ?? `arg${i}`} = ${formatValue(args[i])}`).join(', ')
+        target.textContent = shownArgs ? `${formatValue(value)}   (${shownArgs})` : formatValue(value)
+        target.className = 'io-value'
+      } catch (error) {
+        target.textContent = error instanceof Error ? error.message : copy.cpuFailed
+        target.className = 'io-value failed'
+      }
+    }
+  }
+
+  /** Puts the selected target in the output pane, plain first and coloured once Monaco has
+   *  tokenised it. The plain text lands synchronously, so the pane reads correctly to a screen
+   *  reader and to anything measuring it even when the colouring is slow or unavailable. */
+  const paintOutput = (): void => {
     const token = ++painted
-    output.textContent = wgsl
+    const source = emitted[target]
+    if (!source) {
+      output.textContent = target === 'wgsl' ? copy.noOutput : copy.noGlsl
+      return
+    }
+    output.textContent = source
     if (!monacoApi) return
     monacoApi.editor
-      .colorize(wgsl, WGSL_LANGUAGE, { tabSize: 2 })
+      .colorize(source, TARGET_LANGUAGE[target], { tabSize: 2 })
       .then((html: string) => {
-        if (token === painted) output.innerHTML = html
+        // colorize writes every space as a non-breaking space, which a reader copying the
+        // output would paste into a shader file as U+00A0 and no compiler accepts. It emits
+        // the character itself, and reading innerHTML back spells that as an entity, so both
+        // forms are replaced. The pane is a <pre>, so an ordinary space holds the same column.
+        if (token === painted) output.innerHTML = html.replace(/&nbsp;|\u00a0/g, ' ')
       })
       .catch(() => {})
+  }
+
+  /** Switches the pane to one target and moves the selected state onto its tab. */
+  const selectTarget = (next: Target): void => {
+    target = next
+    for (const tab of root.querySelectorAll('[data-target]')) {
+      tab.setAttribute('aria-selected', tab.getAttribute('data-target') === next ? 'true' : 'false')
+    }
+    paintOutput()
   }
 
   const describe = (diagnostic: TypeshadeDiagnostic): string =>
@@ -237,17 +437,42 @@ function mount(root: HTMLElement): void {
         diagnosticsPane.textContent = copy.clean
       }
 
-      if (result.wgsl) {
-        paintOutput(result.wgsl)
-        root.classList.add('has-output')
-      } else {
-        shown = ''
-        output.textContent = copy.noOutput
+      // Reflection and the GLSL stages read the module the same source produced. A file with
+      // no directive, or one the compiler complained about, has nothing worth reflecting, so
+      // the panes stay empty.
+      compiled = undefined
+      reflection = undefined
+      entries = []
+      if (result.hasDirective && found.length === 0) {
+        try {
+          compiled = compile(source)
+          reflection = reflect(compiled.module)
+          entries = (reflection.entries ?? []) as readonly ReflectedEntry[]
+        } catch {
+          compiled = undefined
+          reflection = undefined
+          entries = []
+        }
       }
+
+      emitted = {
+        wgsl: result.wgsl,
+        glslVertex: compiled?.glsl?.vertex,
+        glslFragment: compiled?.glsl?.fragment,
+      }
+      if (result.wgsl) root.classList.add('has-output')
+      paintOutput()
+      paintReflection()
     } catch (error) {
       status.textContent = copy.errors
       root.classList.add('has-errors')
       diagnosticsPane.textContent = error instanceof Error ? error.message : String(error)
+      compiled = undefined
+      reflection = undefined
+      entries = []
+      emitted = {}
+      paintOutput()
+      paintReflection()
     }
   }
 
@@ -291,7 +516,7 @@ function mount(root: HTMLElement): void {
       )
 
       // Colourising bakes the theme into the markup, so the pane is painted again on a change.
-      followSiteTheme(monaco, () => { if (shown) paintOutput(shown) })
+      followSiteTheme(monaco, paintOutput)
       model = monaco.editor.createModel(sample, 'typescript', monaco.Uri.parse(`file:///${fileName}`))
       editor = monaco.editor.create(editorHost, {
         model,
@@ -344,6 +569,10 @@ function mount(root: HTMLElement): void {
         timer = window.setTimeout(render, 350)
       })
       run.addEventListener('click', render)
+      if (runCpu instanceof HTMLButtonElement) runCpu.addEventListener('click', evaluateOnCpu)
+      for (const tab of root.querySelectorAll('[data-target]')) {
+        tab.addEventListener('click', () => selectTarget((tab.getAttribute('data-target') ?? 'wgsl') as Target))
+      }
       reset.addEventListener('click', () => {
         editor.setValue(sample)
         render()

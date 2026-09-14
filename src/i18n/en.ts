@@ -176,7 +176,12 @@ export const en = {
     run: 'Compile',
     reset: 'Reset example',
     editor: 'TypeShade source',
-    output: 'WGSL output',
+    output: 'Compiler output',
+    // One tab per file the compiler emits: the WGSL module, and the two GLSL ES 3.00 stages.
+    wgslTab: 'WGSL',
+    glslVertexTab: 'GLSL vertex',
+    glslFragmentTab: 'GLSL fragment',
+    noGlsl: 'This module emits no GLSL.',
     diagnostics: 'Diagnostics',
     idle: 'Ready to compile',
     ready: 'Compiled successfully',
@@ -186,6 +191,22 @@ export const en = {
     noOutput: 'No WGSL output.',
     directive: 'A file compiles once it starts with the "use typeshade" directive.',
     unavailable: 'The editor did not load. Check the connection and reload the page.',
+    // The reflection pane: what reflect() recovers from the compiled module, and what each
+    // entry point returns when the CPU oracle runs it.
+    reflection: 'Reflection',
+    entryPoints: 'Entry points',
+    resources: 'Resources',
+    inputs: 'In',
+    outputs: 'Out',
+    returns: 'Returns',
+    runCpu: 'Run on the CPU',
+    running: 'Running',
+    cpuIdle: 'Run the entry points to see the values they return.',
+    noResources: 'This module binds no resources.',
+    noEntryPoints: 'This module declares no entry point.',
+    requiredFeatures: 'Required features',
+    cpuFailed: 'The CPU oracle could not run this entry point.',
+    entryCount: (n: number) => (n === 1 ? '1 entry point' : `${n} entry points`),
   },
 
   footer: {
