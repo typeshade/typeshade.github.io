@@ -170,22 +170,94 @@ export const en = {
   // editor box.
   playground: {
     h1: 'Playground',
-    intro: 'Write a TypeShade TypeScript file, compile it in your browser, and inspect the generated WGSL and diagnostics.',
+    intro: 'Write a TypeShade TypeScript file, compile it in your browser, and read the WGSL, the GLSL, the reflection and what each entry point returns.',
     fileName: 'hello.shade.ts',
     help: 'Author TypeShade in a Monaco editor and compile it here.',
     run: 'Compile',
     reset: 'Reset example',
     editor: 'TypeShade source',
-    output: 'WGSL output',
+    output: 'Generated output',
     diagnostics: 'Diagnostics',
     idle: 'Ready to compile',
     ready: 'Compiled successfully',
     errors: 'Compile errors',
     loading: 'Loading editor…',
     clean: 'No diagnostics.',
-    noOutput: 'No WGSL output.',
     directive: 'A file compiles once it starts with the "use typeshade" directive.',
     unavailable: 'The editor did not load. Check the connection and reload the page.',
+    // The example picker. Each example is one of the compiler's own .shade.ts files, named
+    // and described here; the source text comes from the vendored checkout at build time.
+    exampleLabel: 'Example',
+    examples: {
+      hello: {
+        title: 'Hello triangle',
+        description: 'A vertex entry that places three corners from the vertex index, and a fragment entry that paints them.',
+      },
+      'hello-vsout': {
+        title: 'Vertex output',
+        description: 'The vertex entry returns a struct, so the fragment entry reads the same fields back as interpolated values.',
+      },
+      'hello-vsin': {
+        title: 'Vertex input',
+        description: 'The vertex entry takes its position and texture coordinates from vertex buffer attributes.',
+      },
+      'hello-uniform': {
+        title: 'Uniform scalar',
+        description: 'A single uniform value declared at module level and read inside the fragment entry.',
+      },
+      'hello-camera': {
+        title: 'Uniform struct',
+        description: 'A uniform struct whose byte layout the reflection tab lays out field by field.',
+      },
+    },
+    // The output tabs beside the editor.
+    tabs: {
+      wgsl: 'WGSL',
+      glslVertex: `${glsl} vertex`,
+      glslFragment: `${glsl} fragment`,
+      reflection: 'Reflection',
+      run: 'Run',
+    },
+    copy: 'Copy',
+    copied: 'Copied',
+    empty: {
+      pending: 'Fix the diagnostics below and the generated output appears here.',
+      glsl: `This module emits no ${glsl}.`,
+    },
+    // The reflection tab: what reflect() recovers from the compiled module.
+    reflection: {
+      entries: 'Entry points',
+      stage: 'Stage',
+      name: 'Name',
+      inputs: 'In',
+      outputs: 'Out',
+      workgroup: 'Workgroup',
+      bindings: 'Bind groups',
+      group: 'Group',
+      binding: 'Binding',
+      space: 'Space',
+      kind: 'Kind',
+      uniforms: 'Uniform layout',
+      storage: 'Storage layout',
+      field: 'Field',
+      type: 'Type',
+      offset: 'Offset',
+      size: 'Size',
+      features: 'Required features',
+      bytes: (n: number) => `${n} B`,
+      none: 'None.',
+    },
+    // The run tab: the CPU oracle, which runs an entry point without a GPU.
+    runner: {
+      entry: 'Entry point',
+      args: 'Arguments',
+      execute: 'Run on the CPU',
+      result: 'Result',
+      noEntries: 'This module declares no entry point.',
+      unsupported: 'An argument of this entry point has a type the form cannot fill in.',
+      failed: 'The entry point did not run.',
+      idle: 'Choose an entry point and run it.',
+    },
   },
 
   footer: {

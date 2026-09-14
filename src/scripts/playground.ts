@@ -5,7 +5,13 @@
 // carry arrive here as data attributes instead.
 import {
   TypeshadeLanguageService,
-  compileTsSource,
+  compile,
+  reflect,
+  type BindGroup,
+  type EntryInfo,
+  type EntryIoField,
+  type Reflection,
+  type StructLayout,
   type TypeshadeCompletionItem,
   type TypeshadeDiagnostic,
   type TypeshadePosition,
@@ -20,9 +26,30 @@ interface PlaygroundCopy {
   readonly errors: string
   readonly loading: string
   readonly clean: string
-  readonly noOutput: string
   readonly directive: string
   readonly unavailable: string
+  readonly copy: string
+  readonly copied: string
+  readonly empty: { readonly pending: string; readonly glsl: string }
+  readonly reflection: Record<string, string>
+  readonly runner: {
+    readonly entry: string
+    readonly args: string
+    readonly execute: string
+    readonly result: string
+    readonly noEntries: string
+    readonly unsupported: string
+    readonly failed: string
+    readonly idle: string
+  }
+}
+
+/** One example as the page carries it: the source from the vendored file, the words from i18n. */
+interface PlaygroundExample {
+  readonly id: string
+  readonly source: string
+  readonly title: string
+  readonly description: string
 }
 
 /** Monaco's one-based cursor position. */
@@ -39,14 +66,30 @@ interface MonacoRange {
   readonly endColumn: number
 }
 
+/** A row of the diagnostics list: what to say and where it points. */
+interface DiagnosticRow {
+  readonly message: string
+  readonly category: TypeshadeDiagnostic['category']
+  readonly start: TypeshadePosition
+}
+
+/** The five output tabs, by the id the markup gives them. */
+type PanelId = 'wgsl' | 'glsl-vertex' | 'glsl-fragment' | 'reflection' | 'run'
+const PANEL_IDS: readonly PanelId[] = ['wgsl', 'glsl-vertex', 'glsl-fragment', 'reflection', 'run']
+
 // ── The one place the two coordinate systems meet ──────────────────────────────────────────
 // Monaco counts lines and columns from 1. The language service counts both from 0, the way
-// the Language Server Protocol does. Every crossing goes through these three functions, so a
+// the Language Server Protocol does. Every crossing goes through these four functions, so a
 // +1 or a -1 lives here and in no other file.
 
 const toServicePosition = (position: MonacoPosition): TypeshadePosition => ({
   line: position.lineNumber - 1,
   character: position.column - 1,
+})
+
+const toMonacoPosition = (position: TypeshadePosition): MonacoPosition => ({
+  lineNumber: position.line + 1,
+  column: position.character + 1,
 })
 
 const toMonacoRange = (range: TypeshadeRange): MonacoRange => {
@@ -67,9 +110,11 @@ const toDisplayPosition = (position: TypeshadePosition): string => `${position.l
 // is the directory the loader knows as `vs`, with no trailing slash: the loader joins
 // `/editor/editor.main.js` onto it, and a trailing slash would make that a doubled separator
 // the CDN answers with a 400.
-// The output pane is WGSL. Monaco ships a grammar for it among its basic languages, so the
-// pane is coloured by the same editor and the same theme as the source beside it.
+// The code panes are coloured by the same editor and the same theme as the source beside
+// them. Monaco ships a WGSL grammar among its basic languages. It ships none for GLSL, whose
+// declarations, types and preprocessor lines are close enough to C that `cpp` colours them.
 const WGSL_LANGUAGE = 'wgsl'
+const GLSL_LANGUAGE = 'cpp'
 const MONACO_VERSION = '0.52.2'
 const MONACO_MIN = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min`
 const MONACO_VS = `${MONACO_MIN}/vs`
@@ -155,101 +200,456 @@ function completionKind(monaco: any, kind: TypeshadeCompletionItem['kind']): num
   return byKind[kind] ?? kinds.Text
 }
 
+// ── Small DOM helpers ──────────────────────────────────────────────────────────────────────
+// Every reflected name and every value the oracle returns comes from whatever is in the
+// editor, so all of it is set as text on a node and none of it is written as markup.
+
+function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag)
+  if (text !== undefined) node.textContent = text
+  return node
+}
+
+function table(headers: readonly string[], rows: readonly (readonly string[])[]): HTMLTableElement {
+  const node = el('table')
+  const head = el('tr')
+  for (const header of headers) head.appendChild(el('th', header))
+  node.appendChild(el('thead')).appendChild(head)
+  const body = el('tbody')
+  for (const row of rows) {
+    const line = el('tr')
+    for (const cell of row) line.appendChild(el('td', cell))
+    body.appendChild(line)
+  }
+  node.appendChild(body)
+  return node
+}
+
+/** A value the CPU oracle returned, printed so a vector reads on one line and NaN survives
+ *  (JSON turns it into null, which would read as a value the shader produced). */
+function formatValue(value: unknown, indent = ''): string {
+  if (typeof value === 'number' || typeof value === 'boolean' || value === null) return String(value)
+  if (typeof value === 'string') return JSON.stringify(value)
+  if (Array.isArray(value)) return `[${value.map((item) => formatValue(item)).join(', ')}]`
+  if (value && typeof value === 'object') {
+    const fields = Object.entries(value as Record<string, unknown>)
+    if (fields.length === 0) return '{}'
+    const inner = `${indent}  `
+    return `{\n${fields.map(([key, item]) => `${inner}${key}: ${formatValue(item, inner)}`).join(',\n')}\n${indent}}`
+  }
+  return String(value)
+}
+
+/** One entry point's parameters or results, as the reflection spells them. */
+const ioText = (fields: readonly EntryIoField[]): string =>
+  fields.length === 0
+    ? '-'
+    : fields
+        .map((field) => {
+          const attribute = field.builtin
+            ? ` @builtin(${field.builtin})`
+            : field.location !== undefined
+              ? ` @location(${field.location})`
+              : ''
+          return `${field.name}: ${field.type}${attribute}`
+        })
+        .join(', ')
+
+// ── The reflection tab ─────────────────────────────────────────────────────────────────────
+
+function layoutTables(layouts: readonly StructLayout[], copy: PlaygroundCopy): HTMLElement | undefined {
+  if (layouts.length === 0) return undefined
+  const host = el('div')
+  const bytes = (n: number) => `${n} B`
+  for (const layout of layouts) {
+    host.appendChild(el('p', `${layout.name} (${bytes(layout.size)})`))
+    host.appendChild(
+      table(
+        [copy.reflection.field, copy.reflection.type, copy.reflection.offset, copy.reflection.size],
+        layout.fields.map((field) => [field.name, field.type, bytes(field.offset), bytes(field.size)]),
+      ),
+    )
+  }
+  return host
+}
+
+function bindingTable(groups: readonly BindGroup[], copy: PlaygroundCopy): HTMLElement | undefined {
+  const rows = groups.flatMap((group) =>
+    group.entries.map((entry) => [
+      String(entry.group),
+      String(entry.binding),
+      entry.structName ? `${entry.name}: ${entry.structName}` : entry.name,
+      entry.space,
+      entry.resourceKind,
+    ]),
+  )
+  if (rows.length === 0) return undefined
+  const c = copy.reflection
+  return table([c.group, c.binding, c.name, c.space, c.kind], rows)
+}
+
+function entryTable(entries: readonly EntryInfo[], copy: PlaygroundCopy): HTMLElement | undefined {
+  if (entries.length === 0) return undefined
+  const c = copy.reflection
+  const compute = entries.some((entry) => entry.workgroupSize !== undefined)
+  const headers = compute ? [c.name, c.stage, c.workgroup, c.inputs, c.outputs] : [c.name, c.stage, c.inputs, c.outputs]
+  const rows = entries.map((entry) => {
+    const cells = [entry.name, `@${entry.stage}`, ioText(entry.io.inputs), ioText(entry.io.outputs)]
+    return compute ? [cells[0], cells[1], entry.workgroupSize === undefined ? '-' : String(entry.workgroupSize), cells[2], cells[3]] : cells
+  })
+  return table(headers, rows)
+}
+
+function paintReflection(host: HTMLElement, reflection: Reflection, copy: PlaygroundCopy): void {
+  host.textContent = ''
+  const c = copy.reflection
+  const add = (title: string, body: HTMLElement | undefined): void => {
+    host.appendChild(el('h3', title))
+    host.appendChild(body ?? el('p', c.none))
+  }
+  add(c.entries, entryTable(reflection.entries, copy))
+  add(c.bindings, bindingTable(reflection.bindGroups, copy))
+  add(c.uniforms, layoutTables(reflection.uniforms, copy))
+  add(c.storage, layoutTables(reflection.storage, copy))
+  add(c.features, reflection.requiredFeatures.length > 0 ? el('p', reflection.requiredFeatures.join(', ')) : undefined)
+}
+
+// ── The run tab ────────────────────────────────────────────────────────────────────────────
+// The CPU oracle runs an entry point with no GPU, so the form is filled from the same
+// reflection the tab beside it draws: one field per reflected input, at the zero of its type.
+
+function defaultArgument(field: EntryIoField): string | undefined {
+  if (field.builtin === 'vertex_index' || field.builtin === 'instance_index') return '0'
+  const vector = /^vec([234])<(?:f32|f64|i32|u32)>$/.exec(field.type)
+  if (vector) return new Array(Number(vector[1])).fill('0').join(', ')
+  if (/^(?:f32|f64|i32|u32)$/.test(field.type)) return '0'
+  return undefined
+}
+
+function parseArgument(text: string): number | number[] {
+  const parts = text.split(',').map((part) => Number(part.trim()))
+  if (parts.length === 0 || parts.some((part) => Number.isNaN(part))) throw new Error(`"${text}" is not a number or a list of numbers`)
+  return parts.length === 1 ? parts[0] : parts
+}
+
+// ── The page ───────────────────────────────────────────────────────────────────────────────
+
 function mount(root: HTMLElement): void {
   const editorHost = root.querySelector('[data-editor]')
-  const output = root.querySelector('[data-output]')
-  const diagnosticsPane = root.querySelector('[data-diagnostics]')
+  const diagnosticsList = root.querySelector('[data-diagnostics]')
   const status = root.querySelector('[data-status]')
   const run = root.querySelector('[data-run]')
   const reset = root.querySelector('[data-reset]')
+  const examplePicker = root.querySelector('[data-example]')
+  const exampleNote = root.querySelector('[data-example-note]')
+  const entryPicker = root.querySelector('[data-entry]')
+  const argsHost = root.querySelector('[data-args]')
+  const runEntry = root.querySelector('[data-run-entry]')
   if (
     !(editorHost instanceof HTMLElement) ||
-    !(output instanceof HTMLElement) ||
-    !(diagnosticsPane instanceof HTMLElement) ||
+    !(diagnosticsList instanceof HTMLElement) ||
     !(status instanceof HTMLElement) ||
     !(run instanceof HTMLButtonElement) ||
-    !(reset instanceof HTMLButtonElement)
+    !(reset instanceof HTMLButtonElement) ||
+    !(examplePicker instanceof HTMLSelectElement) ||
+    !(exampleNote instanceof HTMLElement) ||
+    !(entryPicker instanceof HTMLSelectElement) ||
+    !(argsHost instanceof HTMLElement) ||
+    !(runEntry instanceof HTMLButtonElement)
   ) {
     return
   }
 
-  const sample = root.dataset.sample ?? ''
   const copy = JSON.parse(root.dataset.copy ?? '{}') as PlaygroundCopy
+  const examples = JSON.parse(root.dataset.examples ?? '[]') as PlaygroundExample[]
   const fileName = copy.fileName || 'hello.shade.ts'
   const languageService = new TypeshadeLanguageService({ fileName })
+
+  const bodies = new Map<PanelId, HTMLElement>()
+  const empties = new Map<PanelId, HTMLElement>()
+  for (const id of PANEL_IDS) {
+    const body = root.querySelector(`[data-body="${id}"]`)
+    const empty = root.querySelector(`[data-empty="${id}"]`)
+    if (body instanceof HTMLElement) bodies.set(id, body)
+    if (empty instanceof HTMLElement) empties.set(id, empty)
+  }
 
   let editor: any
   let model: any
   let monacoApi: any
   let timer = 0
-  let painted = 0
-  let shown = ''
+  /** The latest colourise each pane started, so a pane's own repaint is the one that lands. */
+  const painting = new Map<PanelId, number>()
+  /** The text each code pane holds, kept so the theme can repaint it and Copy can take it. */
+  const shown = new Map<PanelId, string>()
+  /** The compiled module's oracle, while the source compiles clean. */
+  let evaluate: ((name: string, args?: readonly unknown[]) => unknown) | undefined
+  let entries: readonly EntryInfo[] = []
 
-  /** Puts WGSL in the output pane, plain first and coloured once Monaco has tokenised it.
+  // ── tabs ────────────────────────────────────────────────────────────────────────────────
+  const tabs = [...root.querySelectorAll('[role="tab"]')].filter((node): node is HTMLButtonElement => node instanceof HTMLButtonElement)
+  const panels = [...root.querySelectorAll('[data-panel]')].filter((node): node is HTMLElement => node instanceof HTMLElement)
+
+  const selectTab = (id: string, focus = false): void => {
+    for (const tab of tabs) {
+      const on = tab.dataset.tab === id
+      tab.setAttribute('aria-selected', on ? 'true' : 'false')
+      tab.tabIndex = on ? 0 : -1
+      if (on && focus) tab.focus()
+    }
+    for (const panel of panels) panel.hidden = panel.dataset.panel !== id
+  }
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => selectTab(tab.dataset.tab ?? 'wgsl'))
+    tab.addEventListener('keydown', (event) => {
+      const steps: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }
+      const next = steps[event.key]
+      if (next === undefined) return
+      event.preventDefault()
+      const target = tabs[(next + tabs.length) % tabs.length]
+      selectTab(target.dataset.tab ?? 'wgsl', true)
+    })
+  })
+
+  // ── the panes ───────────────────────────────────────────────────────────────────────────
+  /** Puts generated source in a pane, plain first and coloured once Monaco has tokenised it.
    *  The plain text lands synchronously, so the pane reads correctly to a screen reader and
    *  to anything measuring it even when the colouring is slow or unavailable. */
-  const paintOutput = (wgsl: string): void => {
-    shown = wgsl
-    const token = ++painted
-    output.textContent = wgsl
+  const paintCode = (id: PanelId, text: string, language: string): void => {
+    const body = bodies.get(id)
+    const empty = empties.get(id)
+    if (!body || !empty) return
+    shown.set(id, text)
+    empty.textContent = ''
+    const token = (painting.get(id) ?? 0) + 1
+    painting.set(id, token)
+    body.textContent = text
     if (!monacoApi) return
     monacoApi.editor
-      .colorize(wgsl, WGSL_LANGUAGE, { tabSize: 2 })
+      .colorize(text, language, { tabSize: 2 })
       .then((html: string) => {
-        if (token === painted) output.innerHTML = html
+        if (token === painting.get(id)) body.innerHTML = html
       })
       .catch(() => {})
   }
 
-  const describe = (diagnostic: TypeshadeDiagnostic): string =>
-    `${diagnostic.category} ${toDisplayPosition(diagnostic.range.start)} ${diagnostic.message}`
+  /** A pane with nothing in it: the body stays empty so what is measured is what is there,
+   *  and the sentence beside it says why. */
+  const paintEmpty = (id: PanelId, message: string): void => {
+    const body = bodies.get(id)
+    const empty = empties.get(id)
+    shown.delete(id)
+    if (body) body.textContent = ''
+    if (empty) empty.textContent = message
+  }
 
+  const clearOutput = (): void => {
+    for (const id of PANEL_IDS) paintEmpty(id, copy.empty.pending)
+    evaluate = undefined
+    entries = []
+    entryPicker.textContent = ''
+    argsHost.textContent = ''
+    runEntry.disabled = true
+    root.classList.remove('has-output')
+  }
+
+  // ── the run tab's form ──────────────────────────────────────────────────────────────────
+  const fillArguments = (): void => {
+    argsHost.textContent = ''
+    const entry = entries.find((candidate) => candidate.name === entryPicker.value)
+    if (!entry) {
+      runEntry.disabled = true
+      return
+    }
+    let complete = true
+    entry.io.inputs.forEach((field, index) => {
+      const value = defaultArgument(field)
+      if (value === undefined) complete = false
+      const wrap = el('div')
+      if (field.type.startsWith('vec4')) wrap.className = 'wide'
+      const id = `playground-arg-${index}`
+      const label = el('label', `${field.name}: ${field.type}`)
+      label.htmlFor = id
+      const input = el('input')
+      input.id = id
+      input.type = 'text'
+      input.value = value ?? ''
+      input.disabled = value === undefined
+      wrap.append(label, input)
+      argsHost.appendChild(wrap)
+    })
+    runEntry.disabled = !complete
+    if (!complete) paintEmpty('run', copy.runner.unsupported)
+    else paintEmpty('run', copy.runner.idle)
+  }
+
+  const runSelectedEntry = (): void => {
+    const entry = entries.find((candidate) => candidate.name === entryPicker.value)
+    if (!entry || !evaluate) return
+    const inputs = [...argsHost.querySelectorAll('input')].filter((node): node is HTMLInputElement => node instanceof HTMLInputElement)
+    try {
+      const args = inputs.map((input) => parseArgument(input.value))
+      const result = evaluate(entry.name, args)
+      const printed = `${entry.name}(${args.map((arg) => formatValue(arg)).join(', ')})\n\n${formatValue(result)}`
+      paintCode('run', printed, 'plaintext')
+    } catch (error) {
+      paintEmpty('run', `${copy.runner.failed} ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+  entryPicker.addEventListener('change', fillArguments)
+  runEntry.addEventListener('click', runSelectedEntry)
+
+  // ── diagnostics ─────────────────────────────────────────────────────────────────────────
+  const goTo = (position: TypeshadePosition): void => {
+    if (!editor) return
+    const target = toMonacoPosition(position)
+    editor.setPosition(target)
+    editor.revealPositionInCenter(target)
+    editor.focus()
+  }
+
+  const paintDiagnostics = (rows: readonly DiagnosticRow[]): void => {
+    diagnosticsList.textContent = ''
+    if (rows.length === 0) {
+      diagnosticsList.appendChild(el('li', copy.clean))
+      return
+    }
+    for (const row of rows) {
+      const button = el('button')
+      button.type = 'button'
+      const at = el('span', toDisplayPosition(row.start))
+      at.className = 'at'
+      const message = el('span', ` ${row.message}`)
+      if (row.category === 'error') message.className = 'error'
+      button.append(at, message)
+      button.addEventListener('click', () => goTo(row.start))
+      diagnosticsList.appendChild(el('li')).appendChild(button)
+    }
+  }
+
+  /** The compiler writes its diagnostics in English. The one the Playground itself causes,
+   *  a file with no directive, is the page's own sentence, so it reads in the page's
+   *  language. */
+  const toRow = (diagnostic: TypeshadeDiagnostic): DiagnosticRow => ({
+    message: diagnostic.code === 'TS8001' ? copy.directive : diagnostic.message,
+    category: diagnostic.category,
+    start: diagnostic.range.start,
+  })
+
+  // ── one pass over what is in the editor ─────────────────────────────────────────────────
   const render = (): void => {
     if (!editor || !model || !monacoApi) return
     const source = editor.getValue()
     status.textContent = copy.idle
-    output.textContent = ''
-    diagnosticsPane.textContent = ''
     root.classList.remove('has-errors', 'has-output')
-    try {
-      const result = compileTsSource(source, { fileName, requireDirective: true })
-      const found = [...languageService.getDiagnostics(source)]
-      const lines = found.map(describe)
-      // The compiler stays quiet about a file with no directive, so the Playground says it.
-      if (!result.hasDirective && lines.length === 0) lines.push(copy.directive)
 
-      monacoApi.editor.setModelMarkers(
-        model,
-        'typeshade',
-        found.map((diagnostic) => ({
-          ...toMonacoRange(diagnostic.range),
-          message: diagnostic.message,
-          severity: diagnostic.category === 'warning' ? monacoApi.MarkerSeverity.Warning : monacoApi.MarkerSeverity.Error,
-        })),
-      )
+    const found = languageService.getDiagnostics(source)
+    monacoApi.editor.setModelMarkers(
+      model,
+      'typeshade',
+      found.map((diagnostic) => ({
+        ...toMonacoRange(diagnostic.range),
+        message: diagnostic.message,
+        severity: diagnostic.category === 'warning' ? monacoApi.MarkerSeverity.Warning : monacoApi.MarkerSeverity.Error,
+      })),
+    )
+    const rows = found.map(toRow)
+    paintDiagnostics(rows)
 
-      if (lines.length > 0) {
-        status.textContent = copy.errors
-        root.classList.add('has-errors')
-        diagnosticsPane.textContent = lines.join('\n')
-      } else {
-        status.textContent = copy.ready
-        diagnosticsPane.textContent = copy.clean
-      }
-
-      if (result.wgsl) {
-        paintOutput(result.wgsl)
-        root.classList.add('has-output')
-      } else {
-        shown = ''
-        output.textContent = copy.noOutput
-      }
-    } catch (error) {
+    // An error means the module never finished lowering, so there is nothing downstream to
+    // ask for: the panes stay empty and the compiler is left alone.
+    if (rows.some((row) => row.category === 'error')) {
       status.textContent = copy.errors
       root.classList.add('has-errors')
-      diagnosticsPane.textContent = error instanceof Error ? error.message : String(error)
+      clearOutput()
+      return
+    }
+
+    try {
+      const result = compile(source)
+      status.textContent = copy.ready
+      root.classList.add('has-output')
+
+      paintCode('wgsl', result.wgsl ?? '', WGSL_LANGUAGE)
+      if (result.glsl) {
+        paintCode('glsl-vertex', result.glsl.vertex, GLSL_LANGUAGE)
+        paintCode('glsl-fragment', result.glsl.fragment, GLSL_LANGUAGE)
+      } else {
+        paintEmpty('glsl-vertex', copy.empty.glsl)
+        paintEmpty('glsl-fragment', copy.empty.glsl)
+      }
+
+      const reflection = reflect(result.module)
+      const reflectionBody = bodies.get('reflection')
+      const reflectionEmpty = empties.get('reflection')
+      if (reflectionBody) paintReflection(reflectionBody, reflection, copy)
+      if (reflectionEmpty) reflectionEmpty.textContent = ''
+
+      evaluate = result.eval
+      entries = reflection.entries
+      entryPicker.textContent = ''
+      for (const entry of entries) {
+        const option = el('option', `${entry.name} (@${entry.stage})`)
+        option.value = entry.name
+        entryPicker.appendChild(option)
+      }
+      if (entries.length === 0) {
+        argsHost.textContent = ''
+        runEntry.disabled = true
+        paintEmpty('run', copy.runner.noEntries)
+      } else {
+        fillArguments()
+      }
+    } catch (error) {
+      // A module that passes the front end can still fail further down, where the failure
+      // arrives as a thrown error and not as a diagnostic. It belongs in the same list.
+      status.textContent = copy.errors
+      root.classList.add('has-errors')
+      clearOutput()
+      paintDiagnostics([
+        ...rows,
+        { message: error instanceof Error ? error.message : String(error), category: 'error', start: { line: 0, character: 0 } },
+      ])
     }
   }
+
+  const flash = (button: HTMLButtonElement, word: string, back: string): void => {
+    button.textContent = word
+    window.setTimeout(() => { button.textContent = back }, 1400)
+  }
+
+  for (const button of root.querySelectorAll('[data-copy-panel]')) {
+    if (!(button instanceof HTMLButtonElement)) continue
+    button.addEventListener('click', () => {
+      const id = button.dataset.copyPanel as PanelId
+      const text = shown.get(id) ?? bodies.get(id)?.innerText ?? ''
+      void navigator.clipboard
+        .writeText(text)
+        .then(() => flash(button, copy.copied, copy.copy))
+        .catch(() => {})
+    })
+  }
+
+  // ── the example picker ──────────────────────────────────────────────────────────────────
+  const showExample = (id: string): void => {
+    const example = examples.find((candidate) => candidate.id === id)
+    if (!example || !editor) return
+    examplePicker.value = example.id
+    exampleNote.textContent = example.description
+    editor.setValue(example.source)
+    render()
+  }
+
+  examplePicker.addEventListener('change', () => showExample(examplePicker.value))
+  reset.addEventListener('click', () => {
+    showExample(examplePicker.value)
+    editor?.focus()
+  })
+
+  /** What the page opens with: the example the picker starts on. */
+  const opening = examples.find((candidate) => candidate.id === root.dataset.defaultExample) ?? examples[0]
 
   status.textContent = copy.loading
   loadMonaco()
@@ -290,9 +690,23 @@ function mount(root: HTMLElement): void {
         'file:///types/typeshade.d.ts',
       )
 
-      // Colourising bakes the theme into the markup, so the pane is painted again on a change.
-      followSiteTheme(monaco, () => { if (shown) paintOutput(shown) })
-      model = monaco.editor.createModel(sample, 'typescript', monaco.Uri.parse(`file:///${fileName}`))
+      // Colourising bakes the theme into the markup, so every pane is painted again on a
+      // change.
+      followSiteTheme(monaco, () => {
+        const wgsl = shown.get('wgsl')
+        if (wgsl !== undefined) paintCode('wgsl', wgsl, WGSL_LANGUAGE)
+        for (const id of ['glsl-vertex', 'glsl-fragment'] as const) {
+          const text = shown.get(id)
+          if (text !== undefined) paintCode(id, text, GLSL_LANGUAGE)
+        }
+      })
+
+      if (opening) {
+        examplePicker.value = opening.id
+        exampleNote.textContent = opening.description
+      }
+
+      model = monaco.editor.createModel(opening?.source ?? '', 'typescript', monaco.Uri.parse(`file:///${fileName}`))
       editor = monaco.editor.create(editorHost, {
         model,
         automaticLayout: true,
@@ -344,18 +758,14 @@ function mount(root: HTMLElement): void {
         timer = window.setTimeout(render, 350)
       })
       run.addEventListener('click', render)
-      reset.addEventListener('click', () => {
-        editor.setValue(sample)
-        render()
-        editor.focus()
-      })
+      selectTab('wgsl')
       render()
     })
     .catch((error) => {
       status.textContent = copy.errors
       root.classList.add('has-errors')
       // The reader gets the sentence; the console keeps the cause.
-      diagnosticsPane.textContent = copy.unavailable
+      paintDiagnostics([{ message: copy.unavailable, category: 'error', start: { line: 0, character: 0 } }])
       console.error('[playground]', error)
     })
 }
