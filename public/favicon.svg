@@ -1,9 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="TypeShade">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="38%" r="78%">
-      <stop offset="0" stop-color="#16162a"/>
-      <stop offset="1" stop-color="#05050c"/>
-    </radialGradient>
     <linearGradient id="T" x1="18%" y1="8%" x2="78%" y2="96%">
       <stop offset="0" stop-color="#ffffff"/>
       <stop offset=".28" stop-color="#f4f6ff"/>
@@ -29,8 +25,6 @@
       <feDropShadow dx="0" dy="8" stdDeviation="9" flood-opacity=".35"/>
     </filter>
   </defs>
-  <rect width="1024" height="1024" fill="#000"/>
-  <rect x="101" y="91" width="822" height="840" rx="205" fill="url(#bg)"/>
   <g filter="url(#shadow)">
     <path fill="url(#T)" d="M224 371L304 270Q309 267 320 267H688Q701 267 694 278L620 365Q614 372 601 372H506Q486 372 482 393L439 619Q435 640 418 652L327 714Q304 730 307 700L361 397Q365 373 346 373H232Q218 373 224 371Z"/>
     <path fill="url(#sTop)" d="M476 499L609 385Q618 378 630 378H790Q803 378 793 389L675 499H476Z"/>
