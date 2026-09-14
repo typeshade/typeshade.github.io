@@ -2,6 +2,7 @@
 import { Code } from 'astro-expressive-code/components'
 import Base from '../../layouts/Base.astro'
 import CodeFrame from '../CodeFrame.astro'
+import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts'
@@ -78,7 +79,7 @@ const content = locale === 'ko'
   <section class="hero">
     <p class="hero-eyebrow">{content.eyebrow}</p>
     <h1 class="hero-title"><span class="hero-line accent">{content.title}</span></h1>
-    <p class="hero-subtitle">{content.subtitle}</p>
+    <p class="hero-subtitle"><Rich text={content.subtitle} locale={locale} /></p>
     <p class="hero-tagline">{content.tagline}</p>
     <p class="hero-actions">
       <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
@@ -98,7 +99,7 @@ const content = locale === 'ko'
 
   <section class="wide front-code">
     <h2>{content.flowH}</h2>
-    <p>{content.flowP}</p>
+    <p><Rich text={content.flowP} locale={locale} /></p>
     <div class="authoring-flow" aria-label="TypeShade compilation flow">
       <span>TypeScript authoring</span>
       <span aria-hidden="true">→</span>
@@ -123,13 +124,13 @@ const content = locale === 'ko'
 
   <section class="wide concepts">
     <h2>{content.conceptsH}</h2>
-    <p>{content.conceptsP}</p>
+    <p><Rich text={content.conceptsP} locale={locale} /></p>
     <div class="concept-grid">
       {content.concepts.map(([heading, mapping, body]) => (
         <article class="concept">
           <p class="concept-heading">{heading}</p>
-          <h3>{mapping}</h3>
-          <p>{body}</p>
+          <h3><Rich text={mapping} locale={locale} /></h3>
+          <p><Rich text={body} locale={locale} /></p>
         </article>
       ))}
     </div>
@@ -138,8 +139,8 @@ const content = locale === 'ko'
   <section class="wide highlights">
     {content.highlights.map(([heading, body]) => (
       <div class="highlight">
-        <h2>{heading}</h2>
-        <p>{body}</p>
+        <h2><Rich text={heading} locale={locale} /></h2>
+        <p><Rich text={body} locale={locale} /></p>
       </div>
     ))}
   </section>
