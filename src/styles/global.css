@@ -418,6 +418,8 @@ body > main { flex: 1 }
 
 /* Front page: the headline and its three links, then the live shader and three points */
 .hero { padding: 56px var(--gutter-x) 40px; text-align: center }
+/* The category line above the name, distinct from both the name and the subtitle under it. */
+.hero-eyebrow { margin: 0 0 12px; font-size: var(--text-meta); font-weight: 600; color: var(--color-accent) }
 .hero-title {
   max-inline-size: var(--wide); margin-inline: auto;
   font-size: 2.5rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em;
