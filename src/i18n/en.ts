@@ -164,6 +164,29 @@ export const en = {
       categories: apiCategories,
     },
   },
+  // The Playground at /playground/: the words around the Monaco editor and the WGSL the
+  // compiler writes from what is typed into it. Monaco carries its own English inside the
+  // editor box.
+  playground: {
+    h1: 'Playground',
+    intro: 'Write a TypeShade TypeScript file, compile it in your browser, and inspect the generated WGSL and diagnostics.',
+    fileName: 'hello.shade.ts',
+    help: 'Author TypeShade in a Monaco editor and compile it here.',
+    run: 'Compile',
+    reset: 'Reset example',
+    editor: 'TypeShade source',
+    output: 'WGSL output',
+    diagnostics: 'Diagnostics',
+    idle: 'Ready to compile',
+    ready: 'Compiled successfully',
+    errors: 'Compile errors',
+    loading: 'Loading editor…',
+    clean: 'No diagnostics.',
+    noOutput: 'No WGSL output.',
+    directive: 'A file compiles once it starts with the "use typeshade" directive.',
+    unavailable: 'The editor did not load. Check the connection and reload the page.',
+  },
+
   footer: {
     docs: 'Documentation',
     project: 'Project',

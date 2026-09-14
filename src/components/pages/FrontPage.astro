@@ -21,6 +21,7 @@ const content = locale === 'ko'
       subtitle: '`"use typeshade"`에서 시작하세요.',
       tagline: 'TypeScript의 익숙한 타입, 함수, 모듈과 에디터 경험을 바탕으로 TypeShade만의 GPU 타입과 셰이더 의미론을 사용합니다. 하나의 소스에서 WGSL과 GLSL ES 3.00을 생성합니다.',
       getStarted: 'TypeShade 사용하기',
+      playground: 'Playground에서 작성하기',
       learn: '왜 TypeShade인가',
       language: '언어 배우기',
       examples: '예제 보기',
@@ -48,6 +49,7 @@ const content = locale === 'ko'
       subtitle: 'Start with `"use typeshade"`.',
       tagline: 'Keep the TypeScript authoring experience—types, functions, modules and editor feedback—while writing with TypeShade GPU types and shader semantics. Emit WGSL or GLSL ES 3.00 from one source.',
       getStarted: 'Use TypeShade',
+      playground: 'Write in the Playground',
       learn: 'Why TypeShade',
       language: 'Learn the language',
       examples: 'Explore examples',
@@ -81,8 +83,9 @@ const content = locale === 'ko'
     <p class="hero-actions">
       <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
         {content.getStarted}
-        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 2.847 2.828 10.975-11z" /></svg>
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 2.847 2.828 2.847 2.828 10.975-11z" /></svg>
       </a>
+      <a class="button" href={localePath(locale, links.playground.href)}>{content.playground}</a>
       <a class="button" href={localePath(locale, links.motivation.href)}>{content.learn}</a>
       <a class="button" href={localePath(locale, links.guide.href)}>{content.language}</a>
       <a class="button" href={localePath(locale, links.examples.href)}>{content.examples}</a>

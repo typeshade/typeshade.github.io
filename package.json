@@ -20,7 +20,8 @@
     "capture": "bun run build:icons && bun run capture:stills && bun run capture:og",
     "qa:links": "node scripts/check-http-links.mjs dist",
     "qa:seo": "node scripts/check-seo.mjs dist",
-    "qa:openseo": "bun scripts/openseo-audit.mts dist"
+    "qa:openseo": "bun scripts/openseo-audit.mts dist",
+    "check:playground": "node scripts/check-playground.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -36,6 +37,7 @@
     "fast-xml-parser": "^5.4.1",
     "htmlparser2": "^10.1.0",
     "pagefind": "1.5.2",
+    "playwright": "^1.63.0",
     "robots-parser": "^3.0.1",
     "sharp": "^0.35.4",
     "typescript": "^5.6.3",
