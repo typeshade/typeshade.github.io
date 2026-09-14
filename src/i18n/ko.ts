@@ -198,9 +198,11 @@ export const ko: Copy = {
       concepts: 'TypeScript와 WebGPU',
       playground: 'Playground',
       sidebarGroups: {
-        learn: '학습',
+        getStarted: '시작하기',
         language: '언어',
-        internals: '컴파일러 내부',
+        concepts: '개념',
+        examples: '예제',
+        reference: '참조',
         project: '프로젝트',
       },
       topics: {

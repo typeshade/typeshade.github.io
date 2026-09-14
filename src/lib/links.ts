@@ -101,29 +101,50 @@ export function apiPage(name: string): string {
   return `/api/${slug}/`
 }
 
+/** The guide's own pages in the order the sidebar groups them, for the footer's site map. */
 export function docsPages(locale: Locale): readonly Destination[] {
-  const d = copyFor(locale).docs
-  const page = (key: 'motivation' | 'quickStart' | 'guide' | 'checks' | 'examples' | 'internals') => localePath(locale, links[key].href)
   return [
-    { label: d.why, href: page('motivation') },
-    { label: d.quickStart, href: page('quickStart') },
-    { label: d.labels.languageGuide, href: page('guide') },
-    { label: d.checks, href: page('checks') },
-    { label: d.examples, href: page('examples') },
-    { label: d.labels.internals, href: page('internals') },
+    docsPage(locale, 'motivation'),
+    docsPage(locale, 'quickStart'),
+    docsPage(locale, 'guide'),
+    docsPage(locale, 'concepts'),
+    docsPage(locale, 'examples'),
+    docsPage(locale, 'internals'),
+    docsPage(locale, 'checks'),
   ]
+}
+
+type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'concepts' | 'examples' | 'internals' | 'checks'
+/** One page of the guide as the sidebar and the footer name it, in one language. */
+function docsPage(locale: Locale, key: DocsPageKey): Destination {
+  const d = copyFor(locale).docs
+  const labels: Record<DocsPageKey, string> = {
+    motivation: d.introduction,
+    quickStart: d.labels.nav.use,
+    playground: d.labels.playground,
+    guide: d.labels.languageGuide,
+    concepts: d.labels.concepts,
+    examples: d.examples,
+    internals: d.labels.internals,
+    checks: d.checks,
+  }
+  return { label: labels[key], href: localePath(locale, links[key].href) }
 }
 
 export interface SidebarItem extends Destination { readonly depth?: number }
 export interface SidebarGroup { readonly title: string; readonly items: readonly SidebarItem[] }
 
-export function sidebar(locale: Locale, sections: readonly Destination[] = [], openCategory?: string): readonly SidebarGroup[] {
+/** The sidebar's groups. The reference lists its categories and opens the members of the one
+ *  the reader is in; the compiler internals list their sections the same way, only while the
+ *  reader is on one of them, so the sidebar never carries every page of the reference at once.
+ *  `path` is the page's locale-neutral route. */
+export function sidebar(locale: Locale, sections: readonly Destination[] = [], openCategory?: string, path?: string): readonly SidebarGroup[] {
   const d = copyFor(locale).docs
-  const pages = docsPages(locale)
   const labels = d.labels.sidebarGroups
   const topicLabels = d.labels.topics
+  const page = (key: DocsPageKey): SidebarItem => docsPage(locale, key)
   const languagePages: SidebarItem[] = [
-    pages[2]!,
+    page('guide'),
     { label: topicLabels.types, href: localePath(locale, links.languageTypes.href), depth: 1 },
     { label: topicLabels.functions, href: localePath(locale, links.languageFunctions.href), depth: 1 },
     { label: topicLabels.controlFlow, href: localePath(locale, links.languageControlFlow.href), depth: 1 },
@@ -137,11 +158,14 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     if (category.slug !== openCategory) continue
     for (const m of members) reference.push({ label: m.name, href: localePath(locale, `/api/${m.slug}/`), depth: 1 })
   }
+  reference.push(page('internals'))
+  if (path?.startsWith(links.internals.href)) for (const s of sections) reference.push({ ...s, depth: 1 })
   return [
-    { title: labels.learn, items: [...pages.slice(0, 2), { label: d.labels.concepts, href: localePath(locale, links.concepts.href) }, { label: d.labels.playground, href: localePath(locale, links.playground.href) }] },
+    { title: labels.getStarted, items: [page('motivation'), page('quickStart'), page('playground')] },
     { title: labels.language, items: languagePages },
-    { title: labels.internals, items: sections },
-    { title: labels.project, items: pages.slice(3) },
-    { title: d.api.reference, items: reference },
+    { title: labels.concepts, items: [page('concepts')] },
+    { title: labels.examples, items: [page('examples')] },
+    { title: labels.reference, items: reference },
+    { title: labels.project, items: [page('checks')] },
   ]
 }

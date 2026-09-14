@@ -121,9 +121,11 @@ export const en = {
       playground: 'Playground',
       /** The sidebar's own group headings (src/lib/links.ts sidebar()). */
       sidebarGroups: {
-        learn: 'Learn',
+        getStarted: 'Get started',
         language: 'Language',
-        internals: 'Internals',
+        concepts: 'Concepts',
+        examples: 'Examples',
+        reference: 'Reference',
         project: 'Project',
       },
       topics: {
