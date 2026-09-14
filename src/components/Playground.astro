@@ -2,7 +2,7 @@
 import { copyFor, type Locale } from '../i18n/index.ts';
 import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts';
 
-interface Props { locale: Locale; }
+interface Props { locale: Locale }
 const { locale } = Astro.props;
 const t = copyFor(locale).playground;
 
@@ -15,16 +15,28 @@ const examples = playgroundExamples().map((example) => ({
   title: t.examples[example.id].title,
   description: t.examples[example.id].description,
 }));
+const sample = `"use typeshade"
 
-/** The output tabs, in the order the tablist shows them. */
-const tabs = [
-  { id: 'wgsl', label: t.tabs.wgsl },
-  { id: 'glsl-vertex', label: t.tabs.glslVertex },
-  { id: 'glsl-fragment', label: t.tabs.glslFragment },
-  { id: 'reflection', label: t.tabs.reflection },
-  { id: 'run', label: t.tabs.run },
-];
+class Clip {
+  @builtin("position") pos: vec4
+}
 
+class Color {
+  @location(0) color: vec4
+}
+
+@vertex
+export function vs(@builtin("vertex_index") i: u32): Clip {
+  const x = i === 1 ? 0.8 : i === 2 ? 0. : -0.8
+  const y = i === 2 ? 0.8 : -0.8
+  return { pos: vec4(x, y, 0., 1.) }
+}
+
+@fragment
+export function fs(): Color {
+  return { color: vec4(1., 0., 0., 1.) }
+}
+`;
 // The words the browser half needs once it is running. It reads them off the element, since
 // the script that holds the logic is a bundled module and takes no `define:vars`.
 const runtimeCopy = {
@@ -34,35 +46,27 @@ const runtimeCopy = {
   errors: t.errors,
   loading: t.loading,
   clean: t.clean,
+  noOutput: t.noOutput,
   directive: t.directive,
   unavailable: t.unavailable,
+  entryPoints: t.entryPoints,
+  resources: t.resources,
+  inputs: t.inputs,
+  outputs: t.outputs,
+  returns: t.returns,
+  runCpu: t.runCpu,
+  running: t.running,
+  cpuIdle: t.cpuIdle,
+  noResources: t.noResources,
+  noEntryPoints: t.noEntryPoints,
+  requiredFeatures: t.requiredFeatures,
+  cpuFailed: t.cpuFailed,
+  entryCountOne: t.entryCount(1),
+  noGlsl: t.noGlsl,
   copy: t.copy,
   copied: t.copied,
   share: t.share,
   shared: t.shared,
-  empty: t.empty,
-  reflection: {
-    entries: t.reflection.entries,
-    stage: t.reflection.stage,
-    name: t.reflection.name,
-    inputs: t.reflection.inputs,
-    outputs: t.reflection.outputs,
-    workgroup: t.reflection.workgroup,
-    bindings: t.reflection.bindings,
-    group: t.reflection.group,
-    binding: t.reflection.binding,
-    space: t.reflection.space,
-    kind: t.reflection.kind,
-    uniforms: t.reflection.uniforms,
-    storage: t.reflection.storage,
-    field: t.reflection.field,
-    type: t.reflection.type,
-    offset: t.reflection.offset,
-    size: t.reflection.size,
-    features: t.reflection.features,
-    none: t.reflection.none,
-  },
-  runner: t.runner,
   emit: t.emit,
 };
 ---
@@ -70,25 +74,24 @@ const runtimeCopy = {
 <section
   class="ts-playground"
   data-playground
+  data-sample={sample}
   data-examples={JSON.stringify(examples)}
   data-default-example={defaultPlaygroundExample}
   data-copy={JSON.stringify(runtimeCopy)}
 >
   <div class="playground-toolbar">
     <div class="playground-pick">
-      <label for="playground-example">{t.exampleLabel}</label>
-      <select id="playground-example" data-example>
-        {examples.map((example) => <option value={example.id}>{example.title}</option>)}
-      </select>
+      <strong>{t.fileName}</strong>
+      <div class="pick-row">
+        <label for="playground-example">{t.exampleLabel}</label>
+        <select id="playground-example" data-example>
+          {examples.map((example) => <option value={example.id}>{example.title}</option>)}
+        </select>
+      </div>
       <p data-example-note>{examples[0]?.description}</p>
     </div>
-    <div class="playground-actions">
-      <button type="button" data-share>{t.share}</button>
-      <button type="button" data-reset>{t.reset}</button>
-      <button type="button" class="primary" data-run>{t.run}</button>
-    </div>
+    <div class="playground-actions"><button type="button" data-share>{t.share}</button><button type="button" data-reset>{t.reset}</button><button type="button" class="primary" data-run>{t.run}</button></div>
   </div>
-
   <div class="playground-options" role="group" aria-label={t.emit.title}>
     <div>
       <label for="playground-level">{t.emit.optimization}</label>
@@ -121,62 +124,33 @@ const runtimeCopy = {
 
   <div class="playground-grid">
     <section class="pane source-pane">
-      <div class="pane-title"><span>{t.editor}</span><span data-status>{t.idle}</span></div>
+      <div class="pane-title"><span>{t.editor}</span><kbd>TS</kbd></div>
       <div class="editor-host" data-editor aria-label={t.editor}></div>
     </section>
-
     <section class="pane output-pane">
-      <div class="pane-tabs" role="tablist" aria-label={t.output}>
-        {tabs.map((tab, i) => (
-          <button
-            type="button"
-            role="tab"
-            id={`pg-tab-${tab.id}`}
-            aria-controls={`pg-panel-${tab.id}`}
-            aria-selected={i === 0 ? 'true' : 'false'}
-            tabindex={i === 0 ? 0 : -1}
-            data-tab={tab.id}
-          >{tab.label}</button>
-        ))}
-      </div>
-
-      {tabs.map((tab, i) => (
-        <div
-          class="tab-panel"
-          role="tabpanel"
-          id={`pg-panel-${tab.id}`}
-          aria-labelledby={`pg-tab-${tab.id}`}
-          tabindex="0"
-          data-panel={tab.id}
-          hidden={i !== 0}
-        >
-          <div class="panel-bar">
-            <span data-size={tab.id}></span>
-            <button type="button" data-copy-panel={tab.id}>{t.copy}</button>
-          </div>
-          {tab.id === 'run' && (
-            <div class="run-form">
-              <div>
-                <label for="playground-entry">{t.runner.entry}</label>
-                <select id="playground-entry" data-entry></select>
-              </div>
-              <div class="run-args" data-args></div>
-              <button type="button" class="primary" data-run-entry>{t.runner.execute}</button>
-            </div>
-          )}
-          {tab.id === 'reflection'
-            ? <div class="reflection" data-body={tab.id}></div>
-            : <pre data-body={tab.id} data-output={tab.id === 'wgsl' ? '' : undefined}></pre>}
-          <p class="panel-empty" data-empty={tab.id}></p>
+      <div class="pane-title">
+        <div class="output-tabs" role="tablist" aria-label={t.output}>
+          <button type="button" role="tab" id="pg-tab-wgsl" aria-controls="pg-output" data-target="wgsl" aria-selected="true" tabindex="0">{t.wgslTab}</button>
+          <button type="button" role="tab" id="pg-tab-glslVertex" aria-controls="pg-output" data-target="glslVertex" aria-selected="false" tabindex="-1">{t.glslVertexTab}</button>
+          <button type="button" role="tab" id="pg-tab-glslFragment" aria-controls="pg-output" data-target="glslFragment" aria-selected="false" tabindex="-1">{t.glslFragmentTab}</button>
         </div>
-      ))}
+        <div class="output-meta">
+          <span data-size></span>
+          <button type="button" data-copy-output>{t.copy}</button>
+          <span data-status>{t.idle}</span>
+        </div>
+      </div>
+      <pre id="pg-output" role="tabpanel" aria-labelledby="pg-tab-wgsl" data-output aria-live="polite"></pre>
+      <div class="diagnostics"><div class="diagnostics-title">{t.diagnostics}</div><ul data-diagnostics aria-live="polite"></ul></div>
     </section>
   </div>
-
-  <div class="diagnostics">
-    <div class="diagnostics-title">{t.diagnostics}</div>
-    <ul data-diagnostics aria-live="polite"></ul>
-  </div>
+  <section class="pane reflect-pane">
+    <div class="pane-title">
+      <span>{t.reflection}</span>
+      <button type="button" data-run-cpu disabled>{t.runCpu}</button>
+    </div>
+    <div class="reflection" data-reflection aria-live="polite"></div>
+  </section>
 </section>
 
 <script>
@@ -185,73 +159,47 @@ const runtimeCopy = {
 
 <style>
   .ts-playground { border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
-  .playground-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 12px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
+  .playground-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
+  .playground-toolbar strong { display: block; font: 500 .875rem/1.4 var(--font-mono); }
+  .playground-toolbar span { display: block; margin-top: 2px; color: var(--color-text-3); font-size: .75rem; }
+  .playground-actions { display: flex; gap: 8px; }
+  .playground-actions button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 7px 11px; background: var(--color-ground); color: var(--color-text-1); font: 500 .75rem/1.3 var(--font-sans); cursor: pointer; }
+  .playground-actions button:hover { background: var(--color-surface-1); }
+  .playground-actions .primary { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-ground); }
+  .playground-actions .primary:hover { background: var(--color-accent); filter: brightness(0.92); }
   .playground-pick { min-width: 0; }
-  .playground-pick label { display: block; margin-bottom: 4px; color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
-  .playground-pick select { max-width: 100%; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 6px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .8125rem/1.3 var(--font-sans); }
-  .playground-pick p { margin: 6px 0 0; max-width: 46ch; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
-  .playground-actions { display: flex; flex: none; gap: 8px; }
-  .playground-actions button, .run-form button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 7px 11px; background: var(--color-ground); color: var(--color-text-1); font: 500 .75rem/1.3 var(--font-sans); cursor: pointer; }
-  .playground-actions button:hover, .run-form button:hover { background: var(--color-surface-1); }
-  .playground-actions .primary, .run-form .primary { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-ground); }
-  .playground-actions .primary:hover, .run-form .primary:hover { background: var(--color-accent); filter: brightness(0.92); }
+  .playground-pick .pick-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .playground-pick label { color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
+  .playground-pick select { max-width: 100%; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 5px 8px; background: var(--color-ground); color: var(--color-text-1); font: 500 .75rem/1.3 var(--font-sans); }
+  .playground-pick [data-example-note] { display: block; max-width: 52ch; margin-top: 6px; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
+
   .playground-options { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
   .playground-options label { display: block; margin-bottom: 4px; color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
   .playground-options select { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 6px 9px; background: var(--color-ground); color: var(--color-text-1); font: 400 .75rem/1.3 var(--font-mono); }
   .playground-check { display: flex; align-items: center; gap: 6px; padding-bottom: 7px; }
   .playground-check label { margin-bottom: 0; }
   .playground-check input { accent-color: var(--color-accent); }
-  .playground-options p { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
-  .panel-bar { display: flex; align-items: center; gap: 8px; }
-  .panel-bar [data-size] { color: var(--color-text-3); font: 400 .6875rem/1.3 var(--font-mono); }
+  .playground-options [data-level-note] { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
+
+  .output-meta { display: flex; align-items: center; gap: 10px; }
+  .output-meta [data-size] { color: var(--color-text-3); font: 400 .6875rem/1.3 var(--font-mono); }
+  .output-meta button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 3px 8px; background: var(--color-ground); color: var(--color-text-2); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
+  .output-meta button:hover { color: var(--color-text-1); }
+  .output-tabs button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+
   .playground-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
-  .pane { display: flex; flex-direction: column; min-width: 0; }
+  .pane { min-width: 0; }
   .source-pane { border-bottom: 1px solid var(--color-line-1); }
   .pane-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; color: var(--color-text-2); font-size: .75rem; font-weight: 500; background: var(--color-surface-2); }
-  .pane-title [data-status] { color: var(--color-text-3); font: 500 .6875rem/1.3 var(--font-mono); }
-
-  .pane-tabs { display: flex; overflow-x: auto; background: var(--color-surface-2); }
-  .pane-tabs button { flex: none; border: 0; border-bottom: 2px solid transparent; padding: 9px 12px; background: none; color: var(--color-text-3); font: 500 .75rem/1.3 var(--font-sans); white-space: nowrap; cursor: pointer; }
-  .pane-tabs button:hover { color: var(--color-text-1); }
-  .pane-tabs button[aria-selected='true'] { border-bottom-color: var(--color-accent); color: var(--color-text-1); background: var(--color-ground); }
-  .pane-tabs button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
-
-  .tab-panel { position: relative; display: flex; flex: 1; flex-direction: column; min-height: 480px; background: var(--color-ground); }
-  .tab-panel:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
-  .panel-bar { position: absolute; top: 8px; right: 12px; z-index: 1; }
-  .tab-panel[data-panel='reflection'] .panel-bar [data-size], .tab-panel[data-panel='run'] .panel-bar [data-size] { display: none; }
-  .panel-bar button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 8px; background: var(--color-ground); color: var(--color-text-2); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
-  .panel-bar button:hover { color: var(--color-text-1); }
-  .tab-panel pre { box-sizing: border-box; width: 100%; margin: 0; padding: 16px; overflow: auto; color: var(--color-text-1); font: 400 .8125rem/1.65 var(--font-mono); white-space: pre; }
-  .panel-empty { margin: 0; padding: 16px 16px 20px; color: var(--color-text-3); font-size: .8125rem; line-height: 1.6; }
-  .panel-empty:empty { display: none; }
-
-  /* The reflection, the diagnostics rows and the argument fields are built by the script
-     after the page loads, so they never carry Astro's scoping attribute and a scoped
-     descendant selector would miss them. The element each one hangs off is in the markup, so
-     :global on the descendant keeps the rule to this component. */
-  .reflection { padding: 12px 16px 20px; overflow-x: auto; }
-  .reflection :global(h3) { margin: 16px 0 6px; color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
-  .reflection :global(h3:first-child) { margin-top: 0; }
-  .reflection :global(table) { width: auto; border-collapse: collapse; margin-bottom: 4px; font: 400 .75rem/1.6 var(--font-mono); }
-  .reflection :global(th) { padding: 3px 18px 3px 0; text-align: left; vertical-align: top; white-space: nowrap; }
-  .reflection :global(td) { padding: 3px 18px 3px 0; text-align: left; vertical-align: top; }
-  .reflection :global(th) { color: var(--color-text-3); font-weight: 500; }
-  .reflection :global(td) { color: var(--color-text-1); }
-  .reflection :global(p) { margin: 0 0 2px; color: var(--color-text-3); font: 400 .75rem/1.6 var(--font-mono); }
-
-  .run-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--color-line-1); }
-  .run-form label { display: block; margin-bottom: 4px; color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
-  .run-form select, .run-args :global(input) { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 6px 9px; background: var(--color-ground); color: var(--color-text-1); font: 400 .75rem/1.3 var(--font-mono); }
-  .run-args { display: flex; flex-wrap: wrap; gap: 10px; }
-  .run-args :global(label) { display: block; margin-bottom: 4px; color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
-  .run-args :global(input) { width: 11ch; }
-  .run-args :global(.wide input) { width: 20ch; }
-
-  .editor-host { box-sizing: border-box; width: 100%; min-height: 480px; overflow: hidden; background: var(--color-ground); }
+  .pane-title kbd, .pane-title [data-status] { color: var(--color-text-3); font: 500 .6875rem/1.3 var(--font-mono); }
+  .editor-host, pre { box-sizing: border-box; width: 100%; min-height: 480px; margin: 0; border: 0; border-radius: 0; background: var(--color-ground); color: var(--color-text-1); font: 400 .8125rem/1.65 var(--font-mono); }
+  .editor-host { overflow: hidden; }
+  pre { padding: 16px; overflow: auto; white-space: pre; }
   .diagnostics { min-height: 96px; padding: 12px 16px; border-top: 1px solid var(--color-line-1); background: var(--color-surface-1); }
   .diagnostics-title { margin-bottom: 6px; color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
   [data-diagnostics] { margin: 0; padding: 0; list-style: none; color: var(--color-text-2); font: 400 .75rem/1.55 var(--font-mono); }
+  /* The rows are built by the script after the page loads, so they carry no scoping attribute
+     and a plain descendant selector would miss them, the way .reflection's contents do. */
   [data-diagnostics] :global(li + li) { margin-top: 2px; }
   [data-diagnostics] :global(button) { display: block; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 2px 4px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   [data-diagnostics] :global(button:hover) { background: var(--color-surface-2); }
@@ -260,14 +208,35 @@ const runtimeCopy = {
   .has-errors [data-status] { color: var(--color-diag); }
   .has-errors .diagnostics { border-top-color: var(--color-diag); }
   .has-output [data-status] { color: var(--color-accent); }
-
+  .output-tabs { display: flex; gap: 2px; margin: -3px 0; }
+  .output-tabs button { border: 0; border-radius: var(--radius-sm); padding: 3px 8px; background: transparent; color: var(--color-text-3); font: 500 .75rem/1.4 var(--font-sans); cursor: pointer; }
+  .output-tabs button:hover { color: var(--color-text-1); }
+  .output-tabs button[aria-selected='true'] { background: var(--color-ground); color: var(--color-text-1); }
+  .reflect-pane { border-top: 1px solid var(--color-line-1); }
+  .reflect-pane .pane-title button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
+  .reflect-pane .pane-title button:hover:not(:disabled) { background: var(--color-surface-1); }
+  .reflect-pane .pane-title button:disabled { opacity: .5; cursor: default; }
+  /* The pane's contents are built by src/scripts/playground.ts after the page loads, so those
+     nodes never carry Astro's scoping attribute and a plain descendant selector would miss
+     them. The scoped parent is .reflection; everything under it is addressed globally. */
+  .reflection { padding: 14px 16px; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
+  .reflection :global(.group-title) { margin: 0 0 8px; color: var(--color-text-3); font: 600 .6875rem/1.3 var(--font-sans); letter-spacing: .06em; }
+  .reflection :global(.group + .group) { margin-top: 20px; }
+  .reflection :global(.entry + .entry) { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--color-line-1); }
+  .reflection :global(.entry-head) { margin-bottom: 4px; }
+  .reflection :global(.entry-head .stage) { color: var(--color-accent); }
+  .reflection :global(.entry-head .entry-name) { margin-left: 10px; color: var(--color-text-1); font-weight: 500; }
+  .reflection :global(.io-row) { display: flex; gap: 12px; padding: 1px 0; }
+  .reflection :global(.io-row .io-label) { flex: none; width: 4rem; color: var(--color-text-3); }
+  .reflection :global(.io-row .io-value) { min-width: 0; overflow-wrap: anywhere; }
+  .reflection :global(.io-row .attr) { color: var(--color-text-3); }
+  .reflection :global(.empty) { color: var(--color-text-3); }
+  .reflection :global(.failed) { color: var(--color-diag); }
   @media (min-width: 64rem) { .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); } }
   @media (max-width: 48rem) {
     .playground-toolbar { align-items: stretch; flex-direction: column; }
     .playground-actions { width: 100%; }
     .playground-actions button { flex: 1; }
-    .editor-host, .tab-panel { min-height: 320px; }
-    .run-form { flex-direction: column; align-items: stretch; }
     .playground-options > div { flex: 1 1 45%; }
     .playground-options select { width: 100%; }
   }
