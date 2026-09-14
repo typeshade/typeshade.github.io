@@ -74,6 +74,9 @@ interface PlaygroundCopy {
   readonly noEntryPoints: string;
   readonly requiredFeatures: string;
   readonly cpuFailed: string;
+  readonly args: string;
+  readonly argsInvalid: string;
+  readonly cpuNoResources: string;
   readonly entryCountOne: string;
   readonly noGlsl: string;
 }
@@ -114,6 +117,27 @@ function zeroFor(type: string | undefined): { ok: true; value: unknown; } | { ok
   const vec = /^vec([234])</.exec(type);
   if (vec) return { ok: true, value: Array.from({ length: Number(vec[1]) }, () => 0) };
   return { ok: false };
+}
+
+/** How the zero of a type reads in an argument field, and how what is typed back reads as a
+ *  value. A vector is a comma-separated list, which is how the source spells one too. */
+const argText = (value: unknown): string => (Array.isArray(value) ? value.join(', ') : String(value));
+
+function parseArg(text: string, zero: unknown): unknown {
+  const trimmed = text.trim();
+  if (typeof zero === 'boolean') {
+    if (/^(?:true|1)$/i.test(trimmed)) return true;
+    if (/^(?:false|0)$/i.test(trimmed)) return false;
+    throw new Error('not a boolean');
+  }
+  const parts = trimmed.split(',').map((part) => Number(part.trim()));
+  if (parts.length === 0 || parts.some((part) => !Number.isFinite(part))) throw new Error('not a number');
+  if (Array.isArray(zero)) {
+    if (parts.length !== zero.length) throw new Error('wrong length');
+    return parts;
+  }
+  if (parts.length !== 1) throw new Error('not a single number');
+  return parts[0];
 }
 
 /** How a field reads on one line: `name: type` and the attribute that placed it, when it has one. */
@@ -336,9 +360,18 @@ async function decodeSource(text: string): Promise<string | undefined> {
 
 const hashParams = (): URLSearchParams => new URLSearchParams(window.location.hash.replace(/^#/, ''));
 
-function writeHash(key: string, value: string): void {
+/** The fragment: what to open, and the options to open it under. Only a setting that differs
+ *  from the default is written, so a link to an untouched Playground stays short. */
+function writeHash(key: string, value: string, choice?: EmitChoice): void {
+  const parts = [`${key}=${value}`];
+  if (choice) {
+    if (choice.level !== 'O2') parts.push(`opt=${choice.level}`);
+    if (choice.parens !== 'full') parts.push(`parens=${choice.parens}`);
+    if (choice.minify) parts.push('minify=1');
+    if (choice.floatPrecision !== 'highp') parts.push(`precision=${choice.floatPrecision}`);
+  }
   const url = new URL(window.location.href);
-  url.hash = `${key}=${value}`;
+  url.hash = parts.join('&');
   window.history.replaceState(null, '', url);
 }
 
@@ -449,6 +482,9 @@ function mount(root: HTMLElement): void {
   let compiled: ReturnType<typeof compile> | undefined;
   let reflection: ReturnType<typeof reflect> | undefined;
   let entries: readonly ReflectedEntry[] = [];
+  /** What the reader last typed into each argument field, keyed by entry and field name, so a
+   *  recompile does not throw their values away. */
+  const typedArgs = new Map<string, string>();
 
   /** Draws the reflection pane for the module that just compiled. */
   const paintReflection = (): void => {
@@ -475,6 +511,35 @@ function mount(root: HTMLElement): void {
         const { text, attr } = fieldLabel(field);
         box.append(ioRow(copy.outputs, text, attr));
       }
+      // The oracle used to run every entry at the zero of its type, which is how a triangle
+      // was only ever seen at its first corner and a shader dividing by a zero input returned
+      // NaN for every component. The zeros are the starting values of a form now.
+      const inputs = entry.io?.inputs ?? [];
+      if (inputs.length > 0) {
+        const row = el('div', 'io-row arg-row');
+        row.append(el('span', 'io-label', copy.args));
+        const fields = el('span', 'io-value');
+        inputs.forEach((field, index) => {
+          const zero = zeroFor(field.type);
+          const name = field.name ?? `arg${index}`;
+          const key = `${entry.name}/${name}`;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'arg-input';
+          input.dataset.arg = key;
+          input.setAttribute('aria-label', `${entry.name} ${name}`);
+          input.value = typedArgs.get(key) ?? (zero.ok ? argText(zero.value) : '');
+          // A type the form cannot start off, a matrix or a texture among them, is left for
+          // the reader to fill in instead of guessed at.
+          input.placeholder = field.type ?? '';
+          input.addEventListener('input', () => typedArgs.set(key, input.value));
+          const label = el('span', 'arg-name', `${name}:`);
+          fields.append(label, input);
+        });
+        row.append(fields);
+        box.append(row);
+      }
+
       const returns = ioRow(copy.returns, copy.cpuIdle, '', 'io-value empty');
       returns.dataset.returns = entry.name;
       box.append(returns);
@@ -513,25 +578,40 @@ function mount(root: HTMLElement): void {
       const slot = reflectionPane.querySelector(`[data-returns="${CSS.escape(entry.name)}"] .io-value`);
       const target = slot instanceof HTMLElement ? slot : reflectionPane.querySelector(`[data-returns="${CSS.escape(entry.name)}"]`)?.lastElementChild;
       if (!(target instanceof HTMLElement)) continue;
+      const inputs = entry.io?.inputs ?? [];
       const args: unknown[] = [];
-      let callable = true;
-      for (const field of entry.io?.inputs ?? []) {
+      let invalid = false;
+      for (const [index, field] of inputs.entries()) {
+        const name = field.name ?? `arg${index}`;
+        const typed = reflectionPane.querySelector(`[data-arg="${CSS.escape(`${entry.name}/${name}`)}"]`);
         const zero = zeroFor(field.type);
-        if (!zero.ok) { callable = false; break; }
-        args.push(zero.value);
+        const text = typed instanceof HTMLInputElement ? typed.value : '';
+        try {
+          args.push(parseArg(text, zero.ok ? zero.value : 0));
+        } catch {
+          invalid = true;
+          break;
+        }
       }
-      if (!callable) {
-        target.textContent = copy.cpuFailed;
-        target.className = 'io-value empty';
+      if (invalid) {
+        target.textContent = copy.argsInvalid;
+        target.className = 'io-value failed';
         continue;
       }
       try {
         const value = compiled.eval(entry.name, args);
-        const shownArgs = (entry.io?.inputs ?? []).map((f, i) => `${f.name ?? `arg${i}`} = ${formatValue(args[i])}`).join(', ');
+        const shownArgs = inputs.map((f, i) => `${f.name ?? `arg${i}`} = ${formatValue(args[i])}`).join(', ');
         target.textContent = shownArgs ? `${formatValue(value)}   (${shownArgs})` : formatValue(value);
         target.className = 'io-value';
       } catch (error) {
-        target.textContent = error instanceof Error ? error.message : copy.cpuFailed;
+        // `compileModule` takes `gpuStubs` and `precision` and no resource values, so an entry
+        // reading a uniform or a storage binding has nothing to read and the oracle stops at
+        // the name. The reader gets that sentence instead of the compiler's.
+        const message = error instanceof Error ? error.message : '';
+        const binds = (reflection?.bindGroups ?? []).some((group) => (group.entries ?? []).length > 0);
+        target.textContent = binds && /unknown (?:const|var|binding)/.test(message)
+          ? copy.cpuNoResources
+          : message || copy.cpuFailed;
         target.className = 'io-value failed';
       }
     }
@@ -698,7 +778,7 @@ function mount(root: HTMLElement): void {
 
   const publishSource = async (): Promise<void> => {
     if (!editor) return;
-    writeHash('code', await encodeSource(editor.getValue()));
+    writeHash('code', await encodeSource(editor.getValue()), currentChoice());
   };
 
   const flash = (button: HTMLButtonElement, word: string, back: string): void => {
@@ -726,7 +806,7 @@ function mount(root: HTMLElement): void {
     examplePicker.value = example.id;
     exampleNote.textContent = example.description;
     editor.setValue(example.source);
-    writeHash('example', example.id);
+    writeHash('example', example.id, currentChoice());
     render();
   };
 
@@ -735,6 +815,11 @@ function mount(root: HTMLElement): void {
   const applyOptions = (): void => {
     levelNote.hidden = levelPicker.value === 'O2';
     render();
+    // The bar is part of what a link shows, so changing it rewrites the fragment. An
+    // untouched example keeps its short `#example=` form.
+    const named = hashParams().get('example');
+    if (named && !hashParams().get('code')) writeHash('example', named, currentChoice());
+    else void publishSource();
   };
   for (const control of [levelPicker, parensPicker, precisionPicker, minifyToggle]) {
     control.addEventListener('change', applyOptions);
@@ -744,6 +829,13 @@ function mount(root: HTMLElement): void {
    *  the first example. */
   const openingSource = async (): Promise<{ source: string; example?: PlaygroundExample; }> => {
     const params = hashParams();
+    // The options come off the fragment before the first render, so the panes are painted
+    // once, under the settings the link carried.
+    const level = params.get('opt');
+    if (level === 'O0' || level === 'O1' || level === 'O2') levelPicker.value = level;
+    if (params.get('parens') === 'minimal') parensPicker.value = 'minimal';
+    if (params.get('minify') === '1') minifyToggle.checked = true;
+    if (params.get('precision') === 'mediump') precisionPicker.value = 'mediump';
     const code = params.get('code');
     if (code) {
       const source = await decodeSource(code);

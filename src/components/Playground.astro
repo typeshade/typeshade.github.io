@@ -2,7 +2,7 @@
 import { copyFor, type Locale } from '../i18n/index.ts';
 import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts';
 
-interface Props { locale: Locale }
+interface Props { locale: Locale; }
 const { locale } = Astro.props;
 const t = copyFor(locale).playground;
 
@@ -61,6 +61,9 @@ const runtimeCopy = {
   noEntryPoints: t.noEntryPoints,
   requiredFeatures: t.requiredFeatures,
   cpuFailed: t.cpuFailed,
+  args: t.args,
+  argsInvalid: t.argsInvalid,
+  cpuNoResources: t.cpuNoResources,
   entryCountOne: t.entryCount(1),
   noGlsl: t.noGlsl,
   copy: t.copy,
@@ -227,9 +230,13 @@ const runtimeCopy = {
   .reflection :global(.entry-head .stage) { color: var(--color-accent); }
   .reflection :global(.entry-head .entry-name) { margin-left: 10px; color: var(--color-text-1); font-weight: 500; }
   .reflection :global(.io-row) { display: flex; gap: 12px; padding: 1px 0; }
-  .reflection :global(.io-row .io-label) { flex: none; width: 4rem; color: var(--color-text-3); }
+  .reflection :global(.io-row .io-label) { flex: none; width: 5rem; color: var(--color-text-3); white-space: nowrap; }
   .reflection :global(.io-row .io-value) { min-width: 0; overflow-wrap: anywhere; }
   .reflection :global(.io-row .attr) { color: var(--color-text-3); }
+  .reflection :global(.arg-row input) { width: 16ch; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 2px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .75rem/1.5 var(--font-mono); }
+  .reflection :global(.arg-row input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -1px; }
+  .reflection :global(.arg-row .io-value) { display: flex; flex-wrap: wrap; gap: 8px; }
+  .reflection :global(.arg-name) { align-self: center; color: var(--color-text-3); }
   .reflection :global(.empty) { color: var(--color-text-3); }
   .reflection :global(.failed) { color: var(--color-diag); }
   @media (min-width: 64rem) { .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); } }

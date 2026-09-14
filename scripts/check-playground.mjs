@@ -10,15 +10,16 @@
 //      GLSL tabs hold the two GLSL ES 3.00 stages
 //   5. the reflection pane names the sample's entry points, and running them on the CPU
 //      oracle fills in what each one returns
-//   6. the emit options reach the panes: the level, minify, parens and the GLSL precision
-//   7. dark mode reaches the editor: its background is dark
-//   8. the example picker replaces the source
-//   9. a source the compiler has no rule for reports a diagnostic that carries a position,
+//   6. the arguments are a form: the vertex entry run at another index returns another corner
+//   7. the emit options reach the panes: the level, minify, parens and the GLSL precision
+//   8. dark mode reaches the editor: its background is dark
+//   9. the example picker replaces the source
+//  10. a source the compiler has no rule for reports a diagnostic that carries a position,
 //      and the panes go empty
-//  10. an unclosed call reports a parse error and the panes stay empty
-//  11. the compute example reports the language service's one known false positive
-//  12. `vec` offers vec4 in the completion list
-//  13. the URL fragment carries the edited source into a second tab
+//  11. an unclosed call reports a parse error and the panes stay empty
+//  12. the compute example reports the language service's one known false positive
+//  13. `vec` offers vec4 in the completion list
+//  14. the URL fragment carries the source and the options into a second tab carries the edited source into a second tab
 //
 // Hover over a name a user declared is the one thing the language service at the current pin
 // has no answer for: it returns nothing for `vs` and `fs`. That check arrives with the
@@ -213,6 +214,20 @@ async function checkRoute(browser, origin, route) {
         if (!evaluated.includes(wanted)) problems.push(`the CPU oracle did not return ${wanted}:\n    ${evaluated.slice(0, 240)}`)
       }
 
+      // The arguments are editable, so the vertex entry can be seen at a corner other than
+      // its first. At `vertex_index` 0 the sample returns [-0.8, -0.8, 0, 1]; at 1 it returns
+      // the second corner. Before this the oracle ran every entry at the zero of its type.
+      await page.fill('[data-arg="vs/i"]', '1')
+      await page.click('[data-run-cpu]')
+      await page.waitForTimeout(500)
+      const atOne = (await page.innerText('[data-reflection]')).trim()
+      if (!atOne.includes('[0.8, -0.8, 0, 1]')) {
+        problems.push(`running the vertex entry at vertex_index 1 did not return the second corner:\n    ${atOne.slice(0, 240)}`)
+      }
+      await page.fill('[data-arg="vs/i"]', '0')
+      await page.click('[data-run-cpu]')
+      await page.waitForTimeout(400)
+
       // The GLSL tabs carry the other two files the compiler emits from the same module.
       for (const [tab, wanted] of [['glslVertex', 'void main'], ['glslFragment', 'void main']]) {
         await page.click(`[data-target="${tab}"]`)
@@ -352,6 +367,8 @@ async function checkRoute(browser, origin, route) {
       // ── the source in the URL ───────────────────────────────────────────────────────────
       const edited = sample.replace('vec4(1., 0., 0., 1.)', 'vec4(0.25, 0.5, 0.75, 1.)')
       await typeSource(page, edited)
+      await setOption(page, '[data-opt-level]', 'O0')
+      await setOption(page, '[data-opt-minify]', true)
       const shared = page.url()
       if (!shared.includes('#code=')) {
         problems.push(`editing the source did not put it in the URL: ${shared}`)
@@ -362,6 +379,14 @@ async function checkRoute(browser, origin, route) {
           await second.page.waitForSelector('.monaco-editor', { timeout: EDITOR_TIMEOUT })
           const restored = await sourceOf(second.page)
           if (restored.trim() !== edited.trim()) problems.push(`the shared link opened a different source:\n    ${restored.slice(0, 160)}`)
+          // And the bar it was shared under, so the link shows what the sender saw.
+          const reopened = await second.page.evaluate(() => ({
+            level: document.querySelector('[data-opt-level]')?.value,
+            minify: document.querySelector('[data-opt-minify]')?.checked,
+          }))
+          if (reopened.level !== 'O0' || reopened.minify !== true) {
+            problems.push(`the shared link lost the emit options: level ${reopened.level}, minify ${reopened.minify}`)
+          }
           pageErrors.push(...second.pageErrors)
         } finally {
           await second.page.close()
@@ -369,6 +394,8 @@ async function checkRoute(browser, origin, route) {
       }
       console.log(`  emit options: O2 ${atO2.length} B, O0 ${atO0.length} B, minified ${minified.length} B, parens ${parensFull.length} to ${parensMinimal.length} B`)
       console.log(`  link: ${shared.length} characters`)
+      await setOption(page, '[data-opt-level]', 'O2')
+      await setOption(page, '[data-opt-minify]', false)
 
       const status = (await page.textContent('[data-status]'))?.trim() ?? ''
       const diagnostics = (await page.textContent('[data-diagnostics]'))?.trim() ?? ''

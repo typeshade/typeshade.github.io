@@ -249,6 +249,9 @@ export const en = {
     noResources: 'This module binds no resources.',
     noEntryPoints: 'This module declares no entry point.',
     requiredFeatures: 'Required features',
+    args: 'Arguments',
+    argsInvalid: 'That argument is not a number or a list of numbers.',
+    cpuNoResources: 'The CPU oracle takes entry arguments only, so an entry that reads a uniform or a storage binding cannot run here yet.',
     cpuFailed: 'The CPU oracle could not run this entry point.',
     entryCount: (n: number) => (n === 1 ? '1 entry point' : `${n} entry points`),
     // The example picker. Each example is one of the compiler's own .shade.ts files, named
