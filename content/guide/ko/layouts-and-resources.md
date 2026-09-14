@@ -1,7 +1,7 @@
 ---
 id: layouts-and-resources
-source: 4a26f18a8ba1fc6dca057b639cb2c4f75bd339bf69cb2eec74f41a9383752363
-sourceLine: 883
+source: 095950dbbd1c76dc6040f7e90ee6095185fd308fe7c2045126b136c04c5e1a2a
+sourceLine: 960
 ---
 
 이 절을 읽고 나면 버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고, 그 선언
@@ -87,6 +87,20 @@ const U = uniformStruct(
 const opacity = U.field.raster_params.x
 const m = U.field.mvp
 ```
+
+`U.field`는 평범한 객체이므로, 본문 맨 위에서 한 번 구조 분해해 두고 그 뒤로는 이름으로
+필드를 읽으면 됩니다: `const { mvp, proj_params } = U.field`.
+
+유니폼이 스칼라나 벡터 하나뿐이라면 구조체로 감쌀 필요가 없습니다. `resource`는 이런 단일
+바인딩 값을 선언하고, 값을 읽는 `.node`와 `uses`에 넘길 `.binding`을 함께 돌려줍니다.
+
+```ts
+const mode = resource('mode', u32T, { group: 0, binding: 1 })
+// mode.node is a ReadonlyNode<'u32'> — `@group(0) @binding(1) var<uniform> mode: u32;`
+```
+
+`resource`는 텍스처와 샘플러도 선언합니다. [텍스처와 샘플러](#textures-and-samplers) 절을
+참고하십시오.
 
 ### 일반 구조체
 

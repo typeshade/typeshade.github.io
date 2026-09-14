@@ -1,6 +1,6 @@
 ---
 id: your-first-shader
-source: c49f95f4da58d020cd07c3fed3933a8f0267a7c0d120c6d03353c8e96e66a89e
+source: a926deb630227f8b98ce081f27f432244bc3e5d67a435a8827ba4241a447d536
 sourceLine: 127
 ---
 
@@ -19,22 +19,20 @@ import {
   location,
   emitModule,
   emitGlslStages,
-  u32,
-  toF32,
-  f32,
+  sub,
   vec2,
   vec4,
-  u32T,
   vec2fT,
   vec4fT,
 } from '@xgis/shader-dsl'
 ```
 
-여기에는 두 종류의 이름이 있습니다. `u32T`, `vec2fT`, `vec4fT`는 *타입 토큰*으로, 선언에
-타입을 적어야 하는 자리에 씁니다. `f32`, `vec2`, `vec4`는 *노드*를 만듭니다. 노드는 타입이
-정해진 표현식 하나이고, 이런 노드가 모여 그래프를 이룹니다. 노드는 TypeScript 타입으로도
-자기 타입을 드러내므로, 노드의 메서드를 호출해 더 큰 표현식을 만듭니다. `x.mul(4).sub(1)`은
-곱셈 한 번과 뺄셈 한 번입니다.
+여기에는 두 종류의 이름이 있습니다. `vec2fT`와 `vec4fT`는 *타입 토큰*으로, 선언에 타입을
+적어야 하는 자리에 씁니다. `vec2`와 `vec4`는 *노드*를 만듭니다. 노드는 타입이 정해진 표현식
+하나이고, 이런 노드가 모여 그래프를 이룹니다. 노드는 TypeScript 타입으로도 자기 타입을
+드러내므로, 노드의 메서드를 호출해 더 큰 표현식을 만듭니다. `x.mul(4).sub(1)`은 곱셈 한 번과
+뺄셈 한 번입니다. `sub`는 같은 뺄셈을 독립 함수로 제공하며, 왼쪽 피연산자가 리터럴인
+표현식에 씁니다.
 
 ### 버텍스 진입점
 
@@ -50,10 +48,14 @@ import {
 
 ```ts
 const VsOut = ioStruct('VsOut', {
-  pos: builtin('position', vec4fT),
+  pos: builtin('position'),
   uv: location(0, vec2fT),
 })
 ```
+
+`builtin`에는 타입 토큰이 필요 없습니다. WGSL은 `clip_distances`를 제외한 모든 빌트인의
+타입을 스펙에서 고정해 두므로, `builtin('position')`은 id만 보고 `vec4<f32>`를 읽어 옵니다.
+타입 토큰을 따로 받으면 스펙과 어긋난 타입을 적을 여지만 생깁니다.
 
 이 셰이더에는 버텍스 버퍼가 없습니다. 화면 전체를 덮는 버텍스 세 개를 그리고, 위치는 버텍스
 인덱스만으로 계산합니다. 스테이지 속성이 붙은 매개변수도 일반 매개변수와 같은 매개변수
@@ -62,10 +64,10 @@ const VsOut = ioStruct('VsOut', {
 ```ts
 const vs = fn(
   'vs',
-  { vi: builtin('vertex_index', u32T) },
+  { vi: builtin('vertex_index') },
   ({ vi }) => {
-    const x = toF32(vi.bitAnd(u32(1))).mul(4).sub(1)
-    const y = toF32(vi.shr(u32(1))).mul(4).sub(1)
+    const x = vi.bitAnd(1).f32().mul(4).sub(1)
+    const y = vi.shr(1).f32().mul(4).sub(1)
     return VsOut.construct({
       pos: vec4(x, y, 0, 1),
       uv: vec2(x.mul(0.5).add(0.5), y.mul(0.5).add(0.5)),
@@ -75,9 +77,12 @@ const vs = fn(
 )
 ```
 
-본문은 매개변수를 타입이 정해진 노드로 받습니다. 그래서 `vi`는 `u32` 노드이고, `toF32`가
-이것을 `f32`로 변환합니다. 반환 타입은 따로 적지 않고 본문이 돌려주는 값에서 추론합니다.
-여기서는 `VsOut.construct`가 만든 구조체가 반환 타입입니다.
+본문은 매개변수를 타입이 정해진 노드로 받습니다. 그래서 `vi`는 `u32` 노드이고, `.f32()`가
+이를 변환합니다. 이 캐스트는 `.mul`, `.sub`와 나란히 체인 안에 있으므로 줄을 왼쪽에서
+오른쪽으로 그대로 읽어 나갈 수 있습니다. 독립 함수인 `f32(vi)`와 예전 이름인 `toF32(vi)`도
+같은 노드를 만듭니다. 메서드가 없는 그냥 숫자 피연산자는 만나는 노드의 타입을 그대로
+따르므로, `bitAnd(1)`은 `u32(1)`로 감쌀 필요가 없습니다. 반환 타입은 따로 적지 않고 본문이
+돌려주는 값에서 추론하며, 여기서는 `VsOut.construct`가 만든 구조체가 반환 타입입니다.
 
 ### 프래그먼트 진입점
 
@@ -90,19 +95,21 @@ const fs = fn(
   'fs',
   { vo: VsOut },
   ({ vo }) => {
-    const shade = f32(1).sub(vo.uv.y)
+    const shade = sub(1, vo.uv.y)
     return vec4(vo.uv.x, shade, 0.5, 1)
   },
-  { stage: 'fragment', retAttr: '@location(0)' },
+  { stage: 'fragment' },
 )
 ```
 
-반환값이 구조체가 아닐 때는 `retAttr`로 속성을 붙입니다. `@location(0)`은 첫 번째 색상
-어태치먼트입니다.
+프래그먼트 함수가 구조체가 아닌 값을 반환하면 별도로 적지 않아도 기본값인 `@location(0)`,
+즉 첫 번째 색상 어태치먼트로 나갑니다. 구조체가 아닌 반환값을 다른 곳으로 보내려면
+`retAttr`을 씁니다.
 
-숫자 리터럴은 옆에 있는 피연산자의 타입을 따르므로, `vec4(vo.uv.x, shade, 0.5, 1)`에는 따로
-래퍼가 필요 없습니다. 반면 타입을 알려 줄 피연산자가 옆에 없으면 `f32(1)`처럼 직접 감쌉니다.
-그냥 숫자에는 메서드가 없으므로, `sub`를 호출하려면 먼저 노드가 있어야 합니다.
+숫자 리터럴은 옆에 있는 피연산자의 타입을 따르므로 `vec4(vo.uv.x, shade, 0.5, 1)`에는 따로
+래퍼가 필요 없습니다. `sub(1, x)`는 `x`가 가진 `.sub`를 독립 함수로 옮겨 놓은 형태로, 왼쪽
+피연산자가 리터럴인 표현식을 위한 것입니다. 그냥 숫자에는 메서드가 없으므로 메서드 형태로
+쓰려면 `f32(1).sub(x)`처럼 직접 감싸야 합니다. `add`, `mul`, `div`에도 같은 짝이 있습니다.
 
 ### 모듈 구성
 
