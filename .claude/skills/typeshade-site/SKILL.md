@@ -14,18 +14,24 @@ one design document; this skill is the working procedure on top of it.
 
 The site follows the shapes readers already know, and nothing else:
 
-- **Front page**: vuejs.org, with react.dev's headline: the name in the accent colour, the
-  category line under it (The verifiable TypeScript shader library), one sentence, three buttons (Get
-  started, Why TypeShade, Examples), the live shader, three short
-  points, one line on the release state. No lists of features, no long prose.
-- **Header**: VitePress. Name on the left; Guide, API and Examples; then a language menu (globe
-  icon, current language, list of the others), a dark-mode switch (sun or moon), GitHub as an
-  icon. Under 48rem, a menu button and a panel with the same items.
-- **Docs**: VitePress. Sidebar on the left in four groups (Introduction, Authoring, Project,
-  Reference), the document in the middle at 740px, an outline of the page's own headings on the
-  right on wide screens, an "Edit this page" link and previous and next at the bottom. Under
-  64rem the sidebar is a bar under the header that names the current page. The guide lives
-  under `/guide/`, one page per section of AUTHORING.md; the reference lives under `/api/`.
+- **Front page**: vuejs.org, with react.dev's headline: the category line (A shader language
+  built around the TypeScript experience), the name in the accent colour, a one-line subtitle,
+  the tagline, five buttons (Use TypeShade, Write in the Playground, Why TypeShade, Learn the
+  language, Explore examples), the live shader, the authored file beside the WGSL it emits,
+  four concept cards, three short points. No lists of features, no long prose.
+- **Header**: VitePress. Name on the left; Use TypeShade, Playground, Language, API and
+  Examples; then a language menu (globe icon, current language, list of the others), a
+  dark-mode switch (sun or moon), GitHub as an icon. Under 48rem, a menu button and a panel
+  with the same items.
+- **Docs**: VitePress. Sidebar on the left in six groups (Get started, Language, Concepts,
+  Examples, Reference, Project), the document in the middle at 740px, an outline of the page's
+  own headings on the right on wide screens, an "Edit this page" link and previous and next at
+  the bottom, which follow the sidebar's order. Under 64rem the sidebar is a bar under the
+  header that names the current page. The guide lives under `/guide/`: the language guide and
+  its topics, written in the dictionaries, and the compiler internals under
+  `/guide/internals/`, one page per section of AUTHORING.md. The reference lives under
+  `/api/`; its sidebar group closes with Compiler internals, whose sections open one level in
+  only on their own pages, and Language service.
 - **Reference**: MDN. `/api/` lists the categories, `/api/<category>/` the exports in one of
   them, `/api/<export>/` is the page for one export. A page keeps MDN's order and leaves out
   a section it has nothing for: Syntax, Parameters, Return value, Exceptions, Description,
