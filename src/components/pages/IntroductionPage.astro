@@ -88,26 +88,24 @@ const headings = [
 
   <h2 id="from-typescript">{content.familiarH}</h2>
   <p>{content.familiarP}</p>
-  <div class="table-scroll">
-    <table>
-      <thead>
+  <table>
+    <thead>
+      <tr>
+        <th>{locale === 'ko' ? '개념' : 'Concept'}</th>
+        <th>{locale === 'ko' ? 'TypeScript에서 익숙한 부분' : 'Familiar from TypeScript'}</th>
+        <th>{locale === 'ko' ? 'TypeShade에서 추가되는 의미' : 'TypeShade adds'}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {content.rows.map(([concept, familiar, addition]) => (
         <tr>
-          <th>{locale === 'ko' ? '개념' : 'Concept'}</th>
-          <th>{locale === 'ko' ? 'TypeScript에서 익숙한 부분' : 'Familiar from TypeScript'}</th>
-          <th>{locale === 'ko' ? 'TypeShade에서 추가되는 의미' : 'TypeShade adds'}</th>
+          <td data-label={locale === 'ko' ? '개념' : 'Concept'}><strong>{concept}</strong></td>
+          <td data-label={locale === 'ko' ? 'TypeScript에서 익숙한 부분' : 'Familiar from TypeScript'}>{familiar}</td>
+          <td data-label={locale === 'ko' ? 'TypeShade에서 추가되는 의미' : 'TypeShade adds'}>{addition}</td>
         </tr>
-      </thead>
-      <tbody>
-        {content.rows.map(([concept, familiar, addition]) => (
-          <tr>
-            <td><strong>{concept}</strong></td>
-            <td>{familiar}</td>
-            <td>{addition}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+      ))}
+    </tbody>
+  </table>
 
   <h2 id="further-reading">{content.furtherH}</h2>
   <p>{content.furtherP}</p>

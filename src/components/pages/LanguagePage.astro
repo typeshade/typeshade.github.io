@@ -75,12 +75,12 @@ const headings = [
 
   <h2 id="syntax">{content.syntaxH}</h2>
   <p>{content.syntaxP}</p>
-  <div class="table-scroll"><table><thead><tr><th>{ko ? 'TypeScript 개념' : 'TypeScript concept'}</th><th>TypeShade</th><th>{ko ? '달라지는 의미' : 'What changes'}</th></tr></thead><tbody>
-    <tr><td>function</td><td>helper / entry</td><td>{ko ? 'GPU에서 실행 가능한 함수가 됩니다.' : 'The body must be GPU-lowerable.'}</td></tr>
-    <tr><td>type</td><td>GPU value shape</td><td>{ko ? '허용되는 GPU 값과 layout을 기준으로 검사합니다.' : 'The shape is checked against GPU value semantics.'}</td></tr>
-    <tr><td>class</td><td>GPU struct</td><td>{ko ? 'runtime object가 아니라 데이터 layout을 표현합니다.' : 'It describes data layout, not a runtime object.'}</td></tr>
-    <tr><td>if / for</td><td>GPU control flow</td><td>{ko ? 'JavaScript runtime 전체가 아니라 컴파일 가능한 흐름입니다.' : 'The flow must compile to GPU execution.'}</td></tr>
-  </tbody></table></div>
+  <table><thead><tr><th>{ko ? 'TypeScript 개념' : 'TypeScript concept'}</th><th>TypeShade</th><th>{ko ? '달라지는 의미' : 'What changes'}</th></tr></thead><tbody>
+    <tr><td data-label={ko ? 'TypeScript 개념' : 'TypeScript concept'}>function</td><td data-label="TypeShade">helper / entry</td><td data-label={ko ? '달라지는 의미' : 'What changes'}>{ko ? 'GPU에서 실행 가능한 함수가 됩니다.' : 'The body must be GPU-lowerable.'}</td></tr>
+    <tr><td data-label={ko ? 'TypeScript 개념' : 'TypeScript concept'}>type</td><td data-label="TypeShade">GPU value shape</td><td data-label={ko ? '달라지는 의미' : 'What changes'}>{ko ? '허용되는 GPU 값과 layout을 기준으로 검사합니다.' : 'The shape is checked against GPU value semantics.'}</td></tr>
+    <tr><td data-label={ko ? 'TypeScript 개념' : 'TypeScript concept'}>class</td><td data-label="TypeShade">GPU struct</td><td data-label={ko ? '달라지는 의미' : 'What changes'}>{ko ? 'runtime object가 아니라 데이터 layout을 표현합니다.' : 'It describes data layout, not a runtime object.'}</td></tr>
+    <tr><td data-label={ko ? 'TypeScript 개념' : 'TypeScript concept'}>if / for</td><td data-label="TypeShade">GPU control flow</td><td data-label={ko ? '달라지는 의미' : 'What changes'}>{ko ? 'JavaScript runtime 전체가 아니라 컴파일 가능한 흐름입니다.' : 'The flow must compile to GPU execution.'}</td></tr>
+  </tbody></table>
 
   <h2 id="gpu">{content.gpuH}</h2>
   <p><Rich text={content.gpuP} locale={locale} /></p>
@@ -106,12 +106,12 @@ const headings = [
   <TypeShadeCode code={'"use typeshade"\n\nclass Camera {\n  @align(16)\n  view: mat4\n  pos: vec3\n}\n\ndeclare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}'} lang="ts" title="paint.ts" />
 
   <h2 id="typescript">{content.tsH}</h2>
-  <div class="table-scroll"><table><thead><tr><th>TypeScript</th><th>TypeShade</th></tr></thead><tbody>
-    <tr><td><code>declare</code></td><td><code>declare</code> describes host-provided GPU resources.</td></tr>
-    <tr><td>function parameter</td><td>GPU value or explicit stage builtin input.</td></tr>
-    <tr><td>class</td><td>GPU struct and field metadata.</td></tr>
-    <tr><td>number</td><td>Use explicit GPU numeric types such as <code>f32</code>, <code>i32</code>, <code>u32</code>.</td></tr>
-  </tbody></table></div>
+  <table><thead><tr><th>TypeScript</th><th>TypeShade</th></tr></thead><tbody>
+    <tr><td data-label="TypeScript"><code>declare</code></td><td data-label="TypeShade"><code>declare</code> describes host-provided GPU resources.</td></tr>
+    <tr><td data-label="TypeScript">function parameter</td><td data-label="TypeShade">GPU value or explicit stage builtin input.</td></tr>
+    <tr><td data-label="TypeScript">class</td><td data-label="TypeShade">GPU struct and field metadata.</td></tr>
+    <tr><td data-label="TypeScript">number</td><td data-label="TypeShade">Use explicit GPU numeric types such as <code>f32</code>, <code>i32</code>, <code>u32</code>.</td></tr>
+  </tbody></table>
   <p>{ko ? '즉 TypeShade는 TypeScript 문법을 복제하는 언어가 아니라 TypeScript의 authoring 경험을 GPU 언어의 의미론에 연결하는 언어입니다.' : 'TypeShade is therefore not a copy of TypeScript syntax. It connects the TypeScript authoring experience to a GPU language model.'}</p>
 
   <h2 id="references">{content.refsH}</h2>

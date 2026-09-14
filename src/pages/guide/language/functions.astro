@@ -53,11 +53,11 @@ const headings = [['anatomy',content.anatomy],['params',content.params],['helper
   <h2 id="params">{content.params}</h2>
   <p>{content.paramsP}</p>
   <TypeShadeCode code={`function mix(a: vec4, b: vec4, amount: f32): vec4 {\n  return a + (b - a) * amount\n}`} />
-  <div class="table-scroll"><table><thead><tr><th>{ko ? '부분' : 'Part'}</th><th>{ko ? '역할' : 'Role'}</th></tr></thead><tbody>
-    <tr><td><code>a</code>, <code>b</code></td><td>{ko ? 'GPU 입력 값입니다.' : 'GPU input values.'}</td></tr>
-    <tr><td><code>amount: f32</code></td><td>{ko ? '스칼라 입력이며 컴파일러가 연산 타입을 확인합니다.' : 'A scalar input whose type participates in expression checking.'}</td></tr>
-    <tr><td><code>: vec4</code></td><td>{ko ? '호출자에게 반환할 GPU 값의 shape입니다.' : 'The GPU value shape returned to the caller.'}</td></tr>
-  </tbody></table></div>
+  <table><thead><tr><th>{ko ? '부분' : 'Part'}</th><th>{ko ? '역할' : 'Role'}</th></tr></thead><tbody>
+    <tr><td data-label={ko ? '부분' : 'Part'}><code>a</code>, <code>b</code></td><td data-label={ko ? '역할' : 'Role'}>{ko ? 'GPU 입력 값입니다.' : 'GPU input values.'}</td></tr>
+    <tr><td data-label={ko ? '부분' : 'Part'}><code>amount: f32</code></td><td data-label={ko ? '역할' : 'Role'}>{ko ? '스칼라 입력이며 컴파일러가 연산 타입을 확인합니다.' : 'A scalar input whose type participates in expression checking.'}</td></tr>
+    <tr><td data-label={ko ? '부분' : 'Part'}><code>: vec4</code></td><td data-label={ko ? '역할' : 'Role'}>{ko ? '호출자에게 반환할 GPU 값의 shape입니다.' : 'The GPU value shape returned to the caller.'}</td></tr>
+  </tbody></table>
 
   <h2 id="helper">{content.helper}</h2>
   <p>{content.helperP}</p>
@@ -77,11 +77,11 @@ const headings = [['anatomy',content.anatomy],['params',content.params],['helper
   <h2 id="builtin">{content.builtin}</h2>
   <p>{content.builtinP}</p>
   <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(\n  @builtin("global_invocation_id") gid: vec3u\n) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}`} />
-  <div class="table-scroll"><table><thead><tr><th>{ko ? '표현' : 'Form'}</th><th>{ko ? '의미' : 'Meaning'}</th></tr></thead><tbody>
-    <tr><td><code>@builtin("global_invocation_id")</code></td><td>{ko ? 'GPU가 제공하는 compute 입력을 지정합니다.' : 'Selects the GPU-provided compute input.'}</td></tr>
-    <tr><td><code>gid: vec3u</code></td><td>{ko ? '그 입력의 TypeShade 타입과 local 이름입니다.' : 'The TypeShade type and local name for that input.'}</td></tr>
-    <tr><td><code>gid.x</code></td><td>{ko ? '현재 invocation의 x component를 읽습니다.' : 'Reads the x component for the current invocation.'}</td></tr>
-  </tbody></table></div>
+  <table><thead><tr><th>{ko ? '표현' : 'Form'}</th><th>{ko ? '의미' : 'Meaning'}</th></tr></thead><tbody>
+    <tr><td data-label={ko ? '표현' : 'Form'}><code>@builtin("global_invocation_id")</code></td><td data-label={ko ? '의미' : 'Meaning'}>{ko ? 'GPU가 제공하는 compute 입력을 지정합니다.' : 'Selects the GPU-provided compute input.'}</td></tr>
+    <tr><td data-label={ko ? '표현' : 'Form'}><code>gid: vec3u</code></td><td data-label={ko ? '의미' : 'Meaning'}>{ko ? '그 입력의 TypeShade 타입과 local 이름입니다.' : 'The TypeShade type and local name for that input.'}</td></tr>
+    <tr><td data-label={ko ? '표현' : 'Form'}><code>gid.x</code></td><td data-label={ko ? '의미' : 'Meaning'}>{ko ? '현재 invocation의 x component를 읽습니다.' : 'Reads the x component for the current invocation.'}</td></tr>
+  </tbody></table>
 
   <h2 id="compute">{content.compute}</h2>
   <p><Rich text={content.computeP} locale={locale} /></p>

@@ -34,7 +34,7 @@ const headings = [['mapping',content.mapping],['decl',content.decl],['access',co
   <TypeShadeCode code={`declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>`} />
   <h2 id="decl"><Rich text={content.decl} locale={locale} /></h2><p>{content.declP}</p>
   <h2 id="access">{content.access}</h2><p><Rich text={content.accessP} locale={locale} /></p>
-  <div class="table-scroll"><table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td><code>declare const x: uniform&lt;T&gt;</code></td><td>uniform</td><td>read</td></tr><tr><td><code>declare const x: storage&lt;T&gt;</code></td><td>storage</td><td>read</td></tr><tr><td><code>declare let x: storage&lt;T&gt;</code></td><td>storage</td><td>read_write</td></tr></tbody></table></div>
+  <table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td data-label="Declaration"><code>declare const x: uniform&lt;T&gt;</code></td><td data-label="Space">uniform</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare const x: storage&lt;T&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare let x: storage&lt;T&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read_write</td></tr></tbody></table>
   <h2 id="slots">{content.slots}</h2><p>{content.slotsP}</p>
   <h2 id="invalid">{content.invalid}</h2><ul>{content.invalidItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <p><a href={content.href}>{content.next}</a></p>
