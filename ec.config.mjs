@@ -8,7 +8,7 @@
 // repeated below and bun scripts/check-copy.ts fails the build when they drift from the
 // dictionary they belong to (copy.code).
 import { pluginFramesTexts } from 'expressive-code'
-import typeshadeSyntax from './src/lib/typeshade-syntax.mjs'
+import { gpuTypesSyntax, typeshadeInjection } from './src/lib/typeshade-syntax.mjs'
 
 /** The copy button's two strings per locale, checked against the dictionary by check-copy. */
 export const codeUiTexts = {
@@ -24,13 +24,9 @@ export default {
   themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
   defaultLocale: 'en',
   shiki: {
-    langs: [typeshadeSyntax],
+    // GPU Types is a first-class fence; TypeShade remains an injection into TS/TSX.
+    langs: [gpuTypesSyntax, typeshadeInjection],
   },
-  // The github themes bring their own frame colours: a light background equal to the page
-  // ground (so a frame reads as a bare 1px border, not a surface) and an orange active-tab
-  // indicator outside the site's two-colour palette (accent blue, diagnostic red). Both are
-  // pinned to the site's own tokens so a frame reads as one step off the ground in either
-  // theme and carries no colour the palette doesn't have.
   styleOverrides: {
     frames: {
       editorBackground: 'var(--color-surface-1)',
