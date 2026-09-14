@@ -111,6 +111,10 @@ JavaScript, GPU, CPU, IR, f32, f64, std140은 로마자 그대로 씁니다.
 | do-not-optimize flag | 최적화 금지 플래그 | f64 하향 변환이 자신이 끼워 넣는 에뮬레이션 라이브러리의 헬퍼에 찍어 두는 표시로, `inline()`의 `opaque` 옵션이 다루는 대상입니다. |
 | bucket (semantic diff) | 버킷 | `semanticDiff`가 두 모듈의 차이를 담아 분류하는 그릇 하나. 한국어 개발 문서에서 분류 단위를 가리킬 때 이미 음차로 쓰는 말입니다. |
 | parity gate | 패리티 게이트 | dev 모듈과 prod 모듈의 차이 가운데 선언한 파이프라인으로 설명되지 않는 나머지만 남았는지 검사하는 CI 게이트. |
+| cast | 캐스트 | 노드를 다른 스칼라 타입으로 바꾸는 `.f32()`/`.i32()`/`.u32()`/`.f64()`와 독립 함수 `f32(x)` 등. `your-first-shader.md`와 `glsl-float-precision.md`(비트캐스트)가 이미 쓰는 음차와 통일하고, "형변환"은 쓰지 않습니다. |
+| compound update / compound assignment | 복합 대입 | `.addAssign`, `.subAssign`, `.mulAssign`, `.divAssign`처럼 산술과 대입을 한 번에 하는 메서드. 이미 고정한 "대입"(assign)에 "복합"을 붙였습니다. |
+| free-function form (`sub(1, x)`) | 독립 함수 버전 | `add`/`sub`/`mul`/`div`를 메서드가 아니라 함수로 부르는 형태로, 왼쪽 피연산자가 리터럴일 때 씁니다(`f32(1).sub(x)` 대신 `sub(1, x)`). 위 "free (function)" 행과 같은 개념입니다. |
+| zero (낱말로 적은 zero) | 영 | 영어 원문이 숫자 `0`이 아니라 낱말 zero로 적은 자리("a nonzero start")는 "영이 아닌 값"처럼 낱말로 옮깁니다. 숫자로 적으면 `check:guide`의 숫자 대조가 어긋납니다. |
 
 ## 로마자 그대로 쓰는 용어
 

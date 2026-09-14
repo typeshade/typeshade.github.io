@@ -1,7 +1,7 @@
 ---
 id: control-flow
-source: 21c20dbdc2bc14fb203024393023a0f3b46bc57e5d80b014b7b1dc8c126158ee
-sourceLine: 680
+source: f2b6dfb34a6f250dd5274cb527ed537a3ad797453b8c43a043a620a84a3782e1
+sourceLine: 737
 ---
 
 이 절을 읽고 나면 TypeShade 셰이더 본문에서 TypeScript와 비슷한 분기와 반복을 GPU 제어 흐름으로 작성하고, 문 형태와 값 형태를 구분해 적절한 디스패치와 조기 종료를 선택할 수 있습니다. 문 형태는 `If`와 `Loop`처럼 작성 중인 본문에 코드를 쌓아 올릴 뿐, 바인딩할 수 있는 값을 돌려주지 않습니다. 값 형태는 `when`과 `matchEnum`처럼 내부에서 같은 분기를 만들어 내고, 그 결과를 `const`에 바인딩할 수 있는 노드로 돌려줍니다. 분기가 값을 고르기 위해 있다면 값 형태를 쓰고, 무언가를 하기 위해 있다면 문 형태를 씁니다.
@@ -24,26 +24,46 @@ If(p.idx.eq(1), () => {
   })
 ```
 
-이 셋은 값을 돌려주지 않는 문(statement)입니다. 본문 끝에 TypeScript의 `return value`가 있어도
-그 값이 체인의 결과가 되지는 않습니다. 분기 안에서 함수를 빠져나가려면 `Return`이나
-`ReturnIf`를 쓰며, 둘 다 이 절의 끝에서 다룹니다.
+이 셋은 값을 돌려주지 않는 문(statement)입니다. 본문이 TypeScript의 `return value`로 끝나도
+그 값은 체인의 결과로 읽히지 않으며, 이런 코드는 조용히 버려지는 대신 `SD0115` 오류로
+거부됩니다. 값이 갈 곳이 없어 분기가 빈 블록으로 생성되기 때문입니다. 분기 안에서 함수를
+빠져나가려면 `Return`이나 `ReturnIf`를 쓰며, 둘 다 이 절의 끝에서 다룹니다. 분기가 값을 고르기
+위해 있다면 뒤에서 나오는 `when`을 씁니다.
+
+`.not()`은 논리 부정이므로, 거짓인 경우를 가드로 다룰 때는 `If(hit.eq(bool(false)), …)` 대신
+`If(hit.not(), …)`처럼 씁니다.
 
 ### Loop
 
-`Loop`는 C 스타일 for문입니다. 카운터 초깃값과 조건, 본문을 받고, 증가값은 선택 사항으로
-기본값이 `+1`입니다. 맨 앞에 이름 문자열을 넘기면 생성되는 소스에서 그 이름이 카운터 이름이
-되며, 이 문자열도 선택 사항입니다.
+`Loop`는 C 스타일 for문입니다. 정해진 반복 횟수만 있으면 되는 경우가 대부분이며, 그럴 때는
+짧은 형태로 충분합니다.
+
+```ts
+Loop(64, (i) => {
+  acc.addAssign(i.f32())
+})
+```
+
+카운터는 `0u`에서 시작해 지정한 횟수까지 하나씩 늘어납니다. 카운터가 영이 아닌 값에서
+시작하거나 거꾸로 세거나 리터럴이 아닌 값과 비교해야 한다면 세 부분으로 된 형태를 씁니다. 이
+형태는 카운터 초깃값과 조건, 본문을 받고, 증가값은 선택 사항으로 기본값이 `+1`입니다. 어느
+형태든 맨 앞에 이름 문자열을 넘기면 생성되는 소스에서 그 이름이 카운터 이름이 되며, 이
+문자열도 선택 사항입니다.
 
 ```ts
 Loop(
   u32(0),
-  (i) => i.lt(u32(64)), // the condition receives the counter…
+  (i) => i.lt(64), // the condition receives the counter…
   (i) => {
     // …and so does the body, so declare (i) here too
-    acc.assign(acc.add(toF32(i)))
+    acc.addAssign(i.f32())
   },
 )
 ```
+
+두 형태는 같은 루프를 나타내며 같은 `for` 헤더로 생성됩니다. 그냥 숫자는 비교 대상인 카운터의
+타입을 그대로 따르므로, `u32` 카운터에서는 `i.lt(64)`가 `i < 64u`로 생성되고 따로 `u32(64)`라고
+쓸 필요가 없습니다.
 
 두 콜백 모두 카운터를 인자로 받습니다. 본문을 `() => {}`로 써 놓고 안에서 `i`를 쓰면
 JavaScript 클로저 문법으로는 문제가 없지만, 그 자리에 `i`는 정의되어 있지 않으므로 `tsc`가
@@ -65,7 +85,7 @@ case를 빠져나갑니다. `Continue()`는 가장 가까운 루프의 다음 �
 const dists = Var('dists', arrayT(f32T, 64))
 
 Loop(u32(0), (i) => i.lt(count), (i) => {
-  const d = Let(dists.at(i, f32T))
+  const d = Let(dists.at(i)) // an array node knows its own element type
   If(d.lt(0), () => Continue()) // no distance recorded, next iteration
   If(d.lt(0.001), () => Break()) // close enough, leave the loop
   nearest.assign(min(nearest, d))
