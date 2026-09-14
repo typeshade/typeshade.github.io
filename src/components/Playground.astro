@@ -1,0 +1,126 @@
+---
+import type { Locale } from '../i18n/index.ts'
+interface Props { locale: Locale }
+const { locale } = Astro.props
+const sample = `"use typeshade"
+
+class Clip {
+  @builtin("position") pos: vec4
+}
+
+class Color {
+  @location(0) color: vec4
+}
+
+@vertex
+export function vs(@builtin("vertex_index") i: u32): Clip {
+  const x = i === 1 ? 0.8 : i === 2 ? 0. : -0.8
+  const y = i === 2 ? 0.8 : -0.8
+  return { pos: vec4(x, y, 0., 1.) }
+}
+
+@fragment
+export function fs(): Color {
+  return { color: vec4(1., 0., 0., 1.) }
+}
+`
+const labels = locale === 'ko'
+  ? { run: '컴파일', reset: '예제 복원', editor: 'TypeShade 소스', output: 'WGSL 출력', diagnostics: '진단', idle: '컴파일 대기 중', ready: '컴파일 성공', errors: '컴파일 오류', help: '브라우저에서 TypeShade 컴파일러를 실행합니다.' }
+  : { run: 'Compile', reset: 'Reset example', editor: 'TypeShade source', output: 'WGSL output', diagnostics: 'Diagnostics', idle: 'Ready to compile', ready: 'Compiled successfully', errors: 'Compile errors', help: 'The TypeShade source compiler runs in your browser.' }
+---
+
+<section class="ts-playground" data-playground>
+  <div class="playground-toolbar">
+    <div><strong>hello.shade.ts</strong><span>{labels.help}</span></div>
+    <div class="playground-actions"><button type="button" data-reset>{labels.reset}</button><button type="button" class="primary" data-run>{labels.run}</button></div>
+  </div>
+  <div class="playground-grid">
+    <section class="pane source-pane">
+      <div class="pane-title"><span>{labels.editor}</span><kbd>TS</kbd></div>
+      <textarea data-editor spellcheck="false" aria-label={labels.editor}>{sample}</textarea>
+    </section>
+    <section class="pane output-pane">
+      <div class="pane-title"><span>{labels.output}</span><span data-status>{labels.idle}</span></div>
+      <pre data-output aria-live="polite"></pre>
+      <div class="diagnostics"><div class="diagnostics-title">{labels.diagnostics}</div><div data-diagnostics>{labels.idle}</div></div>
+    </section>
+  </div>
+</section>
+
+<script define:vars={{ sample, locale }}>
+  import { compileTsSource } from '../../vendor/shader-dsl/src/index.ts'
+  const root = document.querySelector('[data-playground]')
+  if (root instanceof HTMLElement) {
+    const editor = root.querySelector('[data-editor]')
+    const output = root.querySelector('[data-output]')
+    const diagnostics = root.querySelector('[data-diagnostics]')
+    const status = root.querySelector('[data-status]')
+    const run = root.querySelector('[data-run]')
+    const reset = root.querySelector('[data-reset]')
+    if (editor instanceof HTMLTextAreaElement && output instanceof HTMLElement && diagnostics instanceof HTMLElement && status instanceof HTMLElement && run instanceof HTMLButtonElement && reset instanceof HTMLButtonElement) {
+      const copy = locale === 'ko'
+        ? { ready: '컴파일 성공', errors: '컴파일 오류', idle: '컴파일 대기 중', noOutput: '출력이 없습니다.', directive: '"use typeshade" 지시어가 필요합니다.' }
+        : { ready: 'Compiled successfully', errors: 'Compile errors', idle: 'Ready to compile', noOutput: 'No WGSL output.', directive: 'The "use typeshade" directive is required.' }
+      const render = () => {
+        status.textContent = copy.idle
+        output.textContent = ''
+        diagnostics.textContent = ''
+        root.classList.remove('has-errors', 'has-output')
+        try {
+          const result = compileTsSource(editor.value, { fileName: 'hello.shade.ts', requireDirective: true })
+          const messages = [...result.diagnostics]
+          if (!result.hasDirective && messages.length === 0) messages.push({ message: copy.directive, line: 1, character: 1, category: 'error' })
+          if (messages.length > 0) {
+            status.textContent = copy.errors
+            root.classList.add('has-errors')
+            diagnostics.textContent = messages.map((d) => `${d.category.toUpperCase()} ${d.line}:${d.character} ${d.message}`).join('\n')
+          } else {
+            status.textContent = copy.ready
+            diagnostics.textContent = '✓'
+          }
+          if (result.wgsl) {
+            output.textContent = result.wgsl
+            root.classList.add('has-output')
+          } else output.textContent = copy.noOutput
+        } catch (error) {
+          status.textContent = copy.errors
+          root.classList.add('has-errors')
+          diagnostics.textContent = error instanceof Error ? error.message : String(error)
+        }
+      }
+      let timer
+      editor.addEventListener('input', () => { window.clearTimeout(timer); timer = window.setTimeout(render, 350) })
+      run.addEventListener('click', render)
+      reset.addEventListener('click', () => { editor.value = sample; render(); editor.focus() })
+      render()
+    }
+  }
+</script>
+
+<style>
+  .ts-playground { border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
+  .playground-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
+  .playground-toolbar strong { display: block; font: 500 .875rem/1.4 var(--font-mono); }
+  .playground-toolbar span { display: block; margin-top: 2px; color: var(--color-text-3); font-size: .75rem; }
+  .playground-actions { display: flex; gap: 8px; }
+  .playground-actions button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 7px 11px; background: var(--color-ground); color: var(--color-text-1); font: 500 .75rem/1.3 var(--font-sans); cursor: pointer; }
+  .playground-actions button:hover { background: var(--color-surface-1); }
+  .playground-actions .primary { border-color: var(--color-accent); background: var(--color-accent); color: white; }
+  .playground-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .pane { min-width: 0; }
+  .source-pane { border-bottom: 1px solid var(--color-line-1); }
+  .pane-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; color: var(--color-text-2); font-size: .75rem; font-weight: 500; background: var(--color-surface-2); }
+  .pane-title kbd, .pane-title [data-status] { color: var(--color-text-3); font: 500 .6875rem/1.3 var(--font-mono); }
+  textarea, pre { box-sizing: border-box; width: 100%; min-height: 480px; margin: 0; border: 0; border-radius: 0; background: var(--color-ground); color: var(--color-text-1); font: 400 .8125rem/1.65 var(--font-mono); tab-size: 2; }
+  textarea { display: block; resize: vertical; padding: 16px; outline: 0; }
+  textarea:focus { box-shadow: inset 0 0 0 2px var(--color-accent); }
+  pre { padding: 16px; overflow: auto; white-space: pre; }
+  .diagnostics { min-height: 96px; padding: 12px 16px; border-top: 1px solid var(--color-line-1); background: var(--color-surface-1); }
+  .diagnostics-title { margin-bottom: 6px; color: var(--color-text-3); font-size: .6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  [data-diagnostics] { white-space: pre-wrap; color: var(--color-text-2); font: 400 .75rem/1.55 var(--font-mono); }
+  .has-errors [data-status] { color: var(--color-diag); }
+  .has-errors .diagnostics { border-top-color: var(--color-diag); }
+  .has-output [data-status] { color: var(--color-accent); }
+  @media (min-width: 64rem) { .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); } }
+  @media (max-width: 48rem) { .playground-toolbar { align-items: flex-start; flex-direction: column; } .playground-actions { width: 100%; } .playground-actions button { flex: 1; } }
+</style>
