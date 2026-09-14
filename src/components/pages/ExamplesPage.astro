@@ -5,7 +5,7 @@ import CodeFrame from '../CodeFrame.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import type { CanvasText } from '../ShaderCanvas.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { checkedBlurbs, facts, hero } from '../../lib/examples.ts'
 import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
@@ -17,7 +17,6 @@ interface Props {
 const { locale } = Astro.props
 const t = copyFor(locale)
 const e = t.examples
-const ko = locale === 'ko'
 
 const deepZoom: CanvasText = {
   neutral: e.f64.caption,
@@ -27,21 +26,7 @@ const deepZoom: CanvasText = {
 }
 const headings = [e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 
-const learningPath = ko
-  ? [
-      { title: '1. 첫 shader', text: '"use typeshade" 파일의 기본 형태와 shader entry를 먼저 익힙니다.', href: links.quickStart.href, label: 'Quick start' },
-      { title: '2. 값과 타입', text: 'TypeScript의 type/class가 GPU value layout으로 어떻게 내려가는지 봅니다.', href: links.languageTypes.href, label: 'Types' },
-      { title: '3. 계산을 함수로', text: 'helper function과 stage entry를 조합해 실제 shader 계산을 구성합니다.', href: links.languageFunctions.href, label: 'Functions' },
-      { title: '4. GPU 데이터', text: 'vector, matrix, array와 host-owned resource를 연결합니다.', href: links.languageResources.href, label: 'Resources' },
-      { title: '5. 실제 예제', text: '저장소의 예제를 읽으며 여러 개념을 하나의 shader로 조합합니다.', href: links.examplesDir.href, label: 'Source examples' },
-    ]
-  : [
-      { title: '1. First shader', text: 'Start with the shape of a "use typeshade" file and its shader entries.', href: links.quickStart.href, label: 'Quick start' },
-      { title: '2. Values and types', text: 'See how TypeScript type aliases and classes become GPU value layouts.', href: links.languageTypes.href, label: 'Types' },
-      { title: '3. Compose functions', text: 'Combine helper functions with stage entries to build shader calculations.', href: links.languageFunctions.href, label: 'Functions' },
-      { title: '4. GPU data', text: 'Connect vectors, matrices, arrays, and host-owned shader resources.', href: links.languageResources.href, label: 'Resources' },
-      { title: '5. Real examples', text: 'Read the repository examples and combine the language pieces into complete shaders.', href: links.examplesDir.href, label: 'Source examples' },
-    ]
+const learningPath = e.path.steps.map((step) => ({ ...step, href: localePath(locale, links[step.linkKey].href) }))
 
 const order = ['cartographic', 'generic', 'compute'] as const
 const blurbs = checkedBlurbs(e.blurbs)
@@ -61,8 +46,8 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
     <p><Rich text={e.intro} locale={locale} /></p>
 
     <section class="learning-path">
-      <h2>{ko ? '예제로 배우는 순서' : 'Learn TypeShade by building'}</h2>
-      <p>{ko ? '각 단계는 Language Guide의 한 개념을 실제 shader 작성으로 연결합니다.' : 'Each step connects one Language Guide concept to actually writing a shader.'}</p>
+      <h2>{e.path.h}</h2>
+      <p>{e.path.p}</p>
       <ol>
         {learningPath.map((step) => (
           <li>

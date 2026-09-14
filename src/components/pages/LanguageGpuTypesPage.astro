@@ -1,0 +1,30 @@
+---
+// Language guide: GPU types. Content lives in language.topics.gpuTypes (src/i18n/en.ts,
+// src/i18n/ko.ts); the code samples are not copy, so they stay here.
+import Docs from '../../layouts/Docs.astro'
+import TypeShadeCode from '../TypeShadeCode.astro'
+import Rich from '../Rich.astro'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { editCopy, links } from '../../lib/links.ts'
+
+interface Props { locale: Locale }
+const { locale } = Astro.props
+const content = copyFor(locale).language.topics.gpuTypes
+const headings = [
+  ['mapping', content.mapping], ['scalar', content.scalar], ['vector', content.vector], ['matrix', content.matrix], ['arrays', content.arrays],
+].map(([slug, text]) => ({ depth: 2, slug, text }))
+---
+
+<Docs locale={locale} path={links.languageGpuTypes.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'language')}>
+  <h1>{content.h1}</h1><p>{content.intro}</p>
+  <h2 id="mapping">{content.mapping}</h2><p><Rich text={content.mappingP} locale={locale} /></p>
+  <TypeShadeCode code={`// TypeScript surface, GPU-specific value types\nlet value: f32 = 1\nlet index: u32 = 0\nlet direction: vec3 = vec3(0, 1, 0)`} />
+  <h2 id="scalar">{content.scalar}</h2><p>{content.scalarP}</p>
+  <h2 id="vector">{content.vector}</h2><p>{content.vectorP}</p>
+  <TypeShadeCode code={`const uv: vec2 = vec2(0.5, 0.5)\nconst color: vec4 = vec4(1, 0, 0, 1)`} />
+  <h2 id="matrix">{content.matrix}</h2><p>{content.matrixP}</p>
+  <TypeShadeCode code={`type Camera = {\n  view: mat4\n}`} />
+  <h2 id="arrays">{content.arrays}</h2><p>{content.arraysP}</p>
+  <TypeShadeCode code={`declare let pixels: storage<array<f32>>`} />
+  <p><a href={localePath(locale, links.languageResources.href)}>{content.next}</a></p>
+</Docs>

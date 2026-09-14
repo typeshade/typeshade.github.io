@@ -109,11 +109,15 @@ widen the layout.
 
 ## Procedure for any change to copy or layout
 
-1. Edit `en.ts` first, then `ko.ts`. Add every new key to both; `bun run check:types` fails
-   on a missing one.
+1. Every user-facing string lives in the dictionaries and a component reads it through `copyFor(locale)`.
+   Edit `en.ts` first, then `ko.ts`. Add every new key to both; `bun run check:types` fails on a missing one.
+   Every locale-dependent URL is built with `localePath(locale, links.<key>.href)`. Route files are one-liners
+   that pass locale to a component; a page never imports another page.
 2. `bun run build`. It runs, in order: `check-style` (voice), `check-copy` (numerals, links and
-   code spans equal in both languages; label widths; the im-not-ai translation tells), the
-   artifact hashes, the Korean font coverage, then Astro.
+   code spans equal in both languages; label widths; the im-not-ai translation tells),
+   `check-i18n` (copy in the dictionaries, URLs through `localePath`, no Hangul or locale literal
+   outside `src/i18n/`, route parity, one-line route files), `check-guide`, the artifact hashes,
+   the Korean font coverage, then Astro.
 3. `bun run qa:seo`, `bun run qa:links`, `bun run qa:openseo` over `dist/`.
 4. Screenshots at 390 and 1440 of every page you touched, in both languages, light and dark,
    with the menus open. Compare the same element in both languages: a Korean line count or
@@ -128,13 +132,19 @@ widen the layout.
 
 ## Files
 
+Site structure and i18n:
+- `src/i18n/en.ts`, `src/i18n/ko.ts`, `src/i18n/index.ts`: dictionaries (source and translation), `copyFor(locale)`,
+  `localePath(locale, path)`, and `localeSettings` for locale behaviour not involving copy.
+- `src/pages`, `src/pages/ko`: one-line route files per locale, each rendering a component from `src/components/pages`
+  with a locale prop.
+- `src/lib/links.ts`: every destination, `navLinks`, `sidebar`.
+
+Layout and page structure:
 - `src/layouts/Base.astro`: head, header, footer, the dark-mode scripts.
 - `src/layouts/Docs.astro`: sidebar, document, outline, pager.
 - `src/components/SiteHeader.astro`, `SiteFooter.astro`.
-- `src/lib/links.ts`: every destination, `navLinks`, `sidebar`.
-- `src/i18n/en.ts`, `src/i18n/ko.ts`, `src/i18n/index.ts`.
-- `src/lib/remark-package-name.mjs`: the guide's package name and links. An environment
-  variable keeps the name the pinned compiler reads.
+
+Reference and guide data:
 - `src/lib/api.ts`, `src/lib/api-types.ts`, `src/lib/api-nav.ts`, `src/lib/api-loader.ts`: the
   reference's data, its contract, its categories and pager order, and the content collection.
   `bun run check:api` prints the categories and their counts and fails on a missing
@@ -145,5 +155,9 @@ widen the layout.
 - `src/lib/guide.ts`, `src/content.config.ts`: AUTHORING.md cut into sections. Each section's
   title and description live in `guide.sections` in every dictionary; English derives them
   from the file, Korean writes them.
-- `scripts/check-style.mjs`, `scripts/check-copy.ts`, `scripts/check-seo.mjs`,
+- `src/lib/remark-package-name.mjs`: the guide's package name and links. An environment
+  variable keeps the name the pinned compiler reads.
+
+Checks and tools:
+- `scripts/check-style.mjs`, `scripts/check-copy.ts`, `scripts/check-i18n.mjs`, `scripts/check-seo.mjs`,
   `scripts/openseo-audit.mts`.

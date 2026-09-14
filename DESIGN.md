@@ -176,9 +176,19 @@ icon, the current language, the others in a list) switches to the same page in t
 language, and every page declares its alternates with `hreflang`. A host per language
 (ko.vuejs.org) needs DNS per language and is not the plan.
 
-- English is the source text, in `src/i18n/en.ts`. Every other language is a translation of
-  it: `src/i18n/ko.ts` is typed against the English object, so a string missing in one
-  language fails the type check.
+- Every user-facing string lives in the two dictionaries (`src/i18n/en.ts` and `src/i18n/ko.ts`)
+  and a component reads it through `copyFor(locale)` from `src/i18n/index.ts`. No `locale === 'ko'`
+  branches in components; no inline copy. Every locale-dependent URL is built with `localePath(locale, links.<key>.href)`;
+  no string literal that starts with `/ko/`. Locale behaviour that is not copy (fonts, description
+  length, the guide collection, the og locale) lives in `localeSettings` in `src/i18n/index.ts`.
+  `bun run check:i18n` (in the build after check-copy) fails on a missing twin route file, Hangul outside
+  src/i18n, or a locale literal outside the dictionaries.
+- English lives at `/`, other languages under their code (`/ko/`). Route files in
+  `src/pages` and `src/pages/ko` are one line each; the page itself is a component in
+  `src/components/pages` that takes a locale. A page never imports another page.
+- English is the source text in `src/i18n/en.ts`. Every other language is a translation of it:
+  `src/i18n/ko.ts` is typed against the English object, so a string missing in one language fails
+  the type check.
 - The authoring guide is translated by hand, one file per section of AUTHORING.md under
   `content/guide/<locale>/`, from the English at the pinned commit. Each file's front matter
   records the sha256 of the English body it was translated from; when the pin moves and a
@@ -194,9 +204,6 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   as fail closed, gather and scatter), glossed once at first use. The check refuses the
   Korean substitutes the glossary names for them. The reference's body stays English on
   every locale.
-- English lives at `/`, other languages under their code (`/ko/`). Route files in
-  `src/pages` and `src/pages/ko` are one line each; the page itself is a component in
-  `src/components/pages` that takes a locale.
 - Inline links in copy are written `[text](key)`, inline code in backticks; `Rich.astro`
   renders them. `key` is a record in `src/lib/links.ts` or a page name, which the locale
   prefixes.

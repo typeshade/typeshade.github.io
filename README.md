@@ -65,6 +65,19 @@ bun run dev
 
 The production build verifies generated artifacts, documentation consistency, links, and SEO before deployment. See `DESIGN.md` for the site's writing and design rules and `.claude/skills/typeshade-site/SKILL.md` for the site maintenance workflow.
 
+## Checks
+
+`bun run build` runs, in order:
+
+- `check-style`: the voice rules in `DESIGN.md`, over `src/`, `scripts/` and the Markdown files.
+- `check-copy`: numerals, links and code spans equal in English and Korean; label widths.
+- `check-i18n`: every string in the dictionaries, every locale URL through `localePath()`, no Hangul or locale literal outside `src/i18n/`, route parity between `src/pages` and `src/pages/ko`, one-line route files.
+- `check-guide`: the Korean guide translations against the pinned English.
+- `check-api`: the reference data from the compiler.
+- The artifact hashes, the Korean font coverage, then Astro and Pagefind.
+
+After the build: `bun run qa:seo`, `bun run qa:links` and `bun run qa:openseo` over `dist/`.
+
 ## Status
 
 TypeShade is pre-release. The public authoring model on `main` is file-level `"use typeshade"`; package and compiler details may change while the language surface matures.
