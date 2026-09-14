@@ -18,11 +18,12 @@
 //  10. dark mode reaches the editor: its background is dark
 //  11. the example picker replaces the source
 //  12. a vector times a scalar compiles: nothing is reported and the broadcast reaches the WGSL
-//  13. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
-//  14. the compute example is clean, and the store into its writable array reaches the WGSL
-//  15. hover over a name the source declares answers with the TypeShade types
-//  16. `vec` offers vec4 in the completion list
-//  17. the URL fragment carries the edited source and the options into a second tab
+//  13. a vector times a string still draws TypeScript's own arithmetic diagnostic
+//  14. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
+//  15. the compute example is clean, and the store into its writable array reaches the WGSL
+//  16. hover over the entry point's parameter answers with its TypeShade type
+//  17. `vec` offers vec4 in the completion list
+//  18. the URL fragment carries the edited source and the options into a second tab
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -374,11 +375,31 @@ async function checkRoute(browser, origin, route) {
         problems.push(`the broadcast did not reach the emitted WGSL:\n    ${broadcast.slice(-200)}`)
       }
 
+      // ── a vector times a string ─────────────────────────────────────────────────────────
+      // The filter typeshade/typeshade#39 added drops TS2362, TS2363, TS2365 and TS2322 where
+      // a vector or a matrix is an operand, because TypeScript's arithmetic rules are not the
+      // compiler's there. This says how far the filter reaches: the right-hand side is a
+      // string, which neither language has a rule for, so TypeScript's own arithmetic
+      // diagnostic has to survive the filter and reach the reader. Without a case like this
+      // one, a later pin that widened the filter would leave the page silent on a real error
+      // and still pass here, since every other source this file refuses fails to parse.
+      await typeSource(page, sample.replace('vec4(1., 0., 0., 1.) }', 'vec4(1., 0., 0., 1.) * "x" }'))
+      const refused = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
+      if (!refused.some((row) => row.includes('arithmetic operation'))) {
+        problems.push(
+          `a vector times a string drew no arithmetic diagnostic, so the filter on vector arithmetic is swallowing real errors:\n    ${refused.join('\n    ') || '(no diagnostics at all)'}`,
+        )
+      }
+      const refusedPane = await wgslPane(page)
+      if (/@vertex|@fragment|fn\s/.test(refusedPane)) {
+        problems.push(`a vector times a string still filled the WGSL pane:\n    ${refusedPane.slice(0, 160)}`)
+      }
+
       // ── an unclosed call ────────────────────────────────────────────────────────────────
       // The compiler reports this as a parse error now (TS8030) and emits nothing for the
-      // file, where it used to report a return-type mismatch and emit WGSL anyway. This is
-      // the one check on a source that does not compile, now that a vector times a scalar
-      // does, so it also carries what that check used to hold: a row a reader can click,
+      // file, where it used to report a return-type mismatch and emit WGSL anyway. It is the
+      // one source here that does not parse, and it carries what the vector check used to
+      // hold before a vector times a scalar started compiling: a row a reader can click,
       // which is a row that carries a position.
       await typeSource(page, sample.replace('return { color: vec4(1., 0., 0., 1.) }', 'return vec4(3.14'))
       const parseRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
@@ -413,16 +434,16 @@ async function checkRoute(browser, origin, route) {
       if (!computeReflection.includes('@compute')) {
         problems.push(`the reflection pane does not name the compute entry point:\n    ${computeReflection.slice(0, 240)}`)
       }
-      // The words are translated, so what is read is that the tab holds a sentence and not a
-      // shader: no #version line, no main.
+      // The sentence is translated, so it is read back out of the copy the component wrote
+      // into the page and the tab has to hold that and nothing else. Asking instead whether
+      // the tab held no shader passed on the WGSL tab too, so the check could not tell which
+      // tab it had read: clicking the wrong one still passed.
+      const noGlsl = await page.evaluate(() => JSON.parse(document.querySelector('[data-playground]').dataset.copy).noGlsl)
       for (const tab of ['glslVertex', 'glslFragment']) {
         await page.click(`[data-target="${tab}"]`)
         await page.waitForTimeout(250)
         const glsl = (await page.innerText('[data-output]')).trim()
-        if (glsl.length === 0) problems.push(`the ${tab} tab says nothing about a compute module having no GLSL stage`)
-        else if (glsl.includes('#version') || glsl.includes('void main')) {
-          problems.push(`the ${tab} tab holds a shader for a compute module:\n    ${glsl.slice(0, 160)}`)
-        }
+        if (glsl !== noGlsl) problems.push(`the ${tab} tab does not say a compute module has no GLSL stage:\n    ${glsl.slice(0, 160)}`)
       }
       await page.click('[data-target="wgsl"]')
       await page.waitForTimeout(250)
@@ -431,25 +452,35 @@ async function checkRoute(browser, origin, route) {
 
       // ── hover ───────────────────────────────────────────────────────────────────────────
       // The service had no answer for a name the source declares when the Playground shipped,
-      // so this check waited for it. It answers now, and what it answers with is the point:
-      // the parameter's TypeShade type, where TypeScript alone would say `number`.
+      // so this check waited for it. What it is asked about is the entry point's parameter,
+      // where its answer is its own: the shim the page hands Monaco declares `u32` as
+      // `number`, so Monaco's own TypeScript hover says `(parameter) i: number` and the
+      // compiler's says `(parameter) i: u32`. Asking about `vs` proved less, since both spell
+      // its signature `vs(i: u32): Clip` and either one satisfied the check.
+      // Monaco's hover provider stays registered beside the page's, so the widget stacks the
+      // two answers and a reader is shown both. That is a bug of the page's own, filed beside
+      // the numeric-literal local; what is read here is the widget a reader sees, and the
+      // compiler's answer has to be in it.
       await typeSource(page, sample)
       const hovered = await page.evaluate(async () => {
         const editor = window.monaco.editor.getEditors()[0]
         const model = editor.getModel()
         const at = model.getLinesContent().findIndex((line) => line.includes('export function vs('))
         if (at < 0) return null
-        editor.setPosition({ lineNumber: at + 1, column: model.getLineContent(at + 1).indexOf('vs(') + 2 })
+        const declared = model.getLineContent(at + 1).indexOf('i: u32')
+        if (declared < 0) return null
+        // The parameter's name is one character wide, so the caret goes just past it.
+        editor.setPosition({ lineNumber: at + 1, column: declared + 2 })
         editor.focus()
         await editor.getAction('editor.action.showHover')?.run()
         return true
       })
-      if (hovered === null) problems.push('the sample no longer declares vs(), so hover had nothing to ask about')
+      if (hovered === null) problems.push('the sample no longer declares vs(i: u32), so hover had nothing to ask about')
       else {
         await page.waitForSelector('.monaco-hover', { timeout: 4_000 }).catch(() => {})
         const quickInfo = await page.evaluate(() => document.querySelector('.monaco-hover')?.innerText.replace(/\s+/g, ' ').trim() ?? '')
-        if (!quickInfo.includes('vs(i: u32): Clip')) {
-          problems.push(`hovering vs() did not answer with its TypeShade signature:\n    ${quickInfo.slice(0, 200)}`)
+        if (!quickInfo.includes('i: u32')) {
+          problems.push(`hovering the parameter did not answer with its TypeShade type:\n    ${quickInfo.slice(0, 200)}`)
         }
         await page.keyboard.press('Escape')
       }
