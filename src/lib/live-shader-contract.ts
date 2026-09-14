@@ -316,68 +316,6 @@ export function layoutFor(id: string, reflection: ShaderReflection): ShaderLayou
   }
 }
 
-// ── The GLSL uniform block ──────────────────────────────────────────────────
-//
-// A workaround, and it is here so there is one place to delete it from.
-//
-// The compiler at the pinned commit works out which bindings a stage reaches by walking the
-// function bodies (`reachFrom` in src/core/passes/stage-bindings.ts). For a module built by
-// the TypeScript front end that walk finds nothing: `collectFnRefs` returns an empty variable
-// set for a body that plainly reads `u.time`. The GLSL backend then decides the binding is
-// unreachable and emits no block for it, so the fragment reads `u.time` from a `u` nothing
-// declared and the shader does not link. WGSL is unaffected, and so is the front page, whose
-// examples are built with `fn()` and reach the binding the walk expects.
-//
-// Until the pin moves, the block is written here from the layout `reflect()` reported, which
-// is the same layout the packer writes into. scripts/check-live.mjs opens a page with
-// `?forcegl2=1` so a build cannot go green with a fallback that does not link. When a
-// re-pinned compiler emits the block itself, `declaresBlock` sees it and this does nothing.
-
-/** GLSL ES 3.00 spellings of the field types a live sample can declare. */
-const GLSL_TYPE: Readonly<Record<string, string>> = {
-  f32: 'float',
-  i32: 'int',
-  u32: 'uint',
-  'vec2<f32>': 'vec2',
-  'vec3<f32>': 'vec3',
-  'vec4<f32>': 'vec4',
-  'vec2<i32>': 'ivec2',
-  'vec3<i32>': 'ivec3',
-  'vec4<i32>': 'ivec4',
-  'vec2<u32>': 'uvec2',
-  'vec3<u32>': 'uvec3',
-  'vec4<u32>': 'uvec4',
-}
-
-const declaresBlock = (glsl: string, block: string): boolean =>
-  new RegExp(`uniform\\s+${block}\\b`).test(glsl)
-
-/** The `layout(std140) uniform` declaration for one module's block. std140 places the fields
- *  from their order alone, which is the order the reflected offsets were computed in, so the
- *  bytes the packer writes land where the shader reads them. */
-export function glslUniformBlock(layout: ShaderLayout, instance: string): string {
-  const fields = layout.fields.map((f) => {
-    const type = GLSL_TYPE[f.type]
-    if (!type) throw new Error(`[live-shader] no GLSL ES 3.00 spelling for '${f.name}: ${f.type}'`)
-    return `  ${type} ${f.name};`
-  })
-  return `layout(std140) uniform ${layout.block} {\n${fields.join('\n')}\n} ${instance};\n`
-}
-
-/** One emitted GLSL stage, with the block declared when the stage reads it and the backend
- *  left it out. A stage that never names the binding is returned as it came. */
-export function withUniformBlock(glsl: string, layout: ShaderLayout, instance: string): string {
-  if (layout.size === 0 || instance === '') return glsl
-  if (declaresBlock(glsl, layout.block)) return glsl
-  if (!new RegExp(`\\b${instance}\\.`).test(glsl)) return glsl
-  // After the precision lines, which every emitted stage opens with.
-  const lines = glsl.split('\n')
-  let at = lines.findIndex((line) => line.startsWith('#version'))
-  while (at + 1 < lines.length && /^\s*(precision|#)/.test(lines[at + 1] ?? '')) at++
-  lines.splice(at + 1, 0, '', glslUniformBlock(layout, instance).trimEnd())
-  return lines.join('\n')
-}
-
 // ── Packing ─────────────────────────────────────────────────────────────────
 
 /** The current value of every control, keyed by field name. The page owns this object and

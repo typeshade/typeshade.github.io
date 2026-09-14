@@ -246,14 +246,11 @@ A field of any other type stops the build, so a page cannot ship a uniform it le
 without saying so. `bool` is one of them: WGSL forbids it in the uniform address space, so a
 flag is a `u32` with `toggle: true`.
 
-One thing the page writes for the compiler. At the pinned commit the GLSL backend works out
-which bindings a stage reaches by walking the function bodies, and for a module built by the
-TypeScript front end that walk finds nothing, so the emitted GLSL reads `u.time` from a `u` it
-never declared and the fallback does not link. The block is written from the reflected layout
-instead (`glslUniformBlock` in the contract), the build refuses a stage that reads the binding
-and declares no block, and `check-live` opens a page with `?forcegl2=1` so the fallback is
-exercised on every run. The front page is unaffected: its examples are built with `fn()` and
-reach the binding the walk expects.
+The build refuses a sample whose emitted GLSL reads the uniform block and declares none. The
+compiler dropped that declaration for a module built by the TypeScript front end until the pin
+this is written against, and the failure was silent: the shader did not link, the canvas stayed
+empty, and the page told the reader their browser has no WebGL2. `check-live` opens a page with
+`?forcegl2=1` so the fallback is exercised on every run.
 
 A sample is a whole file, the way a Book of Shaders page shows a whole `.frag` and an MDN
 example shows something that runs: every name in front of the reader is declared in front of
@@ -293,13 +290,19 @@ What the page carries and when:
   text field is what a phone keyboard and a Korean input method already know, and it costs a
   few kilobytes where CodeMirror 6 measured 133 KB gzipped. Monaco stays in the Playground.
 - One WebGPU device serves every canvas on the page. Only a canvas in view draws, and a
-  hidden tab draws nothing.
+  hidden tab draws nothing. Measured with three on one page: one `requestDevice`, one compiler
+  chunk, and 90 frames on the canvas in view against 0 on the two out of it over the same
+  second and a half.
 - A compile with an error keeps the last frame that worked and says so under the canvas.
 - Under `prefers-reduced-motion: reduce` there is no frame loop at all: the clock is pinned
   and the canvas draws when a control moves or the box changes size, so a reader who asked for
   less motion still sees their own change and nothing between them.
 - Without WebGPU and without WebGL2 the canvas stays empty over its build-time still, and the
   note under it says which browser feature is missing.
+
+A page carries as many live examples as it has ideas to show. The Book of Shaders runs about
+one editor per 390 words; a page with one example per 1,000 words is under-using the block, and
+a page where two examples teach the same thing should have one.
 
 `scripts/check-live.mjs` (`bun run check:live`) opens a page with one in Chromium and checks
 the four things: the canvas mounts or the fallback shows, no large script is fetched before
