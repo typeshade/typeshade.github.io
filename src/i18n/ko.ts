@@ -236,6 +236,7 @@ export const ko: Copy = {
       exceptions: '예외',
       descriptionHeading: '설명',
       examples: '예제',
+      example: '예제',
       targets: '대상별 지원',
       target: '대상',
       supportHeading: '지원',

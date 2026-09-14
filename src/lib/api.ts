@@ -949,7 +949,6 @@ function examplesOf(parsed: ParsedDoc, md: (text: string) => string): ApiExample
     const around = fence ? tag.text.replace(fence[0], '').trim() : ''
     const lang = fence?.[1] === 'wgsl' || fence?.[1] === 'glsl' || fence?.[1] === 'bash' ? fence[1] : 'ts'
     out.push({
-      title: out.length === 0 ? 'Example' : `Example ${out.length + 1}`,
       code: rewriteReferences(code),
       lang,
       description: md(around),

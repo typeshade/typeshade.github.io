@@ -140,6 +140,7 @@ export const en = {
       exceptions: 'Exceptions',
       descriptionHeading: 'Description',
       examples: 'Examples',
+      example: 'Example',
       targets: 'Targets',
       target: 'Target',
       supportHeading: 'Support',
