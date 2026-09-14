@@ -7,7 +7,7 @@
 import { getEntry, render } from 'astro:content'
 import Docs from '../../layouts/Docs.astro'
 import Rich from '../Rich.astro'
-import { assertGuideSections, copyFor, guideSection, type Locale } from '../../i18n/index.ts'
+import { assertGuideSections, copyFor, guideSection, localeSettings, type Locale } from '../../i18n/index.ts'
 import { editGuide, editGuideTranslation, links } from '../../lib/links.ts'
 import { facts } from '../../lib/examples.ts'
 
@@ -21,7 +21,8 @@ const t = copyFor(locale)
 const g = t.guide
 const entry = await getEntry('guide', section)
 if (!entry) throw new Error(`[guide] AUTHORING.md has no section '${section}'`)
-const translated = locale === 'ko' ? await getEntry('guideKo', section) : undefined
+const guideCollection = localeSettings[locale].guideCollection
+const translated = guideCollection ? await getEntry(guideCollection, section) : undefined
 const source = translated ?? entry
 const { Content, headings } = await render(source)
 // The cross-links the remark plugin adds name the English reference; a Korean page keeps the
@@ -38,7 +39,7 @@ const note = translated || locale === 'en' ? g.note : g.noteUntranslated
 // Guide › Compiler internals › section, keeping the compiler reference visibly below the language guide.
 const breadcrumbs = [
   { name: t.nav.guide, href: links.motivation.href },
-  { name: locale === 'ko' ? '컴파일러 내부 구조' : 'Compiler internals', href: links.internals.href },
+  { name: t.docs.labels.internals, href: links.internals.href },
   ...(overview ? [] : [{ name: title, href: `/guide/internals/${entry.id}/` }]),
 ]
 ---

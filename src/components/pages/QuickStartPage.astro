@@ -4,7 +4,7 @@ import Docs from '../../layouts/Docs.astro'
 import CodeFrame from '../CodeFrame.astro'
 import InstallCommand from '../InstallCommand.astro'
 import Rich from '../Rich.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { hero, quickStartFile } from '../../lib/examples.ts'
 import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
 import { editCopy, links } from '../../lib/links.ts'
@@ -16,14 +16,9 @@ interface Props {
 const { locale } = Astro.props
 const t = copyFor(locale)
 const q = t.quickStart as typeof t.quickStart & { p0?: string }
-const hostH = locale === 'ko' ? '호스트 애플리케이션에 연결하기' : 'Connect it to the host application'
-const boundaryH = locale === 'ko' ? 'TypeShade와 호스트의 경계' : 'The TypeShade / host boundary'
-const headings = [q.installH, boundaryH, hostH, q.status.h, locale === 'ko' ? '다음 학습' : 'What to learn next'].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
-const p0 =
-  q.p0 ??
-  (locale === 'ko'
-    ? '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래 예제는 TypeShade의 실제 authoring surface입니다.'
-    : 'A file that starts with `"use typeshade"` is a shader compilation unit. The example below is the TypeShade authoring surface.')
+const host = t.quickStart.host
+const headings = [q.installH, host.boundaryH, host.hostH, q.status.h, host.nextLearnH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const p0 = q.p0 ?? host.p0
 const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
 ---
 
@@ -45,26 +40,16 @@ const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
   </CodeFrame>
   <p><Rich text={q.p3} locale={locale} /></p>
   <section>
-    <h2 id={slugify(boundaryH)}>{boundaryH}</h2>
-    <p>
-      {locale === 'ko'
-        ? 'TypeShade 코드는 TypeScript처럼 작성하지만, `"use typeshade"`가 붙은 파일에서는 셰이더 언어 규칙이 적용됩니다. TypeScript 타입과 문법은 authoring surface를 만들고, TypeShade의 GPU 타입·리소스·shader stage 규칙이 실제 셰이더 의미를 결정합니다.'
-        : 'TypeShade source is authored with TypeScript syntax, but a file marked with `"use typeshade"` follows the shader language rules. TypeScript types and syntax form the authoring surface; TypeShade GPU types, resources and shader-stage rules define the shader semantics.'}
-    </p>
+    <h2 id={slugify(host.boundaryH)}>{host.boundaryH}</h2>
+    <p>{host.boundaryP}</p>
     <ul>
-      <li>{locale === 'ko' ? '`"use typeshade"`가 언어 경계를 선언합니다.' : '`"use typeshade"` declares the language boundary.'}</li>
-      <li>{locale === 'ko' ? 'entry point의 GPU 입력은 `@builtin(...)` 같은 명시적인 매개변수로 표현합니다.' : 'GPU entry inputs are explicit parameters such as `@builtin(...)`, not hidden globals.'}</li>
-      <li>{locale === 'ko' ? '`uniform<T>`와 `storage<T>` 같은 리소스 타입은 GPU 리소스의 의미를 표현합니다.' : 'Resource types such as `uniform<T>` and `storage<T>` express GPU resource semantics.'}</li>
+      {host.boundaryBullets.map((bullet) => <li>{bullet}</li>)}
     </ul>
   </section>
   <section>
-    <h2 id={slugify(hostH)}>{hostH}</h2>
-    <p>
-      {locale === 'ko'
-        ? 'TypeShade는 렌더링 런타임이 아닙니다. TypeScript에서 셰이더를 작성하고 컴파일한 뒤, 호스트 애플리케이션이 생성된 WGSL 또는 GLSL ES 3.00 문자열을 WebGPU나 WebGL2에 넘깁니다.'
-        : 'TypeShade is not the rendering runtime. Write and compile the shader in TypeScript, then let the host application pass the generated WGSL or GLSL ES 3.00 source to WebGPU or WebGL2.'}
-    </p>
-    <CodeFrame label={locale === 'ko' ? '호스트가 WGSL을 소비하는 위치' : 'Where the host consumes WGSL'}>
+    <h2 id={slugify(host.hostH)}>{host.hostH}</h2>
+    <p>{host.hostP1}</p>
+    <CodeFrame label={host.hostWgslLabel}>
       <Code code={`const shaderCode = /* WGSL emitted from the TypeShade module */
 const shaderModule = device.createShaderModule({ code: shaderCode })
 
@@ -76,33 +61,24 @@ const pipeline = device.createComputePipeline({
   },
 })`} lang="ts" title="webgpu.ts" locale={locale} />
     </CodeFrame>
-    <p>
-      {locale === 'ko'
-        ? 'TypeShade가 담당하는 것은 언어 의미와 셰이더 코드 생성입니다. device, pipeline, bind group, buffer, texture, command encoder 같은 GPU 런타임 객체의 생성과 수명 관리는 호스트가 담당합니다.'
-        : 'TypeShade owns the language semantics and shader emission. The host owns runtime objects and their lifetimes, including the device, pipeline, bind groups, buffers, textures and command encoders.'}
-    </p>
+    <p>{host.hostP2}</p>
   </section>
   <section>
     <h2 id={slugify(q.status.h)}>{q.status.h}</h2>
     <p><Rich text={q.status.p} locale={locale} /></p>
   </section>
   <section>
-    <h2 id={slugify(locale === 'ko' ? '다음 학습' : 'What to learn next')}>
-      {locale === 'ko' ? '다음 학습' : 'What to learn next'}
+    <h2 id={slugify(host.nextLearnH)}>
+      {host.nextLearnH}
     </h2>
     <p>
-      {locale === 'ko'
-        ? '이제 TypeScript에서 익숙한 개념을 TypeShade의 GPU 의미로 연결해 보세요.'
-        : 'Now connect familiar TypeScript concepts to their TypeShade GPU meaning.'}
+      {host.nextLearnP}
     </p>
     <ul>
-      <li><a href={locale === 'ko' ? '/ko/guide/language/types/' : links.languageTypes.href}>{locale === 'ko' ? 'Types — 타입과 GPU struct' : 'Types — value shapes and GPU structs'}</a></li>
-      <li><a href={locale === 'ko' ? '/ko/guide/language/functions/' : links.languageFunctions.href}>{locale === 'ko' ? 'Functions — helper와 entry point' : 'Functions — helpers and entry points'}</a></li>
-      <li><a href={locale === 'ko' ? '/ko/guide/language/control-flow/' : links.languageControlFlow.href}>{locale === 'ko' ? 'Control flow — GPU 실행 흐름' : 'Control flow — GPU execution'}</a></li>
-      <li><a href={locale === 'ko' ? '/ko/guide/language/gpu-types/' : links.languageGpuTypes.href}>{locale === 'ko' ? 'GPU types — scalar, vector, matrix, array' : 'GPU types — scalars, vectors, matrices and arrays'}</a></li>
-      <li><a href={locale === 'ko' ? '/ko/guide/language/resources/' : links.languageResources.href}>{locale === 'ko' ? 'Resources — uniform과 storage' : 'Resources — uniform and storage'}</a></li>
-      <li><a href={locale === 'ko' ? '/ko/guide/language/stages/' : links.languageStages.href}>{locale === 'ko' ? 'Shader stages — compute, vertex, fragment' : 'Shader stages — compute, vertex and fragment'}</a></li>
+      {host.nextLinks.map(({ linkKey, label }) => (
+        <li><a href={localePath(locale, links[linkKey as keyof typeof links].href)}>{label}</a></li>
+      ))}
     </ul>
-    <p><a href={locale === 'ko' ? '/ko/guide/language/' : links.guide.href}>{locale === 'ko' ? '전체 Language Guide 보기 →' : 'Read the full Language Guide →'}</a></p>
+    <p><a href={localePath(locale, links.guide.href)}>{host.nextLearnAllLink}</a></p>
   </section>
 </Docs>

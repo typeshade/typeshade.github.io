@@ -81,9 +81,7 @@ export function editGuide(sourceLine: number): string { return `${links.guideSou
 export function editGuideTranslation(locale: Locale, id: string): string { return `${siteRepo}/blob/main/${translationDir(locale)}/${id}.md` }
 
 export function navLinks(locale: Locale): readonly Destination[] {
-  const labels = locale === 'ko'
-    ? { use: 'TypeShade 사용하기', playground: 'Playground', language: '언어', api: 'API', examples: '예제' }
-    : { use: 'Use TypeShade', playground: 'Playground', language: 'Language', api: 'API', examples: 'Examples' }
+  const labels = copyFor(locale).docs.labels.nav
   return [
     { label: labels.use, href: localePath(locale, links.quickStart.href) },
     { label: labels.playground, href: localePath(locale, links.playground.href) },
@@ -105,10 +103,10 @@ export function docsPages(locale: Locale): readonly Destination[] {
   return [
     { label: d.why, href: page('motivation') },
     { label: d.quickStart, href: page('quickStart') },
-    { label: locale === 'ko' ? '언어 가이드' : 'Language guide', href: page('guide') },
+    { label: d.labels.languageGuide, href: page('guide') },
     { label: d.checks, href: page('checks') },
     { label: d.examples, href: page('examples') },
-    { label: locale === 'ko' ? '컴파일러 내부 구조' : 'Compiler internals', href: page('internals') },
+    { label: d.labels.internals, href: page('internals') },
   ]
 }
 
@@ -118,17 +116,16 @@ export interface SidebarGroup { readonly title: string; readonly items: readonly
 export function sidebar(locale: Locale, sections: readonly Destination[] = [], openCategory?: string): readonly SidebarGroup[] {
   const d = copyFor(locale).docs
   const pages = docsPages(locale)
-  const labels = locale === 'ko'
-    ? { learn: '학습', language: '언어', project: '프로젝트', internals: '컴파일러 내부' }
-    : { learn: 'Learn', language: 'Language', project: 'Project', internals: 'Internals' }
+  const labels = d.labels.sidebarGroups
+  const topicLabels = d.labels.topics
   const languagePages: SidebarItem[] = [
     pages[2]!,
-    { label: locale === 'ko' ? '타입' : 'Types', href: localePath(locale, links.languageTypes.href), depth: 1 },
-    { label: locale === 'ko' ? '함수' : 'Functions', href: localePath(locale, links.languageFunctions.href), depth: 1 },
-    { label: locale === 'ko' ? '제어 흐름' : 'Control flow', href: localePath(locale, links.languageControlFlow.href), depth: 1 },
-    { label: locale === 'ko' ? 'GPU 타입' : 'GPU types', href: localePath(locale, links.languageGpuTypes.href), depth: 1 },
-    { label: locale === 'ko' ? '리소스' : 'Resources', href: localePath(locale, links.languageResources.href), depth: 1 },
-    { label: locale === 'ko' ? '셰이더 스테이지' : 'Shader stages', href: localePath(locale, links.languageStages.href), depth: 1 },
+    { label: topicLabels.types, href: localePath(locale, links.languageTypes.href), depth: 1 },
+    { label: topicLabels.functions, href: localePath(locale, links.languageFunctions.href), depth: 1 },
+    { label: topicLabels.controlFlow, href: localePath(locale, links.languageControlFlow.href), depth: 1 },
+    { label: topicLabels.gpuTypes, href: localePath(locale, links.languageGpuTypes.href), depth: 1 },
+    { label: topicLabels.resources, href: localePath(locale, links.languageResources.href), depth: 1 },
+    { label: topicLabels.stages, href: localePath(locale, links.languageStages.href), depth: 1 },
   ]
   const reference: SidebarItem[] = [{ label: d.api.h1, href: localePath(locale, links.api.href) }]
   for (const { category, members } of apiCategories()) {
@@ -137,7 +134,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     for (const m of members) reference.push({ label: m.name, href: localePath(locale, `/api/${m.slug}/`), depth: 1 })
   }
   return [
-    { title: labels.learn, items: [...pages.slice(0, 2), { label: locale === 'ko' ? 'TypeScript와 WebGPU' : 'TypeScript & WebGPU', href: localePath(locale, links.concepts.href) }, { label: 'Playground', href: localePath(locale, links.playground.href) }] },
+    { title: labels.learn, items: [...pages.slice(0, 2), { label: d.labels.concepts, href: localePath(locale, links.concepts.href) }, { label: d.labels.playground, href: localePath(locale, links.playground.href) }] },
     { title: labels.language, items: languagePages },
     { title: labels.internals, items: sections },
     { title: labels.project, items: pages.slice(3) },

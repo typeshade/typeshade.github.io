@@ -4,7 +4,7 @@ import '../styles/global.css'
 import SiteHeader from '../components/SiteHeader.astro'
 import SiteFooter from '../components/SiteFooter.astro'
 import { facts } from '../lib/examples.ts'
-import { copyFor, defaultLocale, locales, localeUrl, type Locale } from '../i18n/index.ts'
+import { copyFor, defaultLocale, localeSettings, locales, localeUrl, type Locale } from '../i18n/index.ts'
 
 interface Props {
   locale: Locale
@@ -29,7 +29,7 @@ const siteDescription = copyFor(defaultLocale).meta.description
 const title = Astro.props.title ?? t.meta.title
 const description = Astro.props.description ?? t.meta.description
 
-const OG_LOCALE: Record<Locale, string> = { en: 'en_US', ko: 'ko_KR' }
+const settings = localeSettings[locale]
 const site = Astro.site ?? new URL('https://typeshade.dev/')
 const canonical = localeUrl(site, locale, path)
 const ogImage = new URL('/og.png', site).toString()
@@ -117,12 +117,12 @@ const jsonLd = {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-latin-wght-normal.woff2" crossorigin />
-    {locale === 'ko' && <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-kr-400.woff2" crossorigin />}
+    {settings.fontPreloads.map((href) => <link rel="preload" as="font" type="font/woff2" href={href} crossorigin />)}
     <meta property="og:site_name" content="TypeShade" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
-    <meta property="og:locale" content={OG_LOCALE[locale]} />
-    {!noAlternates && locales.filter((l) => l !== locale).map((l) => <meta property="og:locale:alternate" content={OG_LOCALE[l]} />)}
+    <meta property="og:locale" content={settings.ogLocale} />
+    {!noAlternates && locales.filter((l) => l !== locale).map((l) => <meta property="og:locale:alternate" content={localeSettings[l].ogLocale} />)}
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
