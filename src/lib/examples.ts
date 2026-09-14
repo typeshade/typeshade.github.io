@@ -177,7 +177,11 @@ function pinnedYear(): number {
 /** The pinned commit's own date, ISO 8601 with its offset, for WebPage.dateModified on the
  *  pages generated from it (the guide and the reference). Nothing else on the site reads it. */
 function pinnedDate(): string {
-  const date = execSync('git -C vendor/shader-dsl log -1 --format=%cI HEAD', { encoding: 'utf8' }).trim()
+  // %cI is ISO 8601, and git spells a commit made at UTC two ways: '+00:00' up to git 2.43,
+  // 'Z' from 2.55. The same pinned commit therefore reads differently depending on which git
+  // built the site, and dateModified would move with the runner. 'Z' is folded into '+00:00'
+  // so the page is the same either way. A commit at any other offset is untouched.
+  const date = execSync('git -C vendor/shader-dsl log -1 --format=%cI HEAD', { encoding: 'utf8' }).trim().replace(/Z$/, '+00:00')
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/.test(date)) throw new Error(`[examples] unusable commit date '${date}'`)
   return date
 }
