@@ -175,7 +175,12 @@ export const en = {
     run: 'Compile',
     reset: 'Reset example',
     editor: 'TypeShade source',
-    output: 'WGSL output',
+    output: 'Compiler output',
+    // One tab per file the compiler emits: the WGSL module, and the two GLSL ES 3.00 stages.
+    wgslTab: 'WGSL',
+    glslVertexTab: 'GLSL vertex',
+    glslFragmentTab: 'GLSL fragment',
+    noGlsl: 'This module emits no GLSL.',
     diagnostics: 'Diagnostics',
     idle: 'Ready to compile',
     ready: 'Compiled successfully',

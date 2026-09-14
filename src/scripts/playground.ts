@@ -38,7 +38,15 @@ interface PlaygroundCopy {
   readonly requiredFeatures: string
   readonly cpuFailed: string
   readonly entryCountOne: string
+  readonly noGlsl: string
 }
+
+/** The files the compiler emits, one per tab over the output pane. */
+type Target = 'wgsl' | 'glslVertex' | 'glslFragment'
+
+// Monaco ships a WGSL grammar. It ships none for GLSL, and GLSL ES 3.00 is close enough to C
+// for Monaco's C++ tokenizer to colour its keywords, types, numbers and `#version` line.
+const TARGET_LANGUAGE: Readonly<Record<Target, string>> = { wgsl: 'wgsl', glslVertex: 'cpp', glslFragment: 'cpp' }
 
 // ── Reflection ─────────────────────────────────────────────────────────────────────────────
 // What reflect() recovers from the compiled module, shaped for the pane. Names and types in
@@ -150,9 +158,6 @@ const toDisplayPosition = (position: TypeshadePosition): string => `${position.l
 // is the directory the loader knows as `vs`, with no trailing slash: the loader joins
 // `/editor/editor.main.js` onto it, and a trailing slash would make that a doubled separator
 // the CDN answers with a 400.
-// The output pane is WGSL. Monaco ships a grammar for it among its basic languages, so the
-// pane is coloured by the same editor and the same theme as the source beside it.
-const WGSL_LANGUAGE = 'wgsl'
 const MONACO_VERSION = '0.52.2'
 const MONACO_MIN = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min`
 const MONACO_VS = `${MONACO_MIN}/vs`
@@ -268,7 +273,9 @@ function mount(root: HTMLElement): void {
   let monacoApi: any
   let timer = 0
   let painted = 0
-  let shown = ''
+  // What the compiler last emitted, by target, and which tab is showing.
+  let emitted: Partial<Record<Target, string>> = {}
+  let target: Target = 'wgsl'
   // The last good compile, kept so the CPU button can call into it without compiling again.
   let compiled: ReturnType<typeof compile> | undefined
   let reflection: ReturnType<typeof reflect> | undefined
@@ -361,20 +368,37 @@ function mount(root: HTMLElement): void {
     }
   }
 
-  /** Puts WGSL in the output pane, plain first and coloured once Monaco has tokenised it.
-   *  The plain text lands synchronously, so the pane reads correctly to a screen reader and
-   *  to anything measuring it even when the colouring is slow or unavailable. */
-  const paintOutput = (wgsl: string): void => {
-    shown = wgsl
+  /** Puts the selected target in the output pane, plain first and coloured once Monaco has
+   *  tokenised it. The plain text lands synchronously, so the pane reads correctly to a screen
+   *  reader and to anything measuring it even when the colouring is slow or unavailable. */
+  const paintOutput = (): void => {
     const token = ++painted
-    output.textContent = wgsl
+    const source = emitted[target]
+    if (!source) {
+      output.textContent = target === 'wgsl' ? copy.noOutput : copy.noGlsl
+      return
+    }
+    output.textContent = source
     if (!monacoApi) return
     monacoApi.editor
-      .colorize(wgsl, WGSL_LANGUAGE, { tabSize: 2 })
+      .colorize(source, TARGET_LANGUAGE[target], { tabSize: 2 })
       .then((html: string) => {
-        if (token === painted) output.innerHTML = html
+        // colorize writes every space as a non-breaking space, which a reader copying the
+        // output would paste into a shader file as U+00A0 and no compiler accepts. It emits
+        // the character itself, and reading innerHTML back spells that as an entity, so both
+        // forms are replaced. The pane is a <pre>, so an ordinary space holds the same column.
+        if (token === painted) output.innerHTML = html.replace(/&nbsp;|\u00a0/g, ' ')
       })
       .catch(() => {})
+  }
+
+  /** Switches the pane to one target and moves the selected state onto its tab. */
+  const selectTarget = (next: Target): void => {
+    target = next
+    for (const tab of root.querySelectorAll('[data-target]')) {
+      tab.setAttribute('aria-selected', tab.getAttribute('data-target') === next ? 'true' : 'false')
+    }
+    paintOutput()
   }
 
   const describe = (diagnostic: TypeshadeDiagnostic): string =>
@@ -413,16 +437,9 @@ function mount(root: HTMLElement): void {
         diagnosticsPane.textContent = copy.clean
       }
 
-      if (result.wgsl) {
-        paintOutput(result.wgsl)
-        root.classList.add('has-output')
-      } else {
-        shown = ''
-        output.textContent = copy.noOutput
-      }
-
-      // Reflection reads the module the same source produced. A file with no directive, or one
-      // the compiler complained about, has nothing worth reflecting, so the pane stays empty.
+      // Reflection and the GLSL stages read the module the same source produced. A file with
+      // no directive, or one the compiler complained about, has nothing worth reflecting, so
+      // the panes stay empty.
       compiled = undefined
       reflection = undefined
       entries = []
@@ -437,6 +454,14 @@ function mount(root: HTMLElement): void {
           entries = []
         }
       }
+
+      emitted = {
+        wgsl: result.wgsl,
+        glslVertex: compiled?.glsl?.vertex,
+        glslFragment: compiled?.glsl?.fragment,
+      }
+      if (result.wgsl) root.classList.add('has-output')
+      paintOutput()
       paintReflection()
     } catch (error) {
       status.textContent = copy.errors
@@ -445,6 +470,8 @@ function mount(root: HTMLElement): void {
       compiled = undefined
       reflection = undefined
       entries = []
+      emitted = {}
+      paintOutput()
       paintReflection()
     }
   }
@@ -489,7 +516,7 @@ function mount(root: HTMLElement): void {
       )
 
       // Colourising bakes the theme into the markup, so the pane is painted again on a change.
-      followSiteTheme(monaco, () => { if (shown) paintOutput(shown) })
+      followSiteTheme(monaco, paintOutput)
       model = monaco.editor.createModel(sample, 'typescript', monaco.Uri.parse(`file:///${fileName}`))
       editor = monaco.editor.create(editorHost, {
         model,
@@ -543,6 +570,9 @@ function mount(root: HTMLElement): void {
       })
       run.addEventListener('click', render)
       if (runCpu instanceof HTMLButtonElement) runCpu.addEventListener('click', evaluateOnCpu)
+      for (const tab of root.querySelectorAll('[data-target]')) {
+        tab.addEventListener('click', () => selectTarget((tab.getAttribute('data-target') ?? 'wgsl') as Target))
+      }
       reset.addEventListener('click', () => {
         editor.setValue(sample)
         render()

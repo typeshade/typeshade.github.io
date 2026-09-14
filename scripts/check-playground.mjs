@@ -6,7 +6,8 @@
 //   1. the page's own script runs: no uncaught error reaches `pageerror`
 //   2. Monaco mounts: `.monaco-editor` appears
 //   3. Monaco's own TypeScript validation is off, and no marker it owns is on the sample
-//   4. the compiler ran in the browser: the WGSL pane holds text, syntax-coloured
+//   4. the compiler ran in the browser: the WGSL pane holds text, syntax-coloured, and the
+//      GLSL tabs hold the two GLSL ES 3.00 stages
 //   5. the reflection pane names the sample's entry points, and running them on the CPU
 //      oracle fills in what each one returns
 //
@@ -121,6 +122,11 @@ async function checkRoute(browser, origin, route) {
       })
       if (colours < 2) problems.push(`the WGSL pane is not syntax-coloured: ${colours} colour(s) across its spans`)
 
+      // And it still copies as shader source. Monaco's colorize writes spaces as &nbsp;, and a
+      // reader pasting U+00A0 into a shader file gets something no compiler accepts.
+      const nbsp = (output.match(/\u00a0/g) ?? []).length
+      if (nbsp > 0) problems.push(`the WGSL pane holds ${nbsp} non-breaking space(s), so copying it out gives source no compiler takes`)
+
       // The reflection pane: what reflect() recovered, and what the entry points return when
       // the CPU oracle runs them. The sample declares a vertex and a fragment entry point.
       const reflection = (await page.innerText('[data-reflection]')).trim()
@@ -135,6 +141,19 @@ async function checkRoute(browser, origin, route) {
       for (const wanted of ['[-0.8, -0.8, 0, 1]', '[1, 0, 0, 1]']) {
         if (!evaluated.includes(wanted)) problems.push(`the CPU oracle did not return ${wanted}:\n    ${evaluated.slice(0, 240)}`)
       }
+
+      // The GLSL tabs carry the other two files the compiler emits from the same module.
+      for (const [tab, wanted] of [['glslVertex', 'void main'], ['glslFragment', 'void main']]) {
+        await page.click(`[data-target="${tab}"]`)
+        await page.waitForTimeout(250)
+        const glsl = (await page.innerText('[data-output]')).trim()
+        const glslNbsp = (glsl.match(/\u00a0/g) ?? []).length
+        if (glslNbsp > 0) problems.push(`the ${tab} tab holds ${glslNbsp} non-breaking space(s)`)
+        if (!glsl.startsWith('#version 300 es')) problems.push(`the ${tab} tab does not open with #version 300 es:\n    ${glsl.slice(0, 160)}`)
+        if (!glsl.includes(wanted)) problems.push(`the ${tab} tab holds no ${wanted}:\n    ${glsl.slice(0, 160)}`)
+      }
+      await page.click('[data-target="wgsl"]')
+      await page.waitForTimeout(250)
 
       const status = (await page.textContent('[data-status]'))?.trim() ?? ''
       const diagnostics = (await page.textContent('[data-diagnostics]'))?.trim() ?? ''
