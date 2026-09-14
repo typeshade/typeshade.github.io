@@ -2,6 +2,7 @@
 import Docs from '../../layouts/Docs.astro'
 import TypeShadeCode from '../TypeShadeCode.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import ConceptDoc from '../ConceptDoc.astro'
 import Rich from '../Rich.astro'
 import { editCopy, links } from '../../lib/links.ts'
 
@@ -26,9 +27,7 @@ const headings = [
 
   <h2 id="syntax">{content.syntaxH}</h2>
   <p>{content.syntaxP}</p>
-  <table><thead><tr><th>{content.syntaxTableHeader1}</th><th>TypeShade</th><th>{content.syntaxTableHeader3}</th></tr></thead><tbody>
-    {content.syntaxTableRows.map(([concept, typeshade, changes]) => <tr><td data-label={content.syntaxTableHeader1}>{concept}</td><td data-label="TypeShade">{typeshade}</td><td data-label={content.syntaxTableHeader3}>{changes}</td></tr>)}
-  </tbody></table>
+  <ConceptDoc locale={locale} rows={content.syntaxTableRows} columns={[content.syntaxTableHeader1, 'TypeShade', content.syntaxTableHeader3]} />
 
   <h2 id="gpu">{content.gpuH}</h2>
   <p><Rich text={content.gpuP} locale={locale} /></p>
@@ -54,12 +53,7 @@ const headings = [
   <TypeShadeCode code={'"use typeshade"\n\nclass Camera {\n  @align(16)\n  view: mat4\n  pos: vec3\n}\n\ndeclare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}'} lang="ts" title="paint.ts" />
 
   <h2 id="typescript">{content.tsH}</h2>
-  <table><thead><tr><th>TypeScript</th><th>TypeShade</th></tr></thead><tbody>
-    <tr><td data-label="TypeScript"><code>declare</code></td><td data-label="TypeShade"><code>declare</code> describes host-provided GPU resources.</td></tr>
-    <tr><td data-label="TypeScript">function parameter</td><td data-label="TypeShade">GPU value or explicit stage builtin input.</td></tr>
-    <tr><td data-label="TypeScript">class</td><td data-label="TypeShade">GPU struct and field metadata.</td></tr>
-    <tr><td data-label="TypeScript">number</td><td data-label="TypeShade">Use explicit GPU numeric types such as <code>f32</code>, <code>i32</code>, <code>u32</code>.</td></tr>
-  </tbody></table>
+  <ConceptDoc locale={locale} rows={content.tsRows} columns={['TypeScript', 'TypeShade']} />
   <p>{content.tsNote}</p>
 
   <h2 id="references">{content.refsH}</h2>

@@ -3,6 +3,7 @@
 // other guide page. Copy lives in `concepts` (src/i18n/en.ts, src/i18n/ko.ts); the shader
 // sample is not copy, so it stays here.
 import Docs from '../../layouts/Docs.astro'
+import ConceptDoc from '../ConceptDoc.astro'
 import Rich from '../Rich.astro'
 import TypeShadeCode from '../TypeShadeCode.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
@@ -32,15 +33,7 @@ export function main(): vec4 {
 
   <section>
     <h2 id={slugify(content.modelH)}>{content.modelH}</h2>
-    <div class="concept-model">
-      {content.model.map(([heading, familiar, adds]) => (
-        <article>
-          <h3>{heading}</h3>
-          <p><Rich text={familiar} locale={locale} /></p>
-          <p><strong>{content.adds}</strong> <Rich text={adds} locale={locale} /></p>
-        </article>
-      ))}
-    </div>
+    <ConceptDoc locale={locale} rows={content.model} layout="cards" addsLabel={content.adds} />
   </section>
 
   <section>
@@ -57,13 +50,3 @@ export function main(): vec4 {
     <ol>{content.orderItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ol>
   </section>
 </Docs>
-
-<style>
-  /* The four mappings as cards in the document column: two across, one under 40rem. */
-  .concept-model { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-block-start: 16px }
-  .concept-model article { padding: 16px 20px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md) }
-  .concept-model h3 { margin-block: 0 8px }
-  .concept-model p { margin-block-start: 8px; color: var(--color-text-2) }
-  .concept-model strong { color: var(--color-text-1) }
-  @media (max-width: 40rem) { .concept-model { grid-template-columns: 1fr } }
-</style>

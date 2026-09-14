@@ -3,6 +3,7 @@
 // src/i18n/ko.ts); the code samples are not copy, so they stay here.
 import Docs from '../../layouts/Docs.astro'
 import TypeShadeCode from '../TypeShadeCode.astro'
+import ConceptDoc from '../ConceptDoc.astro'
 import Rich from '../Rich.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
@@ -29,9 +30,7 @@ const headings = [
   <h2 id="params">{content.params}</h2>
   <p>{content.paramsP}</p>
   <TypeShadeCode code={`function mix(a: vec4, b: vec4, amount: f32): vec4 {\n  return a + (b - a) * amount\n}`} />
-  <table><thead><tr><th>{content.paramsTable[0][0]}</th><th>{content.paramsTable[0][1]}</th></tr></thead><tbody>
-    {content.paramsTable.slice(1).map(([term, role]) => <tr><td data-label={content.paramsTable[0][0]} set:html={term} /><td data-label={content.paramsTable[0][1]}>{role}</td></tr>)}
-  </tbody></table>
+  <ConceptDoc locale={locale} rows={content.paramsTable.slice(1)} columns={content.paramsTable[0]} />
 
   <h2 id="helper">{content.helper}</h2>
   <p>{content.helperP}</p>
@@ -51,9 +50,7 @@ const headings = [
   <h2 id="builtin">{content.builtin}</h2>
   <p>{content.builtinP}</p>
   <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(\n  @builtin("global_invocation_id") gid: vec3u\n) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}`} />
-  <table><thead><tr><th>{content.builtinTable[0][0]}</th><th>{content.builtinTable[0][1]}</th></tr></thead><tbody>
-    {content.builtinTable.slice(1).map(([term, meaning]) => <tr><td data-label={content.builtinTable[0][0]} set:html={term} /><td data-label={content.builtinTable[0][1]}>{meaning}</td></tr>)}
-  </tbody></table>
+  <ConceptDoc locale={locale} rows={content.builtinTable.slice(1)} columns={content.builtinTable[0]} />
 
   <h2 id="compute">{content.compute}</h2>
   <p><Rich text={content.computeP} locale={locale} /></p>

@@ -2,6 +2,7 @@
 // The first conceptual page: explain the language boundary before compiler internals.
 import Docs from '../../layouts/Docs.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
+import ConceptDoc from '../ConceptDoc.astro'
 import Rich from '../Rich.astro'
 import { editCopy, links } from '../../lib/links.ts'
 
@@ -30,24 +31,7 @@ const headings = [
 
   <h2 id="from-typescript">{content.familiarH}</h2>
   <p>{content.familiarP}</p>
-  <table>
-    <thead>
-      <tr>
-        <th>{content.columns[0]}</th>
-        <th>{content.columns[1]}</th>
-        <th>{content.columns[2]}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {content.rows.map(([concept, familiar, addition]) => (
-        <tr>
-          <td data-label={content.columns[0]}><strong>{concept}</strong></td>
-          <td data-label={content.columns[1]}>{familiar}</td>
-          <td data-label={content.columns[2]}>{addition}</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
+  <ConceptDoc locale={locale} rows={content.rows} columns={content.columns} strongTerm />
 
   <h2 id="further-reading">{content.furtherH}</h2>
   <p>{content.furtherP}</p>
