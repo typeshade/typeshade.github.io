@@ -51,7 +51,8 @@ export const links = {
   oracle: { label: 'src/core/oracle.ts', href: at('src/core/oracle.ts') },
   deepZoom: { label: 'fp64-deep-zoom.ts', href: at('examples/fp64-deep-zoom.ts') },
   compileGate: { label: 'scripts/compile-gate.ts', href: at('scripts/compile-gate.ts') },
-  ciGates: { label: 'the CI workflow', href: at('.github/workflows/deploy.yml') },
+  // The deployment workflow belongs to the documentation site, not the compiler submodule.
+  ciGates: { label: 'the CI workflow', href: `${siteRepo}/blob/main/.github/workflows/deploy.yml` },
 
   maplibreRoadmap: {
     label: 'MapLibre graphics modernization roadmap',
