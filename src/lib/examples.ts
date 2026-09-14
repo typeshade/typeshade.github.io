@@ -289,17 +289,19 @@ export const facts = {
   },
 }
 
-// The copy was written against these values at this commit. A change here is a copy
-// decision, so the build stops and asks for one.
-const pinned = { commit: 'd894fc0', examples: 36, bothTargets: 35, testFiles: 146 }
+// The copy was written against these values, at the commit this names. Every count is
+// compared at whatever commit is pinned now, so the pin that changes one stops the build and
+// asks for a copy decision. Comparing them only at the commit the copy was written at left
+// the check inert from the next pin on, which is when it has something to catch.
+const pinned = { commit: 'a2240e0', examples: 36, bothTargets: 35, testFiles: 229 }
 const drift: string[] = []
-if (facts.pinnedCommit === pinned.commit) {
-  if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
-  if (facts.bothTargets !== pinned.bothTargets) drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`)
-}
+if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
+if (facts.bothTargets !== pinned.bothTargets) drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`)
 if (facts.testFiles < pinned.testFiles) drift.push(`testFiles ${facts.testFiles} < ${pinned.testFiles}`)
 if (drift.length > 0) {
-  throw new Error(`[examples] the pinned mirror no longer matches the copy: ${drift.join('; ')}`)
+  throw new Error(
+    `[examples] the pinned mirror (${facts.pinnedCommit}) no longer matches the copy written at ${pinned.commit}: ${drift.join('; ')}`,
+  )
 }
 // The page says the next version is not published. When the compiler reaches it, that copy
 // has to change, so the build stops here instead of printing a stale sentence.

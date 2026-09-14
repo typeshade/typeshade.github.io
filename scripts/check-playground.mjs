@@ -1,7 +1,7 @@
 // The Playground, opened in a browser against the built site. A build that emits a page whose
 // script throws on its first line is still a green build, which is how the Playground shipped
 // two empty panes: the editor never mounted and nothing said so. This opens dist/ on loopback,
-// loads the page the way a reader does, and checks the four things that were wrong.
+// loads the page the way a reader does, and checks what the list below names.
 //
 //   1. the page's own script runs: no uncaught error reaches `pageerror`
 //   2. Monaco mounts: `.monaco-editor` appears
@@ -17,22 +17,21 @@
 //   9. the emit options reach the panes: the level, minify, parens and the GLSL precision
 //  10. dark mode reaches the editor: its background is dark
 //  11. the example picker replaces the source
-//  12. a source the compiler has no rule for reports a diagnostic that carries a position,
-//      and the panes go empty
-//  13. an unclosed call reports a parse error and the panes stay empty
-//  14. the compute example reports the language service's one known false positive
-//  15. `vec` offers vec4 in the completion list
-//  16. the URL fragment carries the source and the options into a second tab
-//  17. raising the resolution changes the grid the fragment entry runs over and leaves the
+//  12. raising the resolution changes the grid the fragment entry runs over and leaves the
 //      box it is drawn in the size it was
-//  18. changing the resolution under a running draw retires it: the result reported is the
+//  13. changing the resolution under a running draw retires it: the result reported is the
 //      new grid's, and the old draw's never lands
-//  19. the source and the result columns are one height, and the canvas is on the first
+//  14. the source and the result columns are one height, and the canvas is on the first
 //      screen beside the code, not below the reflection
-//
-// Hover over a name a user declared is the one thing the language service at the current pin
-// has no answer for: it returns nothing for `vs` and `fs`. That check arrives with the
-// service swap.
+//  15. a vector times a scalar compiles: nothing is reported and the broadcast reaches the WGSL
+//  16. a vector times a string still draws TypeScript's own arithmetic diagnostic
+//  17. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
+//  18. the compute example is clean, and the store into its writable array reaches the WGSL
+//  19. hover over the entry point's parameter answers with its TypeShade type
+//  20. hover over a local bound to a numeric literal answers f32, the type the compiler gave
+//      it, and not the `number` TypeScript infers for it
+//  21. `vec` offers vec4 in the completion list
+//  22. the URL fragment carries the edited source and the options into a second tab
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -447,50 +446,186 @@ async function checkRoute(browser, origin, route) {
       await page.waitForTimeout(AFTER_EDIT)
       const sample = await sourceOf(page)
 
-      // ── a rule the compiler does not have yet: a vector times a scalar ──────────────────
-      // typeshade/typeshade#19 adds the broadcast and is merged upstream, past this pin. At
-      // the re-pin that carries it this check inverts: the source compiles, the diagnostics
-      // list stays empty, and the WGSL pane fills. Change it then to assert that, so the
-      // Playground is held to what the compiler does and not to what it used to do.
+      // ── a vector times a scalar ─────────────────────────────────────────────────────────
+      // typeshade/typeshade#19 broadcasts a vector against a scalar, so `vec4(…) * 2.` is a
+      // rule the compiler has. It reported an error here until this pin, which is half of
+      // what the Playground was reported broken for, so what is checked is the whole way
+      // through: the language service says nothing, and the scalar reaches the emitted
+      // multiply instead of the edit being dropped on the floor.
       await typeSource(page, sample.replace('vec4(1., 0., 0., 1.) }', 'vec4(1., 0., 0., 1.) * 2. }'))
       const rows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
-      if (rows.length === 0) problems.push('a vector times a scalar reported no diagnostic')
-      else if (!/^\d+:\d+\s/.test(rows[0])) problems.push(`a diagnostic row carries no position: ${rows[0]}`)
-      const emptied = await wgslPane(page)
-      if (/@vertex|@fragment|fn\s/.test(emptied)) problems.push(`a source that does not compile still filled the WGSL pane:\n    ${emptied.slice(0, 160)}`)
+      if (rows.length > 0) problems.push(`a vector times a scalar reported ${rows.length} diagnostic(s):\n    ${rows.join('\n    ')}`)
+      const broadcast = await wgslPane(page)
+      if (!/@vertex|@fragment|fn\s/.test(broadcast)) {
+        problems.push(`a vector times a scalar left the WGSL pane without WGSL:\n    ${broadcast.slice(0, 200)}`)
+      } else if (!/vec4<f32>\(1\.0, 0\.0, 0\.0, 1\.0\) \* 2\.0/.test(broadcast)) {
+        problems.push(`the broadcast did not reach the emitted WGSL:\n    ${broadcast.slice(-200)}`)
+      }
+
+      // ── a vector times a string ─────────────────────────────────────────────────────────
+      // The filter typeshade/typeshade#39 added drops TS2362, TS2363, TS2365 and TS2322 where
+      // a vector or a matrix is an operand, because TypeScript's arithmetic rules are not the
+      // compiler's there. This says how far the filter reaches: the right-hand side is a
+      // string, which neither language has a rule for, so TypeScript's own arithmetic
+      // diagnostic has to survive the filter and reach the reader. Without a case like this
+      // one, a later pin that widened the filter would leave the page silent on a real error
+      // and still pass here, since every other source this file refuses fails to parse.
+      await typeSource(page, sample.replace('vec4(1., 0., 0., 1.) }', 'vec4(1., 0., 0., 1.) * "x" }'))
+      const refused = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
+      if (!refused.some((row) => row.includes('arithmetic operation'))) {
+        problems.push(
+          `a vector times a string drew no arithmetic diagnostic, so the filter on vector arithmetic is swallowing real errors:\n    ${refused.join('\n    ') || '(no diagnostics at all)'}`,
+        )
+      }
+      const refusedPane = await wgslPane(page)
+      if (/@vertex|@fragment|fn\s/.test(refusedPane)) {
+        problems.push(`a vector times a string still filled the WGSL pane:\n    ${refusedPane.slice(0, 160)}`)
+      }
 
       // ── an unclosed call ────────────────────────────────────────────────────────────────
       // The compiler reports this as a parse error now (TS8030) and emits nothing for the
-      // file, where it used to report a return-type mismatch and emit WGSL anyway.
+      // file, where it used to report a return-type mismatch and emit WGSL anyway. It is the
+      // one source here that does not parse, and it carries what the vector check used to
+      // hold before a vector times a scalar started compiling: a row a reader can click,
+      // which is a row that carries a position.
       await typeSource(page, sample.replace('return { color: vec4(1., 0., 0., 1.) }', 'return vec4(3.14'))
       const parseRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
       if (parseRows.length === 0) problems.push('an unclosed call reported no diagnostic')
+      else if (!/^\d+:\d+\s/.test(parseRows[0])) problems.push(`a diagnostic row carries no position: ${parseRows[0]}`)
       const afterParse = await wgslPane(page)
       if (/@vertex|@fragment|fn\s/.test(afterParse)) {
         problems.push(`an unclosed call still filled the WGSL pane:\n    ${afterParse.slice(0, 160)}`)
       }
 
       // ── the compute example ─────────────────────────────────────────────────────────────
-      // The language service reports TS2542 on this example's `output[idx] = sum`: the
-      // ambient `array<T>` index signature is read-only, while a `declare let` storage
-      // binding is writable in TypeShade. `compile()` accepts the file, the compiler's own
-      // corpus ships it, and the other five examples are clean, so this is the service's
-      // ambient declaration and not the source. It is pinned here so the Playground is not
-      // quietly working around it; when the ambient type gains a writable form this check
-      // becomes "the reflection names @compute and the GLSL tabs say it has none".
+      // The language service used to report TS2542 on this example's `output[idx] = sum`,
+      // because the ambient `array<T>` index signature was read-only while a `declare let`
+      // storage binding is writable in TypeShade. typeshade/typeshade#39 drops the readonly,
+      // so the example is clean, which is the other half of what the Playground was reported
+      // broken for. The store is followed all the way into the WGSL so a service that goes
+      // quiet by dropping the assignment would still fail here. GLSL ES 3.00 has no compute
+      // stage, so its tabs say the module has none instead of holding a shader.
       await page.selectOption('[data-example]', 'compute-reduction-twin')
       await page.waitForTimeout(AFTER_EDIT)
       const computeRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
-      if (computeRows.length !== 1 || !computeRows[0].includes('only permits reading')) {
-        problems.push(
-          `the compute example no longer reports the known TS2542 false positive, so this check wants updating:\n    ${computeRows.join(' / ').slice(0, 240)}`,
-        )
+      if (computeRows.length > 0) {
+        problems.push(`the compute example reported ${computeRows.length} diagnostic(s):\n    ${computeRows.join('\n    ')}`)
       }
+      const computeWgsl = await wgslPane(page)
+      for (const wanted of ['@compute @workgroup_size(64)', 'fn reduce_windows', 'output[idx] = sum;']) {
+        if (!computeWgsl.includes(wanted)) {
+          problems.push(`the compute example's WGSL is missing ${wanted}:\n    ${computeWgsl.slice(0, 300)}`)
+        }
+      }
+      const computeReflection = (await page.innerText('[data-reflection]')).trim()
+      if (!computeReflection.includes('@compute')) {
+        problems.push(`the reflection pane does not name the compute entry point:\n    ${computeReflection.slice(0, 240)}`)
+      }
+      // The sentence is translated, so it is read back out of the copy the component wrote
+      // into the page and the tab has to hold that and nothing else. Asking instead whether
+      // the tab held no shader passed on the WGSL tab too, so the check could not tell which
+      // tab it had read: clicking the wrong one still passed.
+      const noGlsl = await page.evaluate(() => JSON.parse(document.querySelector('[data-playground]').dataset.copy).noGlsl)
+      for (const tab of ['glslVertex', 'glslFragment']) {
+        await page.click(`[data-target="${tab}"]`)
+        await page.waitForTimeout(250)
+        const glsl = (await page.innerText('[data-output]')).trim()
+        if (glsl !== noGlsl) problems.push(`the ${tab} tab does not say a compute module has no GLSL stage:\n    ${glsl.slice(0, 160)}`)
+      }
+      await page.click('[data-target="wgsl"]')
+      await page.waitForTimeout(250)
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)
 
-      // ── completion ──────────────────────────────────────────────────────────────────────
+      // ── hover ───────────────────────────────────────────────────────────────────────────
+      // The service had no answer for a name the source declares when the Playground shipped,
+      // so this check waited for it. What it is asked about is the entry point's parameter,
+      // where its answer is its own: the shim the page hands Monaco declares `u32` as
+      // `number`, so Monaco's own TypeScript hover says `(parameter) i: number` and the
+      // compiler's says `(parameter) i: u32`. Asking about `vs` proved less, since both spell
+      // its signature `vs(i: u32): Clip` and either one satisfied the check.
+      // Monaco's hover provider stays registered beside the page's, so the widget stacks the
+      // two answers and a reader is shown both. That is a bug of the page's own, filed beside
+      // the numeric-literal local; what is read here is the widget a reader sees, and the
+      // compiler's answer has to be in it.
       await typeSource(page, sample)
+      const hovered = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        const model = editor.getModel()
+        const at = model.getLinesContent().findIndex((line) => line.includes('export function vs('))
+        if (at < 0) return null
+        const declared = model.getLineContent(at + 1).indexOf('i: u32')
+        if (declared < 0) return null
+        // The parameter's name is one character wide, so the caret goes just past it.
+        editor.setPosition({ lineNumber: at + 1, column: declared + 2 })
+        editor.focus()
+        await editor.getAction('editor.action.showHover')?.run()
+        return true
+      })
+      if (hovered === null) problems.push('the sample no longer declares vs(i: u32), so hover had nothing to ask about')
+      else {
+        await page.waitForSelector('.monaco-hover', { timeout: 4_000 }).catch(() => {})
+        const quickInfo = await page.evaluate(() => document.querySelector('.monaco-hover')?.innerText.replace(/\s+/g, ' ').trim() ?? '')
+        if (!quickInfo.includes('i: u32')) {
+          problems.push(`hovering the parameter did not answer with its TypeShade type:\n    ${quickInfo.slice(0, 200)}`)
+        }
+        await page.keyboard.press('Escape')
+      }
+
+      // ── hover over a local ──────────────────────────────────────────────────────────────
+      // The other half of what the Playground was reported for: `let x = 1.` hovered as plain
+      // `number`. The ambient GPU scalars brand `number` optionally, so TypeScript infers
+      // `number` for a local bound to a numeric literal where the front end lowered an `f32`,
+      // and the editor showed the inference. typeshade/typeshade#51 answers every name the
+      // document declares off the compiler's own symbol table instead, so the local now hovers
+      // as `let k: f32`. The check above asks about a parameter, which carries a written
+      // annotation TypeScript could read on its own. A literal-bound local carries none, so
+      // `f32` here can only have come from the compiler.
+      // Monaco's provider stays registered beside the page's and still stacks its own `number`
+      // answer in the same widget, which is a bug of the page's own and filed as one; what is
+      // read here is the widget a reader sees, and the compiler's line has to be in it.
+      const withLocal = sample
+        .replace('let x = -0.8', 'let k = 1.\n  let x = -0.8')
+        .replace('vec4(x, y, 0., 1.)', 'vec4(x, y, 0., k)')
+      if (!withLocal.includes('let k = 1.') || !withLocal.includes('vec4(x, y, 0., k)')) {
+        problems.push('the sample no longer has the vertex entry this check adds a local to, so hover had no local to ask about')
+      } else {
+        await typeSource(page, withLocal)
+        // The type comes off the front end's own run, so a source it refused would fall back
+        // to TypeScript and hover `number` for a reason that is not the service's fault.
+        const localRows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
+        if (localRows.length > 0) {
+          problems.push(`declaring a local reported ${localRows.length} diagnostic(s):\n    ${localRows.join('\n    ')}`)
+        }
+        const hoveredLocal = await page.evaluate(async () => {
+          const editor = window.monaco.editor.getEditors()[0]
+          const model = editor.getModel()
+          const at = model.getLinesContent().findIndex((line) => line.includes('let k = 1.'))
+          if (at < 0) return null
+          const declared = model.getLineContent(at + 1).indexOf('k = 1.')
+          if (declared < 0) return null
+          // On the name itself, where a reader's pointer is. One column further is the space
+          // after it, and the compiler answers a position that lands on whitespace from
+          // TypeScript's quick info, which is the `number` this check exists to refuse. The
+          // parameter above survives that column only because the next character there is `:`.
+          editor.setPosition({ lineNumber: at + 1, column: declared + 1 })
+          editor.focus()
+          await editor.getAction('editor.action.showHover')?.run()
+          return true
+        })
+        if (hoveredLocal === null) problems.push('the editor is not holding the local this check declared')
+        else {
+          await page.waitForSelector('.monaco-hover', { timeout: 4_000 }).catch(() => {})
+          const localInfo = await page.evaluate(() => document.querySelector('.monaco-hover')?.innerText.replace(/\s+/g, ' ').trim() ?? '')
+          if (!localInfo.includes('k: f32')) {
+            problems.push(`hovering a local bound to a numeric literal did not answer with f32:\n    ${localInfo.slice(0, 200)}`)
+          }
+          await page.keyboard.press('Escape')
+        }
+        await typeSource(page, sample)
+      }
+
+      // ── completion ──────────────────────────────────────────────────────────────────────
       await page.evaluate(() => {
         const editor = window.monaco.editor.getEditors()[0]
         const at = editor.getModel().getLinesContent().findIndex((line) => line.includes('return { color:'))
