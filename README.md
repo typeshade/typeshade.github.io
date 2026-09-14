@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://typeshade.dev/">
-    <img height="112" src="./public/apple-touch-icon.png" alt="TypeShade">
+    <img height="112" src="./public/favicon.svg" alt="TypeShade">
   </a>
 </p>
 
