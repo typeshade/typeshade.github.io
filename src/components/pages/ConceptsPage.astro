@@ -20,11 +20,11 @@ const content = copyFor(locale).concepts
 
     <section>
       <h2>{content.startH}</h2>
-      <TypeShadeCode code={`"use typeshade"
+      <TypeShadeCode code={`"use typeshade";
 
 @vertex
 export function main(): vec4 {
-  return vec4(0., 0., 0., 1.)
+  return vec4(0., 0., 0., 1.);
 }`} />
       <p><Rich text={content.startP} locale={locale} /></p>
     </section>

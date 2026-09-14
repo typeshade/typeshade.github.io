@@ -91,22 +91,22 @@ const brightness = (colour) => {
 
 // Every expression here depends on a runtime input, so the optimizer cannot fold it away and
 // `parens: 'minimal'` has parentheses left to drop. The default sample folds to constants.
-const UNFOLDABLE = `"use typeshade"
+const UNFOLDABLE = `"use typeshade";
 
 class VsOut {
-  @builtin("position") pos: vec4
-  @location(0) uv: vec2
+  @builtin("position") pos: vec4;
+  @location(0) uv: vec2;
 }
 
 class Color {
-  @location(0) color: vec4
+  @location(0) color: vec4;
 }
 
 @fragment
 export function fs(v: VsOut): Color {
-  const a = v.uv.x * 2. + v.uv.y * 3. - 1.
-  const b = a * a + a * 2.
-  return { color: vec4(b, a - b * 3., a * b + 1., 1.) }
+  const a = v.uv.x * 2. + v.uv.y * 3. - 1.;
+  const b = a * a + a * 2.;
+  return { color: vec4(b, a - b * 3., a * b + 1., 1.) };
 }
 `
 
