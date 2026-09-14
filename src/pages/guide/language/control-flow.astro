@@ -7,7 +7,7 @@ interface Props { locale: Locale }
 const { locale } = Astro.props
 const ko = locale === 'ko'
 const content = ko ? {
-  title: 'TypeShade 제어 흐름', description: 'TypeScript에서 익숙한 조건문과 반복문의 개념을 TypeShade의 GPU 실행 모델로 연결하는 방법.', h1: 'Control flow: 익숙한 흐름, 명시적인 GPU 실행',
+  title: 'TypeShade 제어 흐름', description: 'TypeScript에서 익숙한 조건문과 반복문의 개념을 TypeShade의 GPU 실행 모델로 연결하고, 실제 셰이더에서 컴파일 가능한 분기와 반복을 안전하게 작성하는 방법을 단계적으로 설명합니다.', h1: 'Control flow: 익숙한 흐름, 명시적인 GPU 실행',
   intro: 'TypeShade는 TypeScript의 조건문과 반복문 표면을 활용하지만, 코드는 GPU에서 실행됩니다. 따라서 JavaScript runtime의 동적 동작이 아니라 컴파일 가능한 계산을 기준으로 제어 흐름을 이해해야 합니다.',
   ts: '1. TypeScript의 흐름에서 출발하기', tsP: 'if/else와 for 같은 구문은 익숙하지만, TypeShade에서는 각 조건식과 반복식이 GPU 코드로 낮아질 수 있어야 합니다. 문법이 같다는 것이 JavaScript runtime semantics 전체를 가져온다는 뜻은 아닙니다.',
   branch: '2. 조건 분기', branchP: 'if/else는 계산 경로를 표현합니다. 분기 안에서도 TypeShade가 이해하는 값과 resource만 사용합니다.',
