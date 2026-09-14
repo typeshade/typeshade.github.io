@@ -20,7 +20,7 @@ const siteRepo = 'https://github.com/typeshade/typeshade.github.io'
 export const links = {
   home: { label: 'TypeShade', href: '/' },
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
-  quickStart: { label: 'Quick start', href: '/guide/quick-start/' },
+  quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
   languageTypes: { label: 'Types', href: '/guide/language/types/' },
   languageFunctions: { label: 'Functions', href: '/guide/language/functions/' },
@@ -95,10 +95,10 @@ export function editGuideTranslation(locale: Locale, id: string): string {
 
 export function navLinks(locale: Locale): readonly Destination[] {
   const labels = locale === 'ko'
-    ? { learn: '학습', language: '언어', api: 'API', examples: '예제' }
-    : { learn: 'Learn', language: 'Language', api: 'API', examples: 'Examples' }
+    ? { use: 'TypeShade 사용하기', language: '언어', api: 'API', examples: '예제' }
+    : { use: 'Use TypeShade', language: 'Language', api: 'API', examples: 'Examples' }
   return [
-    { label: labels.learn, href: localePath(locale, links.motivation.href) },
+    { label: labels.use, href: localePath(locale, links.quickStart.href) },
     { label: labels.language, href: localePath(locale, links.guide.href) },
     { label: labels.api, href: localePath(locale, links.api.href) },
     { label: labels.examples, href: localePath(locale, links.examples.href) },
