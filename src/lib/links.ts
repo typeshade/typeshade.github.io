@@ -22,6 +22,7 @@ export const links = {
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
+  concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
   languageTypes: { label: 'Types', href: '/guide/language/types/' },
   languageFunctions: { label: 'Functions', href: '/guide/language/functions/' },
@@ -44,7 +45,6 @@ export const links = {
   releases: { label: 'Watch releases', href: `${mirror}/releases` },
   license: { label: 'MIT License', href: at('LICENSE') },
   changelog: { label: 'Changelog', href: at('CHANGELOG.md') },
-
   examplesIndex: { label: 'examples/index.ts', href: at('examples/index.ts') },
   examplesDir: { label: 'the examples directory', href: `${mirror}/tree/${facts.pinnedCommit}/examples` },
   goldens: { label: 'emit-goldens.test.ts', href: at('examples/emit-goldens.test.ts') },
@@ -52,13 +52,8 @@ export const links = {
   oracle: { label: 'src/core/oracle.ts', href: at('src/core/oracle.ts') },
   deepZoom: { label: 'fp64-deep-zoom.ts', href: at('examples/fp64-deep-zoom.ts') },
   compileGate: { label: 'scripts/compile-gate.ts', href: at('scripts/compile-gate.ts') },
-  // The deployment workflow belongs to the documentation site, not the compiler submodule.
   ciGates: { label: 'the CI workflow', href: `${siteRepo}/blob/main/.github/workflows/deploy.yml` },
-
-  maplibreRoadmap: {
-    label: 'MapLibre graphics modernization roadmap',
-    href: 'https://maplibre.org/roadmap/maplibre-gl-js/graphics-modernization/',
-  },
+  maplibreRoadmap: { label: 'MapLibre graphics modernization roadmap', href: 'https://maplibre.org/roadmap/maplibre-gl-js/graphics-modernization/' },
   deckglWebgpu: { label: 'deck.gl WebGPU guide', href: 'https://deck.gl/docs/developer-guide/webgpu' },
   pixijsMigration: { label: 'PixiJS v8 migration guide', href: 'https://pixijs.com/8.x/guides/migrations/v8' },
   survey: { label: facts.survey.title, href: facts.survey.url },
@@ -126,16 +121,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
   const labels = locale === 'ko'
     ? { learn: '학습', language: '언어', project: '프로젝트' }
     : { learn: 'Learn', language: 'Language', project: 'Project' }
-  const languagePages: SidebarItem[] = [
-    pages[2]!,
-    { label: locale === 'ko' ? '타입' : 'Types', href: localePath(locale, links.languageTypes.href), depth: 1 },
-    { label: locale === 'ko' ? '함수' : 'Functions', href: localePath(locale, links.languageFunctions.href), depth: 1 },
-    { label: locale === 'ko' ? '제어 흐름' : 'Control flow', href: localePath(locale, links.languageControlFlow.href), depth: 1 },
-    { label: locale === 'ko' ? 'GPU 타입' : 'GPU types', href: localePath(locale, links.languageGpuTypes.href), depth: 1 },
-    { label: locale === 'ko' ? '리소스' : 'Resources', href: localePath(locale, links.languageResources.href), depth: 1 },
-    { label: locale === 'ko' ? '셰이더 스테이지' : 'Shader stages', href: localePath(locale, links.languageStages.href), depth: 1 },
-    ...sections,
-  ]
+  const languagePages: SidebarItem[] = [pages[2]!, { label: locale === 'ko' ? '타입' : 'Types', href: localePath(locale, links.languageTypes.href), depth: 1 }, { label: locale === 'ko' ? '함수' : 'Functions', href: localePath(locale, links.languageFunctions.href), depth: 1 }, { label: locale === 'ko' ? '제어 흐름' : 'Control flow', href: localePath(locale, links.languageControlFlow.href), depth: 1 }, { label: locale === 'ko' ? 'GPU 타입' : 'GPU types', href: localePath(locale, links.languageGpuTypes.href), depth: 1 }, { label: locale === 'ko' ? '리소스' : 'Resources', href: localePath(locale, links.languageResources.href), depth: 1 }, { label: locale === 'ko' ? '셰이더 스테이지' : 'Shader stages', href: localePath(locale, links.languageStages.href), depth: 1 }, ...sections]
   const reference: SidebarItem[] = [{ label: d.api.h1, href: localePath(locale, links.api.href) }]
   for (const { category, members } of apiCategories()) {
     reference.push({ label: apiCategoryCopy(locale, category.slug).name, href: localePath(locale, `/api/${category.slug}/`) })
@@ -143,7 +129,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     for (const m of members) reference.push({ label: m.name, href: localePath(locale, `/api/${m.slug}/`), depth: 1 })
   }
   return [
-    { title: labels.learn, items: [...pages.slice(0, 2), { label: 'Playground', href: localePath(locale, links.playground.href) }] },
+    { title: labels.learn, items: [...pages.slice(0, 2), { label: locale === 'ko' ? 'TypeScript와 WebGPU' : 'TypeScript & WebGPU', href: localePath(locale, links.concepts.href) }, { label: 'Playground', href: localePath(locale, links.playground.href) }] },
     { title: labels.language, items: languagePages },
     { title: labels.project, items: pages.slice(3) },
     { title: d.api.reference, items: reference },
