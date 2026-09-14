@@ -569,7 +569,7 @@ export const ko: Copy = {
 
   concepts: {
     title: 'TypeScript와 WebGPU 개념 연결',
-    eyebrow: '언어 개념 연결',
+    description: 'TypeScript의 타입, 함수, 모듈이 TypeShade의 GPU 값, 진입점, 셰이더 모듈로 어떻게 이어지는지, 그리고 WebGPU가 어디에서 시작되는지 설명합니다.',
     h1: 'TypeScript와 WebGPU 개념 연결',
     lead: 'TypeShade는 TypeScript 개발 경험에서 출발해 GPU 전용 의미론을 더합니다. 이미 아는 개념을 셰이더를 작성하는 데 필요한 개념으로 연결해 봅니다.',
     startH: 'TypeScript 파일에서 시작합니다',

@@ -507,7 +507,7 @@ export const en = {
    *  src/components/pages/ConceptsPage.astro; the shader sample is not copy, so it stays there. */
   concepts: {
     title: 'TypeScript and WebGPU concepts',
-    eyebrow: 'Language bridge',
+    description: 'How TypeScript types, functions and modules map to TypeShade GPU values, entry points and shader modules, and where WebGPU begins.',
     h1: 'TypeScript and WebGPU concepts',
     lead: 'TypeShade starts from TypeScript authoring and adds GPU-specific semantics. This page connects the concepts you already know to the concepts you need to write shaders.',
     startH: 'Start with a TypeScript file',
