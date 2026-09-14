@@ -3,8 +3,12 @@ name: deploy
 on:
   push:
     branches: [main]
+  # Every pull request, whatever branch it targets. While this filtered on main, a pull
+  # request stacked on a feature branch ran no checks at all, so a page that threw on its
+  # first line of script could sit behind a green build. Deployment is unchanged: the Pages
+  # steps and the deploy job below are guarded on the event being something other than a
+  # pull request, so only a push to main and a manual dispatch publish.
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
