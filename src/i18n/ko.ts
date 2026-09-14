@@ -325,8 +325,58 @@ export const ko: Copy = {
     noResources: '이 모듈은 바인딩하는 리소스가 없습니다.',
     noEntryPoints: '이 모듈에는 진입점이 없습니다.',
     requiredFeatures: '필요한 기능',
+    args: '인자',
+    argsInvalid: '그 인자는 숫자나 숫자 목록이 아닙니다.',
+    cpuNoResources: 'CPU 오라클은 진입점 인자만 받습니다. 유니폼이나 스토리지 바인딩을 읽는 진입점은 아직 여기서 실행할 수 없습니다.',
+    canvas: 'CPU 캔버스',
+    draw: 'CPU로 그리기',
+    canvasIdle: '프래그먼트 진입점을 픽셀마다 한 번씩, GPU 없이 실행합니다.',
+    resolution: '해상도',
+    canvasProgress: '타일 {done}/{total}, 실행 {running}, 대기 {waiting}',
+    canvasDrawn: '{px}픽셀, {ms} ms, 워커 {workers}개',
+    canvasNeedsVertex: '그리려면 vertex_index로 도는 버텍스 진입점과 프래그먼트 진입점이 함께 있어야 합니다. 이 모듈에는 그 짝이 없어 덮을 삼각형이 없습니다.',
     cpuFailed: 'CPU 오라클이 이 진입점을 실행하지 못했습니다.',
     entryCount: (n: number) => `진입점 ${n}개`,
+    exampleLabel: '예제',
+    examples: {
+      hello: {
+        title: '헬로 삼각형',
+        description: '버텍스 인덱스로 세 꼭짓점을 놓는 버텍스 진입점, 그리고 그 안을 칠하는 프래그먼트 진입점입니다.',
+      },
+      'hello-vsout': {
+        title: '버텍스 출력',
+        description: '버텍스 진입점이 구조체를 돌려주므로, 프래그먼트 진입점은 같은 필드를 보간 값으로 다시 받습니다.',
+      },
+      'hello-vsin': {
+        title: '버텍스 입력',
+        description: '버텍스 진입점이 위치와 텍스처 좌표를 버텍스 버퍼 속성에서 받습니다.',
+      },
+      'hello-uniform': {
+        title: '유니폼 스칼라',
+        description: '모듈 수준에 선언한 유니폼 값 하나를 프래그먼트 진입점 안에서 읽습니다.',
+      },
+      'hello-camera': {
+        title: '유니폼 구조체',
+        description: '유니폼 구조체 하나의 바이트 레이아웃을 리플렉션 패널이 필드마다 펼쳐 보여 줍니다.',
+      },
+      'compute-reduction-twin': {
+        title: '컴퓨트 리덕션',
+        description: '스토리지 버퍼의 값 여덟 개를 하나로 접는 컴퓨트 진입점입니다. 워크그룹 크기는 64입니다.',
+      },
+    },
+    copy: '복사',
+    copied: '복사됨',
+    share: '링크 복사',
+    shared: '링크 복사됨',
+    emit: {
+      title: '생성 옵션',
+      optimization: 'WGSL 최적화',
+      levels: { O0: 'O0 (패스 없음)', O1: 'O1 (값 보존)', O2: 'O2 (기본)' },
+      parens: '괄호',
+      minify: '최소화',
+      precision: `${glsl} float 정밀도`,
+      levelNote: 'O0과 O1에서는 컴파일러가 레벨만 받아 WGSL을 생성하므로, 괄호와 최소화는 GLSL 탭에만 적용됩니다.',
+    },
   },
 
   footer: {

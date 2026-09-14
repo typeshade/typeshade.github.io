@@ -252,8 +252,61 @@ export const en = {
     noResources: 'This module binds no resources.',
     noEntryPoints: 'This module declares no entry point.',
     requiredFeatures: 'Required features',
+    args: 'Arguments',
+    argsInvalid: 'That argument is not a number or a list of numbers.',
+    cpuNoResources: 'The CPU oracle takes entry arguments only, so an entry that reads a uniform or a storage binding cannot run here yet.',
+    canvas: 'CPU canvas',
+    draw: 'Draw on the CPU',
+    canvasIdle: 'Run the fragment entry once per pixel, with no GPU.',
+    resolution: 'Resolution',
+    canvasProgress: '{done}/{total} tiles, {running} running, {waiting} waiting',
+    canvasDrawn: '{px} px in {ms} ms on {workers} worker(s)',
+    canvasNeedsVertex: 'Drawing needs a vertex entry driven by vertex_index and a fragment entry. This module has no such pair, so there is no triangle to cover.',
     cpuFailed: 'The CPU oracle could not run this entry point.',
     entryCount: (n: number) => (n === 1 ? '1 entry point' : `${n} entry points`),
+    // The example picker. Each example is one of the compiler's own .shade.ts files, named
+    // and described here; the source text comes from the vendored checkout at build time.
+    exampleLabel: 'Example',
+    examples: {
+      hello: {
+        title: 'Hello triangle',
+        description: 'A vertex entry that places three corners from the vertex index, and a fragment entry that paints them.',
+      },
+      'hello-vsout': {
+        title: 'Vertex output',
+        description: 'The vertex entry returns a struct, so the fragment entry reads the same fields back as interpolated values.',
+      },
+      'hello-vsin': {
+        title: 'Vertex input',
+        description: 'The vertex entry takes its position and texture coordinates from vertex buffer attributes.',
+      },
+      'hello-uniform': {
+        title: 'Uniform scalar',
+        description: 'A single uniform value declared at module level and read inside the fragment entry.',
+      },
+      'hello-camera': {
+        title: 'Uniform struct',
+        description: 'A uniform struct whose byte layout the reflection pane lays out field by field.',
+      },
+      'compute-reduction-twin': {
+        title: 'Compute reduction',
+        description: 'A compute entry that folds eight values from a storage buffer into one, with a workgroup size of 64.',
+      },
+    },
+    copy: 'Copy',
+    copied: 'Copied',
+    share: 'Copy link',
+    shared: 'Link copied',
+    // The emit options the compiler takes, as controls over what the code tabs show.
+    emit: {
+      title: 'Emit options',
+      optimization: 'WGSL optimization',
+      levels: { O0: 'O0 (no passes)', O1: 'O1 (value-safe)', O2: 'O2 (default)' },
+      parens: 'Parentheses',
+      minify: 'Minify',
+      precision: `${glsl} float precision`,
+      levelNote: 'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses and minify reach the GLSL tabs only.',
+    },
   },
 
   footer: {
