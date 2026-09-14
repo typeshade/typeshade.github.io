@@ -25,7 +25,7 @@ const content = ko ? {
 }
 const headings = [['ts',content.ts],['branch',content.branch],['loop',content.loop],['boundary',content.boundary]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
-<Docs locale={locale} path="/guide/language/control-flow/" title={content.title} description={content.description} headings={headings}>
+<Docs locale={locale} path="/guide/language/control-flow/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/pages/guide/language/control-flow.astro">
   <h1>{content.h1}</h1><p>{content.intro}</p>
   <h2 id="ts">{content.ts}</h2><p>{content.tsP}</p>
   <h2 id="branch">{content.branch}</h2><p>{content.branchP}</p>

@@ -1,6 +1,7 @@
 ---
 import Docs from '../../../layouts/Docs.astro'
 import TypeShadeCode from '../../../components/TypeShadeCode.astro'
+import Rich from '../../../components/Rich.astro'
 import { type Locale } from '../../../i18n/index.ts'
 
 interface Props { locale: Locale }
@@ -40,9 +41,9 @@ const content = ko ? {
 const headings = [['anatomy',content.anatomy],['params',content.params],['helper',content.helper],['call',content.call],['entry',content.entry],['builtin',content.builtin],['compute',content.compute],['graphics',content.graphics],['scope',content.scope],['boundary',content.boundary],['example',content.example]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
 
-<Docs locale={locale} path="/guide/language/functions/" title={content.title} description={content.description} headings={headings}>
+<Docs locale={locale} path="/guide/language/functions/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/pages/guide/language/functions.astro">
   <h1>{content.h1}</h1>
-  <p>{content.intro}</p>
+  <p><Rich text={content.intro} locale={locale} /></p>
 
   <h2 id="anatomy">{content.anatomy}</h2>
   <p>{content.anatomyP}</p>
@@ -66,12 +67,12 @@ const headings = [['anatomy',content.anatomy],['params',content.params],['helper
   <h2 id="call">{content.call}</h2>
   <p>{content.callP}</p>
   <TypeShadeCode code={`function addBias(value: f32): f32 {\n  return value + 0.5\n}\n\nfunction shade(value: f32): f32 {\n  const biased = addBias(value)\n  return clamp(biased, 0.0, 1.0)\n}`} />
-  <p>{ko ? '호출은 일반 함수 호출처럼 보이지만, `addBias`의 입력과 반환값은 TypeShade가 이해하는 GPU 타입이어야 합니다.' : 'The call looks like a normal function call, but both the argument and the result must be values supported by the TypeShade GPU model.'}</p>
+  <p><Rich text={ko ? '호출은 일반 함수 호출처럼 보이지만, `addBias`의 입력과 반환값은 TypeShade가 이해하는 GPU 타입이어야 합니다.' : 'The call looks like a normal function call, but both the argument and the result must be values supported by the TypeShade GPU model.'} locale={locale} /></p>
 
   <h2 id="entry">{content.entry}</h2>
-  <p>{content.entryP}</p>
+  <p><Rich text={content.entryP} locale={locale} /></p>
   <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = addBias(camera.pos.x)\n}`} />
-  <p>{ko ? '`export`는 TypeScript module 개념과 함께 entry를 compiler가 발견할 수 있게 합니다. stage decorator는 그 exported function이 어느 pipeline stage인지 추가로 설명합니다.' : '`export` keeps the familiar module surface and exposes the function to the compiler as an entry candidate. The stage decorator adds the GPU-specific stage information.'}</p>
+  <p><Rich text={ko ? '`export`는 TypeScript module 개념과 함께 entry를 compiler가 발견할 수 있게 합니다. stage decorator는 그 exported function이 어느 pipeline stage인지 추가로 설명합니다.' : '`export` keeps the familiar module surface and exposes the function to the compiler as an entry candidate. The stage decorator adds the GPU-specific stage information.'} locale={locale} /></p>
 
   <h2 id="builtin">{content.builtin}</h2>
   <p>{content.builtinP}</p>
@@ -83,19 +84,19 @@ const headings = [['anatomy',content.anatomy],['params',content.params],['helper
   </tbody></table></div>
 
   <h2 id="compute">{content.compute}</h2>
-  <p>{content.computeP}</p>
+  <p><Rich text={content.computeP} locale={locale} /></p>
   <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}`} />
   <p>{ko ? '이 함수를 읽을 때는 먼저 stage와 workgroup 크기를 보고, 다음으로 parameter를 통해 어떤 GPU 입력이 들어오는지 확인한 뒤 body에서 계산을 따라가면 됩니다.' : 'When reading this function, first identify the stage and workgroup size, then inspect the parameters for external GPU inputs, and finally follow the body’s calculation.'}</p>
 
   <h2 id="graphics">{content.graphics}</h2>
   <p>{content.graphicsP}</p>
   <TypeShadeCode code={`@vertex\nexport function vs(\n  @builtin("vertex_index") vid: u32,\n  vin: VsIn\n): vec4 {\n  return camera.view * vec4(vin.position, 1)\n}\n\n@fragment\nexport function fs(@builtin("position") pid: vec4): vec4 {\n  return vec4(pid.x, 0, 0, 1)\n}`} />
-  <p>{ko ? 'vertex의 `vid`와 `vin`은 서로 다른 입력입니다. 하나는 GPU builtin이고 다른 하나는 사용자 정의 struct 입력입니다. fragment의 `pid` 역시 signature에 명시되어 있으므로 함수만 읽어도 필요한 입력을 알 수 있습니다.' : 'The vertex function has two different inputs: `vid` is a GPU builtin and `vin` is a user-defined struct. The fragment function makes its builtin input explicit as well, so the signature documents the stage interface.'}</p>
+  <p><Rich text={ko ? 'vertex의 `vid`와 `vin`은 서로 다른 입력입니다. 하나는 GPU builtin이고 다른 하나는 사용자 정의 struct 입력입니다. fragment의 `pid` 역시 signature에 명시되어 있으므로 함수만 읽어도 필요한 입력을 알 수 있습니다.' : 'The vertex function has two different inputs: `vid` is a GPU builtin and `vin` is a user-defined struct. The fragment function makes its builtin input explicit as well, so the signature documents the stage interface.'} locale={locale} /></p>
 
   <h2 id="scope">{content.scope}</h2>
   <p>{content.scopeP}</p>
   <TypeShadeCode code={`function exposure(color: vec3, amount: f32): vec3 {\n  const factor = amount + 1.0\n  return color * factor\n}`} />
-  <p>{ko ? '`factor`는 함수 안에서만 존재하는 local value입니다. 반대로 `camera`나 `pixels` 같은 resource는 host와 연결된 shader interface이며, builtin parameter는 GPU stage가 제공하는 입력입니다.' : '`factor` is a local value scoped to the function. Resources such as `camera` and `pixels` belong to the host-facing shader interface, while builtin parameters are inputs supplied by the GPU stage.'}</p>
+  <p><Rich text={ko ? '`factor`는 함수 안에서만 존재하는 local value입니다. 반대로 `camera`나 `pixels` 같은 resource는 host와 연결된 shader interface이며, builtin parameter는 GPU stage가 제공하는 입력입니다.' : '`factor` is a local value scoped to the function. Resources such as `camera` and `pixels` belong to the host-facing shader interface, while builtin parameters are inputs supplied by the GPU stage.'} locale={locale} /></p>
 
   <h2 id="boundary">{content.boundary}</h2>
   <ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
@@ -103,7 +104,7 @@ const headings = [['anatomy',content.anatomy],['params',content.params],['helper
   <h2 id="example">{content.example}</h2>
   <p>{content.exampleP}</p>
   <TypeShadeCode code={`"use typeshade"\n\nfunction addBias(value: f32): f32 {\n  return value + 0.5\n}\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const value = camera.pos.x\n  pixels[gid.x] = addBias(value)\n}`} />
-  <p>{ko ? '이 예제의 핵심은 함수 자체보다 경계입니다. `addBias`는 재사용 가능한 계산이고, `paint`는 stage와 builtin을 선언하면서 실제 GPU invocation과 resource를 연결합니다.' : 'The important distinction is the boundary: `addBias` is reusable computation, while `paint` connects the stage, builtin input and resources to an actual GPU invocation.'}</p>
+  <p><Rich text={ko ? '이 예제의 핵심은 함수 자체보다 경계입니다. `addBias`는 재사용 가능한 계산이고, `paint`는 stage와 builtin을 선언하면서 실제 GPU invocation과 resource를 연결합니다.' : 'The important distinction is the boundary: `addBias` is reusable computation, while `paint` connects the stage, builtin input and resources to an actual GPU invocation.'} locale={locale} /></p>
 
   <p><a href={content.href}>{content.next}</a></p>
 </Docs>

@@ -1,6 +1,7 @@
 ---
 import Docs from '../../layouts/Docs.astro'
 import TypeShadeCode from '../TypeShadeCode.astro'
+import Rich from '../Rich.astro'
 import { type Locale } from '../../i18n/index.ts'
 import { links } from '../../lib/links.ts'
 
@@ -60,15 +61,15 @@ const headings = [
   ['boundary', content.boundaryH], ['syntax', content.syntaxH], ['gpu', content.gpuH], ['functions', content.functionH],
   ['resources', content.resourceH], ['stages', content.stageH], ['complete', content.completeH], ['typescript', content.tsH],
   ['references', content.refsH], ['next', content.nextH],
-].map(([slug, text]) => ({ depth: 2, slug, text }))
+].map(([slug, text]) => ({ depth: 2, slug, text: text.replace(/`/g, '') }))
 ---
 
-<Docs locale={locale} path="/guide/language/" title={content.title} description={content.description} headings={headings}>
+<Docs locale={locale} path="/guide/language/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/components/pages/LanguagePage.astro">
   <h1>{content.h1}</h1>
   <p>{content.intro}</p>
 
-  <h2 id="boundary">{content.boundaryH}</h2>
-  <p>{content.boundaryP}</p>
+  <h2 id="boundary"><Rich text={content.boundaryH} locale={locale} /></h2>
+  <p><Rich text={content.boundaryP} locale={locale} /></p>
   <TypeShadeCode code={'"use typeshade"'} lang="ts" />
   <p>{ko ? '파일의 첫 directive를 보면 이 코드가 일반 TypeScript 모듈과 같은 방식으로 해석되지 않는다는 것을 알 수 있습니다.' : 'The first directive tells you that this file is not interpreted as an ordinary TypeScript module.'}</p>
 
@@ -82,22 +83,22 @@ const headings = [
   </tbody></table></div>
 
   <h2 id="gpu">{content.gpuH}</h2>
-  <p>{content.gpuP}</p>
+  <p><Rich text={content.gpuP} locale={locale} /></p>
   <TypeShadeCode code={'declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}'} lang="ts" title="compute.ts" />
-  <p>{ko ? '여기서 `camera`와 `pixels`는 shader가 생성하지 않습니다. `gid` 역시 전역 변수로 주입되지 않고 함수 입력으로 선언됩니다.' : 'The shader does not create `camera` or `pixels`. `gid` is not injected as a global either; it is declared as an input to the function.'}</p>
+  <p><Rich text={ko ? '여기서 `camera`와 `pixels`는 shader가 생성하지 않습니다. `gid` 역시 전역 변수로 주입되지 않고 함수 입력으로 선언됩니다.' : 'The shader does not create `camera` or `pixels`. `gid` is not injected as a global either; it is declared as an input to the function.'} locale={locale} /></p>
 
   <h2 id="functions">{content.functionH}</h2>
   <p>{content.functionP}</p>
   <TypeShadeCode code={'function addBias(value: f32): f32 {\n  return value + 0.5\n}\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = addBias(camera.pos.x)\n}'} lang="ts" title="helper + entry" />
-  <p>{ko ? '`addBias`는 재사용 가능한 helper이고 `paint`는 compute entry입니다. 같은 함수 문법을 사용하지만 pipeline에서의 역할은 다릅니다.' : '`addBias` is a reusable helper; `paint` is a compute entry. They share function syntax but have different roles in the pipeline.'}</p>
+  <p><Rich text={ko ? '`addBias`는 재사용 가능한 helper이고 `paint`는 compute entry입니다. 같은 함수 문법을 사용하지만 pipeline에서의 역할은 다릅니다.' : '`addBias` is a reusable helper; `paint` is a compute entry. They share function syntax but have different roles in the pipeline.'} locale={locale} /></p>
 
   <h2 id="resources">{content.resourceH}</h2>
-  <p>{content.resourceP}</p>
+  <p><Rich text={content.resourceP} locale={locale} /></p>
   <TypeShadeCode code={'declare const camera: uniform<Camera>\ndeclare const source: storage<f32>\ndeclare let pixels: storage<f32>'} lang="ts" title="resources" />
-  <p>{ko ? '`const`와 `let`은 여기서 단순한 변수 스타일이 아니라 resource 접근 모드와 연결됩니다.' : '`const` and `let` are not just local-variable style here; they participate in the resource access model.'}</p>
+  <p><Rich text={ko ? '`const`와 `let`은 여기서 단순한 변수 스타일이 아니라 resource 접근 모드와 연결됩니다.' : '`const` and `let` are not just local-variable style here; they participate in the resource access model.'} locale={locale} /></p>
 
   <h2 id="stages">{content.stageH}</h2>
-  <p>{content.stageP}</p>
+  <p><Rich text={content.stageP} locale={locale} /></p>
   <TypeShadeCode code={'@vertex\nexport function vs(@builtin("vertex_index") vid: u32): vec4 {\n  return positions[vid]\n}\n\n@fragment\nexport function fs(): vec4 {\n  return vec4(1, 0, 0, 1)\n}'} lang="ts" title="pipeline stages" />
 
   <h2 id="complete">{content.completeH}</h2>

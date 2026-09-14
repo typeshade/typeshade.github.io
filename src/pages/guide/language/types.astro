@@ -1,6 +1,7 @@
 ---
 import Docs from '../../../layouts/Docs.astro'
 import TypeShadeCode from '../../../components/TypeShadeCode.astro'
+import Rich from '../../../components/Rich.astro'
 import { type Locale } from '../../../i18n/index.ts'
 
 interface Props { locale: Locale }
@@ -31,16 +32,16 @@ const content = ko ? {
 }
 const headings = [['ts',content.ts],['alias',content.alias],['struct',content.struct],['attrs',content.attrs],['boundary',content.boundary],['mapping',content.mapping],['example',content.example]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
-<Docs locale={locale} path="/guide/language/types/" title={content.title} description={content.description} headings={headings}>
+<Docs locale={locale} path="/guide/language/types/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/pages/guide/language/types.astro">
   <h1>{content.h1}</h1><p>{content.intro}</p>
   <h2 id="ts">{content.ts}</h2><p>{content.tsP}</p>
   <h2 id="alias">{content.alias}</h2><p>{content.aliasP}</p>
   <TypeShadeCode code={`type Camera = {\n  view: mat4\n  pos: vec3\n}`} />
   <h2 id="struct">{content.struct}</h2><p>{content.structP}</p>
   <TypeShadeCode code={`class VsIn {\n  position: vec3\n  uv: vec2\n}`} />
-  <h2 id="attrs">{content.attrs}</h2><p>{content.attrsP}</p>
+  <h2 id="attrs">{content.attrs}</h2><p><Rich text={content.attrsP} locale={locale} /></p>
   <TypeShadeCode code={`class VsIn {\n  @location(0) position: vec3\n  @location(1) @interpolate("linear") uv: vec2\n}`} />
-  <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li>{item}</li>)}</ul>
+  <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <h2 id="mapping">{content.mapping}</h2>
   <table><thead><tr><th>{content.mappingRows[0][0]}</th><th>{content.mappingRows[0][1]}</th></tr></thead><tbody>{content.mappingRows.slice(1).map((row) => <tr><td>{row[0]}</td><td>{row[1]}</td></tr>)}</tbody></table>
   <h2 id="example">{content.example}</h2><p>{content.exampleP}</p>

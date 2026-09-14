@@ -1,6 +1,7 @@
 ---
 import Docs from '../../../layouts/Docs.astro'
 import TypeShadeCode from '../../../components/TypeShadeCode.astro'
+import Rich from '../../../components/Rich.astro'
 import { type Locale } from '../../../i18n/index.ts'
 
 interface Props { locale: Locale }
@@ -27,9 +28,9 @@ const content = ko ? {
 }
 const headings = [['mapping',content.mapping],['scalar',content.scalar],['vector',content.vector],['matrix',content.matrix],['arrays',content.arrays]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
-<Docs locale={locale} path="/guide/language/gpu-types/" title={content.title} description={content.description} headings={headings}>
+<Docs locale={locale} path="/guide/language/gpu-types/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/pages/guide/language/gpu-types.astro">
   <h1>{content.h1}</h1><p>{content.intro}</p>
-  <h2 id="mapping">{content.mapping}</h2><p>{content.mappingP}</p>
+  <h2 id="mapping">{content.mapping}</h2><p><Rich text={content.mappingP} locale={locale} /></p>
   <TypeShadeCode code={`// TypeScript surface, GPU-specific value types\nlet value: f32 = 1\nlet index: u32 = 0\nlet direction: vec3 = vec3(0, 1, 0)`} />
   <h2 id="scalar">{content.scalar}</h2><p>{content.scalarP}</p>
   <h2 id="vector">{content.vector}</h2><p>{content.vectorP}</p>
