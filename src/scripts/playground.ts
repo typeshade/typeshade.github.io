@@ -67,6 +67,9 @@ const toDisplayPosition = (position: TypeshadePosition): string => `${position.l
 // is the directory the loader knows as `vs`, with no trailing slash: the loader joins
 // `/editor/editor.main.js` onto it, and a trailing slash would make that a doubled separator
 // the CDN answers with a 400.
+// The output pane is WGSL. Monaco ships a grammar for it among its basic languages, so the
+// pane is coloured by the same editor and the same theme as the source beside it.
+const WGSL_LANGUAGE = 'wgsl'
 const MONACO_VERSION = '0.52.2'
 const MONACO_MIN = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min`
 const MONACO_VS = `${MONACO_MIN}/vs`
@@ -130,8 +133,11 @@ function siteIsDark(): boolean {
   return chosen ? chosen === 'dark' : darkQuery.matches
 }
 
-function followSiteTheme(monaco: any): void {
-  const apply = () => monaco.editor.setTheme(siteIsDark() ? 'vs-dark' : 'vs')
+function followSiteTheme(monaco: any, repaint: () => void): void {
+  const apply = () => {
+    monaco.editor.setTheme(siteIsDark() ? 'vs-dark' : 'vs')
+    repaint()
+  }
   apply()
   new MutationObserver(apply).observe(document.documentElement, { attributeFilter: ['data-theme'] })
   darkQuery.addEventListener('change', apply)
@@ -176,6 +182,24 @@ function mount(root: HTMLElement): void {
   let model: any
   let monacoApi: any
   let timer = 0
+  let painted = 0
+  let shown = ''
+
+  /** Puts WGSL in the output pane, plain first and coloured once Monaco has tokenised it.
+   *  The plain text lands synchronously, so the pane reads correctly to a screen reader and
+   *  to anything measuring it even when the colouring is slow or unavailable. */
+  const paintOutput = (wgsl: string): void => {
+    shown = wgsl
+    const token = ++painted
+    output.textContent = wgsl
+    if (!monacoApi) return
+    monacoApi.editor
+      .colorize(wgsl, WGSL_LANGUAGE, { tabSize: 2 })
+      .then((html: string) => {
+        if (token === painted) output.innerHTML = html
+      })
+      .catch(() => {})
+  }
 
   const describe = (diagnostic: TypeshadeDiagnostic): string =>
     `${diagnostic.category} ${toDisplayPosition(diagnostic.range.start)} ${diagnostic.message}`
@@ -214,9 +238,10 @@ function mount(root: HTMLElement): void {
       }
 
       if (result.wgsl) {
-        output.textContent = result.wgsl
+        paintOutput(result.wgsl)
         root.classList.add('has-output')
       } else {
+        shown = ''
         output.textContent = copy.noOutput
       }
     } catch (error) {
@@ -265,7 +290,8 @@ function mount(root: HTMLElement): void {
         'file:///types/typeshade.d.ts',
       )
 
-      followSiteTheme(monaco)
+      // Colourising bakes the theme into the markup, so the pane is painted again on a change.
+      followSiteTheme(monaco, () => { if (shown) paintOutput(shown) })
       model = monaco.editor.createModel(sample, 'typescript', monaco.Uri.parse(`file:///${fileName}`))
       editor = monaco.editor.create(editorHost, {
         model,

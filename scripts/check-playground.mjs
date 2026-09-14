@@ -6,7 +6,7 @@
 //   1. the page's own script runs: no uncaught error reaches `pageerror`
 //   2. Monaco mounts: `.monaco-editor` appears
 //   3. Monaco's own TypeScript validation is off, and no marker it owns is on the sample
-//   4. the compiler ran in the browser: the WGSL pane holds text
+//   4. the compiler ran in the browser: the WGSL pane holds text, syntax-coloured
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -106,15 +106,24 @@ async function checkRoute(browser, origin, route) {
       if (markers.length > 0) problems.push(`the editor drew ${markers.length} marker(s) on the sample:\n    ${markers.join('\n    ')}`)
 
       // The compiler is bundled into the page, so this is the half that needs no network.
-      const output = (await page.textContent('[data-output]'))?.trim() ?? ''
+      // innerText is what the reader sees: the pane is coloured markup whose line breaks are
+      // <br>, which textContent would run together into one line.
+      const output = (await page.innerText('[data-output]')).trim()
       if (output.length === 0) problems.push('the WGSL pane is empty')
       else if (!/@vertex|@fragment|fn\s/.test(output)) problems.push(`the WGSL pane holds no WGSL:\n    ${output.slice(0, 200)}`)
+
+      // And it is syntax-coloured. One colour throughout means the tokenizer did nothing.
+      const colours = await page.evaluate(() => {
+        const pane = document.querySelector('[data-output]')
+        return [...new Set([...pane.querySelectorAll('span')].map((s) => getComputedStyle(s).color))].length
+      })
+      if (colours < 2) problems.push(`the WGSL pane is not syntax-coloured: ${colours} colour(s) across its spans`)
 
       const status = (await page.textContent('[data-status]'))?.trim() ?? ''
       const diagnostics = (await page.textContent('[data-diagnostics]'))?.trim() ?? ''
       console.log(`  status: ${status}`)
       console.log(`  diagnostics: ${diagnostics}`)
-      console.log(`  WGSL: ${output.split('\n').length} lines, ${output.length} characters`)
+      console.log(`  WGSL: ${output.split('\n').length} lines, ${output.length} characters, ${colours} colours`)
     }
 
     const realErrors = pageErrors
