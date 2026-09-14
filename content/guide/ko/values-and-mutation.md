@@ -1,7 +1,7 @@
 ---
 id: values-and-mutation
-source: 89f4a325c1d6696f50016f7e50d7680463c5d90df66e46a8ed551447ff6101e4
-sourceLine: 323
+source: d5dd93abb3f39c7e95dcbf523b798efd72c507b6c53fc7f01328c44ec64d5f65
+sourceLine: 328
 ---
 
 이 절을 다 읽고 나면 중간값을 작성하고, 코드에 타입이 필요한 자리에 타입을 지정하고, 값을
@@ -21,8 +21,14 @@ const scale = fn('scale', { v: vec2fT, k: f32T }, ({ v, k }) => v.mul(k))
 `f32T`는 부동소수점 스칼라입니다. 타입을 가져올 피연산자가 없는 그냥 숫자도 기본으로 이
 타입이 됩니다. `u32T`와 `i32T`는 정수 스칼라이고, `boolT`는 비교 연산의 결과 타입입니다.
 `vec2fT`, `vec3fT`, `vec4fT`는 부동소수점 벡터이며, 부호 없는 벡터는 `vec2uT`, `vec3uT`,
-`vec4uT`, 부호 있는 벡터는 `vec2iT`, `vec4iT`입니다. `arrayT(elem, n)`은 토큰 하나를 받아
-고정 길이 배열 타입을 만듭니다.
+`vec4uT`, 부호 있는 벡터는 `vec2iT`, `vec3iT`, `vec4iT`입니다. `arrayT(elem, n)`은 토큰 하나를
+받아 고정 길이 배열 타입을 만듭니다.
+
+타입 토큰마다 그 옆에 실제 값을 만드는 생성자가 있습니다. 부동소수점 벡터는 `vec2`, `vec3`,
+`vec4`이고, 정수 벡터는 부호 없는 쪽이 `vec2u`/`vec3u`/`vec4u`, 부호 있는 쪽이
+`vec2i`/`vec3i`/`vec4i`입니다. 구성 요소 자리에 그냥 숫자를 넣으면 그 벡터의 요소 종류를
+따라가므로, `vec3u(1, 2, 3)`은 `vec3<u32>(1u, 2u, 3u)`를 생성하고 `vec3(1, 2, 3)`은
+부동소수점 값을 생성합니다.
 
 ### 평범한 const 바인딩
 
@@ -70,16 +76,22 @@ const hits = Var('hits', u32T) // var hits: u32;
 
 ### assign으로 변경하기
 
-JavaScript는 `=`를 오버로드할 수 없으므로, 변경은 값을 쓸 대상이 가진 메서드로 합니다. 그
-메서드는 `.assign(v)` 하나뿐이고, 노드에 복합 대입 메서드는 없습니다. `add`는 순수
-표현식이므로 `x += v`는 `x.assign(x.add(v))`로 씁니다.
+JavaScript는 `=`를 오버로드할 수 없으므로, 변경은 값을 쓸 대상이 가진 메서드로 합니다.
+`.assign(v)`는 값을 그대로 쓰는 메서드이고, `.addAssign`, `.subAssign`, `.mulAssign`,
+`.divAssign`은 복합 대입 메서드로 `x += v`와 그 나머지 연산을 생성합니다.
 
 ```ts
 const min_dist = f32(1e10) // a plain const…
 min_dist.assign(min(min_dist, d)) // …becomes a var because something assigns to it
-winding.assign(winding.add(1)) // no addAssign; the pure op plus assign
+winding.addAssign(1) // emits `winding += 1`
 o.pos.assign(vec4(pos, 0, 1)) // a struct field is a target too
 ```
+
+변경을 적는 두 방식은 생성되는 텍스트만 다를 뿐 의미는 같습니다. `acc.addAssign(x)`는
+`acc += x`를 생성하고, `acc.assign(acc.add(x))`는 `acc = (acc + x)`를 생성합니다. 복합 대입
+형태를 우선 씁니다. 소스 코드의 `+=`를 두고 `"use typeshade"` 컴파일러가 직접 만들어 내는
+문이 바로 이 형태이므로, 두 작성 인터페이스 사이를 오가며 옮긴 헬퍼도 생성 결과가 그대로
+유지됩니다.
 
 평범한 `const`에 대입하기만 해도 생성된 소스에서는 변수가 됩니다. 대입할 것을 미리 알고
 `Var`로 선언해 둘 필요는 없습니다.
@@ -92,15 +104,31 @@ o.pos.assign(vec4(pos, 0, 1)) // a struct field is a target too
 | 분류       | 메서드                                                                    |
 | ---------- | ------------------------------------------------------------------------ |
 | 산술       | `.add .sub .mul .div .mod .neg`                                          |
+| 복합 대입  | `.addAssign .subAssign .mulAssign .divAssign`                            |
 | 비교       | `.lt .gt .le .ge .eq .ne`                                                |
-| 논리       | `.and .or`                                                               |
+| 논리       | `.and .or .not`                                                          |
 | 비트 연산  | `.bitAnd .bitOr .bitXor .shl .shr`                                       |
+| 캐스트     | `.f32() .i32() .u32() .f64()`                                            |
 | 구성 요소  | `.x .y .z .w` · `.r .g .b .a` · `.rgb .xy .xyz …` · `.swizzle<R>('zxy')` |
-| 인덱스     | `.at(i, elemType)`                                                       |
+| 인덱스     | 배열 노드에는 `.at(i)`, 그 밖에는 `.at(i, elemType)`                     |
 | 삼항       | `cond.select(a, b)`                                                      |
 
-몇몇 연산은 독립 함수로 제공합니다. `select(cond, a, b)`는 `.select`의 독립 함수 버전으로,
-코드에서 조건이 맨 앞에 오지 않는 편이 읽기 좋을 때 씁니다. `mod(x, y)`는 floor 방식의
+메서드는 왼쪽에서 오른쪽으로 읽히므로 기본 형태로 알맞습니다. 메서드로는 적을 수 없는
+식은 왼쪽 피연산자가 리터럴인 식뿐입니다. `add`, `sub`, `mul`, `div`에는 바로 이런
+경우를 위한 독립 함수 버전이 똑같이 네 개 있어서, `f32(1).sub(...)` 대신
+`sub(1, smoothstep(a, b, d))`처럼 씁니다. 둘 중 노드인 쪽이 다른 쪽의 타입을 정하므로, `u32`
+노드 `n`에 대해 `sub(3, n)`은 `3u - n`을 생성합니다. `pow`, `mix`, `atan2`도 첫 번째 자리에
+리터럴을 받습니다.
+
+`f32`, `i32`, `u32`, `f64`는 노드를 넘기면 캐스트로 동작합니다. `f32(i)`가 그 표기이며,
+WGSL과 `"use typeshade"` 인터페이스 모두 이 표기를 씁니다. 반대로 숫자를 넘기면 리터럴이
+됩니다. `toF32`와 그 형제들은 같은 캐스트를 가리키는 예전 이름으로, 지금도 그대로 동작합니다.
+
+이 밖에 몇몇 연산도 독립 함수로 제공합니다. `select(cond, a, b)`는 `.select`의 독립 함수
+버전으로, 코드에서 조건이 맨 앞에 오지 않는 편이 읽기 좋을 때 씁니다. 인자 순서에는 주의해야
+합니다. 이 함수는 조건을 맨 앞에서 읽는데, 이는 WGSL 자체의
+`select(falseValue, trueValue, condition)`과는 반대 순서이므로, `select(c, a, b)`는
+`select(b, a, c)`를 생성합니다. `mod(x, y)`는 floor 방식의
 나머지 연산입니다. 도메인 반복이나 각도 폴딩처럼 피연산자가 음수일 수 있는 자리에서는 이
 함수를 씁니다. `.mod` 메서드는 `%`와 같아서 음수 피연산자에서는 결과가 다릅니다. `radians`와
 `degrees`는 각도를 변환해 주므로, 변환 상수를 직접 적거나 반올림할 일이 없습니다.
@@ -158,6 +186,9 @@ const SKY = constExpr('SKY', vec4fT, vec4(0.4, 0.6, 0.9, 1))
 const PALETTE = constExpr('PALETTE', arrayT(vec4fT, 3), arrayLit(vec4fT, c0, c1, c2))
 ```
 
-`PI.decl`과 `constExpr`의 결과는 모듈의 `consts` 배열에 넣습니다. `constDecl`로 선언한
-상수는 `PI.node`로 읽습니다. `constExpr`로 선언한 상수는 `constRef('SKY', vec4fT)`로
-읽는데, 이름이 문자열이라 잘못 적어도 타입 검사기가 잡아 주지 못합니다.
+`PI.decl`과 `constExpr`의 결과는 모두 모듈의 `consts` 배열에 넣습니다. 이제 두 경우 모두
+`.node`로 읽습니다. `PI.node`, `SKY.node`, `PALETTE.node.at(i)`처럼 씁니다. `constExpr`의
+결과는 그 자체가 선언이므로, `consts`에는 값 그대로 들어가면서 동시에 `.node`로도 답합니다.
+이때 참조는 상수를 선언할 때 쓴 이름과 타입으로 만들어지므로 둘이 어긋날 일이 없습니다.
+`constRef('SKY', vec4fT)`는 예전 표기법으로, 여기 들어가는 이름은 문자열이라 잘못 적어도
+타입 검사기가 잡아 주지 못합니다.

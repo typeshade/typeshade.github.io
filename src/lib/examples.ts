@@ -190,17 +190,27 @@ const pkg = JSON.parse(readFileSync(path.join(vendorRoot, 'package.json'), 'utf8
   version: string
   license: string
   author: string
-  dependencies?: unknown
-  peerDependencies?: unknown
-  optionalDependencies?: unknown
+  dependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>
+  optionalDependencies?: Record<string, string>
 }
 
-/** Zero is derived from the absence of the three fields that put code into a consumer's install.
- *  devDependencies is the compiler's own CI toolchain and never reaches an install. */
+/** Zero is derived from the fields that put code into a consumer's install: `dependencies`,
+ *  `optionalDependencies`, and every `peerDependencies` entry not marked optional in
+ *  `peerDependenciesMeta`. An optional peer installs nothing and does not count; today that is
+ *  `typescript`, which only the `./language-service` subpath asks for and every core subpath
+ *  does without. devDependencies is the compiler's own CI toolchain and never reaches an install. */
 function runtimeDeps(): number {
-  const declared = (['dependencies', 'peerDependencies', 'optionalDependencies'] as const).filter((f) => f in pkg)
+  const meta = pkg.peerDependenciesMeta ?? {}
+  const requiredPeers = Object.keys(pkg.peerDependencies ?? {}).filter((name) => !meta[name]?.optional)
+  const declared = [
+    ...Object.keys(pkg.dependencies ?? {}),
+    ...Object.keys(pkg.optionalDependencies ?? {}),
+    ...requiredPeers,
+  ]
   if (declared.length > 0) {
-    throw new Error(`[examples] the mirror's package.json now declares ${declared.join(', ')}; update the copy`)
+    throw new Error(`[examples] the mirror's package.json now installs ${declared.join(', ')} into a consumer; update the copy`)
   }
   return 0
 }

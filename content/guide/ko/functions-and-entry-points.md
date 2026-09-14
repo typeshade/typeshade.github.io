@@ -1,7 +1,7 @@
 ---
 id: functions-and-entry-points
-source: 857f1e7aaccc0e32d3d337053893b34728addacdbc6781044f3ddab84a4ba94f
-sourceLine: 488
+source: d8b2da39eac02885b042eb94778cb0fa6827f46073a02be56d7e2a883807255f
+sourceLine: 519
 ---
 
 이 페이지를 읽고 나면 헬퍼 함수를 선언하고, 그 헬퍼를 다른 함수에서 호출하고, 버텍스·프래그먼트·컴퓨트 스테이지의 진입점을 작성하고, 이 함수들을 담는 모듈을 조립할 수 있습니다.
@@ -31,18 +31,32 @@ export const dist_to_segment = fn(
 
 ### 반환 타입
 
-반환 타입을 생략하면 본문이 돌려주는 값에서 추론합니다. 본문 안의 TypeScript `return`도 이 타입으로 검사하므로, 타입이 다른 값을 돌려주면 컴파일 오류가 납니다.
+반환 타입을 생략하면 본문이 돌려주는 값에서 추론합니다. 본문 안의 TypeScript `return`도 이 타입으로 검사하므로, 타입이 다른 값을 돌려주면 컴파일 오류가 납니다. 아무 값도 돌려주지 않는 본문 역시 추론되며, 이 경우 `void`가 됩니다.
 
-타입 토큰을 직접 넘겨야 하는 경우는 두 가지입니다. 하나는 반환값이 중첩 클로저 안의 `Return()`으로 빠져나가는 본문입니다. `Return()`은 빌더 없이 주변 문맥에 기대어 동작하는 호출이라 TypeScript가 그 반환값을 알 수 없습니다. 다른 하나는 아무 값도 돌려주지 않는 함수이며, 이때는 `voidT`를 넘깁니다.
+타입 토큰을 직접 넘겨야 하는 경우는 이제 한 가지만 남았습니다. 반환값이 중첩 클로저 안의 `Return(value)` 호출로 빠져나가는 본문입니다. TypeScript는 이런 본문을 실제로 아무 값도 돌려주지 않는 본문과 똑같이 반환 없음으로 읽습니다. 두 경우는 본문이 실제로 실행되고 나서야 비로소 구분되므로, 이때 토큰을 생략하면 어떤 토큰을 써야 하는지 알려주는 `SD0113` 오류로 거부됩니다.
 
 ```ts
 // Inferred: dot() yields f32, so luma returns f32.
 const luma = fn('luma', { c: vec3fT }, ({ c }) => dot(c, vec3(0.2126, 0.7152, 0.0722)))
 
-// Pinned: this one writes into a storage buffer and returns no value.
-const store = fn('store', { i: u32T, v: f32T }, voidT, ({ i, v }) => {
+// Inferred too: this one writes into a storage buffer and returns no value, so it is void.
+const store = fn('store', { i: u32T, v: f32T }, ({ i, v }) => {
   outputB.at(i).assign(v)
 })
+
+// Pinned: the value leaves through the ambient Return(), which tsc cannot see.
+const firstHit = fn(
+  'first_hit',
+  { d: f32T },
+  f32T,
+  ({ d }) => {
+    If(d.lt(0), () => {
+      Return(f32(0))
+    })
+    Return(d)
+  },
+  { allowEarlyReturn: true },
+)
 ```
 
 ### 함수 호출하기
@@ -69,8 +83,7 @@ const params = resource('params', vec4uT, { group: 0, binding: 2 })
 
 const reduceKernel = fn(
   'reduce_windows',
-  { gid: builtin('global_invocation_id', vec3uT) },
-  voidT,
+  { gid: builtin('global_invocation_id') },
   ({ gid }) => {
     const idx = gid.x
     If(idx.ge(params.node.x), () => {
@@ -85,19 +98,21 @@ const reduceKernel = fn(
 
 이 가드 절(guard clause)은 함수의 마지막 문장에 이르기 전에 함수를 빠져나가므로, 옵션에 `allowEarlyReturn: true`도 함께 넣어야 합니다. 조기 반환과 이 옵션은 [제어 흐름](/guide/authoring/control-flow/)에서 다룹니다.
 
+아무 값도 돌려주지 않는 본문에는 반환 타입 토큰이 필요 없습니다. 컴퓨트 진입점이 예전에 써넣던 `voidT`도 이제 추론됩니다.
+
 ### 스테이지 파라미터
 
-스테이지는 속성이 붙은 파라미터로 입력을 전달받습니다. `builtin(name, type)`은 `'vertex_index'`, `'position'`, `'global_invocation_id'`처럼 하드웨어가 공급하는 값을 선언합니다. `location(n, type)`은 스테이지 사이에서 데이터를 나르는, 번호가 매겨진 슬롯을 선언합니다. IO 구조체의 필드도 이 두 헬퍼로 똑같이 적으며, `ioStruct`로 한 번 선언해 두면 두 스테이지가 그 구조체를 함께 씁니다. 필드 맵, 보간 모드, 핸들에 딸린 접근자는 [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에서 설명합니다.
+스테이지는 속성이 붙은 파라미터로 입력을 전달받습니다. `builtin(name)`은 `'vertex_index'`, `'position'`, `'global_invocation_id'`처럼 하드웨어가 공급하는 값을 선언하며, 타입은 id로부터 읽어옵니다. WGSL은 `clip_distances`를 뺀 모든 id의 타입을 고정해 두었고, 이 id만은 `array<f32, N>`의 길이를 직접 정해서 넘깁니다. `location(n, type)`은 스테이지 사이에서 데이터를 나르는, 번호가 매겨진 슬롯을 선언합니다. IO 구조체의 필드도 이 두 헬퍼로 똑같이 적으며, `ioStruct`로 한 번 선언해 두면 두 스테이지가 그 구조체를 함께 씁니다. 필드 맵, 보간 모드, 핸들에 딸린 접근자는 [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에서 설명합니다.
 
 ```ts
 const VsOut = ioStruct('VsOut', {
-  pos: builtin('position', vec4fT),
+  pos: builtin('position'),
   uv: location(0, vec2fT),
 })
 
 const vsFull = fn(
   'vs_full',
-  { idx: builtin('vertex_index', u32T) },
+  { idx: builtin('vertex_index') },
   (p) => {
     const pos = vec2(-1, -1)
     If(p.idx.eq(1), () => {
@@ -120,13 +135,13 @@ const fsGradient = fn(
   (p) => {
     const t = p.vo.uv.y.add(U.field.mix_bias)
     const rgb = mix(U.field.bottom.rgb, U.field.top.rgb, t)
-    return vec4(rgb, f32(1))
+    return vec4(rgb, 1)
   },
-  { stage: 'fragment', retAttr: '@location(0)' },
+  { stage: 'fragment' },
 )
 ```
 
-구조체 없이 값 하나만 돌려주는 스테이지 함수는 위 `fs_gradient`처럼 `retAttr`로 속성을 붙입니다. 구조체를 돌려주는 스테이지 함수라면 속성은 구조체 필드에 이미 붙어 있습니다.
+프래그먼트 함수가 구조체가 아닌 값 하나만 돌려주면, 따로 적지 않아도 첫 번째 색상 어태치먼트인 `@location(0)`이 붙습니다. 다른 곳으로 보내려면 `retAttr`을 넘기면 되고, 이런 기본값이 없는 버텍스 스테이지에서는 `retAttr`을 반드시 씁니다. 구조체를 돌려주는 스테이지 함수라면 속성은 이미 구조체 필드에 붙어 있습니다.
 
 ### 모듈 조립하기
 
@@ -141,6 +156,8 @@ const gradientModule = module({
 ```
 
 `funcs` 배열의 순서가 곧 생성 순서입니다. 불리는 함수를 부르는 함수보다 앞에 두어야 합니다. GLSL ES 3.00은 함수를 쓰기 전에 선언해 두기를 요구하고, 순서를 고정해 두면 실행할 때마다 같은 바이트가 생성되기 때문입니다. 핸들 호출로만 닿고 목록에는 없는 함수는 컴파일러가 알아서 모아 그 함수를 부르는 함수 앞에 넣어 주므로, 진입점만 적은 목록도 올바른 순서로 생성됩니다.
+
+리소스는 함수처럼 저절로 모이지 않습니다. 모듈은 오직 건네받은 선언만 조립하므로, 어떤 함수가 읽는 `uniformStruct`나 `storageBuffer`를 `uses`에 나열하지 않으면 `var` 선언 자체가 전혀 생성되지 않습니다. 이 실수를 맨 처음 알려주는 것은 파이프라인을 생성하는 시점의 드라이버입니다. `uses-declared` 린트 규칙이 바로 이 문제를 미리 잡아냅니다. `diagnose(m)`나 `lintModule(m)`을 실행하면 본문이 읽지만 아무것도 선언하지 않은 변수를 모두 찾아내고, 어떤 핸들을 추가해야 하는지 알려줍니다.
 
 ### 모듈 안 함수 이름 짓기
 
