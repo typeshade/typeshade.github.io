@@ -1,0 +1,53 @@
+---
+// Concepts: WebGPU and WebGL2, at /guide/concepts/webgpu-and-webgl2/. What the host
+// application owns, what the compiler owns, and how reflection joins the two. Copy lives in
+// `concepts.webgpuAndWebgl2` (src/i18n/en.ts, src/i18n/ko.ts); the code sample is not copy,
+// so it stays here.
+import Docs from '../../layouts/Docs.astro'
+import ConceptDoc from '../ConceptDoc.astro'
+import Rich from '../Rich.astro'
+import TypeShadeCode from '../TypeShadeCode.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+import { editCopy, links } from '../../lib/links.ts'
+import { slugify } from '../../lib/slug.ts'
+
+interface Props { locale: Locale }
+const { locale } = Astro.props
+const c = copyFor(locale).concepts.webgpuAndWebgl2
+const headings = [c.ownsH, c.reflectionH, c.runtimeH, c.webgl2H, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+---
+
+<Docs locale={locale} path={links.conceptsWebgpu.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
+  <h1>{c.h1}</h1>
+  <p>{c.lead}</p>
+
+  <section>
+    <h2 id={slugify(c.ownsH)}>{c.ownsH}</h2>
+    <p>{c.ownsP}</p>
+    <ConceptDoc locale={locale} rows={c.ownsRows} columns={c.ownsColumns} strongTerm />
+  </section>
+
+  <section>
+    <h2 id={slugify(c.reflectionH)}>{c.reflectionH}</h2>
+    <p><Rich text={c.reflectionP} locale={locale} /></p>
+    <TypeShadeCode code={`const shader = emitModule(paintModule)\nconst layout = reflect(paintModule)\n\nfor (const group of layout.bindGroups) {\n  for (const entry of group.entries) {\n    // entry.group, entry.binding, entry.space, entry.access, entry.resourceKind\n  }\n}\n\nfor (const struct of layout.uniforms) {\n  for (const field of struct.fields) {\n    // field.name, field.type, field.offset, field.size\n  }\n}`} />
+    <p>{c.reflectionNote}</p>
+  </section>
+
+  <section>
+    <h2 id={slugify(c.runtimeH)}>{c.runtimeH}</h2>
+    <p><Rich text={c.runtimeP} locale={locale} /></p>
+  </section>
+
+  <section>
+    <h2 id={slugify(c.webgl2H)}>{c.webgl2H}</h2>
+    <p>{c.webgl2P}</p>
+    <ul>{c.webgl2Items.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
+  </section>
+
+  <section>
+    <h2 id={slugify(c.furtherH)}>{c.furtherH}</h2>
+    <ul>{c.furtherItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
+    <p><Rich text={c.nextP} locale={locale} /></p>
+  </section>
+</Docs>

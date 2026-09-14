@@ -23,6 +23,10 @@ export const links = {
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
   concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
+  conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
+  conceptsPipeline: { label: 'The pipeline', href: '/guide/concepts/the-pipeline/' },
+  conceptsWebgpu: { label: 'WebGPU and WebGL2', href: '/guide/concepts/webgpu-and-webgl2/' },
+  conceptsWgsl: { label: 'WGSL and GLSL', href: '/guide/concepts/wgsl-and-glsl/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
   languageTypes: { label: 'Types', href: '/guide/language/types/' },
   languageFunctions: { label: 'Functions', href: '/guide/language/functions/' },
@@ -58,6 +62,16 @@ export const links = {
   maplibreRoadmap: { label: 'MapLibre graphics modernization roadmap', href: 'https://maplibre.org/roadmap/maplibre-gl-js/graphics-modernization/' },
   deckglWebgpu: { label: 'deck.gl WebGPU guide', href: 'https://deck.gl/docs/developer-guide/webgpu' },
   pixijsMigration: { label: 'PixiJS v8 migration guide', href: 'https://pixijs.com/8.x/guides/migrations/v8' },
+  mdnWebgpu: { label: 'MDN WebGPU API', href: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API' },
+  mdnGpuDevice: { label: 'MDN GPUDevice', href: 'https://developer.mozilla.org/en-US/docs/Web/API/GPUDevice' },
+  mdnBindGroupLayout: { label: 'MDN GPUBindGroupLayout', href: 'https://developer.mozilla.org/en-US/docs/Web/API/GPUBindGroupLayout' },
+  mdnRenderPipeline: { label: 'MDN GPURenderPipeline', href: 'https://developer.mozilla.org/en-US/docs/Web/API/GPURenderPipeline' },
+  mdnComputePass: { label: 'MDN GPUComputePassEncoder', href: 'https://developer.mozilla.org/en-US/docs/Web/API/GPUComputePassEncoder' },
+  mdnWebgl2: { label: 'MDN WebGL2RenderingContext', href: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext' },
+  specWebgpu: { label: 'WebGPU specification', href: 'https://www.w3.org/TR/webgpu/' },
+  specWgsl: { label: 'WGSL specification', href: 'https://www.w3.org/TR/WGSL/' },
+  specWebgl2: { label: 'WebGL2 specification', href: 'https://registry.khronos.org/webgl/specs/latest/2.0/' },
+  specGlslEs: { label: `${facts.glslTarget} specification`, href: 'https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf' },
   survey: { label: facts.survey.title, href: facts.survey.url },
 } as const satisfies Record<string, Destination>
 
@@ -110,6 +124,10 @@ export function docsPages(locale: Locale): readonly Destination[] {
     docsPage(locale, 'quickStart'),
     docsPage(locale, 'guide'),
     docsPage(locale, 'concepts'),
+    docsPage(locale, 'conceptsCpuGpu'),
+    docsPage(locale, 'conceptsPipeline'),
+    docsPage(locale, 'conceptsWebgpu'),
+    docsPage(locale, 'conceptsWgsl'),
     docsPage(locale, 'examples'),
     docsPage(locale, 'internals'),
     docsPage(locale, 'languageService'),
@@ -117,7 +135,7 @@ export function docsPages(locale: Locale): readonly Destination[] {
   ]
 }
 
-type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'concepts' | 'examples' | 'internals' | 'languageService' | 'checks'
+type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'concepts' | 'conceptsCpuGpu' | 'conceptsPipeline' | 'conceptsWebgpu' | 'conceptsWgsl' | 'examples' | 'internals' | 'languageService' | 'checks'
 /** One page of the guide as the sidebar and the footer name it, in one language. */
 function docsPage(locale: Locale, key: DocsPageKey): Destination {
   const d = copyFor(locale).docs
@@ -127,6 +145,10 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     playground: d.labels.playground,
     guide: d.labels.languageGuide,
     concepts: d.labels.concepts,
+    conceptsCpuGpu: d.labels.conceptPages.cpuAndGpu,
+    conceptsPipeline: d.labels.conceptPages.pipeline,
+    conceptsWebgpu: d.labels.conceptPages.webgpuAndWebgl2,
+    conceptsWgsl: d.labels.conceptPages.wgslAndGlsl,
     examples: d.examples,
     internals: d.labels.internals,
     languageService: d.labels.languageService,
@@ -172,7 +194,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
   return [
     { title: labels.getStarted, items: [page('motivation'), page('quickStart'), page('playground')] },
     { title: labels.language, items: languagePages },
-    { title: labels.concepts, items: [page('concepts')] },
+    { title: labels.concepts, items: [page('concepts'), page('conceptsCpuGpu'), page('conceptsPipeline'), page('conceptsWebgpu'), page('conceptsWgsl')] },
     { title: labels.examples, items: [page('examples')] },
     { title: labels.reference, items: reference },
     { title: labels.project, items: [page('checks')] },

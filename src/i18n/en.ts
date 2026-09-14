@@ -129,6 +129,12 @@ export const en = {
         reference: 'Reference',
         project: 'Project',
       },
+      conceptPages: {
+        cpuAndGpu: 'CPU and GPU',
+        pipeline: 'The pipeline',
+        webgpuAndWebgl2: 'WebGPU and WebGL2',
+        wgslAndGlsl: 'WGSL and GLSL'
+      },
       topics: {
         types: 'Types',
         functions: 'Functions',
@@ -537,6 +543,147 @@ export const en = {
       'Use the Playground to see diagnostics and generated WGSL while you edit.',
       'Only then move into compiler and backend details.',
     ],
+
+    /** The four pages under /guide/concepts/, the learning path from what a TypeScript
+     *  developer knows to what a shader needs. Each is a component in src/components/pages
+     *  and a one-line route file in src/pages/guide/concepts/. */
+    cpuAndGpu: {
+      title: 'CPU and GPU execution',
+      description: 'What the GPU hands one invocation, why a shader has no heap, no strings and no recursion, and which TypeShade rule follows from each of those facts.',
+      h1: 'CPU and GPU',
+      lead: 'A TypeShade file is TypeScript to your editor and a GPU program to the compiler. The restrictions the language guide states are not house style. Each one follows from something the hardware does, so this page gives the fact first and the rule after it.',
+      invocationH: 'Invocations',
+      invocationP: 'A TypeScript function runs once when you call it. An entry point is called by the GPU instead, once for every vertex in a draw, once for every fragment a primitive covers, and once for every work item in a dispatch. Those runs happen beside each other and cannot read each other. Nothing outside the function tells one of them which one it is.',
+      invocationRule: 'What follows: a stage decorator says which of the three is calling, and a `@builtin(...)` parameter is how an invocation learns its own place in the work. [Shader stages](languageStages) states the decorators and [Functions](languageFunctions) states the parameters.',
+      memoryH: 'Memory',
+      memoryP: 'An invocation works in registers and in the buffers and textures the host bound before the draw. There is no heap under it, so a shader has nothing to allocate from, no array that can grow and no string to build. A class in a TypeShade file describes the bytes of a GPU struct, and the host writes those bytes.',
+      memoryRule: 'What follows: `new` builds nothing, a field decorator carries layout, and every resource arrives through `declare`. [Types](languageTypes) states the struct surface and [Resources](languageResources) states the declarations.',
+      callsH: 'Calls',
+      callsP: 'A shader has no call stack to return through, and the call graph is flattened before a driver sees it. A function that calls itself, directly or through another function, leaves the compiler with nothing to flatten.',
+      callsRule: 'What follows: recursion is rejected, and a helper is an ordinary function the compiler can follow to its leaves. [Functions](languageFunctions) states what a call may be.',
+      loopsH: 'Loops',
+      loopsP: 'The invocations of a stage move through a loop together, and the ones that leave early wait for the rest. A bound the compiler can read is what keeps that wait knowable, and it is also what lets a backend unroll the body when the target asks for it.',
+      loopsRule: 'What follows: a loop counts over a value the compiler already holds. [Control flow](languageControlFlow) states which conditions and loops compile.',
+      typesH: 'Value types',
+      typesP: 'A GPU register has a width and a layout, fixed when the shader is compiled. A variable therefore holds one value type from its declaration to the end of its scope, with no union of two value types and nothing at run time that could choose between them.',
+      typesRule: 'What follows: every value carries a written GPU type such as `f32`, `u32` or `vec4`. [Types](languageTypes) states the type surface and [GPU types](languageGpuTypes) states the values.',
+      tableH: 'Facts and rules',
+      tableP: 'The facts above with the rule each produces, and the page of the language guide that states it.',
+      tableColumns: ['What the GPU does', 'What TypeShade asks for', 'Stated in'],
+      tableRows: [
+        ['Calls an entry point once per vertex, fragment or work item', 'A stage decorator on the entry point and a parameter for every builtin input', '[Shader stages](languageStages)'],
+        ['Gives an invocation registers and bound resources, with no heap under them', 'No `new`, no growing array and no string; a class is a layout and a resource is a `declare`', '[Resources](languageResources)'],
+        ['Runs without a call stack', 'A call graph the compiler can flatten, so no recursion', '[Functions](languageFunctions)'],
+        ['Moves the invocations of a stage through a loop together', 'A loop bound the compiler can read', '[Control flow](languageControlFlow)'],
+        ['Holds a value of one width in a register', 'One value type per variable, written out', '[GPU types](languageGpuTypes)']
+      ],
+      furtherH: 'Further reading',
+      furtherItems: [
+        '[WGSL specification](specWgsl) writes down the execution model these facts come from, including what an invocation is and what it may hold.',
+        '[MDN WebGPU API](mdnWebgpu) is the browser side of the same model, written for a JavaScript developer.'
+      ],
+      nextP: 'Next in this path: [The pipeline](conceptsPipeline), which says what each stage is handed and what it produces.'
+    },
+
+    pipeline: {
+      title: 'The shader pipeline',
+      description: 'What a vertex stage, a fragment stage and a compute stage are each handed, what each produces, and how an entry point signature maps onto them.',
+      h1: 'The pipeline',
+      lead: 'A shader never runs on its own. It sits at one of the fixed points of a GPU pipeline, and that point decides what the entry point is handed and what it has to give back. This page describes the points TypeShade emits for, and leaves the syntax to the language guide.',
+      stagesH: 'Stages',
+      stagesP: 'Each row is one stage of the pipeline the host set up.',
+      stagesColumns: ['Stage', 'What it is handed', 'What it produces'],
+      stagesRows: [
+        ['Vertex', 'One vertex of the draw: its index in the draw, and the fields the host laid out in the vertex buffers.', 'A clip-space position, and the values the fragment stage will read.'],
+        ['Fragment', 'The values the vertex stage produced, weighed for this fragment, and the fragment’s own position.', 'A value for each colour attachment the pipeline declares.'],
+        ['Compute', 'Its own place in the dispatch grid, and the resources the host bound.', 'Nothing given back; a compute entry writes through the resources it holds.']
+      ],
+      entryH: 'Entry points',
+      entryP: 'The signature of an entry point is that stage interface written out. A `@builtin(...)` parameter is a value the stage hands the invocation, such as the vertex index or the fragment position. A struct parameter is per-vertex input in a vertex stage and a weighed value in a fragment stage. The return type is what the stage gives back to the pipeline, so a vertex entry returns a position and a fragment entry returns colour. [Shader stages](languageStages) has the decorators and the spellings; this page stays with the meaning.',
+      entryNote: 'Reading a signature therefore tells you which stage the function belongs to, what the pipeline has to supply, and what the pipeline receives.',
+      interpolationH: 'Interpolation',
+      interpolationP: 'Between the vertex stage and the fragment stage the rasterizer works out which fragments a primitive covers. For each of them it weighs the values the vertices produced by how near the fragment lies to each vertex, and hands the fragment stage the result. A vertex entry writes a value per vertex and a fragment entry reads a value per fragment, so the two are different values with the same name.',
+      interpolationNote: '`@interpolate` on a field chooses the weighting, and a field that has to arrive unweighed says so in the same place. [Types](languageTypes) states the field decorators.',
+      computeH: 'Compute',
+      computeP: 'A compute stage has no rasterizer in front of it and no attachment behind it. The host dispatches a grid of work items, the entry point reads its own coordinates in that grid from a builtin parameter, and everything it produces goes through a storage resource. [Resources](languageResources) states how a writable resource is declared.',
+      furtherH: 'Further reading',
+      furtherItems: [
+        '[WebGPU specification](specWebgpu) defines the render and compute pipelines these stages belong to.',
+        '[MDN GPURenderPipeline](mdnRenderPipeline) and [MDN GPUComputePassEncoder](mdnComputePass) show the host code that drives them.'
+      ],
+      nextP: 'Next in this path: [WebGPU and WebGL2](conceptsWebgpu), which divides the work between the host application and the compiler.'
+    },
+
+    webgpuAndWebgl2: {
+      title: 'WebGPU and WebGL2',
+      description: 'What the host application owns, what TypeShade owns, how the compiler’s reflection feeds a bind group layout, and where WebGL2 differs.',
+      h1: 'WebGPU and WebGL2',
+      lead: 'TypeShade produces shader text and the data a host needs in order to bind resources to it. The rest of the GPU side belongs to the application: the device, the pipelines, the bind groups, the buffers and the textures. Knowing which side owns what is most of what a first TypeShade program needs.',
+      ownsH: 'Ownership',
+      ownsP: 'One row per object a WebGPU application creates.',
+      ownsColumns: ['Object', 'What the application does', 'What TypeShade contributes'],
+      ownsRows: [
+        ['Device', 'Asks for an adapter and a `GPUDevice`, and keeps them for the life of the page.', 'Nothing. No TypeShade code touches a WebGPU object.'],
+        ['Pipeline', 'Creates a render or compute pipeline and names an entry point for each stage.', 'The shader text of the module, and the name of every entry point in it.'],
+        ['Bind group layout', 'Describes each binding by its group, its index, its kind and the stages that see it.', 'That same description, read back from the compiled module by `reflect()`.'],
+        ['Buffer', 'Allocates the buffer and writes the bytes into it.', 'The offset, the size and the type of every field of a uniform struct.'],
+        ['Texture and sampler', 'Creates them and puts them in a bind group.', 'The binding the shader declares and the type it expects to find there.']
+      ],
+      reflectionH: 'Reflection',
+      reflectionP: `\`reflect()\` reads a compiled module and returns its bindings: the group and index the shader declared, the address space, the access the shader needs, and for a uniform struct the fields with their offsets and sizes under the ${facts.layoutStandards.join(' and ')} layouts. A host builds its bind group layout entries out of that list and packs its uniform buffer from those offsets. The numbers the shader was compiled with are the numbers the host writes, so the two sides stay in step.`,
+      reflectionNote: 'A field renamed in the shader changes the reflection at the next build, and the host code that reads the reflection follows it.',
+      runtimeH: 'No runtime',
+      runtimeP: `The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService). What reaches the browser is the emitted shader source and the host code the application already had. TypeShade installs ${facts.runtimeDeps} runtime dependencies, and there is no TypeShade object to create at startup and none to keep alive.`,
+      webgl2H: 'Where WebGL2 differs',
+      webgl2P: 'The same source compiles for WebGL2, and the host side of it looks different.',
+      webgl2Items: [
+        'There are no bind groups. A uniform block is bound to a binding point on the linked program and a sampler is set through its uniform location, so a host uses the same reflection in a different shape.',
+        `There is no compute stage. A module with a \`@compute\` entry emits WGSL and refuses to emit ${facts.glslTarget}.`,
+        `Precision belongs to the source. Every emitted ${facts.glslTarget} program declares its default precision above its declarations, which WGSL has no need of.`,
+        'A GPU feature is turned on twice: the host asks the context for the extension and the emitted source declares it. [Compiler internals](internals) describes how the compiler splits those halves.'
+      ],
+      furtherH: 'Further reading',
+      furtherItems: [
+        '[MDN WebGPU API](mdnWebgpu) and [MDN GPUBindGroupLayout](mdnBindGroupLayout) are the host objects this page names.',
+        '[MDN WebGL2RenderingContext](mdnWebgl2) is the older context, with the uniform and sampler calls the WebGL2 path uses.',
+        '[WebGPU specification](specWebgpu) and the [WebGL2 specification](specWebgl2) define the two host APIs.'
+      ],
+      nextP: 'Next in this path: [WGSL and GLSL](conceptsWgsl), which prints what one source compiles to on both targets.'
+    },
+
+    wgslAndGlsl: {
+      title: `WGSL and ${facts.glslTarget}`,
+      description: `The two shader languages one TypeShade source compiles to, the emitted text for one small shader, and where the targets differ.`,
+      h1: `WGSL and ${facts.glslTarget}`,
+      lead: `One \`"use typeshade"\` file reaches WebGPU as WGSL and WebGL2 as ${facts.glslTarget}. The blocks on this page are compiled while the page is built, from the file above them, by the compiler pinned at ${facts.pinnedCommit}.`,
+      sourceH: 'The source',
+      sourceP: 'A triangle, with a vertex entry that places it and a fragment entry that colours it. The two structs give each stage its output shape.',
+      sourceLabel: 'hello.shade.ts',
+      wgslH: 'WGSL',
+      wgslP: 'WGSL is the language a WebGPU device accepts, and one module holds every stage. The structs survive as structs, each entry point keeps its stage attribute, and the builtin input stays an attribute on the parameter that receives it.',
+      wgslLabel: 'The emitted WGSL module',
+      glslH: `${facts.glslTarget}`,
+      glslP: `A WebGL2 program is linked from one vertex shader and one fragment shader, so the compiler emits a separate program for each stage. Each one opens with its version line and its default precision, the vertex index arrives under the name the language reserves for it, and the fragment output becomes a declared out variable.`,
+      glslVertexLabel: `The emitted ${facts.glslTarget} vertex shader`,
+      glslFragmentLabel: `The emitted ${facts.glslTarget} fragment shader`,
+      diffH: 'Where the targets differ',
+      diffP: 'Each difference is named by the page of the guide that handles it.',
+      diffColumns: ['What differs', 'WGSL', `${facts.glslTarget}`],
+      diffRows: [
+        ['[Compute stages](languageStages)', 'A `@compute` entry emits a compute shader carrying its workgroup size.', 'The target has no compute stage, so a module that declares one emits WGSL alone.'],
+        ['[Precision](languageGpuTypes)', 'A type carries its own width, so the program declares nothing.', 'The program opens with a default precision for floating-point and integer values.'],
+        ['[Builtin inputs](languageStages)', 'A builtin stays an attribute on the parameter that receives it.', 'A builtin becomes the name the language reserves for it, and the parameter goes away.'],
+        ['[Stage outputs](languageTypes)', 'A stage returns a struct whose fields carry their locations.', 'A stage writes to declared out variables, and the position goes to the reserved one.'],
+        ['[Extensions](internals)', 'A GPU feature is turned on by a declaration at the top of the module.', 'A GPU feature is turned on by a preprocessor line, and the host asks the context for the matching extension.']
+      ],
+      furtherH: 'Further reading',
+      furtherItems: [
+        '[WGSL specification](specWgsl) defines the first of the two targets.',
+        `[${facts.glslTarget} specification](specGlslEs) and the [WebGL2 specification](specWebgl2) define the second.`,
+        '[MDN WebGPU API](mdnWebgpu) and [MDN WebGL2RenderingContext](mdnWebgl2) show how a host hands each of them to a driver.'
+      ],
+      nextP: 'Next: [Examples](examples), where every example in the compiler’s registry names the targets it emits.'
+    },
   },
 
   /** The language service page at /guide/language-service/, rendered by
