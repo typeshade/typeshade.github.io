@@ -22,11 +22,11 @@ const headings = [content.startH, content.modelH, content.fitH, content.orderH].
 
   <section>
     <h2 id={slugify(content.startH)}>{content.startH}</h2>
-    <TypeShadeCode code={`"use typeshade"
+    <TypeShadeCode code={`"use typeshade";
 
 @vertex
 export function main(): vec4 {
-  return vec4(0., 0., 0., 1.)
+  return vec4(0., 0., 0., 1.);
 }`} />
     <p><Rich text={content.startP} locale={locale} /></p>
   </section>
