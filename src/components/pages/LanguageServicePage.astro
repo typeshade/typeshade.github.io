@@ -20,12 +20,12 @@ const sample = `import { createTypeshadeLanguageService } from '${PACKAGE_NAME}/
 const service = createTypeshadeLanguageService()
 const uri = 'file:///hello.shade.ts'
 
-service.openDocument(uri, source, 1)
+service.openDocument(uri, source)
 const diagnostics = service.getDiagnostics(uri)
-const hover = service.getHover(uri, { line: 4, character: 10 })
+const hover = service.getHover(uri, cursor)
 const output = service.getCompiledOutput(uri, 'wgsl')
 
-service.updateDocument(uri, nextSource, 2)
+service.updateDocument(uri, nextSource)
 service.closeDocument(uri)`
 ---
 
