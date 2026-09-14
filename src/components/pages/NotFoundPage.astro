@@ -4,14 +4,14 @@
 // a Korean page with Korean chrome. Both pages are noindex and out of the sitemap.
 import Base from '../../layouts/Base.astro'
 import Rich from '../Rich.astro'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { copyFor, type Locale } from '../../i18n/index.ts'
 
 interface Props {
   locale: Locale
 }
 const { locale } = Astro.props
 const t = copyFor(locale).notFound
-const path = locale === 'en' ? '/404.html' : localePath(locale, '/404/')
+const path = locale === 'en' ? '/404.html' : '/404/'
 ---
 
 <Base locale={locale} path={path} title={t.title} description={t.description} noAlternates noindex>
