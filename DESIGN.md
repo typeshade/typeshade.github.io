@@ -43,13 +43,16 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - A full-width header bar (56px, one rule under it) and a full-width footer on a soft ground
   frame every page. Under 48rem the header's links, the language menu and the dark-mode switch
   sit in a panel behind a menu button.
-- The front page is centred on a 960px measure: the name as the headline in the accent colour,
-  the category line under it ("The verifiable TypeScript shader library", the way react.dev
-  sets its one line under "React" and vuejs.org attaches "Progressive"), one sentence, three links, a pill with the release state, the live shader, the authored fragment beside the WGSL
-  it emits, three short points. Get started is the one filled button (accent background, the
-  way vuejs.org fills its own Get Started); Why TypeShade and Examples stay the plain surface
-  button. Under 40rem the three links are a grid, Get started across the
-  top; the two code frames stack under 48rem. The layout follows vuejs.org's front page.
+- The front page is centred on a 960px measure: the category line ("A shader language built
+  around the TypeScript experience", the way react.dev sets its one line beside "React" and
+  vuejs.org attaches "Progressive"), the name as the headline in the accent colour, a
+  one-line subtitle, the tagline, five links, the live shader, the authored file beside the
+  WGSL it emits, four concept cards, three short points. Use TypeShade is the one filled
+  button (accent background, the way vuejs.org fills its own Get Started); Write in the
+  Playground, Why TypeShade, Learn the language and Explore examples stay the plain surface
+  button. Under 40rem the five links are a two-column grid, Use TypeShade across the top;
+  from 40rem they sit on one wrapping line; the two code frames stack under 48rem. The
+  layout follows vuejs.org's front page.
 - Every other page is one content column, 740px, left-aligned, with code blocks and figures at
   the same width. Sections are 48 to 56px apart.
 - The one thing that should stand out is a rendered shader. Everything else is quiet.
@@ -64,31 +67,43 @@ The front page answers "what is it" in about 350 words, the length of comparable
 front pages (htmx, esbuild, wgpu, TypeGPU are 250 to 350). Everything that explains how or
 why lives on its own page.
 
-- `/`: the name, the category line, one sentence, three links (Get started, Why TypeShade, Examples), a
-  bordered pill with the release state that links to the quick start, the live metaballs
-  shader, the fragment stage of the gradient example beside the WGSL it emits, and three
-  points.
+- `/`: the category line, the name, the subtitle and the tagline, five links (Use TypeShade,
+  Write in the Playground, Why TypeShade, Learn the language, Explore examples), the live
+  metaballs shader, the compilation flow with `hello.shade.ts` beside the WGSL it emits, four
+  cards that map a TypeScript concept to its TypeShade meaning, and three points.
 - `/guide/…`: the documentation, on the layout every documentation site uses (VitePress,
-  Docusaurus): a sidebar on the left with three groups, the document in the middle, and on a
+  Docusaurus): a sidebar on the left with six groups, the document in the middle, and on a
   wide screen an outline of the page on the right. Under 64rem the sidebar is a bar under the
   header that names the current page. Every page carries its own headings in that outline,
   and closes with a link to the file it is written in ("Edit this page", the VitePress
-  convention) and with previous and next.
-  - Introduction: `/guide/introduction/` (why one source; the hosts' migration guides; the
-    survey figures; what TypeShade does not do) and `/guide/quick-start/` (the submodule
-    command, the authored fragment, the WGSL it emits, the release state).
-  - Authoring: the compiler's AUTHORING.md, rendered from the vendored checkout at the pinned
-    commit. A custom content loader (`src/content.config.ts`) cuts the file at its top-level
-    headings and stores one entry per section, so the guide is one page per section:
-    `/guide/authoring/` is the overview and `/guide/authoring/<section>/` the rest, in the
-    file's order, which the sidebar and the pager follow. The package name is shown as its
-    release name; an environment variable keeps its real name, the one the pinned compiler
-    reads. No page sends a reader to GitHub for something the site can show; the edit
-    link points at the section's line in AUTHORING.md.
+  convention) and with previous and next, which follow the sidebar's order.
+  - Get started: `/guide/introduction/` (the language boundary, what stays familiar from
+    TypeScript, what the compiler produces), `/guide/quick-start/` (the submodule command,
+    the authored file, the WGSL it emits, the host code, the release state) and
+    `/playground/`.
+  - Language: `/guide/language/`, the language guide's overview, and one page per topic under
+    it (types, functions, control flow, GPU types, resources, shader stages), written in the
+    dictionaries.
+  - Concepts: `/guide/typescript-and-webgpu/`, how TypeScript types, functions and modules map
+    to GPU values, entry points and shader modules, and where WebGPU begins.
+  - Examples: `/guide/examples/`, which opens with a table of every example in the compiler's
+    registry, grouped by category, each row linking to its source file at the pinned commit
+    and naming the targets it emits.
+  - Reference: the API reference (`/api/…`, below), then Compiler internals, then Language
+    service. Compiler internals is the compiler's AUTHORING.md, rendered from the vendored
+    checkout at the pinned commit. A custom content loader (`src/content.config.ts`) cuts the
+    file at its top-level headings and stores one entry per section, so it is one page per
+    section: `/guide/internals/` is the overview and `/guide/internals/<section>/` the rest,
+    in the file's order, which the sidebar and the pager follow; the sidebar lists the
+    sections one level in only while the reader is on one of those pages. The package name
+    is shown as its release name; an environment variable keeps its real name, the one the
+    pinned compiler reads. No page sends a reader to GitHub for something the site can show;
+    the edit link points at the section's line in AUTHORING.md. `/guide/language-service/`
+    describes the compiler's editor-neutral language service: what it answers, how a host
+    opens documents on it, its coordinate conventions and its one peer dependency, with a
+    link to the design document at the pinned commit.
   - Project: `/guide/checks/` (the oracle, the compile gate, the golden files, the same pass
-    on both backends, the typed diagnostic) and `/guide/examples/`, which opens with a table of
-    every example in the compiler's registry, grouped by category, each row linking to its
-    source file at the pinned commit and naming the targets it emits.
+    on both backends, the typed diagnostic).
 - `/api/…`: the API reference, on the same documentation layout. `/api/` lists the categories with
   the number of exports in each and one line on what each holds; `/api/<category>/` lists that
   category's exports alphabetically with the sentence each opens with; `/api/<export>/` is one
@@ -96,7 +111,8 @@ why lives on its own page.
   so the build asserts that no category takes a page an export needs (the Reflection category
   is `/api/reflection-api/`, because the compiler exports an interface called Reflection).
   Previous and next walk a category alphabetically and carry on into the next category.
-- The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect.
+- The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect, and so does
+  `/guide/authoring/…`, the internals' first address, to `/guide/internals/…`.
 
 Search is Pagefind. The build runs it over `dist/` after Astro, so `dist/pagefind/` holds the
 index and the search UI, and nothing about them is committed. The index is built from the
@@ -107,8 +123,8 @@ per `html lang`, so a Korean page is searched in Korean. The magnifier in the he
 dialog that loads the index on its first open, and Pagefind's UI is dressed in the site's
 tokens through the CSS variables its stylesheet reads.
 
-The header is the one every library site has: the name on the left; Guide, API and Examples;
-then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
+The header is the one every library site has: the name on the left; Use TypeShade, Playground,
+Language, API and Examples; then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 columns (Documentation, Project, Languages), then the licence, the copyright and the commit the
 page was built from. Headings are single nouns or short noun phrases: Motivation, Verification, Quick
 start.
@@ -155,11 +171,12 @@ barrel and the release name (`import { emitModule } from 'typeshade'`), and a ty
 as a type. A parameter, a return value and a property show their type as a link to the page of
 every name in it that has one.
 
-The sidebar's fourth group, Reference, opens with the reference's own index and then lists the
-category index pages; on a page of one
-category, that category's members follow it one level in, so the sidebar never carries every
-export at once, and the page a reader is on is scrolled into view inside the sidebar's own
-scroller. The guide links into the reference the way MDN links a function's first mention: the
+The sidebar's Reference group opens with the reference's own index and then lists the
+category index pages; on a page of one category, that category's members follow it one level
+in. Compiler internals and Language service close the group, and the internals' sections open
+under their overview the same way, only on their own pages, so the sidebar never carries every
+page of the reference at once, and the page a reader is on is scrolled into view inside the
+sidebar's own scroller. The guide links into the reference the way MDN links a function's first mention: the
 first inline code on a guide page that is exactly a public export's name becomes a link to
 that export's page (`src/lib/remark-api-links.mjs`, over the guide's markdown only). A
 reference page records its kind for the search index, so a result reads "abs (function)". On a

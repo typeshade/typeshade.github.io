@@ -1,76 +1,69 @@
 ---
-// The bridge page at /guide/typescript-and-webgpu/. Copy lives in `concepts`
-// (src/i18n/en.ts, src/i18n/ko.ts); the shader sample is not copy, so it stays here.
-import Base from '../../layouts/Base.astro'
+// The bridge page at /guide/typescript-and-webgpu/, on the documentation layout like every
+// other guide page. Copy lives in `concepts` (src/i18n/en.ts, src/i18n/ko.ts); the shader
+// sample is not copy, so it stays here.
+import Docs from '../../layouts/Docs.astro'
 import Rich from '../Rich.astro'
 import TypeShadeCode from '../TypeShadeCode.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { links } from '../../lib/links.ts'
+import { editCopy, links } from '../../lib/links.ts'
+import { slugify } from '../../lib/slug.ts'
 
 interface Props { locale: Locale }
 const { locale } = Astro.props
 const content = copyFor(locale).concepts
+const headings = [content.startH, content.modelH, content.fitH, content.orderH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
 ---
 
-<Base locale={locale} path={links.concepts.href} searchable searchTitle={content.title}>
-  <article class="concept-page">
-    <p class="eyebrow">{content.eyebrow}</p>
-    <h1>{content.h1}</h1>
-    <p class="lead">{content.lead}</p>
+<Docs locale={locale} path={links.concepts.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
+  <h1>{content.h1}</h1>
+  <p>{content.lead}</p>
 
-    <section>
-      <h2>{content.startH}</h2>
-      <TypeShadeCode code={`"use typeshade";
+  <section>
+    <h2 id={slugify(content.startH)}>{content.startH}</h2>
+    <TypeShadeCode code={`"use typeshade";
 
 @vertex
 export function main(): vec4 {
   return vec4(0., 0., 0., 1.);
 }`} />
-      <p><Rich text={content.startP} locale={locale} /></p>
-    </section>
+    <p><Rich text={content.startP} locale={locale} /></p>
+  </section>
 
-    <section class="mapping">
-      <h2>{content.modelH}</h2>
-      <div class="grid">
-        {content.model.map(([heading, familiar, adds]) => (
-          <article>
-            <h3>{heading}</h3>
-            <p><Rich text={familiar} locale={locale} /></p>
-            <strong>{content.adds}</strong>
-            <p><Rich text={adds} locale={locale} /></p>
-          </article>
-        ))}
-      </div>
-    </section>
+  <section>
+    <h2 id={slugify(content.modelH)}>{content.modelH}</h2>
+    <div class="concept-model">
+      {content.model.map(([heading, familiar, adds]) => (
+        <article>
+          <h3>{heading}</h3>
+          <p><Rich text={familiar} locale={locale} /></p>
+          <p><strong>{content.adds}</strong> <Rich text={adds} locale={locale} /></p>
+        </article>
+      ))}
+    </div>
+  </section>
 
-    <section>
-      <h2>{content.fitH}</h2>
-      <p><Rich text={content.fitP} locale={locale} /></p>
-      <div class="links">
-        {content.fitLinks.map(([label, href]) => <a href={href}>{label}</a>)}
-        <a href={localePath(locale, links.playground.href)}>{content.playgroundLink}</a>
-      </div>
-    </section>
+  <section>
+    <h2 id={slugify(content.fitH)}>{content.fitH}</h2>
+    <p><Rich text={content.fitP} locale={locale} /></p>
+    <ul>
+      {content.fitLinks.map(([label, href]) => <li><a href={href}>{label}</a></li>)}
+      <li><a href={localePath(locale, links.playground.href)}>{content.playgroundLink}</a></li>
+    </ul>
+  </section>
 
-    <section>
-      <h2>{content.orderH}</h2>
-      <ol>{content.orderItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ol>
-    </section>
-  </article>
-</Base>
+  <section>
+    <h2 id={slugify(content.orderH)}>{content.orderH}</h2>
+    <ol>{content.orderItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ol>
+  </section>
+</Docs>
 
 <style>
-  .concept-page { max-width: 58rem; margin: 0 auto; padding: 2rem 0 5rem; }
-  .eyebrow { color: var(--color-text-3); font-size: .75rem; font-weight: 600; letter-spacing: .06em; }
-  .lead { max-width: 48rem; color: var(--color-text-2); font-size: 1.1rem; line-height: 1.7; }
-  section { margin-top: 3rem; }
-  pre { overflow: auto; padding: 1rem; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-ground); font: .8125rem/1.65 var(--font-mono); }
-  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-  .grid article { padding: 1.25rem; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); }
-  .grid p { color: var(--color-text-2); line-height: 1.6; }
-  .grid strong { font-size: .75rem; }
-  .links { display: grid; gap: .6rem; }
-  .links a { color: var(--color-accent); }
-  li { margin: .6rem 0; line-height: 1.6; }
-  @media (max-width: 48rem) { .concept-page { padding: 1rem 0 3rem; } .grid { grid-template-columns: 1fr; } }
+  /* The four mappings as cards in the document column: two across, one under 40rem. */
+  .concept-model { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-block-start: 16px }
+  .concept-model article { padding: 16px 20px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md) }
+  .concept-model h3 { margin-block: 0 8px }
+  .concept-model p { margin-block-start: 8px; color: var(--color-text-2) }
+  .concept-model strong { color: var(--color-text-1) }
+  @media (max-width: 40rem) { .concept-model { grid-template-columns: 1fr } }
 </style>
