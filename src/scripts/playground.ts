@@ -24,7 +24,7 @@ import {
 import { minify } from '../../vendor/shader-dsl/src/emit-prod.ts';
 import {
   cornersOf,
-  drawBand,
+  drawTile,
   entryArguments,
   zeroFor,
   type CpuFunctions,
@@ -638,7 +638,25 @@ function mount(root: HTMLElement): void {
   // blocking pass nor a fixed slice per worker: a worker that finishes its band takes the next
   // one waiting, which is what keeps them busy when a triangle covers the middle of the canvas
   // and none of the top. Each band is painted the moment it arrives, so the picture fills in.
-  const BAND_ROWS = 8;
+  // How big a tile is, which is the whole trade. A unit has to be worth the message that
+  // carries it: measured at 768 by 768 on four cores, drawing takes 380 ms on this thread
+  // alone, and through the pool it is 779 ms at 32 pixels a tile, 333 at 64, 169 at 128 and
+  // 116 at 256. Small tiles lose to their own round trips; large ones leave too few to
+  // balance and too few to watch. This keeps the count near six by six whatever the canvas
+  // is, so the ratio of drawing to messaging holds as the canvas grows.
+  const tileSize = (side: number): number => Math.max(64, Math.round(side / 6 / 16) * 16);
+  /** How many tiles the single-threaded fallback draws between handing the page back. */
+  const YIELD_EVERY = 8;
+  /** How many tiles each worker is kept holding. With one, a worker draws its tile and then
+   *  waits out a whole round trip before the next arrives, and at 1.7 ms of drawing against a
+   *  round trip of the same order that is half its time spent idle. Handing it a few keeps a
+   *  backlog in its own queue, so the return of one tile overlaps the drawing of the next. */
+  const FEED = 3;
+
+  /** The outline on a tile that is being drawn, taken from the page's own accent so it
+   *  follows the theme the reader chose. */
+  const outlineColour = (): string =>
+    getComputedStyle(root).getPropertyValue('--color-accent').trim() || '#3178c6';
   /** One worker per core the browser admits to, and a ceiling so a 64-thread machine does not
    *  open 64 workers to draw a triangle. */
   const poolSize = (): number => Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 8));
@@ -695,24 +713,39 @@ function mount(root: HTMLElement): void {
 
   /** The fallback for a browser with no worker, and for one whose worker fails to start: the
    *  same bands, on this thread, yielding between them so the page still repaints. */
+  /** Every tile of the canvas, in order, as [x0, y0]. */
+  const tilesOf = (plan: RasterPlan): [number, number][] => {
+    const out: [number, number][] = [];
+    const tile = tileSize(plan.width);
+    for (let y0 = 0; y0 < plan.height; y0 += tile) {
+      for (let x0 = 0; x0 < plan.width; x0 += tile) out.push([x0, y0]);
+    }
+    return out;
+  };
+
   const drawHere = async (plan: RasterPlan, context: CanvasRenderingContext2D, mine: number): Promise<void> => {
     const cpu = compileModule(compiled!.module, { gpuStubs: true }).fns as CpuFunctions;
     const corners = cornersOf(cpu, plan);
     if (!corners) throw new Error('no triangle');
     const started = performance.now();
     let covered = 0;
-    const bands = Math.ceil(plan.height / BAND_ROWS);
-    for (let band = 0; band < bands; band += 1) {
+    const tile = tileSize(plan.width);
+    const tiles = tilesOf(plan);
+    for (const [index, [x0, y0]] of tiles.entries()) {
       if (mine !== job) return;
-      const y0 = band * BAND_ROWS;
-      const y1 = Math.min(plan.height, y0 + BAND_ROWS);
-      const drawn = drawBand(cpu, plan, corners, y0, y1);
+      const x1 = Math.min(plan.width, x0 + tile);
+      const y1 = Math.min(plan.height, y0 + tile);
+      const drawn = drawTile(cpu, plan, corners, x0, y0, x1, y1);
       covered += drawn.covered;
-      context.putImageData(new ImageData(drawn.pixels, plan.width, y1 - y0), 0, y0);
-      if (canvasNote instanceof HTMLElement) {
-        canvasNote.textContent = fillNumbers(copy.canvasProgress, { done: band + 1, total: bands, running: 1, waiting: bands - band - 1 });
+      context.putImageData(new ImageData(drawn.pixels, x1 - x0, y1 - y0), x0, y0);
+      // Handing the page back costs a task turn, so it happens every few tiles and not every
+      // one: at one a tile the yielding cost more than the drawing between two of them.
+      if (index % YIELD_EVERY === YIELD_EVERY - 1 || index === tiles.length - 1) {
+        if (canvasNote instanceof HTMLElement) {
+          canvasNote.textContent = fillNumbers(copy.canvasProgress, { done: index + 1, total: tiles.length, running: 1, waiting: tiles.length - index - 1 });
+        }
+        await yieldToPage();
       }
-      await yieldToPage();
     }
     if (canvasNote instanceof HTMLElement) {
       canvasNote.textContent = fillNumbers(copy.canvasDrawn, { px: covered, ms: Math.round(performance.now() - started), workers: 1 });
@@ -755,42 +788,95 @@ function mount(root: HTMLElement): void {
     }
 
     // The queue every worker pulls from, and the counters the note reads.
-    const queue: number[] = [];
-    for (let y0 = 0; y0 < plan.height; y0 += BAND_ROWS) queue.push(y0);
+    const tile = tileSize(plan.width);
+    const queue = tilesOf(plan);
     const total = queue.length;
     let done = 0;
     let running = 0;
     let covered = 0;
-    let settled = 0;
+    let finished = false;
     const started = performance.now();
     const module = compiled.module;
 
+    // Writing the note is a DOM write, and at one a tile that is six hundred of them in a
+    // draw. It is coalesced to one a frame; the numbers it reads are live either way.
+    // Every tile arrives in its own task, and a canvas written once a task is flushed once a
+    // task. Thirty-six flushes cost more than the drawing; the single-threaded path pays far
+    // fewer because it draws several tiles between yields. Arrivals are collected and put on
+    // the canvas together, once a frame, which is as often as anyone can see anyway.
+    const pending: { image: ImageData; x0: number; y0: number }[] = [];
+    let flushQueued = false;
+    // Which tiles a worker is holding right now. Outlining them is a canvas write too, so it
+    // happens in this same frame and not in the task that handed the tile out.
+    const inFlight = new Set<string>();
+    const flush = (): void => {
+      for (const { image, x0, y0 } of pending) context.putImageData(image, x0, y0);
+      pending.length = 0;
+      context.strokeStyle = outlineColour();
+      context.lineWidth = 1;
+      for (const key of inFlight) {
+        const [x0, y0, x1, y1] = key.split(',').map(Number);
+        context.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 1, y1 - y0 - 1);
+      }
+    };
+    const scheduleFlush = (): void => {
+      if (flushQueued) return;
+      flushQueued = true;
+      window.requestAnimationFrame(() => { flushQueued = false; flush(); });
+    };
+
+    let noteQueued = false;
+    // The last tile schedules a frame and the queue empties in the same turn, so without this
+    // the progress line lands after the result and paints over it.
+    let complete = false;
     const say = (): void => {
-      canvasNote.textContent = fillNumbers(copy.canvasProgress, { done, total, running, waiting: queue.length });
+      if (noteQueued || complete) return;
+      noteQueued = true;
+      window.requestAnimationFrame(() => {
+        noteQueued = false;
+        if (complete) return;
+        canvasNote.textContent = fillNumbers(copy.canvasProgress, { done, total, running, waiting: queue.length });
+      });
+    };
+
+    const settleIfDone = (): void => {
+      if (finished || queue.length > 0 || running > 0) return;
+      finished = true;
+      flush();
+      complete = true;
+      canvasNote.textContent = fillNumbers(copy.canvasDrawn, { px: covered, ms: Math.round(performance.now() - started), workers: pool.length });
+      canvasNote.dataset.px = String(covered);
+      canvasNote.dataset.workers = String(pool.length);
+      finish();
     };
 
     const handOut = (worker: Worker): void => {
-      const y0 = queue.shift();
-      if (y0 === undefined) {
-        settled += 1;
-        if (settled === pool.length && running === 0) {
-          canvasNote.textContent = fillNumbers(copy.canvasDrawn, { px: covered, ms: Math.round(performance.now() - started), workers: pool.length });
-          canvasNote.dataset.px = String(covered);
-          canvasNote.dataset.workers = String(pool.length);
-          finish();
-        }
+      const next = queue.shift();
+      if (next === undefined) {
+        settleIfDone();
         return;
       }
+      const [x0, y0] = next;
+      const x1 = Math.min(plan.width, x0 + tile);
+      const y1 = Math.min(plan.height, y0 + tile);
       running += 1;
+      // The tile a worker has just taken is outlined, so the canvas shows where the work is
+      // and not only where it has been. The outline sits inside the tile, so the pixels that
+      // come back cover it exactly.
+      inFlight.add(`${x0},${y0},${x1},${y1}`);
+      scheduleFlush();
       say();
-      worker.postMessage({ kind: 'band', job: mine, y0, y1: Math.min(plan.height, y0 + BAND_ROWS) } satisfies RasterRequest);
+      worker.postMessage({ kind: 'tile', job: mine, x0, y0, x1, y1 } satisfies RasterRequest);
     };
 
     for (const worker of pool) {
       worker.onmessage = (event: MessageEvent<RasterReply>) => {
         const message = event.data;
         if (message.job !== mine) return;
-        if (message.kind === 'ready') { handOut(worker); return; }
+        if (message.kind === 'ready') {
+          for (let i = 0; i < FEED; i += 1) handOut(worker);
+          return;
+        }
         if (message.kind === 'failed') {
           canvasNote.textContent = message.message === 'no triangle' ? copy.canvasNeedsVertex : message.message;
           finish();
@@ -799,7 +885,13 @@ function mount(root: HTMLElement): void {
         running -= 1;
         done += 1;
         covered += message.covered;
-        context.putImageData(new ImageData(message.pixels, plan.width, message.y1 - message.y0), 0, message.y0);
+        inFlight.delete(`${message.x0},${message.y0},${message.x1},${message.y1}`);
+        pending.push({
+          image: new ImageData(message.pixels, message.x1 - message.x0, message.y1 - message.y0),
+          x0: message.x0,
+          y0: message.y0,
+        });
+        scheduleFlush();
         say();
         handOut(worker);
       };

@@ -111,19 +111,25 @@ export function cornersOf(cpu: CpuFunctions, plan: RasterPlan): Corners | undefi
   return { screen, area, outputs };
 }
 
-/** One horizontal band of the canvas, drawn a pixel at a time. Returns the band's own RGBA
- *  rows and how many of its pixels the triangle covered, so the caller can put it straight
- *  onto the canvas without waiting for the rest. */
-export function drawBand(
+/** One tile of the canvas, drawn a pixel at a time. Returns the tile's own RGBA rows and how
+ *  many of its pixels the triangle covered, so the caller can put it straight onto the canvas
+ *  without waiting for the rest.
+ *
+ *  A tile and not a row: a row spans the whole canvas, so a triangle in the middle leaves the
+ *  rows above and below it nearly free and the ones across it expensive, which is the worst
+ *  shape for a queue to balance. Square tiles spread that unevenness out. */
+export function drawTile(
   cpu: CpuFunctions,
   plan: RasterPlan,
   corners: Corners,
+  x0: number,
   y0: number,
+  x1: number,
   y1: number,
 ): { pixels: Uint8ClampedArray<ArrayBuffer>; covered: number; } {
-  const { width } = plan;
+  const tileWidth = x1 - x0;
   const rows = y1 - y0;
-  const pixels = new Uint8ClampedArray(width * rows * 4);
+  const pixels = new Uint8ClampedArray(tileWidth * rows * 4);
   const [a, b, c] = corners.screen;
   const fragmentFlat = plan.fragment.io?.inputs ?? [];
   const vertexOuts = plan.fragment.io ? (plan.vertex.io?.outputs ?? []) : [];
@@ -133,7 +139,7 @@ export function drawBand(
   if (!run) return { pixels, covered };
 
   for (let py = y0; py < y1; py += 1) {
-    for (let px = 0; px < width; px += 1) {
+    for (let px = x0; px < x1; px += 1) {
       const x = px + 0.5;
       const y = py + 0.5;
       const w0 = ((b[0] - x) * (c[1] - y) - (c[0] - x) * (b[1] - y)) / corners.area;
@@ -158,7 +164,7 @@ export function drawBand(
       const returned = run(...(entryArguments(plan.fragment, plan.structs, (at) => values[at]) as never[]));
       const colour = (colourField ? (returned as Record<string, unknown>)[colourField] : returned) as number[];
       if (!Array.isArray(colour)) continue;
-      const offset = ((py - y0) * width + px) * 4;
+      const offset = ((py - y0) * tileWidth + (px - x0)) * 4;
       for (let channel = 0; channel < 3; channel += 1) {
         const value = colour[channel];
         pixels[offset + channel] = Number.isFinite(value) ? Math.round(Math.max(0, Math.min(1, value)) * 255) : 0;
@@ -177,15 +183,24 @@ export function drawBand(
 
 export type RasterRequest =
   | { readonly kind: 'prepare'; readonly job: number; readonly module: unknown; readonly plan: RasterPlan; }
-  | { readonly kind: 'band'; readonly job: number; readonly y0: number; readonly y1: number; };
+  | {
+      readonly kind: 'tile';
+      readonly job: number;
+      readonly x0: number;
+      readonly y0: number;
+      readonly x1: number;
+      readonly y1: number;
+    };
 
 export type RasterReply =
   | { readonly kind: 'ready'; readonly job: number; }
   | { readonly kind: 'failed'; readonly job: number; readonly message: string; }
   | {
-      readonly kind: 'band';
+      readonly kind: 'tile';
       readonly job: number;
+      readonly x0: number;
       readonly y0: number;
+      readonly x1: number;
       readonly y1: number;
       readonly covered: number;
       readonly pixels: Uint8ClampedArray<ArrayBuffer>;

@@ -1,5 +1,5 @@
 // One raster worker. It compiles the module it is handed to the CPU oracle once, then draws
-// whatever bands the page asks it for, a pixel at a time, and sends each one back the moment
+// whatever tiles the page asks it for, a pixel at a time, and sends each one back the moment
 // it is finished so the canvas fills in as the work lands.
 //
 // It imports `core/oracle.ts` and not the package barrel. The barrel re-exports the whole
@@ -10,7 +10,7 @@
 import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
 import {
   cornersOf,
-  drawBand,
+  drawTile,
   type Corners,
   type CpuFunctions,
   type RasterPlan,
@@ -49,11 +49,14 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
     return;
   }
 
-  // A band for a job this worker has moved past, or was never prepared for, is dropped.
+  // A tile for a job this worker has moved past, or was never prepared for, is dropped.
   if (request.job !== job || !plan || !corners || !cpu) return;
   try {
-    const { pixels, covered } = drawBand(cpu, plan, corners, request.y0, request.y1);
-    reply({ kind: 'band', job, y0: request.y0, y1: request.y1, covered, pixels }, [pixels.buffer]);
+    const { pixels, covered } = drawTile(cpu, plan, corners, request.x0, request.y0, request.x1, request.y1);
+    reply(
+      { kind: 'tile', job, x0: request.x0, y0: request.y0, x1: request.x1, y1: request.y1, covered, pixels },
+      [pixels.buffer],
+    );
   } catch (error) {
     reply({ kind: 'failed', job, message: error instanceof Error ? error.message : String(error) });
   }

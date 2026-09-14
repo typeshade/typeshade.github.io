@@ -256,7 +256,7 @@ export const en = {
     draw: 'Draw on the CPU',
     canvasIdle: 'Run the fragment entry once per pixel, with no GPU.',
     resolution: 'Resolution',
-    canvasProgress: '{done}/{total} bands, {running} running, {waiting} waiting',
+    canvasProgress: '{done}/{total} tiles, {running} running, {waiting} waiting',
     canvasDrawn: '{px} px in {ms} ms on {workers} worker(s)',
     canvasNeedsVertex: 'Drawing needs a vertex entry driven by vertex_index and a fragment entry. This module has no such pair, so there is no triangle to cover.',
     cpuFailed: 'The CPU oracle could not run this entry point.',
