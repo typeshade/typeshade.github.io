@@ -39,7 +39,7 @@ const sections: Record<string, { title: string; description: string }> = {
     description: '모듈을 WGSL로, GLSL 두 스테이지로, 또는 호스트가 조합하는 조각으로 바꾸고, 호스트가 바인딩에 쓰는 파이프라인 메타데이터를 읽습니다.',
   },
   'the-cpu-oracle': {
-    title: 'CPU 오라클',
+    title: 'CPU 오라클 안내서',
     description: '모듈을 CPU에서 배정밀도로 실행하고, 거기서 나온 숫자를 GPU가 낸 값과 비교해 컴파일러의 출력을 검증하는 법을 익힙니다.',
   },
   diagnostics: {
