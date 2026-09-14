@@ -11,7 +11,6 @@ const t = copyFor(locale)
 <Base locale={locale} path="/playground/" searchable searchTitle="Playground">
   <main class="playground-page">
     <header class="playground-intro">
-      <p class="eyebrow">TypeShade</p>
       <h1>{t.playground.h1}</h1>
       <p>{t.playground.intro}</p>
       <p class="playground-links">
@@ -24,13 +23,14 @@ const t = copyFor(locale)
 </Base>
 
 <style>
-  .playground-page { width: min(1180px, calc(100vw - 40px)); margin: 0 auto; padding: 56px 0 80px; }
-  .playground-intro { max-width: 760px; margin-bottom: 28px; }
-  .eyebrow { margin: 0 0 8px; color: var(--color-accent); font: 500 .8125rem/1.4 var(--font-mono); letter-spacing: .08em; }
-  h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; }
-  .playground-intro p:not(.eyebrow) { margin: 0; color: var(--color-text-2); }
-  .playground-links { display: flex; gap: 18px; margin-top: 16px !important; }
-  .playground-links a { color: var(--color-accent); text-decoration: none; }
+  /* A tool page, so the heading is one line above the tool and not a landing page above it:
+     the editor and the canvas are what the reader came for, and both fit the first screen. */
+  .playground-page { width: min(1180px, calc(100vw - 40px)); margin: 0 auto; padding: 24px 0 64px; }
+  .playground-intro { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 14px; }
+  h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; }
+  .playground-intro p { margin: 0; color: var(--color-text-2); font-size: .875rem; line-height: 1.5; }
+  .playground-links { display: flex; gap: 14px; margin-left: auto; }
+  .playground-links a { color: var(--color-accent); text-decoration: none; white-space: nowrap; }
   .playground-links a:hover { text-decoration: underline; }
-  @media (min-width: 48rem) { .playground-page { width: min(1180px, calc(100vw - 64px)); padding-top: 72px; } }
+  @media (min-width: 48rem) { .playground-page { width: min(1180px, calc(100vw - 64px)); padding-top: 28px; } }
 </style>
