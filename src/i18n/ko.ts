@@ -547,6 +547,39 @@ export const ko: Copy = {
     },
   },
 
+  concepts: {
+    title: 'TypeScript와 WebGPU 개념 연결',
+    eyebrow: '언어 개념 연결',
+    h1: 'TypeScript와 WebGPU 개념 연결',
+    lead: 'TypeShade는 TypeScript 개발 경험에서 출발해 GPU 전용 의미론을 더합니다. 이미 아는 개념을 셰이더를 작성하는 데 필요한 개념으로 연결해 봅니다.',
+    startH: 'TypeScript 파일에서 시작합니다',
+    startP: '`"use typeshade"`는 파일을 TypeShade 컴파일 단위로 선택합니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.',
+    modelH: '머릿속 모델',
+    adds: 'TypeShade 추가 사항',
+    model: [
+      ['TypeScript 타입', '타입 주석은 값의 형태를 설명하고 잘못된 프로그램을 도구가 발견하도록 합니다.', '`f32`, `u32`, `vec2`, `vec3`, `vec4` 같은 GPU 값 타입과 셰이더 연산 규칙입니다.'],
+      ['함수', '함수는 매개변수, 반환 타입, 본문을 가집니다.', '`@vertex`, `@fragment` 같은 스테이지 데코레이터로 진입점을 표시합니다.'],
+      ['모듈', '`import`와 `export`로 재사용 가능한 프로그램 경계를 만듭니다.', 'GPU 코드로 내릴 수 있도록 셰이더 모듈에 필요한 제약을 적용합니다.'],
+      ['Web API', '디바이스, 파이프라인, 버퍼와 렌더링은 호스트 애플리케이션이 소유합니다.', '셰이더 소스와 리플렉션 메타데이터를 제공하며 WebGPU나 WebGL 호스트 API를 대체하지 않습니다.'],
+    ],
+    fitH: 'WebGPU는 어디에 있나요?',
+    fitP: 'TypeShade를 브라우저 그래픽 API 위에 놓인 작성·컴파일 계층으로 생각하면 됩니다. TypeShade가 셰이더 코드를 만들고, 애플리케이션은 여전히 `GPUDevice`를 만들고 파이프라인을 구성하고 리소스를 바인딩하고 작업을 제출합니다.',
+    fitLinks: [
+      ['TypeScript 문서 ↗', 'https://www.typescriptlang.org/docs/'],
+      ['MDN WebGPU API ↗', 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API'],
+      ['MDN JavaScript 지시문 ↗', 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode'],
+    ],
+    playgroundLink: 'Playground에서 직접 작성 →',
+    orderH: '이 순서로 배우세요',
+    orderItems: [
+      '타입, 함수, 모듈 등 TypeScript의 형태를 익힙니다.',
+      '`"use typeshade"`를 추가하고 GPU 타입을 익힙니다.',
+      '진입점 데코레이터와 리소스 선언을 추가합니다.',
+      'Playground에서 편집하면서 진단과 생성된 WGSL을 확인합니다.',
+      '마지막으로 컴파일러와 백엔드 내부로 들어갑니다.',
+    ],
+  },
+
   examples: {
     path: {
       h: '예제로 배우는 순서',

@@ -11,7 +11,9 @@ interface Props {
 }
 const { locale } = Astro.props
 const t = copyFor(locale).notFound
-const path = locale === defaultLocale ? '/404.html' : localePath(locale, '/404/')
+// Base prefixes the locale itself, so this is the neutral path. The default locale has no
+// /404/ route, only the /404.html GitHub Pages serves for every missing address.
+const path = locale === defaultLocale ? '/404.html' : '/404/'
 // GitHub Pages serves this file for every missing path, so the English page also carries the
 // redirect that sends a reader under another locale's prefix on to that locale's own 404 page.
 const otherLocaleRedirects = locale === defaultLocale

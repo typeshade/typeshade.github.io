@@ -480,6 +480,41 @@ export const en = {
     },
   },
 
+  /** The bridge page at /guide/typescript-and-webgpu/. Rendered by
+   *  src/components/pages/ConceptsPage.astro; the shader sample is not copy, so it stays there. */
+  concepts: {
+    title: 'TypeScript and WebGPU concepts',
+    eyebrow: 'Language bridge',
+    h1: 'TypeScript and WebGPU concepts',
+    lead: 'TypeShade starts from TypeScript authoring and adds GPU-specific semantics. This page connects the concepts you already know to the concepts you need to write shaders.',
+    startH: 'Start with a TypeScript file',
+    startP: '`"use typeshade"` marks the file as a TypeShade compilation unit. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports.',
+    modelH: 'The mental model',
+    adds: 'TypeShade adds',
+    model: [
+      ['TypeScript types', 'Type annotations describe values and make incorrect programs visible to tooling.', 'GPU value types such as `f32`, `u32`, `vec2`, `vec3` and `vec4`, plus rules for shader operations.'],
+      ['Functions', 'A function has parameters, a return type and a body.', 'Stage decorators such as `@vertex` and `@fragment` to identify entry points.'],
+      ['Modules', '`import` and `export` define reusable program boundaries.', 'Shader-module constraints so the compiler can lower the reachable program to GPU code.'],
+      ['Web APIs', 'The host application owns devices, pipelines, buffers and rendering.', 'Shader source and reflection metadata; it does not replace the WebGPU or WebGL host API.'],
+    ],
+    fitH: 'Where WebGPU fits',
+    fitP: 'Think of TypeShade as the authoring and compilation layer above the browser graphics API. TypeShade produces shader code; the application still creates a `GPUDevice`, configures a pipeline, binds resources and submits work.',
+    fitLinks: [
+      ['TypeScript documentation ↗', 'https://www.typescriptlang.org/docs/'],
+      ['MDN WebGPU API ↗', 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API'],
+      ['MDN JavaScript directives ↗', 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode'],
+    ],
+    playgroundLink: 'Try it in the Playground →',
+    orderH: 'Learn in this order',
+    orderItems: [
+      'Learn the TypeScript shape: types, functions and modules.',
+      'Add `"use typeshade"` and learn the GPU types.',
+      'Add entry-point decorators and resource declarations.',
+      'Use the Playground to see diagnostics and generated WGSL while you edit.',
+      'Only then move into compiler and backend details.',
+    ],
+  },
+
   examples: {
     path: {
       h: 'Learn TypeShade by building',
