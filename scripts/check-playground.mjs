@@ -363,6 +363,10 @@ async function checkRoute(browser, origin, route) {
       const sample = await sourceOf(page)
 
       // ── a rule the compiler does not have yet: a vector times a scalar ──────────────────
+      // typeshade/typeshade#19 adds the broadcast and is merged upstream, past this pin. At
+      // the re-pin that carries it this check inverts: the source compiles, the diagnostics
+      // list stays empty, and the WGSL pane fills. Change it then to assert that, so the
+      // Playground is held to what the compiler does and not to what it used to do.
       await typeSource(page, sample.replace('vec4(1., 0., 0., 1.) }', 'vec4(1., 0., 0., 1.) * 2. }'))
       const rows = await page.$$eval('[data-diagnostics] li button', (list) => list.map((row) => row.innerText.trim()))
       if (rows.length === 0) problems.push('a vector times a scalar reported no diagnostic')
