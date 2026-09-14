@@ -17,7 +17,7 @@ const content = ko ? {
   boundary: '4. TypeScript의 class와 다른 점', boundaryItems: ['`new`로 GPU struct를 생성하지 않습니다.', '`extends`와 일반적인 상속 모델을 사용하지 않습니다.', 'entry point를 class method로 만들지 않습니다.', '필드 metadata가 필요하지 않다면 type alias가 더 명확합니다.'],
   mapping: '5. 개념 대응표', mappingRows: [['TypeScript', 'TypeShade'], ['type alias / object shape', 'GPU value shape'], ['class fields', 'GPU struct fields'], ['decorator metadata', 'GPU layout / stage metadata'], ['runtime object', '해당하지 않음'], ['structural compatibility', 'shader 타입 검사 범위에서 적용']],
   example: '6. 실제 entry point와 연결하기', exampleP: 'struct를 정의한 뒤 entry point 매개변수에서 사용할 수 있습니다. 이때 값의 shape와 field metadata가 shader 입력의 의미를 결정합니다.',
-  next: '다음: Resources', href: '/ko/guide/language/resources/'
+  next: '다음: Functions', href: '/ko/guide/language/functions/'
 } : {
   title: 'TypeShade types', description: 'How TypeScript type and class concepts map to TypeShade GPU values, structs and field layout.', h1: 'Types: from TypeScript types to GPU values',
   intro: 'TypeShade starts from TypeScript’s type surface, but the final meaning is a GPU value model. Learn the TypeScript idea first: structural typing and type aliases describe value shape. When GPU layout metadata is required, use classes and field decorators.',
@@ -28,7 +28,7 @@ const content = ko ? {
   boundary: '4. Where TypeScript classes stop', boundaryItems: ['Do not construct GPU structs with `new`.', 'Do not use `extends` as a GPU inheritance model.', 'Do not make shader entry points class methods.', 'Prefer a type alias when field metadata is unnecessary.'],
   mapping: '5. Concept mapping', mappingRows: [['TypeScript', 'TypeShade'], ['type alias / object shape', 'GPU value shape'], ['class fields', 'GPU struct fields'], ['decorator metadata', 'GPU layout / stage metadata'], ['runtime object', 'not applicable'], ['structural compatibility', 'applies within shader type checking']],
   example: '6. Connect the type to an entry point', exampleP: 'After defining a struct, use it as an entry point parameter. The value shape and field metadata then define the meaning of that shader input.',
-  next: 'Next: Resources', href: '/guide/language/resources/'
+  next: 'Next: Functions', href: '/guide/language/functions/'
 }
 const headings = [['ts',content.ts],['alias',content.alias],['struct',content.struct],['attrs',content.attrs],['boundary',content.boundary],['mapping',content.mapping],['example',content.example]].map(([slug,text]) => ({depth:2,slug,text}))
 ---

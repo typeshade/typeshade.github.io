@@ -26,7 +26,7 @@ const content = ko ? {
 }
 const headings = [['mapping',content.mapping],['compute',content.compute],['graphics',content.graphics],['helper',content.helper]].map(([slug,text]) => ({depth:2,slug,text}))
 ---
-<Docs locale={locale} path="/guide/language/stages/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/pages/guide/language/stages.astro">
+<Docs locale={locale} path="/guide/language/stages/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/pages/guide/language/stages.astro" next={{ label: content.next, href: content.href }}>
   <h1>{content.h1}</h1><p>{content.intro}</p>
   <h2 id="mapping">{content.mapping}</h2><p><Rich text={content.mappingP} locale={locale} /></p>
   <TypeShadeCode code={`function addBias(value: f32): f32 {\n  return value + 0.5\n}\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = addBias(camera.pos.x)\n}`} />
