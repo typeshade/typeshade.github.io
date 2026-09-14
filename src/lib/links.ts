@@ -21,6 +21,7 @@ export const links = {
   home: { label: 'TypeShade', href: '/' },
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
+  playground: { label: 'Playground', href: '/playground/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
   languageTypes: { label: 'Types', href: '/guide/language/types/' },
   languageFunctions: { label: 'Functions', href: '/guide/language/functions/' },
@@ -95,10 +96,11 @@ export function editGuideTranslation(locale: Locale, id: string): string {
 
 export function navLinks(locale: Locale): readonly Destination[] {
   const labels = locale === 'ko'
-    ? { use: 'TypeShade 사용하기', language: '언어', api: 'API', examples: '예제' }
-    : { use: 'Use TypeShade', language: 'Language', api: 'API', examples: 'Examples' }
+    ? { use: 'TypeShade 사용하기', playground: 'Playground', language: '언어', api: 'API', examples: '예제' }
+    : { use: 'Use TypeShade', playground: 'Playground', language: 'Language', api: 'API', examples: 'Examples' }
   return [
     { label: labels.use, href: localePath(locale, links.quickStart.href) },
+    { label: labels.playground, href: localePath(locale, links.playground.href) },
     { label: labels.language, href: localePath(locale, links.guide.href) },
     { label: labels.api, href: localePath(locale, links.api.href) },
     { label: labels.examples, href: localePath(locale, links.examples.href) },
@@ -117,6 +119,7 @@ export function docsPages(locale: Locale): readonly Destination[] {
   return [
     { label: d.why, href: page('motivation') },
     { label: d.quickStart, href: page('quickStart') },
+    { label: locale === 'ko' ? 'Playground' : 'Playground', href: localePath(locale, links.playground.href) },
     { label: locale === 'ko' ? '언어 가이드' : 'Language guide', href: page('guide') },
     { label: d.checks, href: page('checks') },
     { label: d.examples, href: page('examples') },
@@ -134,7 +137,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     ? { learn: '학습', language: '언어', project: '프로젝트' }
     : { learn: 'Learn', language: 'Language', project: 'Project' }
   const languagePages: SidebarItem[] = [
-    pages[2]!,
+    pages[3]!,
     { label: locale === 'ko' ? '타입' : 'Types', href: localePath(locale, links.languageTypes.href), depth: 1 },
     { label: locale === 'ko' ? '함수' : 'Functions', href: localePath(locale, links.languageFunctions.href), depth: 1 },
     { label: locale === 'ko' ? '제어 흐름' : 'Control flow', href: localePath(locale, links.languageControlFlow.href), depth: 1 },
@@ -150,9 +153,9 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     for (const m of members) reference.push({ label: m.name, href: localePath(locale, `/api/${m.slug}/`), depth: 1 })
   }
   return [
-    { title: labels.learn, items: pages.slice(0, 2) },
+    { title: labels.learn, items: pages.slice(0, 3) },
     { title: labels.language, items: languagePages },
-    { title: labels.project, items: pages.slice(3) },
+    { title: labels.project, items: pages.slice(4) },
     { title: d.api.reference, items: reference },
   ]
 }
