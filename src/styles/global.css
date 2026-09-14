@@ -212,7 +212,7 @@ body > main { flex: 1 }
 .site-name svg { inline-size: 20px; block-size: 20px; flex: none; translate: 0 1px }
 .site-bar { display: none; align-items: center; gap: 24px }
 .site-nav { display: flex; align-items: center; gap: 24px; font-size: var(--text-meta); font-weight: 500 }
-.site-nav a { color: var(--color-text-2); text-decoration: none; padding-block: 4px }
+.site-nav a { color: var(--color-text-2); text-decoration: none; padding-block: 4px; white-space: nowrap; flex-shrink: 0 }
 .site-nav a:hover { color: var(--color-text-1) }
 .site-tools { display: flex; align-items: center; gap: 4px; padding-inline-start: 20px; border-inline-start: 1px solid var(--color-line-1) }
 .icon { inline-size: 20px; block-size: 20px; flex: none }
@@ -220,6 +220,7 @@ body > main { flex: 1 }
 .site-menu-drop summary {
   list-style: none; display: inline-flex; align-items: center; gap: 6px; block-size: 36px; padding-inline: 8px;
   border-radius: var(--radius-sm); font-size: var(--text-meta); font-weight: 500; color: var(--color-text-2); cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
 }
 .site-menu-drop summary::-webkit-details-marker { display: none }
 .site-menu-drop summary:hover, .site-menu-drop[open] summary { color: var(--color-text-1) }
@@ -244,6 +245,7 @@ body > main { flex: 1 }
   display: inline-flex; align-items: center; gap: 6px; block-size: 36px; padding-inline: 8px;
   border: 0; border-radius: var(--radius-sm); background: none; color: var(--color-text-2);
   font-family: inherit; font-size: var(--text-meta); font-weight: 500; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
 }
 .site-search:hover { color: var(--color-text-1) }
 .site-search .icon { inline-size: 18px; block-size: 18px }
