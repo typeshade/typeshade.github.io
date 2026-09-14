@@ -148,7 +148,7 @@ export const ko: Copy = {
 
   meta: {
     title: 'TypeShade, 검증 가능한 TypeScript 셰이더 라이브러리',
-    description: `파일 맨 위에 \`"use typeshade"\`를 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 소스가 CPU에서 f64로 실행되어 출력을 대조할 수 있습니다.`,
+    description: `파일 맨 위에 "use typeshade"를 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 소스가 CPU에서 f64로 실행되어 출력을 대조할 수 있습니다.`,
     ogAlt: 'TypeShade: WebGPU와 WebGL2를 위한 하나의 셰이더 소스. 렌더링된 metaballs 셰이더.',
   },
 
@@ -368,7 +368,7 @@ export const ko: Copy = {
   },
   quickStart: {
     title: 'TypeShade 빠른 시작: 설치와 첫 셰이더',
-    description: 'TypeShade를 git 서브모듈로 추가한 뒤, `"use typeshade"`로 시작하는 파일을 컴파일합니다. 출시 전 상태도 함께 적었습니다.',
+    description: 'TypeShade를 git 서브모듈로 추가한 뒤, "use typeshade"로 시작하는 파일을 컴파일합니다. 출시 전 상태도 함께 적었습니다.',
     h1: '빠른 시작',
     installH: '설치',
       p0: '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래 삼각형이 공식 표면입니다.',

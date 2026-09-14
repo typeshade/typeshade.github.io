@@ -51,7 +51,7 @@ export const en = {
 
   meta: {
     title: 'TypeShade: typed shaders in TypeScript for WebGPU and WebGL2',
-    description: `Start a file with \`"use typeshade"\` and emit WGSL for WebGPU and ${glsl} for WebGL2. The same source runs on the CPU in f64, so its output can be checked.`,
+    description: `Start a file with "use typeshade" and emit WGSL for WebGPU and ${glsl} for WebGL2. The same source runs on the CPU in f64, so its output can be checked.`,
     ogAlt: 'TypeShade: one shader source for WebGPU and WebGL2, with a rendered metaballs shader.',
   },
 
@@ -278,7 +278,7 @@ export const en = {
   },
   quickStart: {
     title: 'TypeShade quick start: install and a first shader',
-    description: 'Add TypeShade as a git submodule and compile a file that starts with `"use typeshade"`, with a note on the pre-release status.',
+    description: 'Add TypeShade as a git submodule and compile a file that starts with "use typeshade", with a note on the pre-release status.',
     h1: 'Quick start',
     installH: 'Install',
       p0: 'A file that starts with `"use typeshade"` is a shader compilation unit. The triangle below is the official surface.',
