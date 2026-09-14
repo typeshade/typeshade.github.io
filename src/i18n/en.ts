@@ -281,8 +281,8 @@ export const en = {
     description: 'Add TypeShade as a git submodule and compile a file that starts with "use typeshade", with a note on the pre-release status.',
     h1: 'Quick start',
     installH: 'Install',
-      p0: 'A file that starts with `"use typeshade"` is a shader compilation unit. The triangle below is the official surface.',
-      p1: `The graph API is still there for the gallery. The same pass declared with [\`fn\`](apiFn) and [\`module()\`](apiModule), ${quickStartFile.lines} lines from the import line to a call that emits WGSL:`,
+      p0: 'A file that starts with `"use typeshade"` is a shader compilation unit. Below is a first shader, written with a class and stage-decorated functions.',
+      p1: `TypeShade also has a function-based authoring surface: the same pass declared with [\`fn\`](apiFn) and [\`module()\`](apiModule) instead of classes, ${quickStartFile.lines} lines from the import line to a call that emits WGSL:`,
       p2: 'Running it emits WGSL for both stages. Here is the fragment entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [language guide](guide) covers the rest of the surface.`,
     status: {
