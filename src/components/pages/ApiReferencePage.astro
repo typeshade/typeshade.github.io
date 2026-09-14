@@ -148,7 +148,7 @@ const headings: Heading[] = sections.flatMap((s) => [
 ])
 // A guide section is named the way the sidebar names it, so a Korean page reads Korean here.
 const guideLabel = (link: { label: string; href: string }): string => {
-  const id = /\/guide\/authoring\/([^/]+)\//.exec(link.href)?.[1]
+  const id = /\/guide\/internals\/([^/]+)\//.exec(link.href)?.[1]
   if (!id) return t.docs.authoringGuide
   return t.guide.sections[id]?.title ?? link.label
 }
