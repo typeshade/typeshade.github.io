@@ -32,6 +32,8 @@ export const links = {
   languageStages: { label: 'Shader stages', href: '/guide/language/stages/' },
   legacyAuthoring: { label: 'Compiler authoring guide', href: '/guide/authoring/' },
   internals: { label: 'Compiler internals', href: '/guide/internals/' },
+  languageService: { label: 'Language service', href: '/guide/language-service/' },
+  languageServiceDesign: { label: 'Language service design document', href: at('docs/language-service-api.md') },
   checks: { label: 'Verification', href: '/guide/checks/' },
   examples: { label: 'Examples', href: '/guide/examples/' },
   api: { label: 'API reference', href: '/api/' },
@@ -110,11 +112,12 @@ export function docsPages(locale: Locale): readonly Destination[] {
     docsPage(locale, 'concepts'),
     docsPage(locale, 'examples'),
     docsPage(locale, 'internals'),
+    docsPage(locale, 'languageService'),
     docsPage(locale, 'checks'),
   ]
 }
 
-type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'concepts' | 'examples' | 'internals' | 'checks'
+type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'concepts' | 'examples' | 'internals' | 'languageService' | 'checks'
 /** One page of the guide as the sidebar and the footer name it, in one language. */
 function docsPage(locale: Locale, key: DocsPageKey): Destination {
   const d = copyFor(locale).docs
@@ -126,6 +129,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     concepts: d.labels.concepts,
     examples: d.examples,
     internals: d.labels.internals,
+    languageService: d.labels.languageService,
     checks: d.checks,
   }
   return { label: labels[key], href: localePath(locale, links[key].href) }
@@ -160,6 +164,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
   }
   reference.push(page('internals'))
   if (path?.startsWith(links.internals.href)) for (const s of sections) reference.push({ ...s, depth: 1 })
+  reference.push(page('languageService'))
   return [
     { title: labels.getStarted, items: [page('motivation'), page('quickStart'), page('playground')] },
     { title: labels.language, items: languagePages },

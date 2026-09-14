@@ -118,6 +118,7 @@ export const en = {
       languageGuide: 'Language guide',
       internals: 'Compiler internals',
       concepts: 'TypeScript & WebGPU',
+      languageService: 'Language service',
       playground: 'Playground',
       /** The sidebar's own group headings (src/lib/links.ts sidebar()). */
       sidebarGroups: {
@@ -536,6 +537,39 @@ export const en = {
       'Use the Playground to see diagnostics and generated WGSL while you edit.',
       'Only then move into compiler and backend details.',
     ],
+  },
+
+  /** The language service page at /guide/language-service/, rendered by
+   *  src/components/pages/LanguageServicePage.astro. The TypeScript sample is not copy, so it stays there. */
+  languageService: {
+    title: 'TypeShade language service for editors and language servers',
+    description: 'The editor-neutral layer behind the Playground: TypeScript and TypeShade diagnostics, completions, hover, rename and compiled output from one document API.',
+    h1: 'Language service',
+    intro: "The language service is the layer between the compiler's front end and an editor. It takes text and positions and returns data, and it touches no DOM or Node API. The Playground reads its diagnostics, completions and hover from it today, through the Monaco editor, and a language server for VS Code and other editors will read the same layer later, so the two cannot drift apart.",
+    layersH: 'Layers',
+    layersP: `The front end parses a \`"use typeshade"\` file, checks its types, structs and bindings, and reports diagnostics with source positions. The language service sits on top of the front end and of the TypeScript language service, which runs over an ambient declaration of the TypeShade globals, and answers requests about documents it holds by \`uri\`. Adapters sit above it and do nothing semantic: the Playground's Monaco adapter converts coordinates and owns the editor's markers, and an LSP server would carry the same answers over JSON-RPC. A judgement about TypeShade belongs in the service; an adapter converts.`,
+    requestsH: 'Requests',
+    requestsP: 'One document API answers the requests an editor makes.',
+    requests: [
+      ['Diagnostics', 'TypeScript and TypeShade diagnostics in one list. Each carries a `source` of `typeshade` or `typescript` and a code, so an adapter can tell the two apart, and a TypeScript parse error appears once, under its TypeScript code.'],
+      ['Completions', 'The symbols in scope, the keywords, and TypeShade items where the context calls for them: attribute names after `@`, builtin input names inside `@builtin("`, GPU type names in a type position, and snippets for vectors and entry functions.'],
+      ['Hover', 'Quick info for a symbol, with the TypeShade type name where TypeScript would say `number`, and documentation for GPU types, attributes and builtin inputs.'],
+      ['Signature help', 'The signatures of the function under the cursor and the parameter being typed.'],
+      ['Definition and references', 'Where a symbol is declared and where it is used, across the documents the service holds.'],
+      ['Document symbols', 'The functions, structs, fields and resources of a document as an outline, with an entry function labelled by its stage.'],
+      ['Rename', 'The edits that rename a symbol in every document that uses it, after a check that the position can be renamed at all.'],
+      ['Semantic tokens', 'The tokens in document order, with GPU types, entry functions, resources and the names inside `@builtin(...)` marked as such.'],
+      ['Compiled output', 'The WGSL or GLSL a document compiles to, on demand for an output pane. Diagnostics produce no shader text, so a keystroke does not run a backend.'],
+    ],
+    documentsH: 'Documents and positions',
+    documentsP1: "Import `createTypeshadeLanguageService` from the `typeshade/language-service` subpath and open a document by `uri` with its text and an optional version. Update it with the whole text on each change and close it when the editor does; every other method takes the `uri` and, where it applies, a position. Nothing in the service is asynchronous, and a result for a stale version is the adapter's to drop.",
+    documentsP2: "Positions are zero-based line and character pairs, with the character counted in UTF-16 code units, and a range is half-open with its end exclusive. These are the conventions LSP uses, so a language server passes them through field for field. Monaco counts from one, so the Playground's adapter adds one on its own side and takes it off on the way back; that adapter is the only place the two coordinate systems meet.",
+    packagingH: 'Packaging',
+    packagingP: 'The service is the one part of the package that needs `typescript`, which is an optional peer dependency: a program that imports only the compiler installs nothing extra, and one that imports `typeshade/language-service` supplies its own copy.',
+    exampleH: 'Example',
+    exampleP: 'A host opens one document, asks for its diagnostics and for the hover at a position, and compiles it for an output pane.',
+    furtherH: 'Further reading',
+    furtherP: "The [Playground](playground) is the service at work in a browser. The [design document](languageServiceDesign) in the compiler's repository, at the pinned commit, records the conventions, the adapter contracts and the order of work.",
   },
 
   examples: {
