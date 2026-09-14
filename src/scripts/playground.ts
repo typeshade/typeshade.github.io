@@ -30,6 +30,8 @@ interface PlaygroundCopy {
   readonly unavailable: string
   readonly copy: string
   readonly copied: string
+  readonly share: string
+  readonly shared: string
   readonly empty: { readonly pending: string; readonly glsl: string }
   readonly reflection: Record<string, string>
   readonly runner: {
@@ -200,6 +202,63 @@ function completionKind(monaco: any, kind: TypeshadeCompletionItem['kind']): num
   return byKind[kind] ?? kinds.Text
 }
 
+// ── The source in the URL ──────────────────────────────────────────────────────────────────
+// A shared link carries the whole file in its fragment, so nothing is stored and no service
+// has to hand the source back. The bytes are deflated where the browser has
+// CompressionStream and passed through where it does not; the first character says which, so
+// a link written by one browser opens in another.
+const PACKED = 'z'
+const PLAIN = 'u'
+
+function toBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function fromBase64Url(text: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(text.replace(/-/g, '+').replace(/_/g, '/'))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+async function encodeSource(source: string): Promise<string> {
+  // A Blob built from the string is already UTF-8, so the same bytes feed the compressed
+  // path and the plain one.
+  const plain = new Blob([source])
+  if (typeof CompressionStream === 'function') {
+    try {
+      const packed = plain.stream().pipeThrough(new CompressionStream('deflate-raw'))
+      return PACKED + toBase64Url(new Uint8Array(await new Response(packed).arrayBuffer()))
+    } catch {
+      // A browser that has the constructor but refuses the format falls through.
+    }
+  }
+  return PLAIN + toBase64Url(new Uint8Array(await plain.arrayBuffer()))
+}
+
+async function decodeSource(text: string): Promise<string | undefined> {
+  if (text.length < 2) return undefined
+  try {
+    const bytes = fromBase64Url(text.slice(1))
+    if (text.startsWith(PLAIN)) return new TextDecoder().decode(bytes)
+    if (!text.startsWith(PACKED) || typeof DecompressionStream !== 'function') return undefined
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
+    return await new Response(stream).text()
+  } catch {
+    return undefined
+  }
+}
+
+const hashParams = (): URLSearchParams => new URLSearchParams(window.location.hash.replace(/^#/, ''))
+
+function writeHash(key: string, value: string): void {
+  const url = new URL(window.location.href)
+  url.hash = `${key}=${value}`
+  window.history.replaceState(null, '', url)
+}
+
 // ── Small DOM helpers ──────────────────────────────────────────────────────────────────────
 // Every reflected name and every value the oracle returns comes from whatever is in the
 // editor, so all of it is set as text on a node and none of it is written as markup.
@@ -340,6 +399,7 @@ function mount(root: HTMLElement): void {
   const status = root.querySelector('[data-status]')
   const run = root.querySelector('[data-run]')
   const reset = root.querySelector('[data-reset]')
+  const share = root.querySelector('[data-share]')
   const examplePicker = root.querySelector('[data-example]')
   const exampleNote = root.querySelector('[data-example-note]')
   const entryPicker = root.querySelector('[data-entry]')
@@ -351,6 +411,7 @@ function mount(root: HTMLElement): void {
     !(status instanceof HTMLElement) ||
     !(run instanceof HTMLButtonElement) ||
     !(reset instanceof HTMLButtonElement) ||
+    !(share instanceof HTMLButtonElement) ||
     !(examplePicker instanceof HTMLSelectElement) ||
     !(exampleNote instanceof HTMLElement) ||
     !(entryPicker instanceof HTMLSelectElement) ||
@@ -378,6 +439,7 @@ function mount(root: HTMLElement): void {
   let model: any
   let monacoApi: any
   let timer = 0
+  let urlTimer = 0
   /** The latest colourise each pane started, so a pane's own repaint is the one that lands. */
   const painting = new Map<PanelId, number>()
   /** The text each code pane holds, kept so the theme can repaint it and Copy can take it. */
@@ -615,10 +677,23 @@ function mount(root: HTMLElement): void {
     }
   }
 
+  // ── the URL ─────────────────────────────────────────────────────────────────────────────
+  const publishSource = async (): Promise<void> => {
+    if (!editor) return
+    writeHash('code', await encodeSource(editor.getValue()))
+  }
+
   const flash = (button: HTMLButtonElement, word: string, back: string): void => {
     button.textContent = word
     window.setTimeout(() => { button.textContent = back }, 1400)
   }
+
+  share.addEventListener('click', () => {
+    void publishSource()
+      .then(() => navigator.clipboard.writeText(window.location.href))
+      .then(() => flash(share, copy.shared, copy.share))
+      .catch(() => {})
+  })
 
   for (const button of root.querySelectorAll('[data-copy-panel]')) {
     if (!(button instanceof HTMLButtonElement)) continue
@@ -639,6 +714,7 @@ function mount(root: HTMLElement): void {
     examplePicker.value = example.id
     exampleNote.textContent = example.description
     editor.setValue(example.source)
+    writeHash('example', example.id)
     render()
   }
 
@@ -648,12 +724,23 @@ function mount(root: HTMLElement): void {
     editor?.focus()
   })
 
-  /** What the page opens with: the example the picker starts on. */
-  const opening = examples.find((candidate) => candidate.id === root.dataset.defaultExample) ?? examples[0]
+  /** What the page opens with: the source in the link, else the example the link names, else
+   *  the first example. */
+  const openingSource = async (): Promise<{ source: string; example?: PlaygroundExample }> => {
+    const params = hashParams()
+    const code = params.get('code')
+    if (code) {
+      const source = await decodeSource(code)
+      if (source !== undefined) return { source, example: examples.find((candidate) => candidate.source === source) }
+    }
+    const named = params.get('example')
+    const chosen = examples.find((candidate) => candidate.id === named) ?? examples.find((candidate) => candidate.id === root.dataset.defaultExample) ?? examples[0]
+    return { source: chosen?.source ?? '', example: chosen }
+  }
 
   status.textContent = copy.loading
-  loadMonaco()
-    .then((monaco) => {
+  Promise.all([loadMonaco(), openingSource()])
+    .then(([monaco, opening]) => {
       monacoApi = monaco
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ES2022,
@@ -701,12 +788,14 @@ function mount(root: HTMLElement): void {
         }
       })
 
-      if (opening) {
-        examplePicker.value = opening.id
-        exampleNote.textContent = opening.description
+      if (opening.example) {
+        examplePicker.value = opening.example.id
+        exampleNote.textContent = opening.example.description
+      } else {
+        exampleNote.textContent = ''
       }
 
-      model = monaco.editor.createModel(opening?.source ?? '', 'typescript', monaco.Uri.parse(`file:///${fileName}`))
+      model = monaco.editor.createModel(opening.source, 'typescript', monaco.Uri.parse(`file:///${fileName}`))
       editor = monaco.editor.create(editorHost, {
         model,
         automaticLayout: true,
@@ -756,6 +845,8 @@ function mount(root: HTMLElement): void {
       editor.onDidChangeModelContent(() => {
         window.clearTimeout(timer)
         timer = window.setTimeout(render, 350)
+        window.clearTimeout(urlTimer)
+        urlTimer = window.setTimeout(() => { void publishSource() }, 600)
       })
       run.addEventListener('click', render)
       selectTab('wgsl')

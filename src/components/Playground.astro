@@ -38,6 +38,8 @@ const runtimeCopy = {
   unavailable: t.unavailable,
   copy: t.copy,
   copied: t.copied,
+  share: t.share,
+  shared: t.shared,
   empty: t.empty,
   reflection: {
     entries: t.reflection.entries,
@@ -80,6 +82,7 @@ const runtimeCopy = {
       <p data-example-note>{examples[0]?.description}</p>
     </div>
     <div class="playground-actions">
+      <button type="button" data-share>{t.share}</button>
       <button type="button" data-reset>{t.reset}</button>
       <button type="button" class="primary" data-run>{t.run}</button>
     </div>

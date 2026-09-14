@@ -220,6 +220,8 @@ export const en = {
     },
     copy: 'Copy',
     copied: 'Copied',
+    share: 'Copy link',
+    shared: 'Link copied',
     empty: {
       pending: 'Fix the diagnostics below and the generated output appears here.',
       glsl: `This module emits no ${glsl}.`,

@@ -310,6 +310,8 @@ export const ko: Copy = {
     },
     copy: '복사',
     copied: '복사됨',
+    share: '링크 복사',
+    shared: '링크 복사됨',
     empty: {
       pending: '아래 진단을 고치면 생성된 출력이 여기에 나옵니다.',
       glsl: `이 모듈은 ${glsl}을 내지 않습니다.`,
