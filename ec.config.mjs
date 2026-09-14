@@ -8,7 +8,7 @@
 // repeated below and bun scripts/check-copy.ts fails the build when they drift from the
 // dictionary they belong to (copy.code).
 import { pluginFramesTexts } from 'expressive-code'
-import typeshadeSyntax from './src/lib/typeshade-syntax.mjs'
+import { gpuTypesSyntax, typeshadeInjection } from './src/lib/typeshade-syntax.mjs'
 
 /** The copy button's two strings per locale, checked against the dictionary by check-copy. */
 export const codeUiTexts = {
@@ -24,7 +24,7 @@ export default {
   themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
   defaultLocale: 'en',
   shiki: {
-    langs: [typeshadeSyntax],
+    langs: [typeshedInjectionFix(gpuTypesSyntax, typeshadeInjection)],
   },
   // The github themes bring their own frame colours: a light background equal to the page
   // ground (so a frame reads as a bare 1px border, not a surface) and an orange active-tab
@@ -39,4 +39,11 @@ export default {
       editorActiveTabIndicatorBottomColor: 'transparent',
     },
   },
+}
+
+// Keep the two custom grammars in one `langs` entry while supporting the existing
+// TypeScript injection and the standalone GPU Types fence. Shiki accepts both language
+// definitions in the same custom-language array.
+function typeshedInjectionFix(gpuTypes, injection) {
+  return [gpuTypes, injection]
 }
