@@ -293,13 +293,19 @@ What the page carries and when:
   text field is what a phone keyboard and a Korean input method already know, and it costs a
   few kilobytes where CodeMirror 6 measured 133 KB gzipped. Monaco stays in the Playground.
 - One WebGPU device serves every canvas on the page. Only a canvas in view draws, and a
-  hidden tab draws nothing.
+  hidden tab draws nothing. Measured with three on one page: one `requestDevice`, one compiler
+  chunk, and 90 frames on the canvas in view against 0 on the two out of it over the same
+  second and a half.
 - A compile with an error keeps the last frame that worked and says so under the canvas.
 - Under `prefers-reduced-motion: reduce` there is no frame loop at all: the clock is pinned
   and the canvas draws when a control moves or the box changes size, so a reader who asked for
   less motion still sees their own change and nothing between them.
 - Without WebGPU and without WebGL2 the canvas stays empty over its build-time still, and the
   note under it says which browser feature is missing.
+
+A page carries as many live examples as it has ideas to show. The Book of Shaders runs about
+one editor per 390 words; a page with one example per 1,000 words is under-using the block, and
+a page where two examples teach the same thing should have one.
 
 `scripts/check-live.mjs` (`bun run check:live`) opens a page with one in Chromium and checks
 the four things: the canvas mounts or the fallback shows, no large script is fetched before

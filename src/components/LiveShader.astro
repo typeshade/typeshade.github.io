@@ -35,13 +35,20 @@ interface Props {
   /** The name over the block. A file name is not copy, so it is written on the page and reads
    *  the same in every language, the way the other code frames on the site name their file. */
   file?: string
+  /** One line saying what the reader is looking at, precise enough to check by eye. It is the
+   *  prose form of the "Expected output" comment an MDN interactive example carries. From the
+   *  dictionaries. */
+  anchor?: string
+  /** What to try, one line each, with the controls or by editing a line. A live example a
+   *  reader does nothing with is a picture. From the dictionaries. */
+  exercises?: readonly string[]
   /** Range, step, default and label for one uniform field each. A field the module does not
    *  declare fails the build. */
   controls?: ControlProps
   aspect?: '3/1' | '2/1' | '16/9' | '3/2'
 }
 
-const { locale, id, title, code, caption, file, controls = {}, aspect = '2/1' } = Astro.props
+const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1' } = Astro.props
 const t = copyFor(locale)
 const l = t.live
 const payload = liveShader(id, title, code, controls)
@@ -101,6 +108,8 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   </div>
   <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
 
+  {anchor && <p class="live-anchor"><Rich text={anchor} locale={locale} /></p>}
+
   <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
 
   <div class="live-controls" data-live-controls hidden></div>
@@ -109,6 +118,13 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
       <Rich text={reservedNote} locale={locale} />
       {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
     </p>
+  )}
+
+  {exercises.length > 0 && (
+    <div class="live-exercises">
+      <p>{l.exercisesP}</p>
+      <ul>{exercises.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
+    </div>
   )}
 
   <details class="live-output" data-pagefind-ignore>
@@ -155,6 +171,14 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   .live-frame > canvas { pointer-events: auto }
   .live-diagnostics:empty { display: none }
   .live-reserved { margin: 0; color: var(--color-text-3); font-size: var(--text-meta) }
+  /* What the reader should see, and what to try. The first reads as part of the figure, so it
+     sits with the caption; the second is a task list and takes the document's own type. */
+  .live-anchor { margin: 0; color: var(--color-text-2); font-size: var(--text-meta) }
+  .live-exercises { margin-block-start: 4px }
+  .live-exercises p { margin: 0 0 6px }
+  .live-exercises ul { margin: 0; padding-inline-start: 1.25em }
+  .live-exercises li { margin-block-end: 6px }
+  .live-exercises li:last-child { margin-block-end: 0 }
   .live-output { margin-block-start: 6px; border-block-start: 1px solid var(--color-line-1); padding-block-start: 10px }
   .live-output summary { color: var(--color-text-2); font-size: var(--text-meta); cursor: pointer }
   .live-output-body { display: flex; flex-direction: column; gap: 12px; margin-block-start: 12px }

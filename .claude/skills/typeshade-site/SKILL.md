@@ -128,8 +128,14 @@ this is the working procedure.
    so does a field type no control covers. An `f32` is a slider, an `i32` or `u32` a stepper
    (`toggle: true` for a checkbox), a `vec2` a pad, a `vec3` or `vec4` a colour picker with
    `color: true`. There is no `bool` control: WGSL forbids `bool` in a uniform block.
-4. Put `title` and `caption` in both dictionaries, and add the example's heading to the page's
-   `headings` array so the outline on the right lists it.
+4. Put `title`, `caption`, `anchor` and `exercises` in both dictionaries, and add the example's
+   heading to the page's `headings` array so the outline on the right lists it. The `anchor` is
+   one line saying what the reader is looking at, precise enough to check by eye, and it names
+   no number the page does not already show. The `exercises` are two or three things to try,
+   each one edit or one control, each with its outcome stated before the reader runs it. A live
+   example nobody is asked to touch is a picture.
+   Numbers in that copy come from the sample or the control props, never typed twice: write
+   "the top of its range" where you mean the control's maximum.
 5. Add `{ id: '<id>', live: true, page: '<route>' }` to `STILLS` in `scripts/artifacts.mjs`,
    then `bun run capture:stills` and commit the `.webp` and its `.sha256`. The still is what a
    browser with no WebGPU and no WebGL2 shows, and the build refuses a still whose hash moved.
