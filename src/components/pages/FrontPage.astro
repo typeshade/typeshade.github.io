@@ -28,6 +28,8 @@ const content = locale === 'ko'
       examples: '예제 보기',
       flowH: 'TypeShade는 이렇게 동작합니다',
       flowP: 'TypeScript 파일에 `"use typeshade"`를 선언하면 일반 애플리케이션 코드와 TypeShade 언어의 경계가 생깁니다.',
+      flowLabels: ['TypeScript 저작', 'TypeShade 의미론', '공유 IR', 'WGSL / GLSL ES 3.00'],
+      flowAriaLabel: 'TypeShade 컴파일 흐름',
       codeH: '첫 번째 TypeShade 프로그램',
       codeP: '작성하는 코드는 TypeScript처럼 보이지만, 컴파일러는 TypeShade의 타입과 GPU 의미론을 적용해 호스트가 사용할 셰이더를 생성합니다.',
       conceptsH: 'TypeScript를 알면 바로 이어집니다',
@@ -48,7 +50,7 @@ const content = locale === 'ko'
       eyebrow: 'A shader language built around the TypeScript experience',
       title: 'TypeShade',
       subtitle: 'Start with `"use typeshade"`.',
-      tagline: 'Keep the TypeScript authoring experience—types, functions, modules and editor feedback—while writing with TypeShade GPU types and shader semantics. Emit WGSL or GLSL ES 3.00 from one source.',
+      tagline: 'Keep the TypeScript authoring experience: types, functions, modules and editor feedback. Write with TypeShade GPU types and shader semantics, and emit WGSL or GLSL ES 3.00 from one source.',
       getStarted: 'Use TypeShade',
       playground: 'Write in the Playground',
       learn: 'Why TypeShade',
@@ -56,6 +58,8 @@ const content = locale === 'ko'
       examples: 'Explore examples',
       flowH: 'From TypeScript to a shader',
       flowP: 'A file-level `"use typeshade"` directive creates the boundary between ordinary application code and the TypeShade language.',
+      flowLabels: ['TypeScript authoring', 'TypeShade semantics', 'shared IR', 'WGSL / GLSL ES 3.00'],
+      flowAriaLabel: 'TypeShade compilation flow',
       codeH: 'Your first TypeShade program',
       codeP: 'The source looks familiar to a TypeScript developer. The compiler applies TypeShade types and GPU semantics, then produces shader code the host can consume.',
       conceptsH: 'If you know TypeScript, you already know the shape',
@@ -100,16 +104,16 @@ const content = locale === 'ko'
   <section class="wide front-code">
     <h2>{content.flowH}</h2>
     <p><Rich text={content.flowP} locale={locale} /></p>
-    <div class="authoring-flow" aria-label="TypeShade compilation flow">
-      <span>TypeScript authoring</span>
+    <div class="authoring-flow" aria-label={content.flowAriaLabel}>
+      <span>{content.flowLabels[0]}</span>
       <span aria-hidden="true">→</span>
       <code>"use typeshade"</code>
       <span aria-hidden="true">→</span>
-      <span>TypeShade semantics</span>
+      <span>{content.flowLabels[1]}</span>
       <span aria-hidden="true">→</span>
-      <span>shared IR</span>
+      <span>{content.flowLabels[2]}</span>
       <span aria-hidden="true">→</span>
-      <span>WGSL / GLSL ES 3.00</span>
+      <span>{content.flowLabels[3]}</span>
     </div>
     <div class="code-pair">
       {/* Code receives only props supported by astro-expressive-code. */}

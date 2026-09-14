@@ -17,6 +17,7 @@ const RULES = [
   { name: 'uppercase label', re: /text-transform:\s*uppercase|\buppercase\b/ },
   { name: 'middle-dot metadata', re: /\S\s·\s\S/ },
   { name: 'font on the avoid list', re: /\b(Inter|Geist|Space Grotesk|Instrument Serif|Poppins)\b/ },
+  { name: 'em dash', re: /\S—\S/ },
 ]
 
 function walk(dir, out = []) {
