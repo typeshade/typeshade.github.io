@@ -296,6 +296,10 @@ export const en = {
         title: 'Uniform struct',
         description: 'A uniform struct whose byte layout the reflection pane lays out field by field.',
       },
+      'hello-uniform-struct': {
+        title: 'Uniform struct on both targets',
+        description: `A uniform struct both entry points read, laid out as a ${std} block, so this one emits and links for ${glsl} too.`,
+      },
       'compute-reduction-twin': {
         title: 'Compute reduction',
         description: 'A compute entry that folds eight values from a storage buffer into one, with a workgroup size of 64.',
