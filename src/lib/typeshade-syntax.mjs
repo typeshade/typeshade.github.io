@@ -1,9 +1,5 @@
 /**
  * TypeShade syntax shared by TypeScript and the docs' `gpu-types` code fences.
- *
- * The guide uses TypeScript as the host language, but GPU type examples are also
- * rendered independently. Keeping a real Shiki grammar for that fence avoids the
- * common failure mode where the fence is accepted but rendered as plain text.
  */
 
 const typeshadePatterns = [
@@ -17,7 +13,6 @@ const typeshadePatterns = [
   { name: 'storage.modifier.typeshade.declare', match: '\\bdeclare\\b(?=\\s+(?:const|let)\\b)' },
 ]
 
-/** TypeShade syntax injected into normal TypeScript/TSX highlighting. */
 export const typeshadeInjection = {
   id: 'typeshade-injection',
   name: 'TypeShade',
