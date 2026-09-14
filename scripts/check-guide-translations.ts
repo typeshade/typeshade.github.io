@@ -57,6 +57,11 @@ function forbiddenSubstitutes(): string[] {
 const FORBIDDEN = forbiddenSubstitutes()
 
 const KO_TELLS: Array<{ name: string; re: RegExp; max: number }> = [
+  // "statement" as a bare predicate (문입니다) reads as 門 or 文 to a Korean developer; write
+  // 문(statement) at first use, then a qualified 문 (if 문, raw 문) or 문장.
+  { name: 'bare 문 as a predicate (write 문(statement) at first use, then if 문 / raw 문 / 문장)', re: /(?:^|[^가-힣A-Za-z`])문(?:입니다|이며|이고|이라|이었)/g, max: 0 },
+  // "native return" mapped word for word; Korean says whose return it is: TypeScript의 return.
+  { name: '네이티브 (write TypeScript의 or 자바스크립트의)', re: /네이티브/g, max: 0 },
   { name: 'A-1 "~에 대해" three or more times', re: /에 대해/g, max: 2 },
   { name: 'A-2 "~를 통해" three or more times', re: /[를을] 통해/g, max: 2 },
   { name: 'A-3 "~에 있어"', re: /에 있어/g, max: 0 },
