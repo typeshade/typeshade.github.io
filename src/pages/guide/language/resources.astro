@@ -1,5 +1,6 @@
 ---
 import Docs from '../../../layouts/Docs.astro'
+import TypeShadeCode from '../../../components/TypeShadeCode.astro'
 import { type Locale } from '../../../i18n/index.ts'
 
 interface Props { locale: Locale }
@@ -29,7 +30,7 @@ const headings = [['mapping',content.mapping],['decl',content.decl],['access',co
 <Docs locale={locale} path="/guide/language/resources/" title={content.title} description={content.description} headings={headings}>
   <h1>{content.h1}</h1><p>{content.intro}</p>
   <h2 id="mapping">{content.mapping}</h2><p>{content.mappingP}</p>
-  <pre><code>{`declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>`}</code></pre>
+  <TypeShadeCode code={`declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>`} />
   <h2 id="decl">{content.decl}</h2><p>{content.declP}</p>
   <h2 id="access">{content.access}</h2><p>{content.accessP}</p>
   <div class="table-scroll"><table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td><code>declare const x: uniform&lt;T&gt;</code></td><td>uniform</td><td>read</td></tr><tr><td><code>declare const x: storage&lt;T&gt;</code></td><td>storage</td><td>read</td></tr><tr><td><code>declare let x: storage&lt;T&gt;</code></td><td>storage</td><td>read_write</td></tr></tbody></table></div>
