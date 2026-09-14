@@ -3,7 +3,8 @@
 import type { APIRoute } from 'astro'
 import { claims } from '../lib/claims.ts'
 import { facts } from '../lib/examples.ts'
-import { links } from '../lib/links.ts'
+import { links, sidebar } from '../lib/links.ts'
+import { defaultLocale } from '../i18n/index.ts'
 
 const summary = [
   `TypeShade compiles TypeScript files that start with "use typeshade".`,
@@ -24,13 +25,24 @@ const absolute = (href: string) => (href.startsWith('/') ? `https://typeshade.de
 const table = [
   { dest: links.motivation, note: 'why one source for two shader languages' },
   { dest: links.quickStart, note: 'the submodule command, a complete shader file and the WGSL it emits' },
-  { dest: links.checks, note: 'what CI runs on every push' },
-  { dest: links.examples, note: `the ${facts.examples} examples, the GLSL emit and the emulated-double demo` },
+  { dest: links.playground, note: 'the browser editor: a shader, its diagnostics and its emitted shader text side by side' },
   { dest: links.guide, note: 'the language guide and its topics' },
+  { dest: links.languageTypes, note: 'type aliases, classes as GPU structs, and the field decorators that describe layout' },
+  { dest: links.languageFunctions, note: 'parameters, return types, helpers, entry points and builtin inputs' },
+  { dest: links.languageControlFlow, note: 'the conditions and loops that compile to GPU code' },
+  { dest: links.languageGpuTypes, note: 'scalars, vectors, matrices and arrays' },
+  { dest: links.languageResources, note: 'uniform and storage declarations, access modes and binding slots' },
+  { dest: links.languageStages, note: 'the vertex, fragment and compute decorators' },
   { dest: links.concepts, note: 'where the TypeScript you know sits in a WebGPU program' },
+  { dest: links.conceptsCpuGpu, note: 'what the GPU does to an entry point, and the language rule each of those facts produces' },
+  { dest: links.conceptsPipeline, note: 'what each stage is handed, what it produces and what interpolation between stages means' },
+  { dest: links.conceptsWebgpu, note: 'what the host application owns, what the compiler owns, and where WebGL2 differs' },
+  { dest: links.conceptsWgsl, note: `the same source emitted as WGSL and as ${facts.glslTarget}, with the differences between the targets` },
+  { dest: links.examples, note: `the ${facts.examples} examples, the GLSL emit and the emulated-double demo` },
+  { dest: links.api, note: 'the API reference, one page per public export' },
   { dest: links.internals, note: 'the compiler internals, one page per section of AUTHORING.md' },
   { dest: links.languageService, note: 'the editor-neutral language service behind the Playground, for language servers and editor extensions' },
-  { dest: links.api, note: 'the API reference, one page per public export' },
+  { dest: links.checks, note: 'what CI runs on every push' },
   {
     dest: links.mirror,
     note: 'mirror; pull requests cannot be merged there yet; consume as a git submodule, its root is the package',
@@ -39,6 +51,18 @@ const table = [
   { dest: links.npm, note: 'the reserved package name; not published yet' },
   { dest: links.commit, note: 'the commit every number below was measured at' },
 ] as const
+
+// Every page the sidebar names under /guide/, and the Playground beside them, has to be in
+// the table above. A page added to the site and missed here would leave the file a model
+// reads describing a smaller site than the one that shipped.
+const listed = new Set<string>(table.map((r) => r.dest.href))
+const missing = sidebar(defaultLocale)
+  .flatMap((g) => g.items)
+  .map((i) => i.href)
+  .filter((href) => (href.startsWith('/guide/') || href === links.playground.href) && !listed.has(href))
+if (missing.length > 0) {
+  throw new Error(`[llms.txt] the sidebar names ${missing.join(', ')}, which this file does not list`)
+}
 
 const body = `# TypeShade
 
