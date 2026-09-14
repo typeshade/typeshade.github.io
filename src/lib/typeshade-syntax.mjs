@@ -27,9 +27,9 @@ export const typeshadeInjection = {
 }
 
 /**
- * Standalone grammar for ```gpu-types fences.
+ * Standalone grammar for GPU Types code fences.
  * Include TypeScript first so the fence retains normal TS highlighting, then
- * inject TypeShade/GPU-specific scopes on top of it.
+ * apply TypeShade/GPU-specific scopes on top of it.
  */
 export const gpuTypesSyntax = {
   id: 'gpu-types',
