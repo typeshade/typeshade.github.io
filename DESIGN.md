@@ -246,14 +246,11 @@ A field of any other type stops the build, so a page cannot ship a uniform it le
 without saying so. `bool` is one of them: WGSL forbids it in the uniform address space, so a
 flag is a `u32` with `toggle: true`.
 
-One thing the page writes for the compiler. At the pinned commit the GLSL backend works out
-which bindings a stage reaches by walking the function bodies, and for a module built by the
-TypeScript front end that walk finds nothing, so the emitted GLSL reads `u.time` from a `u` it
-never declared and the fallback does not link. The block is written from the reflected layout
-instead (`glslUniformBlock` in the contract), the build refuses a stage that reads the binding
-and declares no block, and `check-live` opens a page with `?forcegl2=1` so the fallback is
-exercised on every run. The front page is unaffected: its examples are built with `fn()` and
-reach the binding the walk expects.
+The build refuses a sample whose emitted GLSL reads the uniform block and declares none. The
+compiler dropped that declaration for a module built by the TypeScript front end until the pin
+this is written against, and the failure was silent: the shader did not link, the canvas stayed
+empty, and the page told the reader their browser has no WebGL2. `check-live` opens a page with
+`?forcegl2=1` so the fallback is exercised on every run.
 
 A sample is a whole file, the way a Book of Shaders page shows a whole `.frag` and an MDN
 example shows something that runs: every name in front of the reader is declared in front of
