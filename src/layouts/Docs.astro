@@ -6,7 +6,7 @@
 // indexes; the sidebar, the outline, the pager and the edit link stay out of it.
 import { getCollection } from 'astro:content'
 import Base from './Base.astro'
-import { sidebar, type Destination } from '../lib/links.ts'
+import { links, sidebar, type Destination } from '../lib/links.ts'
 import { copyFor, guideSection, localePath, type Locale } from '../i18n/index.ts'
 
 export interface Heading {
@@ -56,7 +56,9 @@ const sections = guide
 
 const groups = sidebar(locale, sections, openCategory, path)
 const here = localePath(locale, path)
-const flat = groups.flatMap((g) => g.items)
+// The Playground is in the sidebar but renders outside this layout and has no pager of its
+// own, so the walk steps over it: Use TypeShade leads into the language guide.
+const flat = groups.flatMap((g) => g.items).filter((i) => i.href !== localePath(locale, links.playground.href))
 const at = flat.findIndex((i) => i.href === here)
 // Previous and next follow the sidebar, unless the page passed its own: the reference walks
 // a category alphabetically, and the reference's own index pages are not in the flat list.
