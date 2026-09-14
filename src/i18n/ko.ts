@@ -314,7 +314,7 @@ export const ko: Copy = {
     shared: '링크 복사됨',
     empty: {
       pending: '아래 진단을 고치면 생성된 출력이 여기에 나옵니다.',
-      glsl: `이 모듈은 ${glsl}을 내지 않습니다.`,
+      glsl: `이 모듈은 ${glsl}을 생성하지 않습니다.`,
     },
     reflection: {
       entries: '진입점',

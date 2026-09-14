@@ -8,13 +8,13 @@
 // for the compiler's own example registry. An id that names no file, or a file no id names,
 // fails the build with both directions reported, so this list cannot drift into a stale copy
 // of the directory.
-import { readFileSync, readdirSync } from 'node:fs'
-import path from 'node:path'
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
 
 // Astro bundles this front matter into a chunk under dist/, so the path is resolved from the
 // project root the way src/lib/api.ts and src/lib/guide.ts resolve theirs, and not from
 // import.meta.url.
-const examplesDir = path.resolve(process.cwd(), 'vendor/shader-dsl/examples')
+const examplesDir = path.resolve(process.cwd(), 'vendor/shader-dsl/examples');
 
 /** Every TypeShade example the Playground offers, simplest first. */
 export const playgroundExampleIds = [
@@ -23,17 +23,17 @@ export const playgroundExampleIds = [
   'hello-vsin',
   'hello-uniform',
   'hello-camera',
-] as const
+] as const;
 
-export type PlaygroundExampleId = (typeof playgroundExampleIds)[number]
+export type PlaygroundExampleId = (typeof playgroundExampleIds)[number];
 
 /** One example as the page carries it: the id its words are keyed by, and its source text. */
 export interface PlaygroundExample {
-  readonly id: PlaygroundExampleId
-  readonly source: string
+  readonly id: PlaygroundExampleId;
+  readonly source: string;
 }
 
-const fileFor = (id: string): string => path.join(examplesDir, `${id}.shade.ts`)
+const fileFor = (id: string): string => path.join(examplesDir, `${id}.shade.ts`);
 
 /** The examples, in curated order, with their sources. Throws when the list and the directory
  *  disagree, so an example added upstream is noticed at the next pin. */
@@ -41,21 +41,21 @@ export function playgroundExamples(): readonly PlaygroundExample[] {
   const onDisk = readdirSync(examplesDir)
     .filter((name) => name.endsWith('.shade.ts'))
     .map((name) => name.slice(0, -'.shade.ts'.length))
-    .sort()
+    .sort();
 
-  const listed = new Set<string>(playgroundExampleIds)
-  const missing = playgroundExampleIds.filter((id) => !onDisk.includes(id))
-  const unlisted = onDisk.filter((id) => !listed.has(id))
+  const listed = new Set<string>(playgroundExampleIds);
+  const missing = playgroundExampleIds.filter((id) => !onDisk.includes(id));
+  const unlisted = onDisk.filter((id) => !listed.has(id));
   if (missing.length > 0 || unlisted.length > 0) {
     const parts = [
       missing.length > 0 ? `named here with no file: ${missing.join(', ')}` : '',
       unlisted.length > 0 ? `in the directory with no id here: ${unlisted.join(', ')}` : '',
-    ].filter(Boolean)
-    throw new Error(`[playground] src/lib/playground-examples.ts and ${examplesDir} disagree (${parts.join('; ')})`)
+    ].filter(Boolean);
+    throw new Error(`[playground] src/lib/playground-examples.ts and ${examplesDir} disagree (${parts.join('; ')})`);
   }
 
-  return playgroundExampleIds.map((id) => ({ id, source: readFileSync(fileFor(id), 'utf8') }))
+  return playgroundExampleIds.map((id) => ({ id, source: readFileSync(fileFor(id), 'utf8') }));
 }
 
 /** The example the Playground opens with when the URL carries nothing. */
-export const defaultPlaygroundExample: PlaygroundExampleId = 'hello'
+export const defaultPlaygroundExample: PlaygroundExampleId = 'hello';

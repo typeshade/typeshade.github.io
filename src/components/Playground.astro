@@ -1,10 +1,10 @@
 ---
-import { copyFor, type Locale } from '../i18n/index.ts'
-import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts'
+import { copyFor, type Locale } from '../i18n/index.ts';
+import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts';
 
 interface Props { locale: Locale }
-const { locale } = Astro.props
-const t = copyFor(locale).playground
+const { locale } = Astro.props;
+const t = copyFor(locale).playground;
 
 // The examples arrive from the vendored checkout at build time: the source text from the
 // file, the title and the description from this locale's dictionary. `_shade.ts` reads the
@@ -14,7 +14,7 @@ const examples = playgroundExamples().map((example) => ({
   source: example.source,
   title: t.examples[example.id].title,
   description: t.examples[example.id].description,
-}))
+}));
 
 /** The output tabs, in the order the tablist shows them. */
 const tabs = [
@@ -23,7 +23,7 @@ const tabs = [
   { id: 'glsl-fragment', label: t.tabs.glslFragment },
   { id: 'reflection', label: t.tabs.reflection },
   { id: 'run', label: t.tabs.run },
-]
+];
 
 // The words the browser half needs once it is running. It reads them off the element, since
 // the script that holds the logic is a bundled module and takes no `define:vars`.
@@ -63,7 +63,7 @@ const runtimeCopy = {
     none: t.reflection.none,
   },
   runner: t.runner,
-}
+};
 ---
 
 <section
@@ -148,7 +148,7 @@ const runtimeCopy = {
 </section>
 
 <script>
-  import '../scripts/playground.ts'
+  import '../scripts/playground.ts';
 </script>
 
 <style>
