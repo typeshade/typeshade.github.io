@@ -1,0 +1,35 @@
+---
+import Playground from '../components/Playground.astro'
+import Base from '../layouts/Base.astro'
+import { copyFor, localePath, type Locale } from '../i18n/index.ts'
+
+const locale = 'en' as Locale
+const t = copyFor(locale)
+---
+
+<Base locale={locale} path="/playground/" searchable searchTitle="Playground">
+  <main class="playground-page">
+    <header class="playground-intro">
+      <p class="eyebrow">TypeShade</p>
+      <h1>Playground</h1>
+      <p>Write a TypeShade TypeScript file, compile it in your browser, and inspect the generated WGSL and diagnostics.</p>
+      <p class="playground-links">
+        <a href={localePath(locale, '/guide/quick-start/')}>{t.docs.quickStart}</a>
+        <a href={localePath(locale, '/guide/language/')}>{t.docs.language}</a>
+      </p>
+    </header>
+    <Playground locale={locale} />
+  </main>
+</Base>
+
+<style>
+  .playground-page { width: min(1180px, calc(100vw - 40px)); margin: 0 auto; padding: 56px 0 80px; }
+  .playground-intro { max-width: 760px; margin-bottom: 28px; }
+  .eyebrow { margin: 0 0 8px; color: var(--color-accent); font: 500 .8125rem/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
+  h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; }
+  .playground-intro p:not(.eyebrow) { margin: 0; color: var(--color-text-2); }
+  .playground-links { display: flex; gap: 18px; margin-top: 16px !important; }
+  .playground-links a { color: var(--color-accent); text-decoration: none; }
+  .playground-links a:hover { text-decoration: underline; }
+  @media (min-width: 48rem) { .playground-page { width: min(1180px, calc(100vw - 64px)); padding-top: 72px; } }
+</style>
