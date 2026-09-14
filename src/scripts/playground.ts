@@ -89,11 +89,13 @@ interface PlaygroundCopy {
   readonly cpuFailed: string;
   readonly canvas: string;
   readonly draw: string;
+  readonly stop: string;
   readonly canvasIdle: string;
   readonly canvasNeedsVertex: string;
   readonly canvasProgress: string;
   readonly canvasDrawn: string;
   readonly resolution: string;
+  readonly canvasTooBig: string;
   readonly args: string;
   readonly argsInvalid: string;
   readonly cpuNoResources: string;
@@ -444,6 +446,33 @@ function mount(root: HTMLElement): void {
   const canvasNote = root.querySelector('[data-canvas-note]');
   const drawCpu = root.querySelector('[data-draw-cpu]');
   const resolutionPicker = root.querySelector('[data-resolution]');
+
+  /** Whether the compiled module has the vertex and fragment pair a triangle needs. */
+  let moduleDrawable = false;
+  /** Whether the browser actually backed the canvas at the size it was asked for. */
+  let canvasFits = true;
+
+  /** Every browser caps how large a canvas may be, and they disagree: desktops allow tens of
+   *  megapixels, while an iPhone stops around 4096 by 4096. Past the cap the element still
+   *  reports the width and height that were set and then draws nothing, so asking it its size
+   *  proves nothing. This writes one pixel into the far corner and reads it back, which is the
+   *  only answer the browser cannot be wrong about. It runs on the canvas the page already
+   *  has, and never on a second one, since a spare 8K canvas is another 236 MB. */
+  const holdsItsPixels = (node: HTMLCanvasElement, surface: CanvasRenderingContext2D | null): boolean => {
+    if (!surface) return false;
+    const x = node.width - 1;
+    const y = node.height - 1;
+    if (x < 0 || y < 0) return false;
+    try {
+      surface.fillStyle = '#ffffff';
+      surface.fillRect(x, y, 1, 1);
+      const held = surface.getImageData(x, y, 1, 1).data[3] === 255;
+      surface.clearRect(x, y, 1, 1);
+      return held;
+    } catch {
+      return false;
+    }
+  };
   if (
     !(examplePicker instanceof HTMLSelectElement) ||
     !(exampleNote instanceof HTMLElement) ||
@@ -493,8 +522,11 @@ function mount(root: HTMLElement): void {
       const drawable =
         entries.some((entry) => entry.stage === 'vertex' && (entry.io?.inputs ?? []).some((f) => f.builtin === 'vertex_index')) &&
         entries.some((entry) => entry.stage === 'fragment');
-      drawCpu.disabled = !drawable;
-      if (canvasNote instanceof HTMLElement) canvasNote.textContent = drawable ? copy.canvasIdle : copy.canvasNeedsVertex;
+      moduleDrawable = drawable;
+      syncDrawButton();
+      if (canvasNote instanceof HTMLElement) {
+        canvasNote.textContent = !drawable ? copy.canvasNeedsVertex : canvasFits ? copy.canvasIdle : copy.canvasTooBig;
+      }
       if (canvas instanceof HTMLCanvasElement) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
       if (drawable) window.setTimeout(openPool, 0);
     }
@@ -644,7 +676,14 @@ function mount(root: HTMLElement): void {
   // 116 at 256. Small tiles lose to their own round trips; large ones leave too few to
   // balance and too few to watch. This keeps the count near six by six whatever the canvas
   // is, so the ratio of drawing to messaging holds as the canvas grows.
-  const tileSize = (side: number): number => Math.max(64, Math.round(side / 6 / 16) * 16);
+  //
+  // The ceiling is what makes the big grids usable. Six by six of 3840 is a tile of 640 and
+  // of 7680 a tile of 1280, and a tile that large is seconds of drawing: the progress note
+  // jumps in sixths, and whichever worker draws the last one holds the other seven waiting.
+  // Holding tiles at 256 turns 8K into 900 of them, which balances to the end and costs about
+  // 54 ms of messaging across a draw that takes tens of seconds. Below 1536 the ceiling never
+  // binds, so every size measured above keeps the tile it was measured with.
+  const tileSize = (side: number): number => Math.min(256, Math.max(64, Math.round(side / 6 / 16) * 16));
   /** How many tiles the single-threaded fallback draws between handing the page back. */
   const YIELD_EVERY = 8;
   /** How many tiles each worker is kept holding. With one, a worker draws its tile and then
@@ -680,7 +719,31 @@ function mount(root: HTMLElement): void {
     }
   };
   /** Set while a draw is in flight, so a second press does not race the first. */
-  let drawing = false;
+  /** The job whose draw owns the button and the note, or 0 when none is running. A number and
+   *  not a flag, so a draw that was superseded by the next one can tell that its finish is no
+   *  longer its to perform. */
+  let drawing = 0;
+  /** The button reads Stop while a draw runs and Draw otherwise, and is only ever disabled
+   *  when there is nothing a press could do. */
+  const syncDrawButton = (): void => {
+    if (!(drawCpu instanceof HTMLButtonElement)) return;
+    if (drawing !== 0) {
+      drawCpu.textContent = copy.stop;
+      drawCpu.disabled = false;
+      return;
+    }
+    drawCpu.textContent = copy.draw;
+    drawCpu.disabled = !moduleDrawable || !canvasFits;
+  };
+  /** Ends the running draw where it is. Moving `job` retires it at every worker and at the
+   *  page; clearing `drawing` first makes its own finish a no-op, so the button and the note
+   *  are this press's to set and not the retired draw's. */
+  const stopDrawing = (): void => {
+    job += 1;
+    drawing = 0;
+    syncDrawButton();
+    if (canvasNote instanceof HTMLElement) canvasNote.textContent = copy.canvasIdle;
+  };
 
   /** Hand the page back to the browser without the nested-setTimeout clamp, which is about
    *  4ms a turn and would cost more than the drawing between two of them. A MessageChannel
@@ -755,24 +818,27 @@ function mount(root: HTMLElement): void {
   };
 
   const drawOnCpu = (): void => {
-    if (!(canvas instanceof HTMLCanvasElement) || !(canvasNote instanceof HTMLElement) || drawing) return;
+    if (!(canvas instanceof HTMLCanvasElement) || !(canvasNote instanceof HTMLElement)) return;
     const context = canvas.getContext('2d');
     const plan = rasterPlan();
     if (!compiled || !context || !plan) {
       canvasNote.textContent = copy.canvasNeedsVertex;
       return;
     }
+    // Raising the job retires whatever draw is still running; taking `drawing` makes that
+    // draw's finish a no-op, so the button stays Stop across the handover.
     job += 1;
     const mine = job;
-    drawing = true;
-    if (drawCpu instanceof HTMLButtonElement) drawCpu.disabled = true;
+    drawing = mine;
+    syncDrawButton();
     context.clearRect(0, 0, plan.width, plan.height);
     delete canvasNote.dataset.px;
     delete canvasNote.dataset.workers;
 
     const finish = (): void => {
-      drawing = false;
-      if (drawCpu instanceof HTMLButtonElement) drawCpu.disabled = false;
+      if (drawing !== mine) return;
+      drawing = 0;
+      syncDrawButton();
     };
 
     if (typeof Worker !== 'function') {
@@ -809,7 +875,25 @@ function mount(root: HTMLElement): void {
     // Which tiles a worker is holding right now. Outlining them is a canvas write too, so it
     // happens in this same frame and not in the task that handed the tile out.
     const inFlight = new Set<string>();
+    /** A draw belongs to the grid it was planned against, and `drawHere` already stops on
+     *  `mine !== job` for that reason. The pool has to stop on it too: its tiles carry the old
+     *  grid's coordinates, so once the reader changes the resolution, painting what is still
+     *  in flight would scatter the old picture over the new canvas. At 8K a draw runs for tens
+     *  of seconds, which is long enough for that to be the normal way one ends. */
+    let retired = false;
+    const retire = (): boolean => {
+      if (mine === job) return false;
+      if (!retired) {
+        retired = true;
+        finished = true;
+        pending.length = 0;
+        inFlight.clear();
+        finish();
+      }
+      return true;
+    };
     const flush = (): void => {
+      if (retired) return;
       for (const { image, x0, y0 } of pending) context.putImageData(image, x0, y0);
       pending.length = 0;
       context.strokeStyle = outlineColour();
@@ -834,12 +918,13 @@ function mount(root: HTMLElement): void {
       noteQueued = true;
       window.requestAnimationFrame(() => {
         noteQueued = false;
-        if (complete) return;
+        if (complete || retired) return;
         canvasNote.textContent = fillNumbers(copy.canvasProgress, { done, total, running, waiting: queue.length });
       });
     };
 
     const settleIfDone = (): void => {
+      if (retire()) return;
       if (finished || queue.length > 0 || running > 0) return;
       finished = true;
       flush();
@@ -851,6 +936,7 @@ function mount(root: HTMLElement): void {
     };
 
     const handOut = (worker: Worker): void => {
+      if (retire()) return;
       const next = queue.shift();
       if (next === undefined) {
         settleIfDone();
@@ -873,6 +959,7 @@ function mount(root: HTMLElement): void {
       worker.onmessage = (event: MessageEvent<RasterReply>) => {
         const message = event.data;
         if (message.job !== mine) return;
+        if (retire()) return;
         if (message.kind === 'ready') {
           for (let i = 0; i < FEED; i += 1) handOut(worker);
           return;
@@ -1049,6 +1136,11 @@ function mount(root: HTMLElement): void {
       if (emitted.wgsl) root.classList.add('has-output');
       paintOutput();
       paintReflection();
+      // The canvas and the return values follow the source. The oracle's calls are
+      // microseconds, and a draw at the sizes the page opens with is under half a second, so
+      // neither is worth a button press; the buttons re-run with edited arguments and redraw.
+      evaluateOnCpu();
+      if (moduleDrawable && canvasFits) drawOnCpu();
     } catch (error) {
       status.textContent = copy.errors;
       root.classList.add('has-errors');
@@ -1111,16 +1203,31 @@ function mount(root: HTMLElement): void {
     control.addEventListener('change', applyOptions);
   }
 
-  // A bigger canvas is where the pool earns its keep: the bands are the same size, so four
-  // times the pixels is four times the queue and the same four workers draining it.
+  // `width` and `height` on a canvas are its backing store, which is the grid the fragment
+  // entry is run over. The box it is shown in is held at one size in the stylesheet, so this
+  // changes how much is computed and never how much room the pane takes. A bigger grid is
+  // also where the pool earns its keep: the tiles are the same size, so four times the pixels
+  // is four times the queue and the same workers draining it.
   if (resolutionPicker instanceof HTMLSelectElement && canvas instanceof HTMLCanvasElement) {
     resolutionPicker.addEventListener('change', () => {
       const side = Number(resolutionPicker.value);
       if (!Number.isFinite(side)) return;
+      // A draw already in flight was planned against the old grid, and its tiles carry the
+      // old grid's coordinates. Raising the job retires them at the worker and at the page,
+      // so none of them lands on the canvas that is about to replace them. At 8K a draw runs
+      // for tens of seconds, so this is a control a reader can reach mid-draw.
+      job += 1;
       canvas.width = side;
       canvas.height = side;
-      canvas.getContext('2d')?.clearRect(0, 0, side, side);
-      if (canvasNote instanceof HTMLElement) canvasNote.textContent = copy.canvasIdle;
+      const surface = canvas.getContext('2d');
+      surface?.clearRect(0, 0, side, side);
+      canvasFits = holdsItsPixels(canvas, surface);
+      drawing = 0;
+      syncDrawButton();
+      if (canvasNote instanceof HTMLElement) {
+        canvasNote.textContent = !moduleDrawable ? copy.canvasNeedsVertex : canvasFits ? copy.canvasIdle : copy.canvasTooBig;
+      }
+      if (moduleDrawable && canvasFits) drawOnCpu();
     });
   }
 
@@ -1250,7 +1357,12 @@ function mount(root: HTMLElement): void {
       });
       run.addEventListener('click', render);
       if (runCpu instanceof HTMLButtonElement) runCpu.addEventListener('click', evaluateOnCpu);
-      if (drawCpu instanceof HTMLButtonElement) drawCpu.addEventListener('click', drawOnCpu);
+      if (drawCpu instanceof HTMLButtonElement) {
+        drawCpu.addEventListener('click', () => {
+          if (drawing !== 0) stopDrawing();
+          else drawOnCpu();
+        });
+      }
       tabs.forEach((tab, index) => {
         tab.addEventListener('click', () => selectTarget((tab.dataset.target ?? 'wgsl') as Target));
         tab.addEventListener('keydown', (event) => {
