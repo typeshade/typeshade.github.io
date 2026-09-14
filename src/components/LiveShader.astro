@@ -1,0 +1,214 @@
+---
+// One live example: the source a reader can edit, the canvas it draws on, and a control for
+// every uniform field the module declares. The shape is MDN's "Try it": the code, the result,
+// and the handles, with nothing between them.
+//
+// The build compiles the sample here (src/lib/live-shader-emit.ts) and inlines what the page
+// needs as JSON: the emitted WGSL and GLSL ES 3.00 stages, the reflected layout, and the
+// controls the reflection asks for. The compiler itself stays out of the page until the
+// reader's first edit, when src/scripts/live-shader.ts imports it as a chunk of its own.
+//
+// Putting one on a page: see "Live examples" in DESIGN.md.
+import { Code } from 'astro-expressive-code/components'
+import Rich from './Rich.astro'
+import { copyFor, type Locale } from '../i18n/index.ts'
+import { liveShader, livePayloadJson } from '../lib/live-shader-emit.ts'
+import type { ControlProps } from '../lib/live-shader-contract.ts'
+import type { StateStrings } from '../lib/shader-runtime.ts'
+
+interface Props {
+  locale: Locale
+  /** Names the example. It is the id of its still image and of its inlined payload, so it is
+   *  unique across the site. */
+  id: string
+  /** What the canvas is showing, for the accessible name. From the dictionaries. */
+  title: string
+  /** The sample: a whole file, the way a Book of Shaders page shows a whole `.frag`. A sample
+   *  that declares no `@vertex` entry is compiled behind the fullscreen-triangle vertex half
+   *  (src/lib/live-shader-contract.ts) and takes `uv` as a `@location(0)` parameter; one that
+   *  declares both stages is compiled as written. Code is not copy, so it stays on the page
+   *  that uses it. */
+  code: string
+  /** The line under the canvas. From the dictionaries. The runtime adds what drew the frame,
+   *  the way ShaderCanvas does, so the figure carries one line and not three. */
+  caption: string
+  /** The name over the block. A file name is not copy, so it is written on the page and reads
+   *  the same in every language, the way the other code frames on the site name their file. */
+  file?: string
+  /** Range, step, default and label for one uniform field each. A field the module does not
+   *  declare fails the build. */
+  controls?: ControlProps
+  aspect?: '3/1' | '2/1' | '16/9' | '3/2'
+}
+
+const { locale, id, title, code, caption, file, controls = {}, aspect = '2/1' } = Astro.props
+const t = copyFor(locale)
+const l = t.live
+const payload = liveShader(id, title, code, controls)
+const aria: StateStrings = t.canvas.aria(title)
+
+/** The caption, with what drew the frame appended. One line, the way the hero's is. */
+const captionFor = (backend: string): string => `${caption} ${backend}`
+const captions: StateStrings = {
+  webgpu: captionFor(l.backend.webgpu),
+  webgl2: captionFor(l.backend.webgl2),
+  none: captionFor(l.backend.none),
+  'still-webgpu': captionFor(l.backend.webgpu),
+  'still-webgl2': captionFor(l.backend.webgl2),
+}
+
+// The words the browser half needs once it is running. It reads them off the element: the
+// module that holds the logic is bundled and takes no `define:vars`. Everything the page
+// renders itself stays out of here.
+const runtimeCopy = {
+  editorAria: l.editorAria,
+  loading: l.loading,
+  keptFrame: l.keptFrame,
+  noFrame: l.noFrame,
+  caption: captions,
+  aria,
+  lineAt: l.lineAt,
+  component: l.component,
+}
+
+const payloadId = `live-payload-${id}`
+const fields = payload.data.layout.fields
+// The note under the controls names the reserved fields this sample declares, so it describes
+// the file above it. The names go in as code spans, which Rich renders.
+const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).join(', '))
+---
+
+<figure
+  class="figure live"
+  data-live-shader
+  data-live-id={id}
+  data-payload={payloadId}
+  data-copy={JSON.stringify(runtimeCopy)}
+  data-live-state="idle"
+>
+  <div class="live-code" data-live-code>
+    <Code code={payload.source} lang="ts" title={file ?? l.file} locale={locale} />
+  </div>
+
+  <div class="live-bar">
+    <button type="button" data-live-edit aria-label={`${l.edit} ${file ?? l.file}`}>{l.edit}</button>
+    <button type="button" data-live-reset aria-label={`${l.reset} ${file ?? l.file}`}>{l.reset}</button>
+  </div>
+
+  <div class="figure-frame live-frame" style={`aspect-ratio: ${aspect}`}>
+    <img src={`/stills/${id}.webp`} alt={aria.none} loading="lazy" decoding="async" />
+    <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
+  </div>
+  <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
+
+  <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
+
+  <div class="live-controls" data-live-controls hidden></div>
+  {payload.reserved.length > 0 && (
+    <p class="live-reserved">
+      <Rich text={reservedNote} locale={locale} />
+      {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
+    </p>
+  )}
+
+  <details class="live-output" data-pagefind-ignore>
+    <summary>{l.output}</summary>
+    <div class="live-output-body">
+      <p class="live-reserved"><Rich text={l.outputNote} locale={locale} /></p>
+      <div data-live-emitted="wgsl"><Code code={payload.wgsl} lang="wgsl" title={l.wgsl} locale={locale} /></div>
+      <div data-live-emitted="vertex"><Code code={payload.glsl.vertex} lang="glsl" title={l.glslVertex} locale={locale} /></div>
+      <div data-live-emitted="fragment"><Code code={payload.glsl.fragment} lang="glsl" title={l.glslFragment} locale={locale} /></div>
+      {fields.length > 0 && (
+        <table class="live-reflection">
+          <caption>{l.uniforms}</caption>
+          <thead><tr><th>{l.field}</th><th>{l.type}</th><th>{l.offset}</th></tr></thead>
+          <tbody>
+            {fields.map((f) => (
+              <tr><td><code>{f.name}</code></td><td><code>{f.type}</code></td><td><code>{f.offset}</code></td></tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </details>
+
+  <script type="application/json" id={payloadId} set:html={livePayloadJson(payload)} is:inline />
+</figure>
+
+<script>
+  import '../scripts/live-shader.ts'
+</script>
+
+<style>
+  /* .figure already sets the column and its 10px gap (src/styles/global.css), so this adds
+     nothing but what the block's own parts need. */
+  .live-code { position: relative }
+  .live-bar { display: flex; gap: 8px; margin-block-start: -2px }
+  .live-bar button {
+    border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 6px 12px;
+    background: var(--color-ground); color: var(--color-text-1);
+    font: 500 var(--text-meta)/1.3 var(--font-sans); cursor: pointer;
+  }
+  .live-bar button:hover { background: var(--color-surface-1) }
+  /* The canvas takes the pointer, which the reserved `mouse` field is filled from. Every
+     other figure on the site is a picture and lets the pointer through. */
+  .live-frame > canvas { pointer-events: auto }
+  .live-diagnostics:empty { display: none }
+  .live-reserved { margin: 0; color: var(--color-text-3); font-size: var(--text-meta) }
+  .live-output { margin-block-start: 6px; border-block-start: 1px solid var(--color-line-1); padding-block-start: 10px }
+  .live-output summary { color: var(--color-text-2); font-size: var(--text-meta); cursor: pointer }
+  .live-output-body { display: flex; flex-direction: column; gap: 12px; margin-block-start: 12px }
+  .live-reflection { width: 100%; border-collapse: collapse; font-size: var(--text-meta) }
+  .live-reflection caption { margin-block-end: 6px; color: var(--color-text-3); text-align: left }
+  .live-reflection th, .live-reflection td { padding: 4px 8px 4px 0; text-align: left; border-block-end: 1px solid var(--color-line-1) }
+
+  /* The textarea and the control rows are built by src/scripts/live-shader.ts after the page
+     loads, so those nodes carry no scoping attribute and are addressed globally. */
+  .live-code :global(.live-input) {
+    position: absolute; inset: 0; z-index: 1; box-sizing: border-box; width: 100%;
+    margin: 0; border: 0; outline-offset: -2px; resize: none; overflow: auto;
+    background: transparent; color: transparent; caret-color: var(--color-accent);
+    -webkit-text-fill-color: transparent; white-space: pre; tab-size: 2;
+  }
+  .live-code :global(.live-input::selection) { background: color-mix(in srgb, var(--color-accent) 28%, transparent) }
+  .live-controls[hidden] { display: none }
+  .live-controls { display: flex; flex-direction: column; gap: 10px }
+  .live-controls :global(.live-control) { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px }
+  .live-controls :global(.live-control-head) { display: flex; align-items: baseline; gap: 8px; font-size: var(--text-meta) }
+  .live-controls :global(.live-control-head code) { font-size: var(--text-meta) }
+  .live-controls :global(.live-control-label) { min-width: 0; color: var(--color-text-2) }
+  .live-controls :global(.live-control-value) { flex: 0 0 auto; color: var(--color-text-3); font: 400 var(--text-meta)/1.4 var(--font-mono) }
+  .live-controls :global(.live-control-inputs) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 24px }
+  .live-controls :global(.live-control-inputs input[type='range']) { flex: 1 1 140px; min-width: 0; accent-color: var(--color-accent) }
+  .live-controls :global(.live-control-inputs input[type='number']) {
+    width: 6rem; min-height: 24px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm);
+    padding: 3px 6px; background: var(--color-ground); color: var(--color-text-1);
+    font: 400 var(--text-meta)/1.4 var(--font-mono);
+  }
+  /* 24px is the smallest target WCAG 2.2 takes; a checkbox draws smaller than its box. */
+  .live-controls :global(input[type='checkbox']) { width: 24px; height: 24px; accent-color: var(--color-accent) }
+  .live-controls :global(input[type='color']) {
+    width: 56px; height: 26px; padding: 0; border: 1px solid var(--color-line-2);
+    border-radius: var(--radius-sm); background: var(--color-ground);
+  }
+  .live-controls :global(.live-pad) {
+    position: relative; width: 100%; max-width: 160px; aspect-ratio: 1;
+    border: 1px solid var(--color-line-2); border-radius: var(--radius-sm);
+    background: var(--color-surface-1); touch-action: none; cursor: crosshair;
+  }
+  /* The pad is for a pointer; these two are the same numbers for a keyboard. */
+  .live-controls :global(.live-pad-axes) { display: flex; flex: 1 1 140px; flex-direction: column; gap: 6px; min-width: 0 }
+  .live-controls :global(.live-pad-axes input) { width: 100%; accent-color: var(--color-accent) }
+  .live-controls :global(.live-pad-dot) { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--color-accent) }
+  /* The compiler's own message is code and is set as code; the sentence the site adds is not. */
+  .live-diagnostics :global(.live-message) { color: var(--color-diag); font: 400 var(--text-meta)/1.55 var(--font-mono); white-space: pre-wrap }
+  .live-diagnostics :global(.live-jump) {
+    border: 0; padding: 0; margin-inline-end: 6px; background: none; color: inherit;
+    font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+  }
+  .live-diagnostics :global(.live-note) { margin-block-start: 4px; color: var(--color-text-3); font-size: var(--text-meta) }
+
+  @media (min-width: 40rem) {
+    .live-controls :global(.live-control) { grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); align-items: center; gap: 12px }
+  }
+</style>

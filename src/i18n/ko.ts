@@ -409,6 +409,35 @@ export const ko: Copy = {
     }),
   },
 
+
+  live: {
+    file: 'live.shade.ts',
+    edit: '수정',
+    reset: '초기화',
+    editorAria: '수정할 수 있는 셰이더 소스',
+    loading: '컴파일러를 불러오는 중',
+    keptFrame: '마지막으로 컴파일된 프레임을 캔버스가 그대로 두고 있습니다.',
+    noFrame: '캔버스가 이 프로그램을 실행하지 못해 직전에 실행되던 프레임을 그대로 두고 있습니다.',
+    reserved: (fields: string) => `페이지가 매 프레임 채우는 값이라 컨트롤이 없습니다: ${fields}.`,
+    mouseUnits: '`mouse`는 캔버스 왼쪽 아래를 원점으로 0에서 1까지 가며, `uv`와 같은 공간입니다.',
+    backend: {
+      webgpu: 'WebGPU에서 실행 중.',
+      webgl2: `출력된 ${glsl}로 WebGL2에서 실행 중.`,
+      none: `이 브라우저에는 WebGPU도 WebGL2도 없어서 위 프레임은 빌드할 때 그렸습니다.`,
+    },
+    output: '출력 결과',
+    outputNote: '컴파일러가 본 모듈 전체입니다. 버텍스 진입점과 그것이 돌려주는 `VsOut` 구조체는 페이지가 붙였고, 나머지는 위 파일입니다.',
+    wgsl: 'WGSL',
+    glslVertex: `${glsl} 버텍스`,
+    glslFragment: `${glsl} 프래그먼트`,
+    uniforms: '유니폼 블록',
+    field: '필드',
+    type: '타입',
+    offset: '오프셋',
+    lineAt: '{line}행',
+    component: ['x', 'y', 'z', 'w'],
+  },
+
   code: { copy: '클립보드로 복사', copied: '복사됨' },
   install: { label: '서브모듈 추가 명령' },
   diagnostic: {
@@ -531,6 +560,15 @@ export const ko: Copy = {
       p1: `TypeShade에는 함수 기반 작성 방식도 있습니다. 같은 패스를 class 대신 [\`fn\`](apiFn)과 [\`module()\`](apiModule)로 선언한 파일이며, import 문부터 WGSL을 내보내는 호출까지 ${quickStartFile.lines}줄입니다.`,
       p2: '실행하면 두 단계의 WGSL이 함께 나옵니다. 프래그먼트 진입점은 여기 있습니다.',
       p3: `같은 함수의 ${glsl} 단계와, [\`reflect()\`](apiReflect)가 복원한 유니폼 레이아웃은 [예제 페이지](examples)에 있습니다. 나머지 API는 [작성 가이드](guide)를 보면 됩니다.`,
+    live: {
+      h: '사인파',
+      p: '`sin`이 x 좌표를 파동으로 바꾸고 `time`이 그 파동을 흘려보냅니다. 아래 파일이 그게 전부이고, 여기서 바로 돕니다. 한 줄을 고치면 다음 입력에 캔버스가 따라옵니다.',
+      title: '사인 줄무늬',
+      caption: '두 색 사이를 오가며 캔버스를 가로지르는 사인파.',
+      bands: '캔버스를 가로지르는 파동 수',
+      low: '골 색',
+      high: '마루 색',
+    },
     status: {
       h: '상태',
       p: `정식 출시 전입니다. 저장소는 ${facts.mirrorVersion} 버전이고, npm 이름 [typeshade](npm)는 ${facts.nextVersion} 출시용으로 잡아 두었습니다. 매니페스트와 import 이름은 그 태그에서 바뀝니다. 그때까지는 미러 저장소이며, 위 import는 서브모듈 안의 \`${quickStartFile.importPath}\`에서 해석됩니다. 이슈는 환영합니다. 다만 변경은 업스트림에 먼저 들어가고 이 트리는 그것을 fast-forward로 따라가기 때문에, 풀 리퀘스트는 아직 머지할 수 없습니다. ${facts.nextVersion} 소식은 [릴리스 구독](releases)으로 받을 수 있습니다.`,
@@ -1078,6 +1116,13 @@ export const ko: Copy = {
         matrixP: 'mat4 같은 matrix 타입은 변환 계산에 사용합니다. TypeScript 객체가 아니라 GPU arithmetic value입니다.',
         arrays: '5. Arrays',
         arraysP: 'array는 여러 GPU 값을 하나의 타입으로 표현합니다. resource element type과 함께 사용하면 host가 제공하는 buffer shape를 명확하게 설명할 수 있습니다.',
+        live: '6. 타입 세 개로 만든 원반',
+        liveP: '아래 진입점은 줄마다 GPU 타입이 하나씩 나옵니다. 위치는 `vec2`, 거리와 반지름은 `f32`, 색은 `vec3`입니다. 네모 안을 끌어 보고, 슬라이더를 움직이고, 색을 골라 보세요.',
+        liveTitle: '원반',
+        liveCaption: '원반 하나입니다. vec2가 자리를, f32가 크기를, vec3이 색을 정합니다.',
+        liveCenter: '중심, uv 공간 기준',
+        liveRadius: '반지름, uv 단위',
+        liveTint: '원반 색',
         next: '다음: Resources'
       },
       resources: {

@@ -341,6 +341,41 @@ export const en = {
   },
 
   /** The copy button Expressive Code puts on every code block (ec.config.mjs). */
+
+  /** The chrome around a live example (src/components/LiveShader.astro). The sample's own
+   *  code is not copy: it stays on the page that shows it, and so does its file name. */
+  live: {
+    file: 'live.shade.ts',
+    edit: 'Edit',
+    reset: 'Reset',
+    editorAria: 'Editable shader source',
+    loading: 'Loading the compiler',
+    keptFrame: 'The canvas holds the last frame that compiled.',
+    noFrame: 'The canvas could not run this program, so it is holding the last frame that ran.',
+    /** Named for the reserved fields this sample declares, so the note describes the file
+     *  above it. The list goes last, in code font, so no language has to bend a word around
+     *  whichever name lands at the end. */
+    reserved: (fields: string) => `Filled by the page every frame, with no control: ${fields}.`,
+    mouseUnits: '`mouse` runs 0 to 1 over the canvas from the bottom left, the space `uv` is in.',
+    backend: {
+      webgpu: 'Running on WebGPU.',
+      webgl2: `Running on WebGL2, from the emitted ${glsl}.`,
+      none: `This browser has no WebGPU and no WebGL2, so the frame above was drawn at build time.`,
+    },
+    output: 'Emitted output',
+    outputNote: 'The whole module the compiler saw. The page added the vertex entry and the `VsOut` struct it returns; the rest is the file above.',
+    wgsl: 'WGSL',
+    glslVertex: `${glsl} vertex`,
+    glslFragment: `${glsl} fragment`,
+    uniforms: 'Uniform block',
+    field: 'Field',
+    type: 'Type',
+    offset: 'Offset',
+    lineAt: 'line {line}',
+    /** The names of a vector control's components, for its accessible name. */
+    component: ['x', 'y', 'z', 'w'],
+  },
+
   code: { copy: 'Copy to clipboard', copied: 'Copied' },
 
   install: { label: 'Submodule command' },
@@ -469,6 +504,15 @@ export const en = {
       p1: `TypeShade also has a function-based authoring surface: the same pass declared with [\`fn\`](apiFn) and [\`module()\`](apiModule) instead of classes, ${quickStartFile.lines} lines from the import line to a call that emits WGSL:`,
       p2: 'Running it emits WGSL for both stages. Here is the fragment entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [language guide](guide) covers the rest of the surface.`,
+    live: {
+      h: 'A sine wave',
+      p: '`sin` turns the x coordinate into a wave, and `time` scrolls it. That is the whole file below, and it runs here: edit a line and the canvas follows on the next keystroke.',
+      title: 'Sine stripes',
+      caption: 'A sine wave across the canvas, mixed between two colours.',
+      bands: 'waves across the canvas',
+      low: 'trough colour',
+      high: 'crest colour',
+    },
     status: {
       h: 'Status',
       p: `Pre-release. The repository is at version ${facts.mirrorVersion}; ${facts.nextVersion} is the release the npm name [typeshade](npm) is reserved for, and the manifest and the imports are renamed at that tag. Until then this is a mirror: the import above resolves at \`${quickStartFile.importPath}\`, inside the submodule itself. Issues are welcome; pull requests cannot be merged yet, because changes land upstream and this tree is fast-forwarded from there. [Watch releases](releases) to hear about ${facts.nextVersion}.`,
@@ -990,6 +1034,13 @@ export const en = {
         matrixP: 'Types such as mat4 represent GPU arithmetic values used for transforms. They are not JavaScript objects.',
         arrays: '5. Arrays',
         arraysP: 'array represents a sequence of GPU values. Combined with a resource element type, it describes the shape of host-provided buffer data.',
+        live: '6. A disc from three types',
+        liveP: 'The entry below names a GPU type on every line: `vec2` for the position, `f32` for the distance and the radius, `vec3` for the colour. Drag inside the square, move the slider, pick a colour.',
+        liveTitle: 'Disc',
+        liveCaption: 'A disc placed by a vec2, sized by an f32 and coloured by a vec3.',
+        liveCenter: 'centre, in uv space',
+        liveRadius: 'radius, in uv units',
+        liveTint: 'disc colour',
         next: 'Next: Resources'
       },
       resources: {
