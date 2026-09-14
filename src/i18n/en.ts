@@ -244,6 +244,10 @@ export const en = {
     noOutput: 'No WGSL output.',
     directive: 'A file compiles once it starts with the "use typeshade" directive.',
     unavailable: 'The editor did not load. Check the connection and reload the page.',
+    starting: 'Starting the language service…',
+    serviceFailed: 'The language service stopped. Reload the page.',
+    sourceTypescript: 'TypeScript',
+    sourceTypeshade: 'TypeShade',
     // The reflection pane: what reflect() recovers from the compiled module, and what each
     // entry point returns when the CPU oracle runs it.
     reflection: 'Reflection',
