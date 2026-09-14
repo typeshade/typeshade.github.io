@@ -210,6 +210,16 @@ export const en = {
         description: 'A uniform struct whose byte layout the reflection tab lays out field by field.',
       },
     },
+    // The emit options the compiler takes, as controls over what the code tabs show.
+    emit: {
+      title: 'Emit options',
+      optimization: 'WGSL optimization',
+      levels: { O0: 'O0 (no passes)', O1: 'O1 (value-safe)', O2: 'O2 (default)' },
+      parens: 'Parentheses',
+      minify: 'Minify',
+      precision: `${glsl} float precision`,
+      levelNote: 'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses and minify reach the GLSL tabs only.',
+    },
     // The output tabs beside the editor.
     tabs: {
       wgsl: 'WGSL',
@@ -246,7 +256,6 @@ export const en = {
       offset: 'Offset',
       size: 'Size',
       features: 'Required features',
-      bytes: (n: number) => `${n} B`,
       none: 'None.',
     },
     // The run tab: the CPU oracle, which runs an entry point without a GPU.

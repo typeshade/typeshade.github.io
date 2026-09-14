@@ -9,12 +9,13 @@
 //   4. the compiler ran in the browser: the WGSL pane holds text, syntax-coloured
 //   5. the GLSL vertex tab and the Reflection tab hold what belongs in them
 //   6. the Run tab produces the value the sample's vertex entry returns
-//   7. dark mode reaches the editor: its background is dark
-//   8. the example picker replaces the source
-//   9. a source with an unclosed call reports a diagnostic and leaves the panes empty
-//  10. a source the compiler has no rule for reports a diagnostic of its own
-//  11. `vec` offers vec4 in the completion list
-//  12. the URL fragment carries the edited source into a second tab
+//   7. the emit options reach the panes: the level, minify, parens and the GLSL precision
+//   8. dark mode reaches the editor: its background is dark
+//   9. the example picker replaces the source
+//  10. a source with an unclosed call reports a diagnostic and leaves the panes empty
+//  11. a source the compiler has no rule for reports a diagnostic of its own
+//  12. `vec` offers vec4 in the completion list
+//  13. the URL fragment carries the edited source into a second tab
 //
 // Hover over a name a user declared is the one thing here that the language service at the
 // current pin has no answer for: it returns nothing for `vs` and `fs`, and the intrinsics it
@@ -99,13 +100,18 @@ async function typeSource(page, source) {
   await page.waitForTimeout(AFTER_EDIT);
 }
 
+/** What a pane reads as. `colorize` writes every space as `&nbsp;`, so the text comes back
+ *  with U+00A0 where the emitted source had a space; a check for `precision mediump float`
+ *  misses unless they are put back. */
+const paneText = async (page, selector) => (await page.innerText(selector)).replace(/\u00a0/g, ' ').trim();
+
 /** Open a tab and read the text of its body, which is empty while the pane has nothing. */
 async function readTab(page, id) {
   await page.click(`[data-tab="${id}"]`);
   await page.waitForTimeout(120);
   return {
-    body: (await page.innerText(`[data-body="${id}"]`)).trim(),
-    empty: (await page.innerText(`[data-empty="${id}"]`)).trim(),
+    body: await paneText(page, `[data-body="${id}"]`),
+    empty: await paneText(page, `[data-empty="${id}"]`),
   };
 }
 
@@ -119,6 +125,19 @@ const brightness = (colour) => {
   const [r, g, b] = (colour.match(/\d+(\.\d+)?/g) ?? ['255', '255', '255']).map(Number);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
+
+// Every expression here depends on a runtime input, so the optimizer cannot fold it away and
+// `parens: 'minimal'` has parentheses left to drop. The default sample folds to constants.
+const UNFOLDABLE = `"use typeshade"
+class VsOut { @builtin("position") pos: vec4 @location(0) uv: vec2 }
+class Color { @location(0) color: vec4 }
+@fragment
+export function fs(v: VsOut): Color {
+  const a = v.uv.x * 2. + v.uv.y * 3. - 1.
+  const b = a * a + a * 2.
+  return { color: vec4(b, a - b * 3., a * b + 1., 1.) }
+}
+`;
 
 async function checkRoute(browser, origin, route) {
   const { page, pageErrors, cdnFailures } = await openPage(browser);
@@ -156,7 +175,7 @@ async function checkRoute(browser, origin, route) {
       // The compiler is bundled into the page, so this is the half that needs no network.
       // innerText is what the reader sees: the pane is coloured markup whose line breaks are
       // <br>, which textContent would run together into one line.
-      const wgsl = (await page.innerText('[data-output]')).trim();
+      const wgsl = await paneText(page, '[data-output]');
       if (wgsl.length === 0) problems.push('the WGSL pane is empty');
       else if (!/@vertex|@fragment|fn\s/.test(wgsl)) problems.push(`the WGSL pane holds no WGSL:\n    ${wgsl.slice(0, 200)}`);
 
@@ -182,8 +201,58 @@ async function checkRoute(browser, origin, route) {
       await page.waitForTimeout(120);
       await page.click('[data-run-entry]');
       await page.waitForTimeout(200);
-      const ran = (await page.innerText('[data-body="run"]')).trim();
+      const ran = await paneText(page, '[data-body="run"]');
       if (!/pos:\s*\[/.test(ran)) problems.push(`running the entry point on the CPU produced no value:\n    ${ran.slice(0, 200)}`);
+
+      // ── the emit options ────────────────────────────────────────────────────────────────
+      const wgslPane = async () => {
+        await page.click('[data-tab="wgsl"]');
+        await page.waitForTimeout(120);
+        return paneText(page, '[data-body="wgsl"]');
+      };
+      const setOption = async (selector, value) => {
+        if (value === true || value === false) await page.setChecked(selector, value);
+        else await page.selectOption(selector, value);
+        await page.waitForTimeout(500);
+      };
+
+      const atO2 = await wgslPane();
+      const shownSize = await paneText(page, '[data-size="wgsl"]');
+      if (!/^[0-9]+ B$/.test(shownSize)) problems.push(`the WGSL pane shows no byte count: "${shownSize}"`);
+      else if (Math.abs(Number(shownSize.replace(' B', '')) - atO2.length) > 2) {
+        // The label counts the emitted string; the pane reads back trimmed of its last newline.
+        problems.push(`the byte count says ${shownSize} for a pane holding ${atO2.length} characters`);
+      }
+
+      await setOption('[data-opt-level]', 'O0');
+      const atO0 = await wgslPane();
+      if (atO0 === atO2) problems.push('the optimization level changed nothing in the WGSL pane');
+      if (!(await page.isVisible('[data-level-note]'))) problems.push('at O0 the note about the level standing alone is hidden');
+      await setOption('[data-opt-level]', 'O2');
+      if (await page.isVisible('[data-level-note]')) problems.push('at O2 the note about the level is still shown');
+
+      await setOption('[data-opt-minify]', true);
+      const minified = await wgslPane();
+      if (minified.length >= atO2.length) problems.push(`minify did not shrink the WGSL: ${atO2.length} to ${minified.length} characters`);
+      await setOption('[data-opt-minify]', false);
+
+      await setOption('[data-opt-precision]', 'mediump');
+      const mediump = await readTab(page, 'glsl-vertex');
+      if (!mediump.body.includes('precision mediump float')) {
+        problems.push(`mediump did not reach the GLSL precision line:\n    ${mediump.body.slice(0, 160)}`);
+      }
+      await setOption('[data-opt-precision]', 'highp');
+
+      // `parens` needs a source the optimizer cannot fold flat.
+      await typeSource(page, UNFOLDABLE);
+      const parensFull = await wgslPane();
+      await setOption('[data-opt-parens]', 'minimal');
+      const parensMinimal = await wgslPane();
+      if (parensMinimal.length >= parensFull.length) {
+        problems.push(`minimal parentheses dropped none: ${parensFull.length} to ${parensMinimal.length} characters`);
+      }
+      await setOption('[data-opt-parens]', 'full');
+      console.log(`  emit options: O2 ${atO2.length} B, O0 ${atO0.length} B, minified ${minified.length} B, parens ${parensFull.length} to ${parensMinimal.length} B`);
 
       // ── dark mode reaches inside the editor ─────────────────────────────────────────────
       await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });

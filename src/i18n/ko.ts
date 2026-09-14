@@ -301,6 +301,15 @@ export const ko: Copy = {
         description: '유니폼 구조체 하나의 바이트 레이아웃을 리플렉션 탭이 필드마다 펼쳐 보여 줍니다.',
       },
     },
+    emit: {
+      title: '생성 옵션',
+      optimization: 'WGSL 최적화',
+      levels: { O0: 'O0 (패스 없음)', O1: 'O1 (값 보존)', O2: 'O2 (기본)' },
+      parens: '괄호',
+      minify: '최소화',
+      precision: `${glsl} float 정밀도`,
+      levelNote: 'O0과 O1에서는 컴파일러가 레벨만 받아 WGSL을 생성하므로, 괄호와 최소화는 GLSL 탭에만 적용됩니다.',
+    },
     tabs: {
       wgsl: 'WGSL',
       glslVertex: `${glsl} 버텍스`,
@@ -335,7 +344,6 @@ export const ko: Copy = {
       offset: '오프셋',
       size: '크기',
       features: '필요한 기능',
-      bytes: (n: number) => `${n} B`,
       none: '없음.',
     },
     runner: {

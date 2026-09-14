@@ -6,10 +6,16 @@
 import {
   TypeshadeLanguageService,
   compile,
+  emitGlslStages,
+  emitModule,
+  emitModuleAt,
   reflect,
   type BindGroup,
+  type EmitOptions,
   type EntryInfo,
   type EntryIoField,
+  type GlslEmitOptions,
+  type OptLevel,
   type Reflection,
   type StructLayout,
   type TypeshadeCompletionItem,
@@ -17,6 +23,8 @@ import {
   type TypeshadePosition,
   type TypeshadeRange,
 } from '../../vendor/shader-dsl/src/index.ts';
+// The ship-time plugins live on their own subpath, the one a host imports for a release build.
+import { minify } from '../../vendor/shader-dsl/src/emit-prod.ts';
 
 /** The words the component wrote into `data-copy`; they live in src/i18n. */
 interface PlaygroundCopy {
@@ -32,8 +40,17 @@ interface PlaygroundCopy {
   readonly copied: string;
   readonly share: string;
   readonly shared: string;
-  readonly empty: { readonly pending: string; readonly glsl: string };
+  readonly empty: { readonly pending: string; readonly glsl: string; };
   readonly reflection: Record<string, string>;
+  readonly emit: {
+    readonly title: string;
+    readonly optimization: string;
+    readonly levels: Record<OptLevel, string>;
+    readonly parens: string;
+    readonly minify: string;
+    readonly precision: string;
+    readonly levelNote: string;
+  };
   readonly runner: {
     readonly entry: string;
     readonly args: string;
@@ -74,6 +91,41 @@ interface DiagnosticRow {
   readonly category: TypeshadeDiagnostic['category'];
   readonly start: TypeshadePosition;
 }
+
+/** What the options bar is set to. Every field is a value the compiler's emit API takes. */
+interface EmitChoice {
+  readonly level: OptLevel;
+  readonly parens: 'full' | 'minimal';
+  readonly minify: boolean;
+  readonly floatPrecision: 'highp' | 'mediump';
+}
+
+/** The options both backends share. `minify` is a plugin, so it rides in `plugins`. */
+const sharedEmitOptions = (choice: EmitChoice): EmitOptions => ({
+  parens: choice.parens,
+  ...(choice.minify ? { plugins: [minify()] } : {}),
+});
+
+/** WGSL at the chosen level. `emitModuleAt` takes a level and no other options, and
+ *  `emitModule` takes the options at O2, so O0 and O1 reach the compiler with the level
+ *  alone. The note under the options bar says so where a reader can see it. */
+const emitWgsl = (module: Parameters<typeof emitModule>[0], choice: EmitChoice): string =>
+  choice.level === 'O2' ? emitModule(module, sharedEmitOptions(choice)) : emitModuleAt(module, choice.level);
+
+/** Both GLSL stages. The GLSL backend fixes its own optimizer at a fixpoint, so it takes the
+ *  options and no level. */
+const emitGlsl = (
+  module: Parameters<typeof emitGlslStages>[0],
+  choice: EmitChoice,
+): { vertex: string; fragment: string; } | undefined => {
+  const options: GlslEmitOptions = { ...sharedEmitOptions(choice), floatPrecision: choice.floatPrecision };
+  try {
+    return emitGlslStages(module, options);
+  } catch {
+    // A module the GLSL backend cannot express at all, a uniform scalar among them.
+    return undefined;
+  }
+};
 
 /** The five output tabs, by the id the markup gives them. */
 type PanelId = 'wgsl' | 'glsl-vertex' | 'glsl-fragment' | 'reflection' | 'run';
@@ -405,6 +457,11 @@ function mount(root: HTMLElement): void {
   const entryPicker = root.querySelector('[data-entry]');
   const argsHost = root.querySelector('[data-args]');
   const runEntry = root.querySelector('[data-run-entry]');
+  const levelPicker = root.querySelector('[data-opt-level]');
+  const parensPicker = root.querySelector('[data-opt-parens]');
+  const precisionPicker = root.querySelector('[data-opt-precision]');
+  const minifyToggle = root.querySelector('[data-opt-minify]');
+  const levelNote = root.querySelector('[data-level-note]');
   if (
     !(editorHost instanceof HTMLElement) ||
     !(diagnosticsList instanceof HTMLElement) ||
@@ -416,7 +473,12 @@ function mount(root: HTMLElement): void {
     !(exampleNote instanceof HTMLElement) ||
     !(entryPicker instanceof HTMLSelectElement) ||
     !(argsHost instanceof HTMLElement) ||
-    !(runEntry instanceof HTMLButtonElement)
+    !(runEntry instanceof HTMLButtonElement) ||
+    !(levelPicker instanceof HTMLSelectElement) ||
+    !(parensPicker instanceof HTMLSelectElement) ||
+    !(precisionPicker instanceof HTMLSelectElement) ||
+    !(minifyToggle instanceof HTMLInputElement) ||
+    !(levelNote instanceof HTMLElement)
   ) {
     return;
   }
@@ -447,6 +509,20 @@ function mount(root: HTMLElement): void {
   /** The compiled module's oracle, while the source compiles clean. */
   let evaluate: ((name: string, args?: readonly unknown[]) => unknown) | undefined;
   let entries: readonly EntryInfo[] = [];
+
+  const sizes = new Map<PanelId, HTMLElement>();
+  for (const id of PANEL_IDS) {
+    const node = root.querySelector(`[data-size="${id}"]`);
+    if (node instanceof HTMLElement) sizes.set(id, node);
+  }
+
+  /** What the options bar is set to right now. */
+  const currentChoice = (): EmitChoice => ({
+    level: levelPicker.value as OptLevel,
+    parens: parensPicker.value === 'minimal' ? 'minimal' : 'full',
+    minify: minifyToggle.checked,
+    floatPrecision: precisionPicker.value === 'mediump' ? 'mediump' : 'highp',
+  });
 
   // ── tabs ────────────────────────────────────────────────────────────────────────────────
   const tabs = [...root.querySelectorAll('[role="tab"]')].filter((node): node is HTMLButtonElement => node instanceof HTMLButtonElement);
@@ -484,6 +560,8 @@ function mount(root: HTMLElement): void {
     if (!body || !empty) return;
     shown.set(id, text);
     empty.textContent = '';
+    const size = sizes.get(id);
+    if (size) size.textContent = `${text.length} B`;
     const token = (painting.get(id) ?? 0) + 1;
     painting.set(id, token);
     body.textContent = text;
@@ -502,6 +580,8 @@ function mount(root: HTMLElement): void {
     const body = bodies.get(id);
     const empty = empties.get(id);
     shown.delete(id);
+    const size = sizes.get(id);
+    if (size) size.textContent = '';
     if (body) body.textContent = '';
     if (empty) empty.textContent = message;
   };
@@ -559,6 +639,14 @@ function mount(root: HTMLElement): void {
       paintEmpty('run', `${copy.runner.failed} ${error instanceof Error ? error.message : String(error)}`);
     }
   };
+
+  const applyOptions = (): void => {
+    levelNote.hidden = levelPicker.value === 'O2';
+    render();
+  };
+  for (const control of [levelPicker, parensPicker, precisionPicker, minifyToggle]) {
+    control.addEventListener('change', applyOptions);
+  }
 
   entryPicker.addEventListener('change', fillArguments);
   runEntry.addEventListener('click', runSelectedEntry);
@@ -631,13 +719,18 @@ function mount(root: HTMLElement): void {
 
     try {
       const result = compile(source);
+      const choice = currentChoice();
       status.textContent = copy.ready;
       root.classList.add('has-output');
 
-      paintCode('wgsl', result.wgsl ?? '', WGSL_LANGUAGE);
-      if (result.glsl) {
-        paintCode('glsl-vertex', result.glsl.vertex, GLSL_LANGUAGE);
-        paintCode('glsl-fragment', result.glsl.fragment, GLSL_LANGUAGE);
+      // The panes are emitted here instead of read off `compile()`, so the options bar is
+      // the one thing that decides what they hold. At its defaults the two agree:
+      // `compile().wgsl` is `emitModule(module)`, which is `emitModuleAt(module, 'O2')`.
+      paintCode('wgsl', emitWgsl(result.module, choice), WGSL_LANGUAGE);
+      const glsl = emitGlsl(result.module, choice);
+      if (glsl) {
+        paintCode('glsl-vertex', glsl.vertex, GLSL_LANGUAGE);
+        paintCode('glsl-fragment', glsl.fragment, GLSL_LANGUAGE);
       } else {
         paintEmpty('glsl-vertex', copy.empty.glsl);
         paintEmpty('glsl-fragment', copy.empty.glsl);
@@ -850,6 +943,7 @@ function mount(root: HTMLElement): void {
       });
       run.addEventListener('click', render);
       selectTab('wgsl');
+      levelNote.hidden = levelPicker.value === 'O2';
       render();
     })
     .catch((error) => {
