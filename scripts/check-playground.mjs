@@ -17,13 +17,19 @@
 //   9. the emit options reach the panes: the level, minify, parens and the GLSL precision
 //  10. dark mode reaches the editor: its background is dark
 //  11. the example picker replaces the source
-//  12. a vector times a scalar compiles: nothing is reported and the broadcast reaches the WGSL
-//  13. a vector times a string still draws TypeScript's own arithmetic diagnostic
-//  14. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
-//  15. the compute example is clean, and the store into its writable array reaches the WGSL
-//  16. hover over the entry point's parameter answers with its TypeShade type
-//  17. `vec` offers vec4 in the completion list
-//  18. the URL fragment carries the edited source and the options into a second tab
+//  12. raising the resolution changes the grid the fragment entry runs over and leaves the
+//      box it is drawn in the size it was
+//  13. changing the resolution under a running draw retires it: the result reported is the
+//      new grid's, and the old draw's never lands
+//  14. the source and the result columns are one height, and the canvas is on the first
+//      screen beside the code, not below the reflection
+//  15. a vector times a scalar compiles: nothing is reported and the broadcast reaches the WGSL
+//  16. a vector times a string still draws TypeScript's own arithmetic diagnostic
+//  17. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
+//  18. the compute example is clean, and the store into its writable array reaches the WGSL
+//  19. hover over the entry point's parameter answers with its TypeShade type
+//  20. `vec` offers vec4 in the completion list
+//  21. the URL fragment carries the edited source and the options into a second tab
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -244,9 +250,10 @@ async function checkRoute(browser, origin, route) {
 
       // And the canvas: the vertex entry for three corners, then one fragment call per pixel
       // the triangle covers, with every varying interpolated from what the vertex entry
-      // returned. A triangle covers some of the canvas and not all of it.
-      await page.click('[data-draw-cpu]')
-      await page.waitForTimeout(1_500)
+      // returned. A triangle covers some of the canvas and not all of it. The canvas follows
+      // the source, so choosing the example is what drew it; a draw deletes the count when it
+      // starts and writes it when it ends, so a count present means this draw is done.
+      await page.waitForFunction(() => document.querySelector('[data-canvas-note]').dataset.px !== undefined, null, { timeout: 15_000 })
       const drawn = await page.evaluate(() => {
         const node = document.querySelector('[data-canvas]')
         const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
@@ -278,6 +285,84 @@ async function checkRoute(browser, origin, route) {
         problems.push(`the CPU canvas is not interpolating: ${drawn.colours} colour(s) across ${drawn.opaque} pixels`)
       }
       console.log(`  canvas: ${drawn.opaque} of ${drawn.total} px, ${drawn.colours} colours, ${canvasNote.workers} worker(s)`)
+
+      // ── the grid moves, the box stays ────────────────────────────────────────────────────
+      // Raising the resolution buys pixels and not room. The canvas element's width and
+      // height are its backing store; the size it is shown at comes from the stylesheet, so
+      // the pane does not resize under a reader who is changing the control.
+      const canvasSize = () =>
+        page.evaluate(() => {
+          const node = document.querySelector('[data-canvas]')
+          return { box: Math.round(node.getBoundingClientRect().width), grid: node.width }
+        })
+      const smallGrid = await canvasSize()
+      await page.selectOption('[data-resolution]', '768')
+      await page.waitForTimeout(250)
+      const bigGrid = await canvasSize()
+      if (bigGrid.grid !== 768) problems.push(`choosing 768 left the canvas grid at ${bigGrid.grid}`)
+      if (smallGrid.grid === bigGrid.grid) problems.push('the resolution picker did not change the grid')
+      if (smallGrid.box !== bigGrid.box) {
+        problems.push(
+          `the canvas box moved with the resolution: ${smallGrid.box}px at ${smallGrid.grid}, ${bigGrid.box}px at ${bigGrid.grid}`,
+        )
+      }
+      if (bigGrid.box === 0) problems.push('the canvas is not being shown at any size')
+      console.log(`  resolution: grid ${smallGrid.grid} to ${bigGrid.grid}, box held at ${bigGrid.box} px`)
+
+      // ── a draw retired by the control that started it ────────────────────────────────────
+      // A draw is planned against one grid, and at the larger sizes it runs for seconds, so
+      // changing the resolution while one is running is a normal thing to do and not an edge
+      // case. The tiles in flight carry the old grid's coordinates; if they are not dropped
+      // they scatter the old picture over the new canvas, and if the draw never settles the
+      // button never comes back. This starts one, moves the control under it, and checks that
+      // the page lands somewhere a reader can act from.
+      // Choosing a size starts a draw at it. 1536 is 36 tiles and most of a second, so the
+      // switch to 192 lands while it is well under way; the 192 draw then runs and reports.
+      await page.selectOption('[data-resolution]', '1536')
+      await page.waitForTimeout(150)
+      await page.selectOption('[data-resolution]', '192')
+      await page.waitForFunction(() => document.querySelector('[data-canvas-note]').dataset.px !== undefined, null, { timeout: 15_000 })
+      // The 192 count is in. Now the wait that finds the bug: long enough for the 1536 draw
+      // to have finished if it was never retired, in which case its settle overwrites the
+      // count with its own 753992 and its tiles land on a canvas a quarter of their size.
+      // Retired, it stays quiet, and the count is the 192 draw's and nothing else's.
+      await page.waitForTimeout(3_000)
+      const retired = await page.evaluate(() => {
+        const node = document.querySelector('[data-canvas]')
+        const note = document.querySelector('[data-canvas-note]')
+        return { grid: node.width, reported: Number(note.dataset.px), button: document.querySelector('[data-draw-cpu]').disabled ? 'disabled' : 'enabled' }
+      })
+      if (retired.grid !== 192) problems.push(`after retiring a draw the grid is ${retired.grid} and not the 192 that was chosen`)
+      if (retired.reported !== drawn.opaque) {
+        problems.push(`after switching from 1536 to 192 the count is ${retired.reported}, not the ${drawn.opaque} a 192 draw covers: the retired draw reported over it`)
+      }
+      if (retired.button !== 'enabled') problems.push('the draw button is not available after a retired draw')
+      console.log(`  retired mid-draw: grid ${retired.grid}, reported ${retired.reported} px, button ${retired.button}`)
+      await page.waitForTimeout(AFTER_EDIT)
+
+      // ── the shape of the page ────────────────────────────────────────────────────────────
+      // The source and the result are the two things a reader looks between, so the columns
+      // that hold them end on the same line, and the canvas is beside the code on the first
+      // screen and not under the reflection two screens down. Measured in document space, so
+      // it does not matter what the clicks above scrolled to.
+      const shape = await page.evaluate(() => {
+        const box = (selector) => {
+          const rect = document.querySelector(selector).getBoundingClientRect()
+          return { top: Math.round(rect.top + window.scrollY), bottom: Math.round(rect.bottom + window.scrollY), height: Math.round(rect.height) }
+        }
+        return { source: box('.source-pane'), result: box('.result-column'), canvas: box('[data-canvas]'), editor: box('[data-editor]'), viewport: window.innerHeight }
+      })
+      if (Math.abs(shape.source.height - shape.result.height) > 1) {
+        problems.push(`the source column is ${shape.source.height}px tall and the result column ${shape.result.height}px`)
+      }
+      if (shape.canvas.bottom > shape.viewport) {
+        problems.push(`the canvas ends at ${shape.canvas.bottom}px, below the first ${shape.viewport}px screen`)
+      }
+      if (shape.canvas.top > shape.editor.top + 40) {
+        problems.push(`the canvas starts at ${shape.canvas.top}px, well below the editor at ${shape.editor.top}px: it is not beside the code`)
+      }
+      console.log(`  shape: columns ${shape.source.height} and ${shape.result.height} px, canvas ends at ${shape.canvas.bottom} of ${shape.viewport}`)
+
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)
 

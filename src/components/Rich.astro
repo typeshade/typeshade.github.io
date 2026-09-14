@@ -35,7 +35,7 @@ type Part =
   | { kind: 'link'; value: string; href: string; code: boolean }
 
 const parts: Part[] = []
-const re = /\[([^\]]+)\]\(([A-Za-z]+)\)|`([^`]+)`/g
+const re = /\[([^\]]+)\]\(([A-Za-z][A-Za-z0-9]*)\)|`([^`]+)`/g
 let last = 0
 for (const m of text.matchAll(re)) {
   if (m.index! > last) parts.push({ kind: 'text', value: text.slice(last, m.index) })
@@ -53,6 +53,15 @@ for (const m of text.matchAll(re)) {
   last = m.index! + m[0].length
 }
 if (last < text.length) parts.push({ kind: 'text', value: text.slice(last) })
+
+// A link whose key the pattern above does not accept would reach the page as its own
+// square brackets, and nothing else would notice. Count what the copy wrote against what
+// this file turned into a link, and stop the build when they disagree.
+const written = (text.match(/\[[^\]]+\]\([^)]+\)/g) ?? []).length
+const rendered = parts.filter((p) => p.kind === 'link').length
+if (written !== rendered) {
+  throw new Error(`[Rich] ${written} link(s) written, ${rendered} rendered; a key may hold a character the pattern refuses: ${text.slice(0, 80)}`)
+}
 ---
 
 {

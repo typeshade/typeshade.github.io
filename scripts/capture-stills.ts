@@ -29,7 +29,7 @@ try {
   })
   const page = await context.newPage()
   let current = ''
-  for (const { id, example, page: route, forceWebGl2, backend: expected } of STILLS) {
+  for (const { id, example, live, page: route, forceWebGl2, backend: expected } of STILLS) {
     if (route !== current) {
       await page.goto(`${server.url}${route}`, { waitUntil: 'networkidle' })
       await page.evaluate(() => document.fonts.ready)
@@ -43,7 +43,11 @@ try {
       current = route
     }
     const forced = forceWebGl2 ? '[data-force-webgl2]' : ':not([data-force-webgl2])'
-    const frame = page.locator(`[data-shader-canvas][data-example="${example}"]${forced}`).first()
+    // A live example is one canvas inside its own figure; a registry example is a mount that
+    // may appear twice on a page, once per backend.
+    const frame = live
+      ? page.locator(`[data-live-shader][data-live-id="${id}"] .figure-frame`).first()
+      : page.locator(`[data-shader-canvas][data-example="${example}"]${forced}`).first()
     const backend = await frame.locator('canvas').getAttribute('data-backend')
     if (backend === 'none') throw new Error(`[stills] '${id}' did not draw on any backend`)
     if (expected && backend !== expected) {

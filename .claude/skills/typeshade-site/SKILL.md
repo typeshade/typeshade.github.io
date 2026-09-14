@@ -105,6 +105,47 @@ link targets, the heading count, and the Korean rules above. Translate meaning f
 Nothing about the reference's body is translated; a Korean reference page is Korean chrome
 around the compiler's own JSDoc.
 
+## Live examples
+
+A guide or concept page can carry a shader the reader edits, the way The Book of Shaders does:
+`<LiveShader>` (`src/components/LiveShader.astro`). DESIGN.md "Live examples" is the contract;
+this is the working procedure.
+
+1. Write the sample in the page component, beside the other code samples. Code is not copy,
+   and neither is `file`, the name over the block. Write a whole file, short enough to read at
+   a glance: a `Uniforms` class, one `declare const u: uniform<Uniforms>`, and one entry,
+   `@fragment export function main(@location(0) uv: vec2): vec4`. Leave out the `@vertex`
+   entry and the component supplies the fullscreen triangle behind it. `uv` is 0 to 1 with the
+   origin at the bottom left on both backends; do not read the fragment position builtin,
+   whose y axis points the other way on the two targets.
+2. Name the uniform fields the runtime fills as `time` (`f32`), `resolution` (`vec2`) and
+   `mouse` (`vec2`, 0 to 1 from the bottom left). They get no control, and a sample that does
+   not need one leaves it out. Give the sample two or three fields of its own; more than that
+   turns the page into a control panel. A reader who came for `sin` should see the line with
+   `sin` in it without scrolling.
+3. Give each of those fields a `controls` entry with a range, a step, a default and a `label`
+   from the dictionary. A prop for a field the module has no uniform for fails the build, and
+   so does a field type no control covers. An `f32` is a slider, an `i32` or `u32` a stepper
+   (`toggle: true` for a checkbox), a `vec2` a pad, a `vec3` or `vec4` a colour picker with
+   `color: true`. There is no `bool` control: WGSL forbids `bool` in a uniform block.
+4. Put `title` and `caption` in both dictionaries, and add the example's heading to the page's
+   `headings` array so the outline on the right lists it.
+5. Add `{ id: '<id>', live: true, page: '<route>' }` to `STILLS` in `scripts/artifacts.mjs`,
+   then `bun run capture:stills` and commit the `.webp` and its `.sha256`. The still is what a
+   browser with no WebGPU and no WebGL2 shows, and the build refuses a still whose hash moved.
+6. `bun run build`, then `bun run check:live`. It opens the page on WebGPU and again with
+   `?forcegl2=1`, because the WebGL2 half is a second emitted program and a page that only
+   ever ran on WebGPU can ship one that does not link. The check needs a browser:
+   `PLAYWRIGHT_CHROMIUM` points at one outside the project, and `LIVE_GPU_OPTIONAL=1` lets a
+   runner with no software rasteriser pass on the checks that need no frame.
+7. Screenshot the page at 390 and 1440 in both languages and both themes, with one control
+   moved. A Korean control label that wraps to a second line is a label to shorten. Look at
+   the canvas too: a frame that is mostly black reads as a broken canvas, so mix two colours
+   instead of fading one to nothing.
+
+Leave `src/lib/live-shader-contract.ts` alone unless the contract itself is changing: the
+Playground's live canvas reads it too, and DESIGN.md restates it.
+
 ## Length budget
 
 A translated label may render no wider than about 1.35 times the English label, so a
@@ -167,3 +208,5 @@ Reference and guide data:
 Checks and tools:
 - `scripts/check-style.mjs`, `scripts/check-copy.ts`, `scripts/check-i18n.mjs`, `scripts/check-seo.mjs`,
   `scripts/openseo-audit.mts`.
+- `scripts/check-playground.mjs` and `scripts/check-live.mjs`: the two pages whose worth is that
+  they run, opened in Chromium against `dist/`.

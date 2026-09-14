@@ -3,6 +3,7 @@
 // the code samples are not copy, so they stay here.
 import Docs from '../../layouts/Docs.astro'
 import TypeShadeCode from '../TypeShadeCode.astro'
+import ConceptDoc from '../ConceptDoc.astro'
 import Rich from '../Rich.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
@@ -27,7 +28,7 @@ const headings = [
   <TypeShadeCode code={`class VsIn {\n  @location(0) position: vec3\n  @location(1) @interpolate("linear") uv: vec2\n}`} />
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <h2 id="mapping">{content.mapping}</h2>
-  <table><thead><tr><th>{content.mappingRows[0][0]}</th><th>{content.mappingRows[0][1]}</th></tr></thead><tbody>{content.mappingRows.slice(1).map((row) => <tr><td data-label={content.mappingRows[0][0]}>{row[0]}</td><td data-label={content.mappingRows[0][1]}>{row[1]}</td></tr>)}</tbody></table>
+  <ConceptDoc locale={locale} rows={content.mappingRows.slice(1)} columns={content.mappingRows[0]} />
   <h2 id="example">{content.example}</h2><p>{content.exampleP}</p>
   <TypeShadeCode code={`class VsIn {\n  @location(0) position: vec3\n}\n\n@vertex\nexport function vs(vin: VsIn): vec4 {\n  return vec4(vin.position, 1)\n}`} />
   <p><a href={localePath(locale, links.languageFunctions.href)}>{content.next}</a></p>
