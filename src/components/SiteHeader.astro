@@ -14,14 +14,14 @@ import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts'
 interface Props {
   locale: Locale
   path: string
+  /** Per-locale override for the language switcher, already a real href (the 404 page). */
+  switchTarget?: Partial<Record<Locale, string>>
 }
-const { locale, path } = Astro.props
+const { locale, path, switchTarget } = Astro.props
 const t = copyFor(locale)
-// The 404 exists in one language, so its language links go to the other front pages.
-const target = /\.[a-z0-9]+$/i.test(path) ? '/' : path
 // The menu lists every language, the current one first and not as a link, the way VitePress
 // and the MDN language menu mark the page you are on.
-const languages = locales.map((l) => ({ locale: l, href: localePath(l, target), label: copyFor(l).name, current: l === locale }))
+const languages = locales.map((l) => ({ locale: l, href: switchTarget?.[l] ?? localePath(l, path), label: copyFor(l).name, current: l === locale }))
 const others = languages.filter((l) => !l.current)
 const ordered = [...languages.filter((l) => l.current), ...others]
 ---

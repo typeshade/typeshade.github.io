@@ -1,5 +1,7 @@
 ---
 import Docs from '../../../layouts/Docs.astro'
+import TypeShadeCode from '../../../components/TypeShadeCode.astro'
+import Rich from '../../../components/Rich.astro'
 import { type Locale } from '../../../i18n/index.ts'
 
 interface Props { locale: Locale }
@@ -24,16 +26,16 @@ const content = ko ? {
   invalid: '5. Common mistakes', invalidItems: ['Do not declare `declare const x: f32`; a resource needs a space such as `uniform<T>` or `storage<T>`.', 'Do not use `declare let x: uniform<T>`.', 'Do not assign to a read-only resource.', 'Do not model a resource as a class or bind-group instance.'],
   next: 'Next: Shader stages', href: '/guide/language/stages/'
 }
-const headings = [['mapping',content.mapping],['decl',content.decl],['access',content.access],['slots',content.slots],['invalid',content.invalid]].map(([slug,text]) => ({depth:2,slug,text}))
+const headings = [['mapping',content.mapping],['decl',content.decl],['access',content.access],['slots',content.slots],['invalid',content.invalid]].map(([slug,text]) => ({depth:2,slug,text:text.replace(/`/g,'')}))
 ---
-<Docs locale={locale} path="/guide/language/resources/" title={content.title} description={content.description} headings={headings}>
-  <h1>{content.h1}</h1><p>{content.intro}</p>
-  <h2 id="mapping">{content.mapping}</h2><p>{content.mappingP}</p>
-  <pre><code>{`declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>`}</code></pre>
-  <h2 id="decl">{content.decl}</h2><p>{content.declP}</p>
-  <h2 id="access">{content.access}</h2><p>{content.accessP}</p>
-  <div class="table-scroll"><table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td><code>declare const x: uniform&lt;T&gt;</code></td><td>uniform</td><td>read</td></tr><tr><td><code>declare const x: storage&lt;T&gt;</code></td><td>storage</td><td>read</td></tr><tr><td><code>declare let x: storage&lt;T&gt;</code></td><td>storage</td><td>read_write</td></tr></tbody></table></div>
+<Docs locale={locale} path="/guide/language/resources/" title={content.title} description={content.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/pages/guide/language/resources.astro">
+  <h1>{content.h1}</h1><p><Rich text={content.intro} locale={locale} /></p>
+  <h2 id="mapping">{content.mapping}</h2><p><Rich text={content.mappingP} locale={locale} /></p>
+  <TypeShadeCode code={`declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>`} />
+  <h2 id="decl"><Rich text={content.decl} locale={locale} /></h2><p>{content.declP}</p>
+  <h2 id="access">{content.access}</h2><p><Rich text={content.accessP} locale={locale} /></p>
+  <table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td data-label="Declaration"><code>declare const x: uniform&lt;T&gt;</code></td><td data-label="Space">uniform</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare const x: storage&lt;T&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare let x: storage&lt;T&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read_write</td></tr></tbody></table>
   <h2 id="slots">{content.slots}</h2><p>{content.slotsP}</p>
-  <h2 id="invalid">{content.invalid}</h2><ul>{content.invalidItems.map((item) => <li>{item}</li>)}</ul>
+  <h2 id="invalid">{content.invalid}</h2><ul>{content.invalidItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <p><a href={content.href}>{content.next}</a></p>
 </Docs>

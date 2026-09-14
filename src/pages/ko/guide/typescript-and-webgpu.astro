@@ -1,4 +1,5 @@
 ---
+import TypeShadeCode from '../../../components/TypeShadeCode.astro'
 import Base from '../../../layouts/Base.astro'
 import { localePath } from '../../../i18n/index.ts'
 import { links } from '../../../lib/links.ts'
@@ -9,12 +10,12 @@ import { links } from '../../../lib/links.ts'
     <p class="eyebrow">언어 개념 연결</p>
     <h1>TypeScript와 WebGPU 개념 연결</h1>
     <p class="lead">TypeShade는 TypeScript 개발 경험에서 출발해 GPU 전용 의미론을 더합니다. 이미 아는 개념을 셰이더를 작성하는 데 필요한 개념으로 연결해 봅니다.</p>
-    <section><h2>TypeScript 파일에서 시작합니다</h2><pre><code>&quot;use typeshade&quot;
+    <section><h2>TypeScript 파일에서 시작합니다</h2><TypeShadeCode code={`"use typeshade"
 
 @vertex
-export function main(): vec4 &#123;
+export function main(): vec4 {
   return vec4(0., 0., 0., 1.)
-&#125;</code></pre><p><code>&quot;use typeshade&quot;</code>는 파일을 TypeShade 컴파일 단위로 선택합니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.</p></section>
+}`} /><p><code>&quot;use typeshade&quot;</code>는 파일을 TypeShade 컴파일 단위로 선택합니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.</p></section>
     <section><h2>머릿속 모델</h2><div class="grid">
       <article><h3>TypeScript 타입</h3><p>타입 주석은 값의 형태를 설명하고 잘못된 프로그램을 도구가 발견하도록 합니다.</p><strong>TypeShade가 더하는 것</strong><p><code>f32</code>, <code>u32</code>, <code>vec2</code>, <code>vec3</code>, <code>vec4</code> 같은 GPU 값 타입과 셰이더 연산 규칙입니다.</p></article>
       <article><h3>함수</h3><p>함수는 매개변수, 반환 타입, 본문을 가집니다.</p><strong>TypeShade가 더하는 것</strong><p><code>@vertex</code>, <code>@fragment</code> 같은 스테이지 데코레이터로 진입점을 표시합니다.</p></article>

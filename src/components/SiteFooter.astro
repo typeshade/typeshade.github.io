@@ -9,8 +9,10 @@ import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts'
 interface Props {
   locale: Locale
   path: string
+  /** Per-locale override for the language switcher, already a real href (the 404 page). */
+  switchTarget?: Partial<Record<Locale, string>>
 }
-const { locale, path } = Astro.props
+const { locale, path, switchTarget } = Astro.props
 const t = copyFor(locale)
 const columns = [
   {
@@ -34,7 +36,7 @@ const columns = [
     h: t.footer.languages,
     items: locales.map((l) => ({
       label: copyFor(l).name,
-      href: localePath(l, /\.[a-z0-9]+$/i.test(path) ? '/' : path),
+      href: switchTarget?.[l] ?? localePath(l, path),
       locale: l,
     })),
   },

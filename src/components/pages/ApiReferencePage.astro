@@ -141,14 +141,17 @@ const sections = [
   { id: 'see-also', label: a.seeAlso, show: entry.seeAlso.length > 0 },
   { id: 'source', label: a.source, show: true },
 ].filter((s) => s.show)
+// The first example is titled 'Example', later ones 'Example 2', 'Example 3'. The title is
+// built here from docs.api.example, since the ApiEntry data itself carries no locale.
+const exampleTitle = (i: number): string => (i === 0 ? a.example : `${a.example} ${i + 1}`)
 // The outline follows the page: each example sits under the Examples heading it belongs to.
 const headings: Heading[] = sections.flatMap((s) => [
   { depth: 2, slug: s.id, text: s.label },
-  ...(s.id === 'examples' ? entry.examples.map((e) => ({ depth: 3, slug: `example-${slugify(e.title)}`, text: e.title })) : []),
+  ...(s.id === 'examples' ? entry.examples.map((_, i) => ({ depth: 3, slug: `example-${slugify(exampleTitle(i))}`, text: exampleTitle(i) })) : []),
 ])
 // A guide section is named the way the sidebar names it, so a Korean page reads Korean here.
 const guideLabel = (link: { label: string; href: string }): string => {
-  const id = /\/guide\/authoring\/([^/]+)\//.exec(link.href)?.[1]
+  const id = /\/guide\/internals\/([^/]+)\//.exec(link.href)?.[1]
   if (!id) return t.docs.authoringGuide
   return t.guide.sections[id]?.title ?? link.label
 }
@@ -245,7 +248,7 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
       <h2 id="examples" lang={locale}>{a.examples}</h2>
       {entry.examples.map((e, i) => (
         <section>
-          <h3 id={`example-${slugify(e.title)}`}>{e.title}</h3>
+          <h3 id={`example-${slugify(exampleTitle(i))}`}>{exampleTitle(i)}</h3>
           {html.examples[i] && <Fragment set:html={html.examples[i]} />}
           <Code code={e.code} lang={e.lang ?? 'ts'} locale={locale} />
         </section>

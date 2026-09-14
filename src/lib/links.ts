@@ -119,9 +119,17 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
   const d = copyFor(locale).docs
   const pages = docsPages(locale)
   const labels = locale === 'ko'
-    ? { learn: '학습', language: '언어', project: '프로젝트' }
-    : { learn: 'Learn', language: 'Language', project: 'Project' }
-  const languagePages: SidebarItem[] = [pages[2]!, { label: locale === 'ko' ? '타입' : 'Types', href: localePath(locale, links.languageTypes.href), depth: 1 }, { label: locale === 'ko' ? '함수' : 'Functions', href: localePath(locale, links.languageFunctions.href), depth: 1 }, { label: locale === 'ko' ? '제어 흐름' : 'Control flow', href: localePath(locale, links.languageControlFlow.href), depth: 1 }, { label: locale === 'ko' ? 'GPU 타입' : 'GPU types', href: localePath(locale, links.languageGpuTypes.href), depth: 1 }, { label: locale === 'ko' ? '리소스' : 'Resources', href: localePath(locale, links.languageResources.href), depth: 1 }, { label: locale === 'ko' ? '셰이더 스테이지' : 'Shader stages', href: localePath(locale, links.languageStages.href), depth: 1 }, ...sections]
+    ? { learn: '학습', language: '언어', project: '프로젝트', internals: '컴파일러 내부' }
+    : { learn: 'Learn', language: 'Language', project: 'Project', internals: 'Internals' }
+  const languagePages: SidebarItem[] = [
+    pages[2]!,
+    { label: locale === 'ko' ? '타입' : 'Types', href: localePath(locale, links.languageTypes.href), depth: 1 },
+    { label: locale === 'ko' ? '함수' : 'Functions', href: localePath(locale, links.languageFunctions.href), depth: 1 },
+    { label: locale === 'ko' ? '제어 흐름' : 'Control flow', href: localePath(locale, links.languageControlFlow.href), depth: 1 },
+    { label: locale === 'ko' ? 'GPU 타입' : 'GPU types', href: localePath(locale, links.languageGpuTypes.href), depth: 1 },
+    { label: locale === 'ko' ? '리소스' : 'Resources', href: localePath(locale, links.languageResources.href), depth: 1 },
+    { label: locale === 'ko' ? '셰이더 스테이지' : 'Shader stages', href: localePath(locale, links.languageStages.href), depth: 1 },
+  ]
   const reference: SidebarItem[] = [{ label: d.api.h1, href: localePath(locale, links.api.href) }]
   for (const { category, members } of apiCategories()) {
     reference.push({ label: apiCategoryCopy(locale, category.slug).name, href: localePath(locale, `/api/${category.slug}/`) })
@@ -131,6 +139,7 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
   return [
     { title: labels.learn, items: [...pages.slice(0, 2), { label: locale === 'ko' ? 'TypeScript와 WebGPU' : 'TypeScript & WebGPU', href: localePath(locale, links.concepts.href) }, { label: 'Playground', href: localePath(locale, links.playground.href) }] },
     { title: labels.language, items: languagePages },
+    { title: labels.internals, items: sections },
     { title: labels.project, items: pages.slice(3) },
     { title: d.api.reference, items: reference },
   ]

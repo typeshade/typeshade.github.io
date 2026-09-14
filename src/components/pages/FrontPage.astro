@@ -2,6 +2,7 @@
 import { Code } from 'astro-expressive-code/components'
 import Base from '../../layouts/Base.astro'
 import CodeFrame from '../CodeFrame.astro'
+import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts'
@@ -27,6 +28,8 @@ const content = locale === 'ko'
       examples: '예제 보기',
       flowH: 'TypeShade는 이렇게 동작합니다',
       flowP: 'TypeScript 파일에 `"use typeshade"`를 선언하면 일반 애플리케이션 코드와 TypeShade 언어의 경계가 생깁니다.',
+      flowLabels: ['TypeScript 저작', 'TypeShade 의미론', '공유 IR', 'WGSL / GLSL ES 3.00'],
+      flowAriaLabel: 'TypeShade 컴파일 흐름',
       codeH: '첫 번째 TypeShade 프로그램',
       codeP: '작성하는 코드는 TypeScript처럼 보이지만, 컴파일러는 TypeShade의 타입과 GPU 의미론을 적용해 호스트가 사용할 셰이더를 생성합니다.',
       conceptsH: 'TypeScript를 알면 바로 이어집니다',
@@ -47,7 +50,7 @@ const content = locale === 'ko'
       eyebrow: 'A shader language built around the TypeScript experience',
       title: 'TypeShade',
       subtitle: 'Start with `"use typeshade"`.',
-      tagline: 'Keep the TypeScript authoring experience—types, functions, modules and editor feedback—while writing with TypeShade GPU types and shader semantics. Emit WGSL or GLSL ES 3.00 from one source.',
+      tagline: 'Keep the TypeScript authoring experience: types, functions, modules and editor feedback. Write with TypeShade GPU types and shader semantics, and emit WGSL or GLSL ES 3.00 from one source.',
       getStarted: 'Use TypeShade',
       playground: 'Write in the Playground',
       learn: 'Why TypeShade',
@@ -55,6 +58,8 @@ const content = locale === 'ko'
       examples: 'Explore examples',
       flowH: 'From TypeScript to a shader',
       flowP: 'A file-level `"use typeshade"` directive creates the boundary between ordinary application code and the TypeShade language.',
+      flowLabels: ['TypeScript authoring', 'TypeShade semantics', 'shared IR', 'WGSL / GLSL ES 3.00'],
+      flowAriaLabel: 'TypeShade compilation flow',
       codeH: 'Your first TypeShade program',
       codeP: 'The source looks familiar to a TypeScript developer. The compiler applies TypeShade types and GPU semantics, then produces shader code the host can consume.',
       conceptsH: 'If you know TypeScript, you already know the shape',
@@ -78,7 +83,7 @@ const content = locale === 'ko'
   <section class="hero">
     <p class="hero-eyebrow">{content.eyebrow}</p>
     <h1 class="hero-title"><span class="hero-line accent">{content.title}</span></h1>
-    <p class="hero-subtitle">{content.subtitle}</p>
+    <p class="hero-subtitle"><Rich text={content.subtitle} locale={locale} /></p>
     <p class="hero-tagline">{content.tagline}</p>
     <p class="hero-actions">
       <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
@@ -98,38 +103,38 @@ const content = locale === 'ko'
 
   <section class="wide front-code">
     <h2>{content.flowH}</h2>
-    <p>{content.flowP}</p>
-    <div class="authoring-flow" aria-label="TypeShade compilation flow">
-      <span>TypeScript authoring</span>
+    <p><Rich text={content.flowP} locale={locale} /></p>
+    <div class="authoring-flow" aria-label={content.flowAriaLabel}>
+      <span>{content.flowLabels[0]}</span>
       <span aria-hidden="true">→</span>
       <code>"use typeshade"</code>
       <span aria-hidden="true">→</span>
-      <span>TypeShade semantics</span>
+      <span>{content.flowLabels[1]}</span>
       <span aria-hidden="true">→</span>
-      <span>shared IR</span>
+      <span>{content.flowLabels[2]}</span>
       <span aria-hidden="true">→</span>
-      <span>WGSL / GLSL ES 3.00</span>
+      <span>{content.flowLabels[3]}</span>
     </div>
     <div class="code-pair">
       {/* Code receives only props supported by astro-expressive-code. */}
       <CodeFrame label={useLabel}>
-        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" />
+        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" wrap />
       </CodeFrame>
       <CodeFrame label={t.codeLabels.wgsl}>
-        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" />
+        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" wrap />
       </CodeFrame>
     </div>
   </section>
 
   <section class="wide concepts">
     <h2>{content.conceptsH}</h2>
-    <p>{content.conceptsP}</p>
+    <p><Rich text={content.conceptsP} locale={locale} /></p>
     <div class="concept-grid">
       {content.concepts.map(([heading, mapping, body]) => (
         <article class="concept">
           <p class="concept-heading">{heading}</p>
-          <h3>{mapping}</h3>
-          <p>{body}</p>
+          <h3><Rich text={mapping} locale={locale} /></h3>
+          <p><Rich text={body} locale={locale} /></p>
         </article>
       ))}
     </div>
@@ -138,8 +143,8 @@ const content = locale === 'ko'
   <section class="wide highlights">
     {content.highlights.map(([heading, body]) => (
       <div class="highlight">
-        <h2>{heading}</h2>
-        <p>{body}</p>
+        <h2><Rich text={heading} locale={locale} /></h2>
+        <p><Rich text={body} locale={locale} /></p>
       </div>
     ))}
   </section>

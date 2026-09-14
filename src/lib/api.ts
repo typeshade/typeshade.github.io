@@ -949,7 +949,6 @@ function examplesOf(parsed: ParsedDoc, md: (text: string) => string): ApiExample
     const around = fence ? tag.text.replace(fence[0], '').trim() : ''
     const lang = fence?.[1] === 'wgsl' || fence?.[1] === 'glsl' || fence?.[1] === 'bash' ? fence[1] : 'ts'
     out.push({
-      title: out.length === 0 ? 'Example' : `Example ${out.length + 1}`,
       code: rewriteReferences(code),
       lang,
       description: md(around),
@@ -1059,7 +1058,7 @@ function guideLinksFor(name: string): readonly ApiLink[] {
       for (const m of section.body.matchAll(/`([^`\n]+)`/g)) {
         for (const word of (m[1] ?? '').matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)) {
           const list = guideMentions.get(word[0]) ?? []
-          const href = section.id === 'overview' ? '/guide/authoring/' : `/guide/authoring/${section.id}/`
+          const href = section.id === 'overview' ? '/guide/internals/' : `/guide/internals/${section.id}/`
           if (!list.some((l) => l.href === href)) list.push({ label: section.title, href })
           guideMentions.set(word[0], list)
         }

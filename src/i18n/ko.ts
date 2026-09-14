@@ -39,7 +39,7 @@ const sections: Record<string, { title: string; description: string }> = {
     description: '모듈을 WGSL로, GLSL 두 스테이지로, 또는 호스트가 조합하는 조각으로 바꾸고, 호스트가 바인딩에 쓰는 파이프라인 메타데이터를 읽습니다.',
   },
   'the-cpu-oracle': {
-    title: 'CPU 오라클',
+    title: 'CPU 오라클 안내서',
     description: '모듈을 CPU에서 배정밀도로 실행하고, 거기서 나온 숫자를 GPU가 낸 값과 비교해 컴파일러의 출력을 검증하는 법을 익힙니다.',
   },
   diagnostics: {
@@ -148,7 +148,7 @@ export const ko: Copy = {
 
   meta: {
     title: 'TypeShade, 검증 가능한 TypeScript 셰이더 라이브러리',
-    description: `파일 맨 위에 \`"use typeshade"\`를 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 소스가 CPU에서 f64로 실행되어 출력을 대조할 수 있습니다.`,
+    description: `파일 맨 위에 "use typeshade"를 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 소스가 CPU에서 f64로 실행되어 출력을 대조할 수 있습니다.`,
     ogAlt: 'TypeShade: WebGPU와 WebGL2를 위한 하나의 셰이더 소스. 렌더링된 metaballs 셰이더.',
   },
 
@@ -236,6 +236,7 @@ export const ko: Copy = {
       exceptions: '예외',
       descriptionHeading: '설명',
       examples: '예제',
+      example: '예제',
       targets: '대상별 지원',
       target: '대상',
       supportHeading: '지원',
@@ -367,11 +368,11 @@ export const ko: Copy = {
   },
   quickStart: {
     title: 'TypeShade 빠른 시작: 설치와 첫 셰이더',
-    description: 'TypeShade를 git 서브모듈로 추가한 뒤, `"use typeshade"`로 시작하는 파일을 컴파일합니다. 출시 전 상태도 함께 적었습니다.',
+    description: 'TypeShade를 git 서브모듈로 추가한 뒤, "use typeshade"로 시작하는 파일을 컴파일합니다. 출시 전 상태도 함께 적었습니다.',
     h1: '빠른 시작',
     installH: '설치',
-      p0: '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래 삼각형이 공식 표면입니다.',
-      p1: `갤러리용 그래프 API도 그대로 있습니다. 같은 패스를 [\`fn\`](apiFn)과 [\`module()\`](apiModule)로 쓴 파일입니다. import 문부터 WGSL을 내보내는 호출까지 ${quickStartFile.lines}줄입니다.`,
+      p0: '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래는 class와 스테이지 데코레이터가 붙은 함수로 작성한 첫 셰이더입니다.',
+      p1: `TypeShade에는 함수 기반 작성 방식도 있습니다. 같은 패스를 class 대신 [\`fn\`](apiFn)과 [\`module()\`](apiModule)로 선언한 파일이며, import 문부터 WGSL을 내보내는 호출까지 ${quickStartFile.lines}줄입니다.`,
       p2: '실행하면 두 단계의 WGSL이 함께 나옵니다. 프래그먼트 진입점은 여기 있습니다.',
       p3: `같은 함수의 ${glsl} 단계와, [\`reflect()\`](apiReflect)가 복원한 유니폼 레이아웃은 [예제 페이지](examples)에 있습니다. 나머지 API는 [작성 가이드](guide)를 보면 됩니다.`,
     status: {

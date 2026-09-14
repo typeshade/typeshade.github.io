@@ -43,8 +43,6 @@ export interface ApiException {
 }
 
 export interface ApiExample {
-  /** A short h3 for the example, for example 'A guard clause'. */
-  readonly title: string
   /** Code, TypeScript unless `lang` says otherwise. */
   readonly code: string
   readonly lang?: 'ts' | 'wgsl' | 'glsl' | 'bash'
