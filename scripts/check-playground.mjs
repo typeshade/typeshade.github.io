@@ -7,6 +7,8 @@
 //   2. Monaco mounts: `.monaco-editor` appears
 //   3. Monaco's own TypeScript validation is off, and no marker it owns is on the sample
 //   4. the compiler ran in the browser: the WGSL pane holds text, syntax-coloured
+//   5. the reflection pane names the sample's entry points, and running them on the CPU
+//      oracle fills in what each one returns
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -119,11 +121,27 @@ async function checkRoute(browser, origin, route) {
       })
       if (colours < 2) problems.push(`the WGSL pane is not syntax-coloured: ${colours} colour(s) across its spans`)
 
+      // The reflection pane: what reflect() recovered, and what the entry points return when
+      // the CPU oracle runs them. The sample declares a vertex and a fragment entry point.
+      const reflection = (await page.innerText('[data-reflection]')).trim()
+      for (const wanted of ['@vertex', '@fragment', 'vec4<f32>', '@builtin(vertex_index)', '@location(0)']) {
+        if (!reflection.includes(wanted)) problems.push(`the reflection pane is missing ${wanted}:\n    ${reflection.slice(0, 240)}`)
+      }
+
+      await page.click('[data-run-cpu]')
+      await page.waitForTimeout(500)
+      const evaluated = (await page.innerText('[data-reflection]')).trim()
+      // The sample's two entry points return a clip position and a red fragment.
+      for (const wanted of ['[-0.8, -0.8, 0, 1]', '[1, 0, 0, 1]']) {
+        if (!evaluated.includes(wanted)) problems.push(`the CPU oracle did not return ${wanted}:\n    ${evaluated.slice(0, 240)}`)
+      }
+
       const status = (await page.textContent('[data-status]'))?.trim() ?? ''
       const diagnostics = (await page.textContent('[data-diagnostics]'))?.trim() ?? ''
       console.log(`  status: ${status}`)
       console.log(`  diagnostics: ${diagnostics}`)
       console.log(`  WGSL: ${output.split('\n').length} lines, ${output.length} characters, ${colours} colours`)
+      console.log(`  reflection: ${(reflection.match(/@(?:vertex|fragment|compute)/g) ?? []).length} entry point(s), evaluated on the CPU`)
     }
 
     const realErrors = pageErrors

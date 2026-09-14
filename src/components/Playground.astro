@@ -37,6 +37,19 @@ const runtimeCopy = {
   noOutput: t.noOutput,
   directive: t.directive,
   unavailable: t.unavailable,
+  entryPoints: t.entryPoints,
+  resources: t.resources,
+  inputs: t.inputs,
+  outputs: t.outputs,
+  returns: t.returns,
+  runCpu: t.runCpu,
+  running: t.running,
+  cpuIdle: t.cpuIdle,
+  noResources: t.noResources,
+  noEntryPoints: t.noEntryPoints,
+  requiredFeatures: t.requiredFeatures,
+  cpuFailed: t.cpuFailed,
+  entryCountOne: t.entryCount(1),
 }
 ---
 
@@ -56,6 +69,13 @@ const runtimeCopy = {
       <div class="diagnostics"><div class="diagnostics-title">{t.diagnostics}</div><div data-diagnostics>{t.idle}</div></div>
     </section>
   </div>
+  <section class="pane reflect-pane">
+    <div class="pane-title">
+      <span>{t.reflection}</span>
+      <button type="button" data-run-cpu disabled>{t.runCpu}</button>
+    </div>
+    <div class="reflection" data-reflection aria-live="polite"></div>
+  </section>
 </section>
 
 <script>
@@ -85,6 +105,26 @@ const runtimeCopy = {
   .has-errors [data-status] { color: var(--color-diag); }
   .has-errors .diagnostics { border-top-color: var(--color-diag); }
   .has-output [data-status] { color: var(--color-accent); }
+  .reflect-pane { border-top: 1px solid var(--color-line-1); }
+  .reflect-pane .pane-title button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
+  .reflect-pane .pane-title button:hover:not(:disabled) { background: var(--color-surface-1); }
+  .reflect-pane .pane-title button:disabled { opacity: .5; cursor: default; }
+  /* The pane's contents are built by src/scripts/playground.ts after the page loads, so those
+     nodes never carry Astro's scoping attribute and a plain descendant selector would miss
+     them. The scoped parent is .reflection; everything under it is addressed globally. */
+  .reflection { padding: 14px 16px; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
+  .reflection :global(.group-title) { margin: 0 0 8px; color: var(--color-text-3); font: 600 .6875rem/1.3 var(--font-sans); letter-spacing: .06em; }
+  .reflection :global(.group + .group) { margin-top: 20px; }
+  .reflection :global(.entry + .entry) { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--color-line-1); }
+  .reflection :global(.entry-head) { margin-bottom: 4px; }
+  .reflection :global(.entry-head .stage) { color: var(--color-accent); }
+  .reflection :global(.entry-head .entry-name) { margin-left: 10px; color: var(--color-text-1); font-weight: 500; }
+  .reflection :global(.io-row) { display: flex; gap: 12px; padding: 1px 0; }
+  .reflection :global(.io-row .io-label) { flex: none; width: 4rem; color: var(--color-text-3); }
+  .reflection :global(.io-row .io-value) { min-width: 0; overflow-wrap: anywhere; }
+  .reflection :global(.io-row .attr) { color: var(--color-text-3); }
+  .reflection :global(.empty) { color: var(--color-text-3); }
+  .reflection :global(.failed) { color: var(--color-diag); }
   @media (min-width: 64rem) { .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); } }
   @media (max-width: 48rem) { .playground-toolbar { align-items: flex-start; flex-direction: column; } .playground-actions { width: 100%; } .playground-actions button { flex: 1; } }
 </style>
