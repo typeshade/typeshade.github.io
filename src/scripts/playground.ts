@@ -110,6 +110,24 @@ function loadMonaco(): Promise<any> {
   })
 }
 
+// ── The site's dark mode ───────────────────────────────────────────────────────────────────
+// Base.astro puts the reader's choice on `documentElement.dataset.theme` and leaves it unset
+// while the choice is the system's. Monaco keeps a theme of its own, so it is told which one
+// on load, on the toggle, and when the system setting moves under an unset choice.
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+function siteIsDark(): boolean {
+  const chosen = document.documentElement.dataset.theme
+  return chosen ? chosen === 'dark' : darkQuery.matches
+}
+
+function followSiteTheme(monaco: any): void {
+  const apply = () => monaco.editor.setTheme(siteIsDark() ? 'vs-dark' : 'vs')
+  apply()
+  new MutationObserver(apply).observe(document.documentElement, { attributeFilter: ['data-theme'] })
+  darkQuery.addEventListener('change', apply)
+}
+
 function completionKind(monaco: any, kind: TypeshadeCompletionItem['kind']): number {
   const kinds = monaco.languages.CompletionItemKind
   const byKind: Record<TypeshadeCompletionItem['kind'], number> = {
@@ -238,6 +256,7 @@ function mount(root: HTMLElement): void {
         'file:///types/typeshade.d.ts',
       )
 
+      followSiteTheme(monaco)
       model = monaco.editor.createModel(sample, 'typescript', monaco.Uri.parse(`file:///${fileName}`))
       editor = monaco.editor.create(editorHost, {
         model,
