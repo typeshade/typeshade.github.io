@@ -24,7 +24,8 @@ export default {
   themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
   defaultLocale: 'en',
   shiki: {
-    langs: [typeshedInjectionFix(gpuTypesSyntax, typeshadeInjection)],
+    // `gpu-types` is a real language now, while TypeShade remains an injection into TS/TSX.
+    langs: [gpuTypesSyntax, typeshadeInjection],
   },
   // The github themes bring their own frame colours: a light background equal to the page
   // ground (so a frame reads as a bare 1px border, not a surface) and an orange active-tab
@@ -39,11 +40,4 @@ export default {
       editorActiveTabIndicatorBottomColor: 'transparent',
     },
   },
-}
-
-// Keep the two custom grammars in one `langs` entry while supporting the existing
-// TypeScript injection and the standalone GPU Types fence. Shiki accepts both language
-// definitions in the same custom-language array.
-function typeshedInjectionFix(gpuTypes, injection) {
-  return [gpuTypes, injection]
 }
