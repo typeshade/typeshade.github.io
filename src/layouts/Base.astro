@@ -223,11 +223,11 @@ const jsonLd = {
       for (const d of drops) d.addEventListener('toggle', () => { if (d.open) closeAllBut(d) })
 
       document.addEventListener('click', (e) => {
-        for (const d of drops) if (d.open && !d.contains(e.target)) d.open = false
+        for (const d of all) if (d.open && !d.contains(e.target)) d.open = false
       })
       document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return
-        const open = drops.find((d) => d.open)
+        const open = all.find((d) => d.open)
         if (open) { open.open = false; open.querySelector('summary')?.focus() }
       })
 
