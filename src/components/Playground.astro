@@ -49,6 +49,10 @@ const runtimeCopy = {
   noOutput: t.noOutput,
   directive: t.directive,
   unavailable: t.unavailable,
+  starting: t.starting,
+  serviceFailed: t.serviceFailed,
+  sourceTypescript: t.sourceTypescript,
+  sourceTypeshade: t.sourceTypeshade,
   entryPoints: t.entryPoints,
   resources: t.resources,
   inputs: t.inputs,
@@ -255,6 +259,8 @@ const runtimeCopy = {
   [data-diagnostics] :global(button) { display: block; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 2px 4px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   [data-diagnostics] :global(button:hover) { background: var(--color-surface-2); }
   [data-diagnostics] :global(.at) { color: var(--color-text-3); }
+  /* Which half of the pipeline raised the row: TypeScript over the ambient lib, or the TypeShade front end. */
+  [data-diagnostics] :global(.source) { color: var(--color-text-3); font-weight: 600; }
   [data-diagnostics] :global(.error) { color: var(--color-diag); }
   .has-errors [data-status] { color: var(--color-diag); }
   .has-errors .diagnostics { border-top-color: var(--color-diag); }

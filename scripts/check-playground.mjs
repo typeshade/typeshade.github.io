@@ -32,6 +32,15 @@
 //      it, and not the `number` TypeScript infers for it
 //  21. `vec` offers vec4 in the completion list
 //  22. the URL fragment carries the edited source and the options into a second tab
+//  23. go to definition from a struct's use lands on its declaration
+//  24. find references on the struct lists its declaration and its uses
+//  25. the outline names the entry points
+//  26. signature help inside a call names the function
+//  27. rename on the struct rewrites every occurrence and nothing else
+//  28. the colouring is the compiler's: a decorator and a GPU type draw with classes of
+//      their own, not the identifier's
+//  29. the compiler is in the language worker: a worker script was fetched and the page's
+//      own module is a fraction of what it was
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -179,6 +188,15 @@ async function checkRoute(browser, origin, route) {
       if (!validation) problems.push('the TypeScript defaults are unreachable, so its validation could not be read')
       else if (!validation.noSemanticValidation || !validation.noSyntaxValidation) {
         problems.push(`Monaco is checking the source itself: noSemanticValidation=${validation.noSemanticValidation}, noSyntaxValidation=${validation.noSyntaxValidation}`)
+      }
+      // And its providers are off too, not only its validation: the page's providers answer
+      // for the editor alone, so a hover or a completion list holds one answer and not the
+      // page's beside Monaco's own. The mode configuration is what says so.
+      const mode = await page.evaluate(() => window.monaco?.languages.typescript.typescriptDefaults.modeConfiguration ?? null)
+      if (!mode) problems.push('the TypeScript mode configuration is unreachable')
+      else {
+        const still = ['hovers', 'completionItems', 'definitions', 'references', 'documentSymbols', 'rename', 'signatureHelp', 'diagnostics'].filter((k) => mode[k] !== false)
+        if (still.length > 0) problems.push(`Monaco's own TypeScript providers are still on: ${still.join(', ')}`)
       }
 
       // And nothing it owns reached the model. Its worker reports late, so this settles first.
@@ -544,10 +562,10 @@ async function checkRoute(browser, origin, route) {
       // `number`, so Monaco's own TypeScript hover says `(parameter) i: number` and the
       // compiler's says `(parameter) i: u32`. Asking about `vs` proved less, since both spell
       // its signature `vs(i: u32): Clip` and either one satisfied the check.
-      // Monaco's hover provider stays registered beside the page's, so the widget stacks the
-      // two answers and a reader is shown both. That is a bug of the page's own, filed beside
-      // the numeric-literal local; what is read here is the widget a reader sees, and the
-      // compiler's answer has to be in it.
+      // Monaco's hover provider is off, and the page's is the one answering, so the widget
+      // holds one answer: the compiler's, alone. Both halves are read here, the compiler's
+      // line present and Monaco's `number` absent, and the rows counted, since a stacked
+      // widget is the bug this replaced.
       await typeSource(page, sample)
       const hovered = await page.evaluate(async () => {
         const editor = window.monaco.editor.getEditors()[0]
@@ -556,8 +574,10 @@ async function checkRoute(browser, origin, route) {
         if (at < 0) return null
         const declared = model.getLineContent(at + 1).indexOf('i: u32')
         if (declared < 0) return null
-        // The parameter's name is one character wide, so the caret goes just past it.
-        editor.setPosition({ lineNumber: at + 1, column: declared + 2 })
+        // On the name itself, where a reader's pointer is; one column past it is the `:`, and
+        // typeshade/typeshade#56 records that a position past a name's end falls back to
+        // TypeScript's quick info, which is not what this asks about.
+        editor.setPosition({ lineNumber: at + 1, column: declared + 1 })
         editor.focus()
         await editor.getAction('editor.action.showHover')?.run()
         return true
@@ -566,9 +586,14 @@ async function checkRoute(browser, origin, route) {
       else {
         await page.waitForSelector('.monaco-hover', { timeout: 4_000 }).catch(() => {})
         const quickInfo = await page.evaluate(() => document.querySelector('.monaco-hover')?.innerText.replace(/\s+/g, ' ').trim() ?? '')
+        const hoverRows = await page.evaluate(() => document.querySelectorAll('.monaco-hover .hover-row').length)
         if (!quickInfo.includes('i: u32')) {
           problems.push(`hovering the parameter did not answer with its TypeShade type:\n    ${quickInfo.slice(0, 200)}`)
         }
+        if (quickInfo.includes('i: number')) {
+          problems.push(`hovering the parameter stacks Monaco's own TypeScript answer beside the compiler's:\n    ${quickInfo.slice(0, 200)}`)
+        }
+        if (hoverRows !== 1) problems.push(`the hover widget holds ${hoverRows} answer(s) for the parameter, not one`)
         await page.keyboard.press('Escape')
       }
 
@@ -581,9 +606,8 @@ async function checkRoute(browser, origin, route) {
       // as `let k: f32`. The check above asks about a parameter, which carries a written
       // annotation TypeScript could read on its own. A literal-bound local carries none, so
       // `f32` here can only have come from the compiler.
-      // Monaco's provider stays registered beside the page's and still stacks its own `number`
-      // answer in the same widget, which is a bug of the page's own and filed as one; what is
-      // read here is the widget a reader sees, and the compiler's line has to be in it.
+      // Monaco's provider is off, so the widget holds the compiler's line and nothing else:
+      // the `number` it used to stack beside it is asserted absent, and the rows counted.
       const withLocal = sample
         .replace('let x = -0.8', 'let k = 1.\n  let x = -0.8')
         .replace('vec4(x, y, 0., 1.)', 'vec4(x, y, 0., k)')
@@ -617,9 +641,14 @@ async function checkRoute(browser, origin, route) {
         else {
           await page.waitForSelector('.monaco-hover', { timeout: 4_000 }).catch(() => {})
           const localInfo = await page.evaluate(() => document.querySelector('.monaco-hover')?.innerText.replace(/\s+/g, ' ').trim() ?? '')
+          const localRowsShown = await page.evaluate(() => document.querySelectorAll('.monaco-hover .hover-row').length)
           if (!localInfo.includes('k: f32')) {
             problems.push(`hovering a local bound to a numeric literal did not answer with f32:\n    ${localInfo.slice(0, 200)}`)
           }
+          if (localInfo.includes('k: number')) {
+            problems.push(`hovering the local stacks Monaco's own \`number\` beside the compiler's f32:\n    ${localInfo.slice(0, 200)}`)
+          }
+          if (localRowsShown !== 1) problems.push(`the hover widget holds ${localRowsShown} answer(s) for the local, not one`)
           await page.keyboard.press('Escape')
         }
         await typeSource(page, sample)
@@ -643,6 +672,175 @@ async function checkRoute(browser, origin, route) {
       const suggestions = await page.evaluate(() => document.querySelector('.suggest-widget')?.innerText ?? '')
       if (!suggestions.includes('vec4')) problems.push(`after "vec" the completion list does not offer vec4:\n    ${suggestions.slice(0, 200).replace(/\n/g, ' / ')}`)
       await page.keyboard.press('Escape')
+
+      // ── definition ──────────────────────────────────────────────────────────────────────
+      // The struct a function returns is declared above it. Going to its definition from the
+      // return type has to land on the declaration, and the answer is the service's alone:
+      // Monaco's own definition provider is off.
+      await typeSource(page, sample)
+      const jumped = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        const lines = editor.getModel().getLinesContent()
+        const declaredAt = lines.findIndex((line) => /^class (\w+)/.test(line))
+        if (declaredAt < 0) return null
+        const name = lines[declaredAt].match(/^class (\w+)/)[1]
+        const usedAt = lines.findIndex((line, index) => index !== declaredAt && line.includes(`): ${name}`))
+        if (usedAt < 0) return null
+        editor.setPosition({ lineNumber: usedAt + 1, column: lines[usedAt].indexOf(`): ${name}`) + '): '.length + 2 })
+        editor.focus()
+        // Go to definition is registered as a command and not an editor action in this
+        // Monaco, so `getAction` does not see it; `trigger` dispatches it through the
+        // command service, which does.
+        editor.trigger('check', 'editor.action.revealDefinition', null)
+        await new Promise((done) => setTimeout(done, 1_000))
+        return { name, declaredAt: declaredAt + 1, usedAt: usedAt + 1, landed: editor.getPosition().lineNumber }
+      })
+      if (!jumped) problems.push('the sample has no struct a function returns, so definition had nothing to ask about')
+      else if (jumped.landed !== jumped.declaredAt) {
+        problems.push(`go to definition on ${jumped.name} at line ${jumped.usedAt} landed on line ${jumped.landed}, not its declaration at line ${jumped.declaredAt}`)
+      }
+      console.log(`  definition: ${jumped?.name} from line ${jumped?.usedAt} to line ${jumped?.landed}`)
+
+      // ── references ──────────────────────────────────────────────────────────────────────
+      // Every place the struct is named, asked from its declaration. Monaco peeks when there
+      // is more than one, and the rows in the peek are the service's locations.
+      const referenced = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        const lines = editor.getModel().getLinesContent()
+        const declaredAt = lines.findIndex((line) => /^class (\w+)/.test(line))
+        if (declaredAt < 0) return null
+        editor.setPosition({ lineNumber: declaredAt + 1, column: 'class '.length + 2 })
+        editor.focus()
+        // The peek command, dispatched the same way, so the widget is what opens.
+        editor.trigger('check', 'editor.action.referenceSearch.trigger', null)
+        await new Promise((done) => setTimeout(done, 1_200))
+        return {
+          widget: Boolean(document.querySelector('.reference-zone-widget')),
+          rows: document.querySelectorAll('.reference-zone-widget .monaco-list-row').length,
+        }
+      })
+      if (!referenced) problems.push('the sample declares no struct, so references had nothing to ask about')
+      else if (!referenced.widget || referenced.rows < 2) {
+        problems.push(`references on the struct showed ${referenced.rows} row(s) in ${referenced.widget ? 'the peek widget' : 'no widget'}; its declaration and a use were expected`)
+      }
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(200)
+      console.log(`  references: ${referenced?.rows} row(s) in the peek`)
+
+      // ── outline ─────────────────────────────────────────────────────────────────────────
+      const outline = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        editor.focus()
+        const action = editor.getAction('editor.action.quickOutline')
+        if (!action) return null
+        await action.run()
+        await new Promise((done) => setTimeout(done, 800))
+        return [...document.querySelectorAll('.quick-input-widget .monaco-list-row')].map((row) => row.innerText.replace(/\s+/g, ' ').trim())
+      })
+      if (!outline) problems.push('Monaco has no quick outline action')
+      else {
+        const missing = ['vs', 'fs'].filter((name) => !outline.some((row) => new RegExp(`\\b${name}\\b`).test(row)))
+        if (outline.length === 0 || missing.length > 0) problems.push(`the outline is missing ${missing.join(', ') || 'everything'}:\n    ${outline.join('\n    ')}`)
+      }
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(200)
+      console.log(`  outline: ${outline?.length} row(s)`)
+
+      // ── signature help ──────────────────────────────────────────────────────────────────
+      const hinted = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        const lines = editor.getModel().getLinesContent()
+        const at = lines.findIndex((line) => line.includes('vec4('))
+        if (at < 0) return null
+        editor.setPosition({ lineNumber: at + 1, column: lines[at].indexOf('vec4(') + 'vec4('.length + 1 })
+        editor.focus()
+        const action = editor.getAction('editor.action.triggerParameterHints')
+        if (!action) return { noAction: true }
+        await action.run()
+        await new Promise((done) => setTimeout(done, 800))
+        return { text: document.querySelector('.parameter-hints-widget')?.innerText.replace(/\s+/g, ' ').trim() ?? '' }
+      })
+      if (!hinted) problems.push('the sample calls no vec4, so signature help had nothing to ask about')
+      else if (hinted.noAction) problems.push('Monaco has no parameter hints action')
+      else if (!hinted.text.includes('vec4')) problems.push(`signature help inside vec4( did not name vec4:\n    ${hinted.text.slice(0, 200)}`)
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(200)
+      console.log(`  signature help: ${(hinted?.text ?? '').slice(0, 60)}`)
+
+      // ── rename ──────────────────────────────────────────────────────────────────────────
+      // Every occurrence of the struct's name and nothing else: the count of the new name
+      // afterwards is the count of the old one before, and the old one is gone.
+      const renamed = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        const model = editor.getModel()
+        const lines = model.getLinesContent()
+        const declaredAt = lines.findIndex((line) => /^class (\w+)/.test(line))
+        if (declaredAt < 0) return null
+        const name = lines[declaredAt].match(/^class (\w+)/)[1]
+        const before = (model.getValue().match(new RegExp(`\\b${name}\\b`, 'g')) ?? []).length
+        editor.setPosition({ lineNumber: declaredAt + 1, column: 'class '.length + 2 })
+        editor.focus()
+        const action = editor.getAction('editor.action.rename')
+        if (!action) return { noAction: true }
+        void action.run()
+        await new Promise((done) => setTimeout(done, 1_000))
+        return { name, before, box: Boolean(document.querySelector('.rename-box input')) }
+      })
+      if (!renamed) problems.push('the sample declares no struct, so rename had nothing to ask about')
+      else if (renamed.noAction) problems.push('Monaco has no rename action')
+      else if (!renamed.box) problems.push(`rename on ${renamed.name} opened no rename box`)
+      else {
+        await page.keyboard.press('Control+A')
+        await page.keyboard.type('Renamed')
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(1_000)
+        const after = await page.evaluate((name) => {
+          const text = window.monaco.editor.getModels()[0].getValue()
+          return { old: (text.match(new RegExp(`\\b${name}\\b`, 'g')) ?? []).length, fresh: (text.match(/\bRenamed\b/g) ?? []).length }
+        }, renamed.name)
+        if (after.old !== 0 || after.fresh !== renamed.before) {
+          problems.push(`renaming ${renamed.name} (${renamed.before} occurrence(s)) left ${after.old} of the old name and wrote ${after.fresh} of the new`)
+        }
+        console.log(`  rename: ${renamed.name} to Renamed, ${after.fresh} of ${renamed.before} occurrence(s)`)
+      }
+      await typeSource(page, sample)
+
+      // ── semantic tokens ─────────────────────────────────────────────────────────────────
+      // The colouring is the compiler's classification, drawn over Monaco's tokenizer. Its
+      // tokenizer alone gives `@vertex` an annotation's class and `u32` an identifier's, the
+      // same as the parameter `i`; the compiler's tokens give the decorator and the GPU type
+      // classes of their own, so each has to differ from a plain identifier's.
+      const coloured = await page.evaluate(async () => {
+        await new Promise((done) => setTimeout(done, 1_200))
+        const spans = [...document.querySelectorAll('.monaco-editor .view-line > span > span')]
+        const classOf = (text) => spans.find((span) => span.textContent.trim() === text)?.className ?? ''
+        return { decorator: classOf('@vertex') || classOf('vertex'), gpuType: classOf('u32'), parameter: classOf('i') }
+      })
+      if (!coloured.decorator) problems.push('the rendered lines hold no span for the @vertex decorator')
+      if (!coloured.gpuType) problems.push('the rendered lines hold no span for the u32 type')
+      if (!coloured.parameter) problems.push('the rendered lines hold no span for the parameter i')
+      if (coloured.gpuType && coloured.parameter && coloured.gpuType === coloured.parameter) {
+        problems.push(`the GPU type u32 draws with the parameter's class (${coloured.parameter}): the semantic tokens are not reaching the editor`)
+      }
+      if (coloured.decorator && coloured.parameter && coloured.decorator === coloured.parameter) {
+        problems.push(`the decorator draws with the parameter's class (${coloured.parameter})`)
+      }
+      console.log(`  semantic tokens: decorator ${coloured.decorator}, u32 ${coloured.gpuType}, parameter ${coloured.parameter}`)
+
+      // ── the compiler is in the worker ───────────────────────────────────────────────────
+      // The resource timeline says what the page loaded: a language worker script, and a page
+      // module a fraction of the size it was when it carried the compiler.
+      const loaded = await page.evaluate(() => {
+        const scripts = performance.getEntriesByType('resource').filter((entry) => /\.js(\?|$)/.test(entry.name))
+        const worker = scripts.find((entry) => /playground-language-worker/.test(entry.name))
+        const main = scripts.find((entry) => /Playground\.astro_astro_type_script/.test(entry.name))
+        const kb = (entry) => (entry ? Math.round(entry.decodedBodySize / 1024) : null)
+        return { worker: kb(worker), main: kb(main) }
+      })
+      if (loaded.worker === null) problems.push('no language worker script was fetched: the service is not running in a worker')
+      if (loaded.main === null) problems.push('the page module is not in the resource timeline')
+      else if (loaded.main > 1024) problems.push(`the page module is ${loaded.main} KB: the compiler is still in it`)
+      console.log(`  chunks: page module ${loaded.main} KB, language worker ${loaded.worker} KB, raw`)
 
       // ── the source in the URL ───────────────────────────────────────────────────────────
       const edited = sample.replace('vec4(1., 0., 0., 1.)', 'vec4(0.25, 0.5, 0.75, 1.)')

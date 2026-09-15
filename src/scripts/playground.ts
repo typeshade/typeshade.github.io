@@ -3,25 +3,35 @@
 // `define:vars` script is emitted inline as a classic script, which has no import at all, so
 // everything past the first line of it would die with a SyntaxError; the values it used to
 // carry arrive here as data attributes instead.
-import {
-  TypeshadeLanguageService,
-  compile,
-  compileModule,
-  compileTsSource,
-  emitGlslStages,
-  emitModule,
-  emitModuleAt,
-  reflect,
-  type EmitOptions,
-  type GlslEmitOptions,
-  type OptLevel,
-  type TypeshadeCompletionItem,
-  type TypeshadeDiagnostic,
-  type TypeshadePosition,
-  type TypeshadeRange,
-} from '../../vendor/shader-dsl/src/index.ts';
+// Each import below names the module that defines the symbol and not the package barrel. The
+// barrel re-exports the front end, which carries the TypeScript compiler, and none of these
+// do: the page's own chunk is Monaco's glue, the emitters, reflection and the CPU oracle, and
+// the compiler lives in the language worker alone. The raster worker imports `core/oracle.ts`
+// this way for the same reason.
+import { emitModule, emitModuleAt } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import { emitGlslStages, type GlslEmitOptions } from '../../vendor/shader-dsl/src/core/backends/glsl.ts';
+import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
+import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
+import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
+import type { OptLevel } from '../../vendor/shader-dsl/src/core/passes/opt/optimize.ts';
+import { reflect } from '../../vendor/shader-dsl/src/core/reflect.ts';
 // The ship-time plugins live on their own subpath, the one a host imports for a release build.
 import { minify } from '../../vendor/shader-dsl/src/emit-prod.ts';
+import type {
+  TypeshadeCompletionItem,
+  TypeshadeDiagnostic,
+  TypeshadeDocumentSymbol,
+  TypeshadePosition,
+  TypeshadeRange,
+} from '../../vendor/shader-dsl/src/language-service/index.ts';
+import {
+  SEMANTIC_TOKEN_MODIFIERS,
+  SEMANTIC_TOKEN_TYPES,
+  createLanguageClient,
+  encodeSemanticTokens,
+  type Analysis,
+  type LanguageClient,
+} from './playground-language.ts';
 import {
   cornersOf,
   drawTile,
@@ -101,6 +111,10 @@ interface PlaygroundCopy {
   readonly cpuNoResources: string;
   readonly entryCountOne: string;
   readonly noGlsl: string;
+  readonly starting: string;
+  readonly serviceFailed: string;
+  readonly sourceTypescript: string;
+  readonly sourceTypeshade: string;
 }
 
 /** The files the compiler emits, one per tab over the output pane. */
@@ -285,7 +299,7 @@ function siteIsDark(): boolean {
 
 function followSiteTheme(monaco: any, repaint: () => void): void {
   const apply = () => {
-    monaco.editor.setTheme(siteIsDark() ? 'vs-dark' : 'vs');
+    monaco.editor.setTheme(siteIsDark() ? 'typeshade-dark' : 'typeshade-light');
     repaint();
   };
   apply();
@@ -300,9 +314,57 @@ function completionKind(monaco: any, kind: TypeshadeCompletionItem['kind']): num
     type: kinds.TypeParameter,
     function: kinds.Function,
     attribute: kinds.Keyword,
-    value: kinds.Value,
+    builtin: kinds.Constant,
+    variable: kinds.Variable,
+    field: kinds.Field,
+    struct: kinds.Struct,
+    resource: kinds.Variable,
+    snippet: kinds.Snippet,
   };
   return byKind[kind] ?? kinds.Text;
+}
+
+function symbolKind(monaco: any, kind: TypeshadeDocumentSymbol['kind']): number {
+  const kinds = monaco.languages.SymbolKind;
+  const byKind: Record<TypeshadeDocumentSymbol['kind'], number> = {
+    function: kinds.Function,
+    struct: kinds.Struct,
+    field: kinds.Field,
+    resource: kinds.Variable,
+    constant: kinds.Constant,
+    variable: kinds.Variable,
+    parameter: kinds.Variable,
+    entry: kinds.Function,
+  };
+  return byKind[kind] ?? kinds.Variable;
+}
+
+function markerSeverity(monaco: any, severity: TypeshadeDiagnostic['severity']): number {
+  const levels = monaco.MarkerSeverity;
+  return severity === 'error' ? levels.Error : severity === 'warning' ? levels.Warning : severity === 'information' ? levels.Info : levels.Hint;
+}
+
+/** The service's semantic tokens, coloured. Monaco matches a semantic token against a theme
+ *  rule by its type followed by its modifiers, `type.gpu` for a GPU type, so a decorator, a
+ *  GPU type, an entry point and a bound resource each read as what the compiler says they
+ *  are. The values are Monaco's own light and dark TypeScript palette, so nothing here is a
+ *  colour the editor does not already use. */
+function defineTypeshadeThemes(monaco: any): void {
+  const rules = (dark: boolean) => [
+    { token: 'decorator', foreground: dark ? 'c586c0' : 'af00db' },
+    { token: 'type', foreground: dark ? '4ec9b0' : '267f99' },
+    { token: 'type.gpu', foreground: dark ? '4ec9b0' : '267f99', fontStyle: 'bold' },
+    { token: 'struct', foreground: dark ? '4ec9b0' : '267f99' },
+    { token: 'builtin', foreground: dark ? 'dcdcaa' : '795e26' },
+    { token: 'resource', foreground: dark ? '9cdcfe' : '0070c1', fontStyle: 'italic' },
+    { token: 'function', foreground: dark ? 'dcdcaa' : '795e26' },
+    { token: 'function.entry', foreground: dark ? 'dcdcaa' : '795e26', fontStyle: 'bold' },
+    { token: 'parameter', foreground: dark ? '9cdcfe' : '001080' },
+    { token: 'variable', foreground: dark ? '9cdcfe' : '001080' },
+    { token: 'property', foreground: dark ? '9cdcfe' : '001080' },
+  ];
+  monaco.editor.defineTheme('typeshade-light', { base: 'vs', inherit: true, rules: rules(false), colors: {} });
+  monaco.editor.defineTheme('typeshade-dark', { base: 'vs-dark', inherit: true, rules: rules(true), colors: {} });
 }
 
 // ── The source in the URL ──────────────────────────────────────────────────────────────────
@@ -403,7 +465,8 @@ const emitGlsl = (
 /** A row of the diagnostics list: what to say and where it points. */
 interface DiagnosticRow {
   readonly message: string;
-  readonly category: TypeshadeDiagnostic['category'];
+  readonly severity: TypeshadeDiagnostic['severity'];
+  readonly source: TypeshadeDiagnostic['source'];
   readonly start: TypeshadePosition;
 }
 
@@ -428,7 +491,36 @@ function mount(root: HTMLElement): void {
   const sample = root.dataset.sample ?? '';
   const copy = JSON.parse(root.dataset.copy ?? '{}') as PlaygroundCopy;
   const fileName = copy.fileName || 'hello.shade.ts';
-  const languageService = new TypeshadeLanguageService({ fileName });
+  /** The uri the worker knows the document by. Any string does; this one is the same the
+   *  editor's model is created under, so a location the service hands back names it. */
+  const documentUri = `file:///${fileName}`;
+  /** The version the editor holds. Every change raises it; every reply names the version it
+   *  answers for, and the client drops one for any other, so a slow answer to an old keystroke
+   *  never paints over a fast answer to a new one. */
+  let version = 0;
+  /** The last analysis painted and the version it was of, so a control on the options bar
+   *  repaints from it without asking the worker again. */
+  let lastAnalysis: Analysis | undefined;
+  let analysedVersion = -1;
+  const serviceFailed = (): void => {
+    if (status instanceof HTMLElement) status.textContent = copy.serviceFailed;
+    root.classList.add('has-errors');
+  };
+  /** The language worker, opened as early as the page runs so it boots while Monaco is still
+   *  loading from the CDN; the two arrive in either order and the first analysis waits for
+   *  both. It carries the compiler and the TypeScript it is built on, which is why it is a
+   *  worker: that is a megabyte of script the main thread should never parse or run. */
+  const openLanguageWorker = (): LanguageClient | undefined => {
+    if (typeof Worker !== 'function') return undefined;
+    try {
+      const worker = new Worker(new URL('./playground-language-worker.ts', import.meta.url), { type: 'module' });
+      worker.addEventListener('error', () => serviceFailed());
+      return createLanguageClient(worker, (asked) => asked === version, () => serviceFailed());
+    } catch {
+      return undefined;
+    }
+  };
+  const client = openLanguageWorker();
   const reflectionPane = root.querySelector('[data-reflection]');
   const runCpu = root.querySelector('[data-run-cpu]');
   const examples = JSON.parse(root.dataset.examples ?? '[]') as PlaygroundExample[];
@@ -506,7 +598,7 @@ function mount(root: HTMLElement): void {
   let emitted: Partial<Record<Target, string>> = {};
   let target: Target = 'wgsl';
   // The last good compile, kept so the CPU button can call into it without compiling again.
-  let compiled: ReturnType<typeof compile> | undefined;
+  let compiled: { readonly module: ModuleDecl; } | undefined;
   let reflection: ReturnType<typeof reflect> | undefined;
   let entries: readonly ReflectedEntry[] = [];
   /** What the reader last typed into each argument field, keyed by entry and field name, so a
@@ -638,7 +730,11 @@ function mount(root: HTMLElement): void {
         continue;
       }
       try {
-        const value = compiled.eval(entry.name, entryArguments(entry, compiled.module.structs, (i) => args[i]));
+        // The IR is compiled to the oracle here the way the raster worker compiles it, and the
+        // entry is called directly; the old `compiled.eval` did the same work per call.
+        const run = (compileModule(compiled.module, { gpuStubs: true }).fns as CpuFunctions)[entry.name];
+        if (!run) throw new Error(entry.name);
+        const value = run(...(entryArguments(entry, compiled.module.structs, (i) => args[i]) as never[]));
         const shownArgs = inputs.map((f, i) => `${f.name ?? `arg${i}`} = ${formatValue(args[i])}`).join(', ');
         target.textContent = shownArgs ? `${formatValue(value)}   (${shownArgs})` : formatValue(value);
         target.className = 'io-value';
@@ -1048,7 +1144,8 @@ function mount(root: HTMLElement): void {
    *  file with no directive, is the page's own sentence, so it reads in the page's language. */
   const toRow = (diagnostic: TypeshadeDiagnostic): DiagnosticRow => ({
     message: diagnostic.code === 'TS8001' ? copy.directive : diagnostic.message,
-    category: diagnostic.category,
+    severity: diagnostic.severity,
+    source: diagnostic.source,
     start: diagnostic.range.start,
   });
 
@@ -1062,7 +1159,8 @@ function mount(root: HTMLElement): void {
       const button = el('button') as HTMLButtonElement;
       button.type = 'button';
       button.append(el('span', 'at', toDisplayPosition(row.start)));
-      button.append(el('span', row.category === 'error' ? 'error' : undefined, ` ${row.message}`));
+      button.append(el('span', 'source', ` ${row.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade}`));
+      button.append(el('span', row.severity === 'error' ? 'error' : undefined, ` ${row.message}`));
       button.addEventListener('click', () => goTo(row.start));
       const item = el('li');
       item.append(button);
@@ -1070,88 +1168,114 @@ function mount(root: HTMLElement): void {
     }
   };
 
-  const render = (): void => {
+  /** Paints one analysis of the document: the markers, the list, the status, and the panes
+   *  emitted from the module it lowered. Nothing here compiles. The worker did, and what
+   *  arrived is data: diagnostics, and the IR when they allowed one. */
+  const paintAnalysis = (analysis: Analysis): void => {
     if (!editor || !model || !monacoApi) return;
-    const source = editor.getValue();
-    status.textContent = copy.idle;
     output.textContent = '';
     diagnosticsPane.textContent = '';
     root.classList.remove('has-errors', 'has-output');
-    try {
-      const result = compileTsSource(source, { fileName, requireDirective: true });
-      const found = [...languageService.getDiagnostics(source)];
-      const rows = found.map(toRow);
-      // The compiler stays quiet about a file with no directive, so the Playground says it.
-      if (!result.hasDirective && rows.length === 0) {
-        rows.push({ message: copy.directive, category: 'error', start: { line: 0, character: 0 } });
-      }
 
-      monacoApi.editor.setModelMarkers(
-        model,
-        'typeshade',
-        found.map((diagnostic) => ({
-          ...toMonacoRange(diagnostic.range),
-          message: diagnostic.message,
-          severity: diagnostic.category === 'warning' ? monacoApi.MarkerSeverity.Warning : monacoApi.MarkerSeverity.Error,
-        })),
-      );
+    const found = analysis.diagnostics;
+    const rows = found.map(toRow);
+    // The compiler stays quiet about a file with no directive, so the Playground says it.
+    if (!analysis.hasDirective && rows.length === 0) {
+      rows.push({ message: copy.directive, severity: 'error', source: 'typeshade', start: { line: 0, character: 0 } });
+    }
 
-      paintDiagnostics(rows);
-      if (rows.length > 0) {
-        status.textContent = copy.errors;
-        root.classList.add('has-errors');
-      } else {
-        status.textContent = copy.ready;
-      }
+    // One marker owner, fed from the service alone. Monaco's own TypeScript checking is off,
+    // and TypeScript's diagnostics arrive from the service instead, under `source`; Monaco
+    // prints that beside the code after the message, so the two halves read apart there the
+    // way the list above tags them.
+    monacoApi.editor.setModelMarkers(
+      model,
+      'typeshade',
+      found.map((diagnostic) => ({
+        ...toMonacoRange(diagnostic.range),
+        message: diagnostic.message,
+        source: diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
+        code: String(diagnostic.code),
+        severity: markerSeverity(monacoApi, diagnostic.severity),
+      })),
+    );
 
-      // Reflection and the GLSL stages read the module the same source produced. A file with
-      // no directive, or one the compiler complained about, has nothing worth reflecting, so
-      // the panes stay empty.
-      compiled = undefined;
-      reflection = undefined;
-      entries = [];
-      if (result.hasDirective && found.length === 0) {
-        try {
-          compiled = compile(source);
-          reflection = reflect(compiled.module);
-          entries = (reflection.entries ?? []) as readonly ReflectedEntry[];
-        } catch {
-          compiled = undefined;
-          reflection = undefined;
-          entries = [];
-        }
-      }
-
-      // The panes are emitted from the options bar instead of read off the compile, so the
-      // bar is the one thing that decides what they hold. At its defaults the two agree:
-      // `compile().wgsl` is `emitModule(module)`, which is `emitModuleAt(module, 'O2')`.
-      // `compiled` is already gated on a clean compile, so an error leaves every pane empty.
-      const choice = currentChoice();
-      const glsl = compiled ? emitGlsl(compiled.module, choice) : undefined;
-      emitted = {
-        wgsl: compiled ? emitWgsl(compiled.module, choice) : result.wgsl,
-        glslVertex: glsl?.vertex,
-        glslFragment: glsl?.fragment,
-      };
-      if (emitted.wgsl) root.classList.add('has-output');
-      paintOutput();
-      paintReflection();
-      // The canvas and the return values follow the source. The oracle's calls are
-      // microseconds, and a draw at the sizes the page opens with is under half a second, so
-      // neither is worth a button press; the buttons re-run with edited arguments and redraw.
-      evaluateOnCpu();
-      if (moduleDrawable && canvasFits) drawOnCpu();
-    } catch (error) {
+    paintDiagnostics(rows);
+    if (rows.some((row) => row.severity === 'error')) {
       status.textContent = copy.errors;
       root.classList.add('has-errors');
-      diagnosticsPane.textContent = error instanceof Error ? error.message : String(error);
-      compiled = undefined;
-      reflection = undefined;
-      entries = [];
-      emitted = {};
-      paintOutput();
-      paintReflection();
+    } else {
+      status.textContent = copy.ready;
     }
+
+    // Reflection and the panes read the module the worker lowered. The worker sends none for
+    // a file with no directive or one with an error, so those leave the panes empty, which is
+    // what the service's own contract asks of an adapter: no compiled output past an error.
+    compiled = undefined;
+    reflection = undefined;
+    entries = [];
+    if (analysis.module) {
+      try {
+        compiled = { module: analysis.module as ModuleDecl };
+        reflection = reflect(compiled.module);
+        entries = (reflection.entries ?? []) as readonly ReflectedEntry[];
+      } catch {
+        compiled = undefined;
+        reflection = undefined;
+        entries = [];
+      }
+    }
+
+    // The panes are emitted from the options bar instead of read off the compile, so the
+    // bar is the one thing that decides what they hold. At its defaults the two agree:
+    // `compile().wgsl` is `emitModule(module)`, which is `emitModuleAt(module, 'O2')`.
+    const choice = currentChoice();
+    const glsl = compiled ? emitGlsl(compiled.module, choice) : undefined;
+    emitted = {
+      wgsl: compiled ? emitWgsl(compiled.module, choice) : undefined,
+      glslVertex: glsl?.vertex,
+      glslFragment: glsl?.fragment,
+    };
+    if (emitted.wgsl) root.classList.add('has-output');
+    paintOutput();
+    paintReflection();
+    // The canvas and the return values follow the source. The oracle's calls are
+    // microseconds, and a draw at the sizes the page opens with is under half a second, so
+    // neither is worth a button press; the buttons re-run with edited arguments and redraw.
+    evaluateOnCpu();
+    if (moduleDrawable && canvasFits) drawOnCpu();
+  };
+
+  /** Hands the worker the document as the editor holds it now. Sent on every change, so the
+   *  worker never answers a hover or a completion about text the editor has already left
+   *  behind: storing the text costs the service nothing until something is asked. */
+  const syncDocument = (): void => {
+    if (!editor || !client) return;
+    version += 1;
+    client.update(documentUri, editor.getValue(), version);
+  };
+
+  /** Asks the worker for the document's analysis and paints it when it arrives. A control on
+   *  the options bar calls this too, and for that the last analysis is repainted at once,
+   *  since the document has not changed. Debounced by the caller on an edit. */
+  const render = (): void => {
+    if (!editor || !model || !monacoApi) return;
+    if (lastAnalysis && analysedVersion === version) {
+      paintAnalysis(lastAnalysis);
+      return;
+    }
+    if (!client) {
+      serviceFailed();
+      return;
+    }
+    const asked = version;
+    status.textContent = analysedVersion < 0 ? copy.starting : copy.idle;
+    void client.request('analysis', documentUri, asked, {}).then((analysis) => {
+      if (!analysis || asked !== version) return;
+      lastAnalysis = analysis;
+      analysedVersion = asked;
+      paintAnalysis(analysis);
+    });
   };
 
   const publishSource = async (): Promise<void> => {
@@ -1278,21 +1402,28 @@ function mount(root: HTMLElement): void {
         noSyntaxValidation: true,
         noSuggestionDiagnostics: true,
       });
-      // Kept for completion and hover, which stay on.
-      monaco.languages.typescript.typescriptDefaults.addExtraLib(
-        [
-          'declare type vec2 = { x: number; y: number }',
-          'declare type vec3 = { x: number; y: number; z: number }',
-          'declare type vec4 = { x: number; y: number; z: number; w: number }',
-          'declare type u32 = number',
-          'declare type i32 = number',
-          'declare type f32 = number',
-          'declare function vec2(x: number, y: number): vec2',
-          'declare function vec3(x: number, y: number, z: number): vec3',
-          'declare function vec4(x: number, y: number, z: number, w: number): vec4',
-        ].join('\n'),
-        'file:///types/typeshade.d.ts',
-      );
+      // And its providers are off too. The page registers one provider per service method
+      // below, and the service answers for TypeScript's half as well as TypeShade's, so with
+      // Monaco's own left on a hover would show two answers, `i: number` from its worker over
+      // `i: u32` from the compiler. Off, the widget holds one. The language stays registered:
+      // its tokenizer and bracket rules are what colour the text before the semantic tokens
+      // arrive and what pair the braces.
+      monaco.languages.typescript.typescriptDefaults.setModeConfiguration({
+        completionItems: false,
+        hovers: false,
+        documentSymbols: false,
+        definitions: false,
+        references: false,
+        documentHighlights: false,
+        rename: false,
+        diagnostics: false,
+        documentRangeFormattingEdits: false,
+        signatureHelp: false,
+        onTypeFormattingEdits: false,
+        codeActions: false,
+        inlayHints: false,
+      });
+      defineTypeshadeThemes(monaco);
 
       // Colourising bakes the theme into the markup, so the pane is painted again on a change.
       followSiteTheme(monaco, paintOutput);
@@ -1302,7 +1433,7 @@ function mount(root: HTMLElement): void {
       } else {
         exampleNote.textContent = '';
       }
-      model = monaco.editor.createModel(opening.source, 'typescript', monaco.Uri.parse(`file:///${fileName}`));
+      model = monaco.editor.createModel(opening.source, 'typescript', monaco.Uri.parse(documentUri));
       editor = monaco.editor.create(editorHost, {
         model,
         automaticLayout: true,
@@ -1316,40 +1447,157 @@ function mount(root: HTMLElement): void {
         padding: { top: 14, bottom: 14 },
         quickSuggestions: true,
         roundedSelection: false,
+        'semanticHighlighting.enabled': true,
       });
 
+      // ── The providers, one per service method ─────────────────────────────────────────
+      // Each asks the worker about the document at the version the editor holds and hands
+      // back what it answers; the client resolves `undefined` for an answer about a version
+      // the editor has left, and each provider turns that into nothing. Positions cross in
+      // the four helpers at the top of this file and nowhere else.
+      const isOurs = (currentModel: any): boolean => currentModel.uri.toString() === model.uri.toString();
+      const monacoRange = (range: TypeshadeRange) => {
+        const r = toMonacoRange(range);
+        return new monaco.Range(r.startLineNumber, r.startColumn, r.endLineNumber, r.endColumn);
+      };
+      const here = (position: MonacoPosition) => ({ position: toServicePosition(position) });
+
       monaco.languages.registerCompletionItemProvider('typescript', {
-        triggerCharacters: ['@', '"', ':'],
-        provideCompletionItems: (currentModel: any, position: MonacoPosition) => {
-          if (currentModel.uri.toString() !== model.uri.toString()) return { suggestions: [] };
-          const items = languageService.getCompletions(currentModel.getValue(), toServicePosition(position));
-          const range = new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+        triggerCharacters: ['@', '"', ':', '.'],
+        provideCompletionItems: async (currentModel: any, position: MonacoPosition) => {
+          if (!isOurs(currentModel) || !client) return { suggestions: [] };
+          const items = await client.request('completions', documentUri, version, here(position));
+          if (!items) return { suggestions: [] };
+          const word = currentModel.getWordUntilPosition(position);
+          const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn);
+          // Monaco's word does not include a leading `@`, so an attribute offered after one
+          // has already been typed would insert it twice unless the item says otherwise.
+          const before = currentModel.getValueInRange({ startLineNumber: position.lineNumber, startColumn: 1, endLineNumber: position.lineNumber, endColumn: word.startColumn });
           return {
             suggestions: items.map((item) => ({
               label: item.label,
               kind: completionKind(monaco, item.kind),
-              insertText: item.insertText ?? (item.label.startsWith('@') ? item.label.slice(1) : item.label),
+              insertText: item.insertText ?? (item.label.startsWith('@') && before.endsWith('@') ? item.label.slice(1) : item.label),
+              insertTextRules: item.insertTextFormat === 'snippet' ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,
               detail: item.detail,
-              range,
+              documentation: item.documentation ? { value: item.documentation } : undefined,
+              sortText: item.sortText,
+              filterText: item.filterText,
+              range: item.textEdit ? monacoRange(item.textEdit.range) : range,
             })),
           };
         },
       });
 
       monaco.languages.registerHoverProvider('typescript', {
-        provideHover: (currentModel: any, position: MonacoPosition) => {
-          if (currentModel.uri.toString() !== model.uri.toString()) return null;
-          const hover = languageService.getHover(currentModel.getValue(), toServicePosition(position));
+        provideHover: async (currentModel: any, position: MonacoPosition) => {
+          if (!isOurs(currentModel) || !client) return null;
+          const hover = await client.request('hover', documentUri, version, here(position));
           if (!hover) return null;
-          const r = toMonacoRange(hover.range);
+          return { contents: [{ value: hover.contents }], range: monacoRange(hover.range) };
+        },
+      });
+
+      // A location in another document is dropped: the Playground holds one file.
+      const ownLocations = (locations: readonly { uri: string; range: TypeshadeRange }[] | undefined) =>
+        (locations ?? []).filter((location) => location.uri === documentUri).map((location) => ({ uri: model.uri, range: monacoRange(location.range) }));
+
+      monaco.languages.registerDefinitionProvider('typescript', {
+        provideDefinition: async (currentModel: any, position: MonacoPosition) => {
+          if (!isOurs(currentModel) || !client) return null;
+          return ownLocations(await client.request('definition', documentUri, version, here(position)));
+        },
+      });
+
+      monaco.languages.registerReferenceProvider('typescript', {
+        provideReferences: async (currentModel: any, position: MonacoPosition, context: { includeDeclaration: boolean }) => {
+          if (!isOurs(currentModel) || !client) return null;
+          return ownLocations(
+            await client.request('references', documentUri, version, { ...here(position), includeDeclaration: context.includeDeclaration }),
+          );
+        },
+      });
+
+      const toDocumentSymbol = (symbol: TypeshadeDocumentSymbol): any => ({
+        name: symbol.name,
+        detail: symbol.detail ?? '',
+        kind: symbolKind(monaco, symbol.kind),
+        tags: [],
+        range: monacoRange(symbol.range),
+        selectionRange: monacoRange(symbol.selectionRange),
+        children: symbol.children?.map(toDocumentSymbol),
+      });
+      monaco.languages.registerDocumentSymbolProvider('typescript', {
+        provideDocumentSymbols: async (currentModel: any) => {
+          if (!isOurs(currentModel) || !client) return null;
+          const symbols = await client.request('symbols', documentUri, version, {});
+          return symbols ? symbols.map(toDocumentSymbol) : null;
+        },
+      });
+
+      monaco.languages.registerSignatureHelpProvider('typescript', {
+        signatureHelpTriggerCharacters: ['(', ','],
+        signatureHelpRetriggerCharacters: [','],
+        provideSignatureHelp: async (currentModel: any, position: MonacoPosition) => {
+          if (!isOurs(currentModel) || !client) return null;
+          const help = await client.request('signatureHelp', documentUri, version, here(position));
+          if (!help) return null;
           return {
-            contents: hover.contents.map((value) => ({ value })),
-            range: new monaco.Range(r.startLineNumber, r.startColumn, r.endLineNumber, r.endColumn),
+            value: {
+              signatures: help.signatures.map((signature) => ({
+                label: signature.label,
+                documentation: signature.documentation ? { value: signature.documentation } : undefined,
+                parameters: signature.parameters.map((parameter) => ({
+                  label: parameter.label,
+                  documentation: parameter.documentation ? { value: parameter.documentation } : undefined,
+                })),
+              })),
+              activeSignature: help.activeSignature,
+              activeParameter: help.activeParameter,
+            },
+            dispose: () => {},
           };
         },
       });
 
+      monaco.languages.registerRenameProvider('typescript', {
+        resolveRenameLocation: async (currentModel: any, position: MonacoPosition) => {
+          if (!isOurs(currentModel) || !client) return null;
+          const prepared = await client.request('prepareRename', documentUri, version, here(position));
+          return prepared ? { range: monacoRange(prepared.range), text: prepared.placeholder } : null;
+        },
+        provideRenameEdits: async (currentModel: any, position: MonacoPosition, newName: string) => {
+          if (!isOurs(currentModel) || !client) return null;
+          const edits = await client.request('rename', documentUri, version, { ...here(position), newName });
+          if (!edits) return null;
+          return {
+            edits: (edits[documentUri] ?? []).map((edit) => ({
+              resource: model.uri,
+              textEdit: { range: monacoRange(edit.range), text: edit.newText },
+              versionId: undefined,
+            })),
+          };
+        },
+      });
+
+      // The colouring: the compiler's own classification of every token, delta-encoded the way
+      // Monaco takes it. Monaco asks again after each edit and keeps the last tokens it was
+      // given until then, so an answer dropped for being stale costs nothing but a moment.
+      monaco.languages.registerDocumentSemanticTokensProvider('typescript', {
+        getLegend: () => ({ tokenTypes: [...SEMANTIC_TOKEN_TYPES], tokenModifiers: [...SEMANTIC_TOKEN_MODIFIERS] }),
+        provideDocumentSemanticTokens: async (currentModel: any) => {
+          if (!isOurs(currentModel) || !client) return null;
+          const tokens = await client.request('semanticTokens', documentUri, version, {});
+          return tokens ? { data: encodeSemanticTokens(tokens) } : null;
+        },
+        releaseDocumentSemanticTokens: () => {},
+      });
+
+      // The worker holds the document from the moment the model does.
+      syncDocument();
+
       editor.onDidChangeModelContent(() => {
+        syncDocument();
         window.clearTimeout(timer);
         timer = window.setTimeout(render, 350);
         window.clearTimeout(urlTimer);
