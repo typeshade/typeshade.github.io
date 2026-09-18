@@ -10,6 +10,11 @@ import path from 'node:path'
  * names a <LiveShader> instance by its id instead of a registry example. */
 export const STILLS = [
   { id: 'metaballs', example: 'metaballs', page: '/' },
+  { id: 'ocean', example: 'ocean', page: '/' },
+  { id: 'hillshade', example: 'hillshade', page: '/' },
+  { id: 'kaleidoscope', example: 'kaleidoscope', page: '/' },
+  { id: 'raymarch-boxes', example: 'raymarch-boxes', page: '/' },
+  { id: 'truchet', example: 'truchet', page: '/' },
   { id: 'gradient', example: 'gradient', page: '/guide/checks/', backend: 'webgpu' },
   { id: 'gradient-webgl2', example: 'gradient', page: '/guide/checks/', forceWebGl2: true, backend: 'webgl2' },
   { id: 'fp64-deep-zoom', example: 'fp64-deep-zoom', page: '/guide/examples/' },

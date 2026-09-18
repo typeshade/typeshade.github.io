@@ -4,87 +4,219 @@ import Base from '../../layouts/Base.astro'
 import CodeFrame from '../CodeFrame.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
+import type { CanvasText } from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts'
 import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
-import { links } from '../../lib/links.ts'
+import { landingFragments } from '../../lib/landing-fragments.ts'
+import { checkedBlurbs, facts } from '../../lib/examples.ts'
+import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
+import { apiPage, links } from '../../lib/links.ts'
 
 interface Props {
   locale: Locale
 }
 const { locale } = Astro.props
 const t = copyFor(locale)
-const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
-const content = t.front.use
+const l = t.landing
+const glsl = facts.glslTarget
+
+// The link keys the copy names, resolved the way Rich resolves them.
+const PAGES: Record<string, string> = {
+  playground: links.playground.href,
+  languageService: links.languageService.href,
+  checks: links.checks.href,
+  guide: links.guide.href,
+  languageTypes: links.languageTypes.href,
+  languageResources: links.languageResources.href,
+  languageStages: links.languageStages.href,
+  languageControlFlow: links.languageControlFlow.href,
+  languageGpuTypes: links.languageGpuTypes.href,
+  languageFunctions: links.languageFunctions.href,
+  apiReflect: apiPage('reflect'),
+}
+const page = (key: string): string => {
+  const href = PAGES[key]
+  if (!href) throw new Error(`[front] unknown link key '${key}'`)
+  return localePath(locale, href)
+}
+
+// The gallery: six renderable examples, three from each half of the registry, so a
+// cartographic and a generic shader sit side by side.
+const GALLERY = ['ocean', 'hillshade', 'kaleidoscope', 'fp64-deep-zoom', 'raymarch-boxes', 'truchet']
+const blurbs = checkedBlurbs(t.examples.blurbs)
+const gallery = GALLERY.map((id) => {
+  const e = examples.find((x) => x.id === id)
+  if (!e) throw new Error(`[front] gallery names an example the registry has not: ${id}`)
+  const caption: CanvasText = {
+    neutral: blurbs[id]!,
+    webgpu: blurbs[id]!,
+    webgl2: blurbs[id]!,
+    none: blurbs[id]!,
+  }
+  return { id, title: e.title, caption }
+})
+
+const heroCaption: CanvasText = {
+  neutral: l.heroCaption,
+  webgpu: l.heroCaption,
+  webgl2: l.heroCaption,
+  none: l.heroCaption,
+  reduced: t.front.metaballs.reduced,
+}
+
+const tiles = l.surface.tiles.map((tile, i) => {
+  const fragment = landingFragments[i]
+  if (!fragment) throw new Error(`[front] surface tile ${i} has no fragment`)
+  return { ...tile, code: fragment.files[fragment.show]!, file: fragment.show }
+})
 ---
 
-<Base locale={locale} path="/" searchable searchTitle={content.title}>
-  <section class="hero">
-    <p class="hero-eyebrow">{content.eyebrow}</p>
-    <h1 class="hero-title"><span class="hero-line accent">{content.title}</span></h1>
-    <p class="hero-subtitle"><Rich text={content.subtitle} locale={locale} /></p>
-    <p class="hero-tagline">{content.tagline}</p>
-    <p class="hero-actions">
-      <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
-        {content.getStarted}
-        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 2.847 2.828 2.847 2.828 10.975-11z" /></svg>
-      </a>
-      <a class="button" href={localePath(locale, links.playground.href)}>{content.playground}</a>
-      <a class="button" href={localePath(locale, links.motivation.href)}>{content.learn}</a>
-      <a class="button" href={localePath(locale, links.guide.href)}>{content.language}</a>
-      <a class="button" href={localePath(locale, links.examples.href)}>{content.examples}</a>
-    </p>
-  </section>
-
-  <section class="wide demo">
-    <ShaderCanvas locale={locale} example="metaballs" aspect="3/1" eager caption={t.front.metaballs} />
-  </section>
-
-  <section class="wide front-code">
-    <h2>{content.flowH}</h2>
-    <p><Rich text={content.flowP} locale={locale} /></p>
-    <div class="authoring-flow" aria-label={content.flowAriaLabel}>
-      <span>{content.flowLabels[0]}</span>
-      <span aria-hidden="true">→</span>
-      <code>"use typeshade"</code>
-      <span aria-hidden="true">→</span>
-      <span>{content.flowLabels[1]}</span>
-      <span aria-hidden="true">→</span>
-      <span>{content.flowLabels[2]}</span>
-      <span aria-hidden="true">→</span>
-      <span>{content.flowLabels[3]}</span>
+<Base locale={locale} path="/" searchable searchTitle={t.front.use.title}>
+  <section class="lp-hero">
+    <div class="lp-hero-text">
+      <p class="lp-category">{l.category}</p>
+      <h1 class="lp-name">TypeShade</h1>
+      <p class="lp-lead"><Rich text={l.lead} locale={locale} /></p>
+      <p class="lp-actions">
+        <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
+          {l.getStarted}
+          <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 2.847 2.828 2.847 2.828 10.975-11z" /></svg>
+        </a>
+        <a class="button" href={localePath(locale, links.playground.href)}>{l.playground}</a>
+        <a class="button" href={links.mirror.href} rel="noopener">{l.github}</a>
+      </p>
+      <p class="lp-prerelease"><a href={localePath(locale, links.quickStart.href)}>{l.prerelease}</a></p>
     </div>
-    <div class="code-pair">
-      {/* Code receives only props supported by astro-expressive-code. */}
-      <CodeFrame label={useLabel}>
-        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" wrap />
-      </CodeFrame>
-      <CodeFrame label={t.codeLabels.wgsl}>
-        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" wrap />
-      </CodeFrame>
+    <div class="lp-hero-demo">
+      <ShaderCanvas locale={locale} example="metaballs" aspect="3/2" eager caption={heroCaption} />
     </div>
   </section>
 
-  <section class="wide concepts">
-    <h2>{content.conceptsH}</h2>
-    <p><Rich text={content.conceptsP} locale={locale} /></p>
-    <div class="concept-grid">
-      {content.concepts.map(([heading, mapping, body]) => (
-        <article class="concept">
-          <p class="concept-heading">{heading}</p>
-          <h3><Rich text={mapping} locale={locale} /></h3>
-          <p><Rich text={body} locale={locale} /></p>
+  <section class="wide lp-outputs" aria-labelledby="lp-outputs-h">
+    <h2 id="lp-outputs-h">{l.outputs.h}</h2>
+    <p class="lp-section-p">{l.outputs.p}</p>
+    <div class="lp-tabs" data-tabs>
+      <div class="lp-tablist" role="tablist" aria-label={l.outputs.tablist}>
+        <button class="lp-tab" role="tab" type="button" id="lp-tab-source" aria-selected="true" aria-controls="lp-panel-source" data-tab="source">{l.outputs.tabs.source}</button>
+        <button class="lp-tab" role="tab" type="button" id="lp-tab-wgsl" aria-selected="false" aria-controls="lp-panel-wgsl" data-tab="wgsl" tabindex="-1">{l.outputs.tabs.wgsl}</button>
+        <button class="lp-tab" role="tab" type="button" id="lp-tab-glsl" aria-selected="false" aria-controls="lp-panel-glsl" data-tab="glsl" tabindex="-1">{l.outputs.tabs.glsl}</button>
+      </div>
+      <div class="lp-panel" role="tabpanel" id="lp-panel-source" aria-labelledby="lp-tab-source">
+        <CodeFrame label={t.codeLabels.useTypeshade}><Code code={useTypeshadeSample} lang="ts" wrap /></CodeFrame>
+      </div>
+      <div class="lp-panel" role="tabpanel" id="lp-panel-wgsl" aria-labelledby="lp-tab-wgsl" hidden>
+        <CodeFrame label={t.codeLabels.wgsl}><Code code={useTypeshadeHero.wgsl} lang="wgsl" wrap /></CodeFrame>
+      </div>
+      <div class="lp-panel" role="tabpanel" id="lp-panel-glsl" aria-labelledby="lp-tab-glsl" hidden>
+        <CodeFrame label={t.codeLabels.glsl}><Code code={useTypeshadeHero.glsl} lang="glsl" wrap /></CodeFrame>
+      </div>
+    </div>
+  </section>
+
+  <section class="wide lp-numbers" aria-label={l.numbers.gate}>
+    <dl class="lp-figures">
+      <div><dt>{facts.examples}</dt><dd>{l.numbers.examples}</dd></div>
+      <div><dt>{facts.bothTargets}</dt><dd>{l.numbers.bothTargets}</dd></div>
+      <div><dt>{facts.testFiles}</dt><dd>{l.numbers.testFiles}</dd></div>
+    </dl>
+    <p class="lp-gate">{l.numbers.gate}</p>
+  </section>
+
+  <section class="wide lp-surface" aria-labelledby="lp-surface-h">
+    <div class="lp-section-head">
+      <h2 id="lp-surface-h">{l.surface.h}</h2>
+      <a class="lp-more" href={localePath(locale, links.guide.href)}>{l.surface.more}</a>
+    </div>
+    <p class="lp-section-p">{l.surface.p}</p>
+    <div class="lp-bento">
+      {tiles.map((tile, i) => (
+        <article class={`lp-tile lp-tile-${i + 1}`}>
+          <h3><a href={page(tile.link)}>{tile.h}</a></h3>
+          <p><Rich text={tile.p} locale={locale} /></p>
+          <div class="lp-tile-code"><Code code={tile.code} lang="ts" title={tile.file} /></div>
         </article>
       ))}
     </div>
   </section>
 
-  <section class="wide highlights">
-    {content.highlights.map(([heading, body]) => (
-      <div class="highlight">
-        <h2><Rich text={heading} locale={locale} /></h2>
-        <p><Rich text={body} locale={locale} /></p>
-      </div>
-    ))}
+  <section class="wide lp-tooling" aria-labelledby="lp-tooling-h">
+    <h2 id="lp-tooling-h">{l.tooling.h}</h2>
+    <ul class="lp-list">
+      {l.tooling.items.map((item) => (
+        <li>
+          <h3><a href={page(item.link)}>{item.h}</a></h3>
+          <p><Rich text={item.p} locale={locale} /></p>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="wide lp-checks" aria-labelledby="lp-checks-h">
+    <div class="lp-section-head">
+      <h2 id="lp-checks-h">{l.checks.h}</h2>
+      <a class="lp-more" href={localePath(locale, links.checks.href)}>{l.checks.more}</a>
+    </div>
+    <p class="lp-section-p">{l.checks.p}</p>
+    <ol class="lp-steps">
+      {l.checks.items.map((item) => (
+        <li>
+          <h3>{item.h}</h3>
+          <p><Rich text={item.p} locale={locale} /></p>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="wide lp-gallery" aria-labelledby="lp-gallery-h">
+    <div class="lp-section-head">
+      <h2 id="lp-gallery-h">{l.gallery.h}</h2>
+      <a class="lp-more" href={localePath(locale, links.examples.href)}>{l.gallery.more}</a>
+    </div>
+    <p class="lp-section-p">{l.gallery.p}</p>
+    <div class="lp-gallery-grid">
+      {gallery.map((g) => (
+        <div class="lp-gallery-item">
+          <ShaderCanvas locale={locale} example={g.id} aspect="3/2" still caption={g.caption} />
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="wide lp-status" aria-labelledby="lp-status-h">
+    <h2 id="lp-status-h">{l.status.h}</h2>
+    <p class="lp-section-p">{l.status.p} <a href={links.changelog.href} rel="noopener">{l.status.more}</a></p>
   </section>
 </Base>
+
+<script>
+  // The output tabs. Arrow keys move between tabs the way a tablist does; the chosen tab is
+  // kept in the URL hash so a link can open the page on the WGSL.
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tabs]')) {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+    const panels = [...root.querySelectorAll<HTMLElement>('[role="tabpanel"]')]
+    const select = (tab: HTMLButtonElement, focus: boolean): void => {
+      for (const other of tabs) {
+        const on = other === tab
+        other.setAttribute('aria-selected', on ? 'true' : 'false')
+        other.tabIndex = on ? 0 : -1
+      }
+      for (const panel of panels) panel.hidden = panel.id !== tab.getAttribute('aria-controls')
+      if (focus) tab.focus()
+      history.replaceState(null, '', `#${tab.dataset.tab}`)
+    }
+    for (const tab of tabs) {
+      tab.addEventListener('click', () => select(tab, false))
+      tab.addEventListener('keydown', (e) => {
+        const i = tabs.indexOf(tab)
+        const next = e.key === 'ArrowRight' ? tabs[(i + 1) % tabs.length] : e.key === 'ArrowLeft' ? tabs[(i - 1 + tabs.length) % tabs.length] : e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : undefined
+        if (next) {
+          e.preventDefault()
+          select(next, true)
+        }
+      })
+    }
+    const wanted = tabs.find((tab) => `#${tab.dataset.tab}` === location.hash)
+    if (wanted) select(wanted, false)
+  }
+</script>

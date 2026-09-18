@@ -60,6 +60,72 @@ const nextLinks = (items: readonly NextLink[]): readonly NextLink[] => items
 const pathSteps = (items: readonly PathStep[]): readonly PathStep[] => items
 
 export const en = {
+  landing: {
+    category: 'The TypeScript shader compiler',
+    lead: `A file that starts with \`"use typeshade"\` compiles to WGSL for WebGPU and ${glsl} for WebGL2. The same file runs on the CPU in double precision, so the compiler's output is checked against a reference value. ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both targets from one file.`,
+    getStarted: 'Get started',
+    playground: 'Open the Playground',
+    github: 'GitHub',
+    prerelease: `Pre-release: ${facts.nextVersion} is not on npm yet. Install as a git submodule`,
+    heroCaption: 'Metaballs, one of the examples, drawn live from the compiled shader.',
+    outputs: {
+      h: 'One file, two targets',
+      p: 'The first tab is the whole program. The other two are what the compiler makes of it. Nothing in the file is TypeShade syntax: the types, the decorators and the directive are TypeScript the way an editor already reads it.',
+      tabs: { source: 'hello.shade.ts', wgsl: 'WGSL', glsl: glsl },
+      tablist: 'The authored file and its two outputs',
+    },
+    numbers: {
+      examples: 'examples in the repository',
+      bothTargets: 'of them emit WGSL and GLSL from one file',
+      testFiles: 'test files run on every push',
+      gate: 'Every emitted shader is compiled on Tint and linked on WebGL2 before it merges.',
+    },
+    surface: {
+      h: 'What the language accepts',
+      p: 'TypeScript syntax with GPU types. Each shape below is one the compiler lowers today, with the guide page that states its rules.',
+      more: 'Language guide',
+      tiles: [
+        { h: 'Structs and stage IO', p: 'A class is a struct. Its fields carry `@builtin` and `@location`, and an object literal builds it in a return, an argument or an assignment.', link: 'languageTypes' },
+        { h: 'Resources', p: 'Uniform and storage buffers, textures, samplers and specialization constants are `declare const` bindings. `reflect()` reads their groups and layouts back.', link: 'languageResources' },
+        { h: 'Entry points', p: 'A decorator names the stage. A helper is a plain function, and one that a vertex entry reaches may not call `discard` or a derivative.', link: 'languageStages' },
+        { h: 'Control flow', p: '`if`, `for`, `while` and `switch`. A counted loop is solved in closed form, so a bound the GPU cannot take is reported with its trip count.', link: 'languageControlFlow' },
+        { h: 'Literals in context', p: 'A number written without a decimal point takes the integer type its position declares: a return type, a parameter, a constructor or an array element.', link: 'languageGpuTypes' },
+        { h: 'Double precision', p: '`f64` and `vec3f64` are emulated as pairs of `f32` on both targets. The deep-zoom example goes past the depth a single float can hold.', link: 'languageGpuTypes' },
+        { h: 'Builtins', p: 'The WGSL builtins by their own names, and the `Math` members TypeScript developers reach for, lowered to the same intrinsics.', link: 'guide' },
+        { h: 'Modules', p: 'A shader can import a helper from another file. The compiler follows the graph and refuses a call it cannot lower.', link: 'languageFunctions' },
+      ],
+    },
+    tooling: {
+      h: 'Tooling',
+      items: [
+        { h: 'Playground', p: 'Compile in the browser. Both outputs, the reflection and the diagnostics update as you type.', link: 'playground' },
+        { h: 'Editor', p: 'The language service answers hover, completion, rename and diagnostics from the compiler itself. The Playground uses it today; a VS Code extension is in review.', link: 'languageService' },
+        { h: 'Debugger', p: 'Step a shader on the CPU one statement at a time, stop at a breakpoint by file and line, and watch an expression in the paused frame.', link: 'checks' },
+        { h: 'Reflection', p: `\`reflect()\` reads bind groups and ${facts.layoutStandards.join(' and ')} layouts from the same intermediate representation the shaders come from.`, link: 'apiReflect' },
+      ],
+    },
+    checks: {
+      h: 'Checks',
+      p: 'Four independent checks stand between a source file and the shader text a GPU runs.',
+      items: [
+        { h: 'CPU reference', p: 'Every module also compiles to a CPU function in double precision. The tests evaluate it and compare.' },
+        { h: 'Two front ends, one IR', p: 'A `"use typeshade"` file and the same program written with the `fn()` graph API must build identical intermediate representation.' },
+        { h: 'Compile gate', p: 'Every example is compiled on Tint and linked in a real WebGL2 context on every push.' },
+        { h: 'Emit goldens', p: 'The emitted text of every example is committed. A change to the emitter shows up as a diff a reviewer reads.' },
+      ],
+      more: 'How the checks work',
+    },
+    gallery: {
+      h: 'Examples',
+      p: `${facts.examples} examples, each drawn live in this page from the compiled shader when the browser has WebGPU or WebGL2, and from a frame captured at build time when it has neither.`,
+      more: 'All examples',
+    },
+    status: {
+      h: 'Status',
+      p: `${facts.nextVersion} is the first release and is not on npm yet. The package is installed as a git submodule until it is, and the site is built from the pinned commit named in its footer.`,
+      more: 'Changelog',
+    },
+  },
   lang: 'en',
   /** How this locale names itself, shown in the language switch of other locales. */
   name: 'English',
@@ -307,6 +373,78 @@ export const en = {
       'compute-reduction-twin': {
         title: 'Compute reduction',
         description: 'A compute entry that folds eight values from a storage buffer into one, with a workgroup size of 64.',
+      },
+      'module-const': {
+        title: 'Module constants',
+        description: 'Module-scope constants of every scalar type the language allows, each one read by an entry point.',
+      },
+      'palette-const': {
+        title: 'Vector and array constants',
+        description: 'A module-level palette of `vec4` values and an `array<f32, 3>` of stops, banded across a fullscreen triangle.',
+      },
+      'convert-grid': {
+        title: 'Converting constructors',
+        description: 'A `vec3u(v)` over a float vector converts every component, the way WGSL does; the grid shows each conversion.',
+      },
+      'array-literal-ramp': {
+        title: 'Array literal',
+        description: 'A list initializes a local array, at every element type the language takes.',
+      },
+      'bitfield-bands': {
+        title: 'Bitfield bands',
+        description: 'Compound bitwise assignments, a `switch` over the band index, and a `let` declared before it is assigned.',
+      },
+      'cutout': {
+        title: 'Discard',
+        description: '`discard` in a helper the fragment entry calls, beside `fwidth`, `saturate` and `**`.',
+      },
+      'textured-quad': {
+        title: 'Texture, sampler and overrides',
+        description: 'A fullscreen triangle sampling a `texture_2d<f32>` through a `sampler`, tinted by two `override<f32>` constants.',
+      },
+      'twin-structs': {
+        title: 'Twin structs',
+        description: 'Two structs with identical fields, and an object literal in each position that declares which one it builds.',
+      },
+      'gradient-twin': {
+        title: 'Gradient',
+        description: 'The gradient pass of the graph API, written in the source language. Both compile to the same shader.',
+      },
+      'plasma-twin': {
+        title: 'Plasma',
+        description: 'The plasma example, written in the source language.',
+      },
+      'tunnel-twin': {
+        title: 'Tunnel',
+        description: 'The tunnel example, written in the source language, with a `screenCoords` helper.',
+      },
+      'julia-twin': {
+        title: 'Julia set',
+        description: 'The Julia set, written in the source language.',
+      },
+      'mandelbrot-twin': {
+        title: 'Mandelbrot set',
+        description: 'The Mandelbrot set, written in the source language.',
+      },
+      'domain-warp-twin': {
+        title: 'Domain warping',
+        description: 'Domain warping over noise, written in the source language.',
+      },
+      'kaleidoscope-twin': {
+        title: 'Kaleidoscope',
+        description: 'The kaleidoscope, written in the source language.',
+      },
+      'ocean-twin': {
+        title: 'Ocean horizon',
+        description: 'The ocean horizon, written in the source language.',
+      },
+      'starfield-twin': {
+        title: 'Starfield',
+        description: 'The starfield, written in the source language.',
+      },
+      'hillshade-twin': {
+        title: 'Hillshade',
+        description: 'The hillshade of a height field, written in the source language.',
       },
     },
     copy: 'Copy',

@@ -142,6 +142,72 @@ const apiCategories: Record<string, { name: string; summary: string }> = {
 }
 
 export const ko: Copy = {
+  landing: {
+    category: 'TypeScript 셰이더 컴파일러',
+    lead: `\`"use typeshade"\`로 시작하는 파일이 WebGPU용 WGSL과 WebGL2용 ${glsl}로 컴파일됩니다. 같은 파일을 CPU에서 배정밀도로 실행해 기준값을 얻고, 컴파일러의 출력을 그 값과 맞춰 봅니다. 저장소의 예제 ${facts.examples}개 가운데 ${facts.bothTargets}개가 파일 하나로 두 출력을 냅니다.`,
+    getStarted: '시작하기',
+    playground: 'Playground 열기',
+    github: 'GitHub',
+    prerelease: `출시 전: ${facts.nextVersion}은 아직 npm에 없습니다. git 서브모듈로 설치합니다`,
+    heroCaption: '예제 가운데 하나인 Metaballs. 컴파일된 셰이더로 실시간으로 그립니다.',
+    outputs: {
+      h: '파일 하나, 타깃 둘',
+      p: '첫 탭이 프로그램 전체입니다. 나머지 두 탭은 컴파일러가 그 파일에서 만든 결과입니다. 파일 안에 TypeShade만의 문법은 없습니다. 타입, 데코레이터, 지시어 모두 에디터가 이미 읽는 TypeScript입니다.',
+      tabs: { source: 'hello.shade.ts', wgsl: 'WGSL', glsl: glsl },
+      tablist: '작성한 파일과 두 출력',
+    },
+    numbers: {
+      examples: '저장소의 예제 수',
+      bothTargets: '그중 파일 하나로 WGSL과 GLSL을 내는 예제',
+      testFiles: '푸시마다 실행하는 테스트 파일',
+      gate: '내보낸 셰이더는 머지 전에 모두 Tint에서 컴파일하고 WebGL2에서 링크합니다.',
+    },
+    surface: {
+      h: '언어가 받아들이는 것',
+      p: 'GPU 타입을 더한 TypeScript 문법입니다. 아래 각 항목은 컴파일러가 지금 내리는 형태이며, 규칙을 적은 가이드 페이지로 이어집니다.',
+      more: '언어 가이드',
+      tiles: [
+        { h: '구조체와 스테이지 입출력', p: '클래스가 구조체입니다. 필드에 `@builtin`과 `@location`을 붙이고, 반환문과 인자와 대입문에서 객체 리터럴로 만듭니다.', link: 'languageTypes' },
+        { h: '리소스', p: '유니폼과 스토리지 버퍼, 텍스처, 샘플러, 특수화 상수를 `declare const` 바인딩으로 선언합니다. `reflect()`가 그룹과 레이아웃을 읽어 냅니다.', link: 'languageResources' },
+        { h: '엔트리 포인트', p: '데코레이터가 스테이지를 정합니다. 헬퍼는 평범한 함수이고, 버텍스 엔트리가 닿는 헬퍼는 `discard`나 도함수를 호출할 수 없습니다.', link: 'languageStages' },
+        { h: '제어 흐름', p: '`if`, `for`, `while`, `switch`를 씁니다. 반복 횟수가 정해진 루프는 닫힌 식으로 계산하므로, GPU가 받지 못하는 상한은 반복 횟수와 함께 보고됩니다.', link: 'languageControlFlow' },
+        { h: '문맥을 따르는 리터럴', p: '소수점 없이 쓴 숫자는 자리가 선언한 정수 타입을 따릅니다. 반환 타입, 매개변수, 생성자, 배열 요소가 그 자리입니다.', link: 'languageGpuTypes' },
+        { h: '배정밀도', p: '`f64`와 `vec3f64`는 두 타깃 모두에서 `f32` 두 개의 쌍으로 에뮬레이션합니다. 딥 줌 예제는 단정밀도 하나로는 닿지 못하는 깊이까지 들어갑니다.', link: 'languageGpuTypes' },
+        { h: '빌트인 함수', p: 'WGSL 빌트인은 그 이름 그대로, TypeScript 개발자가 손이 가는 `Math` 멤버는 같은 내장 함수로 내려갑니다.', link: 'guide' },
+        { h: '모듈', p: '셰이더가 다른 파일의 헬퍼를 import할 수 있습니다. 컴파일러는 그래프를 따라가며 내릴 수 없는 호출을 거부합니다.', link: 'languageFunctions' },
+      ],
+    },
+    tooling: {
+      h: '도구',
+      items: [
+        { h: 'Playground', p: '브라우저에서 컴파일합니다. 입력하는 동안 두 출력과 리플렉션과 진단이 함께 바뀝니다.', link: 'playground' },
+        { h: '에디터', p: '언어 서비스가 호버, 완성, 이름 바꾸기, 진단을 컴파일러 자체에서 답합니다. 지금은 Playground가 쓰고, VS Code 확장은 검토 중입니다.', link: 'languageService' },
+        { h: '디버거', p: 'CPU에서 셰이더를 한 문장씩 실행하고, 파일과 줄로 지정한 중단점에 멈추고, 멈춘 프레임에서 식을 지켜봅니다.', link: 'checks' },
+        { h: '리플렉션', p: `\`reflect()\`가 셰이더를 만든 같은 중간 표현에서 바인드 그룹과 ${facts.layoutStandards.join('과 ')} 레이아웃을 읽습니다.`, link: 'apiReflect' },
+      ],
+    },
+    checks: {
+      h: '검증 방식',
+      p: '소스 파일과 GPU가 실행하는 셰이더 텍스트 사이에 독립적인 검사 네 가지가 있습니다.',
+      items: [
+        { h: 'CPU 기준값', p: '모든 모듈은 배정밀도 CPU 함수로도 컴파일됩니다. 테스트가 그 함수를 실행해 결과를 비교합니다.' },
+        { h: '프런트엔드 둘, IR 하나', p: '`"use typeshade"` 파일과 `fn()` 그래프 API로 쓴 같은 프로그램은 동일한 중간 표현을 만들어야 합니다.' },
+        { h: '컴파일 게이트', p: '푸시마다 모든 예제를 Tint에서 컴파일하고 실제 WebGL2 컨텍스트에서 링크합니다.' },
+        { h: '골든 파일', p: '모든 예제의 출력 텍스트를 커밋해 둡니다. 이미터가 바뀌면 리뷰어가 읽는 diff로 드러납니다.' },
+      ],
+      more: '검증 방식 자세히',
+    },
+    gallery: {
+      h: '예제',
+      p: `예제 ${facts.examples}개입니다. 브라우저에 WebGPU나 WebGL2가 있으면 컴파일된 셰이더로 이 페이지에서 바로 그리고, 둘 다 없으면 빌드할 때 찍은 프레임을 보여 줍니다.`,
+      more: '예제 전체',
+    },
+    status: {
+      h: '현재 상태',
+      p: `${facts.nextVersion}이 첫 릴리스이며 아직 npm에 없습니다. 그때까지 패키지는 git 서브모듈로 설치하고, 이 사이트는 푸터에 적힌 고정 커밋으로 빌드합니다.`,
+      more: '변경 이력',
+    },
+  },
   lang: 'ko',
   name: '한국어',
   skip: '본문으로 건너뛰기',
@@ -378,6 +444,78 @@ export const ko: Copy = {
       'compute-reduction-twin': {
         title: '컴퓨트 리덕션',
         description: '스토리지 버퍼의 값 여덟 개를 하나로 접는 컴퓨트 진입점입니다. 워크그룹 크기는 64입니다.',
+      },
+      'module-const': {
+        title: '모듈 상수',
+        description: '언어가 허용하는 모든 스칼라 타입의 모듈 스코프 상수를 엔트리 포인트에서 하나씩 읽습니다.',
+      },
+      'palette-const': {
+        title: '벡터와 배열 상수',
+        description: '모듈 수준의 `vec4` 팔레트와 `array<f32, 3>` 구간값으로 전체 화면 삼각형에 띠를 그립니다.',
+      },
+      'convert-grid': {
+        title: '변환 생성자',
+        description: '부동소수점 벡터에 적용한 `vec3u(v)`가 WGSL처럼 구성 요소마다 변환합니다. 격자가 변환 하나하나를 보여 줍니다.',
+      },
+      'array-literal-ramp': {
+        title: '배열 리터럴',
+        description: '리스트가 지역 배열을 초기화합니다. 언어가 받는 모든 요소 타입에서 그렇습니다.',
+      },
+      'bitfield-bands': {
+        title: '비트필드 띠',
+        description: '복합 비트 대입과 띠 번호에 대한 `switch`, 대입 전에 선언한 `let`을 씁니다.',
+      },
+      'cutout': {
+        title: 'Discard',
+        description: '프래그먼트 엔트리가 호출하는 헬퍼 안의 `discard`와 `fwidth`, `saturate`, `**`입니다.',
+      },
+      'textured-quad': {
+        title: '텍스처, 샘플러, 오버라이드',
+        description: '전체 화면 삼각형이 `sampler`로 `texture_2d<f32>`를 샘플링하고, `override<f32>` 상수 두 개로 색을 입힙니다.',
+      },
+      'twin-structs': {
+        title: '쌍둥이 구조체',
+        description: '필드가 같은 구조체 두 개와, 어느 쪽을 만들지 선언한 자리마다 놓인 객체 리터럴입니다.',
+      },
+      'gradient-twin': {
+        title: '그레이디언트',
+        description: '그래프 API의 그레이디언트 패스를 소스 언어로 쓴 것입니다. 둘은 같은 셰이더로 컴파일됩니다.',
+      },
+      'plasma-twin': {
+        title: '플라스마',
+        description: '플라스마 예제를 소스 언어로 쓴 것입니다.',
+      },
+      'tunnel-twin': {
+        title: '터널',
+        description: '터널 예제를 소스 언어로 쓴 것이며 `screenCoords` 헬퍼가 있습니다.',
+      },
+      'julia-twin': {
+        title: '줄리아 집합',
+        description: '줄리아 집합을 소스 언어로 쓴 것입니다.',
+      },
+      'mandelbrot-twin': {
+        title: '망델브로 집합',
+        description: '망델브로 집합을 소스 언어로 쓴 것입니다.',
+      },
+      'domain-warp-twin': {
+        title: '도메인 워핑',
+        description: '노이즈 위의 도메인 워핑을 소스 언어로 쓴 것입니다.',
+      },
+      'kaleidoscope-twin': {
+        title: '만화경',
+        description: '만화경을 소스 언어로 쓴 것입니다.',
+      },
+      'ocean-twin': {
+        title: '바다 수평선',
+        description: '바다 수평선을 소스 언어로 쓴 것입니다.',
+      },
+      'starfield-twin': {
+        title: '별밭',
+        description: '별밭을 소스 언어로 쓴 것입니다.',
+      },
+      'hillshade-twin': {
+        title: '음영 기복',
+        description: '높이 필드의 음영 기복을 소스 언어로 쓴 것입니다.',
       },
     },
     copy: '복사',

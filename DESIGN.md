@@ -43,16 +43,15 @@ enforces the parts that can be checked mechanically and runs at the start of eve
 - A full-width header bar (56px, one rule under it) and a full-width footer on a soft ground
   frame every page. Under 48rem the header's links, the language menu and the dark-mode switch
   sit in a panel behind a menu button.
-- The front page is centred on a 960px measure: the category line ("A shader language built
-  around the TypeScript experience", the way react.dev sets its one line beside "React" and
-  vuejs.org attaches "Progressive"), the name as the headline in the accent colour, a
-  one-line subtitle, the tagline, five links, the live shader, the authored file beside the
-  WGSL it emits, four concept cards, three short points. Use TypeShade is the one filled
-  button (accent background, the way vuejs.org fills its own Get Started); Write in the
-  Playground, Why TypeShade, Learn the language and Explore examples stay the plain surface
-  button. Under 40rem the five links are a two-column grid, Use TypeShade across the top;
-  from 40rem they sit on one wrapping line; the two code frames stack under 48rem. The
-  layout follows vuejs.org's front page.
+- The front page opens with two columns from 64rem, the words on the left (the category line,
+  the name as the headline, a lead paragraph that carries the measured counts, three links,
+  the release state) and the live shader on the right, so the one thing that should stand out
+  is on screen with the first sentence; under 64rem the shader follows the words. Then, on the
+  960px measure: the authored file and its two outputs in a tablist, three measured figures,
+  the language surface as a bento grid of eight tiles whose code fragments the build compiles
+  (`scripts/check-landing-fragments.ts`), the tooling in a two-column list, the four checks as
+  a numbered list, six still frames from the gallery, and the release state. Get started is the
+  one filled button; the Playground and GitHub stay the plain surface button.
 - Every other page is one content column, 740px, left-aligned, with code blocks and figures at
   the same width. Sections are 48 to 56px apart.
 - The one thing that should stand out is a rendered shader. Everything else is quiet.
@@ -67,10 +66,10 @@ The front page answers "what is it" in about 350 words, the length of comparable
 front pages (htmx, esbuild, wgpu, TypeGPU are 250 to 350). Everything that explains how or
 why lives on its own page.
 
-- `/`: the category line, the name, the subtitle and the tagline, five links (Use TypeShade,
-  Write in the Playground, Why TypeShade, Learn the language, Explore examples), the live
-  metaballs shader, the compilation flow with `hello.shade.ts` beside the WGSL it emits, four
-  cards that map a TypeScript concept to its TypeShade meaning, and three points.
+- `/`: the category line, the name, the lead, three links (Get started, Open the Playground,
+  GitHub), the live metaballs shader, `hello.shade.ts` with its WGSL and GLSL in a tablist,
+  three measured figures, eight tiles of the language surface with compiled fragments, the
+  tooling, the checks, six examples and the release state.
 - `/guide/…`: the documentation, on the layout every documentation site uses (VitePress,
   Docusaurus): a sidebar on the left with six groups, the document in the middle, and on a
   wide screen an outline of the page on the right. Under 64rem the sidebar is a bar under the

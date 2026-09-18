@@ -132,14 +132,14 @@ function countBothTargets(): number {
 
 // Acronyms an example's blurb may keep in capitals. Anything else in capitals is the
 // upstream file emphasising a word, which this site sets in ordinary type.
-const ACRONYMS = new Set(['WGSL', 'GLSL', 'ES', 'GPU', 'CPU', 'RGB', 'LOD', 'SDF', 'API', 'LORAN', 'IO', 'GIS'])
+const ACRONYMS = new Set(['WGSL', 'GLSL', 'ES', 'GPU', 'CPU', 'RGB', 'LOD', 'SDF', 'API', 'LORAN', 'IO'])
 // The first clause of a blurb, up to an em dash, a colon or the first full stop.
 const CLAUSE = new RegExp(` \u2014 |: |(?<=\\.)\\s`)
 
 /** One example's blurb, shortened to its first clause. The blurbs are written in the
  *  compiler's repository, so they are trimmed to this site's typography. */
 function shortBlurb(text: string): string {
-  const clause = text.split(CLAUSE)[0]!.replace(/\s*\(#\d+\)/g, '').trim()
+  const clause = text.split(CLAUSE)[0]!.replace(/\s*\((?:X-GIS )?#\d+\)/g, '').trim()
   const plain = clause.replace(/\b[A-Z]{2,}\b/g, (w) => (ACRONYMS.has(w) ? w : w.toLowerCase()))
   return `${plain.replace(/[.,;:]$/, '')}.`
 }

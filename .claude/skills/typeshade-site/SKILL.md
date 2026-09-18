@@ -14,11 +14,12 @@ one design document; this skill is the working procedure on top of it.
 
 The site follows the shapes readers already know, and nothing else:
 
-- **Front page**: vuejs.org, with react.dev's headline: the category line (A shader language
-  built around the TypeScript experience), the name in the accent colour, a one-line subtitle,
-  the tagline, five buttons (Use TypeShade, Write in the Playground, Why TypeShade, Learn the
-  language, Explore examples), the live shader, the authored file beside the WGSL it emits,
-  four concept cards, three short points. No lists of features, no long prose.
+- **Front page**: two columns from 64rem, the words on the left and the live shader on the
+  right, then on the 960px measure: `hello.shade.ts` with its WGSL and GLSL in a tablist, three
+  measured figures, the language surface as eight tiles whose code fragments the build compiles
+  (`src/lib/landing-fragments.ts`, checked by `scripts/check-landing-fragments.ts`), the
+  tooling, the four checks, six examples and the release state. Copy in `landing` in the
+  dictionaries. No lists of features written as prose, no slogans.
 - **Header**: VitePress. Name on the left; Use TypeShade, Playground, Language, API and
   Examples; then a language menu (globe icon, current language, list of the others), a
   dark-mode switch (sun or moon), GitHub as an icon. Under 48rem, a menu button and a panel
