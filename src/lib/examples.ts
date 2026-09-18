@@ -132,7 +132,7 @@ function countBothTargets(): number {
 
 // Acronyms an example's blurb may keep in capitals. Anything else in capitals is the
 // upstream file emphasising a word, which this site sets in ordinary type.
-const ACRONYMS = new Set(['WGSL', 'GLSL', 'ES', 'GPU', 'CPU', 'RGB', 'LOD', 'SDF', 'API', 'LORAN', 'IO'])
+const ACRONYMS = new Set(['WGSL', 'GLSL', 'ES', 'GPU', 'CPU', 'RGB', 'LOD', 'SDF', 'API', 'LORAN', 'IO', 'GIS'])
 // The first clause of a blurb, up to an em dash, a colon or the first full stop.
 const CLAUSE = new RegExp(` \u2014 |: |(?<=\\.)\\s`)
 

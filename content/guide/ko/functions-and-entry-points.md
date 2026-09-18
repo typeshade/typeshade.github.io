@@ -1,7 +1,7 @@
 ---
 id: functions-and-entry-points
 source: d8b2da39eac02885b042eb94778cb0fa6827f46073a02be56d7e2a883807255f
-sourceLine: 519
+sourceLine: 534
 ---
 
 이 페이지를 읽고 나면 헬퍼 함수를 선언하고, 그 헬퍼를 다른 함수에서 호출하고, 버텍스·프래그먼트·컴퓨트 스테이지의 진입점을 작성하고, 이 함수들을 담는 모듈을 조립할 수 있습니다.

@@ -1,7 +1,7 @@
 ---
 id: the-cpu-oracle
-source: a5e59fa93ff8a83fbea9c15cd55b3ad62fe28d92829ca4965b1ea6d6a26877aa
-sourceLine: 1252
+source: 48e9daa3c0663f49dc15760db5707854745272f8f0715830a55291ef68f55c14
+sourceLine: 1357
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -23,7 +23,7 @@ JavaScript 함수가 됩니다. 픽셀이 잘못 나왔을 때 GPU 실행 결과
 펼친 `number[]`이며, 구조체는 필드 이름을 키로 삼는 객체입니다.
 
 ```ts
-import { module, fn, vec2fT, dot, sqrt, compileModule } from '@xgis/shader-dsl'
+import { module, fn, vec2fT, dot, sqrt, compileModule } from 'typeshade'
 
 const len = fn('len', { p: vec2fT }, ({ p }) => sqrt(dot(p, p)))
 const m = module({ funcs: [len] })
@@ -52,10 +52,10 @@ cpu.fns.len([3, 4]) // → 5
 실제로 읽는 바인딩만 요구합니다. 그래서 f64 연산이 있는 모듈이라도, 하향 변환이 끼워
 넣는 `_fp64` 가드 텍스처([fp64](/guide/authoring/fp64/) 참고)에는 값을 넣지 않아도
 됩니다. 함수가 읽는 바인딩에 값을 넣어 두지 않았으면
-`shader-dsl/cpu: unbound <name>` 오류를 던집니다.
+`typeshade/cpu: unbound <name>` 오류를 던집니다.
 
 ```ts
-import { module, fn, uniformStruct, storageBuffer, f32T, u32T, compileModule } from '@xgis/shader-dsl'
+import { module, fn, uniformStruct, storageBuffer, f32T, u32T, compileModule } from 'typeshade'
 
 const U = uniformStruct('U', { group: 0, binding: 0, as: 'u' }, { scale: f32T })
 const data = storageBuffer('data', f32T, { group: 0, binding: 1, access: 'read' })
@@ -89,7 +89,7 @@ cpu.fns.scale_at(2) // → 6
 불일치를 가릴 만큼 넓은 허용 오차 대신 ulp 단위로 좁혀서 볼 수 있습니다.
 
 ```ts
-import { module, fn, f32T, compileModule } from '@xgis/shader-dsl'
+import { module, fn, f32T, compileModule } from 'typeshade'
 
 const acc = fn('acc', { a: f32T, b: f32T }, ({ a, b }) => a.add(b))
 const m = module({ funcs: [acc] })
@@ -107,7 +107,7 @@ compileModule(m, { precision: 'f32' }).fns.acc(1, 2 ** -30) // → 1
 봅니다.
 
 ```ts
-import { compileModuleJs } from '@xgis/shader-dsl'
+import { compileModuleJs } from 'typeshade'
 
 // m: the module from the bindings sample above.
 const cpu = compileModuleJs(m, { precision: 'f32' })
@@ -144,7 +144,7 @@ for (let i = 0; i < gpuOut.length; i++) {
 먼저 읽기 때문입니다.
 
 ```ts
-import { module, fn, resource, texture2dfT, samplerT, vec2fT, textureSample, compileModule } from '@xgis/shader-dsl'
+import { module, fn, resource, texture2dfT, samplerT, vec2fT, textureSample, compileModule } from 'typeshade'
 
 const tex = resource('tex', texture2dfT, { group: 0, binding: 0 })
 const smp = resource('smp', samplerT, { group: 0, binding: 1 })

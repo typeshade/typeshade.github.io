@@ -1,6 +1,6 @@
 ---
 id: overview
-source: c47868a2a6f05c3cb8a3fff26f0cc81c00bfa3e2136e52681c1fbd6a54884cba
+source: 130d7f11cac5ef89dce95de2e95c7781ff12624394fe0a20c0f97fed104aeeec
 sourceLine: 1
 ---
 
@@ -12,7 +12,7 @@ sourceLine: 1
 
 셰이더는 TypeScript에서 타입이 붙은 표현식과 문장으로 씁니다. 표현식을 만들 때마다 연산과 피연산자를 기록하는 작은 타입 객체인 노드가 생깁니다. 이 노드의 그래프가 중간 표현, 즉 IR이며 패키지가 컴파일하는 대상입니다. 셰이더 텍스트를 직접 조립하지 않으므로 잘못된 타입이나 필드 이름은 에디터에서 TypeScript 오류로 확인할 수 있습니다.
 
-TypeShade의 공식 작성 방식은 일반적인 `.ts` 파일에서 첫 문장으로 `"use typeshade";`를 쓰는 것입니다. 별도의 파일 확장자나 별도의 편집 모드가 필요하지 않으며, TypeScript의 타입 검사와 개발 도구를 유지하면서 GPU 실행에 필요한 의미와 제약을 추가합니다. 기존 EDSL 작성 인터페이스를 그대로 쓰는 경우에는 `@xgis/shader-dsl` 패키지에서 같은 IR 작성 기능을 가져올 수 있습니다.
+TypeShade의 공식 작성 방식은 일반적인 `.ts` 파일에서 첫 문장으로 `"use typeshade";`를 쓰는 것입니다. 별도의 파일 확장자나 별도의 편집 모드가 필요하지 않으며, TypeScript의 타입 검사와 개발 도구를 유지하면서 GPU 실행에 필요한 의미와 제약을 추가합니다. 기존 EDSL 작성 인터페이스를 그대로 쓰는 경우에는 `typeshade` 패키지에서 같은 IR 작성 기능을 가져올 수 있습니다.
 
 구조를 만드는 두 호출은 `fn`과 `module`입니다. `fn`은 함수의 매개변수와 본문을 선언하고, 진입점이면 실행 스테이지도 지정합니다. 진입점은 GPU가 버텍스 하나, 프래그먼트 하나, 컴퓨트 호출 하나마다 한 번씩 부르는 함수이고, 나머지 함수는 진입점이 부르는 헬퍼입니다. `module`은 함수와 구조체, 리소스, 상수를 하나의 모듈 값으로 묶습니다.
 
@@ -24,7 +24,7 @@ TypeShade의 공식 작성 방식은 일반적인 `.ts` 파일에서 첫 문장�
 - `reflect`는 호스트가 파이프라인을 만들 때 필요한 바인딩, std140과 std430 레이아웃, 버텍스 속성, 진입점 시그니처를 반환합니다.
 
 ```ts
-import { fn, module, abs, length, f32T, vec2fT, emitModule, compileModule, reflect } from '@xgis/shader-dsl'
+import { fn, module, abs, length, f32T, vec2fT, emitModule, compileModule, reflect } from 'typeshade'
 
 // One helper. The return type is inferred from the value the body returns.
 const ringMask = fn('ring_mask', { uv: vec2fT, radius: f32T }, (p) =>
@@ -53,11 +53,11 @@ fn ring_mask(uv: vec2<f32>, radius: f32) -> f32 {
 필요한 것은 모두 패키지 루트에서 가져옵니다. 패키지 루트는 IR, 레이아웃 선언자, WGSL과 GLSL 백엔드, 검증기, CPU 오라클과 `reflect`를 포함한 작성 및 생성 인터페이스를 다시 내보냅니다.
 
 ```ts
-import { fn, module, vec4, If, Switch, when, emitModule, reflect } from '@xgis/shader-dsl'
-import { ioStruct, uniformStruct, structDecl, builtin, location, storageBuffer, resource } from '@xgis/shader-dsl'
+import { fn, module, vec4, If, Switch, when, emitModule, reflect } from 'typeshade'
+import { ioStruct, uniformStruct, structDecl, builtin, location, storageBuffer, resource } from 'typeshade'
 ```
 
-`@xgis/shader-dsl/dev`에는 개발용 진단과 최적화 측정, 오류의 소스 위치가 있고, `@xgis/shader-dsl/emit-prod`에는 배포용 이름 변경과 압축 및 난독화 도구가 있습니다. `@xgis/shader-dsl/compute`에는 호스트의 백엔드에서 compute 커널을 실행하는 도구가 있습니다. 실제 셰이더는 사용하는 저장소에 두고 이 패키지를 다른 의존성과 같은 방식으로 가져옵니다.
+`typeshade/dev`에는 개발용 진단과 최적화 측정, 오류의 소스 위치가 있고, `typeshade/emit-prod`에는 배포용 이름 변경과 압축 및 난독화 도구가 있습니다. `typeshade/compute`에는 호스트의 백엔드에서 compute 커널을 실행하는 도구가 있습니다. `typeshade/debug`는 `"use typeshade"` 셰이더의 호출 한 번을 CPU 오라클에서 한 문장씩 실행합니다. 작성자가 쓴 문장마다 멈춰 소스 위치와 프레임의 지역 변수를 보고하고, 줄 번호로 중단점을 찾습니다. 그런 실행을 데이터로 적는 실행 구성도 함께 들어 있습니다. 인자 위치 대신 엔트리가 선언한 이름을 키로 삼고, `launch.json`용 JSON 스키마를 미리 구워 두었으며, 값을 작성자가 쓴 셰이더 타입으로 보여 주는 포매터가 있습니다. 에디터의 디버그 어댑터와 Playground의 단계 실행 패널이 모두 이 위에 서 있습니다. `docs/debugging.md`를 참고하세요. 실제 셰이더는 사용하는 저장소에 두고 이 패키지를 다른 의존성과 같은 방식으로 가져옵니다.
 
 ### 이 가이드의 순서
 

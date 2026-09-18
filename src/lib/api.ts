@@ -70,6 +70,11 @@ const categoryBySlug = new Map(API_CATEGORIES.map((c) => [c.slug, c]))
 // Which category a file's exports belong to. src/core/ir/node.ts is the one file that holds
 // several, so it is split by export below instead.
 const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
+  'src/compiler/ts/compile.ts': 'authoring',
+  'src/core/ir/span.ts': 'ir',
+  'src/compiler/ts/pack.ts': 'authoring',
+  'src/compiler/ts/source-file.ts': 'authoring',
+  'src/compiler/ts/directive.ts': 'authoring',
   'src/core/ir/builder.ts': 'authoring',
   'src/core/ir/types.ts': 'types',
   'src/core/ir/nodes.ts': 'ir',

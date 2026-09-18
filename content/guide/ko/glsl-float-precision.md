@@ -1,7 +1,7 @@
 ---
 id: glsl-float-precision
-source: 475f03623a1b64e230236502c017e0023289732df1aedd541e67fd7bbbebf408
-sourceLine: 2081
+source: bd5e9af82e5add18f38e3dc938af31cb8b12885c72fb21963a045d109a4eb7e7
+sourceLine: 2188
 ---
 
 이 절을 읽고 나면 GLSL 스테이지를 언제 mediump로 생성해야 하는지, 이 옵션 하나가 생성된
@@ -19,7 +19,7 @@ varying이 대역폭과 전력을 실제로 더 씁니다. 언어가 이 비용�
 `'mediump'`를 받습니다.
 
 ```ts
-import { emitGlslModule } from '@xgis/shader-dsl'
+import { emitGlslModule } from 'typeshade'
 
 const fs = emitGlslModule(m, 'fragment', { floatPrecision: 'mediump' })
 ```
@@ -48,7 +48,7 @@ mediump는 대략 fp16에 해당하며, 유효 숫자는 약 세 자리이고 �
 스테이지에서 서로 다른 한정자를 쓸 수 있습니다.
 
 ```ts
-import { emitGlslModule } from '@xgis/shader-dsl'
+import { emitGlslModule } from 'typeshade'
 
 const vertex = emitGlslModule(m, 'vertex') // positions stay highp
 const fragment = emitGlslModule(m, 'fragment', { floatPrecision: 'mediump' })
@@ -103,7 +103,7 @@ CI에서 픽셀을 아무리 비교해도 mediump로 생성한 결과와 highp�
 사실뿐입니다.
 
 ```ts
-import { emitGlslModule } from '@xgis/shader-dsl'
+import { emitGlslModule } from 'typeshade'
 
 const highp = emitGlslModule(m, 'fragment')
 const mediump = emitGlslModule(m, 'fragment', { floatPrecision: 'mediump' })
