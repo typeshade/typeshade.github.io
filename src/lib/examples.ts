@@ -196,11 +196,9 @@ const pkg = JSON.parse(readFileSync(path.join(vendorRoot, 'package.json'), 'utf8
   optionalDependencies?: Record<string, string>
 }
 
-/** Zero is derived from the fields that put code into a consumer's install: `dependencies`,
- *  `optionalDependencies`, and every `peerDependencies` entry not marked optional in
- *  `peerDependenciesMeta`. An optional peer installs nothing and does not count; today that is
- *  `typescript`, which only the `./language-service` subpath asks for and every core subpath
- *  does without. devDependencies is the compiler's own CI toolchain and never reaches an install. */
+/** Runtime installs are empty except for TypeScript, which is now a required peer because the
+ * author-facing `use typeshade` compiler imports the TypeScript API at module scope. Keep this
+ * check strict so a new runtime dependency cannot silently change the installation contract. */
 function runtimeDeps(): number {
   const meta = pkg.peerDependenciesMeta ?? {}
   const requiredPeers = Object.keys(pkg.peerDependencies ?? {}).filter((name) => !meta[name]?.optional)
@@ -209,10 +207,12 @@ function runtimeDeps(): number {
     ...Object.keys(pkg.optionalDependencies ?? {}),
     ...requiredPeers,
   ]
-  if (declared.length > 0) {
-    throw new Error(`[examples] the mirror's package.json now installs ${declared.join(', ')} into a consumer; update the copy`)
+  const allowed = ['typescript']
+  const unexpected = declared.filter((name) => !allowed.includes(name))
+  if (unexpected.length > 0 || requiredPeers.length !== 1 || requiredPeers[0] !== 'typescript') {
+    throw new Error(`[examples] the mirror's package.json changed its runtime dependency contract: ${declared.join(', ') || 'none'}`)
   }
-  return 0
+  return requiredPeers.length
 }
 
 function gitmodulesField(field: 'url' | 'path'): string {
@@ -293,7 +293,7 @@ export const facts = {
 // compared at whatever commit is pinned now, so the pin that changes one stops the build and
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
-const pinned = { commit: 'a2240e0', examples: 36, bothTargets: 35, testFiles: 229 }
+const pinned = { commit: '29d8ee9', examples: 36, bothTargets: 35, testFiles: 292 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
 if (facts.bothTargets !== pinned.bothTargets) drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`)
