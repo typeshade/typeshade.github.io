@@ -425,7 +425,7 @@ export const en = {
     },
     targets: {
       h: 'One file, two targets',
-      p: 'The compiler lowers `hello.shade.ts` to one intermediate representation and emits both targets from it. The file is the whole program; the two frames beside it are what a host hands to WebGPU or WebGL2.',
+      p: 'The compiler lowers `hello.shade.ts` to one intermediate representation and emits both targets from it. The file is the whole program; the pane beside it holds the WGSL and the GLSL ES 3.00 fragment a host hands to WebGPU or WebGL2, one tab each.',
       source: 'hello.shade.ts',
       wgsl: 'WGSL',
       glsl: `${glsl} fragment`,
@@ -444,12 +444,14 @@ export const en = {
     },
     map: {
       h: 'What carries over from TypeScript',
-      p: 'TypeShade keeps the concepts a TypeScript developer already has and gives each one its GPU meaning. The rest of the rules are in the [language guide](guide).',
+      p: 'GPU code has three things: resources, value layouts and entry points. TypeShade gives each a place TypeScript already has, and keeps the rest of the language where it fits the GPU. The full rules are in the [language guide](guide).',
       rows: [
-        ['"use typeshade"', 'The directive is the language boundary', 'It sits where a JavaScript directive sits, at the top of the file, and opts that file into shader compilation. Everything under it is checked as TypeShade.'],
-        ['f32, vec2, mat4', 'Type annotations are GPU types', 'Instead of `number` alone, the checker knows `f32`, `vec2` and `mat4`, and applies the shader operation rules to them in the editor.'],
-        ['@fragment export function', 'Exported functions are entry points', 'The declaration and call model stays the one you know. A decorator such as `@vertex` or `@fragment` names the stage, and the parameters are the inputs a builtin or a location supplies.'],
-        ['class Uniforms { time: f32 }', 'A class is a uniform block', 'Its fields become the block\'s layout, and [`reflect()`](apiReflect) reports the offsets a host writes to.'],
+        ['"use typeshade"', 'The directive is the language boundary', 'It is the first statement of the file, where a JavaScript directive goes. A file without it does not compile as a shader; with it, everything under it is checked as TypeShade and lowered to the compiler\'s intermediate representation.'],
+        ['f32, vec3, mat4, sin(x)', 'GPU types and builtins are globals', '`f32`, `vec3`, `mat4` and the builtins such as `sin` and `vec4(...)` need no import, and `Math.sin` and `Math.PI` are aliases of the same operations. The checker applies the shader rules to them in the editor, before any code is emitted.'],
+        ['class VsIn { @location(0) uv: vec2 }', 'A type or a class is a value layout', 'Plain data is a `type` alias; a `class` carries per-field metadata such as `@location` and `@builtin`, and its fields lay out the struct both targets receive.'],
+        ['new Circle(center, 0.4).sdf(p)', 'A class is a TypeScript class', 'Fields, a constructor and `new`, methods and static functions, `extends` with `super` and `abstract`, generic classes and functions, and the mixin pattern all compile. A method lowers to a function that takes the struct first, and a generic is compiled once per set of type arguments.'],
+        ['declare const u: uniform<Camera>', 'declare names a resource the host fills', '`uniform<T>` reads a uniform block, and `storage<T>` behind `declare let` is writable. There is no initializer: the host owns the slot, in the order the file declares them, and [`reflect()`](apiReflect) reports its layout.'],
+        ['@fragment export function fs(v: VsOut): vec4', 'A decorated export is an entry point', '`@vertex`, `@fragment` and `@compute([64, 1, 1])` name the stage; a function without one is a helper. Stage inputs are explicit parameters, a `@builtin("vertex_index")` or a `@location`. There is no hidden global.'],
       ],
     },
     oracle: {

@@ -486,7 +486,7 @@ export const ko: Copy = {
     },
     targets: {
       h: '파일 하나, 출력 둘',
-      p: '컴파일러는 `hello.shade.ts`를 하나의 중간 표현으로 내린 뒤 거기서 두 출력을 냅니다. 이 파일이 프로그램 전부이고, 옆의 두 프레임이 호스트가 WebGPU나 WebGL2에 넘기는 코드입니다.',
+      p: '컴파일러는 `hello.shade.ts`를 하나의 중간 표현으로 내린 뒤 거기서 두 출력을 냅니다. 이 파일이 프로그램 전부이고, 옆 창에는 호스트가 WebGPU나 WebGL2에 넘기는 WGSL과 GLSL ES 3.00 프래그먼트가 탭 하나씩으로 들어 있습니다.',
       source: 'hello.shade.ts',
       wgsl: 'WGSL',
       glsl: `${glsl} 프래그먼트`,
@@ -505,12 +505,14 @@ export const ko: Copy = {
     },
     map: {
       h: 'TypeScript에서 그대로 이어지는 것',
-      p: 'TypeShade는 TypeScript 개발자가 이미 아는 개념을 그대로 두고, 각 개념이 GPU에서 무엇을 뜻하는지 정합니다. 나머지 규칙은 [언어 가이드](guide)에 있습니다.',
+      p: 'GPU 코드에는 리소스, 값 레이아웃, 엔트리 포인트 세 가지가 있습니다. TypeShade는 각각에 TypeScript가 이미 가진 자리를 주고, 나머지 언어는 GPU에 맞는 범위에서 그대로 둡니다. 전체 규칙은 [언어 가이드](guide)에 있습니다.',
       rows: [
-        ['"use typeshade"', '이 지시어가 언어의 경계입니다', 'JavaScript 지시어와 같은 자리, 파일 맨 위에 놓입니다. 이 줄이 있는 파일은 셰이더로 컴파일되고, 그 아래 모든 코드는 TypeShade로 검사됩니다.'],
-        ['f32, vec2, mat4', '타입 주석이 GPU 타입입니다', '`number`만 보는 대신 검사기가 `f32`, `vec2`, `mat4`를 알고, 셰이더 연산 규칙을 편집기 안에서 적용합니다.'],
-        ['@fragment export function', '내보낸 함수가 엔트리 포인트입니다', '선언하고 호출하는 방식은 아는 그대로입니다. `@vertex`나 `@fragment` 같은 데코레이터가 스테이지를 정하고, 매개변수는 builtin이나 location이 채우는 입력입니다.'],
-        ['class Uniforms { time: f32 }', '클래스가 유니폼 블록입니다', '필드가 블록의 레이아웃이 되고, [`reflect()`](apiReflect)가 호스트가 써 넣을 오프셋을 알려 줍니다.'],
+        ['"use typeshade"', '이 지시어가 언어의 경계입니다', '파일의 첫 문장, JavaScript 지시어가 놓이는 자리에 씁니다. 이 줄이 없는 파일은 셰이더로 컴파일되지 않고, 있는 파일은 그 아래 모든 코드가 TypeShade로 검사되어 컴파일러의 중간 표현으로 내려갑니다.'],
+        ['f32, vec3, mat4, sin(x)', 'GPU 타입과 builtin은 전역입니다', '`f32`, `vec3`, `mat4`와 `sin`, `vec4(...)` 같은 builtin은 import 없이 씁니다. `Math.sin`과 `Math.PI`는 같은 연산의 별칭입니다. 검사기는 코드를 내기 전에 편집기 안에서 셰이더 규칙을 적용합니다.'],
+        ['class VsIn { @location(0) uv: vec2 }', 'type이나 class가 값 레이아웃입니다', '메타데이터가 없는 데이터는 `type` 별칭으로 쓰고, 필드마다 `@location`이나 `@builtin`이 필요하면 `class`로 씁니다. 클래스의 필드가 두 타깃이 받는 구조체의 레이아웃이 됩니다.'],
+        ['new Circle(center, 0.4).sdf(p)', '클래스는 TypeScript 클래스 그대로입니다', '필드, 생성자와 `new`, 메서드와 static 함수, `super`와 `abstract`가 있는 `extends`, 제네릭 클래스와 함수, 믹스인 패턴까지 컴파일됩니다. 메서드는 구조체를 첫 매개변수로 받는 함수로 내려가고, 제네릭은 타입 인자 조합마다 한 번씩 컴파일됩니다.'],
+        ['declare const u: uniform<Camera>', 'declare가 호스트가 채우는 리소스를 선언합니다', '`uniform<T>`는 유니폼 블록을 읽고, `declare let` 뒤의 `storage<T>`는 쓸 수 있습니다. 초기값은 없습니다. 슬롯은 호스트의 것이고 파일의 선언 순서를 따르며, [`reflect()`](apiReflect)가 그 레이아웃을 알려 줍니다.'],
+        ['@fragment export function fs(v: VsOut): vec4', '데코레이터가 붙은 export가 엔트리 포인트입니다', '`@vertex`, `@fragment`, `@compute([64, 1, 1])`가 스테이지를 정하고, 없는 함수는 헬퍼입니다. 스테이지 입력은 `@builtin("vertex_index")`나 `@location` 같은 명시적 매개변수로 받습니다. 숨은 전역 변수는 없습니다.'],
       ],
     },
     oracle: {
