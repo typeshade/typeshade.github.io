@@ -38,10 +38,16 @@ interface Props {
   /** Range, step, default and label for one uniform field each. A field the module does not
    *  declare fails the build. */
   controls?: ControlProps
-  aspect?: '3/1' | '2/1' | '16/9' | '3/2'
+  aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2'
+  /** `figure` is the column a guide page shows: code, then canvas, then controls. `hero` is
+   *  the front page's showcase card: a head bar with the file name and the two buttons, the
+   *  code pane beside the canvas, then the controls and the caption, with no emitted-output
+   *  disclosure (the front page prints that itself). */
+  variant?: 'figure' | 'hero'
 }
 
-const { locale, id, title, code, caption, file, controls = {}, aspect = '2/1' } = Astro.props
+const { locale, id, title, code, caption, file, controls = {}, aspect = '2/1', variant = 'figure' } = Astro.props
+const hero = variant === 'hero'
 const t = copyFor(locale)
 const l = t.live
 const payload = liveShader(id, title, code, controls)
@@ -79,58 +85,98 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
 ---
 
 <figure
-  class="figure live"
+  class:list={['figure', 'live', hero ? 'live-hero' : undefined]}
   data-live-shader
   data-live-id={id}
   data-payload={payloadId}
   data-copy={JSON.stringify(runtimeCopy)}
   data-live-state="idle"
 >
-  <div class="live-code" data-live-code>
-    <Code code={payload.source} lang="ts" title={file ?? l.file} locale={locale} />
-  </div>
+  {/* The hero is one card: a head bar with the file name as the active tab and the two
+      buttons, a body holding the code pane and the picture, then the diagnostics, the
+      controls and the caption. The script finds every part by its data attribute, so the
+      wrappers change nothing for it. */}
+  {hero ? (
+    <div class="live-card">
+      <div class="live-card-head">
+        <span class="live-file">{file ?? l.file}</span>
+        <div class="live-bar">
+          <button type="button" data-live-edit aria-label={`${l.edit} ${file ?? l.file}`}>{l.edit}</button>
+          <button type="button" data-live-reset aria-label={`${l.reset} ${file ?? l.file}`}>{l.reset}</button>
+        </div>
+      </div>
 
-  <div class="live-bar">
-    <button type="button" data-live-edit aria-label={`${l.edit} ${file ?? l.file}`}>{l.edit}</button>
-    <button type="button" data-live-reset aria-label={`${l.reset} ${file ?? l.file}`}>{l.reset}</button>
-  </div>
+      <div class="live-card-body">
+        <div class="live-code" data-live-code>
+          <Code code={payload.source} lang="ts" title={file ?? l.file} locale={locale} />
+        </div>
+        <div class="figure-frame live-frame" style={`aspect-ratio: ${aspect}`}>
+          <img src={`/stills/${id}.webp`} alt={aria.none} loading="eager" fetchpriority="high" decoding="async" />
+          <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
+        </div>
+      </div>
 
-  <div class="figure-frame live-frame" style={`aspect-ratio: ${aspect}`}>
-    <img src={`/stills/${id}.webp`} alt={aria.none} loading="lazy" decoding="async" />
-    <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
-  </div>
-  <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
-
-  <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
-
-  <div class="live-controls" data-live-controls hidden></div>
-  {payload.reserved.length > 0 && (
-    <p class="live-reserved">
-      <Rich text={reservedNote} locale={locale} />
-      {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
-    </p>
-  )}
-
-  <details class="live-output" data-pagefind-ignore>
-    <summary>{l.output}</summary>
-    <div class="live-output-body">
-      <p class="live-reserved"><Rich text={l.outputNote} locale={locale} /></p>
-      <div data-live-emitted="wgsl"><Code code={payload.wgsl} lang="wgsl" title={l.wgsl} locale={locale} /></div>
-      <div data-live-emitted="vertex"><Code code={payload.glsl.vertex} lang="glsl" title={l.glslVertex} locale={locale} /></div>
-      <div data-live-emitted="fragment"><Code code={payload.glsl.fragment} lang="glsl" title={l.glslFragment} locale={locale} /></div>
-      {fields.length > 0 && (
-        <table class="live-reflection">
-          <caption>{l.uniforms}</caption>
-          <thead><tr><th>{l.field}</th><th>{l.type}</th><th>{l.offset}</th></tr></thead>
-          <tbody>
-            {fields.map((f) => (
-              <tr><td><code>{f.name}</code></td><td><code>{f.type}</code></td><td><code>{f.offset}</code></td></tr>
-            ))}
-          </tbody>
-        </table>
+      <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
+      <div class="live-controls" data-live-controls hidden></div>
+      {payload.reserved.length > 0 && (
+        <p class="live-reserved">
+          <Rich text={reservedNote} locale={locale} />
+          {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
+        </p>
       )}
+      <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
     </div>
-  </details>
+  ) : (
+    <Fragment>
+      <div class="live-parts">
+        <div class="live-code" data-live-code>
+          <Code code={payload.source} lang="ts" title={file ?? l.file} locale={locale} />
+        </div>
+
+        <div class="live-bar">
+          <button type="button" data-live-edit aria-label={`${l.edit} ${file ?? l.file}`}>{l.edit}</button>
+          <button type="button" data-live-reset aria-label={`${l.reset} ${file ?? l.file}`}>{l.reset}</button>
+        </div>
+      </div>
+
+      <div class="figure-frame live-frame" style={`aspect-ratio: ${aspect}`}>
+        <img src={`/stills/${id}.webp`} alt={aria.none} loading="lazy" decoding="async" />
+        <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
+      </div>
+      <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
+
+      <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
+
+      <div class="live-controls" data-live-controls hidden></div>
+      {payload.reserved.length > 0 && (
+        <p class="live-reserved">
+          <Rich text={reservedNote} locale={locale} />
+          {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
+        </p>
+      )}
+
+      <details class="live-output" data-pagefind-ignore>
+        <summary>{l.output}</summary>
+        <div class="live-output-body">
+          <p class="live-reserved"><Rich text={l.outputNote} locale={locale} /></p>
+          <div data-live-emitted="wgsl"><Code code={payload.wgsl} lang="wgsl" title={l.wgsl} locale={locale} /></div>
+          <div data-live-emitted="vertex"><Code code={payload.glsl.vertex} lang="glsl" title={l.glslVertex} locale={locale} /></div>
+          <div data-live-emitted="fragment"><Code code={payload.glsl.fragment} lang="glsl" title={l.glslFragment} locale={locale} /></div>
+          {fields.length > 0 && (
+            <table class="live-reflection">
+              <caption>{l.uniforms}</caption>
+              <thead><tr><th>{l.field}</th><th>{l.type}</th><th>{l.offset}</th></tr></thead>
+              <tbody>
+                {fields.map((f) => (
+                  <tr><td><code>{f.name}</code></td><td><code>{f.type}</code></td><td><code>{f.offset}</code></td></tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </details>
+    </Fragment>
+  )}
 
   <script type="application/json" id={payloadId} set:html={livePayloadJson(payload)} is:inline />
 </figure>

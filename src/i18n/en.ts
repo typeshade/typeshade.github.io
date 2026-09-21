@@ -410,73 +410,68 @@ export const en = {
   },
 
   front: {
-    use: {
-      eyebrow: 'A shader language built around the TypeScript experience',
-      title: 'TypeShade',
-      subtitle: 'Start with `"use typeshade"`.',
-      tagline: 'Keep the TypeScript authoring experience: types, functions, modules and editor feedback. Write with TypeShade GPU types and shader semantics, and emit WGSL or GLSL ES 3.00 from one source.',
-      getStarted: 'Use TypeShade',
-      playground: 'Write in the Playground',
-      learn: 'Why TypeShade',
-      language: 'Learn the language',
-      examples: 'Explore examples',
-      flowH: 'From TypeScript to a shader',
-      flowP: 'A file-level `"use typeshade"` directive creates the boundary between ordinary application code and the TypeShade language.',
-      flowLabels: ['TypeScript authoring', 'TypeShade semantics', 'shared IR', 'WGSL / GLSL ES 3.00'],
-      flowAriaLabel: 'TypeShade compilation flow',
-      codeH: 'Your first TypeShade program',
-      codeP: 'The source looks familiar to a TypeScript developer. The compiler applies TypeShade types and GPU semantics, then produces shader code the host can consume.',
-      conceptsH: 'If you know TypeScript, you already know the shape',
-      conceptsP: 'TypeShade extends familiar TypeScript concepts with GPU-specific rules instead of making developers learn an unrelated shader authoring model. Start with these mappings, then go deeper into the language guide.',
-      concepts: [
-        ['File directive', '`"use typeshade"`', 'It uses the same file-leading directive position as JavaScript directives, but TypeShade uses it to opt the file into shader compilation semantics.'],
-        ['Types', 'Type annotations → GPU types', 'Instead of only application-level types such as `number`, TypeShade statically checks GPU types such as `f32`, `vec2`, and `mat4` together with shader operation rules.'],
-        ['Functions', 'Functions → entry points', 'The familiar declaration and call model remains, while TypeShade surface syntax such as `@vertex` and `@fragment` selects shader stages.'],
-        ['Modules', 'import / export → shader modules', 'TypeScript module boundaries remain useful, while the compiler restricts the program graph to constructs it can lower into shader code.']
+    title: 'A shader language you write in TypeScript.',
+    searchTitle: 'TypeShade',
+    lede: `TypeShade is a language of its own, with TypeScript's syntax, types and editor. A file that starts with \`"use typeshade"\` emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file.`,
+    playground: 'Open the Playground',
+    quickStart: 'Quick start',
+    stageAria: 'A shader running beside the file that draws it',
+    first: {
+      title: 'Warped bands',
+      caption: 'The file on the left, drawn on the right. Move the pointer over the picture; edit a line and it follows.',
+      warp: 'how much the bands bend',
+      ink: 'first colour',
+      paper: 'second colour',
+    },
+    targets: {
+      h: 'One file, two targets',
+      p: 'The compiler lowers `hello.shade.ts` to one intermediate representation and emits both targets from it. The file is the whole program; the two frames beside it are what a host hands to WebGPU or WebGL2.',
+      source: 'hello.shade.ts',
+      wgsl: 'WGSL',
+      glsl: `${glsl} fragment`,
+    },
+    gallery: {
+      h: 'More shaders',
+      p: `${facts.examples} examples ship with the compiler, from cartographic passes to a compute kernel. Each tile runs the emitted code in this browser.`,
+      all: 'All examples',
+      tile: (title: string) => ({
+        neutral: `${title}, drawn at build time.`,
+        webgpu: `${title}, running on WebGPU.`,
+        webgl2: `${title}, running on WebGL2.`,
+        none: `${title}, drawn at build time; this browser has no WebGPU or WebGL2.`,
+        reduced: `${title}, one frame, since this system asks for less motion.`,
+      }),
+    },
+    map: {
+      h: 'What carries over from TypeScript',
+      p: 'TypeShade keeps the concepts a TypeScript developer already has and gives each one its GPU meaning. The rest of the rules are in the [language guide](guide).',
+      rows: [
+        ['"use typeshade"', 'The directive is the language boundary', 'It sits where a JavaScript directive sits, at the top of the file, and opts that file into shader compilation. Everything under it is checked as TypeShade.'],
+        ['f32, vec2, mat4', 'Type annotations are GPU types', 'Instead of `number` alone, the checker knows `f32`, `vec2` and `mat4`, and applies the shader operation rules to them in the editor.'],
+        ['@fragment export function', 'Exported functions are entry points', 'The declaration and call model stays the one you know. A decorator such as `@vertex` or `@fragment` names the stage, and the parameters are the inputs a builtin or a location supplies.'],
+        ['class Uniforms { time: f32 }', 'A class is a uniform block', 'Its fields become the block\'s layout, and [`reflect()`](apiReflect) reports the offsets a host writes to.'],
       ],
-      highlights: [
-        ['Start from TypeScript', 'Keep familiar concepts such as type annotations, functions, modules and control flow while shader-specific constraints are checked statically.'],
-        ['`use typeshade` is the language boundary', '`"use typeshade"` is not a comment or a runtime call. It opts the file into TypeShade program semantics and its compilation model.'],
-        ['Lower to host-ready GPU code', 'Emit WGSL for WebGPU or GLSL ES 3.00 for WebGL2 from the same TypeShade source. There is no TypeShade runtime to ship with the application.'],
-      ]
     },
-    hero: {
-      before: '',
-      accent: 'TypeShade',
-      after: '',
-      subtitle: 'The verifiable TypeScript shader library',
-      tagline: `Start a file with \`"use typeshade"\`. TypeShade emits WGSL for WebGPU and ${glsl} for WebGL2. The same source runs on the CPU in double precision, so the compiler's output can be checked.`,
-      getStarted: 'Get started',
-      why: 'Why TypeShade',
-      examples: 'Examples',
-      prerelease: `Pre-release: ${facts.nextVersion} is not on npm yet. Install as a git submodule`,
-    },
-    metaballs: {
-      neutral: `Metaballs, from examples/${exampleFile('metaballs')}, drawn at build time.`,
-      webgpu: 'Metaballs, running live on WebGPU from the compiled WGSL.',
-      webgl2: `Metaballs, running live on WebGL2 from the compiled ${glsl}.`,
-      none: 'Metaballs, rendered at build time; this browser has no WebGPU or WebGL2.',
-      reduced: 'Metaballs, drawn as one frame, since this system asks for reduced motion.',
-    },
-    code: {
-      h: 'The authored file and its WGSL',
-      p: 'A file that starts with `"use typeshade"`, and the WGSL it emits.',
-      more: '[Quick start](quickStart)',
-    },
-    highlights: [
-      {
-        h: 'One source, two targets',
-        p: `A file that starts with \`"use typeshade"\` emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file. The graph calls [\`emitModule()\`](apiEmitModule) and [\`emitGlslModule()\`](apiEmitGlsl) remain for the gallery.`,
+    oracle: {
+      h: 'Checked against the CPU',
+      p: 'The same module runs on the CPU in f64, and [the test suite](checks) checks the compiler\'s algebra against it. Every emit is compiled on Tint and linked on WebGL2 on each push. Below, the gradient pass drawn by each backend from the same file.',
+      webgpu: {
+        neutral: 'The gradient pass, drawn at build time from the emitted WGSL.',
+        webgpu: 'The gradient pass, drawn by WebGPU from the emitted WGSL.',
+        webgl2: 'The gradient pass, drawn by WebGL2; this browser has no WebGPU.',
+        none: 'The gradient pass, drawn at build time; this browser has no WebGPU or WebGL2.',
       },
-      {
-        h: 'Checked against the CPU',
-        p: "The same module runs on the CPU in f64, and [the test suite](checks) checks the compiler's algebra against it. Every emit is compiled on Tint and linked on WebGL2 on each push.",
+      webgl2: {
+        neutral: `The gradient pass, drawn at build time from the emitted ${glsl}.`,
+        webgpu: `The gradient pass, drawn by WebGL2 from the emitted ${glsl}.`,
+        webgl2: `The gradient pass, drawn by WebGL2 from the emitted ${glsl}.`,
+        none: 'The gradient pass, drawn at build time; this browser has no WebGL2.',
       },
-      {
-        h: 'Typed in the editor',
-        p: `A misspelt uniform field or a wrong-typed return is a TypeScript error in the editor. [\`reflect()\`](apiReflect) reads bind groups and ${facts.layoutStandards.join(' and ')} layouts from the same intermediate representation.`,
-      },
-    ],
+    },
+    install: {
+      h: 'Install',
+      p: `Pre-release: ${facts.nextVersion} is not on npm yet. Add the repository as a git submodule and import from it; the [quick start](quickStart) walks through the first file.`,
+    },
   },
   quickStart: {
     host: {
@@ -869,7 +864,7 @@ export const en = {
     intro: `There are ${facts.examples} runnable examples in the repository, covering cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel. ${facts.fp64Examples} use emulated double precision. The renderable ones are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
     categories: { cartographic: 'Cartographic', generic: 'Screen space', compute: 'Compute' },
     columns: { example: 'Example', category: 'Category', blurb: 'Description' },
-    tableCaption: `${facts.bothTargets} of the ${facts.examples} examples below emit WGSL and ${glsl}. ${facts.wgslOnlyExample.title} has no vertex or fragment stage to emit as ${glsl}, so the table marks it WGSL only; its WebGL2 path is the opt-in emulation.`,
+    tableCaption: `${facts.bothTargets} of the ${facts.examples} examples below emit WGSL and ${glsl}. ${facts.wgslOnlyExample.title} has no vertex or fragment stage to emit as ${glsl}, so it is marked WGSL only; its WebGL2 path is the opt-in emulation.`,
     wgslOnly: 'WGSL only',
     /** The Description column, one line per example, keyed by the registry's id. English
      *  takes the compiler's own wording; a translation writes the same lines in its language. */

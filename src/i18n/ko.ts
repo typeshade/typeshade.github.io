@@ -471,68 +471,69 @@ export const ko: Copy = {
   },
 
   front: {
-    use: {
-      eyebrow: 'TypeScript 개발 경험으로 작성하는 셰이더 언어',
-      title: 'TypeShade',
-      subtitle: '`"use typeshade"`에서 시작하세요.',
-      tagline: 'TypeScript의 익숙한 타입, 함수, 모듈과 에디터 경험을 바탕으로 TypeShade만의 GPU 타입과 셰이더 의미론을 사용합니다. 하나의 소스에서 WGSL과 GLSL ES 3.00을 생성합니다.',
-      getStarted: 'TypeShade 사용하기',
-      playground: 'Playground에서 작성하기',
-      learn: '왜 TypeShade인가',
-      language: '언어 배우기',
-      examples: '예제 보기',
-      flowH: 'TypeShade는 이렇게 동작합니다',
-      flowP: 'TypeScript 파일에 `"use typeshade"`를 선언하면 일반 애플리케이션 코드와 TypeShade 언어의 경계가 생깁니다.',
-      flowLabels: ['TypeScript 저작', 'TypeShade 의미론', '공유 IR', 'WGSL / GLSL ES 3.00'],
-      flowAriaLabel: 'TypeShade 컴파일 흐름',
-      codeH: '첫 번째 TypeShade 프로그램',
-      codeP: '작성하는 코드는 TypeScript처럼 보이지만, 컴파일러는 TypeShade의 타입과 GPU 의미론을 적용해 호스트가 사용할 셰이더를 생성합니다.',
-      conceptsH: 'TypeScript를 알면 바로 이어집니다',
-      conceptsP: 'TypeShade는 새로운 문법을 외우게 하기보다 TypeScript의 개념을 GPU 프로그램의 규칙으로 확장합니다. 아래 대응 관계부터 이해하면 문서의 나머지가 훨씬 쉬워집니다.',
-      concepts: [['파일 지시어', '`"use typeshade"`', 'JavaScript의 directive prologue와 같은 파일 시작 위치를 사용하지만, TypeShade에서는 해당 파일을 셰이더 컴파일 단위로 선택합니다.'], ['타입', '타입 주석 → GPU 타입', '`number` 같은 애플리케이션 타입만 보는 대신 `f32`, `vec2`, `mat4` 같은 GPU 타입과 셰이더 연산 규칙을 정적으로 검사합니다.'], ['함수', '함수 → 엔트리 포인트', '일반 함수와 같은 선언·호출 모델을 유지하면서 `@vertex`, `@fragment` 같은 TypeShade 표면 문법으로 셰이더 스테이지를 지정합니다.'], ['모듈', 'import / export → shader module', 'TypeScript의 모듈 경계를 유지하되 컴파일러가 실제 셰이더로 내릴 수 있는 프로그램 그래프만 허용합니다.']],
-      highlights: [
-        ['TypeScript에서 출발합니다', '타입 주석, 함수, 모듈과 제어 흐름처럼 익숙한 언어 개념을 유지하면서 셰이더에 필요한 규칙은 정적으로 확인합니다.'],
-        ['`use typeshade`가 언어 경계입니다', '`"use typeshade"`는 주석이나 런타임 호출이 아닙니다. 해당 파일을 TypeShade 프로그램으로 선택하고 TypeShade의 셰이더 의미론을 적용하는 언어 지시어입니다.'],
-        ['GPU에 맞는 출력으로 내려갑니다', '같은 TypeShade 소스에서 WebGPU용 WGSL 또는 WebGL2용 GLSL ES 3.00을 생성합니다. 애플리케이션에 TypeShade 런타임을 배포할 필요가 없습니다.'],
-      ]
+    title: 'TypeScript로 쓰는 셰이더 언어입니다.',
+    searchTitle: 'TypeShade',
+    lede: `TypeShade는 TypeScript의 문법과 타입, 편집기를 그대로 쓰는 독립된 언어입니다. \`"use typeshade"\`로 시작하는 파일 하나가 WebGPU용 WGSL과 WebGL2용 ${glsl}을 냅니다. 저장소의 예제 ${facts.examples}개 가운데 ${facts.bothTargets}개가 파일 하나로 둘 다 냅니다.`,
+    playground: 'Playground 열기',
+    quickStart: '빠른 시작',
+    stageAria: '그것을 그리는 파일 옆에서 실행되는 셰이더',
+    first: {
+      title: '굽은 띠',
+      caption: '왼쪽 파일이 오른쪽에 그려집니다. 그림 위에서 포인터를 움직여 보고, 한 줄을 고치면 그림이 따라옵니다.',
+      warp: '띠가 휘는 정도',
+      ink: '첫 번째 색',
+      paper: '두 번째 색',
     },
-    hero: {
-      before: '',
-      accent: 'TypeShade',
-      after: '',
-      subtitle: '검증 가능한 TypeScript 셰이더 라이브러리',
-      tagline: `파일 맨 위에 \`"use typeshade"\`를 씁니다. TypeShade가 WebGPU용 WGSL과 WebGL2용 ${glsl}을 냅니다. 같은 소스를 CPU에서 배정밀도로 실행해 기준값을 얻고, 컴파일러가 낸 결과를 그 값과 맞춰 봅니다.`,
-      getStarted: '시작하기',
-      why: '왜 TypeShade인가',
-      examples: '예제',
-      prerelease: `출시 전: ${facts.nextVersion}은 아직 npm에 없습니다. git 서브모듈로 설치합니다`,
+    targets: {
+      h: '파일 하나, 출력 둘',
+      p: '컴파일러는 `hello.shade.ts`를 하나의 중간 표현으로 내린 뒤 거기서 두 출력을 냅니다. 이 파일이 프로그램 전부이고, 옆의 두 프레임이 호스트가 WebGPU나 WebGL2에 넘기는 코드입니다.',
+      source: 'hello.shade.ts',
+      wgsl: 'WGSL',
+      glsl: `${glsl} 프래그먼트`,
     },
-    metaballs: {
-      neutral: `examples/${exampleFile('metaballs')}의 Metaballs. 빌드할 때 그린 화면입니다.`,
-      webgpu: '컴파일된 WGSL로 WebGPU에서 실시간으로 그리는 Metaballs.',
-      webgl2: `컴파일된 ${glsl}으로 WebGL2에서 실시간으로 그리는 Metaballs.`,
-      none: '빌드할 때 렌더링한 Metaballs. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.',
-      reduced: '한 프레임만 그린 Metaballs. 시스템이 움직임 줄이기를 켜 두었습니다.',
+    gallery: {
+      h: '더 많은 셰이더',
+      p: `컴파일러에는 지도 렌더링 패스부터 컴퓨트 커널까지 예제 ${facts.examples}개가 들어 있습니다. 각 타일은 생성된 코드를 이 브라우저에서 실행합니다.`,
+      all: '예제 전체',
+      tile: (title: string) => ({
+        neutral: `${title}. 빌드할 때 그린 화면입니다.`,
+        webgpu: `${title}. WebGPU에서 실행 중입니다.`,
+        webgl2: `${title}. WebGL2에서 실행 중입니다.`,
+        none: `${title}. 빌드할 때 그린 화면입니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.`,
+        reduced: `${title}. 시스템이 움직임 줄이기를 켜 두어 한 프레임만 그렸습니다.`,
+      }),
     },
-    code: {
-      h: '작성한 파일과 그 WGSL',
-      p: '`"use typeshade"`로 시작하는 파일과, 그 파일이 내보내는 WGSL입니다.',
-      more: '[빠른 시작](quickStart)',
+    map: {
+      h: 'TypeScript에서 그대로 이어지는 것',
+      p: 'TypeShade는 TypeScript 개발자가 이미 아는 개념을 그대로 두고, 각 개념이 GPU에서 무엇을 뜻하는지 정합니다. 나머지 규칙은 [언어 가이드](guide)에 있습니다.',
+      rows: [
+        ['"use typeshade"', '이 지시어가 언어의 경계입니다', 'JavaScript 지시어와 같은 자리, 파일 맨 위에 놓입니다. 이 줄이 있는 파일은 셰이더로 컴파일되고, 그 아래 모든 코드는 TypeShade로 검사됩니다.'],
+        ['f32, vec2, mat4', '타입 주석이 GPU 타입입니다', '`number`만 보는 대신 검사기가 `f32`, `vec2`, `mat4`를 알고, 셰이더 연산 규칙을 편집기 안에서 적용합니다.'],
+        ['@fragment export function', '내보낸 함수가 엔트리 포인트입니다', '선언하고 호출하는 방식은 아는 그대로입니다. `@vertex`나 `@fragment` 같은 데코레이터가 스테이지를 정하고, 매개변수는 builtin이나 location이 채우는 입력입니다.'],
+        ['class Uniforms { time: f32 }', '클래스가 유니폼 블록입니다', '필드가 블록의 레이아웃이 되고, [`reflect()`](apiReflect)가 호스트가 써 넣을 오프셋을 알려 줍니다.'],
+      ],
     },
-    highlights: [
-      {
-        h: '소스 하나, 출력 둘',
-        p: `\`"use typeshade"\`로 시작하는 파일에서 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 저장소의 예제 ${facts.examples}개 가운데 ${facts.bothTargets}개가 파일 하나로 두 출력을 다 냅니다. 갤러리는 그래프 호출 [\`emitModule()\`](apiEmitModule)과 [\`emitGlslModule()\`](apiEmitGlsl)을 그대로 씁니다.`,
+    oracle: {
+      h: 'CPU 결과와 대조합니다',
+      p: '같은 모듈을 CPU에서 f64로 실행하고, [테스트](checks)가 컴파일러의 산술을 그 결과와 맞춰 봅니다. 출력은 푸시할 때마다 Tint에서 컴파일하고 WebGL2에서 링크합니다. 아래는 같은 파일에서 나온 그라데이션 패스를 두 백엔드가 각각 그린 화면입니다.'
+      ,
+      webgpu: {
+        neutral: '생성된 WGSL로 빌드할 때 그린 그라데이션 패스입니다.',
+        webgpu: '생성된 WGSL로 WebGPU가 그리는 그라데이션 패스입니다.',
+        webgl2: 'WebGL2가 그리는 그라데이션 패스입니다. 이 브라우저에는 WebGPU가 없습니다.',
+        none: '빌드할 때 그린 그라데이션 패스입니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.',
       },
-      {
-        h: 'CPU 결과와 대조',
-        p: '같은 모듈을 CPU에서 f64로 실행하고, [테스트](checks)는 컴파일러의 산술을 그 결과와 맞춰 봅니다. 출력은 푸시할 때마다 Tint에서 컴파일하고 WebGL2에서 링크합니다.',
+      webgl2: {
+        neutral: `생성된 ${glsl}으로 빌드할 때 그린 그라데이션 패스입니다.`,
+        webgpu: `생성된 ${glsl}으로 WebGL2가 그리는 그라데이션 패스입니다.`,
+        webgl2: `생성된 ${glsl}으로 WebGL2가 그리는 그라데이션 패스입니다.`,
+        none: '빌드할 때 그린 그라데이션 패스입니다. 이 브라우저에는 WebGL2가 없습니다.',
       },
-      {
-        h: '편집기에서 타입 검사',
-        p: `유니폼 필드 이름을 잘못 쓰거나 반환 타입이 틀리면 편집기에서 바로 TypeScript 오류가 납니다. [\`reflect()\`](apiReflect)는 같은 중간 표현에서 바인드 그룹과 ${facts.layoutStandards.join('과 ')} 레이아웃을 읽어 옵니다.`,
-      },
-    ],
+    },
+    install: {
+      h: '설치',
+      p: `출시 전입니다. ${facts.nextVersion}은 아직 npm에 없으므로 저장소를 git 서브모듈로 추가하고 거기서 import합니다. 첫 파일은 [빠른 시작](quickStart)에서 따라갈 수 있습니다.`,
+    },
   },
   quickStart: {
     host: {
@@ -920,7 +921,7 @@ export const ko: Copy = {
     intro: `저장소에는 실행할 수 있는 예제가 ${facts.examples}개 있습니다. 지도용 패스, ShaderToy 시절의 화면 공간 효과, 에뮬레이션 배정밀도 계열, 컴퓨트 커널 하나를 다룹니다. ${facts.fp64Examples}개는 에뮬레이션 배정밀도를 씁니다. 렌더링 가능한 예제는 [examples/index.ts](examplesIndex)가 내보내고, [예제 디렉터리](examplesDir)에서 둘러볼 수 있습니다.`,
     categories: { cartographic: '지도', generic: '화면 공간', compute: '컴퓨트' },
     columns: { example: '예제', category: '분류', blurb: '설명' },
-    tableCaption: `아래 ${facts.examples}개 예제 가운데 ${facts.bothTargets}개는 WGSL과 ${glsl}을 모두 냅니다. ${facts.wgslOnlyExample.title}은 ${glsl}으로 낼 버텍스나 프래그먼트 단계가 없어서 표에 WGSL 전용으로 표시했습니다. WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다.`,
+    tableCaption: `아래 ${facts.examples}개 예제 가운데 ${facts.bothTargets}개는 WGSL과 ${glsl}을 모두 냅니다. ${facts.wgslOnlyExample.title}은 ${glsl}으로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL 전용으로 표시했습니다. WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다.`,
     wgslOnly: 'WGSL 전용',
     blurbs: {
       graticule: '지도라면 다 그리는 경위선 격자.',

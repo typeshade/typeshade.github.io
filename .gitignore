@@ -7,3 +7,6 @@ shots/
 
 # impeccable platform binary: the launcher downloads it per machine
 .claude/skills/impeccable/scripts/bin/
+
+# impeccable review screenshots, regenerated per session
+.impeccable/review/
