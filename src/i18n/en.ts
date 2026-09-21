@@ -342,6 +342,8 @@ export const en = {
       webgl2: `Running on WebGL2, from the emitted ${glsl}.`,
       none: `This browser has no WebGPU and no WebGL2, so the frame above was drawn at build time.`,
     },
+    /** The line that introduces the list of things to try, under the controls. */
+    exercisesP: 'Try the following, with the controls or by editing a line:',
     output: 'Emitted output',
     outputNote: 'The whole module the compiler saw. The page added the vertex entry and the `VsOut` struct it returns; the rest is the file above.',
     wgsl: 'WGSL',
@@ -482,10 +484,17 @@ export const en = {
       p2: 'Running it emits WGSL for both stages. Here is the fragment entry point:',
       p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [language guide](guide) covers the rest of the surface.`,
     live: {
-      h: 'A sine wave',
+      h: 'Live example',
       p: '`sin` turns the x coordinate into a wave, and `time` scrolls it. That is the whole file below, and it runs here: edit a line and the canvas follows on the next keystroke.',
       title: 'Sine stripes',
       caption: 'A sine wave across the canvas, mixed between two colours.',
+      anchor:
+        '`bands` is how many times the wave repeats between the left edge and the right, and `time` slides the pattern along. Every column holds one colour, because only `uv.x` reaches `phase`.',
+      exercises: [
+        'Drag `bands` to the bottom of its range for a single wave, then to the top and watch the crests narrow to lines.',
+        'Change `uv.x` to `uv.y` on the `phase` line. The stripes lie down, because `uv` runs up the canvas as well as across it.',
+        'Add `speed: f32` to `Uniforms`, then multiply `u.time` by `u.speed` on the `phase` line. A slider named `speed` appears under the canvas, and `struct Uniforms` under Emitted output grows a field: the controls and the WGSL are both read from the module the compiler just built.',
+      ],
       bands: 'waves across the canvas',
       low: 'trough colour',
       high: 'crest colour',
@@ -1033,10 +1042,17 @@ export const en = {
         matrixP: 'Types such as mat4 represent GPU arithmetic values used for transforms. They are not JavaScript objects.',
         arrays: '5. Arrays',
         arraysP: 'array represents a sequence of GPU values. Combined with a resource element type, it describes the shape of host-provided buffer data.',
-        live: '6. A disc from three types',
-        liveP: 'The entry below names a GPU type on every line: `vec2` for the position, `f32` for the distance and the radius, `vec3` for the colour. Drag inside the square, move the slider, pick a colour.',
+        live: '6. Live example',
+        liveP: 'The entry below names a GPU type on every line: `vec2` for the position, `f32` for the distance and the radius, `vec3` for the colour.',
         liveTitle: 'Disc',
         liveCaption: 'A disc placed by a vec2, sized by an f32 and coloured by a vec3.',
+        liveAnchor:
+          '`d` is the distance from the pixel to the rim of the disc: negative inside it, 0 on the rim, positive outside. `edge` turns that one `f32` into a mask, and `mix` reads the mask to pick a colour.',
+        liveExercises: [
+          'Change `vec2(ratio, 1.)` to `vec2(1., 1.)` on the `p` line. The disc stretches into an ellipse: `ratio` was scaling the x component alone, which is what a `vec2` lets you do.',
+          'Replace the `return` line with `return vec4(vec3(fract(d * 10.)), 1.)`. The rings that appear are `d` itself, and `vec3` spreads that one `f32` across the three colour channels.',
+          'Swap `length(p)` for `max(abs(p.x), abs(p.y))` and the disc becomes a square, or for `abs(p.x) + abs(p.y)` and it becomes a diamond. Then write the `f32` for a shape of your own.',
+        ],
         liveCenter: 'centre, in uv space',
         liveRadius: 'radius, in uv units',
         liveTint: 'disc colour',
