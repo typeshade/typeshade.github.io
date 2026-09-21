@@ -333,7 +333,7 @@ export const en = {
     releases: 'Releases',
     npm: 'npm package',
     license: 'Released under the [MIT License](license).',
-    copyright: `Copyright © ${facts.year} ${facts.author} contributors`,
+    copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
   },
 
@@ -737,7 +737,7 @@ export const en = {
       reflectionP: `\`reflect()\` reads a compiled module and returns its bindings: the group and index the shader declared, the address space, the access the shader needs, and for a uniform struct the fields with their offsets and sizes under the ${facts.layoutStandards.join(' and ')} layouts. A host builds its bind group layout entries out of that list and packs its uniform buffer from those offsets. The numbers the shader was compiled with are the numbers the host writes, so the two sides stay in step.`,
       reflectionNote: 'A field renamed in the shader changes the reflection at the next build, and the host code that reads the reflection follows it.',
       runtimeH: 'No runtime',
-      runtimeP: `The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService). What reaches the browser is the emitted shader source and the host code the application already had. TypeShade installs ${facts.runtimeDeps} runtime dependencies, and there is no TypeShade object to create at startup and none to keep alive.`,
+      runtimeP: `The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService). What reaches the browser is the emitted shader source and the host code the application already had. TypeShade installs ${facts.runtimeDeps} runtime dependency, TypeScript, which the language service compiles source with and no core subpath asks for, and there is no TypeShade object to create at startup and none to keep alive.`,
       webgl2H: 'Where WebGL2 differs',
       webgl2P: 'The same source compiles for WebGL2, and the host side of it looks different.',
       webgl2Items: [

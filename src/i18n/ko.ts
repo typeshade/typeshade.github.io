@@ -403,7 +403,7 @@ export const ko: Copy = {
     releases: '릴리스',
     npm: 'npm 패키지',
     license: '[MIT 라이선스](license)로 배포합니다.',
-    copyright: `Copyright © ${facts.year} ${facts.author} 기여자`,
+    copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: '빌드한 커밋',
   },
 
@@ -796,7 +796,7 @@ export const ko: Copy = {
       reflectionP: `\`reflect()\`는 컴파일된 모듈을 읽어 그 바인딩을 돌려줍니다. 셰이더가 선언한 그룹과 번호, 주소 공간, 셰이더에 필요한 접근 권한이 들어 있고, 유니폼 구조체라면 ${facts.layoutStandards.join('과 ')} 레이아웃에 따른 필드별 오프셋과 크기도 함께 있습니다. 호스트는 그 목록으로 바인드 그룹 레이아웃 항목을 만들고, 그 오프셋대로 유니폼 버퍼를 채웁니다. 셰이더를 컴파일할 때 쓰인 수치를 호스트가 그대로 쓰므로 양쪽이 어긋나지 않습니다.`,
       reflectionNote: '셰이더에서 필드 이름을 바꾸면 다음 빌드에서 리플렉션이 따라 바뀌고, 리플렉션을 읽는 호스트 코드도 함께 따라옵니다.',
       runtimeH: '런타임 없음',
-      runtimeP: `컴파일러는 셰이더 텍스트가 만들어지는 곳에서 돌아갑니다. 빌드, 테스트, 그리고 [언어 서비스](languageService)를 거친 편집기가 그런 곳입니다. 브라우저에 도달하는 것은 생성된 셰이더 소스와, 애플리케이션이 원래 쓰던 호스트 코드뿐입니다. TypeShade가 설치하는 런타임 의존성은 ${facts.runtimeDeps}개이고, 시작할 때 만들어야 할 TypeShade 객체도 없으며 살려 둘 객체도 없습니다.`,
+      runtimeP: `컴파일러는 셰이더 텍스트가 만들어지는 곳에서 돌아갑니다. 빌드, 테스트, 그리고 [언어 서비스](languageService)를 거친 편집기가 그런 곳입니다. 브라우저에 도달하는 것은 생성된 셰이더 소스와, 애플리케이션이 원래 쓰던 호스트 코드뿐입니다. TypeShade가 설치하는 런타임 의존성은 ${facts.runtimeDeps}개, 언어 서비스가 소스를 컴파일할 때 쓰는 TypeScript뿐입니다. 핵심 서브패스는 그마저도 요구하지 않습니다. 시작할 때 만들어야 할 TypeShade 객체도 없으며 살려 둘 객체도 없습니다.`,
       webgl2H: 'WebGL2에서 달라지는 것',
       webgl2P: '같은 소스가 WebGL2용으로도 컴파일되고, 호스트 쪽 모습은 달라집니다.',
       webgl2Items: [

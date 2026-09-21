@@ -14,7 +14,7 @@ const summary = [
   `a TypeScript error at author time; reflect() recovers`,
   `${facts.layoutStandards.join(' and ')} layouts, so a host packs its uniform buffer from the compiler's`,
   `own layout; emulated double precision is authored with the same syntax as f32. It has`,
-  `${facts.runtimeDeps} runtime dependencies and is ${facts.license} licensed. Its own CI compiles every`,
+  `${facts.runtimeDeps} runtime dependency, TypeScript, and is ${facts.license} licensed. Its own CI compiles every`,
   `WGSL emit on Tint and links every renderable example on WebGL2, on every push. Version`,
   `${facts.nextVersion} is not published yet and the npm name typeshade is reserved, so start from the`,
   `mirror and the authoring guide.`,
