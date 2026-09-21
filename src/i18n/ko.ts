@@ -480,7 +480,7 @@ export const ko: Copy = {
         ['"use typeshade"', '이 지시어가 언어의 경계입니다', '파일의 첫 문장, JavaScript 지시어가 놓이는 자리에 씁니다. 이 줄이 없는 파일은 셰이더로 컴파일되지 않고, 있는 파일은 그 아래 모든 코드가 TypeShade로 검사되어 컴파일러의 중간 표현으로 내려갑니다.'],
         ['f32, vec3, mat4, sin(x)', 'GPU 타입과 builtin은 전역입니다', '`f32`, `vec3`, `mat4`와 `sin`, `vec4(...)` 같은 builtin은 import 없이 씁니다. `Math.sin`과 `Math.PI`는 같은 연산의 별칭입니다. 검사기는 코드를 내기 전에 편집기 안에서 셰이더 규칙을 적용합니다.'],
         ['class VsIn { @location(0) uv: vec2 }', 'type이나 class가 값 레이아웃입니다', '메타데이터가 없는 데이터는 `type` 별칭으로 쓰고, 필드마다 `@location`이나 `@builtin`이 필요하면 `class`로 씁니다. 클래스의 필드가 두 타깃이 받는 구조체의 레이아웃이 됩니다.'],
-        ['new Circle(center, 0.4).sdf(p)', '클래스는 TypeScript 클래스 그대로입니다', '필드, 생성자와 `new`, 메서드와 static 함수, `super`와 `abstract`가 있는 `extends`, 제네릭 클래스와 함수, 믹스인 패턴까지 컴파일됩니다. 메서드는 구조체를 첫 매개변수로 받는 함수로 내려가고, 제네릭은 타입 인자 조합마다 한 번씩 컴파일됩니다.'],
+        ['new Circle(center, 0.3).coverage(p)', '클래스는 TypeScript 클래스 그대로입니다', '필드, 생성자와 `new`, 메서드와 static 함수, `super`와 `abstract`가 있는 `extends`, 제네릭 클래스와 함수, 믹스인 패턴까지 컴파일됩니다. 메서드는 구조체를 첫 매개변수로 받는 함수로 내려가고, 제네릭은 타입 인자 조합마다 한 번씩 컴파일됩니다. [예제 페이지](examples)에 각각의 파일이 있습니다.'],
         ['declare const u: uniform<Camera>', 'declare가 호스트가 채우는 리소스를 선언합니다', '`uniform<T>`는 유니폼 블록을 읽고, `declare let` 뒤의 `storage<T>`는 쓸 수 있습니다. 초기값은 없습니다. 슬롯은 호스트의 것이고 파일의 선언 순서를 따르며, [`reflect()`](apiReflect)가 그 레이아웃을 알려 줍니다.'],
         ['@fragment export function fs(v: VsOut): vec4', '데코레이터가 붙은 export가 엔트리 포인트입니다', '`@vertex`, `@fragment`, `@compute([64, 1, 1])`가 스테이지를 정하고, 없는 함수는 헬퍼입니다. 스테이지 입력은 `@builtin("vertex_index")`나 `@location` 같은 명시적 매개변수로 받습니다. 숨은 전역 변수는 없습니다.'],
       ],
