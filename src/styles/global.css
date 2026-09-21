@@ -757,19 +757,21 @@ body > main { flex: 1 }
 .front-tiles .figure-caption { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap }
 .front-tile-name { display: block; padding: 16px; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1) }
 @media (min-width: 48rem) { .front-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px } }
-/* What carries over: an Ant List, the TypeScript on the left as a code cell filling its
-   column and what it becomes on the right. The cell is as tall as its own lines, not as tall
-   as the row, and its first line sits level with the title beside it. */
+/* What carries over: an Ant List, the TypeScript on the left as a highlighted code cell
+   sized to its own line and what it becomes on the right. The cell is an Expressive Code
+   frame with the chrome taken off (no copy button, the chip's own padding) so it reads as a
+   tag, not a file. Its first line sits level with the title beside it. */
 .front-map-list { margin: 24px 0 0 }
 .front-map-row { display: grid; gap: 8px 32px; padding-block: 20px; border-block-end: 1px solid var(--color-line-1) }
 .front-map-row:first-child { border-block-start: 1px solid var(--color-line-1) }
-.front-map-row dt {
-  align-self: start; justify-self: stretch;
-  padding: 10px 14px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md);
-  background: var(--color-surface-1);
-  font-family: var(--font-mono); font-size: var(--text-code); line-height: 1.6; color: var(--color-text-1);
-  white-space: pre-wrap; overflow-wrap: anywhere;
+.front-map-row dt { align-self: start; justify-self: start; max-inline-size: 100%; min-inline-size: 0 }
+.front-map-row dt .expressive-code {
+  margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
+  --ec-codePadBlk: 10px; --ec-codePadInl: 14px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
 }
+.front-map-row dt .expressive-code .copy { display: none }
+/* No copy button, so the first line keeps no room for one at its end. */
+.front-map-row dt .expressive-code :nth-child(1 of .ec-line) .code { padding-inline-end: var(--ec-codePadInl) }
 .front-map-row dd { margin: 0; padding-block-start: 2px }
 .front-map-row dd strong { display: block; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1) }
 .front-map-row dd strong code { font-size: 0.95em }
@@ -894,6 +896,8 @@ body > main { flex: 1 }
   .expressive-code .frame.has-title:not(.is-terminal) pre > code {
     padding-block-start: calc(0.5rem + 2.9rem);
   }
+  /* The mapping cells have no copy button, so nothing to clear. */
+  .front-map-row dt .expressive-code pre > code { padding-block-start: var(--ec-codePadBlk) }
 }
 
 /* Canvas figure: a framed box with a still image underneath the live canvas */

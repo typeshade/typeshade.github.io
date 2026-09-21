@@ -147,7 +147,7 @@ const quickStart = localePath(locale, links.quickStart.href)
     <dl class="front-map-list">
       {f.map.rows.map(([ts, shade, body]) => (
         <div class="front-map-row">
-          <dt>{ts}</dt>
+          <dt><Code code={ts} lang="ts" locale={locale} wrap /></dt>
           <dd>
             <strong><Rich text={shade} locale={locale} /></strong>
             <p><Rich text={body} locale={locale} /></p>
