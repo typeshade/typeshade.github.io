@@ -4,6 +4,8 @@ import { execSync } from 'node:child_process'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/index.ts'
+import { shortBlurb } from './blurb.ts'
+import { shadeCounts } from './shade-examples.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 
 // Read with fs from the site root, without Vite's glob, so scripts run by bun
@@ -130,20 +132,6 @@ function countBothTargets(): number {
   return n
 }
 
-// Acronyms an example's blurb may keep in capitals. Anything else in capitals is the
-// upstream file emphasising a word, which this site sets in ordinary type.
-const ACRONYMS = new Set(['WGSL', 'GLSL', 'ES', 'GPU', 'CPU', 'RGB', 'LOD', 'SDF', 'API', 'LORAN', 'IO'])
-// The first clause of a blurb, up to an em dash, a colon or the first full stop.
-const CLAUSE = new RegExp(` \u2014 |: |(?<=\\.)\\s`)
-
-/** One example's blurb, shortened to its first clause. The blurbs are written in the
- *  compiler's repository, so they are trimmed to this site's typography. */
-function shortBlurb(text: string): string {
-  const clause = text.split(CLAUSE)[0]!.replace(/\s*\(#\d+\)/g, '').trim()
-  const plain = clause.replace(/\b[A-Z]{2,}\b/g, (w) => (ACRONYMS.has(w) ? w : w.toLowerCase()))
-  return `${plain.replace(/[.,;:]$/, '')}.`
-}
-
 /** The English description of every example, keyed by id. English is the compiler's own
  *  wording; every other language writes its own line against the same keys, in src/i18n. */
 export function registryBlurbs(): Record<string, string> {
@@ -196,23 +184,35 @@ const pkg = JSON.parse(readFileSync(path.join(vendorRoot, 'package.json'), 'utf8
   optionalDependencies?: Record<string, string>
 }
 
-/** Zero is derived from the fields that put code into a consumer's install: `dependencies`,
+/** The names the mirror's package.json puts into a consumer's install: `dependencies`,
  *  `optionalDependencies`, and every `peerDependencies` entry not marked optional in
- *  `peerDependenciesMeta`. An optional peer installs nothing and does not count; today that is
- *  `typescript`, which only the `./language-service` subpath asks for and every core subpath
- *  does without. devDependencies is the compiler's own CI toolchain and never reaches an install. */
-function runtimeDeps(): number {
+ *  `peerDependenciesMeta`. An optional peer installs nothing and does not count.
+ *  devDependencies is the compiler's own CI toolchain and never reaches an install.
+ *  At the pinned commit the one name is `typescript`, a required peer since the language
+ *  service compiles TypeScript source; every core subpath does without it. A name outside
+ *  this list stops the build, because the copy counts these and names them. */
+const RUNTIME_DEPS = ['typescript']
+function runtimeDeps(): readonly string[] {
   const meta = pkg.peerDependenciesMeta ?? {}
   const requiredPeers = Object.keys(pkg.peerDependencies ?? {}).filter((name) => !meta[name]?.optional)
   const declared = [
     ...Object.keys(pkg.dependencies ?? {}),
     ...Object.keys(pkg.optionalDependencies ?? {}),
     ...requiredPeers,
-  ]
-  if (declared.length > 0) {
-    throw new Error(`[examples] the mirror's package.json now installs ${declared.join(', ')} into a consumer; update the copy`)
+  ].sort()
+  const unexpected = declared.filter((name) => !RUNTIME_DEPS.includes(name))
+  if (unexpected.length > 0) {
+    throw new Error(`[examples] the mirror's package.json now installs ${unexpected.join(', ')} into a consumer; update the copy`)
   }
-  return 0
+  return declared
+}
+
+/** The author field with the address removed, so the copyright line and the structured data
+ *  carry the name alone. The mirror writes it in npm's `Name <email>` form. */
+function authorName(): string {
+  const name = pkg.author.replace(/\s*<[^>]*>/, '').replace(/\s*\([^)]*\)/, '').trim()
+  if (name.length === 0) throw new Error(`[examples] the mirror's author field '${pkg.author}' has no name`)
+  return name
 }
 
 function gitmodulesField(field: 'url' | 'path'): string {
@@ -259,20 +259,31 @@ function layoutStandards(): readonly string[] {
 
 export const facts = {
   examples: examples.length,
+  /** The other corpus: the `.shade.ts` files, written in TypeScript source and compiled from
+   *  the file itself. They are registered in examples/_shade.ts and not in the barrel the
+   *  count above reads, so the two are counted apart and shown apart. */
+  shadeExamples: shadeCounts.total,
+  /** How many of those have a GLSL ES 3.00 form. The registry states it per file; a compute
+   *  entry and a WGSL-only texture have none. */
+  shadeRenderable: shadeCounts.renderable,
+  /** Both corpora, for the sentences that count the repository's examples as a whole. */
+  totalExamples: examples.length + shadeCounts.total,
   bothTargets: countBothTargets(),
   wgslOnlyExample: wgslOnlyExample(),
   fp64Examples: examples.filter((e) => e.id.startsWith('fp64')).length,
   testFiles: testFiles.length,
   pinnedCommit: pinnedCommit(),
   license: pkg.license,
-  author: pkg.author,
+  author: authorName(),
   /** The year of the pinned commit, for the copyright line. */
   year: pinnedYear(),
   /** The pinned commit's own date, for WebPage.dateModified on the guide and the reference. */
   pinnedDate: pinnedDate(),
   glslTarget: glslTarget(),
   layoutStandards: layoutStandards(),
-  runtimeDeps: runtimeDeps(),
+  runtimeDeps: runtimeDeps().length,
+  /** The names behind that count, so a sentence can say which one it is. */
+  runtimeDepNames: runtimeDeps(),
   mirrorUrl: gitmodulesField('url').replace(/\.git$/, '').replace(/\/$/, ''),
   mirrorPath: gitmodulesField('path'),
   mirrorVersion,
@@ -293,9 +304,10 @@ export const facts = {
 // compared at whatever commit is pinned now, so the pin that changes one stops the build and
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
-const pinned = { commit: 'a2240e0', examples: 36, bothTargets: 35, testFiles: 229 }
+const pinned = { commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
+if (facts.shadeExamples !== pinned.shadeExamples) drift.push(`shadeExamples ${facts.shadeExamples} != ${pinned.shadeExamples}`)
 if (facts.bothTargets !== pinned.bothTargets) drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`)
 if (facts.testFiles < pinned.testFiles) drift.push(`testFiles ${facts.testFiles} < ${pinned.testFiles}`)
 if (drift.length > 0) {

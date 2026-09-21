@@ -1,7 +1,7 @@
 ---
 id: layouts-and-resources
 source: 095950dbbd1c76dc6040f7e90ee6095185fd308fe7c2045126b136c04c5e1a2a
-sourceLine: 960
+sourceLine: 975
 ---
 
 이 절을 읽고 나면 버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고, 그 선언

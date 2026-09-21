@@ -18,6 +18,25 @@ export const STILL_EXAMPLES = [
   'raymarch-boxes', 'raymarch-sphere', 'starfield', 'truchet', 'tunnel', 'voronoi',
 ]
 
+/** The `.shade.ts` examples the same runtime can draw: every one with a GLSL ES 3.00 form,
+ *  less four. Three declare a texture the page has no data for (textured-quad,
+ *  shadow-compare, cube-env), hello-vsin reads its vertex attributes from a buffer, which a
+ *  page that draws one fullscreen triangle and binds no vertex buffer cannot fill, and
+ *  hello-uniform-struct and bit-bump declare a uniform field that is neither one of the
+ *  three the runtime fills by itself nor covered by a source twin's controls. Those six keep
+ *  the gallery's plain tile, the way a registry example the runtime cannot draw already
+ *  does. A list for the same reason as the one above: plain Node reads this file before the
+ *  build. */
+export const SHADE_STILL_EXAMPLES = [
+  'array-literal-ramp', 'bare-position', 'bitfield-bands', 'block-scope',
+  'bool-select', 'convert-grid', 'cutout', 'default-args', 'domain-warp-twin',
+  'generic-class', 'generic-helpers', 'gradient-twin', 'hello',
+  'hello-vsout', 'hillshade-twin', 'julia-twin', 'kaleidoscope-twin',
+  'mandelbrot-twin', 'mixin-surface', 'module-const', 'ocean-twin', 'orbit-inout',
+  'palette-const', 'pick-composite', 'plasma-twin', 'private-state', 'ray-class',
+  'shape-inheritance', 'starfield-twin', 'tunnel-twin', 'tuple-and-brand', 'twin-structs',
+]
+
 export const STILLS = [
   { id: 'gradient', example: 'gradient', page: '/guide/checks/', backend: 'webgpu' },
   { id: 'gradient-webgl2', example: 'gradient', page: '/guide/checks/', forceWebGl2: true, backend: 'webgl2' },
@@ -30,6 +49,8 @@ export const STILLS = [
   // The examples gallery shows them as pictures and the front page runs nine of them live.
   // gradient and fp64-deep-zoom keep the entries above, at the aspect their own pages use.
   ...STILL_EXAMPLES.filter((id) => id !== 'gradient' && id !== 'fp64-deep-zoom').map((id) => ({ id, example: id, page: '/capture-stills/' })),
+  // The `.shade.ts` corpus, photographed on the same page.
+  ...SHADE_STILL_EXAMPLES.map((id) => ({ id, example: id, page: '/capture-stills/' })),
 ]
 
 export const ARTIFACTS = [

@@ -5,12 +5,13 @@
 // (astro.config.mjs), so it is never served.
 import '../styles/global.css'
 import ShaderCanvas from '../components/ShaderCanvas.astro'
-import { STILL_EXAMPLES } from '../../scripts/artifacts.mjs'
+import { SHADE_STILL_EXAMPLES, STILL_EXAMPLES } from '../../scripts/artifacts.mjs'
 import { examples } from '../../vendor/shader-dsl/examples/index.ts'
+import { shadeExampleList } from '../lib/shade-examples.ts'
 
-const tiles = STILL_EXAMPLES.map((id) => {
-  const example = examples.find((e) => e.id === id)
-  if (!example) throw new Error(`[stills] '${id}' is not in the examples registry`)
+const tiles = [...STILL_EXAMPLES, ...SHADE_STILL_EXAMPLES].map((id) => {
+  const example = examples.find((e) => e.id === id) ?? shadeExampleList.find((e) => e.id === id)
+  if (!example) throw new Error(`[stills] '${id}' is in neither examples registry`)
   return { id, title: example.title }
 })
 const caption = (title: string) => ({ neutral: title, webgpu: title, webgl2: title, none: title })

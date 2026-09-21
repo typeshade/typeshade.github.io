@@ -3,6 +3,7 @@
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
 import { API_CATEGORIES } from '../lib/api.ts'
 import { exampleFile, facts, hero, quickStartFile, registryBlurbs } from '../lib/examples.ts'
+import { shadeDescriptions, shadeTitles } from '../lib/shade-examples.ts'
 import { guideSections } from '../lib/guide.ts'
 import type { LinkKey } from '../lib/links.ts'
 import { typedError } from '../lib/typed-error.ts'
@@ -276,39 +277,10 @@ export const en = {
     canvasNeedsVertex: 'Drawing needs a vertex entry driven by vertex_index and a fragment entry. This module has no such pair, so there is no triangle to cover.',
     cpuFailed: 'The CPU oracle could not run this entry point.',
     entryCount: (n: number) => (n === 1 ? '1 entry point' : `${n} entry points`),
-    // The example picker. Each example is one of the compiler's own .shade.ts files, named
-    // and described here; the source text comes from the vendored checkout at build time.
+    // The example picker. Every example is one of the compiler's own .shade.ts files; the
+    // names and the lines under them are the gallery's, in `examples.shade`, and the source
+    // text comes from the vendored checkout at build time.
     exampleLabel: 'Example',
-    examples: {
-      hello: {
-        title: 'Hello triangle',
-        description: 'A vertex entry that places three corners from the vertex index, and a fragment entry that paints them.',
-      },
-      'hello-vsout': {
-        title: 'Vertex output',
-        description: 'The vertex entry returns a struct, so the fragment entry reads the same fields back as interpolated values.',
-      },
-      'hello-vsin': {
-        title: 'Vertex input',
-        description: 'The vertex entry takes its position and texture coordinates from vertex buffer attributes.',
-      },
-      'hello-uniform': {
-        title: 'Uniform scalar',
-        description: 'A single uniform value declared at module level and read inside the fragment entry.',
-      },
-      'hello-camera': {
-        title: 'Uniform struct',
-        description: 'A uniform struct whose byte layout the reflection pane lays out field by field.',
-      },
-      'hello-uniform-struct': {
-        title: 'Uniform struct on both targets',
-        description: `A uniform struct both entry points read, laid out as a ${std} block, so this one emits and links for ${glsl} too.`,
-      },
-      'compute-reduction-twin': {
-        title: 'Compute reduction',
-        description: 'A compute entry that folds eight values from a storage buffer into one, with a workgroup size of 64.',
-      },
-    },
     copy: 'Copy',
     copied: 'Copied',
     share: 'Copy link',
@@ -333,7 +305,7 @@ export const en = {
     releases: 'Releases',
     npm: 'npm package',
     license: 'Released under the [MIT License](license).',
-    copyright: `Copyright © ${facts.year} ${facts.author} contributors`,
+    copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
   },
 
@@ -451,7 +423,7 @@ export const en = {
         ['"use typeshade"', 'The directive is the language boundary', 'It is the first statement of the file, where a JavaScript directive goes. A file without it does not compile as a shader; with it, everything under it is checked as TypeShade and lowered to the compiler\'s intermediate representation.'],
         ['f32, vec3, mat4, sin(x)', 'GPU types and builtins are globals', '`f32`, `vec3`, `mat4` and the builtins such as `sin` and `vec4(...)` need no import, and `Math.sin` and `Math.PI` are aliases of the same operations. The checker applies the shader rules to them in the editor, before any code is emitted.'],
         ['class VsIn { @location(0) uv: vec2 }', 'A type or a class is a value layout', 'Plain data is a `type` alias; a `class` carries per-field metadata such as `@location` and `@builtin`, and its fields lay out the struct both targets receive.'],
-        ['new Circle(center, 0.4).sdf(p)', 'A class is a TypeScript class', 'Fields, a constructor and `new`, methods and static functions, `extends` with `super` and `abstract`, generic classes and functions, and the mixin pattern all compile. A method lowers to a function that takes the struct first, and a generic is compiled once per set of type arguments.'],
+        ['new Circle(center, 0.3).coverage(p)', 'A class is a TypeScript class', 'Fields, a constructor and `new`, methods and static functions, `extends` with `super` and `abstract`, generic classes and functions, and the mixin pattern all compile. A method lowers to a function that takes the struct first, and a generic is compiled once per set of type arguments. The [gallery](examples) has a file for each of them.'],
         ['declare const u: uniform<Camera>', 'declare names a resource the host fills', '`uniform<T>` reads a uniform block, and `storage<T>` behind `declare let` is writable. There is no initializer: the host owns the slot, in the order the file declares them, and [`reflect()`](apiReflect) reports its layout.'],
         ['@fragment export function fs(v: VsOut): vec4', 'A decorated export is an entry point', '`@vertex`, `@fragment` and `@compute([64, 1, 1])` name the stage; a function without one is a helper. Stage inputs are explicit parameters, a `@builtin("vertex_index")` or a `@location`. There is no hidden global.'],
       ],
@@ -746,7 +718,7 @@ export const en = {
       reflectionP: `\`reflect()\` reads a compiled module and returns its bindings: the group and index the shader declared, the address space, the access the shader needs, and for a uniform struct the fields with their offsets and sizes under the ${facts.layoutStandards.join(' and ')} layouts. A host builds its bind group layout entries out of that list and packs its uniform buffer from those offsets. The numbers the shader was compiled with are the numbers the host writes, so the two sides stay in step.`,
       reflectionNote: 'A field renamed in the shader changes the reflection at the next build, and the host code that reads the reflection follows it.',
       runtimeH: 'No runtime',
-      runtimeP: `The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService). What reaches the browser is the emitted shader source and the host code the application already had. TypeShade installs ${facts.runtimeDeps} runtime dependencies, and there is no TypeShade object to create at startup and none to keep alive.`,
+      runtimeP: `The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService). What reaches the browser is the emitted shader source and the host code the application already had. TypeShade installs ${facts.runtimeDeps} runtime dependency, TypeScript, which the language service compiles source with and no core subpath asks for, and there is no TypeShade object to create at startup and none to keep alive.`,
       webgl2H: 'Where WebGL2 differs',
       webgl2P: 'The same source compiles for WebGL2, and the host side of it looks different.',
       webgl2Items: [
@@ -869,20 +841,39 @@ export const en = {
         }
       ])
     },
-    title: `TypeShade examples: ${facts.examples} shaders, GLSL emit, emulated f64`,
-    description: `The ${facts.examples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
+    title: `TypeShade examples: ${facts.totalExamples} shaders, GLSL emit, emulated f64`,
+    description: `The ${facts.totalExamples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
     h1: 'Examples',
-    intro: `There are ${facts.examples} runnable examples in the repository, covering cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel. ${facts.fp64Examples} use emulated double precision. The renderable ones are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
+    intro: `There are ${facts.totalExamples} runnable examples in the repository, written on the two authoring surfaces. ${facts.examples} are built with the \`fn()\` builder and cover cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel; ${facts.fp64Examples} of those use emulated double precision. The builder's are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
     categories: { cartographic: 'Cartographic', generic: 'Screen space', compute: 'Compute' },
     columns: { example: 'Example', category: 'Category', blurb: 'Description' },
     tableCaption: `${facts.bothTargets} of the ${facts.examples} examples below emit WGSL and ${glsl}. ${facts.wgslOnlyExample.title} has no vertex or fragment stage to emit as ${glsl}, so it is marked WGSL only; its WebGL2 path is the opt-in emulation.`,
     wgslOnly: 'WGSL only',
     /** A tile whose example has nothing the page can draw shows Ant's Empty mark and this
      *  line instead of a bare grey frame. */
-    noStill: 'No picture: this example has no fragment stage the page can draw.',
+    noStill: 'No picture: this example is not one the page can draw.',
     /** The Description column, one line per example, keyed by the registry's id. English
      *  takes the compiler's own wording; a translation writes the same lines in its language. */
     blurbs: registryBlurbs(),
+    /** The other corpus: one TypeScript file per example, compiled from the file itself.
+     *  Grouped by the part of TypeScript each file is there to show, because the compiler
+     *  files them all under one category and a reader looking for inheritance wants them
+     *  apart. The titles and the lines under them are the registry's own words in English;
+     *  a translation writes its own against the same keys. */
+    shade: {
+      h: 'Written as TypeScript source',
+      p: `${facts.shadeExamples} more examples in the same directory are TypeScript files that open with \`"use typeshade"\`, compiled by \`compile()\` from the file's own bytes. Each one is there for one part of the language, and they are grouped here that way. ${facts.shadeRenderable} have a ${glsl} form and carry a picture; the others emit WGSL alone.`,
+      groups: {
+        stages: 'Stages and IO structs',
+        resources: 'Resources',
+        values: 'Values and control flow',
+        classes: 'Classes and generics',
+        compute: 'Module state and compute',
+        twins: 'Source twins',
+      },
+      titles: shadeTitles(),
+      descriptions: shadeDescriptions(),
+    },
     printIntro: 'From a checkout of the repository, the first command prints WGSL, GLSL and reflection for every example; the second does one by id.',
     glsl: {
       h: `The gradient pass in ${glsl}`,

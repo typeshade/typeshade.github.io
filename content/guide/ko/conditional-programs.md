@@ -1,7 +1,7 @@
 ---
 id: conditional-programs
-source: 0081d2d47802b7f6baea58303d9701a3293288938e032ceb6ea5a4a1e9ad5395
-sourceLine: 1554
+source: 72aafcae3f5667dd9b0766c8ba32ccb8d2a0b2c69439030d409aa03dfebe81e0
+sourceLine: 1659
 ---
 
 이 페이지를 읽고 나면 소스 하나에서 만들 수 있는 여러 프로그램 가운데 어느 것을 빌드할지
@@ -28,7 +28,7 @@ sourceLine: 1554
 분기하도록 작성합니다.
 
 ```ts
-import { fn, module, f32, resource, samplerT, texture2dfT, textureSample, vec2fT } from '@xgis/shader-dsl'
+import { fn, module, f32, resource, samplerT, texture2dfT, textureSample, vec2fT } from 'typeshade'
 
 const dem = resource('dem', texture2dfT, { group: 0, binding: 0 })
 const demSampler = resource('dem_sampler', samplerT, { group: 0, binding: 1 })
@@ -62,7 +62,7 @@ const buildTerrain = (hasElevation: boolean) => {
 문장 목록입니다.
 
 ```ts
-import { composeModule, fn, module, vec4, vec4fT, type Stmt } from '@xgis/shader-dsl'
+import { composeModule, fn, module, vec4, vec4fT, type Stmt } from 'typeshade'
 
 const base = module({
   funcs: [
@@ -90,7 +90,7 @@ const composed = composeModule(base, { fill: solid })
 있다가 호스트가 파이프라인을 만들 때 비로소 값이 정해집니다.
 
 ```ts
-import { f32, f32T, If, Var, fn, module, overrideConst } from '@xgis/shader-dsl'
+import { f32, f32T, If, Var, fn, module, overrideConst } from 'typeshade'
 
 const quality = overrideConst('quality', f32T, 1.0)
 
@@ -125,7 +125,7 @@ WGSL은 `override quality: f32 = 1.0;`을 생성하고, 호스트는 파이프�
 축, 점 하나를 만드는 빌더, 키를 정하는 함수를 받아 모든 점을 빌드합니다.
 
 ```ts
-import { fn, f32T, module, variantFamily } from '@xgis/shader-dsl'
+import { fn, f32T, module, variantFamily } from 'typeshade'
 
 const family = variantFamily({
   axes: { quality: ['low', 'high'] },

@@ -137,6 +137,12 @@ JavaScript, GPU, CPU, IR, f32, f64, std140은 로마자 그대로 씁니다.
 | address space | 주소 공간 | `uniform`, `storage`처럼 리소스가 놓이는 메모리 공간. WGSL 명세의 용어를 그대로 옮겼습니다. |
 | binding point | 바인딩 지점 | WebGL2에서 유니폼 블록을 링크된 프로그램에 묶는 자리. 바인드 그룹이 없는 쪽의 짝이 되는 개념입니다. |
 | uniform location | 유니폼 위치 | WebGL2에서 `glUniform*`로 값을 넣을 때 쓰는 식별자. "로케이션"이라는 음차 대신 WebGL 한국어 문서의 "위치"를 씁니다. |
+| debug adapter | 디버그 어댑터 | 편집기의 디버거와 컴파일러의 스테퍼 사이를 잇는 계층. VS Code 한국어 UI가 쓰는 음차를 그대로 따릅니다. |
+| breakpoint | 중단점 | 실행을 멈출 줄을 표시해 두는 것. VS Code 한국어 UI의 표기입니다. |
+| launch configuration | 실행 구성 | 한 번의 디버그 실행을 데이터로 적어 두는 설정(`launch.json`). VS Code 한국어 UI의 표기입니다. |
+| step (debugger) | 단계 실행 | 문장 하나씩 실행을 진행시키는 것. VS Code 한국어 UI의 "단계 실행"을 따릅니다. |
+| formatter (debug value) | 포매터 | 값을 작성자가 쓴 셰이더 타입 모양으로 보여 주는 구성 요소. 한국어 개발 문서에서 이미 굳어진 음차입니다. |
+| saturate (conversion) | 포화 | 범위를 벗어난 값을 타입의 최댓값·최솟값으로 잘라 넣는 변환. 신호 처리와 그래픽스 문서에서 쓰는 번역어입니다. |
 
 ## 로마자 그대로 쓰는 용어
 

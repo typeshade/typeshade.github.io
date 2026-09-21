@@ -1,7 +1,7 @@
 ---
 id: migrating-a-glsl-shader
-source: 1237c505d6cb1995bb61c9d18c80b91c924bd86bfa30d68020d9bd87fbc83726
-sourceLine: 2559
+source: 449625bb86c70551bbd5affa8d3c03cec5ced26e97850a119484da4c4ce59a3c
+sourceLine: 2666
 ---
 
 이 페이지를 읽고 나면 지금 보고 있는 GLSL 구성 요소를 DSL에서 어떻게 표기하는지 찾아보고,
@@ -37,7 +37,7 @@ sourceLine: 2559
 WGSL 타입 이름과 슬롯, 필드 맵을 받아 타입이 맞는 필드 접근을 돌려줍니다.
 
 ```ts
-import { mat4x4fT, uniformStruct, vec2fT } from '@xgis/shader-dsl'
+import { mat4x4fT, uniformStruct, vec2fT } from 'typeshade'
 
 // uniform Camera { mat4 u_matrix; vec2 u_viewport_px; } u_camera;
 const camera = uniformStruct(
@@ -71,7 +71,7 @@ const mvp = camera.field.u_matrix
 프레임버퍼 좌표를 읽습니다.
 
 ```ts
-import { builtin, f32, fn, vec4, vec4fT } from '@xgis/shader-dsl'
+import { builtin, f32, fn, vec4, vec4fT } from 'typeshade'
 
 const fsCoord = fn(
   'fs_coord',
@@ -96,7 +96,7 @@ const fsCoord = fn(
 유니폼 가운데 한쪽만 제공하고, 잘못 고르면 링크에 실패하기 때문입니다.
 
 ```ts
-import { hostBlock, mat4x4fT, vec2fT } from '@xgis/shader-dsl'
+import { hostBlock, mat4x4fT, vec2fT } from 'typeshade'
 
 const camera = hostBlock(
   'CameraUniforms',
@@ -130,7 +130,7 @@ GLSL ES 3.00이 컴파일하는 trunc-mod를 생성합니다.
 이 raw 문에서 fail closed로 실패합니다.
 
 ```ts
-import { f32, f32T, fn } from '@xgis/shader-dsl'
+import { f32, f32T, fn } from 'typeshade'
 
 const sized = fn('sized', {}, f32T, (_p, b) => {
   b.raw({ glsl: 'gl_PointSize = 4.0;' })

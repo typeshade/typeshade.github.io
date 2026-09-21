@@ -1,7 +1,7 @@
 ---
 id: diagnostics
-source: 6a715cd71faf465579b355f2a3770bdd4d581f78db842008c8578d09631a9024
-sourceLine: 1405
+source: 0e477cb350409448ed287c789e704112abe5a0172027dd888a37c99d61f7faf1
+sourceLine: 1510
 ---
 
 이 절을 읽고 나면 오류 코드가 붙은 오류를 읽고, 그 코드를 조건으로 자기 코드의 분기를 나누고,
@@ -15,25 +15,25 @@ sourceLine: 1405
 
 ### 코드가 붙은 오류
 
-이 패키지가 오류 코드를 붙여 던지는 오류는 모두 `ShaderDslError`입니다. 고정된 카탈로그에서 온
+이 패키지가 오류 코드를 붙여 던지는 오류는 모두 `TypeShadeError`입니다. 고정된 카탈로그에서 온
 `code`와 여러 조각을 이어 붙여 만든 `message`가 들어 있고, 카탈로그에 그 코드의 한 줄짜리
 해결책이 있으면 `hint`도 들어 있습니다. `ValidationError`는 이 클래스의 하위 클래스이므로,
-`instanceof ShaderDslError` 처리기 하나로 코드가 붙은 오류를 전부 잡을 수 있습니다.
+`instanceof TypeShadeError` 처리기 하나로 코드가 붙은 오류를 전부 잡을 수 있습니다.
 
 ```ts
-import { ShaderDslError, emitModule } from '@xgis/shader-dsl'
+import { TypeShadeError, emitModule } from 'typeshade'
 
 try {
   emitModule(buildModule())
 } catch (e) {
-  if (e instanceof ShaderDslError) console.error(e.code, e.message, e.hint)
+  if (e instanceof TypeShadeError) console.error(e.code, e.message, e.hint)
   throw e
 }
 ```
 
 타입이 맞지 않는 문제는 생성을 호출하기도 전에, 모듈을 만드는 도중에 드러납니다. 빌더가
 실행되는 순간 피연산자를 검사하기 때문입니다. `vec2f`에 `vec3f`를 더하면 `SD0002`를 던집니다.
-메시지는 코드와 카탈로그 요약 `shader-dsl [SD0002]: binary op on mismatched vectors`로
+메시지는 코드와 카탈로그 요약 `typeshade [SD0002]: binary op on mismatched vectors`로
 시작하고, 이어서 연산자와 실제로 받은 두 타입을 `+: vec2<f32> vs vec3<f32>`처럼 적습니다.
 그 아래 줄이 힌트 `both operands must be the same vector type, or one must be a scalar`입니다.
 
@@ -48,7 +48,7 @@ try {
 try {
   buildModule()
 } catch (e) {
-  if (e instanceof ShaderDslError && e.code === 'SD0002') {
+  if (e instanceof TypeShadeError && e.code === 'SD0002') {
     // a binary op on mismatched vectors: report it against the author's own source
     console.error(e.message, e.loc)
   } else throw e
@@ -70,7 +70,7 @@ try {
 배열입니다.
 
 ```ts
-import { emitModule, ValidationError } from '@xgis/shader-dsl'
+import { emitModule, ValidationError } from 'typeshade'
 
 try {
   emitModule(m)
@@ -85,7 +85,7 @@ try {
 예외 하나로 함께 보고합니다.
 
 ```
-shader-dsl [SD0020]: module validation failed (2 errors):
+typeshade [SD0020]: module validation failed (2 errors):
   - dup-func: duplicate function 'ramp'
   - all-paths-return (fn band): fn 'band' returns non-void but a code path falls through without return
 ```
@@ -105,8 +105,8 @@ shader-dsl [SD0020]: module validation failed (2 errors):
 돌려 볼 만합니다.
 
 ```ts
-import { wgslBackend } from '@xgis/shader-dsl'
-import { diagnose, formatReport } from '@xgis/shader-dsl/dev'
+import { wgslBackend } from 'typeshade'
+import { diagnose, formatReport } from 'typeshade/dev'
 
 const report = diagnose(m, { rules: 'all', backend: wgslBackend })
 if (report.summary.errors > 0) console.error(formatReport(report))
@@ -137,12 +137,12 @@ instead of Let() to mutate it`입니다. 마지막 줄은 개수 `1 error, 0 war
 테스트로 실행할 때 켭니다.
 
 ```ts
-import { setSourceTracing } from '@xgis/shader-dsl/dev'
+import { setSourceTracing } from 'typeshade/dev'
 
 setSourceTracing(true)
 ```
 
-환경 변수 `XGIS_SHADER_DSL_TRACE=1`을 주면 프로세스 전체에서 켜지므로, 테스트 코드를 고치지
+환경 변수 `TYPESHADE_TRACE=1`을 주면 프로세스 전체에서 켜지므로, 테스트 코드를 고치지
 않고 테스트 실행에서 위치를 얻을 때는 이 방법을 씁니다. 위치는 생성된 셰이더에 들어가지
 않습니다. 추적을 켜든 끄든 WGSL과 GLSL은 바이트까지 같습니다. 기록이 선택이므로 오류와 진단의
 `loc`도 선택이며, 없을 수도 있는 필드로 읽어야 합니다.

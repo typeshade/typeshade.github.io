@@ -16,7 +16,10 @@ export const claims: readonly Claim[] = [
     text: `${facts.testFiles} test files.`,
     source: { label: `every *.test.ts in the tree at ${facts.pinnedCommit}`, href: links.commit.href },
   },
-  { text: `${facts.runtimeDeps} runtime dependencies.`, source: links.packageJson },
+  {
+    text: `${facts.runtimeDeps} runtime dependency, ${facts.runtimeDepNames.join(', ')}, which the language service needs and no core subpath does.`,
+    source: links.packageJson,
+  },
   {
     text: `On every push, Tint compiles every WGSL emit and a real WebGL2 context links every renderable example's ${facts.glslTarget}.`,
     source: links.compileGate,
