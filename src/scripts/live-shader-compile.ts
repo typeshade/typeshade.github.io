@@ -10,7 +10,6 @@ import {
   isControllable,
   isReserved,
   layoutFor,
-  withUniformBlock,
   RESERVED_UNIFORMS,
   type ControlProps,
   type LiveControl,
@@ -111,8 +110,8 @@ export function compileLive(
     id,
     title,
     wgsl: result.wgsl,
-    vertex: withUniformBlock(result.glsl.vertex, layout, layout.instance ?? ''),
-    fragment: withUniformBlock(result.glsl.fragment, layout, layout.instance ?? ''),
+    vertex: result.glsl.vertex,
+    fragment: result.glsl.fragment,
     layout,
     controls: {},
   }

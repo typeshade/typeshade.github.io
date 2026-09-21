@@ -35,6 +35,13 @@ interface Props {
   /** The name over the block. A file name is not copy, so it is written on the page and reads
    *  the same in every language, the way the other code frames on the site name their file. */
   file?: string
+  /** One line saying what the reader is looking at, precise enough to check by eye. It is the
+   *  prose form of the "Expected output" comment an MDN interactive example carries. From the
+   *  dictionaries. */
+  anchor?: string
+  /** What to try, one line each, with the controls or by editing a line. A live example a
+   *  reader does nothing with is a picture. From the dictionaries. */
+  exercises?: readonly string[]
   /** Range, step, default and label for one uniform field each. A field the module does not
    *  declare fails the build. */
   controls?: ControlProps
@@ -46,7 +53,7 @@ interface Props {
   variant?: 'figure' | 'hero'
 }
 
-const { locale, id, title, code, caption, file, controls = {}, aspect = '2/1', variant = 'figure' } = Astro.props
+const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1', variant = 'figure' } = Astro.props
 const hero = variant === 'hero'
 const t = copyFor(locale)
 const l = t.live
@@ -149,6 +156,8 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
       </div>
       <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
 
+      {anchor && <p class="live-anchor"><Rich text={anchor} locale={locale} /></p>}
+
       <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
 
       <div class="live-controls" data-live-controls hidden></div>
@@ -157,6 +166,13 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
           <Rich text={reservedNote} locale={locale} />
           {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
         </p>
+      )}
+
+      {exercises.length > 0 && (
+        <div class="live-exercises">
+          <p>{l.exercisesP}</p>
+          <ul>{exercises.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
+        </div>
       )}
 
       <details class="live-output" data-pagefind-ignore>

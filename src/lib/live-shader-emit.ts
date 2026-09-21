@@ -12,7 +12,6 @@ import { compile, reflect } from '../../vendor/shader-dsl/src/index.ts'
 import {
   composeSource,
   controlsFor,
-  withUniformBlock,
   isControllable,
   isReserved,
   layoutFor,
@@ -102,10 +101,12 @@ export function liveShader(id: string, title: string, source: string, props: Con
 
   const controls = controlsFor(layout, props)
   const instance = layout.instance ?? ''
-  const vertex = withUniformBlock(result.glsl.vertex, layout, instance)
-  const fragment = withUniformBlock(result.glsl.fragment, layout, instance)
+  const { vertex, fragment } = result.glsl
   // A stage that reads the block and still has no declaration for it would not link, and the
-  // page would report a browser with no WebGL2 to a reader who has one.
+  // page would report a browser with no WebGL2 to a reader who has one. The compiler dropped
+  // the declaration for a TypeScript-front-end module until the pin this is built against, so
+  // the assertion stays: it is one line, and it is the only thing between a silent relink
+  // failure and a reader being told their browser has no WebGL2.
   for (const [stage, text2] of [['vertex', vertex], ['fragment', fragment]] as const) {
     if (layout.size > 0 && new RegExp(`\\b${instance}\\.`).test(text2) && !text2.includes(`uniform ${layout.block}`)) {
       throw new Error(`[live-shader] '${id}' emits a GLSL ${stage} stage that reads ${instance} and declares no block for it`)

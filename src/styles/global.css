@@ -712,6 +712,31 @@ body > main { flex: 1 }
   background: var(--color-elevated); cursor: pointer;
 }
 
+/* What the reader should see, and what to try, under the same figure. The anchor line is one
+   sentence in the tertiary text, so the caption above it stays the louder of the two. The
+   exercises are an Ant List: no bullets, one row per thing to try, split by the rule every
+   other list on the site is split by. Both carry .figure.live for the same reason the
+   handles above do, to outrank the component's own scoped rules and the .doc defaults. */
+.figure.live .live-anchor {
+  margin: 0;
+  font-size: var(--text-meta); line-height: var(--text-meta--line-height);
+  color: var(--color-text-3);
+}
+.figure.live .live-exercises { font-size: var(--text-ui); line-height: var(--text-ui--line-height) }
+.figure.live .live-exercises > p { margin: 0 0 8px; color: var(--color-text-2) }
+.figure.live .live-exercises ul {
+  margin: 0; padding: 0; list-style: none;
+  border-block-start: 1px solid var(--color-line-1);
+}
+.figure.live .live-exercises li {
+  margin: 0; padding-block: 12px; padding-inline: 0;
+  border-block-end: 1px solid var(--color-line-1);
+  color: var(--color-text-1);
+}
+/* Ant's split list draws no rule after the last row, and here it would land 12px above the
+   emitted-output disclosure's own rule and read as two. */
+.figure.live .live-exercises li:last-child { border-block-end: 0 }
+
 /* One section per idea, separated by space. */
 .front-section { margin-block-start: var(--front-gap) }
 .front-section h2 { max-inline-size: 24ch; margin: 0; font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.01em; text-wrap: balance }
