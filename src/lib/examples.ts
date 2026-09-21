@@ -5,6 +5,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/index.ts'
 import { shortBlurb } from './blurb.ts'
+import { builtinCounts } from './builtin-table.ts'
 import { shadeCounts } from './shade-examples.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 
@@ -257,6 +258,8 @@ function layoutStandards(): readonly string[] {
   return found
 }
 
+const builtins = builtinCounts()
+
 export const facts = {
   examples: examples.length,
   /** The other corpus: the `.shade.ts` files, written in TypeScript source and compiled from
@@ -280,6 +283,14 @@ export const facts = {
   /** The pinned commit's own date, for WebPage.dateModified on the guide and the reference. */
   pinnedDate: pinnedDate(),
   glslTarget: glslTarget(),
+  /** The builtin registry, counted at the pin (src/lib/builtin-table.ts): every id the
+   *  compiler can spell, the ones spelled the same way on both targets, the ones GLSL ES 3.00
+   *  has no form for, and the ones the `Math.*` surface has a name for. The builtin table
+   *  page prints all four and types none of them. */
+  builtins: builtins.total,
+  portableBuiltins: builtins.portable,
+  glslAbsentBuiltins: builtins.noGlsl,
+  mathAliasBuiltins: builtins.aliased,
   layoutStandards: layoutStandards(),
   runtimeDeps: runtimeDeps().length,
   /** The names behind that count, so a sentence can say which one it is. */
@@ -304,12 +315,19 @@ export const facts = {
 // compared at whatever commit is pinned now, so the pin that changes one stops the build and
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
-const pinned = { commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302 }
+const pinned = {
+  commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302,
+  builtins: 139, portableBuiltins: 44, glslAbsentBuiltins: 31, mathAliasBuiltins: 27,
+}
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
 if (facts.shadeExamples !== pinned.shadeExamples) drift.push(`shadeExamples ${facts.shadeExamples} != ${pinned.shadeExamples}`)
 if (facts.bothTargets !== pinned.bothTargets) drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`)
 if (facts.testFiles < pinned.testFiles) drift.push(`testFiles ${facts.testFiles} < ${pinned.testFiles}`)
+if (facts.builtins !== pinned.builtins) drift.push(`builtins ${facts.builtins} != ${pinned.builtins}`)
+if (facts.portableBuiltins !== pinned.portableBuiltins) drift.push(`portableBuiltins ${facts.portableBuiltins} != ${pinned.portableBuiltins}`)
+if (facts.glslAbsentBuiltins !== pinned.glslAbsentBuiltins) drift.push(`glslAbsentBuiltins ${facts.glslAbsentBuiltins} != ${pinned.glslAbsentBuiltins}`)
+if (facts.mathAliasBuiltins !== pinned.mathAliasBuiltins) drift.push(`mathAliasBuiltins ${facts.mathAliasBuiltins} != ${pinned.mathAliasBuiltins}`)
 if (drift.length > 0) {
   throw new Error(
     `[examples] the pinned mirror (${facts.pinnedCommit}) no longer matches the copy written at ${pinned.commit}: ${drift.join('; ')}`,
