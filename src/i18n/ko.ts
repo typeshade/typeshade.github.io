@@ -219,6 +219,12 @@ export const ko: Copy = {
         gpuTypes: 'GPU 타입',
         resources: '리소스',
         stages: '셰이더 스테이지'
+      },
+      mapping: {
+        fromTypescript: 'TypeScript에서',
+        fromWgsl: 'WGSL에서',
+        fromGlsl: 'GLSL에서',
+        builtins: '내장 함수'
       }
     },
     introduction: '소개',
@@ -1271,6 +1277,70 @@ export const ko: Copy = {
         helper: '4. Helper function',
         helperP: 'decorator가 없는 함수는 entry가 아니라 helper입니다. entry point를 class method로 만들거나 `this`를 pipeline 객체로 취급하지 않습니다.',
         next: '언어 개요로 돌아가기'
+      }
+    },
+
+    // 구성 요소 대응 페이지 네 개. 표 자체는 컴파일러 레지스트리에서 생성하므로
+    // 여기에는 표를 둘러싼 문장만 둡니다.
+    mapping: {
+      fromTypescript: {
+        title: 'TypeScript 문법과 그 변환 결과',
+        description: '"use typeshade" 파일에서 TypeScript 문법 하나하나가 무엇이 되는지 정리합니다. 선언, 함수, class, 제어 흐름, 그리고 컴파일러가 생성하는 셰이더 코드를 함께 봅니다.',
+        h1: 'TypeScript 문법',
+        h: '이 페이지가 다루는 것',
+        p: '`"use typeshade"` 파일은 TypeScript로 씁니다. 그 안의 문법은 GPU에서 저마다 뜻이 하나씩 있거나, 왜 안 되는지를 밝히는 거절을 받습니다. 이 페이지는 문법마다 무엇으로 하향 변환되는지와 컴파일러가 생성한 WGSL을 나란히 놓습니다. 생성 결과 칸은 빌드 시점에 컴파일해 얻으므로 컴파일러와 어긋날 수 없습니다.',
+        pending: '문법별 표는 지금 작성하고 있습니다. 선언, 함수, class, 제어 흐름, 식과 타입 순서로 절을 나눠 싣습니다.'
+      },
+      fromWgsl: {
+        title: 'WGSL을 TypeShade로: 타입, 리소스, 진입점',
+        description: 'WGSL 작성 인터페이스를 구성 요소별로 훑고 각각의 TypeShade 표기를 보여 줍니다. 스칼라, 벡터, 텍스처, 주소 공간, 스테이지 속성, 문을 다룹니다.',
+        h1: 'WGSL을 TypeShade로',
+        h: '이 페이지가 다루는 것',
+        p: '이미 WGSL을 쓰는 사람이 이 사이트에서 찾는 것은 하나입니다. 눈앞에 있는 구성 요소를 TypeShade로 어떻게 적느냐입니다. 이 페이지는 그 방향으로 읽힙니다. 왼쪽에 WGSL 형태, 오른쪽에 `"use typeshade"` 파일에 적을 코드, 그리고 둘이 맞아떨어지지 않는 자리에는 설명을 답니다.',
+        pending: '구성 요소별 표는 지금 작성하고 있습니다. 타입, 리소스와 주소 공간, 진입점과 속성, 문 순서로 절을 나눠 싣습니다.'
+      },
+      fromGlsl: {
+        title: `${glsl}을 TypeShade로: 타입과 유니폼 블록`,
+        description: `${glsl} 작성 인터페이스를 구성 요소별로 훑고 각각의 TypeShade 표기를 보여 줍니다. 샘플러, 유니폼 블록, varying, builtin 변수, 함수를 다룹니다.`,
+        h1: `${glsl}을 TypeShade로`,
+        h: '이 페이지가 다루는 것',
+        p: `WebGL2용 셰이더는 ${glsl}로 씁니다. 그 대부분은 TypeShade 표기가 있고, 같은 프로그램을 두 타깃 모두에 생성합니다. 이 페이지는 그 방향으로 읽힙니다. 어떤 구성 요소가 WebGPU에 형태가 없는지, 어떤 구성 요소를 컴파일러가 양쪽 모두에서 거절하는지도 밝힙니다.`,
+        pending: '구성 요소별 표는 지금 작성하고 있습니다. 타입과 샘플러, 유니폼과 버퍼, builtin 변수, 함수 순서로 절을 나눠 싣습니다.'
+      },
+      builtins: {
+        title: `내장 함수와 WGSL, ${glsl} 표기`,
+        description: `컴파일러가 표기할 수 있는 내장 함수 ${facts.builtins}개를 모두 모아, 각 함수가 WGSL과 ${glsl}로 어떤 코드가 되는지 계열별로 정리했습니다.`,
+        h1: '내장 함수',
+        intro: `내장 함수는 GPU에 이미 들어 있는 함수입니다. 호출은 컴파일러 안에서 중립 이름 하나로 다니고, 백엔드가 타깃마다 자기 표기를 씁니다. 그래서 한 번 작성한 호출이 두 벌로 생성됩니다. 레지스트리에 담긴 이름은 ${facts.builtins}개입니다.`,
+        readingH: '한 행을 읽는 법',
+        readingP: `첫째 칸은 호출이 달고 다니는 이름이며, 인자가 들어갈 자리마다 플레이스홀더를 하나씩 넣었습니다. 다음 두 칸은 WGSL 백엔드와 ${glsl} 백엔드가 그 호출에 대해 쓰는 코드로, 고정된 커밋의 컴파일러 표기표를 그대로 실행해 얻었습니다. 이 가운데 ${facts.portableBuiltins}개는 두 타깃에서 표기가 같고, ${facts.glslAbsentBuiltins}개는 ${glsl}에 형태가 아예 없어 그 칸에 컴파일러가 낸 메시지를 싣습니다. ${facts.mathAliasBuiltins}개는 \`Math.\` 이름으로도 부를 수 있으며, 수학과 캐스트 표의 마지막 칸이 그 이름을 보여 줍니다.`,
+        idsP: '이 이름 가운데 몇 개는 컴파일러가 고르는 것이라 손으로 적지 않습니다. 레이어 텍스처 읽기, 깊이 비교, 스토리지 fetch는 저마다 자기 이름을 받습니다. 그래야 호출의 인자 순서가 어떤 텍스처에 쓰였는지에 따라 달라지지 않습니다.',
+        precedenceH: '파일이 직접 선언한 이름',
+        precedenceP: '파일이 선언한 함수가 같은 이름의 내장 함수를 이깁니다. 그런 이름은 내장 함수가 되기 전에는 작성자의 함수를 가리켰고, 기능을 더한다고 해서 이미 돌아가던 프로그램의 뜻이 바뀌면 안 되기 때문입니다.',
+        colName: 'TypeShade',
+        colWgsl: 'WGSL',
+        colGlsl: glsl,
+        colMath: 'Math 이름',
+        colBuiltin: '내장 함수',
+        colHelper: 'GLSL 함수',
+        noForm: '이 타깃에는 형태가 없습니다.',
+        preEmit: '두 백엔드가 돌기 전에 `f32` 레인 두 개로 바뀝니다.',
+        families: {
+          maths: '수학',
+          geometry: '기하 연산',
+          derivatives: '화면 공간 미분',
+          bits: '비트 연산',
+          packing: '패킹',
+          casts: '캐스트',
+          textures: '텍스처와 스토리지',
+          atomics: '원자적 연산',
+          barriers: '배리어',
+          f64: '에뮬레이션 배정밀도'
+        },
+        bitsP: `${glsl}에는 비트 내장 함수가 하나도 없습니다. 그래서 위 칸은 GLSL 생성기가 정의하는 작은 함수를 부릅니다. 그 정의는 해당 타깃에 있는 시프트와 마스크, 비교만으로 쓰여 있습니다. 하나도 부르지 않는 모듈은 정의도 싣지 않습니다.`,
+        helpersH: 'GLSL 헬퍼 함수',
+        helpersP: `스토리지 버퍼는 ${glsl}에 형태가 없어서, 스토리지를 읽는 코드는 데이터 텍스처를 읽는 코드로 바뀝니다. 아래가 그 읽기를 대신하는 함수들이며, 모듈이 부르는 함수의 정의는 GLSL 생성기가 함께 생성합니다.`,
+        sourceP: '이 페이지의 모든 행은 고정된 커밋의 [표기 레지스트리](intrinsicRegistry)에서 읽어 온 것이고, 여기서 손으로 적은 것은 없습니다.'
       }
     }
   },

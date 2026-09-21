@@ -34,6 +34,10 @@ export const links = {
   languageGpuTypes: { label: 'GPU types', href: '/guide/language/gpu-types/' },
   languageResources: { label: 'Resources', href: '/guide/language/resources/' },
   languageStages: { label: 'Shader stages', href: '/guide/language/stages/' },
+  languageFromTypescript: { label: 'TypeScript constructs', href: '/guide/language/from-typescript/' },
+  languageFromWgsl: { label: 'WGSL in TypeShade', href: '/guide/language/from-wgsl/' },
+  languageFromGlsl: { label: `${facts.glslTarget} in TypeShade`, href: '/guide/language/from-glsl/' },
+  languageBuiltins: { label: 'Builtin functions', href: '/guide/language/builtins/' },
   legacyAuthoring: { label: 'Compiler authoring guide', href: '/guide/authoring/' },
   internals: { label: 'Compiler internals', href: '/guide/internals/' },
   languageService: { label: 'Language service', href: '/guide/language-service/' },
@@ -56,6 +60,7 @@ export const links = {
   goldens: { label: 'emit-goldens.test.ts', href: at('examples/emit-goldens.test.ts') },
   packageJson: { label: 'package.json', href: at('package.json') },
   oracle: { label: 'src/core/oracle.ts', href: at('src/core/oracle.ts') },
+  intrinsicRegistry: { label: 'src/core/intrinsics.ts', href: at('src/core/intrinsics.ts') },
   deepZoom: { label: 'fp64-deep-zoom.ts', href: at('examples/fp64-deep-zoom.ts') },
   compileGate: { label: 'scripts/compile-gate.ts', href: at('scripts/compile-gate.ts') },
   ciGates: { label: 'the CI workflow', href: `${siteRepo}/blob/main/.github/workflows/deploy.yml` },
@@ -123,6 +128,10 @@ export function docsPages(locale: Locale): readonly Destination[] {
     docsPage(locale, 'motivation'),
     docsPage(locale, 'quickStart'),
     docsPage(locale, 'guide'),
+    docsPage(locale, 'languageFromTypescript'),
+    docsPage(locale, 'languageFromWgsl'),
+    docsPage(locale, 'languageFromGlsl'),
+    docsPage(locale, 'languageBuiltins'),
     docsPage(locale, 'concepts'),
     docsPage(locale, 'conceptsCpuGpu'),
     docsPage(locale, 'conceptsPipeline'),
@@ -135,7 +144,7 @@ export function docsPages(locale: Locale): readonly Destination[] {
   ]
 }
 
-type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'concepts' | 'conceptsCpuGpu' | 'conceptsPipeline' | 'conceptsWebgpu' | 'conceptsWgsl' | 'examples' | 'internals' | 'languageService' | 'checks'
+type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'languageFromTypescript' | 'languageFromWgsl' | 'languageFromGlsl' | 'languageBuiltins' | 'concepts' | 'conceptsCpuGpu' | 'conceptsPipeline' | 'conceptsWebgpu' | 'conceptsWgsl' | 'examples' | 'internals' | 'languageService' | 'checks'
 /** One page of the guide as the sidebar and the footer name it, in one language. */
 function docsPage(locale: Locale, key: DocsPageKey): Destination {
   const d = copyFor(locale).docs
@@ -144,6 +153,10 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     quickStart: d.labels.nav.use,
     playground: d.labels.playground,
     guide: d.labels.languageGuide,
+    languageFromTypescript: d.labels.mapping.fromTypescript,
+    languageFromWgsl: d.labels.mapping.fromWgsl,
+    languageFromGlsl: d.labels.mapping.fromGlsl,
+    languageBuiltins: d.labels.mapping.builtins,
     concepts: d.labels.concepts,
     conceptsCpuGpu: d.labels.conceptPages.cpuAndGpu,
     conceptsPipeline: d.labels.conceptPages.pipeline,
@@ -181,6 +194,10 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     { label: topicLabels.gpuTypes, href: localePath(locale, links.languageGpuTypes.href), depth: 1 },
     { label: topicLabels.resources, href: localePath(locale, links.languageResources.href), depth: 1 },
     { label: topicLabels.stages, href: localePath(locale, links.languageStages.href), depth: 1 },
+    { ...page('languageFromTypescript'), depth: 1 },
+    { ...page('languageFromWgsl'), depth: 1 },
+    { ...page('languageFromGlsl'), depth: 1 },
+    { ...page('languageBuiltins'), depth: 1 },
   ]
   const reference: SidebarItem[] = [{ label: d.api.h1, href: localePath(locale, links.api.href) }]
   for (const { category, members } of apiCategories()) {

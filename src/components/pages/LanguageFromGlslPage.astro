@@ -1,0 +1,23 @@
+---
+// Language guide: the FromGlsl mapping page. Content lives in language.mapping.fromGlsl
+// (src/i18n/en.ts, src/i18n/ko.ts). The page carries its introduction while the construct
+// tables are written; the sections come next, one <MappingTable> each
+// (src/components/MappingTable.astro documents the props and the CSS classes), with the
+// rows read from the compiler at build time the way the builtin table's are.
+import Docs from '../../layouts/Docs.astro'
+import Rich from '../Rich.astro'
+import { copyFor, type Locale } from '../../i18n/index.ts'
+import { editCopy, links } from '../../lib/links.ts'
+
+interface Props { locale: Locale }
+const { locale } = Astro.props
+const content = copyFor(locale).language.mapping.fromGlsl
+const headings = [{ depth: 2, slug: 'covers', text: content.h }]
+---
+
+<Docs locale={locale} path={links.languageFromGlsl.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'language')}>
+  <h1>{content.h1}</h1>
+  <h2 id="covers">{content.h}</h2>
+  <p><Rich text={content.p} locale={locale} /></p>
+  <p>{content.pending}</p>
+</Docs>

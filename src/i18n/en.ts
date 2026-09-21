@@ -143,6 +143,13 @@ export const en = {
         gpuTypes: 'GPU types',
         resources: 'Resources',
         stages: 'Shader stages'
+      },
+      /** The four construct-mapping pages, after the topics in the Language group. */
+      mapping: {
+        fromTypescript: 'From TypeScript',
+        fromWgsl: 'From WGSL',
+        fromGlsl: 'From GLSL',
+        builtins: 'Builtin functions'
       }
     },
     introduction: 'Introduction',
@@ -1094,6 +1101,72 @@ export const en = {
         helper: '4. Helper functions',
         helperP: 'An undecorated function is a helper, not an entry point. Do not put entry points on classes or treat `this` as a pipeline object.',
         next: 'Back to the language overview'
+      }
+    },
+
+    // The four construct-mapping pages: /guide/language/from-typescript/, from-wgsl/,
+    // from-glsl/ and builtins/. Each page component reads one block. The builtin table is
+    // generated from the compiler's spelling registry (src/lib/builtin-table.ts), so its
+    // rows are not copy and only the words around them live here.
+    mapping: {
+      fromTypescript: {
+        title: 'TypeScript constructs and what each one lowers to',
+        description: 'What each TypeScript construct becomes in a "use typeshade" file: declarations, functions, classes, control flow, and the shader text the compiler writes.',
+        h1: 'TypeScript constructs',
+        h: 'What this page covers',
+        p: 'A `"use typeshade"` file is written in TypeScript, and every construct in it has one meaning on the GPU or a refusal that says why. This page puts each construct beside what it lowers to and beside the WGSL the compiler emits for it, compiled at build time so the emitted column cannot drift from the compiler.',
+        pending: 'The construct tables are being written, one section each for declarations, functions, classes, control flow, and expressions and types.'
+      },
+      fromWgsl: {
+        title: 'WGSL in TypeShade: types, resources and entries',
+        description: 'The WGSL surface construct by construct, with the TypeShade spelling of each one: scalars, vectors, textures, address spaces, stage attributes and statements.',
+        h1: 'WGSL in TypeShade',
+        h: 'What this page covers',
+        p: 'A reader who already writes WGSL needs one thing from this site, which is the TypeShade spelling of the construct in front of them. This page reads in that direction: a WGSL form on the left, what to write in a `"use typeshade"` file on the right, and a note where the two do not line up.',
+        pending: 'The construct tables are being written, one section each for types, resources and address spaces, entry points and attributes, and statements.'
+      },
+      fromGlsl: {
+        title: `${glsl} in TypeShade: types and uniform blocks`,
+        description: `The ${glsl} surface construct by construct, with the TypeShade spelling of each one: samplers, uniform blocks, varyings, builtin variables and functions.`,
+        h1: `${glsl} in TypeShade`,
+        h: 'What this page covers',
+        p: `A shader written for WebGL2 is written in ${glsl}, and most of it has a TypeShade spelling that emits the same program for both targets. This page reads in that direction, and it says which constructs have no form on WebGPU and which ones the compiler refuses on both.`,
+        pending: 'The construct tables are being written, one section each for types and samplers, uniforms and buffers, builtin variables, and functions.'
+      },
+      builtins: {
+        title: `Builtin functions and their WGSL and ${glsl} forms`,
+        description: `Every builtin the compiler can spell, ${facts.builtins} in all, beside the WGSL and the ${glsl} text it writes for each one, grouped by family.`,
+        h1: 'Builtin functions',
+        intro: `A builtin is a function the GPU already has. A call carries one neutral name through the compiler, and each backend writes its own spelling for that name, so the call is written once and emitted twice. The registry holds ${facts.builtins} names.`,
+        readingH: 'How to read a row',
+        readingP: `The first column is the name the call carries, with a placeholder argument in each position it takes. The next two are the text the WGSL backend and the ${glsl} backend write for that call, run from the compiler's own spelling table at the pinned commit. ${facts.portableBuiltins} of the names are spelled the same way on both targets, and ${facts.glslAbsentBuiltins} have no ${glsl} form at all, where the cell carries the compiler's own message. ${facts.mathAliasBuiltins} answer to a \`Math.\` name as well, which the last column of the maths and cast tables shows.`,
+        idsP: 'A few of these names are chosen by the compiler and never written by hand. A layered texture read, a depth comparison and a storage fetch each take a name of their own, so the argument order of a call never depends on the texture it landed on.',
+        precedenceH: 'A name the file declares',
+        precedenceP: 'A function the file declares wins over a builtin of the same name. Such a name meant the author\'s own function before it was a builtin, and an addition does not change what a program already means.',
+        colName: 'TypeShade',
+        colWgsl: 'WGSL',
+        colGlsl: glsl,
+        colMath: 'Math name',
+        colBuiltin: 'Builtin',
+        colHelper: 'GLSL function',
+        noForm: 'No form on this target.',
+        preEmit: 'Rewritten into a pair of `f32` lanes before either backend runs.',
+        families: {
+          maths: 'Maths',
+          geometry: 'Geometry',
+          derivatives: 'Derivatives',
+          bits: 'Bit operations',
+          packing: 'Packing',
+          casts: 'Casts',
+          textures: 'Textures and storage',
+          atomics: 'Atomics',
+          barriers: 'Barriers',
+          f64: 'Emulated double'
+        },
+        bitsP: `${glsl} has none of the bit builtins, so the column above names a small function the GLSL writer defines over the shifts, masks and comparisons that target does have. A module that calls none of them carries none of the definitions.`,
+        helpersH: 'GLSL helper functions',
+        helpersP: `A storage buffer has no ${glsl} form, so a read of one is rewritten into a read from a data texture. These are the functions that read stands for, and the GLSL writer emits the definition of each one a module calls.`,
+        sourceP: 'Every row on this page is read from [the spelling registry](intrinsicRegistry) at the pinned commit, and none of it is typed here.'
       }
     }
   },
