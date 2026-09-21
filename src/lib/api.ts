@@ -70,6 +70,14 @@ const categoryBySlug = new Map(API_CATEGORIES.map((c) => [c.slug, c]))
 // Which category a file's exports belong to. src/core/ir/node.ts is the one file that holds
 // several, so it is split by export below instead.
 const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
+  'src/compiler/ts/compile.ts': 'authoring',
+  'src/compiler/ts/source-file.ts': 'authoring',
+  'src/compiler/ts/directive.ts': 'authoring',
+  'src/compiler/ts/pack.ts': 'reflection-api',
+  'src/core/ir/span.ts': 'ir',
+  'src/core/debug/dispatch.ts': 'cpu-oracle',
+  'src/core/console.ts': 'cpu-oracle',
+  'src/core/passes/determinism.ts': 'tooling',
   'src/core/ir/builder.ts': 'authoring',
   'src/core/ir/types.ts': 'types',
   'src/core/ir/nodes.ts': 'ir',
@@ -149,6 +157,10 @@ function objectKeys(file: string, names: readonly string[]): Record<string, stri
           p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) ? [p.name.text] : [],
         )
       }
+      // A table the compiler writes as a plain list of ids instead of as a keyed record.
+      if (init && ts.isArrayLiteralExpression(init)) {
+        out[node.name.text] = init.elements.flatMap((el) => (ts.isStringLiteral(el) ? [el.text] : []))
+      }
     }
     ts.forEachChild(node, visit)
   }
@@ -189,16 +201,19 @@ interface CompilerTables extends IntrinsicTables {
 
 function compilerTables(): CompilerTables {
   const oracle = objectKeys('src/core/cpu-runtime.ts', ['BUILTINS', 'GPU_STUBS'])
-  const fp64 = objectKeys('src/core/passes/fp64-lower.ts', ['CALL_FN', 'VEC_CALL_KIND'])
+  // The one list of builtins the fp64 pass has an emulated-double body for. It sits in a leaf
+  // module so the front end can name it in a refusal without pulling the pass in, and both
+  // halves of the compiler read it from there.
+  const fp64 = objectKeys('src/core/fp64/twins.ts', ['F64_SCALAR_TWIN_FN', 'F64_VEC_TWIN_KIND', 'F64_VEC_REDUCTIONS'])
   const builtins = oracle.BUILTINS ?? []
   const stubs = oracle.GPU_STUBS ?? []
   if (builtins.length === 0 || stubs.length === 0) throw new Error('[api] the CPU oracle no longer keeps its builtins in BUILTINS and GPU_STUBS')
-  if ((fp64.CALL_FN ?? []).length === 0) throw new Error('[api] the fp64 pass no longer keeps its whitelist in CALL_FN')
+  if ((fp64.F64_SCALAR_TWIN_FN ?? []).length === 0) throw new Error('[api] the fp64 pass no longer keeps its whitelist in F64_SCALAR_TWIN_FN')
   return {
     ...intrinsicTables(),
     oracleBuiltins: new Set(builtins),
     oracleStubs: new Set(stubs),
-    fp64: new Set([...(fp64.CALL_FN ?? []), ...(fp64.VEC_CALL_KIND ?? [])]),
+    fp64: new Set([...(fp64.F64_SCALAR_TWIN_FN ?? []), ...(fp64.F64_VEC_TWIN_KIND ?? []), ...(fp64.F64_VEC_REDUCTIONS ?? [])]),
   }
 }
 
