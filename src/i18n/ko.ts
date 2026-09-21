@@ -479,7 +479,7 @@ export const ko: Copy = {
     stageAria: '그것을 그리는 파일 옆에서 실행되는 셰이더',
     first: {
       title: '굽은 띠',
-      caption: '왼쪽 파일이 오른쪽에 그려집니다. 그림 위에서 포인터를 움직여 보고, 한 줄을 고치면 그림이 따라옵니다.',
+      caption: '왼쪽 파일을 오른쪽에 그립니다. 한 줄을 고치거나 컨트롤을 움직이면 그림이 따라옵니다.',
       warp: '띠가 휘는 정도',
       ink: '첫 번째 색',
       paper: '두 번째 색',
@@ -923,6 +923,7 @@ export const ko: Copy = {
     columns: { example: '예제', category: '분류', blurb: '설명' },
     tableCaption: `아래 ${facts.examples}개 예제 가운데 ${facts.bothTargets}개는 WGSL과 ${glsl}을 모두 냅니다. ${facts.wgslOnlyExample.title}은 ${glsl}으로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL 전용으로 표시했습니다. WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다.`,
     wgslOnly: 'WGSL 전용',
+    noStill: '그림 없음: 이 예제에는 페이지가 그릴 프래그먼트 단계가 없습니다.',
     blurbs: {
       graticule: '지도라면 다 그리는 경위선 격자.',
       hillshade: '음영 기복.',

@@ -126,7 +126,7 @@
   --color-elevated: #1f1f1f;
   --color-selection: #15325b;
   --fill-2: rgb(255 255 255 / 0.08);
-  --fill-3: rgb(255 255 255 / 0.04);
+  --fill-3: rgb(255 255 255 / 0.08);
   --fill-4: rgb(255 255 255 / 0.04);
   --shadow-elevated: 0 6px 16px 0 rgb(0 0 0 / 0.32), 0 3px 6px -4px rgb(0 0 0 / 0.48), 0 9px 28px 8px rgb(0 0 0 / 0.2);
   --shadow-secondary: 0 1px 2px 0 rgb(0 0 0 / 0.16), 0 1px 6px -1px rgb(0 0 0 / 0.12), 0 2px 4px 0 rgb(0 0 0 / 0.12);
@@ -158,7 +158,7 @@
     --color-elevated: #1f1f1f;
     --color-selection: #15325b;
     --fill-2: rgb(255 255 255 / 0.08);
-    --fill-3: rgb(255 255 255 / 0.04);
+    --fill-3: rgb(255 255 255 / 0.08);
     --fill-4: rgb(255 255 255 / 0.04);
     --shadow-elevated: 0 6px 16px 0 rgb(0 0 0 / 0.32), 0 3px 6px -4px rgb(0 0 0 / 0.48), 0 9px 28px 8px rgb(0 0 0 / 0.2);
     --shadow-secondary: 0 1px 2px 0 rgb(0 0 0 / 0.16), 0 1px 6px -1px rgb(0 0 0 / 0.12), 0 2px 4px 0 rgb(0 0 0 / 0.12);
@@ -240,14 +240,17 @@
 :lang(ko) .button, :lang(ko) .site-nav a, :lang(ko) .docs-group a, :lang(ko) .site-search { line-height: 1.5 }
 
 /* Base */
-html { background: var(--color-ground); scrollbar-color: var(--color-line-2) transparent }
+/* The page field is Ant's layout ground; every container on it (the header, the cards, the
+   code frames, the docs column, the footer, the dialog and the dropdowns) keeps the
+   container white. */
+html { background: var(--color-layout); scrollbar-color: var(--color-line-2) transparent }
 /* A column of header, document and footer, so a short page keeps its footer at the bottom
    of the window instead of leaving it halfway up the screen. */
 body {
   display: flex;
   flex-direction: column;
   min-block-size: 100vh;
-  background: var(--color-ground);
+  background: var(--color-layout);
   color: var(--color-text-1);
   font-family: var(--font-sans);
   font-size: var(--text-ui);
@@ -347,7 +350,7 @@ body > main { flex: 1 }
 .site-drop-list a:hover { background: var(--fill-3) }
 .site-drop-note, .site-drop-current {
   display: flex; align-items: center; gap: 6px; white-space: nowrap; padding: 5px 12px;
-  font-size: var(--text-ui); color: var(--color-text-3);
+  font-size: var(--text-ui); color: var(--color-text-2);
 }
 .site-drop-current { color: var(--color-accent); background: var(--color-primary-bg); border-radius: var(--radius); font-weight: 600 }
 .site-drop-current svg { inline-size: 14px; block-size: 14px; flex: none }
@@ -464,7 +467,7 @@ body > main { flex: 1 }
 /* The input carries the page's focus ring, and a match is marked in the primary wash. */
 .search-dialog input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; box-shadow: var(--ring) }
 .search-dialog #search mark { background: var(--color-primary-bg); color: inherit; border-radius: var(--radius-sm) }
-.search-dialog .search-note { padding: 16px; font-size: var(--text-ui); color: var(--color-text-3) }
+.search-dialog .search-note { padding: 16px; font-size: var(--text-ui); color: var(--color-text-2) }
 
 /* Docs: the sidebar as an Ant Menu, the document, the outline as an Ant Anchor; under 64rem
    the sidebar is a bar under the header. */
@@ -479,22 +482,22 @@ body > main { flex: 1 }
 .docs-local nav { padding: 4px calc(var(--gutter-x) - 8px) 16px }
 /* The phone's own "on this page": the same headings the wide outline shows, folded under the
    docs bar. A page with no headings to list renders neither. */
-.docs-toc { border-block-end: 1px solid var(--color-line-1) }
+.docs-toc { border-block-end: 1px solid var(--color-line-1); background: var(--color-ground) }
 .docs-toc summary {
   list-style: none; display: flex; align-items: center; gap: 8px; block-size: 40px; padding-inline: var(--gutter-x);
-  font-size: var(--text-ui); color: var(--color-text-3); cursor: pointer;
+  font-size: var(--text-ui); color: var(--color-text-2); cursor: pointer;
 }
 .docs-toc summary::-webkit-details-marker { display: none }
 .docs-toc summary::before { content: ''; inline-size: 12px; block-size: 12px; border-inline-end: 2px solid currentColor; border-block-end: 2px solid currentColor; transform: rotate(-45deg) scale(0.7); transition: transform var(--motion) }
 .docs-toc[open] summary::before { transform: rotate(45deg) scale(0.7) }
 .docs-toc nav { padding: 4px var(--gutter-x) 16px }
-.docs { display: grid; grid-template-columns: minmax(0, 1fr); max-inline-size: var(--container); margin-inline: auto; padding-inline: var(--gutter-x) }
+.docs { display: grid; grid-template-columns: minmax(0, 1fr); max-inline-size: var(--container); margin-inline: auto; padding-inline: var(--gutter-x); background: var(--color-ground) }
 .docs-sidebar, .docs-outline { display: none }
 .docs-content { padding-block: 32px 24px; max-inline-size: 740px; inline-size: 100% }
 .docs-content > h1:first-child { margin-block-start: 0 }
 .docs-group { margin-block-start: 20px }
 .docs-group:first-child { margin-block-start: 0 }
-.docs-group-title { padding: 8px 16px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-3) }
+.docs-group-title { padding: 8px 16px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
 .docs-group li { margin-block-start: 2px }
 /* Ant Menu: a 40px row, 6px radius, secondary text, the quaternary fill on hover, and the
    current page in the primary over its wash. */
@@ -523,9 +526,9 @@ body > main { flex: 1 }
   transition: border-color var(--motion), box-shadow var(--motion), color var(--motion);
 }
 .docs-pager a:hover { border-color: var(--color-primary-border); color: var(--color-accent); box-shadow: var(--shadow-secondary) }
-.docs-pager a span { display: block; margin-block-end: 4px; font-size: 0.75rem; font-weight: 400; color: var(--color-text-3) }
+.docs-pager a span { display: block; margin-block-end: 4px; font-size: 0.75rem; font-weight: 400; color: var(--color-text-2) }
 .docs-pager-next { text-align: end }
-.docs-outline-title { padding-inline-start: 16px; font-size: 0.75rem; color: var(--color-text-3) }
+.docs-outline-title { padding-inline-start: 16px; font-size: 0.75rem; color: var(--color-text-2) }
 .docs-outline li, .docs-toc li { position: relative; margin-block-start: 2px }
 .docs-outline li.depth-3 a, .docs-toc li.depth-3 { padding-inline-start: 28px }
 /* Ant Anchor: a 2px rail down the left, and a primary segment beside the heading in view. */
@@ -570,6 +573,34 @@ body > main { flex: 1 }
 .button-primary:active { background: var(--color-primary-active); border-color: var(--color-primary-active); color: #fff }
 /* Ant's large control: 40px, 16px text. */
 .button-lg { block-size: 40px; padding: 7px 15px; font-size: var(--text-h5); border-radius: var(--radius-md) }
+/* Edit and Reset over a live example: Ant's small default button, defined here once for both
+   the hero card and the figure column, so the two places cannot drift apart. */
+.live-bar { display: flex; align-items: center; gap: 8px }
+.live-bar button {
+  display: inline-flex; align-items: center; block-size: 24px; padding: 0 8px;
+  border: 1px solid var(--color-line-2); border-radius: var(--radius-sm);
+  background: var(--color-ground); color: var(--color-text-1);
+  font-family: inherit; font-size: 0.75rem; line-height: 1.5; cursor: pointer;
+  transition: color var(--motion), border-color var(--motion);
+}
+.live-bar button:hover { color: var(--color-primary-hover); border-color: var(--color-primary-hover) }
+.live-bar button:active { color: var(--color-primary-active); border-color: var(--color-primary-active) }
+
+/* Ant Alert, the info face: a 1px #91caff rule over the primary's own #e6f4ff wash, with the
+   info-circle at the left. The two pre-release notes on the site use it. */
+.alert {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-block-start: 16px; padding: 12px 16px;
+  border: 1px solid var(--color-primary-border); border-radius: var(--radius-md);
+  background: var(--color-primary-bg);
+  font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-1);
+}
+.alert-icon { inline-size: 16px; block-size: 16px; flex: none; margin-block-start: 3px; fill: var(--color-primary) }
+.alert p { margin: 0 }
+.alert a { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
+.alert a:hover { color: var(--color-primary-text-hover) }
+.alert code { font-family: var(--font-mono); font-size: 0.9em }
+.doc h2 + .alert { margin-block-start: 0 }
 
 /* Front page. A two-column hero in the container: the headline, the sentence and the two
    actions on the left, the showcase card on the right. Then one section per idea, separated
@@ -615,21 +646,20 @@ body > main { flex: 1 }
   box-shadow: inset 0 -2px 0 var(--color-accent);
   font-size: var(--text-ui); font-weight: 600; color: var(--color-text-1);
 }
-.figure.live-hero .live-bar { display: flex; align-items: center; gap: 8px }
-.figure.live-hero .live-bar button {
-  display: inline-flex; align-items: center; block-size: 24px; padding: 0 8px;
-  border: 1px solid var(--color-line-2); border-radius: var(--radius-sm);
-  background: var(--color-ground); color: var(--color-text-1);
-  font-family: inherit; font-size: 0.75rem; line-height: 1.5; cursor: pointer;
-  transition: color var(--motion), border-color var(--motion);
-}
-.figure.live-hero .live-bar button:hover { color: var(--color-primary-hover); border-color: var(--color-primary-hover) }
-.figure.live-hero .live-bar button:active { color: var(--color-primary-active); border-color: var(--color-primary-active) }
 .live-card-body { display: grid; grid-template-columns: minmax(0, 1fr) }
 /* The code pane is a window over the block: its content is taken out of flow, so the picture
    beside it sets the row's height and keeps its 4:3, and the pane scrolls inside. That box
-   is also what the editor's textarea is laid over (src/scripts/live-shader-editor.ts). */
-.figure.live-hero .live-code { position: relative; block-size: 260px; overflow: hidden; background: var(--color-elevated) }
+   is also what the editor's textarea is laid over (src/scripts/live-shader-editor.ts), whose
+   own padding is measured off the rendered lines, so the padding here stays untouched.
+   The pane's height rarely lands on a whole line, and the line the bottom edge crosses would
+   otherwise be cut through the middle of its glyphs; a 32px fade at the foot reads as more
+   code below and hands the cut to the mask. */
+.figure.live-hero .live-code {
+  position: relative; block-size: 260px; overflow-y: auto; background: var(--color-elevated);
+  scrollbar-width: thin; scrollbar-color: var(--color-line-2) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
 .figure.live-hero .live-code > .expressive-code { position: absolute; inset: 0; margin: 0 }
 .figure.live-hero .live-code .frame { display: flex; flex-direction: column; block-size: 100%; box-shadow: none }
 .figure.live-hero .live-code .expressive-code { --ec-brdRad: 0; --ec-brdWd: 0; --ec-frm-shdCol: transparent; --ec-frm-edTabBarBg: transparent; --ec-frm-edTabBarBrdBtmCol: transparent }
@@ -644,11 +674,17 @@ body > main { flex: 1 }
   order: -1; inline-size: 100%; border: 0; border-radius: 0;
   border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-2);
 }
-.figure.live-hero .live-diagnostics, .figure.live-hero .live-reserved, .figure.live-hero figcaption { padding-inline: 16px }
+.figure.live-hero .live-diagnostics, .figure.live-hero figcaption { padding-inline: 16px }
 .figure.live-hero .live-diagnostics { padding-block-start: 12px }
-.figure.live-hero .live-controls { gap: 12px; padding: 16px; border-block-start: 1px solid var(--color-line-1) }
-.figure.live-hero .live-reserved { padding-block-start: 12px; font-size: var(--text-ui); color: var(--color-text-3) }
-.figure.live-hero figcaption { padding-block: 12px 16px; font-size: var(--text-ui); color: var(--color-text-3) }
+/* The handles and the note about the fields that have none read as one group: the note is
+   the group's last row, under the sliders it belongs to, not a second caption at the foot. */
+.figure.live-hero .live-controls-group {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px; border-block-start: 1px solid var(--color-line-1);
+}
+.figure.live-hero .live-controls { gap: 12px }
+.figure.live-hero .live-reserved { font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2) }
+.figure.live-hero figcaption { padding-block: 12px 16px; font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2) }
 @media (min-width: 48rem) {
   .live-card-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
   .figure.live-hero .live-code { block-size: auto; border-inline-end: 1px solid var(--color-line-1) }
@@ -673,9 +709,23 @@ body > main { flex: 1 }
 .front-section > p a:not(.button), .front-gallery-head > p a:not(.button), .front-map dd a, .front-gallery-all { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
 .front-section > p a:not(.button):hover, .front-gallery-head > p a:not(.button):hover, .front-map dd a:hover, .front-gallery-all:hover { color: var(--color-primary-text-hover) }
 .front-section .expressive-code { margin: 0 }
-/* The source beside the two frames it emits. */
+/* The source beside the two frames it emits, which share one tabbed pane. Ant Tabs: a 40px
+   head with a 2px primary underline on the active tab. The head needs the script, so it
+   stays out of the page until the script has run; with no script both panels are in the flow
+   and stack, which is also what the search index reads. */
 .front-targets-grid { display: grid; gap: 16px; margin-block-start: 24px }
 .front-targets-out { display: grid; gap: 16px; align-content: start }
+.front-tabs-head { display: none; gap: 16px; border-block-end: 1px solid var(--color-line-1) }
+[data-front-tabs][data-ready] .front-tabs-head { display: flex }
+.front-tabs-head button {
+  block-size: 40px; padding: 0; border: 0; background: none;
+  box-shadow: inset 0 -2px 0 transparent;
+  color: var(--color-text-2); font-family: inherit; font-size: var(--text-ui); cursor: pointer;
+  transition: color var(--motion), box-shadow var(--motion);
+}
+.front-tabs-head button:hover { color: var(--color-primary-hover) }
+.front-tabs-head button[aria-selected='true'] { color: var(--color-accent); box-shadow: inset 0 -2px 0 var(--color-accent); font-weight: 600 }
+.front-tabs-head button:focus-visible { border-radius: var(--radius-sm) }
 @media (min-width: 64rem) {
   .front-targets-grid { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 24px }
   .front-targets-out { gap: 24px }
@@ -722,6 +772,7 @@ body > main { flex: 1 }
 .front-oracle .figure-frame { border: 0; border-radius: 0; border-block-end: 1px solid var(--color-line-1) }
 .front-oracle .figure-caption { padding: 16px; font-size: var(--text-ui); color: var(--color-text-2) }
 /* The close: the one command, and the action again. */
+.front-section > .alert { max-inline-size: 62ch; margin-block-start: 12px }
 .front-install .expressive-code { margin-block-start: 24px; max-inline-size: 760px }
 .front-install .front-actions { margin-block-start: 24px }
 .wide { inline-size: var(--wide); margin-inline: auto }
@@ -809,7 +860,7 @@ body > main { flex: 1 }
 .doc strong { font-weight: 600 }
 .doc h2 { margin-block-start: var(--section-gap) }
 .doc h1 + h2 { margin-block-start: 24px }
-.guide-note { font-size: var(--text-ui); color: var(--color-text-3) }
+.guide-note { font-size: var(--text-ui); color: var(--color-text-2) }
 /* Code blocks sit at the column width and scroll inside themselves */
 .doc .expressive-code { margin-block-start: 24px }
 .figure .expressive-code { margin-block-start: 0 }
@@ -845,7 +896,7 @@ body > main { flex: 1 }
 }
 .figure-frame > canvas { pointer-events: none }
 .figure-frame > canvas[data-backend='none'] { opacity: 0 }
-.figure-caption { font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-3) }
+.figure-caption { font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
 /* Two frames of the same pass, one per backend, read as one figure */
 .figure-pair { display: grid; gap: 16px; margin-block-start: 24px }
 .figure-pair .figure { margin-block-start: 0 }
@@ -860,7 +911,7 @@ body > main { flex: 1 }
    shares the same targets value, so the caption states it once instead of a column repeating
    it 35 times; the one exception gets a small note in its own row instead. From 45rem the
    three columns fit the document column. */
-.example-table-caption { margin-block-start: 12px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-3) }
+.example-table-caption { margin-block-start: 12px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
 .example-table th[scope='row'], .example-table td:nth-child(2) { white-space: nowrap }
 .example-table td:last-child { min-inline-size: 11rem }
 .example-table tbody + tbody tr:first-child th, .example-table tbody + tbody tr:first-child td {
@@ -905,7 +956,18 @@ body > main { flex: 1 }
 .example-tile-frame { display: block; position: relative; aspect-ratio: 3 / 2; overflow: hidden; border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-2) }
 .example-tile-frame img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; transition: transform 400ms var(--ease-out) }
 @media (hover: hover) and (pointer: fine) { .example-tile:hover .example-tile-frame img { transform: scale(1.03) } }
-.example-tile-blank { position: absolute; inset: 0; display: flex; align-items: end; padding: 12px; font-family: var(--font-mono); font-size: var(--text-code); color: var(--color-text-3) }
+/* A tile the runtime cannot draw gets Ant's Empty instead of a bare grey box: the outlined
+   mark, and one sentence saying why there is no picture. */
+.example-tile-blank {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; padding: 16px;
+  color: var(--color-text-3); text-align: center;
+}
+.example-tile-blank svg {
+  inline-size: 40px; block-size: 40px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.example-tile-blank-note { max-inline-size: 30ch; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
 .example-tile-title { padding: 16px 16px 0; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1); transition: color var(--motion) }
 .example-tile:hover .example-tile-title { color: var(--color-accent) }
 .example-tile-blurb { padding: 4px 16px 16px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
@@ -929,11 +991,11 @@ body > main { flex: 1 }
 .layout-table th { font-weight: 500; color: var(--color-text-3); border-block-start: 0 }
 .layout-table [data-align='end'] { text-align: end; white-space: nowrap }
 .layout-table th:last-child, .layout-table td:last-child { padding-inline-end: 0 }
-.layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-ui); color: var(--color-text-3) }
+.layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-ui); color: var(--color-text-2) }
 
-/* Footer: the site map in three columns on Ant's #fafafa ground, then the licence, the
-   copyright and the commit */
-.site-footer { margin-block-start: 96px; border-block-start: 1px solid var(--color-line-1); background: var(--color-surface-1) }
+/* Footer: the site map in three columns on the container's white, held off the page field by
+   its #f0f0f0 top rule, then the licence, the copyright and the commit */
+.site-footer { margin-block-start: 96px; border-block-start: 1px solid var(--color-line-1); background: var(--color-ground) }
 .site-map { max-inline-size: var(--container); margin-inline: auto; padding: 48px var(--gutter-x) 32px; display: grid; gap: 28px }
 .site-map h2 { font-size: var(--text-ui); font-weight: 600; color: var(--color-text-1) }
 .site-map li { margin-block-start: 8px }
@@ -943,7 +1005,7 @@ body > main { flex: 1 }
   max-inline-size: var(--container); margin-inline: auto; padding: 20px var(--gutter-x) 32px;
   border-block-start: 1px solid var(--color-line-1);
   display: flex; flex-wrap: wrap; gap: 4px 24px;
-  font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-3);
+  font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2);
 }
 .site-legal p { margin: 0 }
 .site-legal a { color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }

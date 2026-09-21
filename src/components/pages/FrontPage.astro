@@ -104,13 +104,23 @@ const quickStart = localePath(locale, links.quickStart.href)
       <CodeFrame label={f.targets.source}>
         <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} wrap />
       </CodeFrame>
-      <div class="front-targets-out">
-        <CodeFrame label={f.targets.wgsl}>
-          <Code code={useTypeshadeHero.wgsl} lang="wgsl" title={f.targets.wgsl} locale={locale} wrap />
-        </CodeFrame>
-        <CodeFrame label={f.targets.glsl}>
-          <Code code={useTypeshadeHero.glsl} lang="glsl" title={f.targets.glsl} locale={locale} wrap />
-        </CodeFrame>
+      <div class="front-targets-out" data-front-tabs>
+        <div class="front-tabs-head" role="tablist" aria-label={f.targets.h}>
+          <button type="button" role="tab" id="targets-tab-wgsl" aria-controls="targets-panel-wgsl" aria-selected="true">{f.targets.wgsl}</button>
+          <button type="button" role="tab" id="targets-tab-glsl" aria-controls="targets-panel-glsl" aria-selected="false">{f.targets.glsl}</button>
+        </div>
+        {/* The tab already names the target, so the frame inside the panel carries no title
+            bar of its own; the label stays as the code region's accessible name. */}
+        <div class="front-tabs-panel" role="tabpanel" id="targets-panel-wgsl" aria-labelledby="targets-tab-wgsl">
+          <CodeFrame label={f.targets.wgsl}>
+            <Code code={useTypeshadeHero.wgsl} lang="wgsl" locale={locale} wrap />
+          </CodeFrame>
+        </div>
+        <div class="front-tabs-panel" role="tabpanel" id="targets-panel-glsl" aria-labelledby="targets-tab-glsl">
+          <CodeFrame label={f.targets.glsl}>
+            <Code code={useTypeshadeHero.glsl} lang="glsl" locale={locale} wrap />
+          </CodeFrame>
+        </div>
       </div>
     </div>
   </section>
@@ -151,14 +161,20 @@ const quickStart = localePath(locale, links.quickStart.href)
     <h2>{f.oracle.h}</h2>
     <p><Rich text={f.oracle.p} locale={locale} /></p>
     <div class="figure-pair">
-      <ShaderCanvas locale={locale} example="gradient" aspect="3/2" still caption={f.oracle.webgpu} stillId="gradient" />
-      <ShaderCanvas locale={locale} example="gradient" aspect="3/2" still forceWebGl2 caption={f.oracle.webgl2} stillId="gradient-webgl2" />
+      <ShaderCanvas locale={locale} example="gradient" aspect="3/1" still caption={f.oracle.webgpu} stillId="gradient" />
+      <ShaderCanvas locale={locale} example="gradient" aspect="3/1" still forceWebGl2 caption={f.oracle.webgl2} stillId="gradient-webgl2" />
     </div>
   </section>
 
   <section class="front-section front-install wide-in">
     <h2>{f.install.h}</h2>
-    <p><Rich text={f.install.p} locale={locale} /></p>
+    <div class="alert alert-info">
+      <svg class="alert-icon" viewBox="0 0 1024 1024" aria-hidden="true" focusable="false">
+        <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" />
+        <path d="M464 336a48 48 0 1096 0 48 48 0 10-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z" />
+      </svg>
+      <p><Rich text={f.install.p} locale={locale} /></p>
+    </div>
     <InstallCommand locale={locale} />
     <p class="front-actions">
       <a class="button button-lg button-primary" href={playground}>{f.playground}</a>
@@ -166,3 +182,34 @@ const quickStart = localePath(locale, links.quickStart.href)
     </p>
   </section>
 </Base>
+
+<script>
+  // Ant Tabs over the two emitted targets. Both panels are in the page, so the search index
+  // and a reader with no script get both, stacked; the head appears and the inactive panel
+  // folds away once this has run. Left and Right walk the head, the way a tablist does.
+  for (const group of document.querySelectorAll<HTMLElement>('[data-front-tabs]')) {
+    const tabs = [...group.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+    const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls') ?? ''))
+    if (tabs.length < 2) continue
+    const select = (index: number, move: boolean): void => {
+      tabs.forEach((tab, i) => {
+        tab.setAttribute('aria-selected', i === index ? 'true' : 'false')
+        tab.tabIndex = i === index ? 0 : -1
+        const panel = panels[i]
+        if (panel) panel.hidden = i !== index
+      })
+      if (move) tabs[index]?.focus()
+    }
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(i, false))
+      tab.addEventListener('keydown', (event) => {
+        const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+        if (step === 0) return
+        event.preventDefault()
+        select((i + step + tabs.length) % tabs.length, true)
+      })
+    })
+    group.dataset.ready = ''
+    select(0, false)
+  }
+</script>

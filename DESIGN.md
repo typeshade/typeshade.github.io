@@ -8,9 +8,9 @@ colors:
   primary-bg: "#e6f4ff"
   primary-border: "#91caff"
   primary-text-hover: "#69b1ff"
-  ground: "#ffffff"
+  ground: "#f5f5f5"
+  container: "#ffffff"
   elevated: "#ffffff"
-  layout: "#f5f5f5"
   surface-1: "#fafafa"
   surface-2: "#f0f0f0"
   surface-3: "#e6e6e6"
@@ -22,8 +22,8 @@ colors:
   text-4: "rgb(0 0 0 / 0.25)"
   diagnostic: "#ff4d4f"
   selection: "#bae0ff"
-  dark-ground: "#141414"
-  dark-layout: "#000000"
+  dark-ground: "#000000"
+  dark-container: "#141414"
   dark-elevated: "#1f1f1f"
   dark-surface-2: "#262626"
   dark-line-1: "#303030"
@@ -226,15 +226,22 @@ A word that names something the compiler reads is set in the mono face wherever 
   focus ring and a slider, and nothing else. A red carries diagnostics and the "not supported"
   badge. There are no colour gradients, no glows and no coloured card borders; the colour on a
   page comes from the shaders.
-- Text is four alphas over the ground: 0.88 for body and headings, 0.65 for secondary prose
-  and captions in a card, 0.45 for a caption, a note or a placeholder, 0.25 for a heading's
-  permalink at rest.
+- Text is four alphas over the container: 0.88 for body and headings, 0.65 for secondary
+  prose, every caption and every note, 0.45 for a chevron, a list marker, a placeholder and a
+  disabled affordance, 0.25 for a heading's permalink at rest. A sentence never sits at 0.45:
+  it reads 3.2:1 on white, under the 4.5:1 body text needs.
 - Lines are two greys: the hairline `#f0f0f0` that separates a card from its cover, a row from
   the next row and the header from the page, and the heavier `#d9d9d9` that draws a control's
   own border.
-- Surfaces are three greys over white: `#fafafa` under the footer, a table head, a code frame's
-  tab bar and a tag; `#f0f0f0` behind a canvas before it draws; `#e6e6e6` above that. The
-  layout ground `#f5f5f5` is a token the dark theme uses as pure black.
+- The page field is the layout ground `#f5f5f5` (`--color-layout`), set on `html` and `body`.
+  Every container on that field is the container white `#ffffff` (`--color-ground`): the
+  header, the showcase card, the gallery and examples tiles, the code frames, the docs column
+  with its sidebar and outline, the Playground's region, the footer above its `#f0f0f0` top
+  rule, the search dialog and the dropdowns. Dark inverts the pair the way Ant's dark
+  algorithm does: the field is `#000000` and the container `#141414`.
+- Surfaces are three greys over the container: `#fafafa` under a table head, a code frame's
+  tab bar, the docs bar on a phone and a tag; `#f0f0f0` behind a canvas before it draws;
+  `#e6e6e6` above that.
 - Hover and press are fills, not colour changes: 0.02, 0.04 and 0.06 black over the container.
 - Dark is Ant's dark algorithm: `#141414` ground, `#1f1f1f` elevated, `#303030` and `#424242`
   lines, primary `#1668dc`. The link and rail blue is lifted one step to `#3c89e8`, because
@@ -325,7 +332,7 @@ gutters; a page of prose is laid out in the 740px column. A third measure needs 
   scales 1.03 over 400ms where the pointer is fine.
 - **Menu.** The documentation sidebar is an Ant Menu: a 40px row, 6px radius, secondary text,
   the 0.04 fill on hover, and the current page in the primary at weight 600 over its wash. A
-  group title is a 12px tertiary label. A child sits at 32px of inset, and a child that names
+  group title is a 12px secondary label. A child sits at 32px of inset, and a child that names
   an export is set in the mono face.
 - **Anchor.** The page outline is an Ant Anchor: a 2px `#f0f0f0` rail down the left, and a
   primary segment beside the heading in view.
@@ -340,8 +347,21 @@ gutters; a page of prose is laid out in the 740px column. A third measure needs 
   border, a `#fafafa` tab bar, white code at 13px, no shadow. The copy button is the one piece
   of chrome the plugin draws itself, and it carries the page's language.
 - **Figure.** `.figure-frame` is a 1px `#f0f0f0` box with an 8px radius on `#f0f0f0`, holding
-  the still and the canvas over it at the same size. Its caption is 14px tertiary text under
-  the frame. Two frames of the same pass sit side by side from 40rem.
+  the still and the canvas over it at the same size. Its caption is 14px secondary text under
+  the frame. Two frames of the same pass sit side by side from 40rem, at 3:1 where the subject
+  is a flat gradient, so the pair costs a band and not half a screen.
+- **Alert.** `.alert.alert-info`: a 1px `#91caff` rule over the primary's `#e6f4ff` wash, 8px
+  radius, 12px by 16px of padding, and Ant's 16px info-circle in the primary at the left. It
+  carries the pre-release note on the front page and on Quick start. Dark uses the same two
+  tokens, `#15325b` and `#111a2c`.
+- **Tabs.** `.front-tabs-head` is an Ant Tabs head: a 40px row of buttons 16px apart over a
+  `#f0f0f0` rule, the active one in the primary at weight 600 with a 2px primary underline,
+  the rest in secondary text. Every panel stays in the page, so the search index and a reader
+  with no script get all of them stacked; the head appears and the inactive panel folds away
+  once the script has run. Left and Right walk the head.
+- **Empty.** A tile whose example has nothing the page can draw shows Ant's Empty instead of a
+  bare grey frame: a 40px outlined mark at one 1.5px stroke in tertiary text, and one 12px
+  secondary sentence under it saying why there is no picture.
 - **Dropdowns.** The version menu, the language menu and the mobile panel are `details`
   elements. An open panel is an 8px card with 4px of padding, the elevation shadow, and 6px
   rows; the current choice is the primary over its wash at weight 600.
@@ -349,10 +369,12 @@ gutters; a page of prose is laid out in the 740px column. A third measure needs 
   card with the elevation shadow, a 56px head bar carrying the file name as an active tab (a
   2px inset accent underline) with Edit and Reset as 24px buttons on the right, then a body
   split into the code pane on the left and the canvas on the right from 48rem, the controls
-  under both panes behind a hairline, and the caption in tertiary text. Under 48rem the panes
-  stack with the canvas first and the code pane fixed at 260px. The code pane is a window over
-  the block: its content is taken out of flow so the picture sets the row's height and keeps
-  its aspect, and the pane scrolls inside.
+  under both panes behind a hairline with the reserved-field note as that group's last row,
+  and the caption as the one 12px secondary line at the foot. Under 48rem the panes stack with
+  the canvas first and the code pane fixed at 260px. The code pane is a window over the block:
+  its content is taken out of flow so the picture sets the row's height and keeps its aspect,
+  and the pane scrolls inside behind a 32px fade at its foot, since the pane's height rarely
+  lands on a whole line and a cut glyph reads as a defect.
 
 ## Structure of the site
 

@@ -117,13 +117,17 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
       </div>
 
       <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
-      <div class="live-controls" data-live-controls hidden></div>
-      {payload.reserved.length > 0 && (
-        <p class="live-reserved">
-          <Rich text={reservedNote} locale={locale} />
-          {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
-        </p>
-      )}
+      {/* The handles and the note naming the fields that have none are one group; the script
+          empties the panel on every rebuild, so the note sits beside it and not inside. */}
+      <div class="live-controls-group">
+        <div class="live-controls" data-live-controls hidden></div>
+        {payload.reserved.length > 0 && (
+          <p class="live-reserved">
+            <Rich text={reservedNote} locale={locale} />
+            {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
+          </p>
+        )}
+      </div>
       <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
     </div>
   ) : (
@@ -189,23 +193,18 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   /* .figure already sets the column and its 10px gap (src/styles/global.css), so this adds
      nothing but what the block's own parts need. */
   .live-code { position: relative }
-  .live-bar { display: flex; gap: 8px; margin-block-start: -2px }
-  .live-bar button {
-    border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 6px 12px;
-    background: var(--color-ground); color: var(--color-text-1);
-    font: 500 var(--text-meta)/1.3 var(--font-sans); cursor: pointer;
-  }
-  .live-bar button:hover { background: var(--color-surface-1) }
+  /* .live-bar and its two buttons are one small default button in src/styles/global.css, so
+     the hero card and the figure column read the same. */
   /* The canvas takes the pointer, which the reserved `mouse` field is filled from. Every
      other figure on the site is a picture and lets the pointer through. */
   .live-frame > canvas { pointer-events: auto }
   .live-diagnostics:empty { display: none }
-  .live-reserved { margin: 0; color: var(--color-text-3); font-size: var(--text-meta) }
+  .live-reserved { margin: 0; color: var(--color-text-2); font-size: var(--text-meta) }
   .live-output { margin-block-start: 6px; border-block-start: 1px solid var(--color-line-1); padding-block-start: 10px }
   .live-output summary { color: var(--color-text-2); font-size: var(--text-meta); cursor: pointer }
   .live-output-body { display: flex; flex-direction: column; gap: 12px; margin-block-start: 12px }
   .live-reflection { width: 100%; border-collapse: collapse; font-size: var(--text-meta) }
-  .live-reflection caption { margin-block-end: 6px; color: var(--color-text-3); text-align: left }
+  .live-reflection caption { margin-block-end: 6px; color: var(--color-text-2); text-align: left }
   .live-reflection th, .live-reflection td { padding: 4px 8px 4px 0; text-align: left; border-block-end: 1px solid var(--color-line-1) }
 
   /* The textarea and the control rows are built by src/scripts/live-shader.ts after the page
@@ -252,7 +251,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
     border: 0; padding: 0; margin-inline-end: 6px; background: none; color: inherit;
     font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
   }
-  .live-diagnostics :global(.live-note) { margin-block-start: 4px; color: var(--color-text-3); font-size: var(--text-meta) }
+  .live-diagnostics :global(.live-note) { margin-block-start: 4px; color: var(--color-text-2); font-size: var(--text-meta) }
 
   @media (min-width: 40rem) {
     .live-controls :global(.live-control) { grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); align-items: center; gap: 12px }

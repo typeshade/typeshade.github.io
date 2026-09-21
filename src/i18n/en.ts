@@ -418,7 +418,7 @@ export const en = {
     stageAria: 'A shader running beside the file that draws it',
     first: {
       title: 'Warped bands',
-      caption: 'The file on the left, drawn on the right. Move the pointer over the picture; edit a line and it follows.',
+      caption: 'The file on the left, drawn on the right. Edit a line or move a control and the picture follows.',
       warp: 'how much the bands bend',
       ink: 'first colour',
       paper: 'second colour',
@@ -866,6 +866,9 @@ export const en = {
     columns: { example: 'Example', category: 'Category', blurb: 'Description' },
     tableCaption: `${facts.bothTargets} of the ${facts.examples} examples below emit WGSL and ${glsl}. ${facts.wgslOnlyExample.title} has no vertex or fragment stage to emit as ${glsl}, so it is marked WGSL only; its WebGL2 path is the opt-in emulation.`,
     wgslOnly: 'WGSL only',
+    /** A tile whose example has nothing the page can draw shows Ant's Empty mark and this
+     *  line instead of a bare grey frame. */
+    noStill: 'No picture: this example has no fragment stage the page can draw.',
     /** The Description column, one line per example, keyed by the registry's id. English
      *  takes the compiler's own wording; a translation writes the same lines in its language. */
     blurbs: registryBlurbs(),
