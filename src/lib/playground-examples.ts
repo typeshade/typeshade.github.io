@@ -16,15 +16,63 @@ import path from 'node:path';
 // import.meta.url.
 const examplesDir = path.resolve(process.cwd(), 'vendor/shader-dsl/examples');
 
-/** Every TypeShade example the Playground offers, simplest first. */
+/** Every TypeShade example the Playground offers, in the order the gallery groups them:
+ *  stages, resources, values and control flow, classes and generics, module state and
+ *  compute, then the source twins of the `fn()` corpus. The same order as `SHADE_GROUPS` in
+ *  src/lib/shade-examples.ts, which is where their words live; the list is repeated here
+ *  because this module reads the directory with `fs` alone and imports no compiler. */
 export const playgroundExampleIds = [
   'hello',
   'hello-vsout',
   'hello-vsin',
+  'bare-position',
+  'twin-structs',
   'hello-uniform',
-  'hello-camera',
   'hello-uniform-struct',
+  'hello-camera',
+  'textured-quad',
+  'array-length',
+  'storage-texture',
+  'shadow-compare',
+  'cube-env',
+  'cube-array-gather',
+  'msaa-resolve',
+  'module-const',
+  'palette-const',
+  'array-literal-ramp',
+  'convert-grid',
+  'normal-matrix',
+  'fp64-lane-stripes',
+  'bitfield-bands',
+  'block-scope',
+  'pick-composite',
+  'cutout',
+  'default-args',
+  'bit-bump',
+  'bool-select',
+  'ray-class',
+  'orbit-inout',
+  'particle-step',
+  'shape-inheritance',
+  'mixin-surface',
+  'generic-helpers',
+  'generic-class',
+  'tuple-and-brand',
+  'private-state',
+  'workgroup-scratch',
+  'workgroup-reduce',
+  'atomic-histogram',
   'compute-reduction-twin',
+  'hillshade-twin',
+  'plasma-twin',
+  'julia-twin',
+  'mandelbrot-twin',
+  'domain-warp-twin',
+  'tunnel-twin',
+  'ocean-twin',
+  'starfield-twin',
+  'kaleidoscope-twin',
+  'gradient-twin',
 ] as const;
 
 export type PlaygroundExampleId = (typeof playgroundExampleIds)[number];

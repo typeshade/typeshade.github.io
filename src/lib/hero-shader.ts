@@ -4,6 +4,7 @@
 // the build.
 
 import { examples } from '../../vendor/shader-dsl/examples/index.ts'
+import { shadeExampleList, shadeModule } from './shade-examples.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 import type { Control as MirrorControl } from '../../vendor/shader-dsl/examples/_shared.ts'
 import type { Control, ShaderData, ShaderLayout } from './shader-runtime.ts'
@@ -32,13 +33,48 @@ function toRuntimeControl(id: string, field: string, c: MirrorControl): Control 
   }
 }
 
+// The three uniform-field names the runtime fills by itself, the same three the live blocks
+// reserve (src/lib/live-shader-contract.ts states the contract).
+const RESERVED: Readonly<Record<string, MirrorControl>> = {
+  time: { kind: 'time' },
+  resolution: { kind: 'resolution' },
+  mouse: { kind: 'mouse' },
+}
+
+/** How a `.shade.ts` example's uniform fields are filled. The registration has no `controls`
+ *  field, so there is nothing to read: the three names above fill themselves, and a source
+ *  twin borrows what its `fn()` original declares, since the two are the same uniform block.
+ *  A field neither covers has no value the page could invent, so the example gets no still
+ *  and the gallery shows it with the plain tile. */
+function shadeControls(id: string, twinOf: string | undefined, module: Parameters<typeof reflect>[0]): Record<string, MirrorControl> {
+  const twin = twinOf ? examples.find((e) => e.id === twinOf) : undefined
+  const out: Record<string, MirrorControl> = {}
+  for (const field of reflect(module).uniforms[0]?.fields ?? []) {
+    const control = twin?.controls?.[field.name] ?? RESERVED[field.name]
+    if (!control) {
+      throw new Error(
+        `[hero-shader] '${id}' declares the uniform field '${field.name}', which the page has no value for; ` +
+          'take it out of SHADE_STILL_EXAMPLES in scripts/artifacts.mjs',
+      )
+    }
+    out[field.name] = control
+  }
+  return out
+}
+
 /** The reflected interface of one module, reduced to what the runtime binds against. */
 function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayout {
   const r = reflect(module)
   const group = r.bindGroups[0]
   const uniformEntry = group?.entries.find((e) => e.resourceKind === 'uniform-buffer')
   const block = r.uniforms[0]
-  if (!uniformEntry || !block) throw new Error(`[hero-shader] '${id}' binds no uniform block`)
+  // A module may bind nothing at all: a `.shade.ts` example that draws from `vertex_index`
+  // and constants has no uniform block, and the runtime already reads `size: 0` as "no
+  // buffer, no bind group". A uniform binding whose block the reflection does not carry is
+  // the broken half of the pair, and still stops the build.
+  if (Boolean(uniformEntry) !== Boolean(block)) {
+    throw new Error(`[hero-shader] '${id}' binds a uniform the reflection has no block for`)
+  }
 
   const textures = (group?.entries ?? [])
     .filter((e) => e.resourceKind === 'texture')
@@ -60,11 +96,11 @@ function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayo
   }
 
   return {
-    size: block.size,
-    block: block.name,
-    group: uniformEntry.group,
-    binding: uniformEntry.binding,
-    fields: block.fields.map((f) => ({ name: f.name, type: f.type, offset: f.offset })),
+    size: block?.size ?? 0,
+    block: block?.name ?? '',
+    group: uniformEntry?.group ?? 0,
+    binding: uniformEntry?.binding ?? 0,
+    fields: (block?.fields ?? []).map((f) => ({ name: f.name, type: f.type, offset: f.offset })),
     vertexEntry: entry('vertex'),
     fragmentEntry: entry('fragment'),
     textures,
@@ -75,7 +111,16 @@ function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayo
  *  The registry's `blurb` is left out: nothing reads it, and it would ship prose the page
  *  never renders into every inlined payload. */
 export function heroShader(id: string): ShaderData {
-  const ex = examples.find((e) => e.id === id)
+  // Both corpora: the `fn()` registry, and the `.shade.ts` files, whose registration has no
+  // module in it, so the module is compiled from the file's own bytes here.
+  const shade = shadeExampleList.find((e) => e.id === id)
+  const fromShade = shade
+    ? (() => {
+        const module = shadeModule(id)
+        return { ...shade, module, controls: shadeControls(id, shade.twinOf, module) }
+      })()
+    : undefined
+  const ex = examples.find((e) => e.id === id) ?? fromShade
   if (!ex) throw new Error(`[hero-shader] no example '${id}' in the mirror's registry`)
   if (!ex.renderable) throw new Error(`[hero-shader] example '${id}' is not renderable (compute)`)
 

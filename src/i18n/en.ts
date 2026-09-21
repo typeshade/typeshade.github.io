@@ -3,6 +3,7 @@
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
 import { API_CATEGORIES } from '../lib/api.ts'
 import { exampleFile, facts, hero, quickStartFile, registryBlurbs } from '../lib/examples.ts'
+import { shadeDescriptions, shadeTitles } from '../lib/shade-examples.ts'
 import { guideSections } from '../lib/guide.ts'
 import type { LinkKey } from '../lib/links.ts'
 import { typedError } from '../lib/typed-error.ts'
@@ -276,39 +277,10 @@ export const en = {
     canvasNeedsVertex: 'Drawing needs a vertex entry driven by vertex_index and a fragment entry. This module has no such pair, so there is no triangle to cover.',
     cpuFailed: 'The CPU oracle could not run this entry point.',
     entryCount: (n: number) => (n === 1 ? '1 entry point' : `${n} entry points`),
-    // The example picker. Each example is one of the compiler's own .shade.ts files, named
-    // and described here; the source text comes from the vendored checkout at build time.
+    // The example picker. Every example is one of the compiler's own .shade.ts files; the
+    // names and the lines under them are the gallery's, in `examples.shade`, and the source
+    // text comes from the vendored checkout at build time.
     exampleLabel: 'Example',
-    examples: {
-      hello: {
-        title: 'Hello triangle',
-        description: 'A vertex entry that places three corners from the vertex index, and a fragment entry that paints them.',
-      },
-      'hello-vsout': {
-        title: 'Vertex output',
-        description: 'The vertex entry returns a struct, so the fragment entry reads the same fields back as interpolated values.',
-      },
-      'hello-vsin': {
-        title: 'Vertex input',
-        description: 'The vertex entry takes its position and texture coordinates from vertex buffer attributes.',
-      },
-      'hello-uniform': {
-        title: 'Uniform scalar',
-        description: 'A single uniform value declared at module level and read inside the fragment entry.',
-      },
-      'hello-camera': {
-        title: 'Uniform struct',
-        description: 'A uniform struct whose byte layout the reflection pane lays out field by field.',
-      },
-      'hello-uniform-struct': {
-        title: 'Uniform struct on both targets',
-        description: `A uniform struct both entry points read, laid out as a ${std} block, so this one emits and links for ${glsl} too.`,
-      },
-      'compute-reduction-twin': {
-        title: 'Compute reduction',
-        description: 'A compute entry that folds eight values from a storage buffer into one, with a workgroup size of 64.',
-      },
-    },
     copy: 'Copy',
     copied: 'Copied',
     share: 'Copy link',
@@ -860,20 +832,39 @@ export const en = {
         }
       ])
     },
-    title: `TypeShade examples: ${facts.examples} shaders, GLSL emit, emulated f64`,
-    description: `The ${facts.examples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
+    title: `TypeShade examples: ${facts.totalExamples} shaders, GLSL emit, emulated f64`,
+    description: `The ${facts.totalExamples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
     h1: 'Examples',
-    intro: `There are ${facts.examples} runnable examples in the repository, covering cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel. ${facts.fp64Examples} use emulated double precision. The renderable ones are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
+    intro: `There are ${facts.totalExamples} runnable examples in the repository, written on the two authoring surfaces. ${facts.examples} are built with the \`fn()\` builder and cover cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel; ${facts.fp64Examples} of those use emulated double precision. The builder's are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
     categories: { cartographic: 'Cartographic', generic: 'Screen space', compute: 'Compute' },
     columns: { example: 'Example', category: 'Category', blurb: 'Description' },
     tableCaption: `${facts.bothTargets} of the ${facts.examples} examples below emit WGSL and ${glsl}. ${facts.wgslOnlyExample.title} has no vertex or fragment stage to emit as ${glsl}, so it is marked WGSL only; its WebGL2 path is the opt-in emulation.`,
     wgslOnly: 'WGSL only',
     /** A tile whose example has nothing the page can draw shows Ant's Empty mark and this
      *  line instead of a bare grey frame. */
-    noStill: 'No picture: this example has no fragment stage the page can draw.',
+    noStill: 'No picture: this example is not one the page can draw.',
     /** The Description column, one line per example, keyed by the registry's id. English
      *  takes the compiler's own wording; a translation writes the same lines in its language. */
     blurbs: registryBlurbs(),
+    /** The other corpus: one TypeScript file per example, compiled from the file itself.
+     *  Grouped by the part of TypeScript each file is there to show, because the compiler
+     *  files them all under one category and a reader looking for inheritance wants them
+     *  apart. The titles and the lines under them are the registry's own words in English;
+     *  a translation writes its own against the same keys. */
+    shade: {
+      h: 'Written as TypeScript source',
+      p: `${facts.shadeExamples} more examples in the same directory are TypeScript files that open with \`"use typeshade"\`, compiled by \`compile()\` from the file's own bytes. Each one is there for one part of the language, and they are grouped here that way. ${facts.shadeRenderable} have a ${glsl} form and carry a picture; the others emit WGSL alone.`,
+      groups: {
+        stages: 'Stages and IO structs',
+        resources: 'Resources',
+        values: 'Values and control flow',
+        classes: 'Classes and generics',
+        compute: 'Module state and compute',
+        twins: 'Source twins',
+      },
+      titles: shadeTitles(),
+      descriptions: shadeDescriptions(),
+    },
     printIntro: 'From a checkout of the repository, the first command prints WGSL, GLSL and reflection for every example; the second does one by id.',
     glsl: {
       h: `The gradient pass in ${glsl}`,

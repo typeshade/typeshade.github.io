@@ -8,12 +8,14 @@ const t = copyFor(locale).playground;
 
 // The examples arrive from the vendored checkout at build time: the source text from the
 // file, the title and the description from this locale's dictionary. `_shade.ts` reads the
-// filesystem, so the browser half never imports it.
+// filesystem, so the browser half never imports it. The words are the gallery's, under
+// `examples.shade`, so the picker and the tile on /guide/examples/ cannot disagree.
+const shade = copyFor(locale).examples.shade;
 const examples = playgroundExamples().map((example) => ({
   id: example.id,
   source: example.source,
-  title: t.examples[example.id].title,
-  description: t.examples[example.id].description,
+  title: shade.titles[example.id]!,
+  description: shade.descriptions[example.id]!,
 }));
 const sample = `"use typeshade";
 

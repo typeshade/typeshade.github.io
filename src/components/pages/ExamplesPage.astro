@@ -8,8 +8,9 @@ import type { CanvasText } from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { checkedBlurbs, facts, hero } from '../../lib/examples.ts'
+import { checkedShade, shadeExampleList, SHADE_GROUPS } from '../../lib/shade-examples.ts'
 import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
-import { STILL_EXAMPLES } from '../../../scripts/artifacts.mjs'
+import { SHADE_STILL_EXAMPLES, STILL_EXAMPLES } from '../../../scripts/artifacts.mjs'
 import { slugify } from '../../lib/slug.ts'
 
 interface Props {
@@ -28,6 +29,8 @@ const deepZoom: CanvasText = {
 const order = ['cartographic', 'generic', 'compute'] as const
 const headings = [
   ...order.map((c) => ({ depth: 2, slug: slugify(c), text: e.categories[c] })),
+  { depth: 2, slug: slugify(e.shade.h), text: e.shade.h },
+  ...SHADE_GROUPS.map((g) => ({ depth: 3, slug: slugify(g.key), text: e.shade.groups[g.key] })),
   ...[e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h })),
 ]
 
@@ -45,6 +48,28 @@ const rows = examples.map((x) => ({
   blurb: blurbs[x.id]!,
 }))
 const groups = order.map((c) => rows.filter((r) => r.category === e.categories[c]))
+
+// The other corpus. Same tile, same still rule; the picture is there for the ones the page
+// can draw and the plain mark stands in for the rest.
+const shadeTitleFor = checkedShade('title', e.shade.titles)
+const shadeTextFor = checkedShade('description', e.shade.descriptions)
+const shadeStills = new Set<string>(SHADE_STILL_EXAMPLES)
+const shadeById = new Map(shadeExampleList.map((x) => [x.id, x]))
+const shadeGroups = SHADE_GROUPS.map((g) => ({
+  key: g.key,
+  heading: e.shade.groups[g.key],
+  rows: g.ids.map((id) => {
+    const x = shadeById.get(id)!
+    return {
+      id,
+      still: shadeStills.has(id),
+      title: shadeTitleFor[id]!,
+      href: `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/examples/${x.file}`,
+      wgslOnly: !x.renderable,
+      blurb: shadeTextFor[id]!,
+    }
+  }),
+}))
 const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts hillshade'].join('\n')
 ---
 
@@ -94,6 +119,38 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
         </ul>
       </section>
     ))}
+
+    <section class="example-group">
+      <h2 id={slugify(e.shade.h)}>{e.shade.h}</h2>
+      <p><Rich text={e.shade.p} locale={locale} /></p>
+      {shadeGroups.map((group) => (
+        <Fragment>
+          <h3 id={slugify(group.key)}>{group.heading}</h3>
+          <ul class="example-grid">
+            {group.rows.map((row) => (
+              <li>
+                <a class="example-tile" href={row.href}>
+                  <span class="example-tile-frame">
+                    {row.still ? <img src={`/stills/${row.id}.webp`} alt="" loading="lazy" decoding="async" /> : (
+                      <span class="example-tile-blank">
+                        <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                          <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
+                          <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
+                          <circle cx="14.5" cy="15.5" r="2.25" />
+                        </svg>
+                        <span class="example-tile-blank-note">{e.noStill}</span>
+                      </span>
+                    )}
+                  </span>
+                  <span class="example-tile-title">{row.title}{row.wgslOnly && <span class="example-wgsl-only">{e.wgslOnly}</span>}</span>
+                  <span class="example-tile-blurb"><Rich text={row.blurb} locale={locale} /></span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Fragment>
+      ))}
+    </section>
 
     <p>{e.printIntro}</p>
     <CodeFrame label={t.codeLabels.print}><Code code={printCommands} lang="bash" locale={locale} /></CodeFrame>
