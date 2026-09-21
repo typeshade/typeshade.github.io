@@ -41,19 +41,20 @@ export default defineConfig({
         },
       },
     },
-    // /og/ exists only so capture-og.ts can photograph it.
+    // /og/ exists only so capture-og.ts can photograph it, and /capture-stills/ only so
+    // capture-stills.ts can; neither is served.
     {
-      name: 'typeshade:og-route',
+      name: 'typeshade:capture-routes',
       hooks: {
         'astro:build:done': ({ dir }) => {
-          if (process.env.OG_REBASELINE === '1') return
-          rmSync(fileURLToPath(new URL('og/', dir)), { recursive: true, force: true })
+          if (process.env.OG_REBASELINE !== '1') rmSync(fileURLToPath(new URL('og/', dir)), { recursive: true, force: true })
+          if (process.env.STILLS_REBASELINE !== '1') rmSync(fileURLToPath(new URL('capture-stills/', dir)), { recursive: true, force: true })
         },
       },
     },
     expressiveCode(), // options in ec.config.mjs
     sitemap({
-      filter: (page) => !['/og', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide', '/ko/404'].includes(new URL(page).pathname.replace(/\/$/, '')),
+      filter: (page) => !['/og', '/capture-stills', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide', '/ko/404'].includes(new URL(page).pathname.replace(/\/$/, '')),
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
       serialize: (item) => ({ ...item, lastmod }),
     }),

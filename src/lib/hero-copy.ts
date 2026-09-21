@@ -2,6 +2,8 @@
 import { en } from '../i18n/en.ts'
 
 export const heroCopy = {
-  h1: 'The verifiable TypeScript shader library',
-  sub: en.front.hero.tagline,
+  h1: en.front.title,
+  // The lede carries its code spans as markdown, which Rich renders on the page. The card
+  // draws plain text into a picture, so the backticks come off instead of printing.
+  sub: en.front.lede.replace(/`/g, ''),
 } as const

@@ -1,90 +1,215 @@
 ---
+// The front page: a two-column hero in Ant Design's grammar. The headline, the sentence and
+// the two actions on the left; on the right the showcase card, where the file that draws the
+// picture sits beside the picture and can be edited in place. Then the same idea at the
+// compiler's scale: one file and the two targets it emits, the repository's own examples
+// running as tiles, what carries over from TypeScript, the gradient pass drawn by each
+// backend, and the command that installs it.
 import { Code } from 'astro-expressive-code/components'
 import Base from '../../layouts/Base.astro'
 import CodeFrame from '../CodeFrame.astro'
+import InstallCommand from '../InstallCommand.astro'
+import LiveShader from '../LiveShader.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts'
 import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
 import { links } from '../../lib/links.ts'
+import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
 
 interface Props {
   locale: Locale
 }
 const { locale } = Astro.props
 const t = copyFor(locale)
-const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
-const content = t.front.use
+const f = t.front
+
+// The front page's own file. Code is not copy, so it lives here, the way every live example
+// keeps its sample beside the page that shows it. `time` and `mouse` are filled by the page;
+// the other three fields get a control each.
+const first = `"use typeshade"
+
+class Uniforms {
+  time: f32
+  mouse: vec2
+  warp: f32
+  ink: vec3
+  paper: vec3
+}
+
+declare const u: uniform<Uniforms>
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  const p = uv * 4.0 - u.mouse * 2.0
+  const a = sin(p.x + u.time * 0.5) + cos(p.y - u.time * 0.3)
+  const b = sin(p.y * u.warp + a) * cos(p.x * u.warp - a)
+  const t = b * 0.5 + 0.5
+  const s = t * t * (3.0 - 2.0 * t)
+  return vec4(mix(u.ink, u.paper, s * s * (3.0 - 2.0 * s)), 1.0)
+}
+`
+
+/** The tiles, in the order they read. Every id is in the registry; a missing one stops the
+ *  build here, before a blank frame could. */
+const TILE_IDS = ['metaballs', 'plasma', 'voronoi', 'julia', 'ocean', 'starfield', 'tunnel', 'kaleidoscope', 'mandelbrot'] as const
+const tiles = TILE_IDS.map((id) => {
+  const example = examples.find((e) => e.id === id)
+  if (!example) throw new Error(`[front] tile '${id}' is not in the examples registry`)
+  return { id, title: example.title }
+})
+
+const playground = localePath(locale, links.playground.href)
+const quickStart = localePath(locale, links.quickStart.href)
 ---
 
-<Base locale={locale} path="/" searchable searchTitle={content.title}>
-  <section class="hero">
-    <p class="hero-eyebrow">{content.eyebrow}</p>
-    <h1 class="hero-title"><span class="hero-line accent">{content.title}</span></h1>
-    <p class="hero-subtitle"><Rich text={content.subtitle} locale={locale} /></p>
-    <p class="hero-tagline">{content.tagline}</p>
-    <p class="hero-actions">
-      <a class="button button-primary" href={localePath(locale, links.quickStart.href)}>
-        {content.getStarted}
-        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 2.847 2.828 2.847 2.828 10.975-11z" /></svg>
-      </a>
-      <a class="button" href={localePath(locale, links.playground.href)}>{content.playground}</a>
-      <a class="button" href={localePath(locale, links.motivation.href)}>{content.learn}</a>
-      <a class="button" href={localePath(locale, links.guide.href)}>{content.language}</a>
-      <a class="button" href={localePath(locale, links.examples.href)}>{content.examples}</a>
+<Base locale={locale} path="/" searchable searchTitle={f.searchTitle}>
+  <div class="front-hero wide-in">
+    <div class="front-hero-text">
+      <h1 class="front-title">{f.title}</h1>
+      <p class="front-lede"><Rich text={f.lede} locale={locale} /></p>
+      <p class="front-actions">
+        <a class="button button-lg button-primary" href={playground}>
+          {f.playground}
+          <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z" /></svg>
+        </a>
+        <a class="button button-lg" href={quickStart}>{f.quickStart}</a>
+      </p>
+    </div>
+
+    <section class="front-stage" aria-label={f.stageAria}>
+      <LiveShader
+        variant="hero"
+        locale={locale}
+        id="front-first"
+        title={f.first.title}
+        code={first}
+        caption={f.first.caption}
+        file="first.shade.ts"
+        aspect="4/3"
+        controls={{
+          warp: { label: f.first.warp, min: 0.5, max: 4, step: 0.1, value: 2.4 },
+          ink: { label: f.first.ink, color: true, value: [0.07, 0.13, 0.55] },
+          paper: { label: f.first.paper, color: true, value: [1, 0.62, 0.18] },
+        }}
+      />
+    </section>
+  </div>
+
+  <section class="front-section front-targets wide-in">
+    <h2>{f.targets.h}</h2>
+    <p><Rich text={f.targets.p} locale={locale} /></p>
+    <div class="front-targets-grid">
+      <CodeFrame label={f.targets.source}>
+        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} wrap />
+      </CodeFrame>
+      <div class="front-targets-out" data-front-tabs>
+        <div class="front-tabs-head" role="tablist" aria-label={f.targets.h}>
+          <button type="button" role="tab" id="targets-tab-wgsl" aria-controls="targets-panel-wgsl" aria-selected="true">{f.targets.wgsl}</button>
+          <button type="button" role="tab" id="targets-tab-glsl" aria-controls="targets-panel-glsl" aria-selected="false">{f.targets.glsl}</button>
+        </div>
+        {/* The tab already names the target, so the frame inside the panel carries no title
+            bar of its own; the label stays as the code region's accessible name. */}
+        <div class="front-tabs-panel" role="tabpanel" id="targets-panel-wgsl" aria-labelledby="targets-tab-wgsl">
+          <CodeFrame label={f.targets.wgsl}>
+            <Code code={useTypeshadeHero.wgsl} lang="wgsl" locale={locale} wrap />
+          </CodeFrame>
+        </div>
+        <div class="front-tabs-panel" role="tabpanel" id="targets-panel-glsl" aria-labelledby="targets-tab-glsl">
+          <CodeFrame label={f.targets.glsl}>
+            <Code code={useTypeshadeHero.glsl} lang="glsl" locale={locale} wrap />
+          </CodeFrame>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="front-section front-gallery wide-in">
+    <div class="front-gallery-head">
+      <h2>{f.gallery.h}</h2>
+      <a class="front-gallery-all" href={localePath(locale, links.examples.href)}>{f.gallery.all}</a>
+      <p><Rich text={f.gallery.p} locale={locale} /></p>
+    </div>
+    <ul class="front-tiles">
+      {tiles.map((tile) => (
+        <li>
+          <ShaderCanvas locale={locale} example={tile.id} aspect="3/2" caption={f.gallery.tile(tile.title)} />
+          <span class="front-tile-name">{tile.title}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="front-section front-map wide-in">
+    <h2>{f.map.h}</h2>
+    <p><Rich text={f.map.p} locale={locale} /></p>
+    <dl class="front-map-list">
+      {f.map.rows.map(([ts, shade, body]) => (
+        <div class="front-map-row">
+          <dt><Code code={ts} lang="ts" locale={locale} wrap /></dt>
+          <dd>
+            <strong><Rich text={shade} locale={locale} /></strong>
+            <p><Rich text={body} locale={locale} /></p>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <section class="front-section front-oracle wide-in">
+    <h2>{f.oracle.h}</h2>
+    <p><Rich text={f.oracle.p} locale={locale} /></p>
+    <div class="figure-pair">
+      <ShaderCanvas locale={locale} example="gradient" aspect="3/1" still caption={f.oracle.webgpu} stillId="gradient" />
+      <ShaderCanvas locale={locale} example="gradient" aspect="3/1" still forceWebGl2 caption={f.oracle.webgl2} stillId="gradient-webgl2" />
+    </div>
+  </section>
+
+  <section class="front-section front-install wide-in">
+    <h2>{f.install.h}</h2>
+    <div class="alert alert-info">
+      <svg class="alert-icon" viewBox="0 0 1024 1024" aria-hidden="true" focusable="false">
+        <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" />
+        <path d="M464 336a48 48 0 1096 0 48 48 0 10-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z" />
+      </svg>
+      <p><Rich text={f.install.p} locale={locale} /></p>
+    </div>
+    <InstallCommand locale={locale} />
+    <p class="front-actions">
+      <a class="button button-lg button-primary" href={playground}>{f.playground}</a>
+      <a class="button button-lg" href={quickStart}>{f.quickStart}</a>
     </p>
   </section>
-
-  <section class="wide demo">
-    <ShaderCanvas locale={locale} example="metaballs" aspect="3/1" eager caption={t.front.metaballs} />
-  </section>
-
-  <section class="wide front-code">
-    <h2>{content.flowH}</h2>
-    <p><Rich text={content.flowP} locale={locale} /></p>
-    <div class="authoring-flow" aria-label={content.flowAriaLabel}>
-      <span>{content.flowLabels[0]}</span>
-      <span aria-hidden="true">→</span>
-      <code>"use typeshade"</code>
-      <span aria-hidden="true">→</span>
-      <span>{content.flowLabels[1]}</span>
-      <span aria-hidden="true">→</span>
-      <span>{content.flowLabels[2]}</span>
-      <span aria-hidden="true">→</span>
-      <span>{content.flowLabels[3]}</span>
-    </div>
-    <div class="code-pair">
-      {/* Code receives only props supported by astro-expressive-code. */}
-      <CodeFrame label={useLabel}>
-        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" wrap />
-      </CodeFrame>
-      <CodeFrame label={t.codeLabels.wgsl}>
-        <Code code={useTypeshadeHero.wgsl} lang="wgsl" title="WGSL" wrap />
-      </CodeFrame>
-    </div>
-  </section>
-
-  <section class="wide concepts">
-    <h2>{content.conceptsH}</h2>
-    <p><Rich text={content.conceptsP} locale={locale} /></p>
-    <div class="concept-grid">
-      {content.concepts.map(([heading, mapping, body]) => (
-        <article class="concept">
-          <p class="concept-heading">{heading}</p>
-          <h3><Rich text={mapping} locale={locale} /></h3>
-          <p><Rich text={body} locale={locale} /></p>
-        </article>
-      ))}
-    </div>
-  </section>
-
-  <section class="wide highlights">
-    {content.highlights.map(([heading, body]) => (
-      <div class="highlight">
-        <h2><Rich text={heading} locale={locale} /></h2>
-        <p><Rich text={body} locale={locale} /></p>
-      </div>
-    ))}
-  </section>
 </Base>
+
+<script>
+  // Ant Tabs over the two emitted targets. Both panels are in the page, so the search index
+  // and a reader with no script get both, stacked; the head appears and the inactive panel
+  // folds away once this has run. Left and Right walk the head, the way a tablist does.
+  for (const group of document.querySelectorAll<HTMLElement>('[data-front-tabs]')) {
+    const tabs = [...group.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+    const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls') ?? ''))
+    if (tabs.length < 2) continue
+    const select = (index: number, move: boolean): void => {
+      tabs.forEach((tab, i) => {
+        tab.setAttribute('aria-selected', i === index ? 'true' : 'false')
+        tab.tabIndex = i === index ? 0 : -1
+        const panel = panels[i]
+        if (panel) panel.hidden = i !== index
+      })
+      if (move) tabs[index]?.focus()
+    }
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(i, false))
+      tab.addEventListener('keydown', (event) => {
+        const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+        if (step === 0) return
+        event.preventDefault()
+        select((i + step + tabs.length) % tabs.length, true)
+      })
+    })
+    group.dataset.ready = ''
+    select(0, false)
+  }
+</script>

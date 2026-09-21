@@ -201,6 +201,9 @@ const runtimeCopy = {
 </script>
 
 <style>
+  /* The page field is Ant's layout ground (src/styles/global.css), so the tool's own region
+     is a white container on it, the way the docs column is. */
+  :global(.playground-page) { background: var(--color-ground) }
   .ts-playground { border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
   .playground-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
   .playground-toolbar strong { font: 500 .8125rem/1.4 var(--font-mono); }
