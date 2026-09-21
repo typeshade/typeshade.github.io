@@ -19,7 +19,7 @@ const I18N_DIR = path.join(SRC, 'i18n')
 // translated guide until a locale has one); like src/i18n/index.ts it is locale wiring, not
 // page or component copy, so it names a locale the same way that file does.
 const EXEMPT_FILES = new Set([path.join(I18N_DIR, 'index.ts'), path.join(I18N_DIR, 'en.ts'), path.join(I18N_DIR, 'ko.ts'), path.join(SRC, 'content.config.ts')])
-const ROOT_ONLY_IGNORE = new Set(['og.astro', 'llms.txt.ts', 'llms-full.txt.ts'])
+const ROOT_ONLY_IGNORE = new Set(['og.astro', 'capture-stills.astro', 'llms.txt.ts', 'llms-full.txt.ts'])
 const ROUTE_EXT = new Set(['.astro', '.ts'])
 const SCAN_EXT = new Set(['.astro', '.ts', '.mjs'])
 

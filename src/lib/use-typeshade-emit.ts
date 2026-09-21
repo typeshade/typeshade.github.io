@@ -1,13 +1,11 @@
-// Build-time WGSL for hello.shade.ts. The front-page pair must show the same module,
-// not the gradient example's fragment next to the triangle source.
-import { compileTsSource } from '../../vendor/shader-dsl/src/compiler/ts/source-file.ts'
+// Build-time WGSL and GLSL ES 3.00 for hello.shade.ts. The front page shows the same module
+// three times: the file, the WGSL, and the GLSL fragment stage, so all three come from one
+// compile of one source.
+import { compile } from '../../vendor/shader-dsl/src/index.ts'
 import { useTypeshadeSample } from './use-typeshade-sample.ts'
 
-function emitSample(): { wgsl: string } {
-  const result = compileTsSource(useTypeshadeSample, {
-    fileName: 'hello.shade.ts',
-    requireDirective: true,
-  })
+function emitSample(): { wgsl: string; glsl: string } {
+  const result = compile(useTypeshadeSample)
   const errors = result.diagnostics.filter((d) => d.category === 'error')
   if (errors.length > 0) {
     throw new Error(`[use-typeshade] sample failed: ${errors.map((e) => e.message).join('; ')}`)
@@ -15,7 +13,10 @@ function emitSample(): { wgsl: string } {
   if (!result.wgsl) {
     throw new Error('[use-typeshade] sample emitted no WGSL')
   }
-  return { wgsl: result.wgsl }
+  if (!result.glsl) {
+    throw new Error('[use-typeshade] sample emitted no GLSL ES 3.00')
+  }
+  return { wgsl: result.wgsl, glsl: result.glsl.fragment }
 }
 
 export const useTypeshadeHero = emitSample()

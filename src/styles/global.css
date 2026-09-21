@@ -1,6 +1,9 @@
 /* typeshade.dev styles. Tokens, fonts, base rules, then one block per component.
-   A full-width header and footer frame either the front page (headline, live shader, three
-   points) or one column of prose, code and figures; light is the default palette. */
+   Ant Design v5's design language as plain CSS custom properties: its blue (#1677ff), its
+   neutral text and border scale, 6px radii on controls and 8px on cards and code frames, its
+   three-layer elevation, 14px interface text with 16px prose, and its button, card, list,
+   menu and table shapes. No React and no antd package: the tokens below are the whole
+   system. Light follows the system, or the switch in the header. */
 
 @import 'tailwindcss';
 
@@ -8,33 +11,43 @@
   --font-sans: 'IBM Plex Sans Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+  /* Ant's neutrals: container white, the #fafafa fill its tab bars and table heads use,
+     then the two fills above it. */
   --color-ground: #ffffff;
-  --color-surface-1: #f6f6f3;
-  --color-surface-2: #eeeeea;
-  --color-line-1: #e3e3de;
-  --color-line-2: #b9b9b2;
-  --color-text-1: #1a1a1a;
-  --color-text-2: #454545;
-  --color-text-3: #6b6b6b;
-  --color-surface-3: #e4e4df;
-  --color-accent: #3178c6;
-  --color-diag: #b3261e;
+  --color-surface-1: #fafafa;
+  --color-surface-2: #f0f0f0;
+  --color-surface-3: #e6e6e6;
+  --color-line-1: #f0f0f0;
+  --color-line-2: #d9d9d9;
+  --color-text-1: rgb(0 0 0 / 0.88);
+  --color-text-2: rgb(0 0 0 / 0.65);
+  --color-text-3: rgb(0 0 0 / 0.45);
+  --color-text-4: rgb(0 0 0 / 0.25);
+  --color-accent: #1677ff;
+  --color-diag: #ff4d4f;
 
   --radius-sm: 4px;
-  --radius-md: 6px;
+  --radius: 6px;
+  --radius-md: 8px;
 
   --text-code: 0.8125rem;
   --text-code--line-height: 1.6;
   --text-meta: 0.875rem;
-  --text-meta--line-height: 1.55;
-  --text-ui: 1rem;
-  --text-ui--line-height: 1.65;
-  --text-h3: 1.125rem;
-  --text-h3--line-height: 1.35;
-  --text-h2: 1.5rem;
-  --text-h2--line-height: 1.25;
-  --text-h1: 2rem;
-  --text-h1--line-height: 1.15;
+  --text-meta--line-height: 1.5714;
+  --text-ui: 0.875rem;
+  --text-ui--line-height: 1.5714;
+  --text-prose: 1rem;
+  --text-prose--line-height: 1.5;
+  --text-h5: 1rem;
+  --text-h5--line-height: 1.5;
+  --text-h4: 1.25rem;
+  --text-h4--line-height: 1.4;
+  --text-h3: 1.5rem;
+  --text-h3--line-height: 1.3333;
+  --text-h2: 1.875rem;
+  --text-h2--line-height: 1.35;
+  --text-h1: 2.375rem;
+  --text-h1--line-height: 1.21;
 
   --breakpoint-sm: 40rem;
   --breakpoint-md: 48rem;
@@ -43,49 +56,114 @@
 
 :root {
   color-scheme: light dark;
-  --gutter-x: 20px;
+  --gutter-x: 16px;
   /* One column, about 72 characters of prose wide. Code and figures share it. */
   --content: min(740px, 100vw - 2 * var(--gutter-x));
-  /* The wider measure the front page's figure, highlights and the site map use. */
+  /* The wider measure the site map and the docs' figures use. */
   --wide: min(960px, 100vw - 2 * var(--gutter-x));
-  --container: 1280px;
-  --nav-height: 56px;
+  --container: 1200px;
+  --nav-height: 64px;
   --section-gap: 48px;
-  --ring: 0 0 0 2px var(--color-ground), 0 0 0 4px var(--color-accent);
+  /* The space between the front page's sections: Ant separates by space, with no rule. */
+  --front-gap: 64px;
+
+  /* Ant's blue, and the states around it. --color-accent is the one that carries text and
+     rails; --color-primary fills a solid control. */
+  --color-primary: #1677ff;
+  --color-primary-hover: #4096ff;
+  --color-primary-active: #0958d9;
+  --color-primary-bg: #e6f4ff;
+  --color-primary-border: #91caff;
+  --color-primary-text-hover: #69b1ff;
+  --color-layout: #f5f5f5;
+  /* What a card, a dropdown and the dialog sit on. Ant's dark algorithm lifts them off the
+     ground; in light they stay the container's white. */
+  --color-elevated: #ffffff;
+  --color-selection: #bae0ff;
+
+  /* Ant's fills, over the container's own ground. */
+  --fill-2: rgb(0 0 0 / 0.06);
+  --fill-3: rgb(0 0 0 / 0.04);
+  --fill-4: rgb(0 0 0 / 0.02);
+
+  /* Ant's three-layer elevation, its resting card shadow, and the two button shadows. */
+  --shadow-elevated: 0 6px 16px 0 rgb(0 0 0 / 0.08), 0 3px 6px -4px rgb(0 0 0 / 0.12), 0 9px 28px 8px rgb(0 0 0 / 0.05);
+  --shadow-secondary: 0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 6px -1px rgb(0 0 0 / 0.02), 0 2px 4px 0 rgb(0 0 0 / 0.02);
+  --shadow-button: 0 2px 0 rgb(0 0 0 / 0.02);
+  --shadow-button-primary: 0 2px 0 rgb(5 145 255 / 0.1);
+
+  --ring: 0 0 0 4px rgb(5 145 255 / 0.1);
+  --ease-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --motion: 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
-@media (min-width: 40rem) { :root { --gutter-x: 32px; --section-gap: 56px } }
-@media (min-width: 48rem) { :root { --text-h1: 2.25rem } }
+@media (min-width: 40rem) { :root { --gutter-x: 24px; --section-gap: 56px; --front-gap: 80px } }
 
 /* Dark: chosen with the switch in the header, or the system's setting when nothing is chosen.
-   The same tokens twice, since plain CSS cannot share a block between the two selectors. */
+   Ant's dark algorithm. The same tokens twice, since plain CSS cannot share a block between
+   the two selectors. The link and rail blue is lifted one step off Ant's dark primary, which
+   does not clear 4.5:1 on the #141414 ground; the solid fill keeps #1668dc. */
 :root[data-theme='dark'] {
   color-scheme: dark;
-    --color-ground: #121212;
-    --color-surface-1: #1b1b1b;
-    --color-surface-2: #242424;
-    --color-surface-3: #2e2e2e;
-    --color-line-1: #2e2e2e;
-    --color-line-2: #5a5a5a;
-    --color-text-1: #ededed;
-    --color-text-2: #bdbdbd;
-    --color-text-3: #8f8f8f;
-    --color-accent: #7ab8f5;
-    --color-diag: #ff8a80;
+  --color-ground: #141414;
+  --color-surface-1: #1f1f1f;
+  --color-surface-2: #262626;
+  --color-surface-3: #303030;
+  --color-line-1: #303030;
+  --color-line-2: #424242;
+  --color-text-1: rgb(255 255 255 / 0.85);
+  --color-text-2: rgb(255 255 255 / 0.65);
+  --color-text-3: rgb(255 255 255 / 0.45);
+  --color-text-4: rgb(255 255 255 / 0.25);
+  --color-accent: #3c89e8;
+  --color-diag: #e87d7f;
+  --color-primary: #1668dc;
+  --color-primary-hover: #3c89e8;
+  --color-primary-active: #1554ad;
+  --color-primary-bg: #111a2c;
+  --color-primary-border: #15325b;
+  --color-primary-text-hover: #65a9f3;
+  --color-layout: #000000;
+  --color-elevated: #1f1f1f;
+  --color-selection: #15325b;
+  --fill-2: rgb(255 255 255 / 0.08);
+  --fill-3: rgb(255 255 255 / 0.08);
+  --fill-4: rgb(255 255 255 / 0.04);
+  --shadow-elevated: 0 6px 16px 0 rgb(0 0 0 / 0.32), 0 3px 6px -4px rgb(0 0 0 / 0.48), 0 9px 28px 8px rgb(0 0 0 / 0.2);
+  --shadow-secondary: 0 1px 2px 0 rgb(0 0 0 / 0.16), 0 1px 6px -1px rgb(0 0 0 / 0.12), 0 2px 4px 0 rgb(0 0 0 / 0.12);
+  --shadow-button: 0 2px 0 rgb(0 0 0 / 0.15);
+  --shadow-button-primary: 0 2px 0 rgb(0 0 0 / 0.15);
 }
 :root[data-theme='light'] { color-scheme: light }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --color-ground: #121212;
-    --color-surface-1: #1b1b1b;
-    --color-surface-2: #242424;
-    --color-surface-3: #2e2e2e;
-    --color-line-1: #2e2e2e;
-    --color-line-2: #5a5a5a;
-    --color-text-1: #ededed;
-    --color-text-2: #bdbdbd;
-    --color-text-3: #8f8f8f;
-    --color-accent: #7ab8f5;
-    --color-diag: #ff8a80;
+    --color-ground: #141414;
+    --color-surface-1: #1f1f1f;
+    --color-surface-2: #262626;
+    --color-surface-3: #303030;
+    --color-line-1: #303030;
+    --color-line-2: #424242;
+    --color-text-1: rgb(255 255 255 / 0.85);
+    --color-text-2: rgb(255 255 255 / 0.65);
+    --color-text-3: rgb(255 255 255 / 0.45);
+    --color-text-4: rgb(255 255 255 / 0.25);
+    --color-accent: #3c89e8;
+    --color-diag: #e87d7f;
+    --color-primary: #1668dc;
+    --color-primary-hover: #3c89e8;
+    --color-primary-active: #1554ad;
+    --color-primary-bg: #111a2c;
+    --color-primary-border: #15325b;
+    --color-primary-text-hover: #65a9f3;
+    --color-layout: #000000;
+    --color-elevated: #1f1f1f;
+    --color-selection: #15325b;
+    --fill-2: rgb(255 255 255 / 0.08);
+    --fill-3: rgb(255 255 255 / 0.08);
+    --fill-4: rgb(255 255 255 / 0.04);
+    --shadow-elevated: 0 6px 16px 0 rgb(0 0 0 / 0.32), 0 3px 6px -4px rgb(0 0 0 / 0.48), 0 9px 28px 8px rgb(0 0 0 / 0.2);
+    --shadow-secondary: 0 1px 2px 0 rgb(0 0 0 / 0.16), 0 1px 6px -1px rgb(0 0 0 / 0.12), 0 2px 4px 0 rgb(0 0 0 / 0.12);
+    --shadow-button: 0 2px 0 rgb(0 0 0 / 0.15);
+    --shadow-button-primary: 0 2px 0 rgb(0 0 0 / 0.15);
   }
 }
 
@@ -155,49 +233,72 @@
 }
 :lang(ko) h1, :lang(ko) h2, :lang(ko) h3, :lang(ko) h4 { letter-spacing: -0.005em; line-height: 1.35 }
 :lang(ko) .figure-caption, :lang(ko) .site-nav, :lang(ko) .site-map { line-height: 1.65 }
-/* IBM Plex Sans KR only ships 400 and 600, so the button's 500 falls back to 400 for Hangul
-   while Latin renders true 500; land both scripts on 600 instead. */
+/* IBM Plex Sans KR only ships 400 and 600, so a 500-weight label falls back to 400 for
+   Hangul while Latin renders true 500; land both scripts on 600 instead. */
 :lang(ko) .button { font-weight: 600 }
+/* A single-line Ant control has no room for the 1.8 line height Korean prose asks for. */
+:lang(ko) .button, :lang(ko) .site-nav a, :lang(ko) .docs-group a, :lang(ko) .site-search { line-height: 1.5 }
 
 /* Base */
-html { background: var(--color-ground) }
+/* The page field is Ant's layout ground; every container on it (the header, the cards, the
+   code frames, the docs column, the footer, the dialog and the dropdowns) keeps the
+   container white. */
+html { background: var(--color-layout); scrollbar-color: var(--color-line-2) transparent }
 /* A column of header, document and footer, so a short page keeps its footer at the bottom
    of the window instead of leaving it halfway up the screen. */
 body {
   display: flex;
   flex-direction: column;
   min-block-size: 100vh;
-  background: var(--color-ground);
+  background: var(--color-layout);
   color: var(--color-text-1);
   font-family: var(--font-sans);
   font-size: var(--text-ui);
   line-height: var(--text-ui--line-height);
   -webkit-font-smoothing: antialiased;
+  caret-color: var(--color-accent);
 }
 body > main { flex: 1 }
+::selection { background: var(--color-selection); color: var(--color-text-1) }
 :where(body *) { min-inline-size: 0 }
 :where(img, canvas, svg, video) { max-inline-size: 100%; display: block }
 :where([id]) { scroll-margin-block-start: 24px }
+/* Ant's focus ring: a 4px wash of the primary, plus the outline a keyboard reader needs on
+   any ground the wash disappears into. */
 :where(a, button, summary, [tabindex]):focus-visible {
-  outline: 2px solid transparent;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   box-shadow: var(--ring);
   border-radius: inherit;
 }
+:where(input, textarea, select):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-color: var(--color-accent);
+  box-shadow: var(--ring);
+}
 
 .wrap { inline-size: var(--content); margin-inline: auto }
+/* The container every full-width page uses: the header's own measure, with the gutters. */
+.wide-in { max-inline-size: var(--container); margin-inline: auto; padding-inline: var(--gutter-x) }
+/* The live figure's parts outside the hero: no box of their own, the figure's column is the box. */
+.live-parts { display: contents }
+/* Text that is only for a screen reader: a tile's caption, whose picture already has a name. */
+.visually-hidden { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap }
 
 /* Skip link */
 .skip {
   position: fixed; inset-block-start: 8px; inset-inline-start: 8px; z-index: 60;
-  padding: 8px 12px; background: var(--color-surface-1); color: var(--color-text-1);
-  border: 1px solid var(--color-line-2); border-radius: var(--radius-sm);
+  padding: 7px 15px; background: var(--color-ground); color: var(--color-text-1);
+  border: 1px solid var(--color-line-2); border-radius: var(--radius);
+  box-shadow: var(--shadow-elevated);
   text-decoration: none; clip-path: inset(50%);
 }
 .skip:focus-visible { clip-path: none }
 
-/* Header: a bar with the mark and the name, the page links, and the other languages.
-   Under 48rem the links live in a panel behind a menu button (a details element). */
+/* Header: a 64px white bar with the mark and the name, the page links, and the tools as Ant
+   icon buttons. Under 48rem the links live in a panel behind a menu button (a details
+   element). */
 .site-header { border-block-end: 1px solid var(--color-line-1); background: var(--color-ground) }
 .site-header-in {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -205,49 +306,65 @@ body > main { flex: 1 }
   padding-inline: var(--gutter-x);
 }
 .site-name {
-  display: inline-flex; align-items: center; gap: 8px;
-  color: var(--color-text-1); font-weight: 600; font-size: 1.0625rem; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--color-text-1); font-weight: 600; font-size: var(--text-h5); text-decoration: none;
 }
-.site-name svg { inline-size: 20px; block-size: 20px; flex: none; translate: 0 1px }
+.site-name img { inline-size: 24px; block-size: 24px; flex: none; border-radius: var(--radius-sm) }
 .site-bar { display: none; align-items: center; gap: 24px }
-.site-nav { display: flex; align-items: center; gap: 24px; font-size: var(--text-meta); font-weight: 500 }
-.site-nav a { color: var(--color-text-2); text-decoration: none; padding-block: 4px; white-space: nowrap; flex-shrink: 0 }
-.site-nav a:hover { color: var(--color-text-1) }
-.site-tools { display: flex; align-items: center; gap: 4px; padding-inline-start: 20px; border-inline-start: 1px solid var(--color-line-1) }
-.icon { inline-size: 20px; block-size: 20px; flex: none }
+.site-nav { display: flex; align-items: center; gap: 24px; font-size: var(--text-ui) }
+.site-nav a {
+  color: var(--color-text-2); text-decoration: none; padding-block: 4px; white-space: nowrap;
+  flex-shrink: 0; transition: color var(--motion);
+}
+.site-nav a:hover { color: var(--color-accent) }
+.site-nav a:active { color: var(--color-primary-active) }
+.site-tools { display: flex; align-items: center; gap: 4px; padding-inline-start: 16px; border-inline-start: 1px solid var(--color-line-1) }
+.icon { inline-size: 16px; block-size: 16px; flex: none }
 .site-menu-drop { position: relative }
 .site-menu-drop summary {
-  list-style: none; display: inline-flex; align-items: center; gap: 6px; block-size: 36px; padding-inline: 8px;
-  border-radius: var(--radius-sm); font-size: var(--text-meta); font-weight: 500; color: var(--color-text-2); cursor: pointer;
+  list-style: none; display: inline-flex; align-items: center; gap: 6px; block-size: 32px; padding-inline: 8px;
+  border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-text-2); cursor: pointer;
   white-space: nowrap; flex-shrink: 0;
+  transition: color var(--motion), background-color var(--motion);
 }
 .site-menu-drop summary::-webkit-details-marker { display: none }
-.site-menu-drop summary:hover, .site-menu-drop[open] summary { color: var(--color-text-1) }
-.site-menu-drop .chevron { inline-size: 14px; block-size: 14px }
-.site-version summary { font-variant-numeric: tabular-nums }
+.site-menu-drop summary:hover, .site-menu-drop[open] summary { color: var(--color-text-1); background: var(--fill-3) }
+.site-menu-drop .chevron { inline-size: 12px; block-size: 12px; color: var(--color-text-3) }
+/* The version reads as an Ant tag: a 24px chip in the mono face, with tabular figures. */
+.site-version summary {
+  block-size: 24px; padding-inline: 7px; gap: 4px;
+  border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-surface-1);
+  font-family: var(--font-mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--color-text-2);
+}
+.site-version summary:hover, .site-version[open] summary { background: var(--color-surface-1); border-color: var(--color-accent); color: var(--color-accent) }
 .site-drop-list {
-  position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 6px); z-index: 40; min-inline-size: 140px;
-  padding: 6px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-ground);
-  box-shadow: 0 6px 24px rgb(0 0 0 / 0.08);
+  position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 6px); z-index: 40; min-inline-size: 160px;
+  padding: 4px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
+  box-shadow: var(--shadow-elevated);
 }
-.site-drop-list a { display: block; white-space: nowrap; padding: 8px 10px; border-radius: var(--radius-sm); font-size: var(--text-meta); color: var(--color-text-2); text-decoration: none }
-.site-drop-list a:hover { background: var(--color-surface-1); color: var(--color-text-1) }
+.site-drop-list a {
+  display: block; white-space: nowrap; padding: 5px 12px; border-radius: var(--radius);
+  font-size: var(--text-ui); color: var(--color-text-1); text-decoration: none;
+  transition: color var(--motion), background-color var(--motion);
+}
+.site-drop-list a:hover { background: var(--fill-3) }
 .site-drop-note, .site-drop-current {
-  display: flex; align-items: center; gap: 6px; white-space: nowrap; padding: 8px 10px;
-  font-size: var(--text-meta); color: var(--color-text-3);
+  display: flex; align-items: center; gap: 6px; white-space: nowrap; padding: 5px 12px;
+  font-size: var(--text-ui); color: var(--color-text-2);
 }
-.site-drop-current { color: var(--color-accent); font-weight: 500 }
+.site-drop-current { color: var(--color-accent); background: var(--color-primary-bg); border-radius: var(--radius); font-weight: 600 }
 .site-drop-current svg { inline-size: 14px; block-size: 14px; flex: none }
-.site-lang .site-drop-list a { padding-inline-start: 30px }
-/* Search: an icon in the tools, with its label from 48rem, and a row in the phone panel. */
+.site-lang .site-drop-list a { padding-inline-start: 32px }
+/* Search: an Ant pill in the tools, with its label from 48rem, and a row in the phone panel. */
 .site-search {
-  display: inline-flex; align-items: center; gap: 6px; block-size: 36px; padding-inline: 8px;
-  border: 0; border-radius: var(--radius-sm); background: none; color: var(--color-text-2);
-  font-family: inherit; font-size: var(--text-meta); font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; block-size: 32px; padding-inline: 12px;
+  border: 0; border-radius: var(--radius); background: var(--fill-4); color: var(--color-text-3);
+  font-family: inherit; font-size: var(--text-ui); cursor: pointer;
   white-space: nowrap; flex-shrink: 0;
+  transition: color var(--motion), background-color var(--motion);
 }
-.site-search:hover { color: var(--color-text-1) }
-.site-search .icon { inline-size: 18px; block-size: 18px }
+.site-search:hover { background: var(--fill-3); color: var(--color-text-1) }
+.site-search .icon { inline-size: 16px; block-size: 16px }
 .site-search-label { display: none }
 @media (min-width: 48rem) { .site-search-label { display: inline } }
 /* Under 48rem the magnifier sits beside the menu button instead of behind it, so search stays
@@ -255,16 +372,18 @@ body > main { flex: 1 }
 .site-mobile-tools { display: flex; align-items: center; gap: 4px }
 .site-search-phone {
   display: inline-flex; align-items: center; justify-content: center; inline-size: 36px; block-size: 36px;
-  border: 0; border-radius: var(--radius-sm); background: none; color: var(--color-text-2); cursor: pointer;
+  border: 0; border-radius: var(--radius); background: none; color: var(--color-text-2); cursor: pointer;
+  transition: color var(--motion), background-color var(--motion);
 }
-.site-search-phone:hover { color: var(--color-text-1) }
+.site-search-phone:hover { color: var(--color-text-1); background: var(--fill-3) }
 .site-search-phone .icon { inline-size: 18px; block-size: 18px }
 @media (min-width: 48rem) { .site-search-phone { display: none } }
 .site-theme, .site-social {
-  display: inline-flex; align-items: center; justify-content: center; inline-size: 36px; block-size: 36px;
-  border: 0; border-radius: var(--radius-sm); background: none; color: var(--color-text-2); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; inline-size: 32px; block-size: 32px;
+  border: 0; border-radius: var(--radius); background: none; color: var(--color-text-2); cursor: pointer;
+  transition: color var(--motion), background-color var(--motion);
 }
-.site-theme:hover, .site-social:hover { color: var(--color-text-1) }
+.site-theme:hover, .site-social:hover { color: var(--color-text-1); background: var(--fill-3) }
 .site-theme .icon-moon { display: none }
 :root[data-theme='dark'] .site-theme .icon-sun { display: none }
 :root[data-theme='dark'] .site-theme .icon-moon { display: block }
@@ -274,13 +393,13 @@ body > main { flex: 1 }
 }
 .site-menu summary {
   position: relative; list-style: none; display: block; inline-size: 40px; block-size: 40px;
-  margin-inline-end: -8px; cursor: pointer; border-radius: var(--radius-sm);
+  margin-inline-end: -8px; cursor: pointer; border-radius: var(--radius);
 }
 .site-menu summary::-webkit-details-marker { display: none }
 .site-menu-bar {
   position: absolute; inset-inline-start: 10px; inline-size: 20px; block-size: 2px;
   background: var(--color-text-1); border-radius: 1px; transform-origin: center;
-  transition: transform 0.2s, opacity 0.2s, inset-block-start 0.2s;
+  transition: transform var(--motion), opacity var(--motion), inset-block-start var(--motion);
 }
 .site-menu-bar:nth-child(1) { inset-block-start: 12px }
 .site-menu-bar:nth-child(2) { inset-block-start: 19px }
@@ -296,10 +415,10 @@ body > main { flex: 1 }
   display: block; padding: 14px 0; border-block-end: 1px solid var(--color-line-1);
   color: var(--color-text-1); font-weight: 500; text-decoration: none;
 }
-.site-screen-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-block-end: 1px solid var(--color-line-1); font-size: var(--text-meta); color: var(--color-text-2) }
+.site-screen-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-block-end: 1px solid var(--color-line-1); font-size: var(--text-ui); color: var(--color-text-2) }
 /* The version row carries the same links as the version menu, so the row wraps. */
 .site-screen-langs { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 2px 14px }
-.site-screen-langs a { color: var(--color-text-1); font-weight: 500; text-decoration: none }
+.site-screen-langs a { color: var(--color-accent); text-decoration: none }
 @media (min-width: 48rem) {
   .site-bar { display: flex }
   .site-menu { display: none }
@@ -311,105 +430,120 @@ body > main { flex: 1 }
   inline-size: min(600px, 100vw - 2 * var(--gutter-x));
   margin: 10vh auto auto;
   padding: 0;
-  border: 1px solid var(--color-line-1);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--color-ground);
+  background: var(--color-elevated);
   color: var(--color-text-1);
-  box-shadow: 0 12px 48px rgb(0 0 0 / 0.16);
+  box-shadow: var(--shadow-elevated);
   --pagefind-ui-scale: 0.8;
   --pagefind-ui-primary: var(--color-accent);
   --pagefind-ui-text: var(--color-text-1);
-  --pagefind-ui-background: var(--color-ground);
-  --pagefind-ui-border: var(--color-line-1);
+  --pagefind-ui-background: var(--color-elevated);
+  --pagefind-ui-border: var(--color-line-2);
   --pagefind-ui-tag: var(--color-surface-1);
   --pagefind-ui-border-width: 1px;
-  --pagefind-ui-border-radius: var(--radius-md);
+  --pagefind-ui-border-radius: var(--radius);
   --pagefind-ui-font: var(--font-sans);
 }
-.search-dialog::backdrop { background: rgb(0 0 0 / 0.4) }
+.search-dialog::backdrop { background: rgb(0 0 0 / 0.45) }
 /* The dark ground and the dark backdrop are close to the same colour, so on a dark page the
    backdrop alone barely reads as dimmed. A heavier backdrop and a lifted dialog surface give
    the dialog its own visible surface above the page. */
 :root[data-theme='dark'] .search-dialog::backdrop { background: rgb(0 0 0 / 0.72) }
-:root[data-theme='dark'] .search-dialog { background: var(--color-surface-1); border-color: var(--color-line-2) }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .search-dialog::backdrop { background: rgb(0 0 0 / 0.72) }
-  :root:not([data-theme='light']) .search-dialog { background: var(--color-surface-1); border-color: var(--color-line-2) }
 }
 /* A close button that stays put whether or not Escape exists (it does not on a phone) or the
    backdrop is reachable (it is not once the keyboard covers it). */
 .search-dialog-bar { display: flex; justify-content: flex-end; padding: 4px 4px 0 }
 .search-dialog-close {
-  display: inline-flex; align-items: center; justify-content: center; inline-size: 44px; block-size: 44px;
-  border: 0; border-radius: var(--radius-sm); background: none; color: var(--color-text-2); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; inline-size: 40px; block-size: 40px;
+  border: 0; border-radius: var(--radius); background: none; color: var(--color-text-3); cursor: pointer;
+  transition: color var(--motion), background-color var(--motion);
 }
-.search-dialog-close:hover { color: var(--color-text-1) }
-.search-dialog-close svg { inline-size: 18px; block-size: 18px }
+.search-dialog-close:hover { color: var(--color-text-1); background: var(--fill-3) }
+.search-dialog-close svg { inline-size: 16px; block-size: 16px }
 .search-dialog #search { max-block-size: min(70vh, 560px); overflow-y: auto; padding: 4px 16px 16px; scrollbar-width: thin }
-/* The input carries the site's focus ring, and a match is marked in the accent. Pagefind's
-   own reset gives mark the same weight, so the id is what settles it. */
-.search-dialog input:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--ring) }
-.search-dialog #search mark { background: color-mix(in srgb, var(--color-accent) 24%, transparent); color: inherit; border-radius: 2px }
-.search-dialog .search-note { padding: 16px; font-size: var(--text-meta); color: var(--color-text-3) }
+/* The input carries the page's focus ring, and a match is marked in the primary wash. */
+.search-dialog input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; box-shadow: var(--ring) }
+.search-dialog #search mark { background: var(--color-primary-bg); color: inherit; border-radius: var(--radius-sm) }
+.search-dialog .search-note { padding: 16px; font-size: var(--text-ui); color: var(--color-text-2) }
 
-/* Docs: the sidebar, the document, the outline; under 64rem the sidebar is a bar under the header */
+/* Docs: the sidebar as an Ant Menu, the document, the outline as an Ant Anchor; under 64rem
+   the sidebar is a bar under the header. */
 .docs-local { border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-1) }
 .docs-local summary {
   list-style: none; display: flex; align-items: center; gap: 8px; block-size: 44px; padding-inline: var(--gutter-x);
-  font-size: var(--text-meta); font-weight: 500; color: var(--color-text-2); cursor: pointer;
+  font-size: var(--text-ui); font-weight: 600; color: var(--color-text-1); cursor: pointer;
 }
 .docs-local summary::-webkit-details-marker { display: none }
-.docs-local summary::before { content: ''; inline-size: 14px; block-size: 14px; border-inline-end: 2px solid currentColor; border-block-end: 2px solid currentColor; transform: rotate(-45deg) scale(0.6); transition: transform 0.2s }
-.docs-local[open] summary::before { transform: rotate(45deg) scale(0.6) }
-.docs-local nav { padding: 8px var(--gutter-x) 20px }
+.docs-local summary::before { content: ''; inline-size: 12px; block-size: 12px; border-inline-end: 2px solid var(--color-text-3); border-block-end: 2px solid var(--color-text-3); transform: rotate(-45deg) scale(0.7); transition: transform var(--motion) }
+.docs-local[open] summary::before { transform: rotate(45deg) scale(0.7) }
+.docs-local nav { padding: 4px calc(var(--gutter-x) - 8px) 16px }
 /* The phone's own "on this page": the same headings the wide outline shows, folded under the
    docs bar. A page with no headings to list renders neither. */
-.docs-toc { border-block-end: 1px solid var(--color-line-1) }
+.docs-toc { border-block-end: 1px solid var(--color-line-1); background: var(--color-ground) }
 .docs-toc summary {
   list-style: none; display: flex; align-items: center; gap: 8px; block-size: 40px; padding-inline: var(--gutter-x);
-  font-size: var(--text-meta); color: var(--color-text-3); cursor: pointer;
+  font-size: var(--text-ui); color: var(--color-text-2); cursor: pointer;
 }
 .docs-toc summary::-webkit-details-marker { display: none }
-.docs-toc summary::before { content: ''; inline-size: 14px; block-size: 14px; border-inline-end: 2px solid currentColor; border-block-end: 2px solid currentColor; transform: rotate(-45deg) scale(0.6); transition: transform 0.2s }
-.docs-toc[open] summary::before { transform: rotate(45deg) scale(0.6) }
+.docs-toc summary::before { content: ''; inline-size: 12px; block-size: 12px; border-inline-end: 2px solid currentColor; border-block-end: 2px solid currentColor; transform: rotate(-45deg) scale(0.7); transition: transform var(--motion) }
+.docs-toc[open] summary::before { transform: rotate(45deg) scale(0.7) }
 .docs-toc nav { padding: 4px var(--gutter-x) 16px }
-.docs-toc a[aria-current='location'] { color: var(--color-accent); font-weight: 500 }
-.docs { display: grid; grid-template-columns: minmax(0, 1fr); max-inline-size: var(--container); margin-inline: auto; padding-inline: var(--gutter-x) }
+.docs { display: grid; grid-template-columns: minmax(0, 1fr); max-inline-size: var(--container); margin-inline: auto; padding-inline: var(--gutter-x); background: var(--color-ground) }
 .docs-sidebar, .docs-outline { display: none }
 .docs-content { padding-block: 32px 24px; max-inline-size: 740px; inline-size: 100% }
 .docs-content > h1:first-child { margin-block-start: 0 }
 .docs-group { margin-block-start: 20px }
 .docs-group:first-child { margin-block-start: 0 }
-.docs-group-title { font-size: var(--text-meta); font-weight: 600; color: var(--color-text-1) }
+.docs-group-title { padding: 8px 16px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
 .docs-group li { margin-block-start: 2px }
-.docs-group a { display: block; padding: 5px 0; font-size: var(--text-meta); color: var(--color-text-2); text-decoration: none }
-.docs-group a:hover { color: var(--color-text-1) }
-.docs-group a[aria-current='page'] { color: var(--color-accent); font-weight: 500 }
+/* Ant Menu: a 40px row, 6px radius, secondary text, the quaternary fill on hover, and the
+   current page in the primary over its wash. */
+.docs-group a {
+  display: flex; align-items: center; min-block-size: 40px; padding: 8px 16px;
+  border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-text-2); text-decoration: none;
+  transition: color var(--motion), background-color var(--motion);
+}
+.docs-group a:hover { color: var(--color-text-1); background: var(--fill-3) }
+.docs-group a[aria-current='page'] { color: var(--color-accent); background: var(--color-primary-bg); font-weight: 600 }
 /* A topic, a member of the open reference category or a section of the compiler internals sits
    one level in, under its parent. Only an export's name is set in the code font. */
 .docs-group li.depth-1 { margin-block-start: 0 }
-.docs-group li.depth-1 a { padding-inline-start: 12px; border-inline-start: 1px solid var(--color-line-1) }
-.docs-group li.depth-1.code a { font-family: var(--font-mono); font-size: 0.8125rem }
-.docs-edit { margin-block-start: 40px; font-size: var(--text-meta) }
-.docs-edit a { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent); text-decoration: none }
-.docs-edit a:hover { text-decoration: underline }
+.docs-group li.depth-1 a { padding-inline-start: 32px }
+.docs-group li.depth-1.code a { font-family: var(--font-mono); font-size: var(--text-code) }
+.docs-edit { margin-block-start: 40px; font-size: var(--text-ui) }
+.docs-edit a { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
+.docs-edit a:hover { color: var(--color-primary-text-hover) }
 .docs-edit svg { inline-size: 14px; block-size: 14px; flex: none }
-.docs-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-block-start: 24px; padding-block-start: 24px; border-block-start: 1px solid var(--color-line-1) }
-.docs-pager a { display: block; min-inline-size: 0; overflow-wrap: anywhere; padding: 12px 16px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); font-size: var(--text-meta); font-weight: 500; color: var(--color-accent); text-decoration: none }
-.docs-pager a:hover { border-color: var(--color-line-2) }
-.docs-pager a span { display: block; margin-block-end: 4px; font-size: 0.75rem; font-weight: 400; color: var(--color-text-3) }
+/* Previous and next as two small Ant cards. */
+.docs-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-block-start: 32px; padding-block-start: 32px; border-block-start: 1px solid var(--color-line-1) }
+.docs-pager a {
+  display: block; min-inline-size: 0; overflow-wrap: anywhere; padding: 16px;
+  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
+  font-size: var(--text-ui); font-weight: 600; color: var(--color-text-1); text-decoration: none;
+  transition: border-color var(--motion), box-shadow var(--motion), color var(--motion);
+}
+.docs-pager a:hover { border-color: var(--color-primary-border); color: var(--color-accent); box-shadow: var(--shadow-secondary) }
+.docs-pager a span { display: block; margin-block-end: 4px; font-size: 0.75rem; font-weight: 400; color: var(--color-text-2) }
 .docs-pager-next { text-align: end }
-.docs-outline-title { font-size: var(--text-meta); font-weight: 600; color: var(--color-text-1) }
-.docs-outline li, .docs-toc li { margin-block-start: 2px }
-.docs-outline li.depth-3, .docs-toc li.depth-3 { padding-inline-start: 12px }
-.docs-outline a, .docs-toc a { display: block; padding: 4px 0; font-size: 0.8125rem; line-height: 1.4; color: var(--color-text-2); text-decoration: none }
+.docs-outline-title { padding-inline-start: 16px; font-size: 0.75rem; color: var(--color-text-2) }
+.docs-outline li, .docs-toc li { position: relative; margin-block-start: 2px }
+.docs-outline li.depth-3 a, .docs-toc li.depth-3 { padding-inline-start: 28px }
+/* Ant Anchor: a 2px rail down the left, and a primary segment beside the heading in view. */
+.docs-outline ul { position: relative; margin-block-start: 8px; border-inline-start: 2px solid var(--color-line-1) }
+.docs-outline a { display: block; padding: 5px 0 5px 16px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+.docs-outline a::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: -2px; inline-size: 2px; background: transparent; transition: background-color var(--motion) }
+.docs-toc a { display: block; padding: 5px 0; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 .docs-outline a:hover, .docs-toc a:hover { color: var(--color-text-1) }
-.docs-outline a[aria-current='location'], .docs-toc a[aria-current='location'] { color: var(--color-accent); font-weight: 500 }
+.docs-outline a[aria-current='location'], .docs-toc a[aria-current='location'] { color: var(--color-accent) }
+.docs-outline a[aria-current='location']::before { background: var(--color-accent) }
 @media (min-width: 64rem) {
   .docs-local, .docs-toc { display: none }
   .docs { grid-template-columns: 240px minmax(0, 1fr); gap: 48px }
   .docs-sidebar { display: block; border-inline-end: 1px solid var(--color-line-1) }
-  .docs-sidebar-in { position: sticky; inset-block-start: 0; max-block-size: 100vh; overflow-y: auto; padding-block: 32px 48px; padding-inline-end: 24px }
+  .docs-sidebar-in { position: sticky; inset-block-start: 0; max-block-size: 100vh; overflow-y: auto; padding-block: 24px 48px; padding-inline-end: 24px; scrollbar-width: thin }
   .docs-content { padding-block: 40px 24px }
 }
 @media (min-width: 80rem) {
@@ -419,113 +553,274 @@ body > main { flex: 1 }
   .docs-outline { display: block; position: sticky; inset-block-start: 0; align-self: start; max-block-size: 100vh; overflow-y: auto; padding-block: 40px 48px }
 }
 
-/* Front page: the headline and its three links, then the live shader and three points */
-.hero { padding: 56px var(--gutter-x) 40px; text-align: center }
-/* The category line above the name, distinct from both the name and the subtitle under it. */
-.hero-eyebrow { margin: 0 0 12px; font-size: var(--text-meta); font-weight: 600; color: var(--color-accent) }
-.hero-title {
-  max-inline-size: var(--wide); margin-inline: auto;
-  font-size: 2.5rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em;
+/* Buttons: Ant's default face and its primary face, 32px tall, 40px for the page's action. */
+.button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  block-size: 32px; padding: 4px 15px;
+  border: 1px solid var(--color-line-2); border-radius: var(--radius);
+  background: var(--color-ground); color: var(--color-text-1);
+  box-shadow: var(--shadow-button);
+  font-family: inherit; font-size: var(--text-ui); line-height: var(--text-ui--line-height);
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: color var(--motion), border-color var(--motion), background-color var(--motion), box-shadow var(--motion);
 }
-/* Each half of the headline breaks on its own, so a line is never left with one word. */
-.hero-line { display: block; inline-size: fit-content; margin-inline: auto; text-wrap: balance }
-.hero-title .accent { color: var(--color-accent) }
-:lang(ko) .hero-title { font-weight: 600; letter-spacing: -0.01em }
-/* The category line under the name, the way react.dev sets "The library for web and native user interfaces" under "React" */
-.hero-subtitle { margin: 12px 0 0; font-size: 1.5rem; line-height: 1.3; font-weight: 500; letter-spacing: -0.01em; color: var(--color-text-2) }
-@media (max-width: 40rem) { .hero-subtitle { font-size: 1.25rem } }
-.hero-tagline {
-  max-inline-size: 720px; margin: 20px auto 32px;
-  font-size: 1.125rem; line-height: 1.5; color: var(--color-text-2);
+.button:hover { color: var(--color-primary-hover); border-color: var(--color-primary-hover) }
+.button:active { color: var(--color-primary-active); border-color: var(--color-primary-active) }
+.button-icon { inline-size: 12px; block-size: 12px; fill: currentColor; transition: transform var(--motion) }
+.button:hover .button-icon { transform: translateX(2px) }
+.button-primary { background: var(--color-primary); border-color: var(--color-primary); color: #fff; box-shadow: var(--shadow-button-primary) }
+.button-primary:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); color: #fff }
+.button-primary:active { background: var(--color-primary-active); border-color: var(--color-primary-active); color: #fff }
+/* Ant's large control: 40px, 16px text. */
+.button-lg { block-size: 40px; padding: 7px 15px; font-size: var(--text-h5); border-radius: var(--radius-md) }
+/* Edit and Reset over a live example: Ant's small default button, defined here once for both
+   the hero card and the figure column, so the two places cannot drift apart. */
+.live-bar { display: flex; align-items: center; gap: 8px }
+.live-bar button {
+  display: inline-flex; align-items: center; block-size: 24px; padding: 0 8px;
+  border: 1px solid var(--color-line-2); border-radius: var(--radius-sm);
+  background: var(--color-ground); color: var(--color-text-1);
+  font-family: inherit; font-size: 0.75rem; line-height: 1.5; cursor: pointer;
+  transition: color var(--motion), border-color var(--motion);
+}
+.live-bar button:hover { color: var(--color-primary-hover); border-color: var(--color-primary-hover) }
+.live-bar button:active { color: var(--color-primary-active); border-color: var(--color-primary-active) }
+
+/* Ant Alert, the info face: a 1px #91caff rule over the primary's own #e6f4ff wash, with the
+   info-circle at the left. The two pre-release notes on the site use it. */
+.alert {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-block-start: 16px; padding: 12px 16px;
+  border: 1px solid var(--color-primary-border); border-radius: var(--radius-md);
+  background: var(--color-primary-bg);
+  font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-1);
+}
+/* The icon is centred on the first line, not on the box: half the line box less the icon.
+   `.doc p` would otherwise add its 16px to the paragraph inside a guide's alert and drop
+   the first line below the icon, so the alert's own reset outranks it. */
+.alert-icon {
+  flex: none; inline-size: 16px; block-size: 16px; fill: var(--color-primary);
+  margin-block-start: calc((var(--text-ui--line-height) * 1em - 16px) / 2);
+}
+.alert p, .doc .alert p { margin: 0 }
+.alert a { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
+.alert a:hover { color: var(--color-primary-text-hover) }
+.alert code { font-family: var(--font-mono); font-size: 0.9em }
+.doc h2 + .alert { margin-block-start: 0 }
+
+/* Front page. A two-column hero in the container: the headline, the sentence and the two
+   actions on the left, the showcase card on the right. Then one section per idea, separated
+   by space. */
+.front-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; padding-block: 48px 0 }
+.front-hero-text { align-self: center }
+.front-title {
+  margin: 0;
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); line-height: 1.15; font-weight: 600; letter-spacing: -0.02em;
   text-wrap: balance;
 }
-/* On a phone the three links are a grid: Get started across the top, the other two under it.
-   From 40rem they sit on one line, as they do on vuejs.org. */
-.hero-actions { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 12px }
-.hero-actions > :first-child { grid-column: 1 / -1 }
-.hero-actions .button { justify-content: center }
-.button {
-  display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
-  border-radius: 8px; background: var(--color-surface-2); color: var(--color-text-1);
-  font-size: var(--text-ui); font-weight: 500; text-decoration: none; transition: background-color 0.2s;
-}
-.button:hover { background: var(--color-surface-3) }
-.button-icon { inline-size: 10px; block-size: 10px; fill: currentColor; transition: transform 0.2s }
-.button:hover .button-icon { transform: translateX(2px) }
-/* Get started is the one filled button on the front page (DESIGN.md); Why TypeShade and
-   Examples stay the plain surface button above. */
-.button-primary { background: var(--color-accent); color: var(--color-ground) }
-.button-primary:hover { background: var(--color-accent); filter: brightness(0.92) }
-.wide { inline-size: var(--wide); margin-inline: auto }
-.demo { margin-block-start: 8px }
-/* A 3/1 strip renders under 130px tall on a phone, where the shader is the one thing that
-   should stand out. Below the point the three links wrap to their own row, the front page's
-   demo takes a taller ratio instead. */
-@media (max-width: 40rem) {
-  .demo .figure-frame { aspect-ratio: 3 / 2 !important }
-}
-.highlights { display: grid; gap: 28px; padding-block: 48px 8px; color: var(--color-text-2) }
-.highlight h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; color: var(--color-text-1); margin-block-end: 0.5em }
-.highlight p { font-size: 0.9375rem; line-height: 1.6 }
-.highlight code { font-family: var(--font-mono); font-size: 0.9em }
-.highlight a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px }
-/* The release state, in the bordered pill vuejs.org puts under its buttons */
-.hero-prerelease { margin-block-start: 20px }
-.hero-prerelease a {
-  display: inline-block; padding: 8px 19px; border: 1px solid var(--color-line-2); border-radius: 999px;
-  font-size: var(--text-meta); line-height: 1.45; font-weight: 500;
-  color: var(--color-text-2); text-decoration: none; text-wrap: balance;
-}
-.hero-prerelease a:hover { color: var(--color-text-1); border-color: var(--color-text-3) }
-
-/* The authored fragment and the WGSL it emits, side by side from 48rem */
-.front-code { padding-block: 48px 0 }
-.front-code h2 { font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.01em }
-.front-code > p { margin-block-start: 12px; font-size: 0.9375rem; line-height: 1.6; color: var(--color-text-2) }
-.code-pair { display: grid; gap: 16px; margin-block-start: 20px }
-.code-pair > * { min-inline-size: 0 }
-.front-code-more a { color: var(--color-accent); text-decoration: none; font-size: var(--text-meta); font-weight: 500 }
-.front-code-more a:hover { text-decoration: underline; text-underline-offset: 3px }
-/* The compilation steps, a wrapping row of quiet pills joined by muted arrows */
-.authoring-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block-start: 20px; font-size: var(--text-meta); line-height: var(--text-meta--line-height) }
-.authoring-flow span:not([aria-hidden]) { padding: 4px 10px; border: 1px solid var(--color-line-1); border-radius: 999px; color: var(--color-text-2) }
-.authoring-flow span[aria-hidden] { color: var(--color-text-3) }
-.authoring-flow code { padding: 4px 10px; border: 1px solid var(--color-line-1); border-radius: 999px; background: var(--color-surface-1); font-family: var(--font-mono); font-size: 0.8em; color: var(--color-text-1) }
-/* The TypeScript-to-shader mappings, a grid of quiet cards under a heading and one paragraph */
-.concepts { padding-block: 48px 8px }
-.concepts h2 { font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.01em }
-.concepts > p { margin-block-start: 12px; font-size: 0.9375rem; line-height: 1.6; color: var(--color-text-2) }
-.concept-grid { display: grid; gap: 16px; margin-block-start: 24px }
-.concept { padding: 20px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md) }
-.concept-heading { margin: 0; font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-3) }
-.concept h3 { margin: 6px 0 8px; font-size: 1.0625rem; line-height: 1.35; font-weight: 600; letter-spacing: -0.01em }
-.concept h3 code { font-family: var(--font-mono); font-size: 0.9em }
-.concept > p:last-child { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--color-text-2) }
+:lang(ko) .front-title { letter-spacing: -0.01em; line-height: 1.3 }
+.front-lede { max-inline-size: 52ch; margin: 16px 0 0; font-size: var(--text-prose); line-height: 1.5; color: var(--color-text-2); text-wrap: pretty }
+.front-lede code, .front-section code { font-family: var(--font-mono); font-size: 0.9em }
+.front-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 32px 0 0 }
+.front-stage { min-inline-size: 0 }
 @media (min-width: 40rem) {
-  .hero { padding: 80px var(--gutter-x) 56px }
-  .hero-title { font-size: 3.25rem }
-  .hero-tagline { font-size: 1.25rem; margin: 24px auto 40px }
-  .hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 16px }
-  .hero-actions > :first-child { grid-column: auto }
-}
-@media (min-width: 48rem) {
-  .hero-title { font-size: 4rem }
-  .highlights { grid-template-columns: repeat(3, 1fr); gap: 32px; padding-block: 64px 16px }
-  .code-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px }
-  .concept-grid { grid-template-columns: repeat(2, 1fr) }
+  .front-hero { padding-block-start: 56px }
 }
 @media (min-width: 64rem) {
-  .hero { padding: 96px var(--gutter-x) 64px }
-  .hero-title { font-size: 4.75rem }
-  .hero-tagline { font-size: 1.375rem }
-  .concept-grid { grid-template-columns: repeat(4, 1fr) }
+  .front-hero { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; padding-block-start: 64px }
+  .front-lede { margin-block-start: 20px }
+}
+@media (min-width: 90rem) {
+  .front-title { font-size: 3.25rem }
 }
 
+/* The showcase card: the file name as an active tab over the panes, the file on the left and
+   the picture it draws on the right, then the controls and the caption. .figure is a flex
+   column, so the hero's own rules carry the class pair to outrank it. */
+.figure.live-hero { display: block; gap: 0; margin: 0 }
+.live-card {
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--color-line-1); border-radius: var(--radius-md);
+  background: var(--color-elevated); box-shadow: var(--shadow-elevated);
+}
+.live-card-head {
+  display: flex; align-items: stretch; gap: 12px; block-size: 56px; padding-inline: 16px;
+  border-block-end: 1px solid var(--color-line-1);
+}
+.live-file {
+  display: inline-flex; align-items: center; margin-inline-end: auto;
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+  font-size: var(--text-ui); font-weight: 600; color: var(--color-text-1);
+}
+.live-card-body { display: grid; grid-template-columns: minmax(0, 1fr) }
+/* The code pane is a window over the block: its content is taken out of flow, so the picture
+   beside it sets the row's height and keeps its 4:3, and the pane scrolls inside. That box
+   is also what the editor's textarea is laid over (src/scripts/live-shader-editor.ts), whose
+   own padding is measured off the rendered lines, so the padding here stays untouched.
+   The pane's height rarely lands on a whole line, and the line the bottom edge crosses would
+   otherwise be cut through the middle of its glyphs; a 32px fade at the foot reads as more
+   code below and hands the cut to the mask. */
+.figure.live-hero .live-code {
+  position: relative; block-size: 260px; overflow-y: auto; background: var(--color-elevated);
+  scrollbar-width: thin; scrollbar-color: var(--color-line-2) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+.figure.live-hero .live-code > .expressive-code { position: absolute; inset: 0; margin: 0 }
+.figure.live-hero .live-code .frame { display: flex; flex-direction: column; block-size: 100%; box-shadow: none }
+.figure.live-hero .live-code .expressive-code { --ec-brdRad: 0; --ec-brdWd: 0; --ec-frm-shdCol: transparent; --ec-frm-edTabBarBg: transparent; --ec-frm-edTabBarBrdBtmCol: transparent }
+.figure.live-hero .live-code .expressive-code .frame.has-title > .header { display: none }
+.figure.live-hero .live-code .expressive-code pre {
+  flex: 1; min-block-size: 0; overflow: auto; border: 0; border-radius: 0;
+  scrollbar-width: thin; scrollbar-color: var(--color-line-2) transparent;
+  overscroll-behavior: contain;
+}
+.figure.live-hero .live-code .expressive-code pre > code { font-size: var(--text-code); line-height: 1.6 }
+.figure.live-hero .live-frame {
+  order: -1; inline-size: 100%; border: 0; border-radius: 0;
+  border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-2);
+}
+.figure.live-hero .live-diagnostics, .figure.live-hero figcaption { padding-inline: 16px }
+.figure.live-hero .live-diagnostics { padding-block-start: 12px }
+/* The handles and the note about the fields that have none read as one group: the note is
+   the group's last row, under the sliders it belongs to, not a second caption at the foot. */
+.figure.live-hero .live-controls-group {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 16px 16px 0; border-block-start: 1px solid var(--color-line-1);
+}
+.figure.live-hero .live-controls { gap: 12px }
+/* The note is the group's last row, so it starts in the handles' own column: the same
+   16rem label column and 12px gap the control rows are built on (src/components/LiveShader.astro). */
+.figure.live-hero .live-reserved { font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
+.figure.live-hero figcaption { padding-block: 8px 16px; font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2) }
+@media (min-width: 40rem) {
+  .figure.live-hero .live-reserved { padding-inline-start: calc(16rem + 12px) }
+}
+@media (min-width: 48rem) {
+  .live-card-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
+  .figure.live-hero .live-code { block-size: auto; border-inline-end: 1px solid var(--color-line-1) }
+  .figure.live-hero .live-frame { order: 0; border-block-end: 0 }
+}
+
+/* The uniform handles under a live example: Ant's primary on the slider, and a colour swatch
+   at the height of an Ant control. The rows themselves are built by the runtime, so the
+   selectors carry .figure.live to outrank the component's own scoped rules. */
+.figure.live .live-controls input[type='range'] { accent-color: var(--color-primary) }
+.figure.live .live-controls input[type='color'] {
+  inline-size: 40px; block-size: 32px; padding: 2px;
+  border: 1px solid var(--color-line-2); border-radius: var(--radius);
+  background: var(--color-elevated); cursor: pointer;
+}
+
+/* What the reader should see, and what to try, under the same figure. The anchor line is one
+   sentence in the tertiary text, so the caption above it stays the louder of the two. The
+   exercises are an Ant List: no bullets, one row per thing to try, split by the rule every
+   other list on the site is split by. Both carry .figure.live for the same reason the
+   handles above do, to outrank the component's own scoped rules and the .doc defaults. */
+.figure.live .live-anchor {
+  margin: 0;
+  font-size: var(--text-meta); line-height: var(--text-meta--line-height);
+  color: var(--color-text-3);
+}
+.figure.live .live-exercises { font-size: var(--text-ui); line-height: var(--text-ui--line-height) }
+.figure.live .live-exercises > p { margin: 0 0 8px; color: var(--color-text-2) }
+.figure.live .live-exercises ul {
+  margin: 0; padding: 0; list-style: none;
+  border-block-start: 1px solid var(--color-line-1);
+}
+.figure.live .live-exercises li {
+  margin: 0; padding-block: 12px; padding-inline: 0;
+  border-block-end: 1px solid var(--color-line-1);
+  color: var(--color-text-1);
+}
+/* Ant's split list draws no rule after the last row, and here it would land 12px above the
+   emitted-output disclosure's own rule and read as two. */
+.figure.live .live-exercises li:last-child { border-block-end: 0 }
+
+/* One section per idea, separated by space. */
+.front-section { margin-block-start: var(--front-gap) }
+.front-section h2 { max-inline-size: 24ch; margin: 0; font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.01em; text-wrap: balance }
+:lang(ko) .front-section h2 { letter-spacing: 0; line-height: 1.4 }
+.front-section > p, .front-gallery-head > p { max-inline-size: 62ch; margin: 12px 0 0; font-size: var(--text-prose); line-height: 1.5; color: var(--color-text-2); text-wrap: pretty }
+.front-section > p a:not(.button), .front-gallery-head > p a:not(.button), .front-map dd a, .front-gallery-all { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
+.front-section > p a:not(.button):hover, .front-gallery-head > p a:not(.button):hover, .front-map dd a:hover, .front-gallery-all:hover { color: var(--color-primary-text-hover) }
+.front-section .expressive-code { margin: 0 }
+/* The source beside the two frames it emits, which share one tabbed pane. Ant Tabs: a 40px
+   head with a 2px primary underline on the active tab. The head needs the script, so it
+   stays out of the page until the script has run; with no script both panels are in the flow
+   and stack, which is also what the search index reads. */
+.front-targets-grid { display: grid; gap: 16px; margin-block-start: 24px }
+.front-targets-out { display: grid; gap: 16px; align-content: start }
+.front-tabs-head { display: none; gap: 16px; border-block-end: 1px solid var(--color-line-1) }
+[data-front-tabs][data-ready] .front-tabs-head { display: flex }
+.front-tabs-head button {
+  block-size: 40px; padding: 0; border: 0; background: none;
+  box-shadow: inset 0 -2px 0 transparent;
+  color: var(--color-text-2); font-family: inherit; font-size: var(--text-ui); cursor: pointer;
+  transition: color var(--motion), box-shadow var(--motion);
+}
+.front-tabs-head button:hover { color: var(--color-primary-hover) }
+.front-tabs-head button[aria-selected='true'] { color: var(--color-accent); box-shadow: inset 0 -2px 0 var(--color-accent); font-weight: 600 }
+.front-tabs-head button:focus-visible { border-radius: var(--radius-sm) }
+@media (min-width: 64rem) {
+  .front-targets-grid { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 24px }
+  .front-targets-out { gap: 24px }
+}
+/* The tiles: an Ant Card each, the running example as its cover and the name as its meta. */
+.front-gallery-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 24px }
+.front-gallery-head > p { grid-column: 1 / -1 }
+.front-gallery-all { font-size: var(--text-ui); font-weight: 600; white-space: nowrap }
+.front-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 24px 0 0; padding: 0; list-style: none }
+.front-tiles li {
+  min-inline-size: 0; overflow: hidden;
+  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
+  transition: box-shadow var(--motion), border-color var(--motion);
+}
+.front-tiles li:hover { border-color: transparent; box-shadow: var(--shadow-elevated) }
+.front-tiles .figure { gap: 0 }
+.front-tiles .figure-frame { border: 0; border-radius: 0; border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-2) }
+.front-tiles .figure-caption { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap }
+.front-tile-name { display: block; padding: 16px; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1) }
+@media (min-width: 48rem) { .front-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px } }
+/* What carries over: an Ant List, the TypeScript on the left as a highlighted code cell
+   sized to its own line and what it becomes on the right. The cell is an Expressive Code
+   frame with the chrome taken off (no copy button, the chip's own padding) so it reads as a
+   tag, not a file. Its first line sits level with the title beside it. */
+.front-map-list { margin: 24px 0 0 }
+.front-map-row { display: grid; gap: 8px 32px; padding-block: 20px; border-block-end: 1px solid var(--color-line-1) }
+.front-map-row:first-child { border-block-start: 1px solid var(--color-line-1) }
+.front-map-row dt { align-self: start; justify-self: start; max-inline-size: 100%; min-inline-size: 0 }
+.front-map-row dt .expressive-code {
+  margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
+  --ec-codePadBlk: 10px; --ec-codePadInl: 14px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
+}
+.front-map-row dt .expressive-code .copy { display: none }
+/* No copy button, so the first line keeps no room for one at its end. */
+.front-map-row dt .expressive-code :nth-child(1 of .ec-line) .code { padding-inline-end: var(--ec-codePadInl) }
+.front-map-row dd { margin: 0; padding-block-start: 2px }
+.front-map-row dd strong { display: block; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1) }
+.front-map-row dd strong code { font-size: 0.95em }
+.front-map-row dd p { margin: 4px 0 0; color: var(--color-text-2); line-height: 1.5714 }
+@media (min-width: 48rem) { .front-map-row { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); align-items: start } }
+/* The gradient pass drawn by each backend: two cards, the picture as the cover. */
+.front-oracle .figure-pair { margin-block-start: 24px }
+.front-oracle .figure {
+  gap: 0; overflow: hidden;
+  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
+}
+.front-oracle .figure-frame { border: 0; border-radius: 0; border-block-end: 1px solid var(--color-line-1) }
+.front-oracle .figure-caption { padding: 16px; font-size: var(--text-ui); color: var(--color-text-2) }
+/* The close: the one command, and the action again. */
+.front-section > .alert { max-inline-size: 760px; margin-block-start: 12px }
+.front-install .expressive-code { margin-block-start: 24px; max-inline-size: 760px }
+.front-install .front-actions { margin-block-start: 24px }
+.wide { inline-size: var(--wide); margin-inline: auto }
+
 /* The document column */
-.doc { padding-block: 8px 24px }
-.doc a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px }
-.doc a:hover { text-decoration-thickness: 2px }
-.doc code { font-family: var(--font-mono); font-size: 0.9em }
+.doc { padding-block: 8px 24px; font-size: var(--text-prose); line-height: var(--text-prose--line-height) }
+.doc a { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
+.doc a:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px }
+.doc code { font-family: var(--font-mono); font-size: 0.875em }
 
 .doc h1 { font-size: var(--text-h1); line-height: var(--text-h1--line-height); font-weight: 600; letter-spacing: -0.02em }
 .doc h2 { font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.01em }
@@ -533,23 +828,24 @@ body > main { flex: 1 }
 /* Only one guide section nests this deep (SoT helpers, an h3 with two of its own subheadings).
    Without a rule of its own it would inherit the browser default: body size, no space above
    it, indistinguishable from the paragraph before it. */
-.doc h4 { font-size: var(--text-ui); line-height: var(--text-ui--line-height); font-weight: 600 }
+.doc h4 { font-size: var(--text-h4); line-height: var(--text-h4--line-height); font-weight: 600 }
 /* A permalink beside a heading, hidden until hover or keyboard focus finds it, the VitePress
    convention for linking to one part of a page. Selectors carry the .doc prefix so this beats
    .doc a's own color and underline on specificity, not just source order. */
 .doc .header-anchor {
-  margin-inline-start: 8px; font-weight: 400; font-size: 0.8em; color: var(--color-text-3); text-decoration: none; opacity: 0;
+  margin-inline-start: 8px; font-weight: 400; font-size: 0.8em; color: var(--color-text-4); text-decoration: none; opacity: 0;
+  transition: opacity var(--motion);
 }
 .doc :is(h2, h3):hover > .header-anchor, .doc .header-anchor:focus-visible { opacity: 1 }
-.doc .header-anchor:hover { color: var(--color-accent) }
+.doc .header-anchor:hover { color: var(--color-accent); text-decoration: none }
 /* No hover to reveal it on a touch device, so it stays on screen there. Muted and without the
    underline, it reads as a quiet trailing mark on the heading itself. */
 @media (hover: none) { .doc .header-anchor { opacity: 0.55 } }
 
 .doc section { margin-block-start: var(--section-gap) }
-.doc h1 { margin-block-end: 10px }
-.doc h2 { margin-block-end: 18px }
-.doc h3 { margin-block: 36px 14px }
+.doc h1 { margin-block-end: 12px }
+.doc h2 { margin-block-end: 16px }
+.doc h3 { margin-block: 36px 12px }
 .doc h4 { margin-block: 28px 8px }
 .doc p { margin-block-start: 16px }
 .doc h1 + p, .doc h2 + p, .doc h3 + p, .doc h4 + p { margin-block-start: 0 }
@@ -559,20 +855,22 @@ body > main { flex: 1 }
 .doc li { margin-block-start: 8px; padding-inline-start: 4px }
 .doc li::marker { color: var(--color-text-3) }
 
-/* The rendered guide: tables scroll inside themselves, quotes get a rule, the contents list
-   sits above the document's own headings */
+/* The rendered guide: Ant's table, quotes with a rule, the contents list above the
+   document's own headings. */
 .doc table {
-  display: block; overflow-x: auto; margin-block-start: 18px; border-collapse: collapse;
-  font-size: var(--text-meta); line-height: var(--text-meta--line-height);
-  background-color: var(--color-ground);
+  display: block; overflow-x: auto; margin-block-start: 24px; border-collapse: collapse;
+  inline-size: 100%;
+  font-size: var(--text-ui); line-height: var(--text-ui--line-height);
+  font-variant-numeric: tabular-nums;
   scrollbar-width: thin;
   scrollbar-color: var(--color-line-2) transparent;
 }
 .doc table::-webkit-scrollbar { block-size: 6px }
 .doc table::-webkit-scrollbar-track { background: transparent }
 .doc table::-webkit-scrollbar-thumb { background: var(--color-line-2); border-radius: 3px }
-.doc th, .doc td { padding: 6px 16px 6px 0; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-line-1) }
-.doc th { font-weight: 600; color: var(--color-text-2) }
+.doc th, .doc td { padding: 12px 16px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-line-1) }
+.doc th { font-weight: 600; color: var(--color-text-1); background: var(--color-surface-1) }
+.doc thead th { border-block-end: 1px solid var(--color-line-1) }
 /* Below 45rem, a plain Markdown table follows the precedent .example-table sets: a row is
    unreadable squeezed to the column and worse scrolled, so it stacks into a vertical block
    instead. A Markdown table carries no row header the way .example-table does, so each cell
@@ -586,26 +884,27 @@ body > main { flex: 1 }
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) tbody { display: block }
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) thead { display: none }
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) tr {
-    display: block; padding-block: 11px; border-block-end: 1px solid var(--color-line-1);
+    display: block; padding-block: 12px; border-block-end: 1px solid var(--color-line-1);
   }
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) th,
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) td {
-    display: block; padding: 3px 0; border: 0; white-space: normal;
+    display: block; padding: 3px 0; border: 0; white-space: normal; background: none;
   }
   .doc table:not(.example-table):not(.layout-table):not(.api-targets) td[data-label]::before {
-    content: attr(data-label); display: block; font-size: var(--text-meta); color: var(--color-text-3);
+    content: attr(data-label); display: block; font-size: var(--text-ui); color: var(--color-text-3);
   }
 }
-.doc blockquote { margin-block-start: 16px; padding-inline-start: 16px; border-inline-start: 3px solid var(--color-line-2); color: var(--color-text-2) }
+.doc blockquote { margin-block-start: 16px; padding: 0 16px; border-inline-start: 2px solid var(--color-line-1); color: var(--color-text-2) }
 .doc hr { margin-block: 40px 0; border: 0; border-block-start: 1px solid var(--color-line-1) }
 .doc strong { font-weight: 600 }
 .doc h2 { margin-block-start: var(--section-gap) }
 .doc h1 + h2 { margin-block-start: 24px }
-.guide-note { font-size: var(--text-meta); color: var(--color-text-3) }
+.guide-note { font-size: var(--text-ui); color: var(--color-text-2) }
 /* Code blocks sit at the column width and scroll inside themselves */
-.doc .expressive-code { margin-block-start: 18px }
+.doc .expressive-code { margin-block-start: 24px }
 .figure .expressive-code { margin-block-start: 0 }
-.expressive-code pre[tabindex]:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--ring) }
+.expressive-code pre { scrollbar-width: thin; scrollbar-color: var(--color-line-2) transparent }
+.expressive-code pre[tabindex]:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; box-shadow: var(--ring) }
 /* Without hover the copy button stays on screen, so a code frame opens with an empty band
    and the first line starts below the button instead of under it. The button sits at the
    same height inside the code area in every non-terminal frame, titled or not, because the
@@ -622,25 +921,27 @@ body > main { flex: 1 }
   .expressive-code .frame.has-title:not(.is-terminal) pre > code {
     padding-block-start: calc(0.5rem + 2.9rem);
   }
+  /* The mapping cells have no copy button, so nothing to clear. */
+  .front-map-row dt .expressive-code pre > code { padding-block-start: var(--ec-codePadBlk) }
 }
 
 /* Canvas figure: a framed box with a still image underneath the live canvas */
 .doc figure { margin-block-start: 24px }
-.figure { display: flex; flex-direction: column; gap: 10px }
+.figure { display: flex; flex-direction: column; gap: 12px }
 .figure-frame {
-  position: relative; overflow: hidden; border: 1px solid var(--color-line-2);
-  border-radius: var(--radius-md); background: var(--color-surface-1);
+  position: relative; overflow: hidden; border: 1px solid var(--color-line-1);
+  border-radius: var(--radius-md); background: var(--color-surface-2);
 }
 .figure-frame > img, .figure-frame > canvas {
   position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover;
 }
 .figure-frame > canvas { pointer-events: none }
 .figure-frame > canvas[data-backend='none'] { opacity: 0 }
-.figure-caption { font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-3) }
+.figure-caption { font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
 /* Two frames of the same pass, one per backend, read as one figure */
-.figure-pair { display: grid; gap: 16px; margin-block-start: 18px }
+.figure-pair { display: grid; gap: 16px; margin-block-start: 24px }
 .figure-pair .figure { margin-block-start: 0 }
-@media (min-width: 40rem) { .figure-pair { grid-template-columns: 1fr 1fr; gap: 20px } }
+@media (min-width: 40rem) { .figure-pair { grid-template-columns: 1fr 1fr; gap: 24px } }
 .figure-split {
   position: absolute; inset-block: 0; inset-inline-start: 50%; inline-size: 2px; translate: -1px 0;
   background: #fff; mix-blend-mode: difference; pointer-events: none;
@@ -651,16 +952,18 @@ body > main { flex: 1 }
    shares the same targets value, so the caption states it once instead of a column repeating
    it 35 times; the one exception gets a small note in its own row instead. From 45rem the
    three columns fit the document column. */
-.example-table-caption { margin-block-start: 10px; font-size: var(--text-meta); line-height: var(--text-meta--line-height); color: var(--color-text-3) }
+.example-table-caption { margin-block-start: 12px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
 .example-table th[scope='row'], .example-table td:nth-child(2) { white-space: nowrap }
 .example-table td:last-child { min-inline-size: 11rem }
 .example-table tbody + tbody tr:first-child th, .example-table tbody + tbody tr:first-child td {
-  border-block-start: 1px solid var(--color-line-2);
+  border-block-start: 1px solid var(--color-line-1);
 }
-.example-table th[scope='row'] { font-weight: 400 }
+.example-table th[scope='row'] { font-weight: 400; background: none }
+/* An Ant tag beside the name of the one example that emits a single target. */
 .example-wgsl-only {
-  display: inline-block; margin-inline-start: 8px; padding: 1px 7px; border-radius: 999px;
-  background: var(--color-surface-2); font-size: var(--text-meta); font-weight: 500; color: var(--color-text-3);
+  display: inline-block; margin-inline-start: 8px; padding: 0 7px; border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line-2); background: var(--color-surface-1);
+  font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2);
   white-space: nowrap;
 }
 /* Below that a description column would be a few characters wide, and the columns to its
@@ -670,52 +973,97 @@ body > main { flex: 1 }
 @media (max-width: 44.999rem) {
   .example-table thead { display: none }
   .example-table, .example-table tbody { display: block }
-  .example-table tr { display: flex; flex-wrap: wrap; column-gap: 14px; padding-block: 11px; border-block-end: 1px solid var(--color-line-1) }
+  .example-table tr { display: flex; flex-wrap: wrap; column-gap: 14px; padding-block: 12px; border-block-end: 1px solid var(--color-line-1) }
   .example-table th, .example-table td { display: block; padding: 0; border: 0; white-space: normal }
-  .example-table th[scope='row'] { flex-basis: 100%; font-size: 1rem; color: var(--color-text-1) }
+  .example-table th[scope='row'] { flex-basis: 100%; font-size: var(--text-h5); color: var(--color-text-1) }
   .example-table td:last-child { flex-basis: 100%; min-inline-size: 0; order: 1; margin-block-start: 3px }
   .example-table td:nth-child(2) { order: 2; margin-block-start: 5px; color: var(--color-text-3) }
   .example-table tbody + tbody tr:first-child th, .example-table tbody + tbody tr:first-child td { border-block-start: 0 }
 }
+
+/* The examples gallery as tiles: an Ant Card each, a picture where the runtime can draw one
+   as the cover, the name and the sentence in the body, the whole tile one link to the source
+   at the pinned commit. */
+.example-group { margin-block-start: 40px }
+.example-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 16px; margin: 24px 0 0; padding: 0; list-style: none }
+.example-grid li { margin: 0; padding: 0 }
+.example-tile {
+  display: flex; flex-direction: column; overflow: hidden; block-size: 100%;
+  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
+  color: inherit; text-decoration: none;
+  transition: box-shadow var(--motion), border-color var(--motion);
+}
+.example-tile:hover { border-color: transparent; box-shadow: var(--shadow-elevated) }
+.example-tile-frame { display: block; position: relative; aspect-ratio: 3 / 2; overflow: hidden; border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-2) }
+.example-tile-frame img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; transition: transform 400ms var(--ease-out) }
+@media (hover: hover) and (pointer: fine) { .example-tile:hover .example-tile-frame img { transform: scale(1.03) } }
+/* A tile the runtime cannot draw gets Ant's Empty instead of a bare grey box: the outlined
+   mark, and one sentence saying why there is no picture. */
+.example-tile-blank {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; padding: 16px;
+  color: var(--color-text-3); text-align: center;
+}
+.example-tile-blank svg {
+  inline-size: 40px; block-size: 40px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.example-tile-blank-note { max-inline-size: 30ch; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
+.example-tile-title { padding: 16px 16px 0; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1); transition: color var(--motion) }
+.example-tile:hover .example-tile-title { color: var(--color-accent) }
+.example-tile-blurb { padding: 4px 16px 16px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
+.example-tile-blurb code { font-family: var(--font-mono); font-size: 0.9em }
+@media (max-width: 30rem) { .example-grid { grid-template-columns: minmax(0, 1fr) } }
+
+/* The examples page opens with a numbered path through the guide. Each step's own heading
+   carries its number, so the list marker would print it a second time. */
+.learning-path ol { padding-inline-start: 0; list-style: none }
+.learning-path li { margin-block-start: 24px }
+.learning-path li p { margin-block-start: 4px }
+.learning-path li a { display: inline-block; margin-block-start: 4px }
 
 /* Diagnostic */
 .diagnostic { margin-block-start: 12px; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); color: var(--color-text-2); overflow-wrap: anywhere }
 .diagnostic b { color: var(--color-diag); font-weight: 500 }
 
 /* Layout table: it sits at its natural width, with a visible caption above it */
-.layout-table { margin-block-start: 18px; border-collapse: collapse; inline-size: auto; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); font-variant-numeric: tabular-nums; color: var(--color-text-2) }
-.layout-table th, .layout-table td { padding: 7px 28px 7px 0; text-align: start; border-block-start: 1px solid var(--color-line-1) }
+.layout-table { margin-block-start: 24px; border-collapse: collapse; inline-size: auto; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); font-variant-numeric: tabular-nums; color: var(--color-text-2) }
+.layout-table th, .layout-table td { padding: 8px 28px 8px 0; text-align: start; border-block-start: 1px solid var(--color-line-1); background: none }
 .layout-table th { font-weight: 500; color: var(--color-text-3); border-block-start: 0 }
 .layout-table [data-align='end'] { text-align: end; white-space: nowrap }
 .layout-table th:last-child, .layout-table td:last-child { padding-inline-end: 0 }
-.layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-meta); color: var(--color-text-3) }
+.layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-ui); color: var(--color-text-2) }
 
-/* Footer: the site map in three columns, then the licence, the copyright and the commit */
-.site-footer { margin-block-start: 80px; background: var(--color-surface-1); border-block-start: 1px solid var(--color-line-1) }
-.site-map { inline-size: var(--wide); margin-inline: auto; padding-block: 40px 24px; display: grid; gap: 28px }
-.site-map h2 { font-size: var(--text-meta); font-weight: 600; color: var(--color-text-1) }
+/* Footer: the site map in three columns on the container's white, held off the page field by
+   its #f0f0f0 top rule, then the licence, the copyright and the commit */
+.site-footer { margin-block-start: 96px; border-block-start: 1px solid var(--color-line-1); background: var(--color-ground) }
+.site-map { max-inline-size: var(--container); margin-inline: auto; padding: 48px var(--gutter-x) 32px; display: grid; gap: 28px }
+.site-map h2 { font-size: var(--text-ui); font-weight: 600; color: var(--color-text-1) }
 .site-map li { margin-block-start: 8px }
-.site-map a { font-size: var(--text-meta); color: var(--color-text-2); text-decoration: none }
-.site-map a:hover { color: var(--color-text-1); text-decoration: underline; text-underline-offset: 3px }
+.site-map a { font-size: var(--text-ui); color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+.site-map a:hover { color: var(--color-accent) }
 .site-legal {
-  border-block-start: 1px solid var(--color-line-1); padding: 22px var(--gutter-x) 24px;
-  text-align: center; font-size: 0.75rem; line-height: 20px; font-weight: 500; color: var(--color-text-2);
+  max-inline-size: var(--container); margin-inline: auto; padding: 20px var(--gutter-x) 32px;
+  border-block-start: 1px solid var(--color-line-1);
+  display: flex; flex-wrap: wrap; gap: 4px 24px;
+  font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2);
 }
-.site-legal a { color: var(--color-text-1); text-decoration: none }
-.site-legal a:hover { color: var(--color-text-2) }
-@media (min-width: 40rem) { .site-map { grid-template-columns: repeat(3, 1fr) } }
+.site-legal p { margin: 0 }
+.site-legal a { color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+.site-legal a:hover { color: var(--color-accent) }
+@media (min-width: 40rem) { .site-map { grid-template-columns: 2fr 1fr 1fr; gap: 32px } }
 
 /* API reference page: the crumbs, the kind line, definition lists for parameters and members,
    the targets table, the see-also list */
-.api-crumbs { display: flex; flex-wrap: wrap; gap: 8px; font-size: var(--text-meta); color: var(--color-text-3) }
+.api-crumbs { display: flex; flex-wrap: wrap; gap: 8px; font-size: var(--text-ui); color: var(--color-text-3) }
 .api-crumbs a { color: var(--color-text-2); text-decoration: none }
-.api-crumbs a:hover { color: var(--color-text-1); text-decoration: underline; text-underline-offset: 3px }
+.api-crumbs a:hover { color: var(--color-accent); text-decoration: none }
 .doc .api-crumbs + h1 { margin-block-start: 12px }
 .doc h1 code { font-size: 0.9em; font-weight: 600; overflow-wrap: anywhere }
-.api-kind { margin-block-start: 4px; font-size: var(--text-meta); color: var(--color-text-3) }
-.api-summary { font-size: 1.0625rem; color: var(--color-text-1) }
+.api-kind { margin-block-start: 4px; font-size: var(--text-ui); color: var(--color-text-3) }
+.api-summary { font-size: var(--text-prose); color: var(--color-text-1) }
 .api-list { margin-block-start: 16px }
-.api-list dt { margin-block-start: 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px }
+.api-list dt { margin-block-start: 16px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px }
 .api-list dt:first-child { margin-block-start: 0 }
 .api-list dd { margin-block-start: 4px; padding-inline-start: 20px; color: var(--color-text-2) }
 .api-list dd p { margin-block-start: 8px }
@@ -724,10 +1072,10 @@ body > main { flex: 1 }
 .api-type a { color: inherit; text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
 .api-type a:hover { color: var(--color-accent); text-decoration-color: currentColor }
 /* The import line under the summary, quiet: it is one line of code a reader copies by eye. */
-.api-import { margin-block-start: 10px; font-size: var(--text-meta); color: var(--color-text-2) }
-.api-optional { font-size: 0.75rem; padding: 1px 6px; border: 1px solid var(--color-line-2); border-radius: 999px; color: var(--color-text-3) }
+.api-import { margin-block-start: 10px; font-size: var(--text-ui); color: var(--color-text-2) }
+.api-optional { font-size: 0.75rem; line-height: 1.6667; padding: 0 7px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-2) }
 .doc h1 .api-optional { margin-inline-start: 10px; vertical-align: middle }
-.api-targets th[scope='row'] { font-weight: 500; color: var(--color-text-1); white-space: nowrap }
+.api-targets th[scope='row'] { font-weight: 600; color: var(--color-text-1); white-space: nowrap; background: none }
 /* On a phone the target name wraps instead of taking half the row: the notes need the width
    more than "GLSL ES 3.00 (WebGL2)" needs one line. */
 @media (max-width: 30rem) {
@@ -735,21 +1083,21 @@ body > main { flex: 1 }
   .api-targets thead th:first-child { width: 30% }
   .api-targets thead th:nth-child(2) { width: 27% }
 }
-.api-support { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8125rem; font-weight: 500; border: 1px solid var(--color-line-2); white-space: nowrap }
+.api-support { display: inline-block; padding: 0 7px; border-radius: var(--radius-sm); font-size: 0.75rem; line-height: 1.6667; border: 1px solid var(--color-line-2); background: var(--color-surface-1); color: var(--color-text-2); white-space: nowrap }
 .api-targets td p { margin-block-start: 0 }
-.api-support-native { color: var(--color-accent); border-color: var(--color-accent) }
+.api-support-native { color: var(--color-accent); border-color: var(--color-primary-border); background: var(--color-primary-bg) }
 .api-support-emulated, .api-support-stub { color: var(--color-text-2) }
-.api-support-none { color: var(--color-diag); border-color: var(--color-diag) }
+.api-support-none { color: var(--color-diag); border-color: var(--color-diag); background: none }
 .api-see-also li { break-inside: avoid }
 /* Two columns only where an identifier still fits one: a phone gets one column. */
 @media (min-width: 40rem) { .api-see-also { columns: 2; column-gap: 24px } }
 /* The reference's index pages: a category or an export per row, its name a link in the
-   site's accent, its sentence under it. The same definition list the parameters use. */
-.api-index dt { margin-block-start: 18px }
-.api-index dt a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; font-weight: 500 }
-.api-index dt a:hover { text-decoration-thickness: 2px }
+   site's primary, its sentence under it. The same definition list the parameters use. */
+.api-index dt { margin-block-start: 20px }
+.api-index dt a { color: var(--color-accent); text-decoration: none; font-weight: 600 }
+.api-index dt a:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px }
 .api-index dd { padding-inline-start: 0 }
-.api-preview { margin-block-start: 12px; padding: 8px 12px; border: 1px solid var(--color-diag); border-radius: var(--radius-sm); font-size: var(--text-meta); color: var(--color-diag) }
+.api-preview { margin-block-start: 12px; padding: 8px 12px; border: 1px solid var(--color-diag); border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-diag) }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
@@ -759,7 +1107,7 @@ body > main { flex: 1 }
   .doc table { background-image: none }
   .figure-split { display: none }
   a { color: LinkText }
-  .hero-title .accent { background: none; color: CanvasText }
   .site-menu-bar { background: CanvasText }
   .docs-group a[aria-current='page'] { color: LinkText }
+  .button-primary { border: 1px solid CanvasText }
 }

@@ -8,13 +8,28 @@ import path from 'node:path'
 /** One still per mount, with the page it is captured from. A mount forced onto WebGL2 gets
  * its own file, so the image under it is a frame that backend drew. An entry with `live`
  * names a <LiveShader> instance by its id instead of a registry example. */
+/** Every registry example src/lib/hero-shader.ts can emit for the canvas: no compute-only
+ *  module, no control kind the runtime has no packer for. A list, because this file is read
+ *  by plain Node before the build, where the registry (TypeScript) cannot be imported. */
+export const STILL_EXAMPLES = [
+  'color-ramp', 'discard-cutout', 'domain-warp', 'fbm-clouds', 'fp64-cancellation', 'fp64-clock',
+  'fp64-deep-zoom', 'fp64-mercator-tiles', 'fp64-sine-sweep', 'gradient', 'graticule', 'heart',
+  'hillshade', 'julia', 'kaleidoscope', 'mandelbrot', 'metaballs', 'ocean', 'plasma',
+  'raymarch-boxes', 'raymarch-sphere', 'starfield', 'truchet', 'tunnel', 'voronoi',
+]
+
 export const STILLS = [
-  { id: 'metaballs', example: 'metaballs', page: '/' },
   { id: 'gradient', example: 'gradient', page: '/guide/checks/', backend: 'webgpu' },
   { id: 'gradient-webgl2', example: 'gradient', page: '/guide/checks/', forceWebGl2: true, backend: 'webgl2' },
   { id: 'fp64-deep-zoom', example: 'fp64-deep-zoom', page: '/guide/examples/' },
   { id: 'quick-start-stripes', live: true, page: '/guide/quick-start/' },
   { id: 'gpu-types-disc', live: true, page: '/guide/language/gpu-types/' },
+  // The front page's own live file.
+  { id: 'front-first', live: true, page: '/' },
+  // One tile per example the runtime can draw, photographed on the build-only /capture-stills/ page.
+  // The examples gallery shows them as pictures and the front page runs nine of them live.
+  // gradient and fp64-deep-zoom keep the entries above, at the aspect their own pages use.
+  ...STILL_EXAMPLES.filter((id) => id !== 'gradient' && id !== 'fp64-deep-zoom').map((id) => ({ id, example: id, page: '/capture-stills/' })),
 ]
 
 export const ARTIFACTS = [

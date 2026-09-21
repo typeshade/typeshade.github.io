@@ -49,6 +49,10 @@ const runtimeCopy = {
   noOutput: t.noOutput,
   directive: t.directive,
   unavailable: t.unavailable,
+  starting: t.starting,
+  serviceFailed: t.serviceFailed,
+  sourceTypescript: t.sourceTypescript,
+  sourceTypeshade: t.sourceTypeshade,
   entryPoints: t.entryPoints,
   resources: t.resources,
   inputs: t.inputs,
@@ -197,6 +201,9 @@ const runtimeCopy = {
 </script>
 
 <style>
+  /* The page field is Ant's layout ground (src/styles/global.css), so the tool's own region
+     is a white container on it, the way the docs column is. */
+  :global(.playground-page) { background: var(--color-ground) }
   .ts-playground { border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
   .playground-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
   .playground-toolbar strong { font: 500 .8125rem/1.4 var(--font-mono); }
@@ -255,6 +262,8 @@ const runtimeCopy = {
   [data-diagnostics] :global(button) { display: block; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 2px 4px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   [data-diagnostics] :global(button:hover) { background: var(--color-surface-2); }
   [data-diagnostics] :global(.at) { color: var(--color-text-3); }
+  /* Which half of the pipeline raised the row: TypeScript over the ambient lib, or the TypeShade front end. */
+  [data-diagnostics] :global(.source) { color: var(--color-text-3); font-weight: 600; }
   [data-diagnostics] :global(.error) { color: var(--color-diag); }
   .has-errors [data-status] { color: var(--color-diag); }
   .has-errors .diagnostics { border-top-color: var(--color-diag); }

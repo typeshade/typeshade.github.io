@@ -9,6 +9,7 @@ import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { checkedBlurbs, facts, hero } from '../../lib/examples.ts'
 import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
+import { STILL_EXAMPLES } from '../../../scripts/artifacts.mjs'
 import { slugify } from '../../lib/slug.ts'
 
 interface Props {
@@ -24,13 +25,19 @@ const deepZoom: CanvasText = {
   webgl2: e.f64.caption,
   none: `${e.f64.caption} ${e.f64.captionNone}`,
 }
-const headings = [e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const order = ['cartographic', 'generic', 'compute'] as const
+const headings = [
+  ...order.map((c) => ({ depth: 2, slug: slugify(c), text: e.categories[c] })),
+  ...[e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h })),
+]
 
 const learningPath = e.path.steps.map((step) => ({ ...step, href: localePath(locale, links[step.linkKey].href) }))
 
-const order = ['cartographic', 'generic', 'compute'] as const
 const blurbs = checkedBlurbs(e.blurbs)
+const stills = new Set<string>(STILL_EXAMPLES)
 const rows = examples.map((x) => ({
+  id: x.id,
+  still: stills.has(x.id),
   title: x.title,
   href: `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/examples/${x.file}`,
   category: e.categories[x.category],
@@ -60,10 +67,33 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
     </section>
 
     <p class="example-table-caption">{e.tableCaption}</p>
-    <table class="example-table" role="table">
-      <thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">{e.columns.example}</th><th role="columnheader" scope="col">{e.columns.category}</th><th role="columnheader" scope="col">{e.columns.blurb}</th></tr></thead>
-      {groups.map((group) => <tbody role="rowgroup">{group.map((row) => <tr role="row"><th role="rowheader" scope="row"><a href={row.href}>{row.title}</a>{row.wgslOnly && <span class="example-wgsl-only">{e.wgslOnly}</span>}</th><td role="cell">{row.category}</td><td role="cell"><Rich text={row.blurb} locale={locale} /></td></tr>)}</tbody>)}
-    </table>
+    {groups.map((group, i) => (
+      <section class="example-group">
+        <h2 id={slugify(order[i]!)}>{e.categories[order[i]!]}</h2>
+        <ul class="example-grid">
+          {group.map((row) => (
+            <li>
+              <a class="example-tile" href={row.href}>
+                <span class="example-tile-frame">
+                  {row.still ? <img src={`/stills/${row.id}.webp`} alt="" loading="lazy" decoding="async" /> : (
+                    <span class="example-tile-blank">
+                      <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                        <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
+                        <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
+                        <circle cx="14.5" cy="15.5" r="2.25" />
+                      </svg>
+                      <span class="example-tile-blank-note">{e.noStill}</span>
+                    </span>
+                  )}
+                </span>
+                <span class="example-tile-title">{row.title}{row.wgslOnly && <span class="example-wgsl-only">{e.wgslOnly}</span>}</span>
+                <span class="example-tile-blurb"><Rich text={row.blurb} locale={locale} /></span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
 
     <p>{e.printIntro}</p>
     <CodeFrame label={t.codeLabels.print}><Code code={printCommands} lang="bash" locale={locale} /></CodeFrame>
