@@ -1,7 +1,7 @@
 ---
 id: production-emit
-source: 953eb87426ad9e790fffcc28a07319e030b1ceb229366415941b64b32a11079b
-sourceLine: 2192
+source: c4b68090036af9a869567bf96a59435346d5a57122fb2af6e4131c22a03cec65
+sourceLine: 2301
 ---
 
 이 절을 읽고 나면 배포 시점 변환들을 생성 호출 하나에 조합할 수 있고, 바뀐 이름으로
@@ -9,7 +9,7 @@ sourceLine: 2192
 
 번들러는 JavaScript는 압축하지만, `createShaderModule`이나 `gl.shaderSource`에 넘기는
 셰이더 문자열에는 손대지 않습니다. 이 절에서 다루는 변환들이 그 나머지 절반을 맡습니다.
-이 변환들은 `@xgis/shader-dsl/emit-prod`라는 별도 서브패스에 있으므로, 이 경로를
+이 변환들은 `typeshade/emit-prod`라는 별도 서브패스에 있으므로, 이 경로를
 가져오지 않는 빌드에는 하나도 번들되지 않고, 일반 생성 호출이 내는 바이트도 달라지지
 않습니다.
 
@@ -23,8 +23,8 @@ sourceLine: 2192
 안에서는 배열에 적은 순서대로 실행됩니다.
 
 ```ts
-import { emitModule, emitGlslModule } from '@xgis/shader-dsl'
-import { mangle, minify, obfuscate } from '@xgis/shader-dsl/emit-prod'
+import { emitModule, emitGlslModule } from 'typeshade'
+import { mangle, minify, obfuscate } from 'typeshade/emit-prod'
 
 const renames = new Map<string, string>()
 const wgsl = emitModule(m, { plugins: [mangle({ renames }), minify()] })
@@ -91,7 +91,7 @@ renames.get('noise.coordinate') // 'f'; a function-scoped key is `authoredFn.aut
 조각(module fragment)이 그런 경우입니다.
 
 ```ts
-import { aliasTypes, minify, minifyShaderText, prune } from '@xgis/shader-dsl/emit-prod'
+import { aliasTypes, minify, minifyShaderText, prune } from 'typeshade/emit-prod'
 
 const glsl = emitGlslModule(m, 'fragment', {
   parens: 'minimal',
@@ -124,7 +124,7 @@ minifyShaderText(wgsl, { numbers: 'f32' }) // the same pass over a string you ho
 어떤 결정을 내렸는지 하나씩 쌓입니다.
 
 ```ts
-import { inline, obfuscate, type InlineDecision } from '@xgis/shader-dsl/emit-prod'
+import { inline, obfuscate, type InlineDecision } from 'typeshade/emit-prod'
 
 const decisions: InlineDecision[] = []
 const wgsl = emitModule(m, {
@@ -151,7 +151,7 @@ decisions[0] // { fn, callSites, ops, growth, inlined, reason: 'inlined' | 'over
 받을 수 있습니다.
 
 ```ts
-import { decodeShaderLog, invertRenames } from '@xgis/shader-dsl/emit-prod'
+import { decodeShaderLog, invertRenames } from 'typeshade/emit-prod'
 
 decodeShaderLog("no matching overload in 'b' for arg of type 'l'", renames)
 // "no matching overload in 'terrain_shade' for arg of type 'vec2<f32>'"
@@ -194,7 +194,7 @@ renames.has('fs') // false; an entry-point name a pipeline names
 어느 플러그인이 어느 버킷의 어떤 줄을 설명하는지 적힙니다.
 
 ```ts
-import { isSemanticallyEqual, semanticDiff } from '@xgis/shader-dsl'
+import { isSemanticallyEqual, semanticDiff } from 'typeshade'
 
 const d = semanticDiff(devModule, prodModule, { transforms: [inline(), ...obfuscate()] })
 

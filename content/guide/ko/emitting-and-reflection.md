@@ -1,7 +1,7 @@
 ---
 id: emitting-and-reflection
-source: 9ee5a392833eca0692209ee0db2d05d77b5172d3a7d819223cafa256eb7e07db
-sourceLine: 1083
+source: 3833337ef0f7eb277b6bca724ffb7cf455334456ee396d7f756930de525459aa
+sourceLine: 1188
 ---
 
 이 페이지를 읽고 나면 모듈을 WGSL로, GLSL 스테이지 둘로, 또는 호스트가 자기 프로그램에
@@ -22,7 +22,7 @@ sourceLine: 1083
 오류 코드가 붙은 오류를 던집니다.
 
 ```ts
-import { emitModule, emitModuleAt, emitIdentity } from '@xgis/shader-dsl'
+import { emitModule, emitModuleAt, emitIdentity } from 'typeshade'
 
 const wgsl = emitModule(m)
 
@@ -48,7 +48,7 @@ WebGL2 프로그램은 따로 컴파일되는 셰이더 두 개로 이루어지�
 돌려주며, 두 스테이지에 공통인 하향 변환(lowering)은 한 번만 수행합니다.
 
 ```ts
-import { emitGlslModule, emitGlslStages } from '@xgis/shader-dsl'
+import { emitGlslModule, emitGlslStages } from 'typeshade'
 
 const { vertex, fragment } = emitGlslStages(m)
 
@@ -76,7 +76,7 @@ const whole = emitGlslModule(m)
 같은 모양으로 돌려줍니다.
 
 ```ts
-import { emitFragment, emitGlslFragment } from '@xgis/shader-dsl'
+import { emitFragment, emitGlslFragment } from 'typeshade'
 
 const f = emitGlslFragment(m, 'fragment')
 
@@ -106,7 +106,7 @@ const w = emitFragment(m, { entryPoints: true })
 GLSL 생성 결과를 함께 설명할 수 있습니다.
 
 ```ts
-import { reflect } from '@xgis/shader-dsl'
+import { reflect } from 'typeshade'
 
 const r = reflect(m)
 
@@ -140,7 +140,7 @@ r.requires // host-provided globals the module references and does not declare
 세 개를 보고 정합니다.
 
 ```ts
-import { reachFrom, reflect, stageOf } from '@xgis/shader-dsl'
+import { reachFrom, reflect, stageOf } from 'typeshade'
 
 for (const group of reflect(m).bindGroups) {
   for (const e of group.entries) {

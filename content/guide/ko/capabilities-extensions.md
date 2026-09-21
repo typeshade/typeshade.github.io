@@ -1,7 +1,7 @@
 ---
 id: capabilities-extensions
-source: cc6bfe3cd72af696d736e062f789fd50e75a0f1d23b7f6df560d7e8ae0c1b00d
-sourceLine: 1718
+source: 66e999586747b6b0281071eb1e9a85ea3f103b94bd28d82b355756ce95ba40ce
+sourceLine: 1823
 ---
 
 이 절을 읽고 나면 모듈에 필요한 GPU 기능을 선언하고, 그 기능이 타깃마다 어떤 비용이
@@ -115,7 +115,7 @@ reflect(m).requiredFeatures // ['float32Blend', 'floatRenderTarget']
 건너뛰므로, 드라이버에 넘길 목록에 빈자리가 생기지 않습니다.
 
 ```ts
-import { hostFeaturesFor, reflect, glslEs300Backend, wgslBackend } from '@xgis/shader-dsl'
+import { hostFeaturesFor, reflect, glslEs300Backend, wgslBackend } from 'typeshade'
 
 // WebGL2: verify the already-booted context has each extension.
 for (const ext of hostFeaturesFor(glslEs300Backend, reflect(m).requiredFeatures)) {

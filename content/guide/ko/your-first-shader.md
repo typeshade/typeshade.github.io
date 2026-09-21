@@ -1,7 +1,7 @@
 ---
 id: your-first-shader
-source: a926deb630227f8b98ce081f27f432244bc3e5d67a435a8827ba4241a447d536
-sourceLine: 127
+source: 03178c82393a313851e1a2963ab674d63e6c866e1466a144bb5a3c1fd0ae98d2
+sourceLine: 134
 ---
 
 이 페이지를 마치면 진입점이 두 개인 셰이더 모듈을 TypeScript로 작성하고, 같은 모듈을 WebGPU용
@@ -24,7 +24,7 @@ import {
   vec4,
   vec2fT,
   vec4fT,
-} from '@xgis/shader-dsl'
+} from 'typeshade'
 ```
 
 여기에는 두 종류의 이름이 있습니다. `vec2fT`와 `vec4fT`는 *타입 토큰*으로, 선언에 타입을

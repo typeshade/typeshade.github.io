@@ -1,7 +1,7 @@
 ---
 id: raw-statements
-source: f3fbe848da05c89a5750a8e9433c86944a2ad2f50fa26102db44ea479f4430f2
-sourceLine: 2395
+source: e8131bf154a4542837ab8f79f13e710da19b3c0e112e3968e4a297ddb36b9d74
+sourceLine: 2504
 ---
 
 이 페이지를 읽고 나면 손으로 직접 쓴 문장을 모듈에 끼워 넣을 수 있고, 그 대가로 타깃마다
@@ -19,7 +19,7 @@ IR로 표현할 수 없는 구문을 써야 할 때 raw 문을 씁니다. 이 �
 그대로 넣을 수 있습니다.
 
 ```ts
-import { rawStmt, vec4fT, type FuncDecl } from '@xgis/shader-dsl'
+import { rawStmt, vec4fT, type FuncDecl } from 'typeshade'
 
 const PAIRED = rawStmt({
   wgsl: 'return vec4<f32>(1.0, 0.0, 0.0, 1.0);',
@@ -48,7 +48,7 @@ raw 문의 뜻은 하나뿐입니다. 이 바이트를 이 자리에 그대로 �
 씁니다. 빌더는 본문 함수의 두 번째 인자로 들어옵니다.
 
 ```ts
-import { fn, voidT } from '@xgis/shader-dsl'
+import { fn, voidT } from 'typeshade'
 
 const seed_lane = fn('seed_lane', {}, voidT, (_p, b) => {
   b.raw({ wgsl: 'let _k = 1.0;', glsl: 'float _k = 1.0;' })
@@ -71,7 +71,7 @@ const seed_lane = fn('seed_lane', {}, voidT, (_p, b) => {
 그대로 실리므로, 오류만 보고도 어느 문장을 옮겨 적어야 하는지 알 수 있습니다.
 
 ```ts
-import { emitGlslModule, emitModule, fn, module, vec4, vec4fT } from '@xgis/shader-dsl'
+import { emitGlslModule, emitModule, fn, module, vec4, vec4fT } from 'typeshade'
 
 const fs = fn(
   'fs_main',
@@ -129,8 +129,8 @@ b.raw({
 어긋나기 때문입니다.
 
 ```ts
-import { emitModule, f32T, fn, module, vec4, vec4fT } from '@xgis/shader-dsl'
-import { mangle } from '@xgis/shader-dsl/emit-prod'
+import { emitModule, f32T, fn, module, vec4, vec4fT } from 'typeshade'
+import { mangle } from 'typeshade/emit-prod'
 
 const shade = fn('shade_pixel', { x: f32T }, vec4fT, (p) => vec4(p.x, 0, 0, 1))
 
