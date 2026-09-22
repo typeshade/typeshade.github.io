@@ -1285,7 +1285,7 @@ export const ko: Copy = {
     mapping: {
       fromTypescript: {
         title: 'TypeScript 문법과 그 변환 결과',
-        description: `"use typeshade" 파일에서 TypeScript 문법 ${facts.constructRows}가지가 각각 무엇이 되는지 정리합니다. 선언, 함수, class, 제어 흐름, 그리고 컴파일러가 생성하는 셰이더 코드를 함께 싣습니다.`,
+        description: `"use typeshade" 파일에서 TypeScript 문법 ${facts.constructRows}가지가 각각 무엇이 되는지 정리합니다. 선언, 함수, 클래스, 제어 흐름, 그리고 컴파일러가 생성하는 셰이더 코드를 함께 싣습니다.`,
         h1: 'TypeScript 문법',
         intro: `TypeShade는 셰이더 컴파일러가 검사하는 TypeScript 문법입니다. 문법 하나는 셰이더 코드로 하향 변환되거나, 이유가 붙은 거절을 받습니다. 아래 표의 셋째 칸은 고정된 커밋의 컴파일러가 생성한 코드이며, 여기에 ${facts.constructRows}가지를 실었습니다.`,
         readingH: '한 행을 읽는 법',
@@ -1304,8 +1304,8 @@ export const ko: Copy = {
             p: '모든 함수는 모듈의 함수입니다. 함수 값도, 가둬 둘 환경도, 호출 스택도 없습니다.'
           },
           classes: {
-            h: 'class',
-            p: 'class는 함수를 두른 구조체입니다. 디스패치가 정적이라 상속과 믹스인과 제네릭은 파일을 컴파일하는 동안 다 정해집니다.'
+            h: '클래스',
+            p: '클래스는 함수를 두른 구조체입니다. 디스패치가 정적이라 상속과 믹스인과 제네릭은 파일을 컴파일하는 동안 다 정해집니다.'
           },
           controlFlow: {
             h: '제어 흐름',
@@ -1343,14 +1343,14 @@ export const ko: Copy = {
           mathAlias: '`Math.sin`은 `sin`과 같은 내장 함수이고, `Math.PI`는 값으로 접힙니다.',
           constructorNew: '`new`는 `Ray_new` 호출입니다. 구조체를 지어 돌려줍니다.',
           method: '첫 매개변수가 구조체인 함수가 되고, `this`는 그 매개변수로 읽힙니다.',
-          staticFn: '수신자가 없는 함수가 되며, class 이름을 앞에 답니다.',
+          staticFn: '수신자가 없는 함수가 되며, 클래스 이름을 앞에 답니다.',
           thisAssign: `객체를 바꾸는 메서드는 WGSL에서 포인터로, ${glsl}에서 \`inout\`으로 객체를 받습니다. [orbit-inout](shadeOrbitInout)`,
-          extendsSuper: '기반 class의 필드가 앞에 오고, 물려받은 메서드는 다시 하향 변환됩니다. `super`는 자기 함수가 됩니다. [shape-inheritance](shadeShapeInheritance)',
-          abstractRow: 'abstract class에는 구조체가 없습니다. 하위 class가 저마다 필드와 메서드 복사본을 가집니다.',
-          implementsRow: 'TypeScript만 검사합니다. 구조체는 그 class 자신의 필드입니다.',
+          extendsSuper: '기반 클래스의 필드가 앞에 오고, 물려받은 메서드는 다시 하향 변환됩니다. `super`는 자기 함수가 됩니다. [shape-inheritance](shadeShapeInheritance)',
+          abstractRow: 'abstract 클래스에는 구조체가 없습니다. 하위 클래스가 저마다 필드와 메서드 복사본을 가집니다.',
+          implementsRow: 'TypeScript만 검사합니다. 구조체는 그 클래스 자신의 필드입니다.',
           accessModifiers: '받아들이지만 셰이더에는 아무 뜻이 없습니다. 강제하는 쪽은 TypeScript입니다.',
           getterRefused: '거절합니다. static 필드와 `abstract` 메서드 등 TS8035 목록이 함께 걸립니다. 메서드로 쓰십시오.',
-          mixin: '함수는 컴파일하는 동안 실행됩니다. 멤버는 class에 끼워 넣고, `Tinted`는 어디에도 생성되지 않습니다. [mixin-surface](shadeMixinSurface)',
+          mixin: '함수는 컴파일하는 동안 실행됩니다. 멤버는 클래스에 끼워 넣고, `Tinted`는 어디에도 생성되지 않습니다. [mixin-surface](shadeMixinSurface)',
           genericFunction: '파일이 쓰는 타입 인자 조합마다 함수가 하나씩 생기고, `pick`이라는 이름은 없습니다. [generic-helpers](shadeGenericHelpers)',
           genericClass: '타입 인자 조합마다 구조체가 하나씩 생기고, 메서드도 조합마다 따로 생깁니다. [generic-class](shadeGenericClass)',
           ifRow: '적은 그대로 `if`입니다.',
