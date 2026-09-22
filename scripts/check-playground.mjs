@@ -14,7 +14,9 @@
 //   7. an entry declaring a struct parameter is called with the struct, not with its fields
 //   8. the CPU canvas rasterises the module: a triangle, one fragment call per pixel, drawn
 //      by a pool of workers that says how many of them there were
-//   9. the emit options reach the panes: the level, minify, parens and the GLSL precision
+//   9. the emit options reach the panes: the level, minify and its number mode, parens,
+//      obfuscate, the GLSL precision, and the f64 emulation flavour in both the WGSL and
+//      the reflection
 //  10. dark mode reaches the editor: its background is dark
 //  11. the example picker replaces the source
 //  12. raising the resolution changes the grid the fragment entry runs over and leaves the
@@ -137,6 +139,31 @@ export function fs(v: VsOut): Color {
   const a = v.uv.x * 2. + v.uv.y * 3. - 1.;
   const b = a * a + a * 2.;
   return { color: vec4(b, a - b * 3., a * b + 1., 1.) };
+}
+`
+
+// A float the f32 mode can shorten: 0.30000001192092896 is the f64 printout of the f32
+// nearest 0.3, so `.3` loads the same bits and the lossless mode has to keep every digit.
+const LONG_LITERAL = `"use typeshade";
+
+class Clip {
+  @builtin("position") pos: vec4;
+}
+
+class Color {
+  @location(0) color: vec4;
+}
+
+@vertex
+export function vs(@builtin("vertex_index") i: u32): Clip {
+  const k = 0.30000001192092896;
+  const x = i === 1 ? k : -k;
+  return { pos: vec4(x, k, 0., 1.) };
+}
+
+@fragment
+export function fs(): Color {
+  return { color: vec4(0.30000001192092896, 0., 0., 1.) };
 }
 `
 
@@ -479,6 +506,54 @@ async function checkRoute(browser, origin, route) {
         problems.push(`minimal parentheses dropped none: ${parensFull.length} to ${parensMinimal.length} characters`)
       }
       await setOption(page, '[data-opt-parens]', 'full')
+
+      // The number mode minify runs under, which is a control only while minify is on.
+      if (await page.isVisible('[data-numbers-field]')) problems.push('the number literal mode is shown with minify off')
+      await typeSource(page, LONG_LITERAL)
+      const plainLiteral = await wgslPane(page)
+      await setOption(page, '[data-opt-minify]', true)
+      if (!(await page.isVisible('[data-numbers-field]'))) problems.push('with minify on the number literal mode is still hidden')
+      const canonical = await wgslPane(page)
+      await setOption(page, '[data-opt-numbers]', 'f32')
+      const asF32 = await wgslPane(page)
+      await setOption(page, '[data-opt-numbers]', 'false')
+      const asEmitted = await wgslPane(page)
+      if (!canonical.includes('.30000001192092896')) problems.push(`the lossless number mode dropped a significand digit:\n    ${canonical.slice(0, 200)}`)
+      if (asF32.includes('.30000001192092896')) problems.push(`the f32 number mode left the literal spelled in full:\n    ${asF32.slice(0, 200)}`)
+      if (asF32.length >= canonical.length) problems.push(`the f32 number mode saved nothing: ${canonical.length} to ${asF32.length} characters`)
+      if (asEmitted.length <= canonical.length) problems.push(`leaving the literals alone spelled them shorter than the lossless mode: ${asEmitted.length} to ${canonical.length} characters`)
+      console.log(`  number literals: plain ${plainLiteral.length} B, true ${canonical.length} B, f32 ${asF32.length} B, false ${asEmitted.length} B`)
+      await setOption(page, '[data-opt-numbers]', 'true')
+      await setOption(page, '[data-opt-minify]', false)
+
+      // obfuscate(), the compiler's production preset: renamed identifiers over a compacted
+      // text. It is a plugin array, so it reaches the same `plugins` field minify does.
+      const named = await wgslPane(page)
+      await setOption(page, '[data-opt-obfuscate]', true)
+      const obfuscated = await wgslPane(page)
+      if (obfuscated.includes('Clip')) problems.push(`obfuscate left the struct's authored name in the WGSL:\n    ${obfuscated.slice(0, 200)}`)
+      if (obfuscated.length >= named.length) problems.push(`obfuscate did not shrink the WGSL: ${named.length} to ${obfuscated.length} characters`)
+      console.log(`  obfuscate: ${named.length} B to ${obfuscated.length} B`)
+      await setOption(page, '[data-opt-obfuscate]', false)
+
+      // fp64Flavor, which goes to reflect() as well as to the emit. An f64 module lowered
+      // with the float primitives binds an `_fp64` guard texture the integer ones never
+      // read, so the flavour decides what a host has to bind and the reflection has to say
+      // so. This is the one option whose effect is visible in two panels at once.
+      await page.selectOption('[data-example]', 'fp64-lane-stripes')
+      await page.waitForTimeout(AFTER_EDIT)
+      const floatWgsl = await wgslPane(page)
+      const floatReflection = await reflectionPane(page, 300)
+      await setOption(page, '[data-opt-fp64]', 'integer')
+      const integerWgsl = await wgslPane(page)
+      const integerReflection = await reflectionPane(page, 300)
+      if (floatWgsl === integerWgsl) problems.push('the f64 emulation flavour changed nothing in the WGSL of an f64 module')
+      if (!floatReflection.includes('_fp64')) problems.push(`the float flavour's reflection does not report the _fp64 guard:\n    ${floatReflection.slice(0, 300)}`)
+      if (integerReflection.includes('_fp64')) problems.push(`the integer flavour's reflection still reports the _fp64 guard, which its helpers never read:\n    ${integerReflection.slice(0, 300)}`)
+      console.log(`  f64 flavour: WGSL ${floatWgsl.length} B float, ${integerWgsl.length} B integer; guard in the reflection ${floatReflection.includes('_fp64')} and ${integerReflection.includes('_fp64')}`)
+      await setOption(page, '[data-opt-fp64]', 'float')
+      await page.selectOption('[data-example]', 'hello')
+      await page.waitForTimeout(AFTER_EDIT)
 
       // ── dark mode reaches inside the editor ─────────────────────────────────────────────
       await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })

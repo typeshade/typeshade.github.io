@@ -450,8 +450,11 @@ export const ko: Copy = {
       levels: { O0: 'O0 (패스 없음)', O1: 'O1 (값 보존)', O2: 'O2 (기본)' },
       parens: '괄호',
       minify: '최소화',
+      numbers: '숫자 리터럴',
+      obfuscate: '난독화',
+      fp64: 'f64 에뮬레이션',
       precision: `${glsl} float 정밀도`,
-      levelNote: 'O0과 O1에서는 컴파일러가 레벨만 받아 WGSL을 생성하므로, 괄호와 최소화는 GLSL 탭에만 적용됩니다.',
+      levelNote: 'O0과 O1에서는 컴파일러가 레벨만 받아 WGSL을 생성하므로, 괄호와 최소화, 숫자 리터럴, 난독화는 GLSL 탭에만 적용됩니다. f64 에뮬레이션은 모든 레벨에서 리플렉션에 반영됩니다.',
     },
   },
 

@@ -12,11 +12,12 @@ import { emitModule, emitModuleAt } from '../../vendor/shader-dsl/src/core/backe
 import { emitGlslStages, type GlslEmitOptions } from '../../vendor/shader-dsl/src/core/backends/glsl.ts';
 import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
+import type { Fp64Flavor } from '../../vendor/shader-dsl/src/core/passes/fp64-lower.ts';
 import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
 import type { OptLevel } from '../../vendor/shader-dsl/src/core/passes/opt/optimize.ts';
 import { reflect } from '../../vendor/shader-dsl/src/core/reflect.ts';
 // The ship-time plugins live on their own subpath, the one a host imports for a release build.
-import { minify } from '../../vendor/shader-dsl/src/emit-prod.ts';
+import { minify, obfuscate } from '../../vendor/shader-dsl/src/emit-prod.ts';
 import type {
   TypeshadeCompletionItem,
   TypeshadeDiagnostic,
@@ -58,6 +59,11 @@ interface EmitChoice {
   readonly level: OptLevel;
   readonly parens: 'full' | 'minimal';
   readonly minify: boolean;
+  /** `minify({ numbers })`: how a float literal is re-spelled. */
+  readonly numbers: boolean | 'f32';
+  readonly obfuscate: boolean;
+  /** Which primitives back the emulated-double helpers, for the emit and for reflect(). */
+  readonly fp64Flavor: Fp64Flavor;
   readonly floatPrecision: 'highp' | 'mediump';
 }
 
@@ -82,6 +88,9 @@ interface PlaygroundCopy {
     readonly levels: Record<OptLevel, string>;
     readonly parens: string;
     readonly minify: string;
+    readonly numbers: string;
+    readonly obfuscate: string;
+    readonly fp64: string;
     readonly precision: string;
     readonly levelNote: string;
   };
@@ -434,6 +443,9 @@ function writeHash(key: string, value: string, choice?: EmitChoice): void {
     if (choice.level !== 'O2') parts.push(`opt=${choice.level}`);
     if (choice.parens !== 'full') parts.push(`parens=${choice.parens}`);
     if (choice.minify) parts.push('minify=1');
+    if (choice.numbers !== true) parts.push(`numbers=${choice.numbers === 'f32' ? 'f32' : 'false'}`);
+    if (choice.obfuscate) parts.push('obfuscate=1');
+    if (choice.fp64Flavor !== 'float') parts.push(`fp64=${choice.fp64Flavor}`);
     if (choice.floatPrecision !== 'highp') parts.push(`precision=${choice.floatPrecision}`);
   }
   const url = new URL(window.location.href);
@@ -443,11 +455,22 @@ function writeHash(key: string, value: string, choice?: EmitChoice): void {
 
 // ── The emit options ───────────────────────────────────────────────────────────────────────
 
-/** The options both backends share. `minify` is a plugin, so it rides in `plugins`. */
-const sharedEmitOptions = (choice: EmitChoice): EmitOptions => ({
-  parens: choice.parens,
-  ...(choice.minify ? { plugins: [minify()] } : {}),
-});
+/** The options both backends share. `minify` and `obfuscate` are plugins, so they ride in
+ *  `plugins`. `obfuscate()` is the compiler's own preset and expands to four plugins, the
+ *  last of them a `minify({ numbers: 'f32' })`; the reader's own minify follows it, because
+ *  the text-stage hooks run in array order and the reader's number mode is the one they
+ *  chose. Running minify twice changes nothing the first run did not already do. */
+const sharedEmitOptions = (choice: EmitChoice): EmitOptions => {
+  const plugins = [
+    ...(choice.obfuscate ? obfuscate() : []),
+    ...(choice.minify ? [minify({ numbers: choice.numbers })] : []),
+  ];
+  return {
+    parens: choice.parens,
+    fp64Flavor: choice.fp64Flavor,
+    ...(plugins.length > 0 ? { plugins } : {}),
+  };
+};
 
 /** WGSL at the chosen level. `emitModuleAt` takes a level and no other options, and
  *  `emitModule` takes the options at O2, so O0 and O1 reach the compiler with the level
@@ -541,6 +564,10 @@ function mount(root: HTMLElement): void {
   const parensPicker = root.querySelector('[data-opt-parens]');
   const precisionPicker = root.querySelector('[data-opt-precision]');
   const minifyToggle = root.querySelector('[data-opt-minify]');
+  const numbersPicker = root.querySelector('[data-opt-numbers]');
+  const numbersField = root.querySelector('[data-numbers-field]');
+  const obfuscateToggle = root.querySelector('[data-opt-obfuscate]');
+  const fp64Picker = root.querySelector('[data-opt-fp64]');
   const levelNote = root.querySelector('[data-level-note]');
   const canvas = root.querySelector('[data-canvas]');
   const canvasNote = root.querySelector('[data-canvas-note]');
@@ -583,6 +610,10 @@ function mount(root: HTMLElement): void {
     !(parensPicker instanceof HTMLSelectElement) ||
     !(precisionPicker instanceof HTMLSelectElement) ||
     !(minifyToggle instanceof HTMLInputElement) ||
+    !(numbersPicker instanceof HTMLSelectElement) ||
+    !(numbersField instanceof HTMLElement) ||
+    !(obfuscateToggle instanceof HTMLInputElement) ||
+    !(fp64Picker instanceof HTMLSelectElement) ||
     !(levelNote instanceof HTMLElement)
   ) {
     return;
@@ -593,6 +624,9 @@ function mount(root: HTMLElement): void {
     level: levelPicker.value as OptLevel,
     parens: parensPicker.value === 'minimal' ? 'minimal' : 'full',
     minify: minifyToggle.checked,
+    numbers: numbersPicker.value === 'f32' ? 'f32' : numbersPicker.value !== 'false',
+    obfuscate: obfuscateToggle.checked,
+    fp64Flavor: fp64Picker.value === 'integer' ? 'integer' : 'float',
     floatPrecision: precisionPicker.value === 'mediump' ? 'mediump' : 'highp',
   });
 
@@ -1242,10 +1276,18 @@ function mount(root: HTMLElement): void {
     compiled = undefined;
     reflection = undefined;
     entries = [];
+    // The panes are emitted from the options bar instead of read off the compile, so the
+    // bar is the one thing that decides what they hold. At its defaults the two agree:
+    // `compile().wgsl` is `emitModule(module)`, which is `emitModuleAt(module, 'O2')`.
+    const choice = currentChoice();
     if (analysis.module) {
       try {
         compiled = { module: analysis.module as ModuleDecl };
-        reflection = reflect(compiled.module);
+        // The same flavour the emit is given. The `float` helpers read an `_fp64` guard
+        // texture the lowering injects and the `integer` ones read none, so a reflection
+        // computed under the other flavour lists a binding the emitted module does not
+        // declare, or leaves out one it does.
+        reflection = reflect(compiled.module, { fp64Flavor: choice.fp64Flavor });
         entries = (reflection.entries ?? []) as readonly ReflectedEntry[];
       } catch {
         compiled = undefined;
@@ -1254,10 +1296,6 @@ function mount(root: HTMLElement): void {
       }
     }
 
-    // The panes are emitted from the options bar instead of read off the compile, so the
-    // bar is the one thing that decides what they hold. At its defaults the two agree:
-    // `compile().wgsl` is `emitModule(module)`, which is `emitModuleAt(module, 'O2')`.
-    const choice = currentChoice();
     const glsl = compiled ? emitGlsl(compiled.module, choice) : undefined;
     emitted = {
       wgsl: compiled ? emitWgsl(compiled.module, choice) : undefined,
@@ -1344,6 +1382,7 @@ function mount(root: HTMLElement): void {
 
   const applyOptions = (): void => {
     levelNote.hidden = levelPicker.value === 'O2';
+    numbersField.hidden = !minifyToggle.checked;
     render();
     // The bar is part of what a link shows, so changing it rewrites the fragment. An
     // untouched example keeps its short `#example=` form.
@@ -1351,7 +1390,7 @@ function mount(root: HTMLElement): void {
     if (named && !hashParams().get('code')) writeHash('example', named, currentChoice());
     else void publishSource();
   };
-  for (const control of [levelPicker, parensPicker, precisionPicker, minifyToggle]) {
+  for (const control of [levelPicker, parensPicker, precisionPicker, minifyToggle, numbersPicker, obfuscateToggle, fp64Picker]) {
     control.addEventListener('change', applyOptions);
   }
 
@@ -1393,6 +1432,10 @@ function mount(root: HTMLElement): void {
     if (level === 'O0' || level === 'O1' || level === 'O2') levelPicker.value = level;
     if (params.get('parens') === 'minimal') parensPicker.value = 'minimal';
     if (params.get('minify') === '1') minifyToggle.checked = true;
+    const numbers = params.get('numbers');
+    if (numbers === 'f32' || numbers === 'false') numbersPicker.value = numbers;
+    if (params.get('obfuscate') === '1') obfuscateToggle.checked = true;
+    if (params.get('fp64') === 'integer') fp64Picker.value = 'integer';
     if (params.get('precision') === 'mediump') precisionPicker.value = 'mediump';
     const code = params.get('code');
     if (code) {
@@ -1655,6 +1698,7 @@ function mount(root: HTMLElement): void {
         editor.focus();
       });
       levelNote.hidden = levelPicker.value === 'O2';
+      numbersField.hidden = !minifyToggle.checked;
       render();
     })
     .catch((error) => {

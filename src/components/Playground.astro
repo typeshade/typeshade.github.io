@@ -134,9 +134,34 @@ const runtimeCopy = {
         <option value="mediump">mediump</option>
       </select>
     </div>
+    {/* Which primitives back the emulated-double helpers. It goes to reflect() as well as
+        to the emit: the `float` helpers bind an `_fp64` guard texture and the `integer` ones
+        bind none, so a reflection computed under the other flavour names a binding the
+        emitted module does not have. */}
+    <div>
+      <label for="playground-fp64">{t.emit.fp64}</label>
+      <select id="playground-fp64" data-opt-fp64>
+        <option value="float" selected>float</option>
+        <option value="integer">integer</option>
+      </select>
+    </div>
     <div class="playground-check">
       <input type="checkbox" id="playground-minify" data-opt-minify />
       <label for="playground-minify">{t.emit.minify}</label>
+    </div>
+    {/* How minify re-spells a float literal. It has no effect with minify off, so it is
+        shown with it. */}
+    <div data-numbers-field hidden>
+      <label for="playground-numbers">{t.emit.numbers}</label>
+      <select id="playground-numbers" data-opt-numbers>
+        <option value="true" selected>true</option>
+        <option value="f32">f32</option>
+        <option value="false">false</option>
+      </select>
+    </div>
+    <div class="playground-check">
+      <input type="checkbox" id="playground-obfuscate" data-opt-obfuscate />
+      <label for="playground-obfuscate">{t.emit.obfuscate}</label>
     </div>
     <p data-level-note hidden>{t.emit.levelNote}</p>
   </div>

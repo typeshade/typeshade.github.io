@@ -391,8 +391,11 @@ export const en = {
       levels: { O0: 'O0 (no passes)', O1: 'O1 (value-safe)', O2: 'O2 (default)' },
       parens: 'Parentheses',
       minify: 'Minify',
+      numbers: 'Number literals',
+      obfuscate: 'Obfuscate',
+      fp64: 'f64 emulation',
       precision: `${glsl} float precision`,
-      levelNote: 'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses and minify reach the GLSL tabs only.',
+      levelNote: 'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses, minify, the number literals and obfuscate reach the GLSL tabs only. The f64 emulation reaches the reflection at every level.',
     },
   },
 
