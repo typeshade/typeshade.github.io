@@ -1,17 +1,15 @@
 ---
-// Language guide: TypeScript construct by construct. The words live in
-// language.mapping.fromTypescript (src/i18n/en.ts, src/i18n/ko.ts); the code in a card's two
-// panes is not words at all. Each construct carries a short `"use typeshade"` program that
-// src/lib/typescript-lowering.ts compiles with the pinned compiler at build time, the way
-// src/lib/concepts-emit.ts compiles the front page's sample, and the card shows the part of
-// the emit it is about. A construct the language refuses shows the compiler's own diagnostic
-// there. The cards render through ConstructCard.astro, whose header comment documents its
-// props and the CSS classes it uses.
+// Language guide: the index of the TypeScript construct set. It says how to read a card and
+// names its six sections, one page each; the cards themselves are on those pages
+// (LanguageFromTypescriptSectionPage.astro). The words live in
+// language.mapping.fromTypescript (src/i18n/en.ts, src/i18n/ko.ts); the rows do not. Each
+// construct carries a short `"use typeshade"` program that src/lib/typescript-lowering.ts
+// compiles with the pinned compiler at build time, and the count beside a section here is
+// that section's own row count, read off the generator.
 import Docs from '../../layouts/Docs.astro'
-import ConstructCard from '../ConstructCard.astro'
 import Rich from '../Rich.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { editCopy, links, mappingSet } from '../../lib/links.ts'
 import { loweringSections } from '../../lib/typescript-lowering.ts'
 
 interface Props { locale: Locale }
@@ -21,7 +19,8 @@ const sections = loweringSections()
 
 // A construct with no words about it, or words about a construct that has gone, is a page
 // half written. Both stop the build here, where the generator and the dictionary can be put
-// back in step.
+// back in step. The check reads every section, so it holds for the whole set and not only
+// for the rows one section page renders.
 const ids = sections.flatMap((s) => s.rows.map((r) => r.id))
 const missing = ids.filter((id) => !(id in c.rows))
 const spare = Object.keys(c.rows).filter((id) => !ids.includes(id))
@@ -33,9 +32,20 @@ if (missing.length > 0 || spare.length > 0) {
   throw new Error(`[from-typescript] the dictionary and src/lib/typescript-lowering.ts disagree: ${parts.join('; ')}`)
 }
 
+const pages = mappingSet('languageFromTypescript').sections.map(({ key, link }) => {
+  const group = sections.find((s) => s.key === key)
+  if (!group) throw new Error(`[from-typescript] src/lib/typescript-lowering.ts has no '${key}' section`)
+  return {
+    h: c.sections[key].h,
+    href: localePath(locale, links[link].href),
+    summary: c.pages[key].description,
+    count: group.rows.length,
+  }
+})
+
 const headings = [
   { depth: 2, slug: 'reading', text: c.readingH },
-  ...sections.map((s) => ({ depth: 2, slug: s.key, text: c.sections[s.key].h })),
+  { depth: 2, slug: 'sections', text: c.pagesH },
 ]
 ---
 
@@ -54,28 +64,15 @@ const headings = [
   <p><Rich text={c.readingP} locale={locale} /></p>
   <p><Rich text={c.guidesP} locale={locale} /></p>
 
-  {sections.map((section) => (
-    <>
-      <h2 id={section.key}>{c.sections[section.key].h}</h2>
-      <p><Rich text={c.sections[section.key].p} locale={locale} /></p>
-      <ul class="construct-cards">
-        {section.rows.map((row) => (
-          <ConstructCard
-            locale={locale}
-            name={c.rows[row.id]!.name}
-            becomes={c.rows[row.id]!.p}
-            ts={row.ts}
-            tsTitle={c.paneTs}
-            emitTitle={c.paneWgsl}
-            wgsl={row.wgsl}
-            diagnostic={row.diagnostic}
-            refusedLabel={c.refused}
-            diagnosticTitle={c.paneDiagnostic}
-          />
-        ))}
-      </ul>
-    </>
-  ))}
+  <h2 id="sections">{c.pagesH}</h2>
+  <dl class="api-list api-index">
+    {pages.map((p) => (
+      <>
+        <dt><a href={p.href}>{p.h}</a> <span class="api-type">{c.constructs(p.count)}</span></dt>
+        <dd>{p.summary}</dd>
+      </>
+    ))}
+  </dl>
 
   <p><Rich text={c.sourceP} locale={locale} /></p>
 </Docs>

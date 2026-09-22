@@ -151,6 +151,31 @@ export const en = {
         fromWgsl: 'From WGSL',
         fromGlsl: 'From GLSL',
         builtins: 'Builtin functions'
+      },
+      /** The sections of the three mapping sets, one page each. The sidebar opens a set's
+       *  sections under its index while the reader is inside it, so these are the short
+       *  names a 240px row holds; the page's own h1 is the longer heading. */
+      mappingSections: {
+        fromTypescript: {
+          declarations: 'Declarations',
+          functions: 'Functions',
+          classes: 'Classes',
+          controlFlow: 'Control flow',
+          expressions: 'Expressions',
+          double: 'Emulated double'
+        },
+        fromWgsl: {
+          types: 'Types',
+          resources: 'Resources',
+          entries: 'Entry points',
+          statements: 'Statements'
+        },
+        fromGlsl: {
+          types: 'Types',
+          uniforms: 'Uniforms',
+          variables: 'Builtin variables',
+          functions: 'Functions'
+        }
       }
     },
     introduction: 'Introduction',
@@ -1253,7 +1278,7 @@ export const en = {
         title: 'TypeScript constructs and what each one lowers to',
         description: `What ${facts.constructRows} TypeScript constructs become in a "use typeshade" file: declarations, functions, classes, control flow, and the shader text the compiler writes.`,
         h1: 'TypeScript constructs',
-        intro: `TypeShade is TypeScript's syntax, checked by a shader compiler. A construct either lowers to shader code or is refused with a reason, and the emitted pane of every card below is what the compiler wrote at the pinned commit. There are ${facts.constructRows} of them here.`,
+        intro: `TypeShade is TypeScript's syntax, checked by a shader compiler. A construct either lowers to shader code or is refused with a reason, and the emitted pane of every card is what the compiler wrote at the pinned commit. There are ${facts.constructRows} of them, on the section pages below.`,
         readingH: 'How to read a card',
         readingP: 'The head of a card names the construct, and a badge marks one the language refuses. The sentence under it says what becomes of the construct. The left pane is the TypeScript, taken from a `"use typeshade"` program that is compiled while this page is built. The right pane is the emitted WGSL, cut out of that program by name, and a refused card carries the compiler\'s own code and message there instead.',
         guidesP: 'A card says what happens. The pages before this one say why: [types](languageTypes), [functions](languageFunctions), [control flow](languageControlFlow), [GPU types](languageGpuTypes) and [resources](languageResources). The builtins have [a table of their own](languageBuiltins).',
@@ -1261,6 +1286,37 @@ export const en = {
         paneWgsl: 'Emitted WGSL',
         paneDiagnostic: 'Compiler diagnostic',
         refused: 'Refused',
+        /** The index names its sections and links each one; the cards themselves are on
+         *  those pages. The count beside a section is that section's own row count, read
+         *  off the generator. */
+        pagesH: 'Sections',
+        constructs: (n: number) => `${n} constructs`,
+        pages: {
+          declarations: {
+            title: 'Declarations in TypeShade and what they lower to',
+            description: 'What a constant, a variable, an enum, a type alias, an interface and a namespace become in a "use typeshade" file, and what is emitted for each.'
+          },
+          functions: {
+            title: 'Functions in TypeShade and what they lower to',
+            description: 'Helpers, arrow functions, overloads, recursion, entry points and the calls the compiler refuses, each with the shader text written for it.'
+          },
+          classes: {
+            title: 'Classes in TypeShade, and what each one lowers to',
+            description: 'Constructors, methods, static members, inheritance, mixins and generics, each with the struct and the functions the compiler writes for it.'
+          },
+          controlFlow: {
+            title: 'Control flow in TypeShade and what it lowers to',
+            description: 'Conditions, counted loops, while, switch, the ternary, break, continue and discard, with the shader text written for each and the loops refused.'
+          },
+          expressions: {
+            title: 'TypeShade expressions and types, and what they lower to',
+            description: 'Assertions, destructuring, spreads, literals and the values a shader cannot build while it runs, each with the shader text or the refusal it gets.'
+          },
+          double: {
+            title: 'Emulated double precision in a TypeShade file',
+            description: 'Neither target has a 64-bit float, so a double is a pair of single words. What the compiler rewrites, and the calls it puts in place of the arithmetic.'
+          }
+        },
         sections: {
           declarations: {
             h: 'Declarations',
@@ -1368,6 +1424,27 @@ export const en = {
         colType: 'Type',
         colNote: 'Note',
         colInstead: 'What to write',
+        /** The index names its four sections and links each one; the tables are on those
+         *  pages. */
+        pagesH: 'Sections',
+        pages: {
+          types: {
+            title: 'WGSL scalars, vectors, matrices and their spelling',
+            description: 'The WGSL type surface with the TypeShade spelling of each one: scalars, vectors, matrices, arrays and atomics, textures and samplers.'
+          },
+          resources: {
+            title: 'WGSL resources and address spaces in TypeShade',
+            description: 'A resource is a declare, the address space and the access mode are the wrapper type on the annotation, and the slot index is the source order.'
+          },
+          entries: {
+            title: 'WGSL entry points and attributes in TypeShade',
+            description: 'Stage attributes, workgroup size, what a vertex entry has to return, the builtin ids the pipeline supplies, and the names WGSL does not have.'
+          },
+          statements: {
+            title: 'WGSL statements and expressions, and how to write them',
+            description: 'The statements are TypeScript, and each one means what the WGSL beside it means. The text comes from one file compiled while this page is built.'
+          }
+        },
         typesH: 'Types',
         typesP: 'A type is written where WGSL writes one, on a declaration, a parameter, a field and a return. The element type rides inside the name where WGSL takes a type argument, so `vec3<u32>` is `vec3u` and there is nothing in angle brackets to get wrong.',
         scalarsH: 'Scalars',
@@ -1437,6 +1514,27 @@ export const en = {
         colDirective: 'Source directive',
         colExtension: 'WebGL2 extension',
         noDirective: 'None. The host turns the extension on before it links the program.',
+        /** The index names its four sections and links each one; the tables are on those
+         *  pages. */
+        pagesH: 'Sections',
+        pages: {
+          types: {
+            title: `${glsl} types and their TypeShade spelling`,
+            description: `The ${glsl} type surface with the TypeShade spelling of each one: scalars, vectors, matrices, arrays, samplers, and the types this target refuses.`
+          },
+          uniforms: {
+            title: `Uniforms and buffers in ${glsl} and TypeShade`,
+            description: `A uniform binding is a struct the writer emits as a block, a varying is a field on both sides, and each capability this target knows is one row.`
+          },
+          variables: {
+            title: `Builtin variables from ${glsl} in TypeShade`,
+            description: `A gl_ global is a builtin attribute on a parameter, on a class field or on the return, and the writer decides which global that becomes.`
+          },
+          functions: {
+            title: `Functions and operators in ${glsl} and TypeShade`,
+            description: `A call carries one neutral name and each backend writes its own spelling. The derivative, texture, bit and remainder forms a GLSL author looks for.`
+          }
+        },
         typesH: 'Types',
         typesP: 'The scalar and vector names are WGSL\'s, since one source has to serve both targets, and the GLSL writer spells each one in this target\'s terms. A declaration therefore says `f32` where the emitted shader says `float`.',
         scalarsH: 'Scalars',

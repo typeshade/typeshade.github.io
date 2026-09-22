@@ -518,6 +518,8 @@ body > main { flex: 1 }
    one level in, under its parent. Only an export's name is set in the code font. */
 .docs-group li.depth-1 { margin-block-start: 0 }
 .docs-group li.depth-1 a { padding-inline-start: 32px }
+/* A section of a mapping set sits under that set's index, which is itself one level in. */
+.docs-group li.depth-2 a { padding-inline-start: 48px }
 .docs-group li.depth-1.code a { font-family: var(--font-mono); font-size: var(--text-code) }
 .docs-edit { margin-block-start: 40px; font-size: var(--text-ui) }
 .docs-edit a { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
