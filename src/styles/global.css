@@ -303,8 +303,10 @@ body > main { flex: 1 }
 .skip:focus-visible { clip-path: none }
 
 /* Header: a 64px white bar with the mark and the name, the page links, and the tools as Ant
-   icon buttons. Under 48rem the links live in a panel behind a menu button (a details
-   element). */
+   icon buttons. Under 64rem the links live in a panel behind a menu button (a details
+   element). The bar needs about 1004px in English and 892px in Korean to lay out at full
+   size, and nothing in it shrinks or wraps, so it appears at the same 64rem the documentation
+   grid opens at. */
 .site-header { border-block-end: 1px solid var(--color-line-1); background: var(--color-ground) }
 .site-header-in {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -358,7 +360,7 @@ body > main { flex: 1 }
 .site-drop-current { color: var(--color-accent); background: var(--color-primary-bg); border-radius: var(--radius); font-weight: 600 }
 .site-drop-current svg { inline-size: 14px; block-size: 14px; flex: none }
 .site-lang .site-drop-list a { padding-inline-start: 32px }
-/* Search: an Ant pill in the tools, with its label from 48rem, and a row in the phone panel. */
+/* Search: an Ant pill in the tools, and a row in the phone panel. */
 .site-search {
   display: inline-flex; align-items: center; gap: 8px; block-size: 32px; padding-inline: 12px;
   border: 0; border-radius: var(--radius); background: var(--fill-4); color: var(--color-text-3);
@@ -369,8 +371,9 @@ body > main { flex: 1 }
 .site-search:hover { background: var(--fill-3); color: var(--color-text-1) }
 .site-search .icon { inline-size: 16px; block-size: 16px }
 .site-search-label { display: none }
-@media (min-width: 48rem) { .site-search-label { display: inline } }
-/* Under 48rem the magnifier sits beside the menu button instead of behind it, so search stays
+/* The label comes with the bar, so its query is the bar's. */
+@media (min-width: 64rem) { .site-search-label { display: inline } }
+/* Under 64rem the magnifier sits beside the menu button instead of behind it, so search stays
    one tap away whether or not the panel is open. */
 .site-mobile-tools { display: flex; align-items: center; gap: 4px }
 .site-search-phone {
@@ -421,10 +424,10 @@ body > main { flex: 1 }
 /* The version row carries the same links as the version menu, so the row wraps. */
 .site-screen-langs { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 2px 14px }
 .site-screen-langs a { color: var(--color-accent); text-decoration: none }
-/* From 48rem the whole phone row goes, box included. Leaving the empty box in the flow gave
+/* The whole phone row goes, box included. Leaving the empty box in the flow gave
    `justify-content: space-between` a third item to space, which held the tools 243px short of
    the gutter at 1440 and moved the nav's left edge with the viewport. */
-@media (min-width: 48rem) {
+@media (min-width: 64rem) {
   .site-bar { display: flex }
   .site-mobile-tools { display: none }
 }

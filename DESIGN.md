@@ -295,9 +295,12 @@ element is fully round except the two-axis pad's dot.
 ## Layout
 
 - A full-width header bar (64px, one `#f0f0f0` rule under it) and a full-width footer on
-  `#fafafa` frame every page. Under 48rem the header's links, the version menu, the language
+  `#fafafa` frame every page. Under 64rem the header's links, the version menu, the language
   menu and the dark-mode switch sit in a full-screen panel behind a menu button; the magnifier
-  stays outside it, one tap away.
+  stays outside it, one tap away. The bar appears at 64rem because that is the width it lays
+  out at: it needs about 1004px in English and 892px in Korean, and no item in it shrinks or
+  wraps. It is the width the documentation grid opens its sidebar at, so the two chrome
+  layouts change together.
 - Nothing is centred in a container. The header, the footer, the front page, the documentation
   grid, the examples gallery and the Playground run the width of the viewport, held off it by
   the gutter alone: 8px, 12px from 40rem. Two measures work inside that shell. Running text
