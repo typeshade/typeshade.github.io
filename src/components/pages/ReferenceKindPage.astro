@@ -1,0 +1,107 @@
+---
+// One kind of the language reference: every documented name of that kind, with the
+// declaration the editor loads for it and the compiler's own sentence. The functions page
+// runs its entries under the families the spelling registry groups them by, so its outline
+// stays a list a reader can use; the other five pages carry their entries at the top level
+// and the outline is the index of names.
+import Docs, { type Heading } from '../../layouts/Docs.astro'
+import ReferenceEntry from '../ReferenceEntry.astro'
+import Rich from '../Rich.astro'
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { editCopy, links } from '../../lib/links.ts'
+import { facts } from '../../lib/examples.ts'
+import { languageSection, languageSections, scalarBrand, type LanguageKind } from '../../lib/language-reference.ts'
+
+interface Props {
+  locale: Locale
+  kind: LanguageKind
+}
+const { locale, kind } = Astro.props
+const r = copyFor(locale).docs.reference
+const section = languageSection(kind)
+const named = r.kinds[kind]
+const grouped = section.groups.length > 0
+// How to read a declaration on this page, shown only where the declarations call for it: a
+// bare `number` is the scalar slot and not the width an author writes, a parameter named by
+// position carries a generated name, and a signature may reach for a type the ambient file
+// declares for itself and no table documents. Which of the three applies is read off the
+// declarations (src/lib/language-reference.ts), so a page says nothing its entries do not.
+const reading = section.showsNumber || section.showsPositions || section.helpers.length > 0
+// The brand is quoted from the ambient file, except on the types page, whose own `f32`
+// entry prints that same declaration a few lines below. The functions page has an `f32`
+// entry too, but it is the cast, so the quote earns its place there.
+const quoteBrand = section.showsNumber && kind !== 'type'
+const headings: Heading[] = grouped
+  ? section.groups.map((g) => ({ depth: 2, slug: g.family, text: r.families[g.family] }))
+  : section.entries.map((e) => ({ depth: 2, slug: e.name, text: e.title }))
+// Previous and next follow the sidebar, which lists the six kinds under the index.
+const all = languageSections()
+const at = all.findIndex((s) => s.kind === kind)
+const previous = at > 0
+  ? { label: r.kinds[all[at - 1]!.kind].name, href: localePath(locale, `/reference/${all[at - 1]!.slug}/`) }
+  : { label: r.h1, href: localePath(locale, links.reference.href) }
+const next = at < all.length - 1
+  ? { label: r.kinds[all[at + 1]!.kind].name, href: localePath(locale, `/reference/${all[at + 1]!.slug}/`) }
+  : undefined
+---
+
+<Docs
+  locale={locale}
+  path={`/reference/${section.slug}/`}
+  title={r.kindTitle(named.name)}
+  description={named.description}
+  headings={headings}
+  editHref={editCopy(locale, 'docs')}
+  previous={previous}
+  next={next}
+  breadcrumbs={[
+    { name: r.reference, href: links.reference.href },
+    { name: named.name, href: `/reference/${section.slug}/` },
+  ]}
+  dateModified={facts.pinnedDate}
+>
+  <nav class="api-crumbs" aria-label={r.breadcrumbs} lang={locale}>
+    <a href={localePath(locale, links.reference.href)}>{r.h1}</a>
+  </nav>
+  <h1 lang={locale}>{named.name}</h1>
+  <p class="api-kind" lang={locale}>{r.entries(section.entries.length)}</p>
+  <p class="api-summary" lang={locale}><Rich text={named.summary} locale={locale} /></p>
+  <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
+
+  {reading && (
+    <div class="ref-reading" lang={locale}>
+      {section.showsNumber && (
+        <>
+          <p><Rich text={r.numberP} locale={locale} /></p>
+          {quoteBrand && <p class="ref-entry-code"><code>{scalarBrand()}</code></p>}
+          <p><Rich text={r.widthP} locale={locale} /></p>
+        </>
+      )}
+      {section.showsPositions && <p><Rich text={r.positionsP} locale={locale} /></p>}
+      {section.helpers.length > 0 && (
+        <>
+          <p><Rich text={r.helpersP} locale={locale} /></p>
+          <dl class="ref-helpers">
+            {section.helpers.map((h) => (
+              <>
+                <dt><code>{h.name}</code></dt>
+                <dd><code>{h.declaration}</code></dd>
+              </>
+            ))}
+          </dl>
+        </>
+      )}
+    </div>
+  )}
+
+  {grouped
+    ? section.groups.map((group) => (
+        <>
+          <h2 id={group.family} lang={locale}>{r.families[group.family]}</h2>
+          {group.entries.map((entry) => <ReferenceEntry locale={locale} entry={entry} level={3} />)}
+        </>
+      ))
+    : section.entries.map((entry) => <ReferenceEntry locale={locale} entry={entry} level={2} />)}
+
+  <p class="guide-note" lang={locale}><Rich text={r.sourceP} locale={locale} /></p>
+</Docs>

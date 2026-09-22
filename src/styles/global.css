@@ -539,6 +539,10 @@ body > main { flex: 1 }
 /* Ant Anchor: a 2px rail down the left, and a primary segment beside the heading in view. */
 .docs-outline ul { position: relative; margin-block-start: 8px; border-inline-start: 2px solid var(--color-line-1) }
 .docs-outline a { display: block; padding: 5px 0 5px 16px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+/* The language reference heads an entry with the name itself, and a name can be one
+   unbreakable token wider than the outline's 220px (@builtin("local_invocation_index")). It
+   wraps instead of running past the column. */
+.docs-outline a, .docs-toc a { overflow-wrap: anywhere }
 .docs-outline a::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: -2px; inline-size: 2px; background: transparent; transition: background-color var(--motion) }
 .docs-toc a { display: block; padding: 5px 0; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 .docs-outline a:hover, .docs-toc a:hover { color: var(--color-text-1) }
@@ -911,6 +915,49 @@ body > main { flex: 1 }
     content: attr(data-label); display: block; font-size: var(--text-ui); color: var(--color-text-3);
   }
 }
+/* The mapping table (src/components/MappingTable.astro): a construct table whose cells are
+   code. A row is a grid of the same columns as the head, and a code cell is an Expressive
+   Code frame with the chrome taken off, the way .front-map-list sets one, so the cell reads
+   as a spelling and not as a file. Every column is minmax(0, 1fr), so the grid stays inside
+   the document column (DESIGN.md, the Container Rule) and a line too long for its cell wraps
+   or scrolls inside its own frame. Below 45rem the row stacks and each cell shows its column
+   heading again, which is what .doc table does with data-label. */
+.mapping-table { display: block; overflow-x: auto; max-inline-size: 100%; margin-block-start: 24px; font-size: var(--text-ui); line-height: var(--text-ui--line-height) }
+.mapping-head, .mapping-row { display: grid; grid-template-columns: var(--mapping-tracks, repeat(var(--mapping-columns, 3), minmax(0, 1fr))); gap: 8px 16px; align-items: start }
+.mapping-head { padding: 12px 16px; background: var(--color-surface-1); border-block-end: 1px solid var(--color-line-1) }
+.mapping-heading { font-weight: 600; color: var(--color-text-1) }
+.mapping-row { padding: 10px 16px; border-block-end: 1px solid var(--color-line-1) }
+.mapping-cell { min-inline-size: 0 }
+/* A prose or name cell sits level with the first line inside a code cell beside it: the
+   frame's own border and block padding. One selector deeper than `.doc p`, whose space above
+   would push a note below the frame beside it. */
+.mapping-table .mapping-cell .mapping-note { margin: 0; padding-block-start: 9px; color: var(--color-text-2) }
+.mapping-table .mapping-cell .mapping-name { display: block; padding-block-start: 9px; color: var(--color-text-1); overflow-wrap: anywhere }
+.mapping-table .mapping-cell a.mapping-name { color: var(--color-accent) }
+.mapping-table .mapping-cell a.mapping-name:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px }
+/* One selector deeper than `.doc .expressive-code`, whose 24px of space above would open a
+   gap between a cell and the frame in it. */
+.mapping-table .mapping-cell .expressive-code {
+  margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
+  --ec-codePadBlk: 8px; --ec-codePadInl: 12px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
+}
+.mapping-table .mapping-cell .expressive-code .copy { display: none }
+/* A cell is narrow and a builtin's name can be longer than it: wrapping at spaces alone
+   leaves `textureSampleCompareLevelCubeArray(` hanging past the frame, where the frame clips
+   it, so a line breaks wherever it has to. The width is reset because Expressive Code marks a
+   wrapping block `pre.wrap`, and the site's own layout class of that name would give it the
+   page's measure inside a table cell. */
+.mapping-table .mapping-cell .expressive-code pre.wrap { inline-size: auto; margin-inline: 0 }
+.mapping-table .mapping-cell .expressive-code .ec-line .code { overflow-wrap: anywhere; min-inline-size: 0 }
+/* No copy button, so the first line keeps no room for one at its end. */
+.mapping-table .mapping-cell .expressive-code :nth-child(1 of .ec-line) .code { padding-inline-end: var(--ec-codePadInl) }
+@media (max-width: 44.999rem) {
+  .mapping-head { display: none }
+  .mapping-row { display: block; padding: 12px 0 }
+  .mapping-cell + .mapping-cell { margin-block-start: 8px }
+  .mapping-table .mapping-cell .mapping-note, .mapping-table .mapping-cell .mapping-name { padding-block-start: 0 }
+  .mapping-cell[data-label]::before { content: attr(data-label); display: block; margin-block-end: 4px; font-size: var(--text-ui); color: var(--color-text-3) }
+}
 .doc blockquote { margin-block-start: 16px; padding: 0 16px; border-inline-start: 2px solid var(--color-line-1); color: var(--color-text-2) }
 .doc hr { margin-block: 40px 0; border: 0; border-block-start: 1px solid var(--color-line-1) }
 .doc strong { font-weight: 600 }
@@ -1172,6 +1219,89 @@ body > main { flex: 1 }
 .api-index dd { padding-inline-start: 0 }
 .api-preview { margin-block-start: 12px; padding: 8px 12px; border: 1px solid var(--color-diag); border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-diag) }
 
+/* The construct card (src/components/ConstructCard.astro): one TypeScript construct per card
+   on /guide/language/from-typescript/. An Ant Card, and the card is what separates one
+   construct from the next: the same page as three columns of code put a hairline between
+   rows that ran ten lines tall, and a reader could not see where a construct ended. Two
+   panes instead of three columns also give each one about twice the width a cell had. The
+   head names the construct, the sentence under it runs at the card's full width, and the
+   panes sit side by side from 48rem and stack below it with the TypeScript first. Every
+   measure is relative to the card, so the cards stay inside the document column (DESIGN.md,
+   the Container Rule) at every width. */
+.doc .construct-cards { display: grid; gap: 16px; margin: 24px 0 0; padding: 0; list-style: none }
+.doc .construct-card {
+  margin: 0; padding: 16px;
+  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
+}
+.construct-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px }
+.doc .construct-card-name {
+  margin: 0; font-size: var(--text-h5); line-height: var(--text-h5--line-height);
+  font-weight: 600; color: var(--color-text-1); overflow-wrap: anywhere;
+}
+.construct-card-name code, .construct-card-note code { font-family: var(--font-mono); font-size: 0.9em }
+/* An Ant tag in the shape .example-wgsl-only takes, in the diagnostic red the reference's
+   own "not supported" tag carries, so a refused construct reads as one before it is read. */
+.construct-card-badge {
+  display: inline-block; padding: 0 7px; border-radius: var(--radius-sm);
+  border: 1px solid var(--color-diag); background: none;
+  font-size: 0.75rem; line-height: 1.6667; color: var(--color-diag); white-space: nowrap;
+}
+.doc .construct-card-note {
+  margin-block-start: 8px;
+  font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2);
+}
+.construct-card-panes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-block-start: 12px; align-items: start }
+.construct-card-pane { min-inline-size: 0 }
+/* One selector deeper than `.doc .expressive-code`, whose 24px of space above would open a
+   gap between a pane and the frame in it. */
+.construct-card-pane .expressive-code {
+  margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
+  --ec-codePadBlk: 10px; --ec-codePadInl: 12px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
+}
+.construct-card-pane .expressive-code .copy { display: none }
+/* A pane is about 280px wide in the document column, and a line of a real program is longer
+   than that, so a line wraps at a space and reads on under the hanging indent Expressive
+   Code gives it. A name breaks inside itself only where the name alone is wider than the
+   pane, so a line breaks at a space and reads on under the hanging indent Expressive Code
+   gives it. Two rules keep a break off the middle of a name: <CodeFrame holdTokens> holds a
+   token with a hyphen or an angle bracket in it together, and `overflow-wrap: normal`
+   overrides Expressive Code's own emergency break, so the two lines on this page that carry
+   a name longer than the pane scroll inside their frame instead of cutting the name in two.
+   The width is reset because Expressive Code marks a wrapping block `pre.wrap`, and the
+   site's own layout class of that name would give it the page's measure inside a card. */
+.construct-card-pane .expressive-code pre.wrap { inline-size: auto; margin-inline: 0 }
+.construct-card-pane .expressive-code pre.wrap .ec-line .code { overflow-wrap: normal; min-inline-size: 0 }
+/* No copy button, so the first line keeps no room for one at its end. */
+.construct-card-pane .expressive-code :nth-child(1 of .ec-line) .code { padding-inline-end: var(--ec-codePadInl) }
+/* A refused construct: where the emitting card has a second frame, this one has the
+   compiler's own code and message in the diagnostic colour, under the label that says what
+   it is. It is no code frame, because nothing here was emitted. */
+.doc .construct-card-pane-title {
+  display: flex; align-items: center; margin: 0; min-block-size: 34px;
+  font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-3);
+}
+/* The label stands as tall as a frame's title bar and the message starts where the frame's
+   first line of code starts, so the two panes of a refused construct read as one row. */
+.doc .construct-card-refusal .diagnostic { margin-block-start: 10px }
+@media (min-width: 48rem) {
+  .construct-card-panes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
+}
+
+/* The builtin table (/guide/language/builtins/) stays a table: a row is one call and its
+   one-line spellings, and a card each would turn a list a reader scans into a page to scroll.
+   Its rows do have the same boundary problem the construct table had, in two places. Across
+   four columns at 1440 the eye loses which cell belongs to which call, so a row takes Ant's
+   own table hover. Below 45rem a row stacks into four labelled cells and runs 270px tall,
+   where one hairline between two runs of labels reads as one more label, so the space around
+   the rule grows until it is wider than the space between the cells inside a row and the
+   row reads as one block. Both rules are spacing and a fill the site already has, and a row
+   keeps its hairline. */
+.mapping-row { transition: background-color var(--motion) }
+.mapping-row:hover { background: var(--fill-4) }
+@media (max-width: 44.999rem) {
+  .mapping-row { padding-block: 18px }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
 }
@@ -1183,4 +1313,60 @@ body > main { flex: 1 }
   .site-menu-bar { background: CanvasText }
   .docs-group a[aria-current='page'] { color: LinkText }
   .button-primary { border: 1px solid CanvasText }
+}
+
+/* The language reference (src/components/ReferenceEntry.astro): one entry per documented
+   name on /reference/<kind>/. A page runs from thirty to a hundred and forty of them, so an
+   entry is a band separated by a hairline instead of a card, and its name is set at the
+   heading size one step under the page's sections whatever level the markup gives it: the
+   functions page runs its entries under a family heading and the other five run them at the
+   top level. Every measure is relative to the entry, so an entry stays inside the document
+   column (DESIGN.md, the Container Rule) at every width, and a long signature wraps inside
+   its own frame. */
+.doc .ref-entry { margin-block-start: 28px; padding-block-start: 24px; border-block-start: 1px solid var(--color-line-1) }
+/* The hairline separates one entry from the next, so the first entry after a family heading
+   or after the page's own lead-in carries none. */
+.doc h2 + .ref-entry, .doc .ref-reading + .ref-entry, .doc .guide-note + .ref-entry { margin-block-start: 24px; padding-block-start: 0; border-block-start: none }
+.doc .ref-entry-name {
+  margin: 0; font-size: var(--text-h4); line-height: var(--text-h4--line-height);
+  font-weight: 600; letter-spacing: normal; scroll-margin-block-start: 88px; overflow-wrap: anywhere;
+}
+.doc .ref-entry-name code { font-size: 1em; color: inherit }
+.doc .ref-entry-summary { margin-block-start: 8px; color: var(--color-text-2) }
+.doc .ref-entry-code { margin-block-start: 12px; overflow-wrap: anywhere }
+.doc .ref-entry-code code { font-size: var(--text-code) }
+.doc .ref-entry-meta { margin-block-start: 10px; font-size: var(--text-ui); color: var(--color-text-3) }
+.ref-label { font-weight: 600; color: var(--color-text-2) }
+/* The link back to the builtin table sits under every builtin function, so it reads as a
+   footnote and takes the accent only under the pointer. */
+.doc .ref-entry-meta a { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
+.doc .ref-entry-meta a:hover { color: var(--color-accent); text-decoration-color: currentColor }
+/* How to read a declaration, above the entries: what a bare `number` stands for, what a
+   positional parameter name is, and the declaration of each helper type the signatures on
+   this page reach for. The helper list is a label column and a declaration column, and the
+   declaration is one wrapped line, so a sixteen-format union costs a paragraph. */
+.doc .ref-reading { margin-block-start: 20px; font-size: var(--text-ui); color: var(--color-text-2) }
+.doc .ref-reading p { margin-block-start: 10px }
+.doc .ref-helpers { margin-block-start: 10px; display: grid; gap: 4px 16px; grid-template-columns: max-content minmax(0, 1fr) }
+.doc .ref-helpers dt { font-weight: 600; color: var(--color-text-2) }
+.doc .ref-helpers dt code, .doc .ref-helpers dd code { font-size: var(--text-code) }
+.doc .ref-helpers dd { margin: 0; min-width: 0; overflow-wrap: anywhere }
+@media (max-width: 30rem) {
+  .doc .ref-helpers { grid-template-columns: minmax(0, 1fr); gap: 2px }
+  .doc .ref-helpers dt { margin-block-start: 6px }
+}
+
+/* The two target spellings under a builtin function: the target's name in the label column
+   and the text that backend writes beside it. Below 30rem the pair stacks, since a GLSL cell
+   can hold a whole inlined expression and needs the row's width to itself. */
+.doc .ref-emits {
+  margin-block-start: 12px; display: grid; gap: 4px 16px;
+  grid-template-columns: max-content minmax(0, 1fr); font-size: var(--text-ui);
+}
+.doc .ref-emits dt { font-weight: 600; color: var(--color-text-2) }
+.doc .ref-emits dd { margin: 0; min-width: 0; color: var(--color-text-2); overflow-wrap: anywhere }
+.doc .ref-emits dd code { font-size: var(--text-code) }
+@media (max-width: 30rem) {
+  .doc .ref-emits { grid-template-columns: minmax(0, 1fr); gap: 2px }
+  .doc .ref-emits dt { margin-block-start: 6px }
 }
