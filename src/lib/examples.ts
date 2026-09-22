@@ -6,6 +6,7 @@ import path from 'node:path'
 import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/index.ts'
 import { shortBlurb } from './blurb.ts'
 import { builtinCounts } from './builtin-table.ts'
+import { glslCapabilityCount } from './glsl-mapping.ts'
 import { wgslBuiltinIdCount } from './target-mapping.ts'
 import { shadeCounts } from './shade-examples.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
@@ -295,6 +296,10 @@ export const facts = {
   /** How many `@builtin(...)` ids the WGSL vocabulary holds (src/core/sot.ts
    *  WGSL_BUILTIN_NAMES). The WGSL mapping page states it and types none of it. */
   wgslBuiltinIds: wgslBuiltinIdCount(),
+  /** How many capabilities the GLSL ES 3.00 profile has a row for
+   *  (src/core/backends/glsl.ts GLSL_CAP_PROFILE). Everything with no row fails the module
+   *  closed on that target. The GLSL mapping page states it and types none of it. */
+  glslCapabilities: glslCapabilityCount(),
   layoutStandards: layoutStandards(),
   runtimeDeps: runtimeDeps().length,
   /** The names behind that count, so a sentence can say which one it is. */
@@ -322,7 +327,7 @@ export const facts = {
 const pinned = {
   commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302,
   builtins: 139, portableBuiltins: 44, glslAbsentBuiltins: 31, mathAliasBuiltins: 27,
-  wgslBuiltinIds: 15,
+  wgslBuiltinIds: 15, glslCapabilities: 4,
 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
@@ -334,6 +339,7 @@ if (facts.portableBuiltins !== pinned.portableBuiltins) drift.push(`portableBuil
 if (facts.glslAbsentBuiltins !== pinned.glslAbsentBuiltins) drift.push(`glslAbsentBuiltins ${facts.glslAbsentBuiltins} != ${pinned.glslAbsentBuiltins}`)
 if (facts.mathAliasBuiltins !== pinned.mathAliasBuiltins) drift.push(`mathAliasBuiltins ${facts.mathAliasBuiltins} != ${pinned.mathAliasBuiltins}`)
 if (facts.wgslBuiltinIds !== pinned.wgslBuiltinIds) drift.push(`wgslBuiltinIds ${facts.wgslBuiltinIds} != ${pinned.wgslBuiltinIds}`)
+if (facts.glslCapabilities !== pinned.glslCapabilities) drift.push(`glslCapabilities ${facts.glslCapabilities} != ${pinned.glslCapabilities}`)
 if (drift.length > 0) {
   throw new Error(
     `[examples] the pinned mirror (${facts.pinnedCommit}) no longer matches the copy written at ${pinned.commit}: ${drift.join('; ')}`,
