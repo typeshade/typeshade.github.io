@@ -1222,6 +1222,21 @@ body > main { flex: 1 }
   .construct-card-panes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
 }
 
+/* The builtin table (/guide/language/builtins/) stays a table: a row is one call and its
+   one-line spellings, and a card each would turn a list a reader scans into a page to scroll.
+   Its rows do have the same boundary problem the construct table had, in two places. Across
+   four columns at 1440 the eye loses which cell belongs to which call, so a row takes Ant's
+   own table hover. Below 45rem a row stacks into four labelled cells and runs 270px tall,
+   where one hairline between two runs of labels reads as one more label, so the space around
+   the rule grows until it is wider than the space between the cells inside a row and the
+   row reads as one block. Both rules are spacing and a fill the site already has, and a row
+   keeps its hairline. */
+.mapping-row { transition: background-color var(--motion) }
+.mapping-row:hover { background: var(--fill-4) }
+@media (max-width: 44.999rem) {
+  .mapping-row { padding-block: 18px }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
 }
