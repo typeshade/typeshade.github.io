@@ -6,6 +6,7 @@ import path from 'node:path'
 import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/index.ts'
 import { shortBlurb } from './blurb.ts'
 import { builtinCounts } from './builtin-table.ts'
+import { languageCounts } from './language-reference.ts'
 import { loweringRowCount, loweringTripLimit } from './typescript-lowering.ts'
 import { glslCapabilityCount } from './glsl-mapping.ts'
 import { wgslBuiltinIdCount } from './target-mapping.ts'
@@ -262,6 +263,7 @@ function layoutStandards(): readonly string[] {
 }
 
 const builtins = builtinCounts()
+const languageSurface = languageCounts()
 
 export const facts = {
   examples: examples.length,
@@ -324,6 +326,17 @@ export const facts = {
     n: 400,
     url: 'https://www.khronos.org/blog/shader-ecosystem-survey-results-2026',
   },
+  /** The documented language surface at the pin, counted from the six tables the compiler's
+   *  language service keeps one sentence per name in (src/lib/language-reference.ts). The
+   *  language reference at /reference/ is generated from them, and every count on those
+   *  pages is read from here. */
+  languageEntries: languageSurface.total,
+  languageTypes: languageSurface.type,
+  languageAttributes: languageSurface.attribute,
+  languageBuiltinValues: languageSurface.builtin,
+  languageFunctions: languageSurface.function,
+  languageConstants: languageSurface.constant,
+  languageMathMembers: languageSurface.math,
 }
 
 // The copy was written against these values, at the commit this names. Every count is
@@ -335,6 +348,8 @@ const pinned = {
   builtins: 139, portableBuiltins: 44, glslAbsentBuiltins: 31, mathAliasBuiltins: 27,
   constructRows: 65, forTripLimit: 256,
   wgslBuiltinIds: 15, glslCapabilities: 4,
+  languageEntries: 235, languageTypes: 31, languageAttributes: 5, languageBuiltinValues: 15,
+  languageFunctions: 140, languageConstants: 8, languageMathMembers: 36,
 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
@@ -349,6 +364,13 @@ if (facts.constructRows !== pinned.constructRows) drift.push(`constructRows ${fa
 if (facts.forTripLimit !== pinned.forTripLimit) drift.push(`forTripLimit ${facts.forTripLimit} != ${pinned.forTripLimit}`)
 if (facts.wgslBuiltinIds !== pinned.wgslBuiltinIds) drift.push(`wgslBuiltinIds ${facts.wgslBuiltinIds} != ${pinned.wgslBuiltinIds}`)
 if (facts.glslCapabilities !== pinned.glslCapabilities) drift.push(`glslCapabilities ${facts.glslCapabilities} != ${pinned.glslCapabilities}`)
+if (facts.languageEntries !== pinned.languageEntries) drift.push(`languageEntries ${facts.languageEntries} != ${pinned.languageEntries}`)
+if (facts.languageTypes !== pinned.languageTypes) drift.push(`languageTypes ${facts.languageTypes} != ${pinned.languageTypes}`)
+if (facts.languageAttributes !== pinned.languageAttributes) drift.push(`languageAttributes ${facts.languageAttributes} != ${pinned.languageAttributes}`)
+if (facts.languageBuiltinValues !== pinned.languageBuiltinValues) drift.push(`languageBuiltinValues ${facts.languageBuiltinValues} != ${pinned.languageBuiltinValues}`)
+if (facts.languageFunctions !== pinned.languageFunctions) drift.push(`languageFunctions ${facts.languageFunctions} != ${pinned.languageFunctions}`)
+if (facts.languageConstants !== pinned.languageConstants) drift.push(`languageConstants ${facts.languageConstants} != ${pinned.languageConstants}`)
+if (facts.languageMathMembers !== pinned.languageMathMembers) drift.push(`languageMathMembers ${facts.languageMathMembers} != ${pinned.languageMathMembers}`)
 if (drift.length > 0) {
   throw new Error(
     `[examples] the pinned mirror (${facts.pinnedCommit}) no longer matches the copy written at ${pinned.commit}: ${drift.join('; ')}`,
