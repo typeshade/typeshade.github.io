@@ -13,6 +13,7 @@ import LiveShader from '../LiveShader.astro'
 import Rich from '../Rich.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
+import { examplePath } from '../../lib/example-pages.ts'
 import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts'
 import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
 import { links } from '../../lib/links.ts'
@@ -52,12 +53,15 @@ export function main(@location(0) uv: vec2): vec4 {
 `
 
 /** The tiles, in the order they read. Every id is in the registry; a missing one stops the
- *  build here, before a blank frame could. */
+ *  build here, before a blank frame could. A tile shows the still captured from the shader at
+ *  build time and links to that example's own page, the way a gallery tile does: the front
+ *  page is a first visit, and nine shaders compiling and animating on it is GPU work every
+ *  visitor pays for. The showcase card above is the one thing on the page that runs. */
 const TILE_IDS = ['metaballs', 'plasma', 'voronoi', 'julia', 'ocean', 'starfield', 'tunnel', 'kaleidoscope', 'mandelbrot'] as const
 const tiles = TILE_IDS.map((id) => {
   const example = examples.find((e) => e.id === id)
   if (!example) throw new Error(`[front] tile '${id}' is not in the examples registry`)
-  return { id, title: example.title }
+  return { id, title: example.title, href: localePath(locale, examplePath(id)) }
 })
 
 const playground = localePath(locale, links.playground.href)
@@ -101,9 +105,15 @@ const quickStart = localePath(locale, links.quickStart.href)
     <h2>{f.targets.h}</h2>
     <p><Rich text={f.targets.p} locale={locale} /></p>
     <div class="front-targets-grid">
-      <CodeFrame label={f.targets.source}>
-        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} wrap />
-      </CodeFrame>
+      {/* The file name is the source column's own head, in the shape the tabs opposite make
+          and the one the hero card gives the same file. The frame under it carries no title
+          bar of its own, so the first line of code sits at the same height in both columns. */}
+      <div class="front-targets-src">
+        <p class="front-tabs-head front-targets-file"><span class="live-file">hello.shade.ts</span></p>
+        <CodeFrame label={f.targets.source}>
+          <Code code={useTypeshadeSample} lang="ts" locale={locale} wrap />
+        </CodeFrame>
+      </div>
       <div class="front-targets-out" data-front-tabs>
         <div class="front-tabs-head" role="tablist" aria-label={f.targets.h}>
           <button type="button" role="tab" id="targets-tab-wgsl" aria-controls="targets-panel-wgsl" aria-selected="true">{f.targets.wgsl}</button>
@@ -134,8 +144,12 @@ const quickStart = localePath(locale, links.quickStart.href)
     <ul class="front-tiles">
       {tiles.map((tile) => (
         <li>
-          <ShaderCanvas locale={locale} example={tile.id} aspect="3/2" caption={f.gallery.tile(tile.title)} />
-          <span class="front-tile-name">{tile.title}</span>
+          <a class="front-tile" href={tile.href}>
+            <span class="example-tile-frame">
+              <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" />
+            </span>
+            <span class="front-tile-name">{tile.title}</span>
+          </a>
         </li>
       ))}
     </ul>

@@ -206,8 +206,13 @@ and has a matching Korean cut.
   phone panel's links. Korean pushes a 500 label to 600, because Plex Sans KR ships two weights.
 - Negative tracking sits on the largest sizes alone: -0.02em on the front headline and h1,
   -0.01em on h2. Korean relaxes both and keeps a 1.8 line height with `word-break: keep-all`.
-- The document column holds about 72 characters of prose (740px). A front page section's
-  heading is capped at 24ch and its paragraph at 62ch; the hero's lede is capped at 52ch.
+- Running text in a document stops at 620px, which sets about 85 characters of English at 16px
+  and about 72 of Korean. That is the line the 596px column set before the shell went edge to
+  edge, and it is why the measure is not the 740px a wider body would allow: at 740px a line
+  runs to about 100 characters. The column around the text is wider: 860px at a 1440 viewport,
+  1340px at 1920. A front page section's heading is
+  capped at 24ch and its paragraph at 62ch; the hero's lede is capped at 52ch, and the sentence
+  under a construct card's name at 62ch.
 - No uppercase labels, no tracked "eyebrow" lines above headings, no single-word labels <!-- ok -->
   under blocks, no "a · b · c" metadata strings. <!-- ok -->
 
@@ -293,29 +298,43 @@ element is fully round except the two-axis pad's dot.
   `#fafafa` frame every page. Under 48rem the header's links, the version menu, the language
   menu and the dark-mode switch sit in a full-screen panel behind a menu button; the magnifier
   stays outside it, one tap away.
-- Three measures. The container is 1200px with 16px gutters, 24px from 40rem: the header, the
-  footer, the front page and the documentation grid share it. A document column is 740px. The
-  wide measure, 960px, is for a docs figure that needs more than the column.
-- The front page is a sequence of sections in the container, separated by space with no rule
+- Nothing is centred in a container. The header, the footer, the front page, the documentation
+  grid, the examples gallery and the Playground run the width of the viewport, held off it by
+  the gutter alone: 8px, 12px from 40rem. Two measures work inside that shell. Running text
+  stops at 620px. A block that shows one thing stops at the wide measure, 960px: a figure, a
+  pair of figures, a table, the builtin table, a code frame the document itself carries, and
+  the front page's source beside its output, which takes two of that measure side by side. A
+  grid of cards takes the whole column, and answers a wider column with more cards, each at
+  its own size.
+- The front page is a sequence of sections across the shell, separated by space with no rule
   between them: 64px, 80px from 40rem. Its hero is a two-column grid from 64rem, 5fr text and
   7fr stage, 48px apart; under that the columns stack with the text first.
 - The documentation grid is one column under 64rem, `240px / 1fr` from 64rem with a 48px gap,
-  and `240px / 1fr / 220px` from 80rem, where the outline joins on the right. A page with no
-  headings keeps the two-column form. Under 64rem the sidebar is a bar under the header that
-  names the current page, with the page's own headings folded under it.
+  and `240px / 1fr / 220px` from 80rem, where the outline joins on the right. The document
+  column is what that leaves: 700px at a 1280 viewport, 860px at 1440, 1020px at 1600, 1340px
+  at 1920. A page with no headings keeps the two-column form. Under 64rem the sidebar is a bar
+  under the header that names the current page, with the page's own headings folded under it.
 - Sections inside a document are 48px apart, 56px from 40rem. The footer starts 96px below the
   content.
+- The Playground is one heading over the tool. The heading, its sentence and its two links sit
+  on the tool's own content edge, 15px in from the region, so they line up with the file name
+  in the toolbar under them, and the heading keeps the 40px a documentation page's h1 has under
+  the header, 32px under 64rem.
 - Breakpoints are 40rem, 48rem, 64rem and 80rem, with two one-off queries: 90rem for the
   headline's last step, and 45rem where a table stops being a table and becomes a stack of
   rows.
-- The one thing that should stand out is a rendered shader. Everything else is quiet.
+- The one thing that should stand out is a rendered shader. Everything else is quiet. The
+  front page runs one: the showcase card. Its nine tiles are stills, because a first visit
+  pays for every canvas that compiles and animates on it.
 - Every canvas has a still image underneath it, captured at build time
   (`bun run capture:stills`), so the page never shows an empty frame.
-- A table sits in the document column, scrolls inside itself, and stacks into labelled rows
-  below 45rem. The layout table keeps its natural width and a caption above it.
+- A table sits at the wide measure inside the document column, scrolls inside itself, and
+  stacks into labelled rows below 45rem. The layout table keeps its natural width and a
+  caption above it.
 
-**The Container Rule.** A full-width page is laid out in the 1200px container with the
-gutters; a page of prose is laid out in the 740px column. A third measure needs a reason.
+**The Container Rule.** Every page is laid out edge to edge behind the gutter. Running text is
+laid out in the 620px measure and a figure, a table or a code frame in the 960px one. A grid of
+cards takes the column. A third measure needs a reason.
 
 ## Components
 
@@ -332,13 +351,14 @@ gutters; a page of prose is laid out in the 740px column. A third measure needs 
   scales 1.03 over 400ms where the pointer is fine.
 - **Menu.** The documentation sidebar is an Ant Menu: a 40px row, 6px radius, secondary text,
   the 0.04 fill on hover, and the current page in the primary at weight 600 over its wash. A
-  group title is a 12px secondary label. A child sits at 32px of inset, and a child that names
-  an export is set in the mono face.
+  group title is a 12px secondary label. A row is padded 12px, the same distance the header's
+  own content sits from the gutter. A child sits at 28px of inset, and a child that names an
+  export is set in the mono face.
 - **Anchor.** The page outline is an Ant Anchor: a 2px `#f0f0f0` rail down the left, and a
   primary segment beside the heading in view.
 - **Table.** Ant's lines: no vertical rules, a `#fafafa` head at weight 600, 12px by 16px
   cells, a `#f0f0f0` rule under every row, tabular figures, and the whole table scrollable
-  inside the column.
+  inside the wide measure.
 - **Tag.** A 12px chip with a 4px radius, a `#d9d9d9` border and the `#fafafa` fill: the
   version in the header, an optional parameter, a target's support state, the one example that
   emits a single target. The target state that reads "not supported" swaps the border and text
@@ -387,8 +407,9 @@ why lives on its own page.
   showcase card, where `first.shade.ts` sits beside the picture it draws and the reader edits
   it in place. Then one section per idea, each a heading, a sentence and its evidence: one
   file and two targets, with `hello.shade.ts` beside the WGSL and the GLSL ES 3.00 it emits;
-  nine of the repository's examples running as tiles, each a card with the canvas as its cover
-  and the example's name under it; what carries over from TypeScript, as a list whose left
+  nine of the repository's examples as tiles, each a card with that example's build-time still
+  as its cover, the example's name under it, and the whole card a link to the page that runs
+  it; what carries over from TypeScript, as a list whose left
   column is the TypeScript in a code chip and whose right column is what it becomes; the
   gradient pass drawn by each backend as two cards; and the install command with the two
   buttons again.
@@ -409,12 +430,20 @@ why lives on its own page.
     to GPU values, entry points and shader modules, and where WebGPU begins.
   - Examples: `/guide/examples/`, the gallery of every example in both corpora, grouped by
     category, each tile linking to that example's own page at `/guide/examples/<id>/`. A page
-    there opens with the shader running over its build-time still, then the file it is
-    written in, then the WGSL and the two GLSL ES 3.00 stages the compiler baked into
-    `examples/__emit-goldens__/` at the pinned commit, and closes with the file on GitHub, the
-    Playground for a `"use typeshade"` example, and previous and next inside its own group.
-    An example the page cannot draw says in one sentence why, from the reason
-    `scripts/artifacts.mjs` records for it.
+    there is laid out the way ShaderToy lays one out: one card split down the middle, the
+    shader running over its build-time still on the left and its text on the right, and
+    nothing else in either pane. The card is the showcase card the front page's hero already
+    is (`.live-card`). The right pane carries its own Ant tab bar over one of four texts, the
+    source file first and then every target the compiler emits, the WGSL and the two GLSL ES
+    3.00 stages it baked into `examples/__emit-goldens__/` at the pinned commit; it opens on
+    the line the shader starts at, since several of those files begin with a banner comment.
+    Which backend drew the frame, or why nothing did, and where the emitted text comes from
+    are written under the card, because a label inside a pane makes that pane read as a
+    figure. The card is its own container, so the panes go side by side once the card is wide
+    enough and stack with the picture first when it is not. Under it the page closes with the
+    file on GitHub, the Playground for a `"use typeshade"` example, and previous and next
+    inside its own group. An example the page cannot draw says in one sentence why, from the
+    reason `scripts/artifacts.mjs` records for it.
   - Reference: the API reference (`/api/…`, below), then Compiler internals, then Language
     service. Compiler internals is the compiler's AUTHORING.md, rendered from the vendored
     checkout at the pinned commit. A custom content loader (`src/content.config.ts`) cuts the

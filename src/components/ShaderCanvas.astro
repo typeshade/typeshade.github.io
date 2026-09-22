@@ -21,7 +21,9 @@ interface Props {
   locale: Locale
   example: string
   caption: CanvasText
-  aspect: '3/1' | '2/1' | '16/9' | '3/2'
+  /** The frame's shape. `auto` hands the box to the page, for a mount that fills a cell it
+   *  shares with something else (the example pages' two-pane card). */
+  aspect: '3/1' | '2/1' | '16/9' | '3/2' | 'auto'
   /** Draw one frame at a fixed clock, then stop. */
   still?: boolean
   /** Skip the WebGPU probe and draw on WebGL2. */
@@ -33,6 +35,10 @@ interface Props {
   /** Which still sits under the canvas; defaults to the example id. A second mount of the
    *  same example forced onto another backend names its own still. */
   stillId?: string
+  /** The page places the caption and owns the scope: no `<figcaption>` is written here, and
+   *  the mount looks for `[data-shader-caption]` inside the page's own `[data-shader-scope]`.
+   *  For a canvas that fills a pane of its own, with nothing written inside the pane. */
+  externalCaption?: boolean
   class?: string
 }
 
@@ -46,6 +52,7 @@ const {
   split = false,
   stillId,
   eager = false,
+  externalCaption = false,
   class: className,
 } = Astro.props
 const data = heroShader(example)
@@ -72,7 +79,7 @@ const firstOfExample = !emitted.has(data.id)
 emitted.add(data.id)
 ---
 
-<figure class:list={['figure', className]} data-shader-scope>
+<figure class:list={['figure', className]} data-shader-scope={externalCaption ? undefined : ''}>
   <div
     class="figure-frame"
     style={`aspect-ratio: ${aspect}`}
@@ -93,7 +100,7 @@ emitted.add(data.id)
     <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
     {split && <span class="figure-split" aria-hidden="true"></span>}
   </div>
-  <figcaption class="figure-caption" data-shader-caption>{caption.neutral}</figcaption>
+  {!externalCaption && <figcaption class="figure-caption" data-shader-caption>{caption.neutral}</figcaption>}
   {firstOfExample && <script type="application/json" id={payloadId} set:html={heroPayload(data.id)} is:inline />}
 </figure>
 

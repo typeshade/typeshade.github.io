@@ -553,7 +553,7 @@ export const ko: Copy = {
     },
     gallery: {
       h: '더 많은 셰이더',
-      p: `컴파일러에는 지도 렌더링 패스부터 컴퓨트 커널까지 예제 ${facts.examples}개가 들어 있습니다. 각 타일은 생성된 코드를 이 브라우저에서 실행합니다.`,
+      p: `컴파일러에는 지도 렌더링 패스부터 컴퓨트 커널까지 예제 ${facts.examples}개가 들어 있습니다. 각 타일은 빌드할 때 그 셰이더가 그린 화면이고, 누르면 그 예제를 실행하는 페이지로 갑니다.`,
       all: '예제 전체',
       tile: (title: string) => ({
         neutral: `${title}. 빌드할 때 그린 화면입니다.`,
@@ -1165,12 +1165,18 @@ export const ko: Copy = {
       description: (name: string, blurb: string) => `TypeShade 예제 ${name}. ${blurb}`,
       descriptionPad: `소스와 WGSL 출력, ${glsl} 단계까지 한 페이지에 모았습니다.`,
       source: '소스',
-      emitted: '출력 결과',
-      emittedNote: `아래 코드는 커밋 ${facts.pinnedCommit}의 컴파일러가 직접 낸 출력입니다. 컴파일러의 출력 검사가 구워 둔 골든 파일에서 그대로 읽어 왔습니다([emit-goldens.test.ts](goldens)).`,
+      tabs: '소스와 출력 결과',
+      canvas: (name: string) => ({
+        neutral: `${name}. 빌드할 때 그린 화면입니다.`,
+        webgpu: `${name}. WebGPU에서 실행 중입니다.`,
+        webgl2: `${name}. WebGL2에서 실행 중입니다.`,
+        none: `${name}. 빌드할 때 그린 화면입니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.`,
+        reduced: `${name}. 시스템이 움직임 줄이기를 켜 두어 한 프레임만 그렸습니다.`,
+      }),
+      emittedNote: `WGSL과 GLSL 탭은 커밋 ${facts.pinnedCommit}의 컴파일러가 직접 낸 출력입니다. 컴파일러의 출력 검사가 구워 둔 골든 파일에서 그대로 읽어 왔습니다([emit-goldens.test.ts](goldens)).`,
       wgsl: 'WGSL',
       glslVertex: `${glsl} 버텍스`,
       glslFragment: `${glsl} 프래그먼트`,
-      wgslOnlyNote: `이 예제는 ${glsl} 형태가 없어서 컴파일러가 WGSL만 구워 둡니다.`,
       github: 'GitHub의 파일',
       playground: 'Playground에서 열기',
       noPicture: {
