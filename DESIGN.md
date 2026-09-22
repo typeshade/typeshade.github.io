@@ -303,14 +303,14 @@ element is fully round except the two-axis pad's dot.
   pair of figures, a table, the builtin table, and the front page's source beside its output,
   which takes two of that measure side by side. A code frame and a grid of cards take the whole
   column they sit in, and a grid answers a wider column with more cards, each at its own size.
-- The front page is a sequence of sections in the container, separated by space with no rule
+- The front page is a sequence of sections across the shell, separated by space with no rule
   between them: 64px, 80px from 40rem. Its hero is a two-column grid from 64rem, 5fr text and
   7fr stage, 48px apart; under that the columns stack with the text first.
 - The documentation grid is one column under 64rem, `240px / 1fr` from 64rem with a 48px gap,
   and `240px / 1fr / 220px` from 80rem, where the outline joins on the right. The document
   column is what that leaves: 700px at a 1280 viewport, 860px at 1440, 1020px at 1600, 1340px
-  at 1920. A page with no headings keeps the two-column form. Under 64rem the sidebar is a bar under the header that
-  names the current page, with the page's own headings folded under it.
+  at 1920. A page with no headings keeps the two-column form. Under 64rem the sidebar is a bar
+  under the header that names the current page, with the page's own headings folded under it.
 - Sections inside a document are 48px apart, 56px from 40rem. The footer starts 96px below the
   content.
 - The Playground is one heading over the tool. The heading, its sentence and its two links sit
@@ -320,7 +320,9 @@ element is fully round except the two-axis pad's dot.
 - Breakpoints are 40rem, 48rem, 64rem and 80rem, with two one-off queries: 90rem for the
   headline's last step, and 45rem where a table stops being a table and becomes a stack of
   rows.
-- The one thing that should stand out is a rendered shader. Everything else is quiet.
+- The one thing that should stand out is a rendered shader. Everything else is quiet. The
+  front page runs one: the showcase card. Its nine tiles are stills, because a first visit
+  pays for every canvas that compiles and animates on it.
 - Every canvas has a still image underneath it, captured at build time
   (`bun run capture:stills`), so the page never shows an empty frame.
 - A table sits at the wide measure inside the document column, scrolls inside itself, and
@@ -402,8 +404,9 @@ why lives on its own page.
   showcase card, where `first.shade.ts` sits beside the picture it draws and the reader edits
   it in place. Then one section per idea, each a heading, a sentence and its evidence: one
   file and two targets, with `hello.shade.ts` beside the WGSL and the GLSL ES 3.00 it emits;
-  nine of the repository's examples running as tiles, each a card with the canvas as its cover
-  and the example's name under it; what carries over from TypeScript, as a list whose left
+  nine of the repository's examples as tiles, each a card with that example's build-time still
+  as its cover, the example's name under it, and the whole card a link to the page that runs
+  it; what carries over from TypeScript, as a list whose left
   column is the TypeScript in a code chip and whose right column is what it becomes; the
   gradient pass drawn by each backend as two cards; and the install command with the two
   buttons again.
@@ -422,9 +425,14 @@ why lives on its own page.
     dictionaries.
   - Concepts: `/guide/typescript-and-webgpu/`, how TypeScript types, functions and modules map
     to GPU values, entry points and shader modules, and where WebGPU begins.
-  - Examples: `/guide/examples/`, which opens with a table of every example in the compiler's
-    registry, grouped by category, each row linking to its source file at the pinned commit
-    and naming the targets it emits.
+  - Examples: `/guide/examples/`, the gallery of every example in both corpora, grouped by
+    category, each tile linking to that example's own page at `/guide/examples/<id>/`. A page
+    there opens with the shader running over its build-time still, then the file it is
+    written in, then the WGSL and the two GLSL ES 3.00 stages the compiler baked into
+    `examples/__emit-goldens__/` at the pinned commit, and closes with the file on GitHub, the
+    Playground for a `"use typeshade"` example, and previous and next inside its own group.
+    An example the page cannot draw says in one sentence why, from the reason
+    `scripts/artifacts.mjs` records for it.
   - Reference: the API reference (`/api/…`, below), then Compiler internals, then Language
     service. Compiler internals is the compiler's AUTHORING.md, rendered from the vendored
     checkout at the pinned commit. A custom content loader (`src/content.config.ts`) cuts the
@@ -447,8 +455,8 @@ why lives on its own page.
   so the build asserts that no category takes a page an export needs (the Reflection category
   is `/api/reflection-api/`, because the compiler exports an interface called Reflection).
   Previous and next walk a category alphabetically and carry on into the next category.
-- `/examples/…`: the gallery, one tile per registry example, grouped by category, each tile a
-  link to the source at the pinned commit with its build-time still as the cover.
+- `/examples/…`: the gallery, one tile per example, grouped by category, each tile a link to
+  that example's own page with its build-time still as the cover.
 - The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect, and so does
   `/guide/authoring/…`, the internals' first address, to `/guide/internals/…`.
 

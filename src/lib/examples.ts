@@ -6,8 +6,11 @@ import path from 'node:path'
 import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/index.ts'
 import { shortBlurb } from './blurb.ts'
 import { builtinCounts } from './builtin-table.ts'
+import { languageCounts } from './language-reference.ts'
 import { loweringRowCount, loweringTripLimit } from './typescript-lowering.ts'
-import { shadeCounts } from './shade-examples.ts'
+import { glslCapabilityCount } from './glsl-mapping.ts'
+import { wgslBuiltinIdCount } from './target-mapping.ts'
+import { shadeCounts, shadeExampleList } from './shade-examples.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 
 // Read with fs from the site root, without Vite's glob, so scripts run by bun
@@ -260,6 +263,7 @@ function layoutStandards(): readonly string[] {
 }
 
 const builtins = builtinCounts()
+const languageSurface = languageCounts()
 
 export const facts = {
   examples: examples.length,
@@ -273,6 +277,11 @@ export const facts = {
   /** Both corpora, for the sentences that count the repository's examples as a whole. */
   totalExamples: examples.length + shadeCounts.total,
   bothTargets: countBothTargets(),
+  /** How many examples of the two corpora together have a GLSL ES 3.00 pair baked beside
+   *  their WGSL in examples/__emit-goldens__/. The per-example pages read that directory, so
+   *  a pin that stops baking a stage stops the build here as well as at the page that wanted
+   *  the file. */
+  goldenGlslPairs: [...examples, ...shadeExampleList].filter((e) => e.renderable).length,
   wgslOnlyExample: wgslOnlyExample(),
   fp64Examples: examples.filter((e) => e.id.startsWith('fp64')).length,
   testFiles: testFiles.length,
@@ -297,6 +306,13 @@ export const facts = {
   constructRows: loweringRowCount(),
   /** The most trips a counted `for` may run, read off the compiler's own refusal. */
   forTripLimit: loweringTripLimit(),
+  /** How many `@builtin(...)` ids the WGSL vocabulary holds (src/core/sot.ts
+   *  WGSL_BUILTIN_NAMES). The WGSL mapping page states it and types none of it. */
+  wgslBuiltinIds: wgslBuiltinIdCount(),
+  /** How many capabilities the GLSL ES 3.00 profile has a row for
+   *  (src/core/backends/glsl.ts GLSL_CAP_PROFILE). Everything with no row fails the module
+   *  closed on that target. The GLSL mapping page states it and types none of it. */
+  glslCapabilities: glslCapabilityCount(),
   layoutStandards: layoutStandards(),
   runtimeDeps: runtimeDeps().length,
   /** The names behind that count, so a sentence can say which one it is. */
@@ -315,6 +331,17 @@ export const facts = {
     n: 400,
     url: 'https://www.khronos.org/blog/shader-ecosystem-survey-results-2026',
   },
+  /** The documented language surface at the pin, counted from the six tables the compiler's
+   *  language service keeps one sentence per name in (src/lib/language-reference.ts). The
+   *  language reference at /reference/ is generated from them, and every count on those
+   *  pages is read from here. */
+  languageEntries: languageSurface.total,
+  languageTypes: languageSurface.type,
+  languageAttributes: languageSurface.attribute,
+  languageBuiltinValues: languageSurface.builtin,
+  languageFunctions: languageSurface.function,
+  languageConstants: languageSurface.constant,
+  languageMathMembers: languageSurface.math,
 }
 
 // The copy was written against these values, at the commit this names. Every count is
@@ -323,13 +350,18 @@ export const facts = {
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
   commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302,
+  goldenGlslPairs: 73,
   builtins: 139, portableBuiltins: 44, glslAbsentBuiltins: 31, mathAliasBuiltins: 27,
   constructRows: 65, forTripLimit: 256,
+  wgslBuiltinIds: 15, glslCapabilities: 4,
+  languageEntries: 235, languageTypes: 31, languageAttributes: 5, languageBuiltinValues: 15,
+  languageFunctions: 140, languageConstants: 8, languageMathMembers: 36,
 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
 if (facts.shadeExamples !== pinned.shadeExamples) drift.push(`shadeExamples ${facts.shadeExamples} != ${pinned.shadeExamples}`)
 if (facts.bothTargets !== pinned.bothTargets) drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`)
+if (facts.goldenGlslPairs !== pinned.goldenGlslPairs) drift.push(`goldenGlslPairs ${facts.goldenGlslPairs} != ${pinned.goldenGlslPairs}`)
 if (facts.testFiles < pinned.testFiles) drift.push(`testFiles ${facts.testFiles} < ${pinned.testFiles}`)
 if (facts.builtins !== pinned.builtins) drift.push(`builtins ${facts.builtins} != ${pinned.builtins}`)
 if (facts.portableBuiltins !== pinned.portableBuiltins) drift.push(`portableBuiltins ${facts.portableBuiltins} != ${pinned.portableBuiltins}`)
@@ -337,6 +369,15 @@ if (facts.glslAbsentBuiltins !== pinned.glslAbsentBuiltins) drift.push(`glslAbse
 if (facts.mathAliasBuiltins !== pinned.mathAliasBuiltins) drift.push(`mathAliasBuiltins ${facts.mathAliasBuiltins} != ${pinned.mathAliasBuiltins}`)
 if (facts.constructRows !== pinned.constructRows) drift.push(`constructRows ${facts.constructRows} != ${pinned.constructRows}`)
 if (facts.forTripLimit !== pinned.forTripLimit) drift.push(`forTripLimit ${facts.forTripLimit} != ${pinned.forTripLimit}`)
+if (facts.wgslBuiltinIds !== pinned.wgslBuiltinIds) drift.push(`wgslBuiltinIds ${facts.wgslBuiltinIds} != ${pinned.wgslBuiltinIds}`)
+if (facts.glslCapabilities !== pinned.glslCapabilities) drift.push(`glslCapabilities ${facts.glslCapabilities} != ${pinned.glslCapabilities}`)
+if (facts.languageEntries !== pinned.languageEntries) drift.push(`languageEntries ${facts.languageEntries} != ${pinned.languageEntries}`)
+if (facts.languageTypes !== pinned.languageTypes) drift.push(`languageTypes ${facts.languageTypes} != ${pinned.languageTypes}`)
+if (facts.languageAttributes !== pinned.languageAttributes) drift.push(`languageAttributes ${facts.languageAttributes} != ${pinned.languageAttributes}`)
+if (facts.languageBuiltinValues !== pinned.languageBuiltinValues) drift.push(`languageBuiltinValues ${facts.languageBuiltinValues} != ${pinned.languageBuiltinValues}`)
+if (facts.languageFunctions !== pinned.languageFunctions) drift.push(`languageFunctions ${facts.languageFunctions} != ${pinned.languageFunctions}`)
+if (facts.languageConstants !== pinned.languageConstants) drift.push(`languageConstants ${facts.languageConstants} != ${pinned.languageConstants}`)
+if (facts.languageMathMembers !== pinned.languageMathMembers) drift.push(`languageMathMembers ${facts.languageMathMembers} != ${pinned.languageMathMembers}`)
 if (drift.length > 0) {
   throw new Error(
     `[examples] the pinned mirror (${facts.pinnedCommit}) no longer matches the copy written at ${pinned.commit}: ${drift.join('; ')}`,

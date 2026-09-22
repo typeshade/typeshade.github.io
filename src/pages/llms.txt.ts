@@ -3,8 +3,11 @@
 import type { APIRoute } from 'astro'
 import { claims } from '../lib/claims.ts'
 import { facts } from '../lib/examples.ts'
+import { languageSections } from '../lib/language-reference.ts'
 import { links, sidebar } from '../lib/links.ts'
-import { defaultLocale } from '../i18n/index.ts'
+import { copyFor, defaultLocale } from '../i18n/index.ts'
+
+const copy = copyFor(defaultLocale)
 
 const summary = [
   `TypeShade compiles TypeScript files that start with "use typeshade".`,
@@ -21,6 +24,25 @@ const summary = [
 ].join(' ')
 
 const absolute = (href: string) => (href.startsWith('/') ? `https://typeshade.dev${href}` : href)
+
+// The six kind pages of the language reference, named the way the English dictionary names
+// them, so a page added to the reference upstream reaches this file with the next pin.
+const kindNotes: Readonly<Record<string, string>> = {
+  types: 'the scalar, vector, matrix and memory types a declaration names',
+  attributes: 'the decorators that mark an entry point and bind a field to the pipeline',
+  'builtin-values': 'the @builtin(...) ids the pipeline supplies, with the stage each belongs to',
+  functions: 'the functions a shader calls, with the WGSL and GLSL text written for each',
+  constants: 'the compile-time literals the compiler inlines, and discard',
+  math: 'the Math members a shader may reach, each routed to a builtin or a literal',
+}
+const referenceKinds = languageSections().map((section) => {
+  const note = kindNotes[section.slug]
+  if (!note) throw new Error(`[llms.txt] the language reference has a '${section.slug}' page this file does not describe`)
+  return {
+    dest: { label: copy.docs.reference.kinds[section.kind].name, href: `/reference/${section.slug}/` },
+    note,
+  }
+})
 
 const table = [
   { dest: links.motivation, note: 'why one source for two shader languages' },
@@ -42,8 +64,10 @@ const table = [
   { dest: links.conceptsPipeline, note: 'what each stage is handed, what it produces and what interpolation between stages means' },
   { dest: links.conceptsWebgpu, note: 'what the host application owns, what the compiler owns, and where WebGL2 differs' },
   { dest: links.conceptsWgsl, note: `the same source emitted as WGSL and as ${facts.glslTarget}, with the differences between the targets` },
-  { dest: links.examples, note: `the ${facts.examples} examples, the GLSL emit and the emulated-double demo` },
-  { dest: links.api, note: 'the API reference, one page per public export' },
+  { dest: links.examples, note: `the ${facts.totalExamples} examples, one page each with the shader running and the text it emits, the GLSL emit and the emulated-double demo` },
+  { dest: links.reference, note: `the language reference, every name a "use typeshade" file can write, one page per kind` },
+  ...referenceKinds,
+  { dest: links.api, note: 'the compiler API reference, one page per public export, for a host application and the fn() builder' },
   { dest: links.internals, note: 'the compiler internals, one page per section of AUTHORING.md' },
   { dest: links.languageService, note: 'the editor-neutral language service behind the Playground, for language servers and editor extensions' },
   { dest: links.checks, note: 'what CI runs on every push' },
@@ -54,11 +78,14 @@ const table = [
   { dest: links.docs, note: "the repository's README" },
   { dest: links.npm, note: 'the reserved package name; not published yet' },
   { dest: links.commit, note: 'the commit every number below was measured at' },
-] as const
+]
 
 // Every page the sidebar names under /guide/, and the Playground beside them, has to be in
 // the table above. A page added to the site and missed here would leave the file a model
-// reads describing a smaller site than the one that shipped.
+// reads describing a smaller site than the one that shipped. The per-example pages under
+// /guide/examples/<id>/ are one set the gallery already lists and links every member of, so
+// the gallery's row covers them; the sidebar names that gallery page alone, which is what
+// the check below reads.
 const listed = new Set<string>(table.map((r) => r.dest.href))
 const missing = sidebar(defaultLocale)
   .flatMap((g) => g.items)

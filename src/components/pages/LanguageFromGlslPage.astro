@@ -1,23 +1,195 @@
 ---
-// Language guide: the FromGlsl mapping page. Content lives in language.mapping.fromGlsl
-// (src/i18n/en.ts, src/i18n/ko.ts). The page carries its introduction while the construct
-// tables are written; the sections come next, one <MappingTable> each
-// (src/components/MappingTable.astro documents the props and the CSS classes), with the
-// rows read from the compiler at build time the way the builtin table's are.
+// Language guide: GLSL ES 3.00 construct by construct, with the TypeShade spelling of each
+// one. The words live in language.mapping.fromGlsl (src/i18n/en.ts, src/i18n/ko.ts); the rows
+// do not. Every row is measured at build time by src/lib/glsl-mapping.ts, which hands the
+// pinned compiler a `"use typeshade"` file and reads back the GLSL it writes, or the message
+// it throws where that target has no form, so no spelling on this page is typed by hand. The
+// tables render through MappingTable.astro, whose header comment documents its props.
 import Docs from '../../layouts/Docs.astro'
+import MappingTable from '../MappingTable.astro'
 import Rich from '../Rich.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
+import { glslMapping, type GlslTableId } from '../../lib/glsl-mapping.ts'
 import { editCopy, links } from '../../lib/links.ts'
+import type { MappingRowData } from '../../lib/target-mapping.ts'
 
 interface Props { locale: Locale }
 const { locale } = Astro.props
-const content = copyFor(locale).language.mapping.fromGlsl
-const headings = [{ depth: 2, slug: 'covers', text: content.h }]
+const c = copyFor(locale).language.mapping.fromGlsl
+const mapping = glslMapping()
+
+// A cell the compiler left empty carries a sentence from the copy instead, and a row whose
+// sentence nobody wrote stops the build here: an empty cell in a mapping table reads as a
+// blank the reader has to fill.
+const refusal = (table: GlslTableId, row: MappingRowData): string => {
+  const key = `${table}.${row.id}`
+  const written = c.refusals[key]
+  if (!written) throw new Error(`[from-glsl] the row '${key}' has an empty cell and no sentence for it`)
+  return written
+}
+
+const fill = (table: GlslTableId, row: MappingRowData) =>
+  ({ note: row.message.length > 0 ? row.message : refusal(table, row) })
+
+// [GLSL ES 3.00, TypeShade], the two columns every construct table has.
+const pair = (table: GlslTableId) =>
+  mapping.tables[table].map((row) => [row.target ?? fill(table, row), row.source ?? fill(table, row)])
+
+// The same, with the note the copy carries for that row as a third column.
+const noted = (table: GlslTableId) => {
+  const cells = pair(table)
+  return mapping.tables[table].map((row, i) => [...cells[i]!, { note: c.notes[`${table}.${row.id}`] ?? '' }])
+}
+
+const glslFirst = ['glsl', 'ts'] as const
+const twoColumns = [c.colGlsl, c.colSource]
+
+// The capability rows read the other way: the id a module declares, the directive the shader
+// carries for it, and the WebGL2 extension the host turns on.
+const capabilityRows = mapping.tables.capabilities.map((row) => [
+  { name: row.source ?? '' },
+  row.target ?? { note: c.noDirective },
+  { name: row.message },
+])
+
+const headings = [
+  { depth: 2, slug: 'reading', text: c.readingH },
+  { depth: 2, slug: 'types', text: c.typesH },
+  { depth: 3, slug: 'scalars', text: c.scalarsH },
+  { depth: 3, slug: 'vectors', text: c.vectorsH },
+  { depth: 3, slug: 'arrays', text: c.arraysH },
+  { depth: 3, slug: 'samplers', text: c.samplersH },
+  { depth: 3, slug: 'no-form', text: c.noFormH },
+  { depth: 2, slug: 'uniforms', text: c.uniformsH },
+  { depth: 3, slug: 'varyings', text: c.varyingsH },
+  { depth: 3, slug: 'capabilities', text: c.capabilitiesH },
+  { depth: 2, slug: 'variables', text: c.variablesH },
+  { depth: 2, slug: 'functions', text: c.functionsH },
+  { depth: 2, slug: 'edsl', text: c.edslH },
+]
 ---
 
-<Docs locale={locale} path={links.languageFromGlsl.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'language')}>
-  <h1>{content.h1}</h1>
-  <h2 id="covers">{content.h}</h2>
-  <p><Rich text={content.p} locale={locale} /></p>
-  <p>{content.pending}</p>
+<Docs
+  locale={locale}
+  path={links.languageFromGlsl.href}
+  title={c.title}
+  description={c.description}
+  headings={headings}
+  editHref={editCopy(locale, 'language')}
+>
+  <h1>{c.h1}</h1>
+  <p><Rich text={c.intro} locale={locale} /></p>
+
+  <h2 id="reading">{c.readingH}</h2>
+  <p><Rich text={c.readingP} locale={locale} /></p>
+
+  <h2 id="types">{c.typesH}</h2>
+  <p><Rich text={c.typesP} locale={locale} /></p>
+
+  <h3 id="scalars">{c.scalarsH}</h3>
+  <MappingTable locale={locale} caption={c.scalarsH} columns={twoColumns} lang={glslFirst} rows={pair('scalars')} />
+
+  <h3 id="vectors">{c.vectorsH}</h3>
+  <MappingTable locale={locale} caption={c.vectorsH} columns={twoColumns} lang={glslFirst} rows={pair('vectors')} />
+  <p><Rich text={c.vectorsP} locale={locale} /></p>
+
+  <h3 id="arrays">{c.arraysH}</h3>
+  <MappingTable locale={locale} caption={c.matricesH} columns={twoColumns} lang={glslFirst} rows={pair('matrices')} />
+  <p><Rich text={c.matricesP} locale={locale} /></p>
+  <MappingTable locale={locale} caption={c.arraysH} columns={twoColumns} lang={glslFirst} rows={pair('arrays')} />
+  <p><Rich text={c.arraysP} locale={locale} /></p>
+
+  <h3 id="samplers">{c.samplersH}</h3>
+  <p><Rich text={c.samplersP} locale={locale} /></p>
+  <MappingTable locale={locale} caption={c.samplersH} columns={twoColumns} lang={glslFirst} rows={pair('samplers')} />
+  <p><Rich text={c.shadowP} locale={locale} /></p>
+
+  <h3 id="no-form">{c.noFormH}</h3>
+  <p><Rich text={c.noFormP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.noFormH}
+    columns={[c.colSource, c.colMessage]}
+    lang={['ts', null]}
+    widths={['0.9fr', '1.3fr']}
+    rows={mapping.tables.noForm.map((row) => [row.source, fill('noForm', row)])}
+  />
+
+  <h2 id="uniforms">{c.uniformsH}</h2>
+  <p><Rich text={c.uniformsP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.uniformsH}
+    columns={[c.colGlsl, c.colSource, c.colNote]}
+    lang={['glsl', 'ts', null]}
+    widths={['1fr', '1fr', '1.05fr']}
+    rows={noted('uniforms')}
+  />
+
+  <h3 id="varyings">{c.varyingsH}</h3>
+  <p><Rich text={c.varyingsP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.varyingsH}
+    columns={[c.colGlsl, c.colSource, c.colNote]}
+    lang={['glsl', 'ts', null]}
+    widths={['1fr', '0.8fr', '1.2fr']}
+    rows={noted('varyings')}
+  />
+
+  <h3 id="capabilities">{c.capabilitiesH}</h3>
+  <p><Rich text={c.capabilitiesP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.capabilitiesH}
+    columns={[c.colCapability, c.colDirective, c.colExtension]}
+    lang={[null, 'glsl', null]}
+    widths={['0.8fr', '1.15fr', '1.15fr']}
+    rows={capabilityRows}
+  />
+  <p><Rich text={c.enablesP} locale={locale} /></p>
+
+  <h2 id="variables">{c.variablesH}</h2>
+  <p><Rich text={c.variablesP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.variablesH}
+    columns={[c.colGlsl, c.colSource, c.colNote]}
+    lang={['glsl', 'ts', null]}
+    widths={['0.75fr', '1.15fr', '1.1fr']}
+    rows={noted('variables')}
+  />
+  <p><Rich text={c.absentP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.absentH}
+    columns={[c.colGlsl, c.colInstead]}
+    lang={glslFirst}
+    widths={['0.6fr', '1.6fr']}
+    rows={pair('absentVariables')}
+  />
+
+  <h2 id="functions">{c.functionsH}</h2>
+  <p><Rich text={c.functionsP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.functionsH}
+    columns={[c.colGlsl, c.colSource, c.colNote]}
+    lang={['glsl', 'ts', null]}
+    widths={['1fr', '0.9fr', '1.1fr']}
+    rows={noted('functions')}
+  />
+  <p><Rich text={c.operatorsP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.operatorsH}
+    columns={[c.colGlsl, c.colSource, c.colNote]}
+    lang={['glsl', 'ts', null]}
+    widths={['1.1fr', '1fr', '1fr']}
+    rows={noted('operators')}
+  />
+  <p><Rich text={c.restP} locale={locale} /></p>
+
+  <h2 id="edsl">{c.edslH}</h2>
+  <p><Rich text={c.edslP} locale={locale} /></p>
 </Docs>
