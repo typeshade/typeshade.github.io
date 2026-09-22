@@ -79,6 +79,12 @@ const FAMILY_OF: Readonly<Record<string, LanguageFamily>> = {
   array: 'resources', fill: 'resources', uniform: 'resources', storage: 'resources',
 }
 
+// The tables whose bare `number` is the GPU scalar slot. An attribute's `number` is a
+// decorator argument the host file writes (`@location(0)`, `@compute([64])`), an ordinary
+// JavaScript number and no shader value, so that page says nothing about it. A kind listed
+// here whose signatures stop writing `number` stops the build.
+const SCALAR_SLOT_KINDS: ReadonlySet<LanguageKind> = new Set<LanguageKind>(['type', 'function', 'constant', 'math'])
+
 /** Which stage and direction a `@builtin(...)` id is valid in, as the compiler's front end
  *  checks it. An id with no rule is unconstrained. */
 export interface BuiltinStageRule {
@@ -115,6 +121,15 @@ export interface LanguageEntry {
   readonly stages: readonly BuiltinStageRule[]
 }
 
+/** A type `SHADE_DTS` declares for its own use, which a signature on a page names and no
+ *  `*_DOCS` table documents. The page prints the declaration itself, so the explanation of
+ *  one is the compiler's own text. */
+export interface LanguageHelper {
+  readonly name: string
+  /** The declaration with its line breaks collapsed, so it sets as one wrapped line. */
+  readonly declaration: string
+}
+
 export interface LanguageGroup {
   readonly family: LanguageFamily
   readonly entries: readonly LanguageEntry[]
@@ -126,6 +141,14 @@ export interface LanguageSection {
   readonly entries: readonly LanguageEntry[]
   /** The functions page runs in family sections; the other five are one list. */
   readonly groups: readonly LanguageGroup[]
+  /** A signature here writes a bare `number`, which is the scalar slot and not a width an
+   *  author declares. The page says so where this is true. */
+  readonly showsNumber: boolean
+  /** A signature here names its parameters by position (`a0`, `a1`), which the ambient file
+   *  generates and a call never uses. */
+  readonly showsPositions: boolean
+  /** The undocumented helper types this section's signatures name, in the order they appear. */
+  readonly helpers: readonly LanguageHelper[]
 }
 
 // ── SHADE_DTS, parsed once ────────────────────────────────────────────────────────────────
@@ -135,13 +158,23 @@ interface Declarations {
   readonly types: ReadonlyMap<string, string>
   readonly values: ReadonlyMap<string, string>
   readonly mathMembers: ReadonlyMap<string, { readonly text: string; readonly callable: boolean }>
+  /** Every type alias again, each one collapsed to a single line. */
+  readonly oneLiners: ReadonlyMap<string, string>
+  /** The `unique symbol` tags the ambient file brands its opaque handles with. */
+  readonly brandTags: ReadonlySet<string>
 }
 
 function declarations(): Declarations {
   const source = ts.createSourceFile('shade.d.ts', SHADE_DTS, ts.ScriptTarget.ES2022, true)
+  // A declaration set as one wrapped line: the ambient file breaks a long union and a
+  // conditional type over many lines for its own readability, and a leading `|` after the
+  // equals sign is part of that formatting.
+  const oneLine = (text: string): string => text.replace(/\s+/g, ' ').replace(/=\s*\|\s*/, '= ').trim()
   const functions = new Map<string, string[]>()
   const types = new Map<string, string>()
   const values = new Map<string, string>()
+  const oneLiners = new Map<string, string>()
+  const brandTags = new Set<string>()
   const mathMembers = new Map<string, { text: string; callable: boolean }>()
   for (const statement of source.statements) {
     if (ts.isFunctionDeclaration(statement) && statement.name) {
@@ -150,9 +183,15 @@ function declarations(): Declarations {
       functions.set(statement.name.text, overloads)
     } else if (ts.isTypeAliasDeclaration(statement)) {
       types.set(statement.name.text, statement.getText(source))
+      oneLiners.set(statement.name.text, oneLine(statement.getText(source)))
     } else if (ts.isVariableStatement(statement)) {
       for (const d of statement.declarationList.declarations) {
-        if (ts.isIdentifier(d.name)) values.set(d.name.text, statement.getText(source))
+        if (!ts.isIdentifier(d.name)) continue
+        values.set(d.name.text, statement.getText(source))
+        // `declare const vecTag: unique symbol`, the brand behind an opaque handle type.
+        if (d.type && ts.isTypeOperatorNode(d.type) && d.type.operator === ts.SyntaxKind.UniqueKeyword) {
+          brandTags.add(d.name.text)
+        }
       }
     } else if (ts.isInterfaceDeclaration(statement) && statement.name.text === 'MathObject') {
       for (const member of statement.members) {
@@ -163,7 +202,8 @@ function declarations(): Declarations {
     }
   }
   if (mathMembers.size === 0) throw new Error('[language-reference] SHADE_DTS no longer declares a MathObject interface')
-  return { functions, types, values, mathMembers }
+  if (brandTags.size === 0) throw new Error('[language-reference] SHADE_DTS declares no unique symbol brands any more')
+  return { functions, types, values, mathMembers, oneLiners, brandTags }
 }
 
 // ── the stage rules, read off the front end's own table ───────────────────────────────────
@@ -321,6 +361,9 @@ function build(): readonly LanguageSection[] {
     math: MATH_MEMBER_DOCS,
   }
 
+  // Every name any table documents, so a helper is what is left over.
+  const documented = new Set(Object.values(tables).flatMap((t) => Object.keys(t)))
+
   return LANGUAGE_KINDS.map((kind) => {
     const entries = entriesOf(kind, tables[kind])
     if (entries.length === 0) throw new Error(`[language-reference] the ${kind} table is empty; the page would have nothing on it`)
@@ -334,8 +377,35 @@ function build(): readonly LanguageSection[] {
       const placed = groups.reduce((n, g) => n + g.entries.length, 0)
       if (placed !== entries.length) throw new Error(`[language-reference] ${entries.length} functions, ${placed} placed in a family`)
     }
-    return { kind, slug: LANGUAGE_SLUGS[kind], entries, groups }
+    // What the page has to say about reading a declaration, read off the declarations
+    // themselves. A helper is a type alias the ambient file declares for its own use and no
+    // table documents; a signature that names one carries a type the reader can look up
+    // nowhere, so the page prints its declaration.
+    const writesNumber = entries.some((e) => /\bnumber\b/.test(e.signature))
+    if (SCALAR_SLOT_KINDS.has(kind) && !writesNumber) {
+      throw new Error(`[language-reference] no ${kind} signature writes a bare 'number' any more; drop the kind from SCALAR_SLOT_KINDS`)
+    }
+    const showsNumber = SCALAR_SLOT_KINDS.has(kind) && writesNumber
+    const showsPositions = entries.some((e) => /\ba\d+\b/.test(e.signature))
+    // A type whose declaration names a brand tag is an opaque handle (a texture, a sampler,
+    // the vector and matrix shapes): its body is the tag and says nothing a reader can use.
+    // What is left is the structural helpers, whose body is the vocabulary itself.
+    const isHandle = (text: string): boolean => [...decl.brandTags].some((tag) => new RegExp(`\\b${tag}\\b`).test(text))
+    const helpers = [...decl.oneLiners.entries()]
+      .filter(([name]) => !documented.has(name))
+      .filter(([, text]) => !isHandle(text))
+      .filter(([name]) => entries.some((e) => new RegExp(`\\b${name}\\b`).test(e.signature)))
+      .map(([name, declaration]) => ({ name, declaration }))
+    return { kind, slug: LANGUAGE_SLUGS[kind], entries, groups, showsNumber, showsPositions, helpers }
   })
+}
+
+/** The ambient file's own declaration of a GPU scalar, which is what a `number` in a
+ *  signature stands for. Lifted out of SHADE_DTS so the page quotes the compiler. */
+export function scalarBrand(): string {
+  const text = declarations().types.get('f32')
+  if (!text) throw new Error('[language-reference] SHADE_DTS no longer declares f32')
+  return text
 }
 
 function sections(): readonly LanguageSection[] {

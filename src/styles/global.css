@@ -1263,7 +1263,9 @@ body > main { flex: 1 }
    column (DESIGN.md, the Container Rule) at every width, and a long signature wraps inside
    its own frame. */
 .doc .ref-entry { margin-block-start: 28px; padding-block-start: 24px; border-block-start: 1px solid var(--color-line-1) }
-.doc .ref-entry:first-of-type { margin-block-start: 24px; padding-block-start: 0; border-block-start: none }
+/* The hairline separates one entry from the next, so the first entry after a family heading
+   or after the page's own lead-in carries none. */
+.doc h2 + .ref-entry, .doc .ref-reading + .ref-entry, .doc .guide-note + .ref-entry { margin-block-start: 24px; padding-block-start: 0; border-block-start: none }
 .doc .ref-entry-name {
   margin: 0; font-size: var(--text-h4); line-height: var(--text-h4--line-height);
   font-weight: 600; letter-spacing: normal; scroll-margin-block-start: 88px; overflow-wrap: anywhere;
@@ -1278,6 +1280,21 @@ body > main { flex: 1 }
    footnote and takes the accent only under the pointer. */
 .doc .ref-entry-meta a { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
 .doc .ref-entry-meta a:hover { color: var(--color-accent); text-decoration-color: currentColor }
+/* How to read a declaration, above the entries: what a bare `number` stands for, what a
+   positional parameter name is, and the declaration of each helper type the signatures on
+   this page reach for. The helper list is a label column and a declaration column, and the
+   declaration is one wrapped line, so a sixteen-format union costs a paragraph. */
+.doc .ref-reading { margin-block-start: 20px; font-size: var(--text-ui); color: var(--color-text-2) }
+.doc .ref-reading p { margin-block-start: 10px }
+.doc .ref-helpers { margin-block-start: 10px; display: grid; gap: 4px 16px; grid-template-columns: max-content minmax(0, 1fr) }
+.doc .ref-helpers dt { font-weight: 600; color: var(--color-text-2) }
+.doc .ref-helpers dt code, .doc .ref-helpers dd code { font-size: var(--text-code) }
+.doc .ref-helpers dd { margin: 0; min-width: 0; overflow-wrap: anywhere }
+@media (max-width: 30rem) {
+  .doc .ref-helpers { grid-template-columns: minmax(0, 1fr); gap: 2px }
+  .doc .ref-helpers dt { margin-block-start: 6px }
+}
+
 /* The two target spellings under a builtin function: the target's name in the label column
    and the text that backend writes beside it. Below 30rem the pair stacks, since a GLSL cell
    can hold a whole inlined expression and needs the row's width to itself. */
