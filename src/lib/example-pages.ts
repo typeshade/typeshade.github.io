@@ -48,6 +48,10 @@ export interface ExamplePage {
   /** Why it does not, where it does not. */
   readonly reason?: NoPictureReason
   readonly source: string
+  /** The line the code pane opens on, counted from 0. Several of these files begin with a
+   *  banner comment and a block of imports, and a pane that opened there would show a reader
+   *  no shader at all. */
+  readonly entryLine: number
   readonly emitted: Emitted
   readonly previous?: string
   readonly next?: string
@@ -100,6 +104,25 @@ function sourceOf(file: string): string {
   return text
 }
 
+// Where the shader starts in one of these files, so the code pane opens on it and the reader
+// scrolls up for the header. A `.shade.ts` file declares a stage with `@vertex`, `@fragment`
+// or `@compute`; a `fn()` file builds one by assigning a `fn(` call. A file with neither
+// opens on its first export. The file's own text is never touched.
+const STAGE_LINE = /^[\t ]*(?:@vertex|@fragment|@compute)\b|^[\t ]*(?:const|let|var)\s+\w+\s*=\s*fn\(/
+const EXPORT_LINE = /^[\t ]*export\b/
+
+function entryLineOf(id: string, source: string): number {
+  const lines = source.split('\n')
+  const stage = lines.findIndex((line) => STAGE_LINE.test(line))
+  if (stage >= 0) return stage
+  const exported = lines.findIndex((line) => EXPORT_LINE.test(line))
+  if (exported >= 0) return exported
+  throw new Error(
+    `[example-pages] examples/${id} declares no stage and exports nothing, so the code pane has ` +
+      'no line to open on. Widen STAGE_LINE here if the compiler now writes a stage another way',
+  )
+}
+
 // The order the gallery already shows: the registry's three categories, then the `.shade.ts`
 // groups. The pager walks one of these lists at a time, so previous and next stay inside the
 // group a reader arrived from.
@@ -138,18 +161,22 @@ function build(): readonly ExamplePage[] {
     withPager(
       examples
         .filter((e) => e.category === category)
-        .map((e) => ({
-          id: e.id,
-          corpus: 'registry' as const,
-          file: e.file,
-          title: e.title,
-          group: category,
-          drawn: drawn.has(e.id),
-          ...(reasons[e.id] ? { reason: reasons[e.id]! } : {}),
-          source: sourceOf(e.file),
-          emitted: emittedFor(e.id, e.renderable),
-          inPlayground: inPlayground.has(e.id),
-        })),
+        .map((e) => {
+          const source = sourceOf(e.file)
+          return {
+            id: e.id,
+            corpus: 'registry' as const,
+            file: e.file,
+            title: e.title,
+            group: category,
+            drawn: drawn.has(e.id),
+            ...(reasons[e.id] ? { reason: reasons[e.id]! } : {}),
+            source,
+            entryLine: entryLineOf(e.file, source),
+            emitted: emittedFor(e.id, e.renderable),
+            inPlayground: inPlayground.has(e.id),
+          }
+        }),
     ),
   )
   const byId = new Map(shadeExampleList.map((e) => [e.id, e]))
@@ -157,6 +184,7 @@ function build(): readonly ExamplePage[] {
     withPager(
       g.ids.map((id) => {
         const e = byId.get(id)!
+        const source = sourceOf(e.file)
         return {
           id,
           corpus: 'shade' as const,
@@ -165,7 +193,8 @@ function build(): readonly ExamplePage[] {
           group: g.key,
           drawn: drawn.has(id),
           ...(reasons[id] ? { reason: reasons[id]! } : {}),
-          source: sourceOf(e.file),
+          source,
+          entryLine: entryLineOf(e.file, source),
           emitted: emittedFor(id, e.renderable),
           inPlayground: inPlayground.has(id),
         }

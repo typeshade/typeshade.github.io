@@ -1122,6 +1122,75 @@ body > main { flex: 1 }
 .example-tile-blurb { padding: 4px 16px 16px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
 .example-tile-blurb code { font-family: var(--font-mono); font-size: 0.9em }
 
+/* One example's page, in the shape ShaderToy gives one: a single card split down the middle,
+   the picture on the left and the code on the right, and nothing else in either pane. The
+   card is the showcase card the front page's hero already is (.live-card above), and the
+   right pane's tab bar is the Ant tab head the "one file, two targets" section uses. What a
+   reader is told about the frame and about where the emitted text comes from is written
+   under the card, because a label inside a pane makes that pane read as a figure.
+
+   The card is its own container, because the width it gets depends on the sidebar and the
+   page's own measure; the split follows the card's width and not the window's. */
+.example-stage { container-type: inline-size; margin-block-start: 24px }
+.example-stage-body { display: grid; grid-template-columns: minmax(0, 1fr) }
+
+/* Left: the picture, edge to edge. ShaderCanvas writes a <figure> around its frame and the
+   page places the caption itself, so the figure carries no box of its own here. */
+.example-stage-view { min-inline-size: 0; min-block-size: 0; background: var(--color-surface-2) }
+.example-stage-view .figure { display: contents }
+.example-stage-view .figure-frame {
+  block-size: clamp(220px, 68cqi, 420px); border: 0; border-radius: 0; background: var(--color-surface-2);
+}
+
+/* Right: one pane showing one of four texts, under a bar of its own. */
+.example-stage-code {
+  display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0;
+  block-size: 360px; background: var(--color-elevated);
+  border-block-start: 1px solid var(--color-line-1);
+}
+.example-stage .front-tabs-head {
+  flex: none; align-items: stretch; gap: 20px; block-size: 44px; padding-inline: 16px;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+  border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-1);
+}
+.example-stage .front-tabs-head::-webkit-scrollbar { display: none }
+.example-stage .front-tabs-head button { flex: none; block-size: auto; white-space: nowrap }
+/* The file is where the pane rests, so it leads and a rule sets it apart from the three
+   texts the compiler makes out of it. */
+.example-stage .front-tabs-head button:first-child { padding-inline-end: 20px; position: relative }
+.example-stage .front-tabs-head button:first-child::after {
+  content: ''; position: absolute; inset-block: 13px; inset-inline-end: 0;
+  inline-size: 1px; background: var(--color-line-1);
+}
+/* A 32px fade at the foot hands the cut line to the mask instead of slicing a row of glyphs
+   in half; the head fades the same way once the pane has been scrolled off its first line,
+   which is how a reader is told the banner comment is still up there. With no script the
+   head bar stays hidden and every panel is in this scroller, stacked, which is what the
+   search index reads. */
+.example-stage-panels {
+  flex: 1; min-block-size: 0; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--color-line-2) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+.example-stage-panels[data-scrolled] {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
+}
+.example-stage-code .expressive-code { margin: 0; --ec-brdRad: 0; --ec-brdWd: 0; --ec-frm-shdCol: transparent }
+.example-stage-code pre { border: 0; border-radius: 0; padding-block: 12px }
+.example-stage-code pre > code { font-size: var(--text-code); line-height: 1.6 }
+.example-stage-notes { max-inline-size: var(--content); margin-block-start: 12px; font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2) }
+.example-stage-notes p { margin: 0 }
+.example-stage-notes p + p { margin-block-start: 4px }
+@container (min-width: 44rem) {
+  /* One height for the row, read off the card's own width, so both panes grow with the page. */
+  .example-stage-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); block-size: clamp(360px, 48cqi, 680px) }
+  .example-stage-view .figure-frame { block-size: 100% }
+  .example-stage-code { block-size: auto; border-block-start: 0; border-inline-start: 1px solid var(--color-line-1) }
+}
+.example-page-links { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-block-start: 32px }
+
 /* The examples page opens with a numbered path through the guide. Each step's own heading
    carries its number, so the list marker would print it a second time. */
 .learning-path ol { padding-inline-start: 0; list-style: none }

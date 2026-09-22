@@ -1,0 +1,44 @@
+// The code pane on an example's page opens on the shader. Several of the compiler's example
+// files begin with a banner comment and a block of imports, and a pane that opened at the
+// top would show a reader no shader at all, so the pane is scrolled to the line
+// src/lib/example-pages.ts found the first stage declaration on. The file's own text is
+// untouched, and scrolling up from there reads the header the way opening the file does.
+//
+// A fade at the top says there is more above, once there is: the pane starts with only the
+// foot faded, and the head fades in as soon as the pane is scrolled off its first line.
+
+/** Room between the pane's top edge and the line it opens on. */
+const AIR = 12
+
+for (const panel of document.querySelectorAll<HTMLElement>('[data-entry-line]')) {
+  const scroller = panel.closest<HTMLElement>('[data-example-panels]')
+  if (!scroller) continue
+
+  const mark = (): void => {
+    if (scroller.scrollTop > 1) scroller.dataset.scrolled = ''
+    else delete scroller.dataset.scrolled
+  }
+  scroller.addEventListener('scroll', mark, { passive: true })
+
+  const line = Number(panel.dataset.entryLine)
+  const rows = panel.querySelectorAll<HTMLElement>('pre > code > .ec-line')
+  const row = Number.isInteger(line) && line > 0 ? rows[line] : undefined
+  if (!row) {
+    mark()
+    continue
+  }
+
+  // The code font arrives after this runs, and it changes how tall a line is, so the pane is
+  // placed again once the fonts have settled. A reader who has already scrolled keeps their
+  // place: the second placement only happens while the pane is still where it was put.
+  let placed = -1
+  const place = (): void => {
+    if (placed >= 0 && Math.abs(scroller.scrollTop - placed) > 1) return
+    const top = row.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
+    scroller.scrollTop = Math.max(0, top - AIR)
+    placed = scroller.scrollTop
+    mark()
+  }
+  place()
+  void document.fonts?.ready.then(place)
+}
