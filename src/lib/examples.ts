@@ -7,7 +7,7 @@ import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/i
 import { shortBlurb } from './blurb.ts'
 import { builtinCounts } from './builtin-table.ts'
 import { loweringRowCount, loweringTripLimit } from './typescript-lowering.ts'
-import { shadeCounts } from './shade-examples.ts'
+import { shadeCounts, shadeExampleList } from './shade-examples.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 
 // Read with fs from the site root, without Vite's glob, so scripts run by bun
@@ -273,6 +273,11 @@ export const facts = {
   /** Both corpora, for the sentences that count the repository's examples as a whole. */
   totalExamples: examples.length + shadeCounts.total,
   bothTargets: countBothTargets(),
+  /** How many examples of the two corpora together have a GLSL ES 3.00 pair baked beside
+   *  their WGSL in examples/__emit-goldens__/. The per-example pages read that directory, so
+   *  a pin that stops baking a stage stops the build here as well as at the page that wanted
+   *  the file. */
+  goldenGlslPairs: [...examples, ...shadeExampleList].filter((e) => e.renderable).length,
   wgslOnlyExample: wgslOnlyExample(),
   fp64Examples: examples.filter((e) => e.id.startsWith('fp64')).length,
   testFiles: testFiles.length,
@@ -322,7 +327,7 @@ export const facts = {
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
-  commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302,
+  commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, goldenGlslPairs: 73, testFiles: 302,
   builtins: 139, portableBuiltins: 44, glslAbsentBuiltins: 31, mathAliasBuiltins: 27,
   constructRows: 65, forTripLimit: 256,
 }
@@ -330,6 +335,7 @@ const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
 if (facts.shadeExamples !== pinned.shadeExamples) drift.push(`shadeExamples ${facts.shadeExamples} != ${pinned.shadeExamples}`)
 if (facts.bothTargets !== pinned.bothTargets) drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`)
+if (facts.goldenGlslPairs !== pinned.goldenGlslPairs) drift.push(`goldenGlslPairs ${facts.goldenGlslPairs} != ${pinned.goldenGlslPairs}`)
 if (facts.testFiles < pinned.testFiles) drift.push(`testFiles ${facts.testFiles} < ${pinned.testFiles}`)
 if (facts.builtins !== pinned.builtins) drift.push(`builtins ${facts.builtins} != ${pinned.builtins}`)
 if (facts.portableBuiltins !== pinned.portableBuiltins) drift.push(`portableBuiltins ${facts.portableBuiltins} != ${pinned.portableBuiltins}`)
