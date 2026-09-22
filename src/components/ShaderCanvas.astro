@@ -21,7 +21,9 @@ interface Props {
   locale: Locale
   example: string
   caption: CanvasText
-  aspect: '3/1' | '2/1' | '16/9' | '3/2'
+  /** The frame's shape. `auto` hands the box to the page, for a mount that fills a cell it
+   *  shares with something else (the example pages' two-pane card). */
+  aspect: '3/1' | '2/1' | '16/9' | '3/2' | 'auto'
   /** Draw one frame at a fixed clock, then stop. */
   still?: boolean
   /** Skip the WebGPU probe and draw on WebGL2. */

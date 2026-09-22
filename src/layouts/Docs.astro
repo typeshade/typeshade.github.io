@@ -42,8 +42,12 @@ interface Props {
   breadcrumbs?: readonly { name: string; href: string }[]
   /** The pinned commit's date, for Base's WebPage.dateModified. */
   dateModified?: string
+  /** The document is not prose: it fills the column instead of stopping at the reading
+   *  measure, and holds its own paragraphs to that measure with `.doc-measure`. The example
+   *  pages set it, because the canvas and the code beside it want the whole width. */
+  wide?: boolean
 }
-const { locale = 'en', path, title, description, headings = [], editHref = '#', bodyLang, noindex = false, openCategory, label, meta, breadcrumbs, dateModified } = Astro.props
+const { locale = 'en', path, title, description, headings = [], editHref = '#', bodyLang, noindex = false, openCategory, label, meta, breadcrumbs, dateModified, wide = false } = Astro.props
 const d = copyFor(locale).docs
 
 // The compiler internals' sections follow their overview in the sidebar while the reader is on
@@ -102,7 +106,7 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2
         ))}
       </nav>
     </aside>
-    <article class="doc docs-content" lang={bodyLang} data-pagefind-body data-pagefind-meta={meta} data-permalink={d.permalink}>
+    <article class:list={['doc', 'docs-content', wide && 'docs-content-wide']} lang={bodyLang} data-pagefind-body data-pagefind-meta={meta} data-permalink={d.permalink}>
       <slot />
       <p class="docs-edit" lang={locale} data-pagefind-ignore>
         <a href={editHref}>
