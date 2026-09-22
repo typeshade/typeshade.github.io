@@ -22,10 +22,10 @@ const headings = [
   <h2 id="ts">{content.ts}</h2><p>{content.tsP}</p>
   <h2 id="alias">{content.alias}</h2><p>{content.aliasP}</p>
   <TypeShadeCode code={`type Camera = {\n  view: mat4\n  pos: vec3\n}`} />
-  <h2 id="struct">{content.struct}</h2><p>{content.structP}</p>
+  <h2 id="struct">{content.struct}</h2><p><Rich text={content.structP} locale={locale} /></p>
   <TypeShadeCode code={`class VsIn {\n  position: vec3\n  uv: vec2\n}`} />
   <h2 id="attrs">{content.attrs}</h2><p><Rich text={content.attrsP} locale={locale} /></p>
-  <TypeShadeCode code={`class VsIn {\n  @location(0) position: vec3\n  @location(1) @interpolate("linear") uv: vec2\n}`} />
+  <TypeShadeCode code={`class VsOut {\n  @builtin("position") position: vec4\n  @location(0) uv: vec2\n}`} />
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <h2 id="mapping">{content.mapping}</h2>
   <ConceptDoc locale={locale} rows={content.mappingRows.slice(1)} columns={content.mappingRows[0]} />
