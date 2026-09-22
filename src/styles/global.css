@@ -56,12 +56,18 @@
 
 :root {
   color-scheme: light dark;
-  --gutter-x: 16px;
-  /* One column, about 72 characters of prose wide. Code and figures share it. */
+  /* What holds the page off the screen. It is the only margin the shell has, so it is as
+     small as a focus ring and a code frame's border can sit in. */
+  --gutter-x: 8px;
+  /* The reading measure: running text in a document column stops here, the measure
+     vuejs.org gives its own body, which sets about 100 characters of English at 16px. */
   --content: min(740px, 100vw - 2 * var(--gutter-x));
   /* The wider measure the site map and the docs' figures use. */
   --wide: min(960px, 100vw - 2 * var(--gutter-x));
-  --container: 1200px;
+  /* The shell has no measure of its own: the header, the footer, the front page, the
+     documentation grid and the Playground run the width of the viewport, and the gutters
+     are what holds them off its edge. One token, so a cap is one value away. */
+  --container: none;
   --nav-height: 64px;
   --section-gap: 48px;
   /* The space between the front page's sections: Ant separates by space, with no rule. */
@@ -96,7 +102,7 @@
   --ease-out: cubic-bezier(0.645, 0.045, 0.355, 1);
   --motion: 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
-@media (min-width: 40rem) { :root { --gutter-x: 24px; --section-gap: 56px; --front-gap: 80px } }
+@media (min-width: 40rem) { :root { --gutter-x: 12px; --section-gap: 56px; --front-gap: 80px } }
 
 /* Dark: chosen with the switch in the header, or the system's setting when nothing is chosen.
    Ant's dark algorithm. The same tokens twice, since plain CSS cannot share a block between
@@ -493,16 +499,16 @@ body > main { flex: 1 }
 .docs-toc nav { padding: 4px var(--gutter-x) 16px }
 .docs { display: grid; grid-template-columns: minmax(0, 1fr); max-inline-size: var(--container); margin-inline: auto; padding-inline: var(--gutter-x); background: var(--color-ground) }
 .docs-sidebar, .docs-outline { display: none }
-.docs-content { padding-block: 32px 24px; max-inline-size: 740px; inline-size: 100% }
+.docs-content { padding-block: 32px 24px; inline-size: 100% }
 .docs-content > h1:first-child { margin-block-start: 0 }
 .docs-group { margin-block-start: 20px }
 .docs-group:first-child { margin-block-start: 0 }
-.docs-group-title { padding: 8px 16px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
+.docs-group-title { padding: 8px 12px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
 .docs-group li { margin-block-start: 2px }
 /* Ant Menu: a 40px row, 6px radius, secondary text, the quaternary fill on hover, and the
    current page in the primary over its wash. */
 .docs-group a {
-  display: flex; align-items: center; min-block-size: 40px; padding: 8px 16px;
+  display: flex; align-items: center; min-block-size: 40px; padding: 8px 12px;
   border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-text-2); text-decoration: none;
   transition: color var(--motion), background-color var(--motion);
 }
@@ -511,7 +517,7 @@ body > main { flex: 1 }
 /* A topic, a member of the open reference category or a section of the compiler internals sits
    one level in, under its parent. Only an export's name is set in the code font. */
 .docs-group li.depth-1 { margin-block-start: 0 }
-.docs-group li.depth-1 a { padding-inline-start: 32px }
+.docs-group li.depth-1 a { padding-inline-start: 28px }
 .docs-group li.depth-1.code a { font-family: var(--font-mono); font-size: var(--text-code) }
 .docs-edit { margin-block-start: 40px; font-size: var(--text-ui) }
 .docs-edit a { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
@@ -528,12 +534,12 @@ body > main { flex: 1 }
 .docs-pager a:hover { border-color: var(--color-primary-border); color: var(--color-accent); box-shadow: var(--shadow-secondary) }
 .docs-pager a span { display: block; margin-block-end: 4px; font-size: 0.75rem; font-weight: 400; color: var(--color-text-2) }
 .docs-pager-next { text-align: end }
-.docs-outline-title { padding-inline-start: 16px; font-size: 0.75rem; color: var(--color-text-2) }
+.docs-outline-title { padding-inline-start: 12px; font-size: 0.75rem; color: var(--color-text-2) }
 .docs-outline li, .docs-toc li { position: relative; margin-block-start: 2px }
 .docs-outline li.depth-3 a, .docs-toc li.depth-3 { padding-inline-start: 28px }
 /* Ant Anchor: a 2px rail down the left, and a primary segment beside the heading in view. */
 .docs-outline ul { position: relative; margin-block-start: 8px; border-inline-start: 2px solid var(--color-line-1) }
-.docs-outline a { display: block; padding: 5px 0 5px 16px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+.docs-outline a { display: block; padding: 5px 0 5px 12px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 .docs-outline a::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: -2px; inline-size: 2px; background: transparent; transition: background-color var(--motion) }
 .docs-toc a { display: block; padding: 5px 0; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 .docs-outline a:hover, .docs-toc a:hover { color: var(--color-text-1) }
@@ -543,7 +549,7 @@ body > main { flex: 1 }
   .docs-local, .docs-toc { display: none }
   .docs { grid-template-columns: 240px minmax(0, 1fr); gap: 48px }
   .docs-sidebar { display: block; border-inline-end: 1px solid var(--color-line-1) }
-  .docs-sidebar-in { position: sticky; inset-block-start: 0; max-block-size: 100vh; overflow-y: auto; padding-block: 24px 48px; padding-inline-end: 24px; scrollbar-width: thin }
+  .docs-sidebar-in { position: sticky; inset-block-start: 0; max-block-size: 100vh; overflow-y: auto; padding-block: 24px 48px; padding-inline-end: 16px; scrollbar-width: thin }
   .docs-content { padding-block: 40px 24px }
 }
 @media (min-width: 80rem) {
@@ -830,6 +836,22 @@ body > main { flex: 1 }
 
 /* The document column */
 .doc { padding-block: 8px 24px; font-size: var(--text-prose); line-height: var(--text-prose--line-height) }
+/* The column is as wide as the grid leaves it, so running text is what carries the reading
+   measure. The cap sits on the document's own top-level blocks, the paragraphs, lists,
+   definition lists, quotes and headings a page writes straight into the article or into one
+   of its sections. A block that is a picture of something keeps the whole column: a code
+   frame, a table, a figure, the mapping table and the card grids. Nothing nested inside one
+   of those is capped, so a card and the sentence in it never carry two widths. */
+.doc > :is(p, ul, ol, dl, blockquote, h1, h2, h3, h4, .alert),
+.doc > section > :is(p, ul, ol, dl, blockquote, h2, h3, h4, .alert) {
+  max-inline-size: var(--content);
+}
+.doc .construct-cards, .doc .example-grid { max-inline-size: none }
+/* A block that shows one thing stops at the wide measure: a figure keeps a 3:1 pass from
+   growing into a band as tall as the screen, and a table of short code cells keeps columns
+   a row can be read across. A code frame and a card grid still take the whole column, since
+   a code line has no width of its own and a grid answers the extra width with more cards. */
+.doc figure, .doc .figure-pair, .doc table, .doc .mapping-table { max-inline-size: var(--wide) }
 .doc a { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
 .doc a:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px }
 .doc code { font-family: var(--font-mono); font-size: 0.875em }
@@ -1040,7 +1062,10 @@ body > main { flex: 1 }
    as the cover, the name and the sentence in the body, the whole tile one link to the source
    at the pinned commit. */
 .example-group { margin-block-start: 40px }
-.example-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 16px; margin: 24px 0 0; padding: 0; list-style: none }
+/* A tile is a 3:2 cover with a name and a sentence under it, and 260px is the width the two
+   columns in the old 596px document column gave one, so a wider column carries more tiles
+   instead of taller ones. Under 276px of column the track collapses to one, a phone's. */
+.example-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 24px 16px; margin: 24px 0 0; padding: 0; list-style: none }
 .example-grid li { margin: 0; padding: 0 }
 .example-tile {
   display: flex; flex-direction: column; overflow: hidden; block-size: 100%;
@@ -1068,7 +1093,6 @@ body > main { flex: 1 }
 .example-tile:hover .example-tile-title { color: var(--color-accent) }
 .example-tile-blurb { padding: 4px 16px 16px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
 .example-tile-blurb code { font-family: var(--font-mono); font-size: 0.9em }
-@media (max-width: 30rem) { .example-grid { grid-template-columns: minmax(0, 1fr) } }
 
 /* The examples page opens with a numbered path through the guide. Each step's own heading
    carries its number, so the list marker would print it a second time. */
@@ -1163,7 +1187,13 @@ body > main { flex: 1 }
    panes sit side by side from 48rem and stack below it with the TypeScript first. Every
    measure is relative to the card, so the cards stay inside the document column (DESIGN.md,
    the Container Rule) at every width. */
-.doc .construct-cards { display: grid; gap: 16px; margin: 24px 0 0; padding: 0; list-style: none }
+/* One card per row until two fit. A card holds two code panes side by side, and 620px is
+   where a pane is still the ~280px the panes below are written for, so the column answers
+   the extra width with another card instead of stretching one card's panes across it. */
+.doc .construct-cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr));
+  gap: 16px; margin: 24px 0 0; padding: 0; list-style: none;
+}
 .doc .construct-card {
   margin: 0; padding: 16px;
   border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
@@ -1181,8 +1211,11 @@ body > main { flex: 1 }
   border: 1px solid var(--color-diag); background: none;
   font-size: 0.75rem; line-height: 1.6667; color: var(--color-diag); white-space: nowrap;
 }
+/* The card is as wide as two panes need and a card at the head of a wide column can be the
+   whole column; the sentence under the name keeps the measure a front page paragraph keeps,
+   so it does not run 130 characters across a card nobody meant to be a page. */
 .doc .construct-card-note {
-  margin-block-start: 8px;
+  margin-block-start: 8px; max-inline-size: 62ch;
   font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2);
 }
 .construct-card-panes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-block-start: 12px; align-items: start }

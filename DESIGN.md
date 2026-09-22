@@ -206,8 +206,11 @@ and has a matching Korean cut.
   phone panel's links. Korean pushes a 500 label to 600, because Plex Sans KR ships two weights.
 - Negative tracking sits on the largest sizes alone: -0.02em on the front headline and h1,
   -0.01em on h2. Korean relaxes both and keeps a 1.8 line height with `word-break: keep-all`.
-- The document column holds about 72 characters of prose (740px). A front page section's
-  heading is capped at 24ch and its paragraph at 62ch; the hero's lede is capped at 52ch.
+- Running text in a document stops at 740px, the measure vuejs.org gives its own body, which
+  sets about 100 characters of English at 16px and about 86 of Korean. The column around it is
+  wider than that: 860px at a 1440 viewport, 1340px at 1920. A front page section's heading is
+  capped at 24ch and its paragraph at 62ch; the hero's lede is capped at 52ch, and the sentence
+  under a construct card's name at 62ch.
 - No uppercase labels, no tracked "eyebrow" lines above headings, no single-word labels <!-- ok -->
   under blocks, no "a · b · c" metadata strings. <!-- ok -->
 
@@ -293,29 +296,40 @@ element is fully round except the two-axis pad's dot.
   `#fafafa` frame every page. Under 48rem the header's links, the version menu, the language
   menu and the dark-mode switch sit in a full-screen panel behind a menu button; the magnifier
   stays outside it, one tap away.
-- Three measures. The container is 1200px with 16px gutters, 24px from 40rem: the header, the
-  footer, the front page and the documentation grid share it. A document column is 740px. The
-  wide measure, 960px, is for a docs figure that needs more than the column.
+- Nothing is centred in a container. The header, the footer, the front page, the documentation
+  grid, the examples gallery and the Playground run the width of the viewport, held off it by
+  the gutter alone: 8px, 12px from 40rem. Two measures work inside that shell. Running text
+  stops at 740px. A block that shows one thing stops at the wide measure, 960px: a figure, a
+  pair of figures, a table, the builtin table, and the front page's source beside its output,
+  which takes two of that measure side by side. A code frame and a grid of cards take the whole
+  column they sit in, and a grid answers a wider column with more cards, each at its own size.
 - The front page is a sequence of sections in the container, separated by space with no rule
   between them: 64px, 80px from 40rem. Its hero is a two-column grid from 64rem, 5fr text and
   7fr stage, 48px apart; under that the columns stack with the text first.
 - The documentation grid is one column under 64rem, `240px / 1fr` from 64rem with a 48px gap,
-  and `240px / 1fr / 220px` from 80rem, where the outline joins on the right. A page with no
-  headings keeps the two-column form. Under 64rem the sidebar is a bar under the header that
+  and `240px / 1fr / 220px` from 80rem, where the outline joins on the right. The document
+  column is what that leaves: 700px at a 1280 viewport, 860px at 1440, 1020px at 1600, 1340px
+  at 1920. A page with no headings keeps the two-column form. Under 64rem the sidebar is a bar under the header that
   names the current page, with the page's own headings folded under it.
 - Sections inside a document are 48px apart, 56px from 40rem. The footer starts 96px below the
   content.
+- The Playground is one heading over the tool. The heading, its sentence and its two links sit
+  on the tool's own content edge, 15px in from the region, so they line up with the file name
+  in the toolbar under them, and the heading keeps the 40px a documentation page's h1 has under
+  the header, 32px under 64rem.
 - Breakpoints are 40rem, 48rem, 64rem and 80rem, with two one-off queries: 90rem for the
   headline's last step, and 45rem where a table stops being a table and becomes a stack of
   rows.
 - The one thing that should stand out is a rendered shader. Everything else is quiet.
 - Every canvas has a still image underneath it, captured at build time
   (`bun run capture:stills`), so the page never shows an empty frame.
-- A table sits in the document column, scrolls inside itself, and stacks into labelled rows
-  below 45rem. The layout table keeps its natural width and a caption above it.
+- A table sits at the wide measure inside the document column, scrolls inside itself, and
+  stacks into labelled rows below 45rem. The layout table keeps its natural width and a
+  caption above it.
 
-**The Container Rule.** A full-width page is laid out in the 1200px container with the
-gutters; a page of prose is laid out in the 740px column. A third measure needs a reason.
+**The Container Rule.** Every page is laid out edge to edge behind the gutter. Running text is
+laid out in the 740px measure and a figure, a table or a pair of code panes in the 960px one. A
+third measure needs a reason.
 
 ## Components
 
@@ -332,13 +346,14 @@ gutters; a page of prose is laid out in the 740px column. A third measure needs 
   scales 1.03 over 400ms where the pointer is fine.
 - **Menu.** The documentation sidebar is an Ant Menu: a 40px row, 6px radius, secondary text,
   the 0.04 fill on hover, and the current page in the primary at weight 600 over its wash. A
-  group title is a 12px secondary label. A child sits at 32px of inset, and a child that names
-  an export is set in the mono face.
+  group title is a 12px secondary label. A row is padded 12px, the same distance the header's
+  own content sits from the gutter. A child sits at 28px of inset, and a child that names an
+  export is set in the mono face.
 - **Anchor.** The page outline is an Ant Anchor: a 2px `#f0f0f0` rail down the left, and a
   primary segment beside the heading in view.
 - **Table.** Ant's lines: no vertical rules, a `#fafafa` head at weight 600, 12px by 16px
   cells, a `#f0f0f0` rule under every row, tabular figures, and the whole table scrollable
-  inside the column.
+  inside the wide measure.
 - **Tag.** A 12px chip with a 4px radius, a `#d9d9d9` border and the `#fafafa` fill: the
   version in the header, an optional parameter, a target's support state, the one example that
   emits a single target. The target state that reads "not supported" swaps the border and text
