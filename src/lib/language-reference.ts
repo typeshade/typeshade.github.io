@@ -13,11 +13,18 @@
 // (docs.ts -> compiler/ts/type-map.ts -> typescript) resolves the same way the rest of the
 // site's vendor imports already do (src/lib/concepts-emit.ts, src/lib/examples.ts).
 //
-// What an entry carries: the name, the declaration lifted out of SHADE_DTS, the sentence
-// from its table, and for a builtin function the WGSL and GLSL ES 3.00 text the spelling
-// registry writes (src/lib/builtin-table.ts, which already runs those templates). A
-// documented name with no declaration, or a declaration with no documented name, stops the
-// build and is named in the message.
+// What an entry carries: the name, the declaration lifted out of SHADE_DTS, the parameters
+// and return types parsed out of that same declaration, the sentence from its table, what
+// the CPU oracle does with the name, and for a builtin function the WGSL and GLSL ES 3.00
+// text the spelling registry writes (src/lib/builtin-table.ts, which already runs those
+// templates). A documented name with no declaration, or a declaration with no documented
+// name, stops the build and is named in the message.
+//
+// Each entry has a page of its own at /reference/<kind>/<name>/, the shape /api/ already
+// uses. The kind is a path segment, so the 58 names two tables document at once keep the
+// spelling their table gives them: /reference/types/f32/ and /reference/functions/f32/ are
+// two paths and neither carries a suffix. The six /reference/<kind>/ pages are the indexes
+// over those pages, and languageEntryPaths() is what the two route files build from.
 import ts from 'typescript'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -103,10 +110,50 @@ export interface LanguageSpelling {
   readonly family: BuiltinFamily
 }
 
+/** One parameter of one overload, as the ambient file declares it. */
+export interface LanguageParameter {
+  readonly name: string
+  readonly optional: boolean
+  readonly rest: boolean
+  /** The declared type, collapsed to one line. Empty when the declaration writes none. */
+  readonly type: string
+}
+
+/** One overload of a declaration: what it takes and what it gives back. A type alias has one
+ *  of these too, whose parameters are the alias's type parameters. */
+export interface LanguageOverload {
+  readonly parameters: readonly LanguageParameter[]
+  readonly returns: string | null
+}
+
+/** One row of the Parameters section: the same slot across every overload. The declarations
+ *  disagree about a slot's name (a generated `a0` in one overload, `uv` in another) and about
+ *  its type (`texture_2d<f32>` and `texture_cube<f32>`), so a row carries every type the
+ *  overloads write for it and is marked optional where an overload leaves it out. */
+export interface LanguageParameterRow {
+  readonly name: string
+  readonly optional: boolean
+  readonly rest: boolean
+  readonly types: readonly string[]
+}
+
+/** Another entry of the reference, named from this one: the `Math` spelling of a function,
+ *  or the function a `Math` member routes to. */
+export interface LanguageAlias {
+  readonly kind: LanguageKind
+  readonly name: string
+  /** How that entry heads itself, `Math.abs` or `f32`. */
+  readonly title: string
+}
+
+/** What the CPU oracle does with a name: run it in f64, or stand in for it. A name the
+ *  oracle's two tables do not hold is null, and the page says nothing about it. */
+export type LanguageOracle = 'evaluates' | 'stubs'
+
 /** One documented name. */
 export interface LanguageEntry {
   readonly kind: LanguageKind
-  /** The name the table carries it under, which is also the id of its anchor. */
+  /** The name the table carries it under, which is also its own page's last path segment. */
   readonly name: string
   /** What the entry is headed with: `@vertex` for an attribute, `Math.abs` for a member. */
   readonly title: string
@@ -114,11 +161,40 @@ export interface LanguageEntry {
   readonly signature: string
   /** The compiler's own sentence, Markdown with inline code. */
   readonly summary: string
+  /** The first sentence of it, which is the lead a row of the kind's index carries and the
+   *  lead an entry page opens with. */
+  readonly line: string
+  /** What is left of the sentence after that lead, which is the Description section. Empty
+   *  where the compiler wrote one sentence and the lead is the whole of it. */
+  readonly rest: string
   readonly family: LanguageFamily
+  /** Every overload of the declaration, in the order the ambient file writes them. */
+  readonly overloads: readonly LanguageOverload[]
+  /** Those overloads' parameters merged into one list, in call order. */
+  readonly parameters: readonly LanguageParameterRow[]
+  /** Every type the overloads return, in the order they appear. */
+  readonly returns: readonly string[]
+  /** A parameter row above carries a name the ambient file generated from its position. */
+  readonly positional: boolean
+  /** A decorator an author writes on its own, with no argument list. `@vertex` has only
+   *  that form; `@compute` has it beside the form that takes a workgroup size. */
+  readonly bareForm: boolean
+  /** The declaration also names what the TypeScript decorator runtime hands a decorator,
+   *  which is no part of what a call writes. */
+  readonly protocol: boolean
+  /** This signature writes a bare `number`, which is the scalar slot and not a width an
+   *  author declares. The page says so where this is true. */
+  readonly showsNumber: boolean
+  /** The undocumented helper types this signature names, in the order they are declared. */
+  readonly helpers: readonly LanguageHelper[]
   /** The two target spellings, for a function the spelling registry has an id for. */
   readonly spelling: LanguageSpelling | null
   /** Where a `@builtin(...)` id may be used. Empty means the compiler constrains it nowhere. */
   readonly stages: readonly BuiltinStageRule[]
+  /** The same call under its other name, where the surface has two for it. */
+  readonly alias: LanguageAlias | null
+  /** What the CPU oracle does with this name, where its tables name it. */
+  readonly oracle: LanguageOracle | null
 }
 
 /** A type `SHADE_DTS` declares for its own use, which a signature on a page names and no
@@ -139,29 +215,24 @@ export interface LanguageSection {
   readonly kind: LanguageKind
   readonly slug: string
   readonly entries: readonly LanguageEntry[]
-  /** The functions page runs in family sections; the other five are one list. */
+  /** The functions index runs in family sections; the other five are one list. */
   readonly groups: readonly LanguageGroup[]
-  /** A signature here writes a bare `number`, which is the scalar slot and not a width an
-   *  author declares. The page says so where this is true. */
-  readonly showsNumber: boolean
-  /** A signature here names its parameters by position (`a0`, `a1`), which the ambient file
-   *  generates and a call never uses. */
-  readonly showsPositions: boolean
-  /** The undocumented helper types this section's signatures name, in the order they appear. */
-  readonly helpers: readonly LanguageHelper[]
 }
 
 // ── SHADE_DTS, parsed once ────────────────────────────────────────────────────────────────
 
 interface Declarations {
-  readonly functions: ReadonlyMap<string, readonly string[]>
-  readonly types: ReadonlyMap<string, string>
+  /** The ambient file's own node for each overload, so the signature and the parameter list
+   *  below it come off the same parse. */
+  readonly functions: ReadonlyMap<string, readonly ts.FunctionDeclaration[]>
+  readonly types: ReadonlyMap<string, ts.TypeAliasDeclaration>
   readonly values: ReadonlyMap<string, string>
-  readonly mathMembers: ReadonlyMap<string, { readonly text: string; readonly callable: boolean }>
+  readonly mathMembers: ReadonlyMap<string, ts.TypeElement>
   /** Every type alias again, each one collapsed to a single line. */
   readonly oneLiners: ReadonlyMap<string, string>
   /** The `unique symbol` tags the ambient file brands its opaque handles with. */
   readonly brandTags: ReadonlySet<string>
+  readonly source: ts.SourceFile
 }
 
 function declarations(): Declarations {
@@ -170,19 +241,19 @@ function declarations(): Declarations {
   // conditional type over many lines for its own readability, and a leading `|` after the
   // equals sign is part of that formatting.
   const oneLine = (text: string): string => text.replace(/\s+/g, ' ').replace(/=\s*\|\s*/, '= ').trim()
-  const functions = new Map<string, string[]>()
-  const types = new Map<string, string>()
+  const functions = new Map<string, ts.FunctionDeclaration[]>()
+  const types = new Map<string, ts.TypeAliasDeclaration>()
   const values = new Map<string, string>()
   const oneLiners = new Map<string, string>()
   const brandTags = new Set<string>()
-  const mathMembers = new Map<string, { text: string; callable: boolean }>()
+  const mathMembers = new Map<string, ts.TypeElement>()
   for (const statement of source.statements) {
     if (ts.isFunctionDeclaration(statement) && statement.name) {
       const overloads = functions.get(statement.name.text) ?? []
-      overloads.push(statement.getText(source))
+      overloads.push(statement)
       functions.set(statement.name.text, overloads)
     } else if (ts.isTypeAliasDeclaration(statement)) {
-      types.set(statement.name.text, statement.getText(source))
+      types.set(statement.name.text, statement)
       oneLiners.set(statement.name.text, oneLine(statement.getText(source)))
     } else if (ts.isVariableStatement(statement)) {
       for (const d of statement.declarationList.declarations) {
@@ -197,13 +268,139 @@ function declarations(): Declarations {
       for (const member of statement.members) {
         const name = member.name
         if (!name || !(ts.isIdentifier(name) || ts.isStringLiteral(name))) continue
-        mathMembers.set(name.text, { text: member.getText(source), callable: ts.isMethodSignature(member) })
+        mathMembers.set(name.text, member)
       }
     }
   }
   if (mathMembers.size === 0) throw new Error('[language-reference] SHADE_DTS no longer declares a MathObject interface')
   if (brandTags.size === 0) throw new Error('[language-reference] SHADE_DTS declares no unique symbol brands any more')
-  return { functions, types, values, mathMembers, oneLiners, brandTags }
+  return { functions, types, values, mathMembers, oneLiners, brandTags, source }
+}
+
+// ── the parameters and the return type, off the same parse ────────────────────────────────
+
+/** A parameter name the ambient file generated from its position. A call never writes one,
+ *  so a page that shows such a row says where the name came from. */
+const GENERATED = /^a\d+$/
+
+/** A type as a row shows it: one line, whatever the ambient file's own line breaks were. */
+const flat = (text: string): string => text.replace(/\s+/g, ' ').trim()
+
+/** One overload's parameters and return type. A type alias goes through the same function:
+ *  its parameters are its type parameters, and it returns nothing. */
+function overloadOf(node: ts.SignatureDeclarationBase | ts.TypeAliasDeclaration, source: ts.SourceFile): LanguageOverload {
+  if (ts.isTypeAliasDeclaration(node)) {
+    return {
+      parameters: (node.typeParameters ?? []).map((p) => ({
+        name: p.name.text,
+        optional: p.default !== undefined,
+        rest: false,
+        type: p.constraint ? flat(p.constraint.getText(source)) : '',
+      })),
+      returns: null,
+    }
+  }
+  return {
+    parameters: node.parameters.map((p) => ({
+      name: p.name.getText(source),
+      optional: p.questionToken !== undefined || p.initializer !== undefined,
+      rest: p.dotDotDotToken !== undefined,
+      type: p.type ? flat(p.type.getText(source)) : '',
+    })),
+    returns: node.type ? flat(node.type.getText(source)) : null,
+  }
+}
+
+/** The overloads' parameters as one list. The overloads that carry real names settle the
+ *  rows: a slot sits at the earliest position any of them writes it at, and two slots that
+ *  share a position (`uv` on a 2d texture, `dir` on a cube) keep the order the overloads
+ *  introduced them in. An overload the ambient file named by position has no names to add,
+ *  so its types are folded onto the rows by position instead, and where every overload is
+ *  like that the longest of them names the rows. A slot an overload leaves out is one a
+ *  call may leave out, so the row is marked optional. */
+function mergeParameters(overloads: readonly LanguageOverload[]): LanguageParameterRow[] {
+  const generated = (o: LanguageOverload): boolean => o.parameters.some((p) => GENERATED.test(p.name))
+  const named = overloads.filter((o) => !generated(o))
+  const naming = named.length > 0 ? named : [...overloads].sort((a, b) => b.parameters.length - a.parameters.length).slice(0, 1)
+  interface Slot { name: string; at: number; seq: number; optional: boolean; rest: boolean; types: string[] }
+  const slots = new Map<string, Slot>()
+  for (const o of naming) {
+    o.parameters.forEach((p, i) => {
+      const slot = slots.get(p.name)
+      if (slot) slot.at = Math.min(slot.at, i)
+      else slots.set(p.name, { name: p.name, at: i, seq: slots.size, optional: false, rest: false, types: [] })
+    })
+  }
+  const rows = [...slots.values()].sort((a, b) => a.at - b.at || a.seq - b.seq)
+  for (const o of overloads) {
+    const byPosition = generated(o)
+    const filled = new Set<Slot>()
+    o.parameters.forEach((p, i) => {
+      let row = byPosition ? rows[i] : rows.find((r) => r.name === p.name)
+      if (!row) {
+        row = { name: p.name, at: i, seq: rows.length, optional: true, rest: false, types: [] }
+        rows.push(row)
+      }
+      filled.add(row)
+      if (p.optional) row.optional = true
+      if (p.rest) row.rest = true
+      if (p.type.length > 0 && !row.types.includes(p.type)) row.types.push(p.type)
+    })
+    for (const row of rows) if (!filled.has(row)) row.optional = true
+  }
+  return rows.map(({ name, optional, rest, types }) => ({ name, optional, rest, types }))
+}
+
+// ── the CPU oracle's two tables ───────────────────────────────────────────────────────────
+
+/** `BUILTINS` and `GPU_STUBS` in src/core/cpu-runtime.ts: the builtin ids the oracle runs in
+ *  f64, and the GPU-only ones it stands in for. src/lib/api.ts reads the same pair as
+ *  `oracleBuiltins` and `oracleStubs` for its Targets table; they are read again here rather
+ *  than imported from it, for the reason src/lib/builtin-table.ts gives for repeating its own
+ *  dozen lines: scripts/patch-api-categories.mjs rewrites that file during the build, and a
+ *  page's data should not come out of a patched module. Both tables are object literals with
+ *  identifier keys, so the names come off the AST with nothing evaluated. */
+function oracleTables(): { builtins: ReadonlySet<string>; stubs: ReadonlySet<string> } {
+  const file = 'src/core/cpu-runtime.ts'
+  const abs = path.resolve(process.cwd(), ROOT, file)
+  const source = ts.createSourceFile(file, readFileSync(abs, 'utf8'), ts.ScriptTarget.ES2022, true)
+  const out = new Map<string, Set<string>>()
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      (node.name.text === 'BUILTINS' || node.name.text === 'GPU_STUBS') &&
+      node.initializer &&
+      ts.isObjectLiteralExpression(node.initializer)
+    ) {
+      const names = new Set<string>()
+      for (const p of node.initializer.properties) {
+        if (p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))) names.add(p.name.text)
+      }
+      out.set(node.name.text, names)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  const builtins = out.get('BUILTINS')
+  const stubs = out.get('GPU_STUBS')
+  if (!builtins?.size || !stubs?.size) {
+    throw new Error(`[language-reference] ${file} no longer keeps the oracle's names in BUILTINS and GPU_STUBS`)
+  }
+  return { builtins, stubs }
+}
+
+/** The compiler's sentence cut at its first full stop, for a row of a kind's index. A full
+ *  stop inside a code span belongs to the code (`fract(sin(dot(seed, k)) * s)`), and so does
+ *  one inside `Math.abs`, so the cut only lands where whitespace follows. */
+export function firstSentence(text: string): string {
+  let inCode = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]!
+    if (c === '`') inCode = !inCode
+    else if (!inCode && c === '.' && /\s/.test(text[i + 1] ?? ' ')) return text.slice(0, i + 1)
+  }
+  return text
 }
 
 // ── the stage rules, read off the front end's own table ───────────────────────────────────
@@ -267,6 +464,19 @@ function build(): readonly LanguageSection[] {
   const spellings = new Map<string, { row: BuiltinRow; family: BuiltinFamily }>()
   for (const group of builtinGroups()) for (const row of group.rows) spellings.set(row.id, { row, family: group.family })
 
+  // The `Math.*` surface in both directions, off the same registry rows: the Math name the
+  // compiler routes to an id (`Math.round` for `round`, `Math.fround` for `f32`), and the id
+  // each of those names reaches.
+  const mathNameOfId = new Map<string, string>()
+  const idOfMathName = new Map<string, string>()
+  for (const [id, { row }] of spellings) {
+    if (!row.math) continue
+    mathNameOfId.set(id, row.math)
+    idOfMathName.set(row.math.replace(/^Math\./, ''), id)
+  }
+  const oracle = oracleTables()
+  const source = decl.source
+
   // Every `declare function` in the ambient file belongs to one of the two tables that
   // document a call: the attributes and the functions. A name in neither is an undocumented
   // call the editor would still offer, so it stops the build here.
@@ -289,6 +499,21 @@ function build(): readonly LanguageSection[] {
     throw new Error(`[language-reference] the ${kind} '${name}' is documented and has no ${where}`)
   }
 
+  // Every name any table documents, so a helper is what is left over. A type whose
+  // declaration names a brand tag is an opaque handle (a texture, a sampler, the vector and
+  // matrix shapes): its body is the tag and says nothing a reader can use. What is left is
+  // the structural helpers, whose body is the vocabulary itself, and an entry carries the
+  // ones its own signature reaches for.
+  const documented = new Set(
+    [TYPE_DOCS, ATTRIBUTE_DOCS, BUILTIN_DOCS, FUNCTION_DOCS, CONSTANT_DOCS, MATH_MEMBER_DOCS].flatMap((t) => Object.keys(t)),
+  )
+  const isHandle = (text: string): boolean => [...decl.brandTags].some((tag) => new RegExp(`\\b${tag}\\b`).test(text))
+  const allHelpers: LanguageHelper[] = [...decl.oneLiners.entries()]
+    .filter(([name]) => !documented.has(name))
+    .filter(([, text]) => !isHandle(text))
+    .map(([name, declaration]) => ({ name, declaration }))
+  const helpersIn = (signature: string): LanguageHelper[] => allHelpers.filter((h) => new RegExp(`\\b${h.name}\\b`).test(signature))
+
   const entriesOf = (kind: LanguageKind, docs: Readonly<Record<string, string>>): LanguageEntry[] =>
     Object.entries(docs).map(([name, summary]) => {
       let title = name
@@ -296,14 +521,39 @@ function build(): readonly LanguageSection[] {
       let family: LanguageFamily = 'constructors'
       let spelling: LanguageSpelling | null = null
       let stages: readonly BuiltinStageRule[] = []
+      let bareForm = false
+      let protocol = false
+      // The overloads the Syntax frame prints, parsed as they are lifted, so the Parameters
+      // and Return value sections below read off the same nodes and cannot drift from it.
+      let overloads: LanguageOverload[] = []
       switch (kind) {
-        case 'type':
-          signature = decl.types.get(name) ?? missing(kind, name, 'type alias in SHADE_DTS')
+        case 'type': {
+          const alias = decl.types.get(name) ?? missing(kind, name, 'type alias in SHADE_DTS')
+          signature = alias.getText(source)
+          overloads = [overloadOf(alias, source)]
           break
-        case 'attribute':
+        }
+        case 'attribute': {
           title = `@${name}`
-          signature = (decl.functions.get(name) ?? missing(kind, name, 'declaration in SHADE_DTS')).join('\n')
+          const nodes = decl.functions.get(name) ?? missing(kind, name, 'declaration in SHADE_DTS')
+          signature = nodes.map((n) => n.getText(source)).join('\n')
+          // A decorator's declaration comes in two shapes and only one of them lists what an
+          // author writes. A factory returns the decorator, so its own parameters are the
+          // ones the call site passes (`@location(0)`, `@builtin("position")`). A bare
+          // decorator is the decorator, so its parameters are the two values the TypeScript
+          // decorator runtime hands it and `@vertex` passes neither. The shape is read off
+          // the return type, so a pin that changes these declarations changes the page.
+          const factories = nodes.filter((n) => n.type !== undefined && ts.isFunctionTypeNode(n.type))
+          // What a factory returns is the decorator the runtime calls, and no value the call
+          // site receives, so an attribute has no Return value either.
+          overloads = factories.map((n) => ({ ...overloadOf(n, source), returns: null }))
+          bareForm = factories.length < nodes.length
+          const runtimeArgs = (n: ts.FunctionDeclaration): boolean =>
+            n.parameters.some((param) => param.name.getText(source) === 'target') ||
+            (n.type !== undefined && ts.isFunctionTypeNode(n.type) && n.type.parameters.some((param) => param.name.getText(source) === 'target'))
+          protocol = nodes.some(runtimeArgs)
           break
+        }
         case 'builtin': {
           if (!builtinNames.has(name)) missing(kind, name, 'id in the compiler\'s WGSL_BUILTIN_NAMES')
           title = `@builtin("${name}")`
@@ -318,7 +568,9 @@ function build(): readonly LanguageSection[] {
           break
         }
         case 'function': {
-          signature = (decl.functions.get(name) ?? missing(kind, name, 'declaration in SHADE_DTS')).join('\n')
+          const nodes = decl.functions.get(name) ?? missing(kind, name, 'declaration in SHADE_DTS')
+          signature = nodes.map((n) => n.getText(source)).join('\n')
+          overloads = nodes.map((n) => overloadOf(n, source))
           const known = spellings.get(name)
           if (known) {
             family = known.family
@@ -345,12 +597,69 @@ function build(): readonly LanguageSection[] {
           // The member's own text with `Math.` in front of it, so the line reads the way the
           // call is written. A value member is declared `readonly`, which the qualified name
           // makes redundant.
-          signature = `Math.${member.text.replace(/^readonly\s+/, '')}`
+          signature = `Math.${member.getText(source).replace(/^readonly\s+/, '')}`
+          if (ts.isMethodSignature(member)) overloads = [overloadOf(member, source)]
           break
         }
       }
-      return { kind, name, title, signature, summary, family, spelling, stages }
+      // The same call under its other name. A function carries the `Math` spelling the
+      // compiler's alias table routes to its id; a `Math` member carries the function or the
+      // constant that name reaches. A name with no second spelling gets no See also row.
+      const aliasName = kind === 'function' ? mathNameOfId.get(name)?.replace(/^Math\./, '') : undefined
+      const alias: LanguageAlias | null =
+        kind === 'function'
+          ? aliasName && Object.prototype.hasOwnProperty.call(MATH_MEMBER_DOCS, aliasName)
+            ? { kind: 'math', name: aliasName, title: `Math.${aliasName}` }
+            : Object.prototype.hasOwnProperty.call(MATH_MEMBER_DOCS, name)
+              ? { kind: 'math', name, title: `Math.${name}` }
+              : null
+          : kind === 'math'
+            ? routeOfMath(name)
+            : kind === 'constant' && Object.prototype.hasOwnProperty.call(MATH_MEMBER_DOCS, name)
+              ? { kind: 'math', name, title: `Math.${name}` }
+              : null
+      // The id the oracle's tables would hold for this name: a function's own name, and for a
+      // `Math` member the id the alias table routes it to. Nothing else reaches the oracle
+      // under a name of its own.
+      const oracleId = kind === 'function' ? name : kind === 'math' ? (idOfMathName.get(name) ?? name) : null
+      const parameters = mergeParameters(overloads)
+      const returns = [...new Set(overloads.flatMap((o) => (o.returns ? [o.returns] : [])))]
+      return {
+        kind,
+        name,
+        title,
+        signature,
+        summary,
+        line: firstSentence(summary),
+        rest: summary.slice(firstSentence(summary).length).trim(),
+        family,
+        overloads,
+        parameters,
+        returns,
+        positional: parameters.some((p) => GENERATED.test(p.name)),
+        bareForm,
+        protocol,
+        showsNumber: SCALAR_SLOT_KINDS.has(kind) && /\bnumber\b/.test(signature),
+        helpers: helpersIn(signature),
+        spelling,
+        stages,
+        alias,
+        oracle: oracleId === null ? null : oracle.builtins.has(oracleId) ? 'evaluates' : oracle.stubs.has(oracleId) ? 'stubs' : null,
+      }
     })
+
+  /** Where a `Math` member goes: the function the alias table routes it to, the function of
+   *  the same name, or the constant of the same name. `Math.SQRT2` reaches none of the three
+   *  and gets no row. */
+  function routeOfMath(name: string): LanguageAlias | null {
+    const routed = idOfMathName.get(name)
+    const fn = routed && Object.prototype.hasOwnProperty.call(FUNCTION_DOCS, routed) ? routed : undefined
+    const own = Object.prototype.hasOwnProperty.call(FUNCTION_DOCS, name) ? name : undefined
+    const target = fn ?? own
+    if (target) return { kind: 'function', name: target, title: target }
+    if (Object.prototype.hasOwnProperty.call(CONSTANT_DOCS, name)) return { kind: 'constant', name, title: name }
+    return null
+  }
 
   const tables: Readonly<Record<LanguageKind, Readonly<Record<string, string>>>> = {
     type: TYPE_DOCS,
@@ -360,9 +669,6 @@ function build(): readonly LanguageSection[] {
     constant: CONSTANT_DOCS,
     math: MATH_MEMBER_DOCS,
   }
-
-  // Every name any table documents, so a helper is what is left over.
-  const documented = new Set(Object.values(tables).flatMap((t) => Object.keys(t)))
 
   return LANGUAGE_KINDS.map((kind) => {
     const entries = entriesOf(kind, tables[kind])
@@ -377,35 +683,23 @@ function build(): readonly LanguageSection[] {
       const placed = groups.reduce((n, g) => n + g.entries.length, 0)
       if (placed !== entries.length) throw new Error(`[language-reference] ${entries.length} functions, ${placed} placed in a family`)
     }
-    // What the page has to say about reading a declaration, read off the declarations
-    // themselves. A helper is a type alias the ambient file declares for its own use and no
-    // table documents; a signature that names one carries a type the reader can look up
-    // nowhere, so the page prints its declaration.
-    const writesNumber = entries.some((e) => /\bnumber\b/.test(e.signature))
-    if (SCALAR_SLOT_KINDS.has(kind) && !writesNumber) {
+    // A kind listed as carrying the scalar slot whose signatures have stopped writing a bare
+    // `number` no longer needs the note its entry pages print, so the list is checked here
+    // instead of going stale.
+    if (SCALAR_SLOT_KINDS.has(kind) && !entries.some((e) => e.showsNumber)) {
       throw new Error(`[language-reference] no ${kind} signature writes a bare 'number' any more; drop the kind from SCALAR_SLOT_KINDS`)
     }
-    const showsNumber = SCALAR_SLOT_KINDS.has(kind) && writesNumber
-    const showsPositions = entries.some((e) => /\ba\d+\b/.test(e.signature))
-    // A type whose declaration names a brand tag is an opaque handle (a texture, a sampler,
-    // the vector and matrix shapes): its body is the tag and says nothing a reader can use.
-    // What is left is the structural helpers, whose body is the vocabulary itself.
-    const isHandle = (text: string): boolean => [...decl.brandTags].some((tag) => new RegExp(`\\b${tag}\\b`).test(text))
-    const helpers = [...decl.oneLiners.entries()]
-      .filter(([name]) => !documented.has(name))
-      .filter(([, text]) => !isHandle(text))
-      .filter(([name]) => entries.some((e) => new RegExp(`\\b${name}\\b`).test(e.signature)))
-      .map(([name, declaration]) => ({ name, declaration }))
-    return { kind, slug: LANGUAGE_SLUGS[kind], entries, groups, showsNumber, showsPositions, helpers }
+    return { kind, slug: LANGUAGE_SLUGS[kind], entries, groups }
   })
 }
 
 /** The ambient file's own declaration of a GPU scalar, which is what a `number` in a
  *  signature stands for. Lifted out of SHADE_DTS so the page quotes the compiler. */
 export function scalarBrand(): string {
-  const text = declarations().types.get('f32')
-  if (!text) throw new Error('[language-reference] SHADE_DTS no longer declares f32')
-  return text
+  const decl = declarations()
+  const node = decl.types.get('f32')
+  if (!node) throw new Error('[language-reference] SHADE_DTS no longer declares f32')
+  return node.getText(decl.source)
 }
 
 function sections(): readonly LanguageSection[] {
@@ -429,21 +723,65 @@ export function languageCounts(): Readonly<Record<LanguageKind, number>> & { rea
   return { ...per, total: sections().reduce((n, s) => n + s.entries.length, 0) }
 }
 
-/** Where one entry sits: the page's locale-neutral route and the id of its heading. The two
- *  are apart because a caller prefixes the route with its locale (localePath) and an anchor
- *  takes no prefix. */
-export interface LanguageEntryLink {
-  readonly path: string
-  readonly anchor: string
+/** Every entry of every kind, in the order the kinds and their tables run. */
+export function languageEntries(): readonly LanguageEntry[] {
+  return sections().flatMap((s) => s.entries)
 }
 
-/** The entry for one name of one kind, or undefined when that table has no such name. */
-export function languageEntryLink(kind: LanguageKind, name: string): LanguageEntryLink | undefined {
-  const section = languageSection(kind)
-  return section.entries.some((e) => e.name === name) ? { path: `/reference/${section.slug}/`, anchor: name } : undefined
+/** One entry's own page, locale-neutral. The kind is a path segment, so the 58 names that
+ *  sit in two tables at once need no disambiguating slug: `/reference/types/f32/` and
+ *  `/reference/functions/f32/` are two paths and each is spelled the way the table spells
+ *  the name. */
+export const languageEntryPath = (kind: LanguageKind, name: string): string => `/reference/${LANGUAGE_SLUGS[kind]}/${name}/`
+
+/** The page for one name of one kind, or undefined when that table has no such name. */
+export function languageEntryPage(kind: LanguageKind, name: string): string | undefined {
+  return languageSection(kind).entries.some((e) => e.name === name) ? languageEntryPath(kind, name) : undefined
 }
 
-/** The function entry for a builtin the spelling registry has an id for, or undefined for an
+/** The function page for a builtin the spelling registry has an id for, or undefined for an
  *  id the language surface does not name (the layered texture forms the compiler picks
  *  itself, the storage fetches, the fp64 helpers). The builtin table links each row with it. */
-export const languageBuiltinLink = (id: string): LanguageEntryLink | undefined => languageEntryLink('function', id)
+export const languageBuiltinPage = (id: string): string | undefined => languageEntryPage('function', id)
+
+/** One entry by kind and name. A name the table does not carry stops the build. */
+export function languageEntry(kind: LanguageKind, name: string): LanguageEntry {
+  const found = languageSection(kind).entries.find((e) => e.name === name)
+  if (!found) throw new Error(`[language-reference] the ${kind} table has no '${name}'`)
+  return found
+}
+
+/** The routes the two entry-page route files build, one per documented name in each
+ *  language. The kind goes through as a prop as well as a parameter, so the page component
+ *  is handed the kind itself and not the slug it is spelled with in the path. */
+export function languageEntryPaths(): { params: { kind: string; name: string }; props: { kind: LanguageKind; name: string } }[] {
+  return sections().flatMap((s) => s.entries.map((e) => ({ params: { kind: s.slug, name: e.name }, props: { kind: s.kind, name: e.name } })))
+}
+
+/** The entry before and after one of them inside its own kind, for the pager. Undefined at
+ *  either end, where the page falls back to the kind's index. */
+export function languageSiblings(kind: LanguageKind, name: string): { previous?: LanguageEntry; next?: LanguageEntry } {
+  const entries = languageSection(kind).entries
+  const at = entries.findIndex((e) => e.name === name)
+  if (at < 0) throw new Error(`[language-reference] the ${kind} table has no '${name}'`)
+  return { previous: entries[at - 1], next: entries[at + 1] }
+}
+
+// Every name has to survive being a path segment of its own, and two names of one kind that
+// differ only in case would be one directory on a case-insensitive checkout. Both are
+// checked once, here, so a name added upstream stops the build instead of shipping a page
+// that overwrites another.
+{
+  const bad: string[] = []
+  for (const section of sections()) {
+    const seen = new Map<string, string>()
+    for (const entry of section.entries) {
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(entry.name)) bad.push(`'${entry.name}' (${section.kind}) cannot be a path segment`)
+      const folded = entry.name.toLowerCase()
+      const other = seen.get(folded)
+      if (other) bad.push(`'${entry.name}' and '${other}' (${section.kind}) differ only in case`)
+      seen.set(folded, entry.name)
+    }
+  }
+  if (bad.length > 0) throw new Error(`[language-reference] ${bad.join('; ')}`)
+}

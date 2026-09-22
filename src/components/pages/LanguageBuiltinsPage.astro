@@ -11,7 +11,7 @@ import Rich from '../Rich.astro'
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { apiSlugByName } from '../../lib/api-nav.ts'
 import { builtinGroups, builtinHelpers, type BuiltinFamily, type BuiltinRow } from '../../lib/builtin-table.ts'
-import { languageBuiltinLink } from '../../lib/language-reference.ts'
+import { languageBuiltinPage } from '../../lib/language-reference.ts'
 import { editCopy, links } from '../../lib/links.ts'
 
 interface Props { locale: Locale }
@@ -21,14 +21,14 @@ const groups = builtinGroups()
 const helpers = builtinHelpers()
 const slugs = apiSlugByName()
 
-// A row links the entry that holds the detail: the language reference's own entry for that
+// A row links the page that holds the detail: the language reference's own page for that
 // name where there is one, since this page is written for someone authoring a shader. An id
 // the language surface does not name (the layered texture forms the compiler picks itself,
 // the storage fetches, the fp64 guard) falls back to the compiler's API reference, and an id
 // in neither gets no link, so the page carries none that leads nowhere.
 const pageOf = (name: string): string | undefined => {
-  const entry = languageBuiltinLink(name)
-  if (entry) return `${localePath(locale, entry.path)}#${entry.anchor}`
+  const entry = languageBuiltinPage(name)
+  if (entry) return localePath(locale, entry)
   const slug = slugs.get(name)
   return slug ? localePath(locale, `/api/${slug}/`) : undefined
 }

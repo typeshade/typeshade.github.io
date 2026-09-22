@@ -1399,35 +1399,32 @@ body > main { flex: 1 }
   .button-primary { border: 1px solid CanvasText }
 }
 
-/* The language reference (src/components/ReferenceEntry.astro): one entry per documented
-   name on /reference/<kind>/. A page runs from thirty to a hundred and forty of them, so an
-   entry is a band separated by a hairline instead of a card, and its name is set at the
-   heading size one step under the page's sections whatever level the markup gives it: the
-   functions page runs its entries under a family heading and the other five run them at the
-   top level. Every measure is relative to the entry, so an entry stays inside the document
-   column (DESIGN.md, the Container Rule) at every width, and a long signature wraps inside
-   its own frame. */
-.doc .ref-entry { margin-block-start: 28px; padding-block-start: 24px; border-block-start: 1px solid var(--color-line-1) }
-/* The hairline separates one entry from the next, so the first entry after a family heading
-   or after the page's own lead-in carries none. */
-.doc h2 + .ref-entry, .doc .ref-reading + .ref-entry, .doc .guide-note + .ref-entry { margin-block-start: 24px; padding-block-start: 0; border-block-start: none }
-.doc .ref-entry-name {
-  margin: 0; font-size: var(--text-h4); line-height: var(--text-h4--line-height);
-  font-weight: 600; letter-spacing: normal; scroll-margin-block-start: 88px; overflow-wrap: anywhere;
-}
-.doc .ref-entry-name code { font-size: 1em; color: inherit }
-.doc .ref-entry-summary { margin-block-start: 8px; color: var(--color-text-2) }
+/* The language reference (src/components/pages/ReferenceEntryPage.astro): one documented
+   name per page, under the sections /api/ already uses. What is left here is the parts that
+   page has and an API page does not: a declaration the highlighter does not set, the lines
+   under the Description heading, the types beside a parameter, the helper declarations and
+   the two target spellings. Every measure is relative to the element, so each stays inside
+   the document column (DESIGN.md, the Container Rule) at every width and a long declaration
+   wraps inside its own frame. */
 .doc .ref-entry-code { margin-block-start: 12px; overflow-wrap: anywhere }
 .doc .ref-entry-code code { font-size: var(--text-code) }
 .doc .ref-entry-meta { margin-block-start: 10px; font-size: var(--text-ui); color: var(--color-text-3) }
 .ref-label { font-weight: 600; color: var(--color-text-2) }
-/* The link back to the builtin table sits under every builtin function, so it reads as a
-   footnote and takes the accent only under the pointer. */
 .doc .ref-entry-meta a { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
 .doc .ref-entry-meta a:hover { color: var(--color-accent); text-decoration-color: currentColor }
-/* How to read a declaration, above the entries: what a bare `number` stands for, what a
-   positional parameter name is, and the declaration of each helper type the signatures on
-   this page reach for. The helper list is a label column and a declaration column, and the
+/* One parameter per row: the name, whether a call may leave it out, and every type the
+   overloads write for that slot. A slot the overloads spell several ways carries one type
+   per spelling, and the row wraps inside the column. The return types are the same row
+   without a name. */
+.doc .ref-params { margin-block-start: 16px; padding-inline-start: 0; list-style: none }
+.doc .ref-params li, .doc .ref-types {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  min-width: 0; margin-block-start: 10px;
+}
+.doc .ref-param-name { font-weight: 600; color: var(--color-text-1) }
+.doc .ref-params code, .doc .ref-types code { overflow-wrap: anywhere }
+/* How to read a declaration, under the Syntax frame: what a bare `number` stands for and
+   the declaration of each helper type this signature reaches for. The helper list is a label column and a declaration column, and the
    declaration is one wrapped line, so a sixteen-format union costs a paragraph. */
 .doc .ref-reading { margin-block-start: 20px; font-size: var(--text-ui); color: var(--color-text-2) }
 .doc .ref-reading p { margin-block-start: 10px }

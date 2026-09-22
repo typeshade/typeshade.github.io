@@ -26,14 +26,19 @@ const summary = [
 const absolute = (href: string) => (href.startsWith('/') ? `https://typeshade.dev${href}` : href)
 
 // The six kind pages of the language reference, named the way the English dictionary names
-// them, so a page added to the reference upstream reaches this file with the next pin.
+// them, so a page added to the reference upstream reaches this file with the next pin. Each
+// one is the index over its names, and every name has a page of its own one segment further
+// in at /reference/<kind>/<name>/; the index lists and links every one of them, so the
+// index's row here covers the set, the way the examples gallery's row covers the per-example
+// pages. The sidebar names the six indexes and no entry page, so the check below, which
+// holds the sidebar to this table, needs nothing added to it.
 const kindNotes: Readonly<Record<string, string>> = {
-  types: 'the scalar, vector, matrix and memory types a declaration names',
-  attributes: 'the decorators that mark an entry point and bind a field to the pipeline',
-  'builtin-values': 'the @builtin(...) ids the pipeline supplies, with the stage each belongs to',
-  functions: 'the functions a shader calls, with the WGSL and GLSL text written for each',
-  constants: 'the compile-time literals the compiler inlines, and discard',
-  math: 'the Math members a shader may reach, each routed to a builtin or a literal',
+  types: 'the scalar, vector, matrix and memory types a declaration names, one page each',
+  attributes: 'the decorators that mark an entry point and bind a field to the pipeline, one page each',
+  'builtin-values': 'the @builtin(...) ids the pipeline supplies, with the stage each belongs to, one page each',
+  functions: 'the functions a shader calls, with the WGSL and GLSL text written for each, one page each',
+  constants: 'the compile-time literals the compiler inlines, and discard, one page each',
+  math: 'the Math members a shader may reach, each routed to a builtin or a literal, one page each',
 }
 const referenceKinds = languageSections().map((section) => {
   const note = kindNotes[section.slug]
@@ -79,7 +84,7 @@ const table = [
   { dest: links.conceptsWebgpu, note: 'what the host application owns, what the compiler owns, and where WebGL2 differs' },
   { dest: links.conceptsWgsl, note: `the same source emitted as WGSL and as ${facts.glslTarget}, with the differences between the targets` },
   { dest: links.examples, note: `the ${facts.totalExamples} examples, one page each with the shader running and the text it emits, the GLSL emit and the emulated-double demo` },
-  { dest: links.reference, note: `the language reference, every name a "use typeshade" file can write, one page per kind` },
+  { dest: links.reference, note: `the language reference, every name a "use typeshade" file can write, one page per name under six indexes` },
   ...referenceKinds,
   { dest: links.api, note: 'the compiler API reference, one page per public export, for a host application and the fn() builder' },
   { dest: links.internals, note: 'the compiler internals, one page per section of AUTHORING.md' },

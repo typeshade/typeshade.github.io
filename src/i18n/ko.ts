@@ -360,6 +360,36 @@ export const ko: Copy = {
         const suffixes = [', "use typeshade" 파일에서 쓰는 이름을 모은 TypeShade 언어 참조', ', TypeShade 언어 참조에서 쓰는 이름 목록', ', TypeShade 언어 참조']
         return name + (suffixes.find((suffix) => (name + suffix).length <= 60) ?? '')
       },
+      entry: {
+        // 영어와 같은 이유로 60자 안에서 들어가는 만큼만 꾸밈말을 붙입니다. 이름이 가장 짧은 `E`부터
+        // 가장 긴 `textureSampleCompareLevel`까지 재어 보면 45자에서 60자 사이에 들어갑니다.
+        title: (name: string, kind: string) => {
+          const suffixes = [
+            `: "use typeshade" 파일에서 쓰는 ${kind} 이름 하나, TypeShade 언어 참조`,
+            `: TypeShade 언어 참조에 실린 ${kind} 이름과 그 시그니처`,
+            `: TypeShade 언어 참조에 실린 ${kind} 이름`,
+            `: TypeShade 언어 참조의 ${kind}`,
+          ]
+          return name + (suffixes.find((suffix) => (name + suffix).length <= 60) ?? suffixes[suffixes.length - 1]!)
+        },
+        description: (name: string, kind: string, summary: string) => `${name}, TypeShade 언어 참조의 ${kind}입니다. ${summary}`,
+        kindNames: { type: '타입', attribute: '어트리뷰트', builtin: '내장 값', function: '함수', constant: '상수', math: 'Math 멤버' },
+        kindWords: { type: '타입', attribute: '어트리뷰트', builtin: '내장 값', function: '함수', constant: '상수', math: 'Math 멤버' },
+        kindMeta: '종류',
+        syntax: '구문',
+        parameters: '매개변수',
+        returnValue: '반환값',
+        descriptionHeading: '설명',
+        targets: '대상별 출력',
+        examples: '예제',
+        seeAlso: '함께 보기',
+        optional: '선택 사항',
+        decoratorNone: '이 데코레이터는 인자 없이 그대로 붙입니다.',
+        decoratorBareToo: '인자 없이 그대로 붙이는 형태도 있습니다.',
+        decoratorProtocol: '선언에는 TypeScript 데코레이터 런타임이 넘겨주는 `target`과 `context`도 적혀 있습니다. 호출에서는 둘 다 쓰지 않습니다.',
+        oracleEvaluates: 'CPU 오라클이 f64로 직접 계산합니다.',
+        oracleStub: 'CPU 오라클에는 텍스처 메모리도 이웃 프래그먼트도 없습니다. `{ gpuStubs: true }`로 컴파일한 모듈이 아니면 호출이 예외를 던집니다. 그 옵션을 주면 자리를 채우는 값이 돌아옵니다.',
+      },
       kinds: {
         type: {
           name: '타입',

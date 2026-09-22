@@ -292,6 +292,50 @@ export const en = {
         const suffixes = [', the TypeShade language reference for shaders', ', the TypeShade language reference', ', TypeShade language reference', ', TypeShade']
         return name + (suffixes.find((suffix) => (name + suffix).length <= 60) ?? '')
       },
+      // One documented name on a page of its own, at /reference/<kind>/<name>/. The page
+      // keeps MDN's order, the order /api/ already keeps: Syntax, Parameters, Return value,
+      // Description, Targets, Examples, See also, and leaves out a section the compiler
+      // supplies nothing for.
+      entry: {
+        // The title carries the name and what kind of name it is, and takes the longest
+        // suffix that stays inside the 60 characters check-seo.mjs allows. Measured over
+        // every name in the reference, the shortest of them `E` and the longest
+        // `textureSampleCompareLevel`: the titles run from 45 to 60 characters.
+        title: (name: string, kind: string) => {
+          const suffixes = [
+            `: ${kind} in the TypeShade language reference`,
+            `: ${kind}, TypeShade language reference`,
+            `: ${kind}, TypeShade reference`,
+          ]
+          return name + (suffixes.find((suffix) => (name + suffix).length <= 60) ?? suffixes[suffixes.length - 1]!)
+        },
+        // 'attribute' is the one kind that starts with a vowel, so the article follows the word.
+        description: (name: string, kind: string, summary: string) =>
+          `${name}, ${/^[aeiou]/i.test(kind) ? 'an' : 'a'} ${kind} in the TypeShade language reference. ${summary}`,
+        kindNames: { type: 'Type', attribute: 'Attribute', builtin: 'Builtin value', function: 'Function', constant: 'Constant', math: 'Math member' },
+        kindWords: { type: 'type', attribute: 'attribute', builtin: 'builtin value', function: 'function', constant: 'constant', math: 'Math member' },
+        kindMeta: 'Kind',
+        syntax: 'Syntax',
+        parameters: 'Parameters',
+        returnValue: 'Return value',
+        descriptionHeading: 'Description',
+        targets: 'Targets',
+        examples: 'Examples',
+        seeAlso: 'See also',
+        optional: 'optional',
+        // A decorator, under its Parameters heading. `@vertex` is written on its own, and
+        // `@compute` has that form beside the one that takes a workgroup size, so the two
+        // lines are apart. The third names the values the declaration carries for the
+        // TypeScript decorator runtime, which a call never writes.
+        decoratorNone: 'This decorator is written on its own and takes no arguments.',
+        decoratorBareToo: 'It is also written on its own, with no arguments.',
+        decoratorProtocol: 'The declaration also names what the TypeScript decorator runtime hands a decorator, `target` and `context`. A call passes neither.',
+        // What the CPU oracle does with the name, from the two tables it keeps its own
+        // builtins and its GPU stubs in. The wording is the one the API reference's Targets
+        // table already gives the same two cases.
+        oracleEvaluates: 'Evaluated in f64 by the CPU oracle.',
+        oracleStub: 'The CPU oracle has no texture memory and no neighbouring fragments. The call throws unless the module was compiled with `{ gpuStubs: true }`, which returns a placeholder.',
+      },
       kinds: {
         type: {
           name: 'Types',
