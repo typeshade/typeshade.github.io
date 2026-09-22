@@ -16,6 +16,9 @@ const { locale, path, switchTarget } = Astro.props
 const t = copyFor(locale)
 const columns = [
   {
+    // The group with the links in it. It spans most of the site map's tracks and its list
+    // runs down them, so it never stands as one tall column beside the two short ones.
+    wide: true,
     h: t.footer.docs,
     items: [
       ...docsPages(locale),
@@ -46,7 +49,7 @@ const columns = [
 <footer class="site-footer" data-pagefind-ignore>
   <div class="site-map">
     {columns.map((c) => (
-      <div class="site-map-col">
+      <div class:list={['site-map-col', 'wide' in c && c.wide ? 'site-map-docs' : undefined]}>
         <h2>{c.h}</h2>
         <ul>
           {c.items.map((i) => (

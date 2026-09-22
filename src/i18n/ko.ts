@@ -226,6 +226,28 @@ export const ko: Copy = {
         fromWgsl: 'WGSL에서',
         fromGlsl: 'GLSL에서',
         builtins: '내장 함수'
+      },
+      mappingSections: {
+        fromTypescript: {
+          declarations: '선언',
+          functions: '함수',
+          classes: '클래스',
+          controlFlow: '제어 흐름',
+          expressions: '식과 타입',
+          double: '배정밀도 에뮬레이션'
+        },
+        fromWgsl: {
+          types: '타입',
+          resources: '리소스',
+          entries: '진입점',
+          statements: '문과 식'
+        },
+        fromGlsl: {
+          types: '타입',
+          uniforms: '유니폼',
+          variables: 'builtin 변수',
+          functions: '함수'
+        }
       }
     },
     introduction: '소개',
@@ -337,6 +359,36 @@ export const ko: Copy = {
       kindTitle: (name: string) => {
         const suffixes = [', "use typeshade" 파일에서 쓰는 이름을 모은 TypeShade 언어 참조', ', TypeShade 언어 참조에서 쓰는 이름 목록', ', TypeShade 언어 참조']
         return name + (suffixes.find((suffix) => (name + suffix).length <= 60) ?? '')
+      },
+      entry: {
+        // 영어와 같은 이유로 60자 안에서 들어가는 만큼만 꾸밈말을 붙입니다. 이름이 가장 짧은 `E`부터
+        // 가장 긴 `textureSampleCompareLevel`까지 재어 보면 45자에서 60자 사이에 들어갑니다.
+        title: (name: string, kind: string) => {
+          const suffixes = [
+            `: "use typeshade" 파일에서 쓰는 ${kind} 이름 하나, TypeShade 언어 참조`,
+            `: TypeShade 언어 참조에 실린 ${kind} 이름과 그 시그니처`,
+            `: TypeShade 언어 참조에 실린 ${kind} 이름`,
+            `: TypeShade 언어 참조의 ${kind}`,
+          ]
+          return name + (suffixes.find((suffix) => (name + suffix).length <= 60) ?? suffixes[suffixes.length - 1]!)
+        },
+        description: (name: string, kind: string, summary: string) => `${name}, TypeShade 언어 참조의 ${kind}입니다. ${summary}`,
+        kindNames: { type: '타입', attribute: '어트리뷰트', builtin: '내장 값', function: '함수', constant: '상수', math: 'Math 멤버' },
+        kindWords: { type: '타입', attribute: '어트리뷰트', builtin: '내장 값', function: '함수', constant: '상수', math: 'Math 멤버' },
+        kindMeta: '종류',
+        syntax: '구문',
+        parameters: '매개변수',
+        returnValue: '반환값',
+        descriptionHeading: '설명',
+        targets: '대상별 출력',
+        examples: '예제',
+        seeAlso: '함께 보기',
+        optional: '선택 사항',
+        decoratorNone: '이 데코레이터는 인자 없이 그대로 붙입니다.',
+        decoratorBareToo: '인자 없이 그대로 붙이는 형태도 있습니다.',
+        decoratorProtocol: '선언에는 TypeScript 데코레이터 런타임이 넘겨주는 `target`과 `context`도 적혀 있습니다. 호출에서는 둘 다 쓰지 않습니다.',
+        oracleEvaluates: 'CPU 오라클이 f64로 직접 계산합니다.',
+        oracleStub: 'CPU 오라클에는 텍스처 메모리도 이웃 프래그먼트도 없습니다. `{ gpuStubs: true }`로 컴파일한 모듈이 아니면 호출이 예외를 던집니다. 그 옵션을 주면 자리를 채우는 값이 돌아옵니다.',
       },
       kinds: {
         type: {
@@ -1417,7 +1469,7 @@ export const ko: Copy = {
         title: 'TypeScript 문법과 그 변환 결과',
         description: `"use typeshade" 파일에서 TypeScript 문법 ${facts.constructRows}가지가 각각 무엇이 되는지 정리합니다. 선언, 함수, 클래스, 제어 흐름, 그리고 컴파일러가 생성하는 셰이더 코드를 함께 싣습니다.`,
         h1: 'TypeScript 문법',
-        intro: `TypeShade는 셰이더 컴파일러가 검사하는 TypeScript 문법입니다. 문법 하나는 셰이더 코드로 하향 변환되거나, 이유가 붙은 거절을 받습니다. 아래 카드마다 오른쪽 칸에 놓인 코드는 고정된 커밋의 컴파일러가 낸 것이며, 여기에 ${facts.constructRows}가지를 실었습니다.`,
+        intro: `TypeShade는 셰이더 컴파일러가 검사하는 TypeScript 문법입니다. 문법 하나는 셰이더 코드로 하향 변환되거나, 이유가 붙은 거절을 받습니다. 카드마다 오른쪽 칸에 놓인 코드는 고정된 커밋의 컴파일러가 낸 것입니다. 아래 섹션 페이지에 ${facts.constructRows}가지를 나눠 실었습니다.`,
         readingH: '카드 하나를 읽는 법',
         readingP: '카드 머리에는 문법의 이름이 있고, 언어가 거절하는 문법에는 표시가 하나 붙습니다. 이름 아래 문장은 그것이 무엇이 되는지 말합니다. 왼쪽 칸은 TypeScript이며, 이 페이지를 빌드할 때 컴파일하는 `"use typeshade"` 프로그램에서 그대로 가져옵니다. 오른쪽 칸은 생성된 WGSL이고, 그 프로그램에서 이름으로 잘라 낸 부분입니다. 거절되는 카드에는 그 자리에 컴파일러가 낸 코드와 메시지가 들어갑니다.',
         guidesP: '카드 하나는 무슨 일이 일어나는지만 말합니다. 왜 그런지는 앞선 페이지들이 설명합니다. [타입](languageTypes), [함수](languageFunctions), [제어 흐름](languageControlFlow), [GPU 타입](languageGpuTypes), [리소스](languageResources)를 보십시오. 내장 함수는 [별도의 표](languageBuiltins)에 있습니다.',
@@ -1425,6 +1477,34 @@ export const ko: Copy = {
         paneWgsl: '생성된 WGSL',
         paneDiagnostic: '컴파일러 진단',
         refused: '거절',
+        pagesH: '섹션',
+        constructs: (n: number) => `구성 요소 ${n}가지`,
+        pages: {
+          declarations: {
+            title: '선언과 그 변환 결과',
+            description: '"use typeshade" 파일에서 상수와 변수, enum, 타입 별칭, 인터페이스, 네임스페이스가 각각 무엇이 되고 무엇이 생성되는지 싣습니다.'
+          },
+          functions: {
+            title: '함수와 그 변환 결과',
+            description: '헬퍼와 화살표 함수, 오버로드, 재귀, 진입점, 그리고 컴파일러가 거절하는 호출을 하나씩 짚고, 각각에 대해 생성된 셰이더 코드를 함께 놓습니다.'
+          },
+          classes: {
+            title: '클래스와 그 변환 결과',
+            description: '생성자와 메서드, 정적 멤버, 상속, 믹스인, 제네릭이 각각 무엇이 되는지, 컴파일러가 쓰는 구조체와 함수를 옆에 나란히 놓고 보여 줍니다.'
+          },
+          controlFlow: {
+            title: '제어 흐름과 그 변환 결과',
+            description: '조건과 횟수가 정해진 루프, while, switch, 삼항 연산, break, continue, discard를 생성 코드와 함께 놓고, 거절되는 루프도 보여 줍니다.'
+          },
+          expressions: {
+            title: '식과 타입, 그리고 그 변환 결과',
+            description: '타입 주장과 구조 분해, 전개, 리터럴, 그리고 실행 중에 만들 수 없는 값을 각각 생성 코드나 거절 메시지와 함께 놓습니다.'
+          },
+          double: {
+            title: 'TypeShade 파일의 배정밀도 에뮬레이션',
+            description: '두 타깃 모두 64비트 부동소수점이 없어서 배정밀도 값은 단정밀도 워드 쌍입니다. 컴파일러가 무엇을 다시 쓰고 어떤 호출로 연산을 대신하는지 봅니다.'
+          }
+        },
         sections: {
           declarations: {
             h: '선언',
@@ -1532,6 +1612,25 @@ export const ko: Copy = {
         colType: '타입',
         colNote: '설명',
         colInstead: '대신 적을 것',
+        pagesH: '섹션',
+        pages: {
+          types: {
+            title: 'WGSL 스칼라와 벡터, 행렬의 표기',
+            description: 'WGSL 타입 표면을 TypeShade 표기와 나란히 놓습니다. 스칼라와 벡터, 행렬, 배열과 atomic, 텍스처와 샘플러를 다룹니다.'
+          },
+          resources: {
+            title: 'WGSL 리소스와 주소 공간의 TypeShade 표기',
+            description: '리소스는 declare로 적고, 주소 공간과 접근 모드는 타입 주석에 씌우는 래퍼 타입입니다. 슬롯 번호는 파일에 적은 순서가 정합니다.'
+          },
+          entries: {
+            title: 'WGSL 진입점과 속성의 TypeShade 표기',
+            description: '스테이지 속성과 워크그룹 크기, 버텍스 진입점이 내야 하는 값, 파이프라인이 주는 builtin 이름, 그리고 WGSL에 없는 이름을 다룹니다.'
+          },
+          statements: {
+            title: 'WGSL의 문과 식, 그리고 그 TypeShade 표기',
+            description: '문은 TypeScript의 문이고, 하나하나가 옆에 놓인 WGSL과 같은 뜻입니다. 생성된 코드는 이 페이지를 빌드할 때 컴파일한 파일 하나에서 나옵니다.'
+          }
+        },
         typesH: '타입',
         typesP: '타입은 WGSL이 타입을 적는 자리, 곧 선언과 매개변수와 필드와 반환 위치에 그대로 적습니다. WGSL이 타입 인자를 받는 자리에서는 요소 타입이 이름 안으로 들어가므로 `vec3<u32>`는 `vec3u`가 되고, 꺾쇠 안에서 틀릴 것이 남지 않습니다.',
         scalarsH: '스칼라',
@@ -1601,6 +1700,25 @@ export const ko: Copy = {
         colDirective: '소스 지시문',
         colExtension: 'WebGL2 확장',
         noDirective: '없습니다. 프로그램을 링크하기 전에 호스트가 확장을 켭니다.',
+        pagesH: '섹션',
+        pages: {
+          types: {
+            title: `${glsl} 타입과 그 TypeShade 표기`,
+            description: `${glsl} 타입 표면을 TypeShade 표기와 나란히 놓습니다. 스칼라와 벡터, 행렬, 배열, 샘플러, 그리고 이 타깃이 거부하는 타입을 다룹니다.`
+          },
+          uniforms: {
+            title: `${glsl}의 유니폼과 버퍼, 그 TypeShade 표기`,
+            description: '유니폼 바인딩은 생성기가 블록으로 내보내는 구조체이고, varying은 양쪽 모두에서 필드입니다. 이 타깃이 아는 기능은 하나에 한 행씩입니다.'
+          },
+          variables: {
+            title: `${glsl}의 builtin 변수와 그 TypeShade 표기`,
+            description: 'gl_ 전역 변수는 매개변수나 클래스 필드나 반환 자리에 붙는 builtin 속성이고, 그것이 어느 전역 변수가 될지는 생성기가 정합니다.'
+          },
+          functions: {
+            title: `${glsl}의 함수와 연산자, 그 TypeShade 표기`,
+            description: '호출은 중립 이름 하나로 다니고 백엔드마다 자기 표기를 씁니다. GLSL 작성자가 찾는 미분과 텍스처, 비트, 나머지 형태를 싣습니다.'
+          }
+        },
         typesH: '타입',
         typesP: '스칼라와 벡터 이름은 WGSL의 것입니다. 소스 하나가 두 타깃을 모두 맡아야 하기 때문입니다. GLSL 생성기가 그 이름을 이 타깃의 말로 옮기므로, 선언에 `f32`라고 적은 것이 생성된 셰이더에서는 `float`가 됩니다.',
         scalarsH: '스칼라',

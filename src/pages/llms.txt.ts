@@ -26,14 +26,19 @@ const summary = [
 const absolute = (href: string) => (href.startsWith('/') ? `https://typeshade.dev${href}` : href)
 
 // The six kind pages of the language reference, named the way the English dictionary names
-// them, so a page added to the reference upstream reaches this file with the next pin.
+// them, so a page added to the reference upstream reaches this file with the next pin. Each
+// one is the index over its names, and every name has a page of its own one segment further
+// in at /reference/<kind>/<name>/; the index lists and links every one of them, so the
+// index's row here covers the set, the way the examples gallery's row covers the per-example
+// pages. The sidebar names the six indexes and no entry page, so the check below, which
+// holds the sidebar to this table, needs nothing added to it.
 const kindNotes: Readonly<Record<string, string>> = {
-  types: 'the scalar, vector, matrix and memory types a declaration names',
-  attributes: 'the decorators that mark an entry point and bind a field to the pipeline',
-  'builtin-values': 'the @builtin(...) ids the pipeline supplies, with the stage each belongs to',
-  functions: 'the functions a shader calls, with the WGSL and GLSL text written for each',
-  constants: 'the compile-time literals the compiler inlines, and discard',
-  math: 'the Math members a shader may reach, each routed to a builtin or a literal',
+  types: 'the scalar, vector, matrix and memory types a declaration names, one page each',
+  attributes: 'the decorators that mark an entry point and bind a field to the pipeline, one page each',
+  'builtin-values': 'the @builtin(...) ids the pipeline supplies, with the stage each belongs to, one page each',
+  functions: 'the functions a shader calls, with the WGSL and GLSL text written for each, one page each',
+  constants: 'the compile-time literals the compiler inlines, and discard, one page each',
+  math: 'the Math members a shader may reach, each routed to a builtin or a literal, one page each',
 }
 const referenceKinds = languageSections().map((section) => {
   const note = kindNotes[section.slug]
@@ -55,9 +60,23 @@ const table = [
   { dest: links.languageGpuTypes, note: 'scalars, vectors, matrices and arrays' },
   { dest: links.languageResources, note: 'uniform and storage declarations, access modes and binding slots' },
   { dest: links.languageStages, note: 'the vertex, fragment and compute decorators' },
-  { dest: links.languageFromTypescript, note: 'every TypeScript construct, what it lowers to, and the shader text it emits' },
-  { dest: links.languageFromWgsl, note: 'the WGSL surface construct by construct, with the TypeShade spelling of each one' },
-  { dest: links.languageFromGlsl, note: `the ${facts.glslTarget} surface construct by construct, with the TypeShade spelling of each one` },
+  { dest: links.languageFromTypescript, note: 'every TypeScript construct, what it lowers to, and the shader text it emits, one page per section' },
+  { dest: links.fromTsDeclarations, note: 'constants, variables, enums, type aliases, interfaces and namespaces, and what is emitted for each' },
+  { dest: links.fromTsFunctions, note: 'helpers, arrow functions, overloads, recursion, entry points, and the calls the compiler refuses' },
+  { dest: links.fromTsClasses, note: 'constructors, methods, static members, inheritance, mixins and generics as structs and functions' },
+  { dest: links.fromTsControlFlow, note: 'conditions, loops, switch, the ternary, break, continue and discard, and the loops refused' },
+  { dest: links.fromTsExpressions, note: 'assertions, destructuring, spreads, literals, and the values a shader cannot build while it runs' },
+  { dest: links.fromTsDouble, note: 'emulated double precision: what is rewritten, and the calls put in place of the arithmetic' },
+  { dest: links.languageFromWgsl, note: 'the WGSL surface construct by construct, with the TypeShade spelling of each one, one page per section' },
+  { dest: links.fromWgslTypes, note: 'WGSL scalars, vectors, matrices, arrays, atomics, textures and samplers, and how each is written' },
+  { dest: links.fromWgslResources, note: 'address spaces, access modes and the binding slot a declare takes' },
+  { dest: links.fromWgslEntries, note: 'stage attributes, workgroup size, vertex returns, and the builtin ids the pipeline supplies' },
+  { dest: links.fromWgslStatements, note: 'the statements and expressions, with the WGSL each one is emitted as' },
+  { dest: links.languageFromGlsl, note: `the ${facts.glslTarget} surface construct by construct, with the TypeShade spelling of each one, one page per section` },
+  { dest: links.fromGlslTypes, note: `${facts.glslTarget} scalars, vectors, matrices, arrays and samplers, and the types this target refuses` },
+  { dest: links.fromGlslUniforms, note: 'uniform blocks, storage buffers, varyings, and the extensions this target has a row for' },
+  { dest: links.fromGlslVariables, note: 'the gl_ globals as builtin attributes, and the ones neither writer takes' },
+  { dest: links.fromGlslFunctions, note: `the functions and operators a GLSL author looks for, with the ${facts.glslTarget} written for each` },
   { dest: links.languageBuiltins, note: `every builtin with the WGSL and ${facts.glslTarget} text the compiler writes for it` },
   { dest: links.concepts, note: 'where the TypeScript you know sits in a WebGPU program' },
   { dest: links.conceptsCpuGpu, note: 'what the GPU does to an entry point, and the language rule each of those facts produces' },
@@ -65,7 +84,7 @@ const table = [
   { dest: links.conceptsWebgpu, note: 'what the host application owns, what the compiler owns, and where WebGL2 differs' },
   { dest: links.conceptsWgsl, note: `the same source emitted as WGSL and as ${facts.glslTarget}, with the differences between the targets` },
   { dest: links.examples, note: `the ${facts.totalExamples} examples, one page each with the shader running and the text it emits, the GLSL emit and the emulated-double demo` },
-  { dest: links.reference, note: `the language reference, every name a "use typeshade" file can write, one page per kind` },
+  { dest: links.reference, note: `the language reference, every name a "use typeshade" file can write, one page per name under six indexes` },
   ...referenceKinds,
   { dest: links.api, note: 'the compiler API reference, one page per public export, for a host application and the fn() builder' },
   { dest: links.internals, note: 'the compiler internals, one page per section of AUTHORING.md' },

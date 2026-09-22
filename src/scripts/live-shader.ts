@@ -64,6 +64,9 @@ declare global {
 }
 
 const DEBOUNCE = 250
+/** How far a pointer may travel and still count as a tap on the code. Below this a reader is
+ *  reaching for the editor; above it they are selecting text. */
+const TAP_SLOP = 4
 /** The clock a reader who asked for less motion sees. The canvas still redraws, so a control
  *  they move still changes the picture; what stops is the animation. The value is the one the
  *  runtime's own one-frame path uses, so a still example and a live one look alike. */
@@ -428,14 +431,78 @@ function setUp(root: HTMLElement): void {
     editor.focus(index)
   }
 
+  /** The point a caret API reports under a pixel, in whichever of the two spellings the
+   *  browser has. */
+  function caretAt(x: number, y: number): { node: Node; offset: number } | null {
+    const doc = document as Document & {
+      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null
+      caretRangeFromPoint?: (x: number, y: number) => Range | null
+    }
+    const position = doc.caretPositionFromPoint?.(x, y)
+    if (position) return { node: position.offsetNode, offset: position.offset }
+    const range = doc.caretRangeFromPoint?.(x, y)
+    return range ? { node: range.startContainer, offset: range.startOffset } : null
+  }
+
+  /** Where in the source a point on the rendered block falls, so the editor opens with the
+   *  caret on the glyph the reader touched. The rendered rows are the source's own lines, so
+   *  the row gives the line and the text before the point gives the column. */
+  function offsetAt(x: number, y: number): number | undefined {
+    const point = caretAt(x, y)
+    if (!point) return undefined
+    const from = point.node.nodeType === Node.ELEMENT_NODE ? (point.node as Element) : point.node.parentElement
+    const row = from?.closest('.ec-line')
+    if (!row || !codeEl.contains(row)) return undefined
+    const line = [...codeEl.querySelectorAll('.ec-line')].indexOf(row)
+    const lines = payload.source.split('\n')
+    if (line < 0 || line >= lines.length) return undefined
+    let column = 0
+    if (point.node.nodeType === Node.TEXT_NODE) {
+      const cell = row.querySelector('.code') ?? row
+      const walk = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT)
+      for (let node = walk.nextNode(); node; node = walk.nextNode()) {
+        if (node === point.node) {
+          column += point.offset
+          break
+        }
+        column += node.textContent?.length ?? 0
+      }
+    }
+    let at = 0
+    for (let i = 0; i < line; i++) at += (lines[i]?.length ?? 0) + 1
+    // An empty row carries a newline of its own, so the column is held to the line's length.
+    return at + Math.min(column, lines[line]?.length ?? 0)
+  }
+
+  // The editor is mounted when the pointer comes up. A pointerdown on the block is also how a
+  // reader starts selecting the source, and a transparent textarea focused in the middle of
+  // that drag collapses the selection and gives the rest of the drag to text nobody can see.
+  // A drag leaves the block alone, so a copy takes the source as written.
+  let tapFrom: { x: number; y: number; id: number } | null = null
+  const forgetTap = (): void => {
+    tapFrom = null
+  }
+  const onBlockDown = (e: PointerEvent): void => {
+    tapFrom = editor ? null : { x: e.clientX, y: e.clientY, id: e.pointerId }
+  }
+  const onBlockUp = (e: PointerEvent): void => {
+    const from = tapFrom
+    tapFrom = null
+    if (!from || from.id !== e.pointerId || editor) return
+    if (Math.abs(e.clientX - from.x) > TAP_SLOP || Math.abs(e.clientY - from.y) > TAP_SLOP) return
+    if (window.getSelection()?.isCollapsed === false) return
+    openEditor(offsetAt(e.clientX, e.clientY) ?? 0)
+  }
   // Not `once`: a reset takes the editor away again, and the block has to open a new one.
-  block.addEventListener('pointerdown', () => {
-    if (!editor) openEditor()
-  })
+  block.addEventListener('pointerdown', onBlockDown)
+  block.addEventListener('pointerup', onBlockUp)
+  block.addEventListener('pointercancel', forgetTap)
+  block.addEventListener('pointerleave', forgetTap)
   root.querySelector<HTMLElement>('[data-live-edit]')?.addEventListener('click', () => openEditor(0))
 
   root.querySelector<HTMLElement>('[data-live-reset]')?.addEventListener('click', () => {
     for (const control of payload.controls) values[control.field] = [...control.value]
+    forgetTap()
     if (editor) {
       editor.destroy()
       editor = null

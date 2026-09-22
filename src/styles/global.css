@@ -58,7 +58,7 @@
   color-scheme: light dark;
   /* What holds the page off the screen. It is the only margin the shell has, so it is as
      small as a focus ring and a code frame's border can sit in. */
-  --gutter-x: 8px;
+  --gutter-x: 16px;
   /* The reading measure: running text in a document column stops here, the measure
      vuejs.org gives its own body, which sets about 100 characters of English at 16px. */
   --content: min(620px, 100vw - 2 * var(--gutter-x));
@@ -102,7 +102,7 @@
   --ease-out: cubic-bezier(0.645, 0.045, 0.355, 1);
   --motion: 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
-@media (min-width: 40rem) { :root { --gutter-x: 12px; --section-gap: 56px; --front-gap: 80px } }
+@media (min-width: 40rem) { :root { --gutter-x: 24px; --section-gap: 56px; --front-gap: 80px } }
 
 /* Dark: chosen with the switch in the header, or the system's setting when nothing is chosen.
    Ant's dark algorithm. The same tokens twice, since plain CSS cannot share a block between
@@ -303,8 +303,10 @@ body > main { flex: 1 }
 .skip:focus-visible { clip-path: none }
 
 /* Header: a 64px white bar with the mark and the name, the page links, and the tools as Ant
-   icon buttons. Under 48rem the links live in a panel behind a menu button (a details
-   element). */
+   icon buttons. Under 64rem the links live in a panel behind a menu button (a details
+   element). The bar needs about 1004px in English and 892px in Korean to lay out at full
+   size, and nothing in it shrinks or wraps, so it appears at the same 64rem the documentation
+   grid opens at. */
 .site-header { border-block-end: 1px solid var(--color-line-1); background: var(--color-ground) }
 .site-header-in {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -336,13 +338,10 @@ body > main { flex: 1 }
 .site-menu-drop summary::-webkit-details-marker { display: none }
 .site-menu-drop summary:hover, .site-menu-drop[open] summary { color: var(--color-text-1); background: var(--fill-3) }
 .site-menu-drop .chevron { inline-size: 12px; block-size: 12px; color: var(--color-text-3) }
-/* The version reads as an Ant tag: a 24px chip in the mono face, with tabular figures. */
-.site-version summary {
-  block-size: 24px; padding-inline: 7px; gap: 4px;
-  border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-surface-1);
-  font-family: var(--font-mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--color-text-2);
-}
-.site-version summary:hover, .site-version[open] summary { background: var(--color-surface-1); border-color: var(--color-accent); color: var(--color-accent) }
+/* The version is one of the tools, so it takes the same 32px box, radius and hover fill as the
+   language menu beside it. The mono face and tabular figures stay at the row's own 14px: the
+   digits name a release. */
+.site-version summary { font-family: var(--font-mono); font-variant-numeric: tabular-nums }
 .site-drop-list {
   position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 6px); z-index: 40; min-inline-size: 160px;
   padding: 4px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
@@ -361,7 +360,7 @@ body > main { flex: 1 }
 .site-drop-current { color: var(--color-accent); background: var(--color-primary-bg); border-radius: var(--radius); font-weight: 600 }
 .site-drop-current svg { inline-size: 14px; block-size: 14px; flex: none }
 .site-lang .site-drop-list a { padding-inline-start: 32px }
-/* Search: an Ant pill in the tools, with its label from 48rem, and a row in the phone panel. */
+/* Search: an Ant pill in the tools, and a row in the phone panel. */
 .site-search {
   display: inline-flex; align-items: center; gap: 8px; block-size: 32px; padding-inline: 12px;
   border: 0; border-radius: var(--radius); background: var(--fill-4); color: var(--color-text-3);
@@ -372,8 +371,9 @@ body > main { flex: 1 }
 .site-search:hover { background: var(--fill-3); color: var(--color-text-1) }
 .site-search .icon { inline-size: 16px; block-size: 16px }
 .site-search-label { display: none }
-@media (min-width: 48rem) { .site-search-label { display: inline } }
-/* Under 48rem the magnifier sits beside the menu button instead of behind it, so search stays
+/* The label comes with the bar, so its query is the bar's. */
+@media (min-width: 64rem) { .site-search-label { display: inline } }
+/* Under 64rem the magnifier sits beside the menu button instead of behind it, so search stays
    one tap away whether or not the panel is open. */
 .site-mobile-tools { display: flex; align-items: center; gap: 4px }
 .site-search-phone {
@@ -383,7 +383,6 @@ body > main { flex: 1 }
 }
 .site-search-phone:hover { color: var(--color-text-1); background: var(--fill-3) }
 .site-search-phone .icon { inline-size: 18px; block-size: 18px }
-@media (min-width: 48rem) { .site-search-phone { display: none } }
 .site-theme, .site-social {
   display: inline-flex; align-items: center; justify-content: center; inline-size: 32px; block-size: 32px;
   border: 0; border-radius: var(--radius); background: none; color: var(--color-text-2); cursor: pointer;
@@ -425,9 +424,12 @@ body > main { flex: 1 }
 /* The version row carries the same links as the version menu, so the row wraps. */
 .site-screen-langs { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 2px 14px }
 .site-screen-langs a { color: var(--color-accent); text-decoration: none }
-@media (min-width: 48rem) {
+/* The whole phone row goes, box included. Leaving the empty box in the flow gave
+   `justify-content: space-between` a third item to space, which held the tools 243px short of
+   the gutter at 1440 and moved the nav's left edge with the viewport. */
+@media (min-width: 64rem) {
   .site-bar { display: flex }
-  .site-menu { display: none }
+  .site-mobile-tools { display: none }
 }
 
 /* The search dialog: Pagefind's own UI, dressed in the site's tokens through the variables
@@ -503,12 +505,12 @@ body > main { flex: 1 }
 .docs-content > h1:first-child { margin-block-start: 0 }
 .docs-group { margin-block-start: 20px }
 .docs-group:first-child { margin-block-start: 0 }
-.docs-group-title { padding: 8px 12px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
+.docs-group-title { padding: 8px 16px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
 .docs-group li { margin-block-start: 2px }
 /* Ant Menu: a 40px row, 6px radius, secondary text, the quaternary fill on hover, and the
    current page in the primary over its wash. */
 .docs-group a {
-  display: flex; align-items: center; min-block-size: 40px; padding: 8px 12px;
+  display: flex; align-items: center; min-block-size: 40px; padding: 8px 16px;
   border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-text-2); text-decoration: none;
   transition: color var(--motion), background-color var(--motion);
 }
@@ -517,14 +519,19 @@ body > main { flex: 1 }
 /* A topic, a member of the open reference category or a section of the compiler internals sits
    one level in, under its parent. Only an export's name is set in the code font. */
 .docs-group li.depth-1 { margin-block-start: 0 }
-.docs-group li.depth-1 a { padding-inline-start: 28px }
+.docs-group li.depth-1 a { padding-inline-start: 32px }
+/* A section of a mapping set sits under that set's index, which is itself one level in. */
+.docs-group li.depth-2 a { padding-inline-start: 48px }
 .docs-group li.depth-1.code a { font-family: var(--font-mono); font-size: var(--text-code) }
 .docs-edit { margin-block-start: 40px; font-size: var(--text-ui) }
 .docs-edit a { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
 .docs-edit a:hover { color: var(--color-primary-text-hover) }
 .docs-edit svg { inline-size: 14px; block-size: 14px; flex: none }
 /* Previous and next as two small Ant cards. */
-.docs-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-block-start: 32px; padding-block-start: 32px; border-block-start: 1px solid var(--color-line-1) }
+/* Previous and next are two boxes holding one short label each, so they stop at the wide
+   measure the way a code frame, a figure and a table in this column do. Left to the whole
+   column they reach 650px a side at 1920, which is a button the width of a paragraph. */
+.docs-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-inline-size: var(--wide); margin-block-start: 32px; padding-block-start: 32px; border-block-start: 1px solid var(--color-line-1) }
 .docs-pager a {
   display: block; min-inline-size: 0; overflow-wrap: anywhere; padding: 16px;
   border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
@@ -534,12 +541,12 @@ body > main { flex: 1 }
 .docs-pager a:hover { border-color: var(--color-primary-border); color: var(--color-accent); box-shadow: var(--shadow-secondary) }
 .docs-pager a span { display: block; margin-block-end: 4px; font-size: 0.75rem; font-weight: 400; color: var(--color-text-2) }
 .docs-pager-next { text-align: end }
-.docs-outline-title { padding-inline-start: 12px; font-size: 0.75rem; color: var(--color-text-2) }
+.docs-outline-title { padding-inline-start: 16px; font-size: 0.75rem; color: var(--color-text-2) }
 .docs-outline li, .docs-toc li { position: relative; margin-block-start: 2px }
 .docs-outline li.depth-3 a, .docs-toc li.depth-3 { padding-inline-start: 28px }
 /* Ant Anchor: a 2px rail down the left, and a primary segment beside the heading in view. */
 .docs-outline ul { position: relative; margin-block-start: 8px; border-inline-start: 2px solid var(--color-line-1) }
-.docs-outline a { display: block; padding: 5px 0 5px 12px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+.docs-outline a { display: block; padding: 5px 0 5px 16px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 /* The language reference heads an entry with the name itself, and a name can be one
    unbreakable token wider than the outline's 220px (@builtin("local_invocation_index")). It
    wraps instead of running past the column. */
@@ -553,7 +560,7 @@ body > main { flex: 1 }
   .docs-local, .docs-toc { display: none }
   .docs { grid-template-columns: 240px minmax(0, 1fr); gap: 48px }
   .docs-sidebar { display: block; border-inline-end: 1px solid var(--color-line-1) }
-  .docs-sidebar-in { position: sticky; inset-block-start: 0; max-block-size: 100vh; overflow-y: auto; padding-block: 24px 48px; padding-inline-end: 16px; scrollbar-width: thin }
+  .docs-sidebar-in { position: sticky; inset-block-start: 0; max-block-size: 100vh; overflow-y: auto; padding-block: 24px 48px; padding-inline-end: 24px; scrollbar-width: thin }
   .docs-content { padding-block: 40px 24px }
 }
 @media (min-width: 80rem) {
@@ -1219,16 +1226,24 @@ body > main { flex: 1 }
 .layout-table th:last-child, .layout-table td:last-child { padding-inline-end: 0 }
 .layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-ui); color: var(--color-text-2) }
 
-/* Footer: the site map in three columns on the container's white, held off the page field by
-   its #f0f0f0 top rule, then the licence, the copyright and the commit */
+/* Footer: the site map in three groups on the container's white, held off the page field by
+   its #f0f0f0 top rule, then the licence, the copyright and the commit. The shell has no
+   measure, so the three groups take tracks of one width across it and Documentation, which
+   carries most of the links, spans as many of those tracks as the screen has room for and
+   runs its list down each one. One tall column beside two stubs is what the same list does
+   in a single track: 19 items and a 746px band at 1440. */
 .site-footer { margin-block-start: 96px; border-block-start: 1px solid var(--color-line-1); background: var(--color-ground) }
-.site-map { max-inline-size: var(--container); margin-inline: auto; padding: 48px var(--gutter-x) 32px; display: grid; gap: 28px }
-.site-map h2 { font-size: var(--text-ui); font-weight: 600; color: var(--color-text-1) }
-.site-map li { margin-block-start: 8px }
-.site-map a { font-size: var(--text-ui); color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+.site-map { padding: 32px var(--gutter-x) 24px; display: grid; gap: 24px 32px }
+.site-map h2 { font-size: var(--text-ui); font-weight: 600; line-height: 1.5; color: var(--color-text-1) }
+.site-map ul { margin-block-start: 2px }
+/* The spacing between two links is the link's own padding, not a margin: a margin at the top
+   of a flowed column is dropped, which would leave the first item of every column but the
+   first sitting higher than its neighbours. */
+.site-map li { break-inside: avoid }
+.site-map a { display: block; padding-block: 3px; font-size: var(--text-ui); color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 .site-map a:hover { color: var(--color-accent) }
 .site-legal {
-  max-inline-size: var(--container); margin-inline: auto; padding: 20px var(--gutter-x) 32px;
+  padding: 16px var(--gutter-x) 24px;
   border-block-start: 1px solid var(--color-line-1);
   display: flex; flex-wrap: wrap; gap: 4px 24px;
   font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2);
@@ -1236,7 +1251,13 @@ body > main { flex: 1 }
 .site-legal p { margin: 0 }
 .site-legal a { color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 .site-legal a:hover { color: var(--color-accent) }
-@media (min-width: 40rem) { .site-map { grid-template-columns: 2fr 1fr 1fr; gap: 32px } }
+/* One track per group on a phone-and-a-half, then four, six and seven tracks, with
+   Documentation taking all but the last two at every step. Its list flows down the tracks it
+   spans, so no column runs past eight items and the band stays about as tall as the legal
+   line under it. */
+@media (min-width: 40rem) { .site-map { grid-template-columns: repeat(4, minmax(0, 1fr)) } .site-map-docs { grid-column: span 2 } .site-map-docs ul { columns: 2; column-gap: 32px } }
+@media (min-width: 64rem) { .site-map { grid-template-columns: repeat(6, minmax(0, 1fr)) } .site-map-docs { grid-column: span 4 } .site-map-docs ul { columns: 4 } }
+@media (min-width: 90rem) { .site-map { grid-template-columns: repeat(7, minmax(0, 1fr)) } .site-map-docs { grid-column: span 5 } .site-map-docs ul { columns: 5 } }
 
 /* API reference page: the crumbs, the kind line, definition lists for parameters and members,
    the targets table, the see-also list */
@@ -1389,35 +1410,32 @@ body > main { flex: 1 }
   .button-primary { border: 1px solid CanvasText }
 }
 
-/* The language reference (src/components/ReferenceEntry.astro): one entry per documented
-   name on /reference/<kind>/. A page runs from thirty to a hundred and forty of them, so an
-   entry is a band separated by a hairline instead of a card, and its name is set at the
-   heading size one step under the page's sections whatever level the markup gives it: the
-   functions page runs its entries under a family heading and the other five run them at the
-   top level. Every measure is relative to the entry, so an entry stays inside the document
-   column (DESIGN.md, the Container Rule) at every width, and a long signature wraps inside
-   its own frame. */
-.doc .ref-entry { margin-block-start: 28px; padding-block-start: 24px; border-block-start: 1px solid var(--color-line-1) }
-/* The hairline separates one entry from the next, so the first entry after a family heading
-   or after the page's own lead-in carries none. */
-.doc h2 + .ref-entry, .doc .ref-reading + .ref-entry, .doc .guide-note + .ref-entry { margin-block-start: 24px; padding-block-start: 0; border-block-start: none }
-.doc .ref-entry-name {
-  margin: 0; font-size: var(--text-h4); line-height: var(--text-h4--line-height);
-  font-weight: 600; letter-spacing: normal; scroll-margin-block-start: 88px; overflow-wrap: anywhere;
-}
-.doc .ref-entry-name code { font-size: 1em; color: inherit }
-.doc .ref-entry-summary { margin-block-start: 8px; color: var(--color-text-2) }
+/* The language reference (src/components/pages/ReferenceEntryPage.astro): one documented
+   name per page, under the sections /api/ already uses. What is left here is the parts that
+   page has and an API page does not: a declaration the highlighter does not set, the lines
+   under the Description heading, the types beside a parameter, the helper declarations and
+   the two target spellings. Every measure is relative to the element, so each stays inside
+   the document column (DESIGN.md, the Container Rule) at every width and a long declaration
+   wraps inside its own frame. */
 .doc .ref-entry-code { margin-block-start: 12px; overflow-wrap: anywhere }
 .doc .ref-entry-code code { font-size: var(--text-code) }
 .doc .ref-entry-meta { margin-block-start: 10px; font-size: var(--text-ui); color: var(--color-text-3) }
 .ref-label { font-weight: 600; color: var(--color-text-2) }
-/* The link back to the builtin table sits under every builtin function, so it reads as a
-   footnote and takes the accent only under the pointer. */
 .doc .ref-entry-meta a { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
 .doc .ref-entry-meta a:hover { color: var(--color-accent); text-decoration-color: currentColor }
-/* How to read a declaration, above the entries: what a bare `number` stands for, what a
-   positional parameter name is, and the declaration of each helper type the signatures on
-   this page reach for. The helper list is a label column and a declaration column, and the
+/* One parameter per row: the name, whether a call may leave it out, and every type the
+   overloads write for that slot. A slot the overloads spell several ways carries one type
+   per spelling, and the row wraps inside the column. The return types are the same row
+   without a name. */
+.doc .ref-params { margin-block-start: 16px; padding-inline-start: 0; list-style: none }
+.doc .ref-params li, .doc .ref-types {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  min-width: 0; margin-block-start: 10px;
+}
+.doc .ref-param-name { font-weight: 600; color: var(--color-text-1) }
+.doc .ref-params code, .doc .ref-types code { overflow-wrap: anywhere }
+/* How to read a declaration, under the Syntax frame: what a bare `number` stands for and
+   the declaration of each helper type this signature reaches for. The helper list is a label column and a declaration column, and the
    declaration is one wrapped line, so a sixteen-format union costs a paragraph. */
 .doc .ref-reading { margin-block-start: 20px; font-size: var(--text-ui); color: var(--color-text-2) }
 .doc .ref-reading p { margin-block-start: 10px }
