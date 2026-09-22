@@ -1,0 +1,266 @@
+---
+// One documented name of the language surface, on a page of its own at
+// /reference/<kind>/<name>/. The shape is the one /api/ already uses and MDN set: the name,
+// a one-line summary, then Syntax, Parameters, Return value, Description, Targets, Examples
+// and See also, with a section left out where the compiler supplies nothing for it. Nothing
+// on the page is written here: the declaration, the parameters, the return types, the
+// sentence, the stage rules and the two target spellings are a LanguageEntry
+// (src/lib/language-reference.ts), the examples come from the corpus
+// (src/lib/language-examples.ts), and the words around them are docs.reference in every
+// dictionary.
+import { Code } from 'astro-expressive-code/components'
+import Docs, { type Heading } from '../../layouts/Docs.astro'
+import LanguageType from '../LanguageType.astro'
+import Rich from '../Rich.astro'
+import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts'
+import { apiSlugByName } from '../../lib/api-nav.ts'
+import { facts } from '../../lib/examples.ts'
+import { languageExamples } from '../../lib/language-examples.ts'
+import {
+  languageEntry,
+  languageEntryPath,
+  languageSection,
+  languageSections,
+  languageSiblings,
+  scalarBrand,
+  type LanguageKind,
+} from '../../lib/language-reference.ts'
+import { editCopy, links } from '../../lib/links.ts'
+import { META_MIN, fitDescription } from '../../lib/meta-description.ts'
+
+interface Props {
+  locale: Locale
+  kind: LanguageKind
+  name: string
+}
+const { locale, kind, name } = Astro.props
+const r = copyFor(locale).docs.reference
+const e = r.entry
+const entry = languageEntry(kind, name)
+const section = languageSection(kind)
+const named = r.kinds[kind]
+const kindWord = e.kindWords[kind]
+
+// The title and the description. Both are measured here, not left to qa:seo: with 470 entry
+// pages a title out of bounds is one line in a page dump, and the name behind it is what a
+// fix starts from.
+const title = e.title(entry.name, kindWord)
+if (title.length < 45 || title.length > 60) {
+  throw new Error(`[reference-entry] '${kind}/${name}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`)
+}
+// The compiler's sentence is Markdown with inline code; a meta description carries neither,
+// so the backticks come off and the rest is the compiler's own words.
+const plain = (text: string): string => text.replace(/`/g, '')
+const composed = e.description(entry.name, kindWord, plain(entry.line))
+// A one-clause sentence leaves the description under the 70 characters the SEO checks want,
+// so the kind's own line fills it out, the way a category's does in the API reference.
+const filled = composed.length < META_MIN ? `${composed} ${plain(named.summary)}` : composed
+const description = fitDescription(filled, localeSettings[locale].metaDescriptionMax)
+
+// The examples that call this name, found by parsing the corpus.
+const examples = languageExamples(kind, name)
+// The compiler's own export of the same name, where it has one: `mix` is a builtin an author
+// calls and a function the `fn()` builder exports, and the two pages answer two questions.
+// The row is named after the reference it leads to, since the name on it is this one.
+const apiSlug = apiSlugByName().get(entry.name)
+
+// See also: the index this name is listed on, the family of the builtin table that shows the
+// same call four columns wide, the same call under its other name, and the compiler's own
+// page for it.
+const seeAlso: { href: string; label: string; code: boolean }[] = [
+  { href: localePath(locale, `/reference/${section.slug}/`), label: named.name, code: false },
+]
+if (entry.spelling) seeAlso.push({ href: `${localePath(locale, links.languageBuiltins.href)}#${entry.spelling.family}`, label: r.inTable, code: false })
+if (entry.alias) seeAlso.push({ href: localePath(locale, languageEntryPath(entry.alias.kind, entry.alias.name)), label: entry.alias.title, code: true })
+if (apiSlug) seeAlso.push({ href: localePath(locale, `/api/${apiSlug}/`), label: copyFor(locale).docs.api.h1, code: false })
+
+// The two target cells, the way the builtin table's own rows read them: the copy for an id a
+// pre-emit pass consumes, the registry's own message where it named a reason, and the plain
+// "no form" line otherwise. The compiler's message is English on every locale, the way the
+// sentence above it is.
+type Cell = { readonly code: string } | { readonly copy: string } | { readonly message: string }
+const cellFor = (text: string | null, message: string): Cell => {
+  if (text !== null) return { code: text }
+  if (entry.spelling?.preEmit) return { copy: r.preEmit }
+  return message.length > 0 ? { message } : { copy: r.noForm }
+}
+const wgslCell = entry.spelling ? cellFor(entry.spelling.wgsl, '') : null
+const glslCell = entry.spelling ? cellFor(entry.spelling.glsl, entry.spelling.glslMessage) : null
+
+const stageText = entry.stages.map((s) =>
+  r.stageRule(r.stages[s.stage as keyof typeof r.stages] ?? s.stage, r.directions[s.direction as keyof typeof r.directions] ?? s.direction),
+)
+
+// The brand is quoted under a signature that writes a bare `number`, except on the `f32`
+// type's own page, which prints that same declaration as its syntax.
+const quoteBrand = entry.showsNumber && !(kind === 'type' && name === 'f32')
+
+const sections = [
+  { id: 'syntax', label: e.syntax, show: true },
+  { id: 'parameters', label: e.parameters, show: entry.parameters.length > 0 },
+  { id: 'return-value', label: e.returnValue, show: entry.returns.length > 0 },
+  // The lead under the name is the compiler's first sentence, so Description carries what
+  // the sentence goes on to say, the stage the front end holds a builtin id to, and what the
+  // CPU oracle does with the name. An entry with none of the three has no Description.
+  { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.kind === 'builtin' || entry.oracle !== null },
+  { id: 'targets', label: e.targets, show: entry.spelling !== null },
+  { id: 'examples', label: e.examples, show: examples.length > 0 },
+  { id: 'see-also', label: e.seeAlso, show: true },
+].filter((s) => s.show)
+const headings: Heading[] = sections.map((s) => ({ depth: 2, slug: s.id, text: s.label }))
+const shows = (id: string): boolean => sections.some((s) => s.id === id)
+
+// Previous and next walk this kind in the order its table lists it, then step out to the
+// index at either end, the way the API reference walks a category.
+const index = { label: named.name, href: localePath(locale, `/reference/${section.slug}/`) }
+const siblings = languageSiblings(kind, name)
+const all = languageSections()
+const at = all.findIndex((s) => s.kind === kind)
+const nextSection = all[at + 1]
+const previous = siblings.previous
+  ? { label: siblings.previous.title, href: localePath(locale, languageEntryPath(kind, siblings.previous.name)) }
+  : index
+const next = siblings.next
+  ? { label: siblings.next.title, href: localePath(locale, languageEntryPath(kind, siblings.next.name)) }
+  : nextSection
+    ? { label: r.kinds[nextSection.kind].name, href: localePath(locale, `/reference/${nextSection.slug}/`) }
+    : undefined
+// What a search result calls the page: the name with its kind, so a hit reads mix (function).
+const meta = `title:${entry.name} (${kindWord})`
+---
+
+<Docs
+  locale={locale}
+  path={languageEntryPath(kind, name)}
+  title={title}
+  description={description}
+  headings={headings}
+  editHref={editCopy(locale, 'docs')}
+  previous={previous}
+  next={next}
+  label={entry.title}
+  meta={meta}
+  breadcrumbs={[
+    { name: r.reference, href: links.reference.href },
+    { name: named.name, href: `/reference/${section.slug}/` },
+    { name: entry.title, href: languageEntryPath(kind, name) },
+  ]}
+  dateModified={facts.pinnedDate}
+>
+  <nav class="api-crumbs" aria-label={r.breadcrumbs} lang={locale}>
+    <a href={localePath(locale, links.reference.href)}>{r.h1}</a>
+    <span aria-hidden="true">›</span>
+    <a href={index.href}>{named.name}</a>
+  </nav>
+  <h1><code>{entry.title}</code></h1>
+  <p class="api-kind" lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
+  <p class="api-summary" lang="en"><Rich text={entry.line} locale={locale} /></p>
+  <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
+
+  <section>
+    <h2 id="syntax" lang={locale}>{e.syntax}</h2>
+    {entry.kind === 'builtin'
+      ? <p class="ref-entry-code"><code>{entry.signature}</code></p>
+      : <Code code={entry.signature} lang="ts" locale={locale} wrap />}
+    {(entry.showsNumber || entry.helpers.length > 0) && (
+      <div class="ref-reading" lang={locale}>
+        {entry.showsNumber && (
+          <>
+            <p><Rich text={r.numberP} locale={locale} /></p>
+            {quoteBrand && <p class="ref-entry-code"><code>{scalarBrand()}</code></p>}
+            <p><Rich text={r.widthP} locale={locale} /></p>
+          </>
+        )}
+        {entry.helpers.length > 0 && (
+          <>
+            <p><Rich text={r.helpersP} locale={locale} /></p>
+            <dl class="ref-helpers">
+              {entry.helpers.map((h) => (
+                <>
+                  <dt><code>{h.name}</code></dt>
+                  <dd><code>{h.declaration}</code></dd>
+                </>
+              ))}
+            </dl>
+          </>
+        )}
+      </div>
+    )}
+  </section>
+
+  {shows('parameters') && (
+    <section>
+      <h2 id="parameters" lang={locale}>{e.parameters}</h2>
+      {entry.positional && <p class="guide-note" lang={locale}><Rich text={r.positionsP} locale={locale} /></p>}
+      <ul class="ref-params">
+        {entry.parameters.map((p) => (
+          <li>
+            <code class="ref-param-name">{p.rest ? `...${p.name}` : p.name}</code>
+            {p.optional && <span class="api-optional" lang={locale}>{e.optional}</span>}
+            {p.types.map((t) => <LanguageType locale={locale} text={t} self={entry.name} />)}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {shows('return-value') && (
+    <section>
+      <h2 id="return-value" lang={locale}>{e.returnValue}</h2>
+      <p class="ref-types">{entry.returns.map((t) => <LanguageType locale={locale} text={t} self={entry.name} />)}</p>
+    </section>
+  )}
+
+  {shows('description') && (
+  <section>
+    <h2 id="description" lang={locale}>{e.descriptionHeading}</h2>
+    {entry.rest.length > 0 && <p lang="en"><Rich text={entry.rest} locale={locale} /></p>}
+    {entry.kind === 'builtin' && (
+      <p class="ref-entry-meta" lang={locale}>
+        {stageText.length > 0 ? <><span class="ref-label">{r.validIn}</span> {stageText.join(', ')}</> : r.anyStage}
+      </p>
+    )}
+    {entry.oracle && (
+      <p class="ref-entry-meta" lang={locale}>
+        <Rich text={entry.oracle === 'evaluates' ? e.oracleEvaluates : e.oracleStub} locale={locale} />
+      </p>
+    )}
+  </section>
+  )}
+
+  {shows('targets') && wgslCell && glslCell && (
+    <section>
+      <h2 id="targets" lang={locale}>{e.targets}</h2>
+      <dl class="ref-emits">
+        <dt lang={locale}>{r.wgsl}</dt>
+        <dd>
+          {'code' in wgslCell && <code>{wgslCell.code}</code>}
+          {'copy' in wgslCell && <span lang={locale}><Rich text={wgslCell.copy} locale={locale} /></span>}
+          {'message' in wgslCell && <span lang="en">{wgslCell.message}</span>}
+        </dd>
+        <dt lang={locale}>{r.glsl}</dt>
+        <dd>
+          {'code' in glslCell && <code>{glslCell.code}</code>}
+          {'copy' in glslCell && <span lang={locale}><Rich text={glslCell.copy} locale={locale} /></span>}
+          {'message' in glslCell && <span lang="en">{glslCell.message}</span>}
+        </dd>
+      </dl>
+    </section>
+  )}
+
+  {shows('examples') && (
+    <section>
+      <h2 id="examples" lang={locale}>{e.examples}</h2>
+      <ul class="api-see-also">
+        {examples.map((x) => <li><a href={localePath(locale, x.href)}><code>{x.file}</code></a></li>)}
+      </ul>
+    </section>
+  )}
+
+  <section>
+    <h2 id="see-also" lang={locale}>{e.seeAlso}</h2>
+    <ul class="api-see-also">
+      {seeAlso.map((s) => <li><a href={s.href} lang={s.code ? 'en' : locale}>{s.code ? <code>{s.label}</code> : s.label}</a></li>)}
+    </ul>
+  </section>
+</Docs>
