@@ -494,6 +494,11 @@ body > main { flex: 1 }
 .docs { display: grid; grid-template-columns: minmax(0, 1fr); max-inline-size: var(--container); margin-inline: auto; padding-inline: var(--gutter-x); background: var(--color-ground) }
 .docs-sidebar, .docs-outline { display: none }
 .docs-content { padding-block: 32px 24px; max-inline-size: 740px; inline-size: 100% }
+/* A page whose document is not prose (the examples' two-pane stage) fills the column it is
+   given and holds its own paragraphs to the reading measure instead, so the stage grows with
+   the viewport while the sentences around it stay the width a sentence is read at. */
+.docs-content-wide { max-inline-size: none }
+.doc-measure { max-inline-size: 740px }
 .docs-content > h1:first-child { margin-block-start: 0 }
 .docs-group { margin-block-start: 20px }
 .docs-group:first-child { margin-block-start: 0 }
@@ -1026,6 +1031,62 @@ body > main { flex: 1 }
 .example-tile-blurb { padding: 4px 16px 16px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
 .example-tile-blurb code { font-family: var(--font-mono); font-size: 0.9em }
 @media (max-width: 30rem) { .example-grid { grid-template-columns: minmax(0, 1fr) } }
+
+/* One example's page: the shader on one side and its text on the other, inside the showcase
+   card the front page's hero already is (.live-card and .live-card-head above). The head bar
+   carries one Ant tab strip over the source file and the emitted targets, so a reader sees
+   the picture and the text at once and switches what the text is.
+
+   The card is its own container, because the width it gets depends on the sidebar, the
+   outline and the page's own measure; the panes go side by side once the card itself is wide
+   enough, not once the window is, which is what keeps this right on either side of a change
+   to how wide a documentation page runs. */
+.example-stage { container-type: inline-size; margin-block-start: 24px }
+.example-stage .live-card-head { padding-inline: 0 }
+/* Ant's scrollable tab bar: four tabs and a file name do not fit a phone, so the strip
+   scrolls and the card does not. The card's head already draws the rule under it. */
+.example-stage .front-tabs-head {
+  flex: 1; align-items: stretch; min-inline-size: 0; gap: 20px; overflow-x: auto;
+  padding-inline: 16px; border-block-end: 0; scrollbar-width: none;
+}
+.example-stage .front-tabs-head::-webkit-scrollbar { display: none }
+.example-stage .front-tabs-head button { flex: none; block-size: auto; white-space: nowrap }
+.example-stage-body { display: grid; grid-template-columns: minmax(0, 1fr) }
+.example-stage-view {
+  display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0;
+  background: var(--color-surface-2); border-block-end: 1px solid var(--color-line-1);
+}
+.example-stage-view .figure { flex: 1; min-block-size: 0; gap: 0; margin: 0 }
+.example-stage-view .figure-frame { block-size: clamp(220px, 68cqi, 420px); border: 0; border-radius: 0; background: var(--color-surface-2) }
+.example-stage-view .figure-caption { padding: 10px 16px; font-size: 0.75rem; line-height: 1.6667 }
+/* The code pane is a window over its panels: the panels are taken out of flow, so the pane
+   takes the height the row gives it and scrolls inside instead of setting that height from
+   whichever file is open. A 32px fade at the foot hands the cut line to the mask instead of
+   slicing a row of glyphs in half, the way the hero card's pane does. With no script every
+   panel is in that scroller and stacks, which is what the search index reads. */
+.example-stage-code { position: relative; block-size: 320px; min-block-size: 0; background: var(--color-elevated) }
+.example-stage-panels {
+  position: absolute; inset: 0; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--color-line-2) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+.example-stage-code .expressive-code { margin: 0; --ec-brdRad: 0; --ec-brdWd: 0; --ec-frm-shdCol: transparent }
+.example-stage-code pre { border: 0; border-radius: 0; padding-block: 12px }
+.example-stage-code pre > code { font-size: var(--text-code); line-height: 1.6 }
+.example-stage-note {
+  padding: 12px 16px; border-block-start: 1px solid var(--color-line-1);
+  font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2);
+}
+@container (min-width: 44rem) {
+  /* The code under the strip that names it, the picture beside it, and one height for the
+     row, read off the card's own width so both panes grow with the page. */
+  .example-stage-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); block-size: clamp(360px, 52cqi, 680px) }
+  .example-stage-view { order: 1; border-block-end: 0; border-inline-start: 1px solid var(--color-line-1) }
+  .example-stage-view .figure-frame { flex: 1; block-size: auto }
+  .example-stage-code { block-size: auto }
+}
+.example-page-links { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-block-start: 32px }
 
 /* The examples page opens with a numbered path through the guide. Each step's own heading
    carries its number, so the list marker would print it a second time. */

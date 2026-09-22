@@ -409,9 +409,13 @@ why lives on its own page.
     to GPU values, entry points and shader modules, and where WebGPU begins.
   - Examples: `/guide/examples/`, the gallery of every example in both corpora, grouped by
     category, each tile linking to that example's own page at `/guide/examples/<id>/`. A page
-    there opens with the shader running over its build-time still, then the file it is
-    written in, then the WGSL and the two GLSL ES 3.00 stages the compiler baked into
-    `examples/__emit-goldens__/` at the pinned commit, and closes with the file on GitHub, the
+    there is laid out the way ShaderToy lays one out: the shader running over its build-time
+    still on one side and its text on the other, inside the showcase card the front page's
+    hero already is (`.live-card`), with one Ant tab strip over the text carrying the source
+    file first and then every target the compiler emits, the WGSL and the two GLSL ES 3.00
+    stages it baked into `examples/__emit-goldens__/` at the pinned commit. The card is its
+    own container, so the panes go side by side once the card is wide enough and stack with
+    the picture first when it is not. Under it the page closes with the file on GitHub, the
     Playground for a `"use typeshade"` example, and previous and next inside its own group.
     An example the page cannot draw says in one sentence why, from the reason
     `scripts/artifacts.mjs` records for it.

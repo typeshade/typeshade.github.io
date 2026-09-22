@@ -897,12 +897,11 @@ export const en = {
        *  SEO checks want. */
       descriptionPad: `The source, the WGSL it emits and the ${glsl} stages, on one page.`,
       source: 'Source',
-      emitted: 'Emitted output',
-      emittedNote: `The text below is the compiler's own output at commit ${facts.pinnedCommit}, read from the goldens its emit suite bakes ([emit-goldens.test.ts](goldens)).`,
+      tabs: 'Source and emitted output',
+      emittedNote: `The WGSL and GLSL tabs are the compiler's own output at commit ${facts.pinnedCommit}, read from the goldens its emit suite bakes ([emit-goldens.test.ts](goldens)).`,
       wgsl: 'WGSL',
       glslVertex: `${glsl} vertex`,
       glslFragment: `${glsl} fragment`,
-      wgslOnlyNote: `This example has no ${glsl} form, so the compiler bakes its WGSL alone.`,
       github: 'File on GitHub',
       playground: 'Open in the Playground',
       /** What the page says where it draws no picture, one line per reason in
