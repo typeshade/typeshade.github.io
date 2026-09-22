@@ -176,6 +176,12 @@ export interface LanguageEntry {
   readonly returns: readonly string[]
   /** A parameter row above carries a name the ambient file generated from its position. */
   readonly positional: boolean
+  /** A decorator an author writes on its own, with no argument list. `@vertex` has only
+   *  that form; `@compute` has it beside the form that takes a workgroup size. */
+  readonly bareForm: boolean
+  /** The declaration also names what the TypeScript decorator runtime hands a decorator,
+   *  which is no part of what a call writes. */
+  readonly protocol: boolean
   /** This signature writes a bare `number`, which is the scalar slot and not a width an
    *  author declares. The page says so where this is true. */
   readonly showsNumber: boolean
@@ -515,6 +521,8 @@ function build(): readonly LanguageSection[] {
       let family: LanguageFamily = 'constructors'
       let spelling: LanguageSpelling | null = null
       let stages: readonly BuiltinStageRule[] = []
+      let bareForm = false
+      let protocol = false
       // The overloads the Syntax frame prints, parsed as they are lifted, so the Parameters
       // and Return value sections below read off the same nodes and cannot drift from it.
       let overloads: LanguageOverload[] = []
@@ -529,7 +537,21 @@ function build(): readonly LanguageSection[] {
           title = `@${name}`
           const nodes = decl.functions.get(name) ?? missing(kind, name, 'declaration in SHADE_DTS')
           signature = nodes.map((n) => n.getText(source)).join('\n')
-          overloads = nodes.map((n) => overloadOf(n, source))
+          // A decorator's declaration comes in two shapes and only one of them lists what an
+          // author writes. A factory returns the decorator, so its own parameters are the
+          // ones the call site passes (`@location(0)`, `@builtin("position")`). A bare
+          // decorator is the decorator, so its parameters are the two values the TypeScript
+          // decorator runtime hands it and `@vertex` passes neither. The shape is read off
+          // the return type, so a pin that changes these declarations changes the page.
+          const factories = nodes.filter((n) => n.type !== undefined && ts.isFunctionTypeNode(n.type))
+          // What a factory returns is the decorator the runtime calls, and no value the call
+          // site receives, so an attribute has no Return value either.
+          overloads = factories.map((n) => ({ ...overloadOf(n, source), returns: null }))
+          bareForm = factories.length < nodes.length
+          const runtimeArgs = (n: ts.FunctionDeclaration): boolean =>
+            n.parameters.some((param) => param.name.getText(source) === 'target') ||
+            (n.type !== undefined && ts.isFunctionTypeNode(n.type) && n.type.parameters.some((param) => param.name.getText(source) === 'target'))
+          protocol = nodes.some(runtimeArgs)
           break
         }
         case 'builtin': {
@@ -615,6 +637,8 @@ function build(): readonly LanguageSection[] {
         parameters,
         returns,
         positional: parameters.some((p) => GENERATED.test(p.name)),
+        bareForm,
+        protocol,
         showsNumber: SCALAR_SLOT_KINDS.has(kind) && /\bnumber\b/.test(signature),
         helpers: helpersIn(signature),
         spelling,

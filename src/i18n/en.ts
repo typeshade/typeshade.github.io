@@ -298,6 +298,13 @@ export const en = {
         examples: 'Examples',
         seeAlso: 'See also',
         optional: 'optional',
+        // A decorator, under its Parameters heading. `@vertex` is written on its own, and
+        // `@compute` has that form beside the one that takes a workgroup size, so the two
+        // lines are apart. The third names the values the declaration carries for the
+        // TypeScript decorator runtime, which a call never writes.
+        decoratorNone: 'This decorator is written on its own and takes no arguments.',
+        decoratorBareToo: 'It is also written on its own, with no arguments.',
+        decoratorProtocol: 'The declaration also names what the TypeScript decorator runtime hands a decorator, `target` and `context`. A call passes neither.',
         // What the CPU oracle does with the name, from the two tables it keeps its own
         // builtins and its GPU stubs in. The wording is the one the API reference's Targets
         // table already gives the same two cases.

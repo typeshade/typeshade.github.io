@@ -97,7 +97,9 @@ const quoteBrand = entry.showsNumber && !(kind === 'type' && name === 'f32')
 
 const sections = [
   { id: 'syntax', label: e.syntax, show: true },
-  { id: 'parameters', label: e.parameters, show: entry.parameters.length > 0 },
+  // A decorator written on its own has no row to show and still has something to say, so
+  // its Parameters heading stands with the line that it takes no arguments.
+  { id: 'parameters', label: e.parameters, show: entry.parameters.length > 0 || entry.bareForm },
   { id: 'return-value', label: e.returnValue, show: entry.returns.length > 0 },
   // The lead under the name is the compiler's first sentence, so Description carries what
   // the sentence goes on to say, the stage the front end holds a builtin id to, and what the
@@ -192,15 +194,21 @@ const meta = `title:${entry.name} (${kindWord})`
     <section>
       <h2 id="parameters" lang={locale}>{e.parameters}</h2>
       {entry.positional && <p class="guide-note" lang={locale}><Rich text={r.positionsP} locale={locale} /></p>}
-      <ul class="ref-params">
-        {entry.parameters.map((p) => (
-          <li>
-            <code class="ref-param-name">{p.rest ? `...${p.name}` : p.name}</code>
-            {p.optional && <span class="api-optional" lang={locale}>{e.optional}</span>}
-            {p.types.map((t) => <LanguageType locale={locale} text={t} self={entry.name} />)}
-          </li>
-        ))}
-      </ul>
+      {entry.parameters.length > 0 && (
+        <ul class="ref-params">
+          {entry.parameters.map((p) => (
+            <li>
+              <code class="ref-param-name">{p.rest ? `...${p.name}` : p.name}</code>
+              {p.optional && <span class="api-optional" lang={locale}>{e.optional}</span>}
+              {p.types.map((t) => <LanguageType locale={locale} text={t} self={entry.name} />)}
+            </li>
+          ))}
+        </ul>
+      )}
+      {entry.bareForm && (
+        <p lang={locale}><Rich text={entry.parameters.length > 0 ? e.decoratorBareToo : e.decoratorNone} locale={locale} /></p>
+      )}
+      {entry.protocol && <p class="guide-note" lang={locale}><Rich text={e.decoratorProtocol} locale={locale} /></p>}
     </section>
   )}
 
