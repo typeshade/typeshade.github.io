@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { apiCategories, apiSlugByName } from './api-nav.ts'
 import { facts } from './examples.ts'
+import { shadeExampleList } from './shade-examples.ts'
 import { translationDir } from './guide-translations.ts'
 import { apiCategoryCopy, copyFor, localePath, type Locale } from '../i18n/index.ts'
 
@@ -15,6 +16,14 @@ export interface Destination {
 
 const mirror = facts.mirrorUrl
 const at = (file: string): string => `${mirror}/blob/${facts.pinnedCommit}/${file}`
+/** One `.shade.ts` example, by the id the registry carries it under. The construct page links
+ *  a row to the file that demonstrates it; a renamed or dropped example stops the build here
+ *  instead of leaving the row pointing at nothing. */
+const shade = (id: string): Destination => {
+  const example = shadeExampleList.find((e) => e.id === id)
+  if (!example) throw new Error(`[links] no '.shade.ts' example called '${id}' at ${facts.pinnedCommit}`)
+  return { label: example.file, href: at(`examples/${example.file}`) }
+}
 const siteRepo = 'https://github.com/typeshade/typeshade.github.io'
 
 export const links = {
@@ -78,6 +87,27 @@ export const links = {
   specWebgl2: { label: 'WebGL2 specification', href: 'https://registry.khronos.org/webgl/specs/latest/2.0/' },
   specGlslEs: { label: `${facts.glslTarget} specification`, href: 'https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf' },
   survey: { label: facts.survey.title, href: facts.survey.url },
+  // The `.shade.ts` example behind a row of /guide/language/from-typescript/.
+  shadeModuleConst: shade('module-const'),
+  shadePaletteConst: shade('palette-const'),
+  shadePrivateState: shade('private-state'),
+  shadeBitfieldBands: shade('bitfield-bands'),
+  shadeRayClass: shade('ray-class'),
+  shadeDefaultArgs: shade('default-args'),
+  shadeAtomicHistogram: shade('atomic-histogram'),
+  shadeOrbitInout: shade('orbit-inout'),
+  shadeShapeInheritance: shade('shape-inheritance'),
+  shadeMixinSurface: shade('mixin-surface'),
+  shadeGenericHelpers: shade('generic-helpers'),
+  shadeGenericClass: shade('generic-class'),
+  shadeBlockScope: shade('block-scope'),
+  shadePickComposite: shade('pick-composite'),
+  shadeCutout: shade('cutout'),
+  shadeJuliaTwin: shade('julia-twin'),
+  shadeArrayLiteralRamp: shade('array-literal-ramp'),
+  shadeTupleAndBrand: shade('tuple-and-brand'),
+  shadeBoolSelect: shade('bool-select'),
+  shadeLaneStripes: shade('fp64-lane-stripes'),
 } as const satisfies Record<string, Destination>
 
 /** The name of a destination above. Copy that carries a link as a key (src/i18n/en.ts) is
