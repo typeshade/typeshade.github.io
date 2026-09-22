@@ -101,9 +101,15 @@ const quickStart = localePath(locale, links.quickStart.href)
     <h2>{f.targets.h}</h2>
     <p><Rich text={f.targets.p} locale={locale} /></p>
     <div class="front-targets-grid">
-      <CodeFrame label={f.targets.source}>
-        <Code code={useTypeshadeSample} lang="ts" title="hello.shade.ts" locale={locale} wrap />
-      </CodeFrame>
+      {/* The file name is the source column's own head, in the shape the tabs opposite make
+          and the one the hero card gives the same file. The frame under it carries no title
+          bar of its own, so the first line of code sits at the same height in both columns. */}
+      <div class="front-targets-src">
+        <p class="front-tabs-head front-targets-file"><span class="live-file">hello.shade.ts</span></p>
+        <CodeFrame label={f.targets.source}>
+          <Code code={useTypeshadeSample} lang="ts" locale={locale} wrap />
+        </CodeFrame>
+      </div>
       <div class="front-targets-out" data-front-tabs>
         <div class="front-tabs-head" role="tablist" aria-label={f.targets.h}>
           <button type="button" role="tab" id="targets-tab-wgsl" aria-controls="targets-panel-wgsl" aria-selected="true">{f.targets.wgsl}</button>

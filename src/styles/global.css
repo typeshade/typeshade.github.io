@@ -767,10 +767,25 @@ body > main { flex: 1 }
    head with a 2px primary underline on the active tab. The head needs the script, so it
    stays out of the page until the script has run; with no script both panels are in the flow
    and stack, which is also what the search index reads. */
-.front-targets-grid { display: grid; gap: 16px; margin-block-start: 24px }
-.front-targets-out { display: grid; gap: 16px; align-content: start }
+/* The source and what it emits are two panes of code, so the pair stops at two of the wide
+   measure side by side. Past that the frames would grow with the viewport and each would
+   hold a 40-character line across 1200px. */
+.front-targets-grid { display: grid; gap: 16px; margin-block-start: 24px; max-inline-size: calc(2 * var(--wide) + 24px) }
+/* The two columns read as one row: each is a 40px head over a code frame, so the first line
+   of code sits at the same height on both sides, and the frames stretch to the taller of the
+   two, which is the source at 21 lines. A pane whose emit is shorter sits against the same
+   box and a longer one scrolls inside it, the way the hero card's code pane does, so the
+   section keeps its height when the tab changes. */
+.front-targets-src, .front-targets-out { display: flex; flex-direction: column; gap: 16px; min-inline-size: 0 }
+.front-targets-src > .expressive-code, .front-tabs-panel { flex: 1 1 auto; min-block-size: 0 }
+.front-tabs-panel > .expressive-code { block-size: 100% }
+.front-targets-grid .frame { display: flex; flex-direction: column; block-size: 100% }
+.front-targets-grid .frame pre { flex: 1 1 auto; min-block-size: 0; overflow: auto }
 .front-tabs-head { display: none; gap: 16px; border-block-end: 1px solid var(--color-line-1) }
 [data-front-tabs][data-ready] .front-tabs-head { display: flex }
+/* The source's head is not a tablist and needs no script, so it is on screen from the start.
+   One selector deeper than the head's own `display: none`, which comes after it here. */
+.front-tabs-head.front-targets-file { display: flex; align-items: center; block-size: 41px; margin: 0 }
 .front-tabs-head button {
   block-size: 40px; padding: 0; border: 0; background: none;
   box-shadow: inset 0 -2px 0 transparent;
@@ -782,7 +797,7 @@ body > main { flex: 1 }
 .front-tabs-head button:focus-visible { border-radius: var(--radius-sm) }
 @media (min-width: 64rem) {
   .front-targets-grid { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 24px }
-  .front-targets-out { gap: 24px }
+  .front-targets-src, .front-targets-out { gap: 24px }
 }
 /* The tiles: an Ant Card each, the running example as its cover and the name as its meta. */
 .front-gallery-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 24px }
