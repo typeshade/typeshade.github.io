@@ -43,6 +43,12 @@
 //      their own, not the identifier's
 //  29. the compiler is in the language worker: a worker script was fetched and the page's
 //      own module is a fraction of what it was
+//  30. a file with no @vertex entry is compiled behind the fullscreen triangle: the page
+//      says so, the WGSL and the reflection carry that entry, and the canvas is covered
+//  31. the reader's own lines survive the prelude: a mistake on line 9 is reported on line
+//      9, the markers land there, and hover answers about that line
+//  32. a file that declares its own vertex half, and one with no directive at all, are both
+//      left exactly as they were
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -164,6 +170,22 @@ export function vs(@builtin("vertex_index") i: u32): Clip {
 @fragment
 export function fs(): Color {
   return { color: vec4(0.30000001192092896, 0., 0., 1.) };
+}
+`
+
+// A fragment program and nothing else: no vertex entry, so the page compiles it behind the
+// fullscreen triangle and the reader gets a picture without writing a vertex half. The
+// mistake below is on its line 9, which is where the diagnostics have to land.
+const FRAGMENT_ONLY = `"use typeshade"
+
+class Color {
+  @location(0) color: vec4
+}
+
+@fragment
+export function fs(@location(0) uv: vec2): Color {
+  const stripe = fract(uv.x * 8.);
+  return { color: vec4(stripe, uv.y, 1. - stripe, 1.) };
 }
 `
 
@@ -497,8 +519,13 @@ async function checkRoute(browser, origin, route) {
       }
       await setOption(page, '[data-opt-precision]', 'highp')
 
-      // `parens` needs a source the optimizer cannot fold flat.
+      // `parens` needs a source the optimizer cannot fold flat. This one declares its own
+      // `VsOut` and no vertex entry, so it is also what proves the prelude stays out of a
+      // file that would get a duplicate from it.
       await typeSource(page, UNFOLDABLE)
+      if (await page.isVisible('[data-prelude-note]')) {
+        problems.push('a file declaring its own VsOut was compiled behind the prelude, which declares one too')
+      }
       const parensFull = await wgslPane(page)
       if (!/fn\s/.test(parensFull)) {
         // Without this the next comparison reads as the option failing when the source is
@@ -559,6 +586,80 @@ async function checkRoute(browser, origin, route) {
       await setOption(page, '[data-opt-fp64]', 'float')
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)
+
+      // ── the fullscreen vertex half ──────────────────────────────────────────────────────
+      // A file with no @vertex entry is compiled behind the fullscreen triangle, the way
+      // <LiveShader> compiles one, so a reader can write a fragment program alone and see
+      // it cover the canvas. The compiler then answers about a text the editor does not
+      // hold, and every line the page prints has to be the reader's own.
+      // The example the options above left in the editor declares its own vertex half, so
+      // it is what the last two steps of this block put back.
+      const moduleShaped = await sourceOf(page)
+      await typeSource(page, FRAGMENT_ONLY)
+      if (!(await page.isVisible('[data-prelude-note]'))) problems.push('a file with no vertex entry does not say it was compiled behind the fullscreen triangle')
+      const preludeStatus = await page.textContent('[data-status]')
+      const preludeDiagnostics = (await page.innerText('[data-diagnostics]')).trim()
+      const preludeWgsl = await wgslPane(page)
+      if (!/fn fullscreen/.test(preludeWgsl)) problems.push(`the fullscreen vertex half did not reach the WGSL:\n    ${preludeWgsl.slice(0, 200)}`)
+      const preludeReflection = await reflectionPane(page, 300)
+      if (!preludeReflection.includes('fullscreen')) problems.push(`the reflection does not name the fullscreen entry:\n    ${preludeReflection.slice(0, 200)}`)
+      await openTab(page, 'result')
+      await page.waitForFunction(() => document.querySelector('[data-canvas-note]').dataset.px !== undefined, null, { timeout: 20_000 })
+      const preludeDrawn = await page.evaluate(() => {
+        const node = document.querySelector('[data-canvas]')
+        const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
+        let opaque = 0
+        const colours = new Set()
+        for (let i = 0; i < data.length; i += 4) if (data[i + 3] > 0) { opaque += 1; colours.add(`${data[i]},${data[i + 1]},${data[i + 2]}`) }
+        return { opaque, colours: colours.size, total: node.width * node.height }
+      })
+      if (preludeDrawn.opaque < preludeDrawn.total) {
+        problems.push(`the fullscreen triangle covered ${preludeDrawn.opaque} of ${preludeDrawn.total} pixels, and it is meant to cover all of them`)
+      }
+      if (preludeDrawn.colours < 2) problems.push(`the fullscreen triangle drew ${preludeDrawn.colours} colour(s)`)
+      console.log(`  fullscreen half: ${preludeStatus}, WGSL ${preludeWgsl.length} B, canvas ${preludeDrawn.opaque}/${preludeDrawn.total} px in ${preludeDrawn.colours} colours`)
+      if (!/No diagnostics|진단 없음/.test(preludeDiagnostics)) problems.push(`the fragment program did not compile clean:\n    ${preludeDiagnostics.slice(0, 200)}`)
+
+      // The prelude moves the reader's own lines down inside the compiled text, so every
+      // line the page prints has to be moved back. The mistake is on the reader's line 9.
+      await typeSource(page, FRAGMENT_ONLY.replace('fract(uv.x * 8.)', 'fract(uv.x * "eight")'))
+      const shiftedRows = (await page.innerText('[data-diagnostics]')).trim().split('\n')
+      const shiftedMarkers = await page.evaluate(() => (window.monaco?.editor.getModelMarkers({}) ?? []).map((m) => m.startLineNumber))
+      if (!shiftedRows.some((row) => row.startsWith('9:'))) problems.push(`the mistake on line 9 was not reported there:\n    ${shiftedRows.join('\n    ')}`)
+      if (shiftedMarkers.length === 0 || !shiftedMarkers.includes(9)) problems.push(`the editor drew markers on lines ${shiftedMarkers.join(', ') || 'nothing'}, and the mistake is on line 9`)
+      if (shiftedMarkers.some((line) => line > FRAGMENT_ONLY.split('\n').length)) {
+        problems.push(`a marker landed on line ${Math.max(...shiftedMarkers)}, past the ${FRAGMENT_ONLY.split('\n').length} lines the editor holds`)
+      }
+      console.log(`  shifted lines: diagnostics ${shiftedRows.map((r) => r.split(' ')[0]).join(', ')}, markers ${shiftedMarkers.join(', ')}`)
+
+      // And hover answers about the reader's own line, which is the same shift the other way.
+      await typeSource(page, FRAGMENT_ONLY)
+      const preludeHover = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        const lines = editor.getModel().getLinesContent()
+        const at = lines.findIndex((line) => line.includes('const stripe'))
+        editor.revealLineInCenter(at + 1)
+        editor.setPosition({ lineNumber: at + 1, column: lines[at].indexOf('stripe') + 2 })
+        editor.focus()
+        editor.trigger('check', 'editor.action.showHover', null)
+        await new Promise((done) => setTimeout(done, 900))
+        return { line: at + 1, text: (document.querySelector('.monaco-hover')?.innerText ?? '').replace(/\s+/g, ' ').trim() }
+      })
+      if (!preludeHover.text.includes('f32')) problems.push(`hover on the reader's own line ${preludeHover.line} answered "${preludeHover.text}", and the local is an f32`)
+      console.log(`  hover past the prelude: line ${preludeHover.line} is ${preludeHover.text.slice(0, 40)}`)
+      await page.keyboard.press('Escape')
+
+      // A file that declares its own vertex half is compiled as written.
+      await typeSource(page, moduleShaped)
+      if (await page.isVisible('[data-prelude-note]')) problems.push('a file with its own vertex entry says it was compiled behind the fullscreen triangle')
+      if (/fn fullscreen/.test(await wgslPane(page))) problems.push('a file with its own vertex entry was compiled behind the fullscreen triangle anyway')
+      // And one with no directive still gets the page's own sentence about the directive,
+      // which supplying a directive for the reader would hide.
+      await typeSource(page, 'class Color {\n  @location(0) color: vec4\n}\n')
+      const noDirective = (await page.innerText('[data-diagnostics]')).trim()
+      if (!/use typeshade/.test(noDirective)) problems.push(`a file with no directive was not told so:\n    ${noDirective.slice(0, 160)}`)
+      await typeSource(page, moduleShaped)
+      await openTab(page, 'result')
 
       // ── dark mode reaches inside the editor ─────────────────────────────────────────────
       await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })

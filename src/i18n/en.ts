@@ -374,6 +374,11 @@ export const en = {
     canvasProgress: '{done}/{total} tiles, {running} running, {waiting} waiting',
     canvasDrawn: '{px} px in {ms} ms on {workers} worker(s)',
     canvasNeedsVertex: 'Drawing needs a vertex entry driven by vertex_index and a fragment entry. This module has no such pair, so there is no triangle to cover.',
+    // What the canvas says when the pair is there and the three corners it got have no area.
+    // The canvas runs the vertex entry at the indices 0, 1 and 2 and has no value for any
+    // other input, so it leaves those at zero, and a stage that reads one collapses.
+    canvasFlat: 'The vertex entry returned three corners with no area between them, so there is no triangle to cover.',
+    canvasFlatInputs: 'The canvas runs the vertex entry at the indices 0, 1 and 2 and has no value for {fields}, so it left those at 0. The three corners it got back have no area between them.',
     cpuFailed: 'The CPU oracle could not run this entry point.',
     entryCount: (n: number) => (n === 1 ? '1 entry point' : `${n} entry points`),
     // The example picker. Every example is one of the compiler's own .shade.ts files; the
@@ -384,6 +389,9 @@ export const en = {
     copied: 'Copied',
     share: 'Copy link',
     shared: 'Link copied',
+    // Shown while the file declares no `@vertex` entry of its own, which is when the page
+    // compiles it behind the fullscreen triangle src/lib/live-shader-contract.ts fixes.
+    preludeNote: 'This file declares no `@vertex` entry, so it is compiled behind a fullscreen triangle that hands the fragment stage a `uv` running 0 to 1. The tabs and the canvas show that program.',
     // The emit options the compiler takes, as controls over what the code tabs show.
     emit: {
       title: 'Emit options',

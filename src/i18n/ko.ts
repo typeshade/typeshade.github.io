@@ -437,6 +437,8 @@ export const ko: Copy = {
     canvasProgress: '타일 {done}/{total}, 실행 {running}, 대기 {waiting}',
     canvasDrawn: '{px}픽셀, {ms} ms, 워커 {workers}개',
     canvasNeedsVertex: '그리려면 vertex_index로 도는 버텍스 진입점과 프래그먼트 진입점이 함께 있어야 합니다. 이 모듈에는 그 짝이 없어 덮을 삼각형이 없습니다.',
+    canvasFlat: '버텍스 진입점이 돌려준 세 꼭짓점 사이에 넓이가 없어서 덮을 삼각형이 없습니다.',
+    canvasFlatInputs: '캔버스는 버텍스 진입점을 인덱스 0, 1, 2로 실행하며 {fields}에 넣을 값이 없어 0으로 두었습니다. 그렇게 받은 세 꼭짓점 사이에는 넓이가 없습니다.',
     cpuFailed: 'CPU 오라클이 이 진입점을 실행하지 못했습니다.',
     entryCount: (n: number) => `진입점 ${n}개`,
     exampleLabel: '예제',
@@ -444,6 +446,7 @@ export const ko: Copy = {
     copied: '복사됨',
     share: '링크 복사',
     shared: '링크 복사됨',
+    preludeNote: '이 파일에는 `@vertex` 진입점이 없어서, 화면 전체를 덮는 삼각형 뒤에 놓고 컴파일합니다. 그 삼각형이 프래그먼트 단계에 0에서 1까지 도는 `uv`를 넘깁니다. 탭과 캔버스에는 그렇게 만든 프로그램이 나옵니다.',
     emit: {
       title: '생성 옵션',
       optimization: 'WGSL 최적화',

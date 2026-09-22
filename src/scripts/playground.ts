@@ -33,6 +33,7 @@ import {
   type Analysis,
   type LanguageClient,
 } from './playground-language.ts';
+import { codeOnly, FRAGMENT_PRELUDE, sampleShape } from '../lib/live-shader-contract.ts';
 import {
   cornersOf,
   drawTile,
@@ -111,6 +112,8 @@ interface PlaygroundCopy {
   readonly stop: string;
   readonly canvasIdle: string;
   readonly canvasNeedsVertex: string;
+  readonly canvasFlat: string;
+  readonly canvasFlatInputs: string;
   readonly canvasProgress: string;
   readonly canvasDrawn: string;
   readonly resolution: string;
@@ -218,25 +221,84 @@ interface MonacoRange {
   readonly endColumn: number;
 }
 
+// ── The fullscreen vertex half ─────────────────────────────────────────────────────────────
+// A file that declares no `@vertex` entry is compiled behind the fullscreen triangle every
+// Book of Shaders page draws on, which is what `<LiveShader>` does on a guide page and what
+// src/lib/live-shader-contract.ts fixes as the site's one rule for it. So a reader can write
+// a fragment program alone, take the `uv` the triangle hands them, and see it cover the
+// canvas, instead of reading that the canvas needs a vertex entry they did not want to write.
+//
+// The directive has to stay the first thing in the file, so the prelude goes in after it and
+// everything below moves down by its lines. The compiler answers about the composed text and
+// the editor holds the reader's, so the two line numbers differ from that point on, and the
+// four functions below are where they meet.
+
+/** The directive line as the compiler wants it: first in the file. The Playground's own
+ *  sample writes a semicolon after it and the `.shade.ts` examples do not. */
+const DIRECTIVE_LINE = /^[\s\uFEFF]*(['"])use typeshade\1[ \t]*;?[ \t]*\r?\n/;
+
+/** The two top-level names the prelude brings. A file that declares one of its own would get
+ *  a duplicate and stop compiling, so that file keeps what it wrote and the prelude stays
+ *  out. A file that only names one of them gets the prelude and the declaration with it. */
+const PRELUDE_DECLARES = /^[\t ]*(?:export[\t ]+)?(?:class|function|const|let|var|type|interface)[\t ]+(?:VsOut|fullscreen)\b/m;
+
+/** The reader's text as the compiler sees it, and where the prelude went in. A file with no
+ *  directive is left alone: the page's own message about the directive is what that reader
+ *  needs, and it would never appear if a directive were supplied for them. */
+function compose(source: string): { readonly text: string; readonly at: number; readonly lines: number } {
+  const directive = DIRECTIVE_LINE.exec(source);
+  const code = codeOnly(source);
+  if (!directive || sampleShape(source) === 'module' || PRELUDE_DECLARES.test(code)) {
+    return { text: source, at: 0, lines: 0 };
+  }
+  const head = source.slice(0, directive[0].length);
+  const inserted = `\n${FRAGMENT_PRELUDE}\n`;
+  return {
+    text: head + inserted + source.slice(directive[0].length),
+    at: head.split('\n').length - 1,
+    lines: inserted.split('\n').length - 1,
+  };
+}
+
+/** How many lines the prelude took, and the line it went in at. Zero while the reader's file
+ *  declares its own vertex entry, which is when the two texts are the same text. */
+let preludeLines = 0;
+let preludeAt = 0;
+
+/** Whether a line of the compiled text is one of the prelude's, which the editor does not
+ *  hold and the reader never wrote. */
+const inPrelude = (line: number): boolean =>
+  preludeLines > 0 && line >= preludeAt && line < preludeAt + preludeLines;
+
+/** A line of the editor's text, as the compiled text numbers it. */
+const intoDocument = (line: number): number => (preludeLines > 0 && line >= preludeAt ? line + preludeLines : line);
+
+/** A line of the compiled text, back in the editor's. One of the prelude's own lands on the
+ *  directive line, which is the nearest line the reader can see. */
+const outOfDocument = (line: number): number => {
+  if (preludeLines === 0 || line < preludeAt) return line;
+  return line >= preludeAt + preludeLines ? line - preludeLines : Math.max(0, preludeAt - 1);
+};
+
 // ── The one place the two coordinate systems meet ──────────────────────────────────────────
 // Monaco counts lines and columns from 1. The language service counts both from 0, the way
 // the Language Server Protocol does. Every crossing goes through these four functions, so a
-// +1 or a -1 lives here and in no other file.
+// +1 or a -1, and the prelude's own lines, live here and in no other file.
 
 const toServicePosition = (position: MonacoPosition): TypeshadePosition => ({
-  line: position.lineNumber - 1,
+  line: intoDocument(position.lineNumber - 1),
   character: position.column - 1,
 });
 
 const toMonacoPosition = (position: TypeshadePosition): MonacoPosition => ({
-  lineNumber: position.line + 1,
+  lineNumber: outOfDocument(position.line) + 1,
   column: position.character + 1,
 });
 
 const toMonacoRange = (range: TypeshadeRange): MonacoRange => {
-  const startLineNumber = range.start.line + 1;
+  const startLineNumber = outOfDocument(range.start.line) + 1;
   const startColumn = range.start.character + 1;
-  const endLineNumber = range.end.line + 1;
+  const endLineNumber = outOfDocument(range.end.line) + 1;
   const endColumn = range.end.character + 1;
   // A zero-width range draws no squiggle, so an empty one is widened by a column.
   const empty = endLineNumber === startLineNumber && endColumn <= startColumn;
@@ -244,7 +306,7 @@ const toMonacoRange = (range: TypeshadeRange): MonacoRange => {
 };
 
 /** How a diagnostic's position reads in the diagnostics pane: the line and column an editor shows. */
-const toDisplayPosition = (position: TypeshadePosition): string => `${position.line + 1}:${position.character + 1}`;
+const toDisplayPosition = (position: TypeshadePosition): string => `${outOfDocument(position.line) + 1}:${position.character + 1}`;
 
 // ── Monaco, from the CDN ───────────────────────────────────────────────────────────────────
 // The editor is loaded the way its own samples load it, through its AMD loader. `MONACO_VS`
@@ -493,12 +555,14 @@ const emitGlsl = (
   }
 };
 
-/** A row of the diagnostics list: what to say and where it points. */
+/** A row of the diagnostics list: what to say and where it points. A row about a line of the
+ *  prelude points nowhere, since the editor does not hold that line. */
 interface DiagnosticRow {
   readonly message: string;
   readonly severity: TypeshadeDiagnostic['severity'];
   readonly source: TypeshadeDiagnostic['source'];
   readonly start: TypeshadePosition;
+  readonly located: boolean;
 }
 
 function mount(root: HTMLElement): void {
@@ -569,6 +633,7 @@ function mount(root: HTMLElement): void {
   const obfuscateToggle = root.querySelector('[data-opt-obfuscate]');
   const fp64Picker = root.querySelector('[data-opt-fp64]');
   const levelNote = root.querySelector('[data-level-note]');
+  const preludeNote = root.querySelector('[data-prelude-note]');
   const canvas = root.querySelector('[data-canvas]');
   const canvasNote = root.querySelector('[data-canvas-note]');
   const drawCpu = root.querySelector('[data-draw-cpu]');
@@ -896,6 +961,28 @@ function mount(root: HTMLElement): void {
   const fillNumbers = (text: string, values: Record<string, string | number>): string =>
     text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole));
 
+  /** What the canvas had no value for when it ran the vertex entry. It runs that entry at
+   *  the indices 0, 1 and 2 and zeroes every other input, so an input the entry reads comes
+   *  back as three collapsed corners and there is no triangle. Naming them is the difference
+   *  between a reader fixing their shader and reading the page as broken. */
+  const zeroedVertexInputs = (): readonly string[] => {
+    const vertex = entries.find((entry) => entry.stage === 'vertex');
+    return (vertex?.io?.inputs ?? [])
+      .filter((field) => field.builtin !== 'vertex_index')
+      .map((field, index) => field.name ?? `arg${index}`);
+  };
+
+  /** A raster failure as a sentence. The oracle takes entry arguments and no resource
+   *  values, so an entry reading a uniform or a storage binding stops at the name. */
+  const rasterFailure = (message: string): string => {
+    if (message === 'no triangle') {
+      const zeroed = zeroedVertexInputs();
+      return zeroed.length > 0 ? fillNumbers(copy.canvasFlatInputs, { fields: zeroed.join(', ') }) : copy.canvasFlat;
+    }
+    if (/unknown (?:const|var|binding)|unbound/.test(message)) return copy.cpuNoResources;
+    return message || copy.cpuFailed;
+  };
+
   const rasterPlan = (): RasterPlan | undefined => {
     if (!compiled || !(canvas instanceof HTMLCanvasElement)) return undefined;
     const vertex = entries.find((entry) => entry.stage === 'vertex');
@@ -981,13 +1068,13 @@ function mount(root: HTMLElement): void {
 
     if (typeof Worker !== 'function') {
       void drawHere(plan, context, mine).catch((error) => {
-        canvasNote.textContent = error instanceof Error ? error.message : copy.cpuFailed;
+        canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
       }).finally(finish);
       return;
     }
 
     if (!openPool()) {
-      void drawHere(plan, context, mine).catch(() => { canvasNote.textContent = copy.cpuFailed; }).finally(finish);
+      void drawHere(plan, context, mine).catch((error) => { canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : ''); }).finally(finish);
       return;
     }
 
@@ -1103,7 +1190,7 @@ function mount(root: HTMLElement): void {
           return;
         }
         if (message.kind === 'failed') {
-          canvasNote.textContent = message.message === 'no triangle' ? copy.canvasNeedsVertex : message.message;
+          canvasNote.textContent = rasterFailure(message.message);
           finish();
           return;
         }
@@ -1124,7 +1211,7 @@ function mount(root: HTMLElement): void {
         // A worker that cannot start at all leaves the drawing to this thread.
         for (const other of pool) other.terminate();
         pool = [];
-        void drawHere(plan, context, mine).catch(() => { canvasNote.textContent = copy.cpuFailed; }).finally(finish);
+        void drawHere(plan, context, mine).catch((error) => { canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : ''); }).finally(finish);
       };
       worker.postMessage({ kind: 'prepare', job: mine, module, plan } satisfies RasterRequest);
     }
@@ -1207,6 +1294,7 @@ function mount(root: HTMLElement): void {
     severity: diagnostic.severity,
     source: diagnostic.source,
     start: diagnostic.range.start,
+    located: !inPrelude(diagnostic.range.start.line),
   });
 
   const paintDiagnostics = (rows: readonly DiagnosticRow[]): void => {
@@ -1218,10 +1306,11 @@ function mount(root: HTMLElement): void {
     for (const row of rows) {
       const button = el('button') as HTMLButtonElement;
       button.type = 'button';
-      button.append(el('span', 'at', toDisplayPosition(row.start)));
+      if (row.located) button.append(el('span', 'at', toDisplayPosition(row.start)));
       button.append(el('span', 'source', ` ${row.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade}`));
       button.append(el('span', row.severity === 'error' ? 'error' : undefined, ` ${row.message}`));
-      button.addEventListener('click', () => goTo(row.start));
+      if (row.located) button.addEventListener('click', () => goTo(row.start));
+      else button.disabled = true;
       const item = el('li');
       item.append(button);
       diagnosticsPane.append(item);
@@ -1241,7 +1330,7 @@ function mount(root: HTMLElement): void {
     const rows = found.map(toRow);
     // The compiler stays quiet about a file with no directive, so the Playground says it.
     if (!analysis.hasDirective && rows.length === 0) {
-      rows.push({ message: copy.directive, severity: 'error', source: 'typeshade', start: { line: 0, character: 0 } });
+      rows.push({ message: copy.directive, severity: 'error', source: 'typeshade', start: { line: 0, character: 0 }, located: true });
     }
 
     // One marker owner, fed from the service alone. Monaco's own TypeScript checking is off,
@@ -1251,7 +1340,7 @@ function mount(root: HTMLElement): void {
     monacoApi.editor.setModelMarkers(
       model,
       'typeshade',
-      found.map((diagnostic) => ({
+      found.filter((diagnostic) => !inPrelude(diagnostic.range.start.line)).map((diagnostic) => ({
         ...toMonacoRange(diagnostic.range),
         message: diagnostic.message,
         source: diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
@@ -1316,7 +1405,11 @@ function mount(root: HTMLElement): void {
   const syncDocument = (): void => {
     if (!editor || !client) return;
     version += 1;
-    client.update(documentUri, editor.getValue(), version);
+    const composed = compose(editor.getValue());
+    preludeAt = composed.at;
+    preludeLines = composed.lines;
+    if (preludeNote instanceof HTMLElement) preludeNote.hidden = composed.lines === 0;
+    client.update(documentUri, composed.text, version);
   };
 
   /** Asks the worker for the document's analysis and paints it when it arrives. A control on
@@ -1575,9 +1668,12 @@ function mount(root: HTMLElement): void {
         },
       });
 
-      // A location in another document is dropped: the Playground holds one file.
+      // A location in another document is dropped: the Playground holds one file. So is one
+      // inside the prelude, which the editor does not hold either.
       const ownLocations = (locations: readonly { uri: string; range: TypeshadeRange }[] | undefined) =>
-        (locations ?? []).filter((location) => location.uri === documentUri).map((location) => ({ uri: model.uri, range: monacoRange(location.range) }));
+        (locations ?? [])
+          .filter((location) => location.uri === documentUri && !inPrelude(location.range.start.line))
+          .map((location) => ({ uri: model.uri, range: monacoRange(location.range) }));
 
       monaco.languages.registerDefinitionProvider('typescript', {
         provideDefinition: async (currentModel: any, position: MonacoPosition) => {
@@ -1647,6 +1743,10 @@ function mount(root: HTMLElement): void {
           if (!isOurs(currentModel) || !client) return null;
           const edits = await client.request('rename', documentUri, version, { ...here(position), newName });
           if (!edits) return null;
+          // A name the prelude also declares would be renamed in there too, and the editor
+          // holds none of those lines, so the edit has nowhere to land. The rename is
+          // refused whole instead of applied to half the occurrences.
+          if ((edits[documentUri] ?? []).some((edit) => inPrelude(edit.range.start.line))) return null;
           return {
             edits: (edits[documentUri] ?? []).map((edit) => ({
               resource: model.uri,
@@ -1665,7 +1765,14 @@ function mount(root: HTMLElement): void {
         provideDocumentSemanticTokens: async (currentModel: any) => {
           if (!isOurs(currentModel) || !client) return null;
           const tokens = await client.request('semanticTokens', documentUri, version, {});
-          return tokens ? { data: encodeSemanticTokens(tokens) } : null;
+          if (!tokens) return null;
+          // The compiler classified the composed text, so the prelude's tokens come back
+          // too. They are dropped and the rest move up, since the encoding is a delta over
+          // the lines the editor actually holds.
+          const own = tokens
+            .filter((token) => !inPrelude(token.line))
+            .map((token) => ({ ...token, line: outOfDocument(token.line) }));
+          return { data: encodeSemanticTokens(own) };
         },
         releaseDocumentSemanticTokens: () => {},
       });
