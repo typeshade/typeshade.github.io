@@ -21,7 +21,7 @@ The site follows the shapes readers already know, and nothing else:
   four concept cards, three short points. No lists of features, no long prose.
 - **Header**: VitePress. Name on the left; Use TypeShade, Playground, Language, API and
   Examples; then a language menu (globe icon, current language, list of the others), a
-  dark-mode switch (sun or moon), GitHub as an icon. Under 48rem, a menu button and a panel
+  dark-mode switch (sun or moon), GitHub as an icon. Under 64rem, a menu button and a panel
   with the same items.
 - **Docs**: VitePress. Sidebar on the left in six groups (Get started, Language, Concepts,
   Examples, Reference, Project), the document in the middle at 740px, an outline of the page's

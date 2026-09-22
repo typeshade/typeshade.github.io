@@ -217,7 +217,7 @@ and has a matching Korean cut.
   under blocks, no "a · b · c" metadata strings. <!-- ok -->
 
 **The Two Families Rule.** Plex Sans carries interface and prose; Plex Mono carries code,
-identifiers, diagnostics, the version tag, the layout table and a uniform's own field name.
+identifiers, diagnostics, the header's version, the layout table and a uniform's own field name.
 A word that names something the compiler reads is set in the mono face wherever it appears.
 
 ## Colour
@@ -295,9 +295,12 @@ element is fully round except the two-axis pad's dot.
 ## Layout
 
 - A full-width header bar (64px, one `#f0f0f0` rule under it) and a full-width footer on
-  `#fafafa` frame every page. Under 48rem the header's links, the version menu, the language
+  `#fafafa` frame every page. Under 64rem the header's links, the version menu, the language
   menu and the dark-mode switch sit in a full-screen panel behind a menu button; the magnifier
-  stays outside it, one tap away.
+  stays outside it, one tap away. The bar appears at 64rem because that is the width it lays
+  out at: it needs about 1004px in English and 892px in Korean, and no item in it shrinks or
+  wraps. It is the width the documentation grid opens its sidebar at, so the two chrome
+  layouts change together.
 - Nothing is centred in a container. The header, the footer, the front page, the documentation
   grid, the examples gallery and the Playground run the width of the viewport, held off it by
   the gutter alone: 8px, 12px from 40rem. Two measures work inside that shell. Running text
@@ -359,10 +362,9 @@ cards takes the column. A third measure needs a reason.
 - **Table.** Ant's lines: no vertical rules, a `#fafafa` head at weight 600, 12px by 16px
   cells, a `#f0f0f0` rule under every row, tabular figures, and the whole table scrollable
   inside the wide measure.
-- **Tag.** A 12px chip with a 4px radius, a `#d9d9d9` border and the `#fafafa` fill: the
-  version in the header, an optional parameter, a target's support state, the one example that
-  emits a single target. The target state that reads "not supported" swaps the border and text
-  to the red.
+- **Tag.** A 12px chip with a 4px radius, a `#d9d9d9` border and the `#fafafa` fill: an
+  optional parameter, a target's support state, the one example that emits a single target.
+  The target state that reads "not supported" swaps the border and text to the red.
 - **Code frames.** Expressive Code in the same shape as a card: 8px radius, a 1px `#f0f0f0`
   border, a `#fafafa` tab bar, white code at 13px, no shadow. The copy button is the one piece
   of chrome the plugin draws itself, and it carries the page's language.
@@ -383,8 +385,11 @@ cards takes the column. A third measure needs a reason.
   bare grey frame: a 40px outlined mark at one 1.5px stroke in tertiary text, and one 12px
   secondary sentence under it saying why there is no picture.
 - **Dropdowns.** The version menu, the language menu and the mobile panel are `details`
-  elements. An open panel is an 8px card with 4px of padding, the elevation shadow, and 6px
-  rows; the current choice is the primary over its wash at weight 600.
+  elements. The version's summary is one of the header's 32px controls, with the row's radius
+  and its 0.04 hover fill; it keeps the mono face and tabular figures at the row's 14px,
+  because the digits name a release. An open panel is an 8px card with 4px of padding, the
+  elevation shadow, and 6px rows; the current choice is the primary over its wash at weight
+  600.
 - **The showcase card.** The front page's live editor, `<LiveShader variant="hero">`: an 8px
   card with the elevation shadow, a 56px head bar carrying the file name as an active tab (a
   2px inset accent underline) with Edit and Reset as 24px buttons on the right, then a body
