@@ -787,7 +787,7 @@ export const ko: Copy = {
       invocationRule: '여기에서 규칙이 나옵니다. 스테이지 데코레이터가 셋 가운데 어느 쪽이 부르는지 밝히고, `@builtin(...)` 매개변수가 인보케이션에게 자기 자리를 알려 줍니다. 데코레이터는 [셰이더 스테이지](languageStages)가, 매개변수는 [함수](languageFunctions)가 적어 두었습니다.',
       memoryH: '메모리',
       memoryP: '인보케이션은 레지스터와, 호스트가 그리기 전에 바인딩해 둔 버퍼와 텍스처 위에서 움직입니다. 그 아래에 힙이 없으므로 셰이더는 메모리를 할당할 곳도, 길이가 늘어나는 배열도, 문자열을 만들 방법도 없습니다. TypeShade 파일의 클래스는 GPU 구조체의 바이트 배치를 설명하고, 그 바이트는 호스트가 채웁니다.',
-      memoryRule: '여기에서 규칙이 나옵니다. `new`는 아무것도 만들지 않고, 필드 데코레이터가 레이아웃을 담으며, 리소스는 모두 `declare`로 들어옵니다. 구조체 작성 인터페이스는 [타입](languageTypes)이, 선언은 [리소스](languageResources)가 적어 두었습니다.',
+      memoryRule: '여기에서 규칙이 나옵니다. `new`는 정체성을 가진 객체가 아니라 값을 만들고, 필드 데코레이터가 레이아웃을 담으며, 리소스는 모두 `declare`로 들어옵니다. 구조체 작성 인터페이스는 [타입](languageTypes)이, 선언은 [리소스](languageResources)가 적어 두었습니다.',
       callsH: '호출',
       callsP: '셰이더에는 돌아갈 호출 스택이 없고, 호출 그래프는 드라이버가 보기 전에 평탄화됩니다. 자기 자신을 직접 부르거나 다른 함수를 거쳐 부르는 함수는 평탄화할 대상을 남기지 못합니다.',
       callsRule: '여기에서 규칙이 나옵니다. 재귀는 컴파일러가 거부하고, 헬퍼 함수는 컴파일러가 끝까지 따라갈 수 있는 평범한 함수입니다. 호출이 무엇일 수 있는지는 [함수](languageFunctions)가 적어 두었습니다.',
@@ -802,7 +802,7 @@ export const ko: Copy = {
       tableColumns: ['GPU가 하는 일', 'TypeShade가 요구하는 것', '적어 둔 곳'],
       tableRows: [
         ['버텍스, 프래그먼트, 작업 항목마다 진입점을 한 번씩 부릅니다', '진입점에 스테이지 데코레이터를 달고, builtin 입력마다 매개변수를 둡니다', '[셰이더 스테이지](languageStages)'],
-        ['인보케이션에 레지스터와 바인딩된 리소스를 주고, 그 아래에 힙은 없습니다', '`new`도, 늘어나는 배열도, 문자열도 없습니다. 클래스는 레이아웃이고 리소스는 `declare`입니다', '[리소스](languageResources)'],
+        ['인보케이션에 레지스터와 바인딩된 리소스를 주고, 그 아래에 힙은 없습니다', '늘어나는 배열도 문자열도 없습니다. `new`는 값을 만들고, 클래스는 레이아웃이며 리소스는 `declare`입니다', '[리소스](languageResources)'],
         ['호출 스택 없이 실행합니다', '컴파일러가 평탄화할 수 있는 호출 그래프를 요구하므로 재귀가 없습니다', '[함수](languageFunctions)'],
         ['한 스테이지의 인보케이션들을 루프에 함께 통과시킵니다', '컴파일러가 읽을 수 있는 루프 상한을 요구합니다', '[제어 흐름](languageControlFlow)'],
         ['레지스터 하나에 폭이 정해진 값을 담습니다', '변수마다 값 타입 하나를 적어 둡니다', '[GPU 타입](languageGpuTypes)']
@@ -833,7 +833,7 @@ export const ko: Copy = {
       entryNote: '그래서 시그니처 한 줄만 읽어도 그 함수가 어느 스테이지에 속하는지, 파이프라인이 무엇을 공급해야 하는지, 파이프라인이 무엇을 돌려받는지 알 수 있습니다.',
       interpolationH: '보간',
       interpolationP: '버텍스 스테이지와 프래그먼트 스테이지 사이에서 래스터라이저가 프리미티브가 덮는 프래그먼트를 가려냅니다. 그리고 프래그먼트마다, 버텍스들이 만든 값을 각 버텍스에서 얼마나 가까운지에 따라 가중해 프래그먼트 스테이지에 건넵니다. 이 과정을 보간이라고 합니다. 버텍스 진입점은 버텍스마다 값을 쓰고 프래그먼트 진입점은 프래그먼트마다 값을 읽으므로, 이름은 같아도 서로 다른 값입니다.',
-      interpolationNote: '필드에 붙인 `@interpolate`가 가중 방식을 고르고, 보간 없이 그대로 와야 하는 필드도 같은 자리에서 그렇게 밝힙니다. 필드 데코레이터는 [타입](languageTypes)이 적어 두었습니다.',
+      interpolationNote: '`@location` 필드는 모두 이렇게 가중됩니다. 보간 없이 그대로 와야 하는 필드를 쓰는 방법은 아직 없고, `@interpolate`는 컴파일러가 받는 어트리뷰트가 아닙니다. 필드 데코레이터는 [타입](languageTypes)이 적어 두었습니다.',
       computeH: '컴퓨트',
       computeP: '컴퓨트 스테이지 앞에는 래스터라이저가 없고 뒤에는 어태치먼트가 없습니다. 호스트가 작업 항목의 격자를 디스패치하면, 진입점은 그 격자 안의 자기 좌표를 builtin 매개변수로 읽고, 만들어 낸 값은 모두 스토리지 리소스를 거쳐 나갑니다. 쓰기 가능한 리소스를 어떻게 선언하는지는 [리소스](languageResources)가 적어 두었습니다.',
       furtherH: '더 읽을 자료',
@@ -1149,6 +1149,38 @@ export const ko: Copy = {
         'gradient-twin': '`gradient-pass.ts`를 `fn()` / `module()`로 만드는 대신 소스 언어로 다시 쓴 예제입니다.',
       },
     },
+    page: {
+      // 영어와 같은 방식입니다. 60자 상한에 들어가는 가장 긴 꼬리말을 고르고, 꼬리말 사이 간격을
+      // 15자 이하로 두어 어떤 예제 이름이 와도 45자 아래로 내려가지 않게 했습니다.
+      title: (name: string) => {
+        const suffixes = [
+          ', TypeShade 예제 소스와 컴파일러가 낸 셰이더 코드를 한 화면에서 봅니다',
+          ', TypeShade 예제와 컴파일러가 낸 셰이더 코드',
+          ', TypeShade 셰이더 예제',
+          ' 예제, TypeShade',
+        ]
+        const fitting = suffixes.find((suffix) => (name + suffix).length <= 60)
+        return fitting ? name + fitting : name
+      },
+      description: (name: string, blurb: string) => `TypeShade 예제 ${name}. ${blurb}`,
+      descriptionPad: `소스와 WGSL 출력, ${glsl} 단계까지 한 페이지에 모았습니다.`,
+      source: '소스',
+      emitted: '출력 결과',
+      emittedNote: `아래 코드는 커밋 ${facts.pinnedCommit}의 컴파일러가 직접 낸 출력입니다. 컴파일러의 출력 검사가 구워 둔 골든 파일에서 그대로 읽어 왔습니다([emit-goldens.test.ts](goldens)).`,
+      wgsl: 'WGSL',
+      glslVertex: `${glsl} 버텍스`,
+      glslFragment: `${glsl} 프래그먼트`,
+      wgslOnlyNote: `이 예제는 ${glsl} 형태가 없어서 컴파일러가 WGSL만 구워 둡니다.`,
+      github: 'GitHub의 파일',
+      playground: 'Playground에서 열기',
+      noPicture: {
+        'no-glsl': `이 예제는 ${glsl} 형태가 없고 캔버스는 두 백엔드에서 같은 프로그램을 돌리므로, 이 페이지에는 그림이 없습니다.`,
+        control: '이 예제를 움직이는 컨트롤에 페이지가 넣을 값이 없어서, 이 페이지에는 그림이 없습니다.',
+        texture: '이 예제가 읽는 텍스처에 페이지가 넣을 데이터가 없어서, 이 페이지에는 그림이 없습니다.',
+        uniform: '이 예제가 선언한 유니폼 필드에 페이지가 넣을 값이 없어서, 이 페이지에는 그림이 없습니다.',
+        'vertex-buffer': '이 예제는 버텍스 속성을 버퍼에서 읽는데 페이지가 그 버퍼를 바인딩하지 않아서, 그림이 없습니다.',
+      },
+    },
     printIntro: '저장소를 받아 둔 디렉터리에서 실행합니다. 첫 번째 명령은 모든 예제의 WGSL, GLSL, 리플렉션을 출력하고, 두 번째는 id로 하나만 출력합니다.',
     glsl: {
       h: `gradient 패스의 ${glsl} 출력`,
@@ -1192,7 +1224,7 @@ export const ko: Copy = {
       syntaxTableRows: [
         ['function', 'helper / entry', 'GPU에서 실행 가능한 함수가 됩니다.'],
         ['type', 'GPU value shape', '허용되는 GPU 값과 layout을 기준으로 검사합니다.'],
-        ['class', 'GPU struct', 'runtime object가 아니라 데이터 layout을 표현합니다.'],
+        ['class', 'GPU struct', 'struct와 그 곁에 쓴 함수들이며, runtime object는 없습니다.'],
         ['if / for', 'GPU control flow', 'JavaScript runtime 전체가 아니라 컴파일 가능한 흐름입니다.']
       ],
       gpuH: '3. GPU 개념은 소스에 드러납니다',
@@ -1232,14 +1264,14 @@ export const ko: Copy = {
         tsP: 'Type alias는 값의 shape를 이름 붙이는 방법입니다. TypeShade에서도 이 표면을 유지하지만, 사용 가능한 타입과 표현식은 shader semantics가 결정합니다.',
         alias: '1. 타입 별칭은 plain data에 사용',
         aliasP: '필드에 decorator가 필요 없다면 type alias가 가장 단순한 표현입니다. 여러 함수의 인자나 반환값에서 같은 GPU value shape를 공유할 때도 유용합니다.',
-        struct: '2. class는 GPU struct',
-        structP: 'class는 JavaScript 객체를 만드는 런타임 클래스가 아닙니다. TypeShade에서는 GPU struct와 필드 metadata를 표현하는 authoring surface입니다.',
+        struct: '2. class는 struct와 그 함수들',
+        structP: 'TypeShade의 class는 GPU struct이면서 그 곁에 쓴 함수들입니다. 필드는 호스트가 채우는 바이트입니다. 생성자와 메서드와 static 함수는 각각 평범한 함수로 내려가서, `new Ray(o, d)`는 `Ray_new`를 부르고 `r.at(t)`는 `Ray_at(r, t)`를 부릅니다. 그 사이에 살아 있는 객체는 없습니다.',
         attrs: '3. 필드 decorator는 레이아웃을 설명',
-        attrsP: '현재 surface에서 `@location`, `@builtin`, `@align`, `@size`, `@offset`, `@interpolate`, `@ignore`를 class field에 사용할 수 있습니다. decorator는 TypeScript의 일반적인 객체 metadata가 아니라 shader layout 의미를 부여합니다.',
+        attrsP: '필드에는 `@location`과 `@builtin`을 붙이고, 컴파일러가 필드에 적용하는 것도 이 둘입니다. `@align`은 읽고 나서 거부하며 `@size`, `@offset`, `@interpolate`, `@ignore`는 아는 어트리뷰트가 아닙니다. 받아들이는 전체 집합은 `@vertex`, `@fragment`, `@compute`, `@builtin`, `@location`입니다.',
         boundary: '4. TypeScript의 class와 다른 점',
-        boundaryItems: ['`new`로 GPU struct를 생성하지 않습니다.', '`extends`와 일반적인 상속 모델을 사용하지 않습니다.', 'entry point를 class method로 만들지 않습니다.', '필드 metadata가 필요하지 않다면 type alias가 더 명확합니다.'],
+        boundaryItems: ['진입점은 최상위 함수이고 메서드가 아닙니다.', '필드가 없는 class는 struct가 아니므로 그 함수들은 함수로 씁니다.', 'getter와 setter, 두 번째 생성자는 각각 이름을 들어 거부됩니다.', '`new`는 함수 본문 안에서 값을 만들고, 모듈 상수는 객체 리터럴로 씁니다.', '데코레이터가 필요한 필드가 없다면 type alias가 더 명확합니다.'],
         mapping: '5. 개념 대응표',
-        mappingRows: [['TypeScript', 'TypeShade'], ['type alias / object shape', 'GPU value shape'], ['class fields', 'GPU struct fields'], ['decorator metadata', 'GPU layout / stage metadata'], ['runtime object', '해당하지 않음'], ['structural compatibility', 'shader 타입 검사 범위에서 적용']],
+        mappingRows: [['TypeScript', 'TypeShade'], ['type alias / object shape', 'GPU value shape'], ['class fields', 'GPU struct fields'], ['class method', '구조체를 첫 매개변수로 받는 함수'], ['`new`', '만들어진 생성자 함수 호출'], ['`extends` with `super`', '베이스 필드를 이어 붙이고 본문을 다시 내림'], ['decorator metadata', 'GPU layout / stage metadata'], ['runtime object', '해당하지 않음'], ['structural compatibility', 'shader 타입 검사 범위에서 적용']],
         example: '6. 실제 entry point와 연결하기',
         exampleP: 'struct를 정의한 뒤 entry point 매개변수에서 사용할 수 있습니다. 이때 값의 shape와 field metadata가 shader 입력의 의미를 결정합니다.',
         next: '다음: Functions'

@@ -18,15 +18,11 @@ export const STILL_EXAMPLES = [
   'raymarch-boxes', 'raymarch-sphere', 'starfield', 'truchet', 'tunnel', 'voronoi',
 ]
 
-/** The `.shade.ts` examples the same runtime can draw: every one with a GLSL ES 3.00 form,
- *  less four. Three declare a texture the page has no data for (textured-quad,
- *  shadow-compare, cube-env), hello-vsin reads its vertex attributes from a buffer, which a
- *  page that draws one fullscreen triangle and binds no vertex buffer cannot fill, and
- *  hello-uniform-struct and bit-bump declare a uniform field that is neither one of the
- *  three the runtime fills by itself nor covered by a source twin's controls. Those six keep
- *  the gallery's plain tile, the way a registry example the runtime cannot draw already
- *  does. A list for the same reason as the one above: plain Node reads this file before the
- *  build. */
+/** The `.shade.ts` examples the same runtime can draw. The eight with a GLSL ES 3.00 form
+ *  that are left out are listed in NO_STILL_REASONS below, with the reason each one gives.
+ *  Those eight keep the gallery's plain tile, the way a registry example the runtime cannot
+ *  draw already does. A list for the same reason as the one above: plain Node reads this
+ *  file before the build. */
 export const SHADE_STILL_EXAMPLES = [
   'array-literal-ramp', 'bare-position', 'bitfield-bands', 'block-scope',
   'bool-select', 'convert-grid', 'cutout', 'default-args', 'domain-warp-twin',
@@ -36,6 +32,58 @@ export const SHADE_STILL_EXAMPLES = [
   'palette-const', 'pick-composite', 'plasma-twin', 'private-state', 'ray-class',
   'shape-inheritance', 'starfield-twin', 'tunnel-twin', 'tuple-and-brand', 'twin-structs',
 ]
+
+/** Why one example has no still, keyed by id, for every example of either corpus that is not
+ *  in the two lists above. The per-example page (src/components/pages/ExamplePage.astro)
+ *  prints the sentence its language writes for the reason instead of an empty frame, and
+ *  src/lib/example-pages.ts holds this table against the two registries in both directions,
+ *  so an example added upstream stops the build here instead of shipping a blank picture.
+ *
+ *  The five reasons, each the refusal src/lib/hero-shader.ts already raises:
+ *   - `no-glsl`      the registry marks it as having no GLSL ES 3.00 form that links
+ *   - `control`      a control kind src/lib/shader-runtime.ts has no packer for
+ *   - `texture`      a texture the page has no data for; only the fp64 guard is supplied
+ *   - `uniform`      a uniform field that is neither one of the three the runtime fills by
+ *                    itself nor covered by a source twin's controls
+ *   - `vertex-buffer` vertex attributes read from a buffer, which a page that draws one
+ *                    fullscreen triangle and binds no vertex buffer cannot fill */
+export const NO_STILL_REASONS = {
+  // The `fn()` registry.
+  'fp64-checker-plane': 'control',
+  'fp64-loran': 'control',
+  'fp64-rtc': 'control',
+  'fp64-mandelbrot': 'control',
+  'fp64-julia': 'control',
+  'fp64-burning-ship': 'control',
+  'fp64-newton': 'control',
+  'fp64-mandelbrot-de': 'control',
+  'override-quality': 'no-glsl',
+  'texture-array-lod': 'no-glsl',
+  'compute-reduction': 'no-glsl',
+  // The `.shade.ts` corpus.
+  'hello-vsin': 'vertex-buffer',
+  'hello-uniform': 'no-glsl',
+  'hello-uniform-struct': 'uniform',
+  'hello-camera': 'no-glsl',
+  'textured-quad': 'texture',
+  'compute-reduction-twin': 'no-glsl',
+  'array-length': 'no-glsl',
+  'atomic-histogram': 'no-glsl',
+  'workgroup-scratch': 'no-glsl',
+  'workgroup-reduce': 'no-glsl',
+  'shadow-compare': 'texture',
+  'cube-env': 'texture',
+  'cube-array-gather': 'no-glsl',
+  'msaa-resolve': 'no-glsl',
+  'storage-texture': 'no-glsl',
+  'particle-step': 'no-glsl',
+  'bit-bump': 'uniform',
+  'normal-matrix': 'uniform',
+  'fp64-lane-stripes': 'uniform',
+}
+
+/** The reason keys above, so a dictionary can be held to one sentence for each. */
+export const NO_STILL_REASON_KEYS = ['no-glsl', 'control', 'texture', 'uniform', 'vertex-buffer']
 
 export const STILLS = [
   { id: 'gradient', example: 'gradient', page: '/guide/checks/', backend: 'webgpu' },

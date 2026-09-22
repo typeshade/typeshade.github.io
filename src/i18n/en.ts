@@ -738,7 +738,7 @@ export const en = {
       invocationRule: 'What follows: a stage decorator says which of the three is calling, and a `@builtin(...)` parameter is how an invocation learns its own place in the work. [Shader stages](languageStages) states the decorators and [Functions](languageFunctions) states the parameters.',
       memoryH: 'Memory',
       memoryP: 'An invocation works in registers and in the buffers and textures the host bound before the draw. There is no heap under it, so a shader has nothing to allocate from, no array that can grow and no string to build. A class in a TypeShade file describes the bytes of a GPU struct, and the host writes those bytes.',
-      memoryRule: 'What follows: `new` builds nothing, a field decorator carries layout, and every resource arrives through `declare`. [Types](languageTypes) states the struct surface and [Resources](languageResources) states the declarations.',
+      memoryRule: 'What follows: `new` builds a value and not an object with identity, a field decorator carries layout, and every resource arrives through `declare`. [Types](languageTypes) states the struct surface and [Resources](languageResources) states the declarations.',
       callsH: 'Calls',
       callsP: 'A shader has no call stack to return through, and the call graph is flattened before a driver sees it. A function that calls itself, directly or through another function, leaves the compiler with nothing to flatten.',
       callsRule: 'What follows: recursion is rejected, and a helper is an ordinary function the compiler can follow to its leaves. [Functions](languageFunctions) states what a call may be.',
@@ -753,7 +753,7 @@ export const en = {
       tableColumns: ['What the GPU does', 'What TypeShade asks for', 'Stated in'],
       tableRows: [
         ['Calls an entry point once per vertex, fragment or work item', 'A stage decorator on the entry point and a parameter for every builtin input', '[Shader stages](languageStages)'],
-        ['Gives an invocation registers and bound resources, with no heap under them', 'No `new`, no growing array and no string; a class is a layout and a resource is a `declare`', '[Resources](languageResources)'],
+        ['Gives an invocation registers and bound resources, with no heap under them', 'No growing array and no string; `new` builds a value, a class is a layout and a resource is a `declare`', '[Resources](languageResources)'],
         ['Runs without a call stack', 'A call graph the compiler can flatten, so no recursion', '[Functions](languageFunctions)'],
         ['Moves the invocations of a stage through a loop together', 'A loop bound the compiler can read', '[Control flow](languageControlFlow)'],
         ['Holds a value of one width in a register', 'One value type per variable, written out', '[GPU types](languageGpuTypes)']
@@ -784,7 +784,7 @@ export const en = {
       entryNote: 'Reading a signature therefore tells you which stage the function belongs to, what the pipeline has to supply, and what the pipeline receives.',
       interpolationH: 'Interpolation',
       interpolationP: 'Between the vertex stage and the fragment stage the rasterizer works out which fragments a primitive covers. For each of them it weighs the values the vertices produced by how near the fragment lies to each vertex, and hands the fragment stage the result. A vertex entry writes a value per vertex and a fragment entry reads a value per fragment, so the two are different values with the same name.',
-      interpolationNote: '`@interpolate` on a field chooses the weighting, and a field that has to arrive unweighed says so in the same place. [Types](languageTypes) states the field decorators.',
+      interpolationNote: 'Every `@location` field is weighed this way. A field that has to arrive unweighed has no spelling yet, and `@interpolate` is not one of the attributes the compiler takes. [Types](languageTypes) states the field decorators.',
       computeH: 'Compute',
       computeP: 'A compute stage has no rasterizer in front of it and no attachment behind it. The host dispatches a grid of work items, the entry point reads its own coordinates in that grid from a builtin parameter, and everything it produces goes through a storage resource. [Resources](languageResources) states how a writable resource is declared.',
       furtherH: 'Further reading',
@@ -970,6 +970,47 @@ export const en = {
       titles: shadeTitles(),
       descriptions: shadeDescriptions(),
     },
+    /** The page one example gets, at /guide/examples/<id>/. Every tile in the gallery links
+     *  here, and the file on GitHub is one link in the row at the foot of the page. */
+    page: {
+      // The title names the example and takes the longest suffix that still fits under the
+      // 60-character ceiling check-seo.mjs enforces, the way docs.api.pageTitle does. The
+      // shortest example name is 6 characters and the longest 41, so the suffixes step down
+      // by no more than 15 and every name lands over the SEO review's 45-character floor.
+      // src/components/pages/ExamplePage.astro asserts both ends for all of them.
+      title: (name: string) => {
+        const suffixes = [
+          ', a TypeShade example with its source and emitted code',
+          ', a TypeShade example and the code it emits',
+          ', a TypeShade shader example',
+          ' in TypeShade',
+        ]
+        const fitting = suffixes.find((suffix) => (name + suffix).length <= 60)
+        return fitting ? name + fitting : name
+      },
+      description: (name: string, blurb: string) => `${name}, a TypeShade example. ${blurb}`,
+      /** Added when an example's own line leaves the description under the 70 characters the
+       *  SEO checks want. */
+      descriptionPad: `The source, the WGSL it emits and the ${glsl} stages, on one page.`,
+      source: 'Source',
+      emitted: 'Emitted output',
+      emittedNote: `The text below is the compiler's own output at commit ${facts.pinnedCommit}, read from the goldens its emit suite bakes ([emit-goldens.test.ts](goldens)).`,
+      wgsl: 'WGSL',
+      glslVertex: `${glsl} vertex`,
+      glslFragment: `${glsl} fragment`,
+      wgslOnlyNote: `This example has no ${glsl} form, so the compiler bakes its WGSL alone.`,
+      github: 'File on GitHub',
+      playground: 'Open in the Playground',
+      /** What the page says where it draws no picture, one line per reason in
+       *  NO_STILL_REASONS (scripts/artifacts.mjs). */
+      noPicture: {
+        'no-glsl': `This example has no ${glsl} form, and the canvas runs one program on both backends, so the page shows no picture.`,
+        control: 'This example is steered by a control the page has no value for, so the page shows no picture.',
+        texture: 'This example reads a texture the page has no data for, so the page shows no picture.',
+        uniform: 'This example declares a uniform field the page has no value for, so the page shows no picture.',
+        'vertex-buffer': 'This example reads its vertex attributes from a buffer the page does not bind, so the page shows no picture.',
+      },
+    },
     printIntro: 'From a checkout of the repository, the first command prints WGSL, GLSL and reflection for every example; the second does one by id.',
     glsl: {
       h: `The gradient pass in ${glsl}`,
@@ -1017,7 +1058,7 @@ export const en = {
       syntaxTableRows: [
         ['function', 'helper / entry', 'The body must be GPU-lowerable.'],
         ['type', 'GPU value shape', 'The shape is checked against GPU value semantics.'],
-        ['class', 'GPU struct', 'It describes data layout, not a runtime object.'],
+        ['class', 'GPU struct', 'A struct and the functions written with it, with no runtime object.'],
         ['if / for', 'GPU control flow', 'Only flow that compiles to GPU execution, not the whole JavaScript runtime.']
       ],
       gpuH: '3. GPU concepts stay visible in the source',
@@ -1057,14 +1098,14 @@ export const en = {
         tsP: 'A type alias gives a name to a value shape. TypeShade keeps that surface, while shader semantics determine which types and expressions are valid in a shader.',
         alias: '1. Use type aliases for plain data',
         aliasP: 'When fields do not need decorators, a type alias is the smallest representation. It is also useful when the same GPU value shape is shared across helper parameters and return values.',
-        struct: '2. A class is a GPU struct',
-        structP: 'A TypeShade class is not a JavaScript runtime object. It is an authoring surface for a GPU struct and its field metadata.',
+        struct: '2. A class is a struct and its functions',
+        structP: 'A TypeShade class is a GPU struct and the functions written with it. The fields are the bytes the host writes. A constructor, a method and a static function each lower to a plain function, so `new Ray(o, d)` calls `Ray_new` and `r.at(t)` calls `Ray_at(r, t)`. Nothing keeps an object alive between them.',
         attrs: '3. Field decorators describe layout',
-        attrsP: 'The current surface supports `@location`, `@builtin`, `@align`, `@size`, `@offset`, `@interpolate`, and `@ignore` on class fields. These decorators carry shader layout meaning, not ordinary JavaScript object metadata.',
+        attrsP: 'A field takes `@location` and `@builtin`, and those two are the ones the compiler applies to a field. `@align` is read and refused, and `@size`, `@offset`, `@interpolate` and `@ignore` are not attributes it knows. The whole set it accepts is `@vertex`, `@fragment`, `@compute`, `@builtin` and `@location`.',
         boundary: '4. Where TypeScript classes stop',
-        boundaryItems: ['Do not construct GPU structs with `new`.', 'Do not use `extends` as a GPU inheritance model.', 'Do not make shader entry points class methods.', 'Prefer a type alias when field metadata is unnecessary.'],
+        boundaryItems: ['An entry point is a top-level function, not a method.', 'A class with no fields is not a struct, so write its functions as functions.', 'A getter, a setter and a second constructor are each refused by name.', '`new` builds a value inside a function body, and a module constant takes an object literal.', 'Prefer a type alias when no field needs a decorator.'],
         mapping: '5. Concept mapping',
-        mappingRows: [['TypeScript', 'TypeShade'], ['type alias / object shape', 'GPU value shape'], ['class fields', 'GPU struct fields'], ['decorator metadata', 'GPU layout / stage metadata'], ['runtime object', 'not applicable'], ['structural compatibility', 'applies within shader type checking']],
+        mappingRows: [['TypeScript', 'TypeShade'], ['type alias / object shape', 'GPU value shape'], ['class fields', 'GPU struct fields'], ['class method', 'A function taking the struct first'], ['`new`', 'A call of the generated constructor'], ['`extends` with `super`', 'The base fields spliced in and the body lowered again'], ['decorator metadata', 'GPU layout / stage metadata'], ['runtime object', 'not applicable'], ['structural compatibility', 'applies within shader type checking']],
         example: '6. Connect the type to an entry point',
         exampleP: 'After defining a struct, use it as an entry point parameter. The value shape and field metadata then define the meaning of that shader input.',
         next: 'Next: Functions'

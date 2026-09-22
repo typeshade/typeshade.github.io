@@ -407,9 +407,14 @@ why lives on its own page.
     dictionaries.
   - Concepts: `/guide/typescript-and-webgpu/`, how TypeScript types, functions and modules map
     to GPU values, entry points and shader modules, and where WebGPU begins.
-  - Examples: `/guide/examples/`, which opens with a table of every example in the compiler's
-    registry, grouped by category, each row linking to its source file at the pinned commit
-    and naming the targets it emits.
+  - Examples: `/guide/examples/`, the gallery of every example in both corpora, grouped by
+    category, each tile linking to that example's own page at `/guide/examples/<id>/`. A page
+    there opens with the shader running over its build-time still, then the file it is
+    written in, then the WGSL and the two GLSL ES 3.00 stages the compiler baked into
+    `examples/__emit-goldens__/` at the pinned commit, and closes with the file on GitHub, the
+    Playground for a `"use typeshade"` example, and previous and next inside its own group.
+    An example the page cannot draw says in one sentence why, from the reason
+    `scripts/artifacts.mjs` records for it.
   - Reference: the API reference (`/api/…`, below), then Compiler internals, then Language
     service. Compiler internals is the compiler's AUTHORING.md, rendered from the vendored
     checkout at the pinned commit. A custom content loader (`src/content.config.ts`) cuts the
@@ -432,8 +437,8 @@ why lives on its own page.
   so the build asserts that no category takes a page an export needs (the Reflection category
   is `/api/reflection-api/`, because the compiler exports an interface called Reflection).
   Previous and next walk a category alphabetically and carry on into the next category.
-- `/examples/…`: the gallery, one tile per registry example, grouped by category, each tile a
-  link to the source at the pinned commit with its build-time still as the cover.
+- `/examples/…`: the gallery, one tile per example, grouped by category, each tile a link to
+  that example's own page with its build-time still as the cover.
 - The first routes (`/motivation/`, `/checks/`, `/examples/`, `/guide/`) redirect, and so does
   `/guide/authoring/…`, the internals' first address, to `/guide/internals/…`.
 
