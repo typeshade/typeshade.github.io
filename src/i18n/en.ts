@@ -1180,7 +1180,7 @@ export const en = {
           genericFunction: 'One function per set of type arguments the file uses, and nothing called `pick`. [generic-helpers](shadeGenericHelpers)',
           genericClass: 'One struct per set of type arguments, each with its own copy of every method. [generic-class](shadeGenericClass)',
           ifRow: 'An `if`, as written.',
-          forRow: 'A counted loop: an integer variable, a constant bound, a constant step, at most 256 trips. [block-scope](shadeBlockScope)',
+          forRow: `A counted loop: an integer variable, a constant bound, a constant step, at most ${facts.forTripLimit} trips. [block-scope](shadeBlockScope)`,
           forRefused: 'Refused. The trip count is over the limit a loop may run.',
           whileRow: 'A loop with a counter the compiler adds. Nothing checks that the body moves toward the bound.',
           switchRow: 'A `switch`. The `break` TypeScript asks for is dropped, and a body does not fall through. [bitfield-bands](shadeBitfieldBands)',
@@ -1210,7 +1210,7 @@ export const en = {
           f64Vector: 'A vector of doubles, lowered into a hi plane and a lo plane. `vec2d` is the short spelling of `vec2f64`.',
           f64Builtin: 'Ten builtins have an emulated body on a scalar and thirteen on a vector.',
           f64Refused: 'Refused at the call, which names the ten and the narrow to write.',
-          f64Guard: 'A `_fp64` texture is injected, which the host fills with 1.0. Reflection lists it like any binding.',
+          f64Guard: 'A `_fp64` texture is injected, which the host fills with `1.0`. Reflection lists it like any binding.',
           f64Varying: 'Refused. Read the double in the stage that needs it, or narrow it to an `f32` at the boundary.'
         },
         sourceP: 'Every program on this page is compiled at the pinned commit while the site is built, and a snippet that stops compiling stops the build. The grammar itself is [the surface document](surfaceSource).'

@@ -168,6 +168,16 @@ export function loweringRowCount(): number {
   return loweringSections().reduce((n, s) => n + s.rows.length, 0)
 }
 
+/** The most trips a counted loop may run, read out of the refusal the compiler answers a
+ *  longer loop with, so the page states a limit it measured. */
+export function loweringTripLimit(): number {
+  const rows = loweringSections().find((s) => s.key === 'controlFlow')?.rows ?? []
+  const message = rows.find((r) => r.id === 'forRefused')?.diagnostic?.message ?? ''
+  const found = /exceeds (\d+)\./.exec(message)
+  if (!found) throw new Error(`[typescript-lowering] the over-long loop no longer names its limit: ${message}`)
+  return Number(found[1])
+}
+
 const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
   declarations: [
     {

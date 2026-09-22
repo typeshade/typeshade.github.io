@@ -1354,7 +1354,7 @@ export const ko: Copy = {
           genericFunction: '파일이 쓰는 타입 인자 조합마다 함수가 하나씩 생기고, `pick`이라는 이름은 없습니다. [generic-helpers](shadeGenericHelpers)',
           genericClass: '타입 인자 조합마다 구조체가 하나씩 생기고, 메서드도 조합마다 따로 생깁니다. [generic-class](shadeGenericClass)',
           ifRow: '적은 그대로 `if`입니다.',
-          forRow: '횟수가 정해진 루프입니다. 정수 변수, 상수 경계, 상수 증가, 최대 256회입니다. [block-scope](shadeBlockScope)',
+          forRow: `횟수가 정해진 루프입니다. 정수 변수, 상수 경계, 상수 증가, 최대 ${facts.forTripLimit}회입니다. [block-scope](shadeBlockScope)`,
           forRefused: '거절합니다. 반복 횟수가 루프에 허용된 한도를 넘습니다.',
           whileRow: '컴파일러가 카운터를 붙인 루프가 됩니다. 본문이 경계로 다가가는지는 아무것도 검사하지 않습니다.',
           switchRow: '`switch`가 됩니다. TypeScript가 요구하는 `break`는 사라지고, 본문은 다음 case로 흘러가지 않습니다. [bitfield-bands](shadeBitfieldBands)',
@@ -1384,7 +1384,7 @@ export const ko: Copy = {
           f64Vector: '배정밀도 벡터입니다. hi 평면과 lo 평면으로 하향 변환됩니다. `vec2d`는 `vec2f64`의 짧은 표기입니다.',
           f64Builtin: '스칼라에서 내장 함수 열 개, 벡터에서 열세 개가 에뮬레이션 본체를 가집니다.',
           f64Refused: '호출 자리에서 거절하며, 그 열 개와 좁히는 방법을 함께 알려 줍니다.',
-          f64Guard: '`_fp64` 텍스처가 주입됩니다. 호스트가 1.0으로 채우고, 리플렉션이 다른 바인딩처럼 보여 줍니다.',
+          f64Guard: '`_fp64` 텍스처가 주입됩니다. 호스트가 `1.0`으로 채우고, 리플렉션이 다른 바인딩처럼 보여 줍니다.',
           f64Varying: '거절합니다. 배정밀도 값은 필요한 스테이지에서 읽거나, 경계에서 `f32`로 좁히십시오.'
         },
         sourceP: '이 페이지의 프로그램은 사이트를 빌드할 때 고정된 커밋에서 모두 컴파일합니다. 컴파일되지 않는 코드가 생기면 빌드가 멈춥니다. 문법 자체는 [작성 인터페이스 문서](surfaceSource)에 있습니다.'
