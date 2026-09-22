@@ -4,6 +4,7 @@
 // come from the compiler (src/lib/api-nav.ts); their names and sentences come from the
 // dictionary, so a Korean reader gets Korean around English identifiers.
 import Docs from '../../layouts/Docs.astro'
+import Rich from '../Rich.astro'
 import { apiCategories } from '../../lib/api-nav.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
@@ -37,6 +38,7 @@ const categories = apiCategories().map(({ category, members }) => ({
 >
   <h1>{a.h1}</h1>
   <p class="api-summary">{a.intro}</p>
+  <p class="guide-note" lang={locale}><Rich text={a.audience} locale={locale} /></p>
   <dl class="api-list api-index">
     {categories.map((c) => (
       <>
