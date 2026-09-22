@@ -206,9 +206,11 @@ and has a matching Korean cut.
   phone panel's links. Korean pushes a 500 label to 600, because Plex Sans KR ships two weights.
 - Negative tracking sits on the largest sizes alone: -0.02em on the front headline and h1,
   -0.01em on h2. Korean relaxes both and keeps a 1.8 line height with `word-break: keep-all`.
-- Running text in a document stops at 740px, the measure vuejs.org gives its own body, which
-  sets about 100 characters of English at 16px and about 86 of Korean. The column around it is
-  wider than that: 860px at a 1440 viewport, 1340px at 1920. A front page section's heading is
+- Running text in a document stops at 620px, which sets about 85 characters of English at 16px
+  and about 72 of Korean. That is the line the 596px column set before the shell went edge to
+  edge, and it is why the measure is not the 740px a wider body would allow: at 740px a line
+  runs to about 100 characters. The column around the text is wider: 860px at a 1440 viewport,
+  1340px at 1920. A front page section's heading is
   capped at 24ch and its paragraph at 62ch; the hero's lede is capped at 52ch, and the sentence
   under a construct card's name at 62ch.
 - No uppercase labels, no tracked "eyebrow" lines above headings, no single-word labels <!-- ok -->
@@ -299,7 +301,7 @@ element is fully round except the two-axis pad's dot.
 - Nothing is centred in a container. The header, the footer, the front page, the documentation
   grid, the examples gallery and the Playground run the width of the viewport, held off it by
   the gutter alone: 8px, 12px from 40rem. Two measures work inside that shell. Running text
-  stops at 740px. A block that shows one thing stops at the wide measure, 960px: a figure, a
+  stops at 620px. A block that shows one thing stops at the wide measure, 960px: a figure, a
   pair of figures, a table, the builtin table, a code frame the document itself carries, and
   the front page's source beside its output, which takes two of that measure side by side. A
   grid of cards takes the whole column, and answers a wider column with more cards, each at
@@ -331,7 +333,7 @@ element is fully round except the two-axis pad's dot.
   caption above it.
 
 **The Container Rule.** Every page is laid out edge to edge behind the gutter. Running text is
-laid out in the 740px measure and a figure, a table or a code frame in the 960px one. A grid of
+laid out in the 620px measure and a figure, a table or a code frame in the 960px one. A grid of
 cards takes the column. A third measure needs a reason.
 
 ## Components

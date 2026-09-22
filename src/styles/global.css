@@ -61,7 +61,7 @@
   --gutter-x: 8px;
   /* The reading measure: running text in a document column stops here, the measure
      vuejs.org gives its own body, which sets about 100 characters of English at 16px. */
-  --content: min(740px, 100vw - 2 * var(--gutter-x));
+  --content: min(620px, 100vw - 2 * var(--gutter-x));
   /* The wider measure the site map and the docs' figures use. */
   --wide: min(960px, 100vw - 2 * var(--gutter-x));
   /* The shell has no measure of its own: the header, the footer, the front page, the
