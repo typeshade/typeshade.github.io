@@ -413,15 +413,8 @@ export const en = {
     },
     gallery: {
       h: 'More shaders',
-      p: `${facts.examples} examples ship with the compiler, from cartographic passes to a compute kernel. Each tile runs the emitted code in this browser.`,
+      p: `${facts.examples} examples ship with the compiler, from cartographic passes to a compute kernel. Each tile is the frame its shader drew at build time, and opens the file it was drawn from.`,
       all: 'All examples',
-      tile: (title: string) => ({
-        neutral: `${title}, drawn at build time.`,
-        webgpu: `${title}, running on WebGPU.`,
-        webgl2: `${title}, running on WebGL2.`,
-        none: `${title}, drawn at build time; this browser has no WebGPU or WebGL2.`,
-        reduced: `${title}, one frame, since this system asks for less motion.`,
-      }),
     },
     map: {
       h: 'What carries over from TypeScript',

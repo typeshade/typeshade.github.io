@@ -470,15 +470,8 @@ export const ko: Copy = {
     },
     gallery: {
       h: '더 많은 셰이더',
-      p: `컴파일러에는 지도 렌더링 패스부터 컴퓨트 커널까지 예제 ${facts.examples}개가 들어 있습니다. 각 타일은 생성된 코드를 이 브라우저에서 실행합니다.`,
+      p: `컴파일러에는 지도 렌더링 패스부터 컴퓨트 커널까지 예제 ${facts.examples}개가 들어 있습니다. 각 타일은 빌드할 때 그 셰이더가 그린 화면이고, 누르면 그 화면을 그린 파일이 열립니다.`,
       all: '예제 전체',
-      tile: (title: string) => ({
-        neutral: `${title}. 빌드할 때 그린 화면입니다.`,
-        webgpu: `${title}. WebGPU에서 실행 중입니다.`,
-        webgl2: `${title}. WebGL2에서 실행 중입니다.`,
-        none: `${title}. 빌드할 때 그린 화면입니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.`,
-        reduced: `${title}. 시스템이 움직임 줄이기를 켜 두어 한 프레임만 그렸습니다.`,
-      }),
     },
     map: {
       h: 'TypeScript에서 그대로 이어지는 것',
