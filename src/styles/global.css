@@ -58,7 +58,7 @@
   color-scheme: light dark;
   /* What holds the page off the screen. It is the only margin the shell has, so it is as
      small as a focus ring and a code frame's border can sit in. */
-  --gutter-x: 8px;
+  --gutter-x: 16px;
   /* The reading measure: running text in a document column stops here, the measure
      vuejs.org gives its own body, which sets about 100 characters of English at 16px. */
   --content: min(620px, 100vw - 2 * var(--gutter-x));
@@ -102,7 +102,7 @@
   --ease-out: cubic-bezier(0.645, 0.045, 0.355, 1);
   --motion: 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
-@media (min-width: 40rem) { :root { --gutter-x: 12px; --section-gap: 56px; --front-gap: 80px } }
+@media (min-width: 40rem) { :root { --gutter-x: 24px; --section-gap: 56px; --front-gap: 80px } }
 
 /* Dark: chosen with the switch in the header, or the system's setting when nothing is chosen.
    Ant's dark algorithm. The same tokens twice, since plain CSS cannot share a block between
@@ -503,12 +503,12 @@ body > main { flex: 1 }
 .docs-content > h1:first-child { margin-block-start: 0 }
 .docs-group { margin-block-start: 20px }
 .docs-group:first-child { margin-block-start: 0 }
-.docs-group-title { padding: 8px 12px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
+.docs-group-title { padding: 8px 16px; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
 .docs-group li { margin-block-start: 2px }
 /* Ant Menu: a 40px row, 6px radius, secondary text, the quaternary fill on hover, and the
    current page in the primary over its wash. */
 .docs-group a {
-  display: flex; align-items: center; min-block-size: 40px; padding: 8px 12px;
+  display: flex; align-items: center; min-block-size: 40px; padding: 8px 16px;
   border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-text-2); text-decoration: none;
   transition: color var(--motion), background-color var(--motion);
 }
@@ -517,7 +517,7 @@ body > main { flex: 1 }
 /* A topic, a member of the open reference category or a section of the compiler internals sits
    one level in, under its parent. Only an export's name is set in the code font. */
 .docs-group li.depth-1 { margin-block-start: 0 }
-.docs-group li.depth-1 a { padding-inline-start: 28px }
+.docs-group li.depth-1 a { padding-inline-start: 32px }
 .docs-group li.depth-1.code a { font-family: var(--font-mono); font-size: var(--text-code) }
 .docs-edit { margin-block-start: 40px; font-size: var(--text-ui) }
 .docs-edit a { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
@@ -534,12 +534,12 @@ body > main { flex: 1 }
 .docs-pager a:hover { border-color: var(--color-primary-border); color: var(--color-accent); box-shadow: var(--shadow-secondary) }
 .docs-pager a span { display: block; margin-block-end: 4px; font-size: 0.75rem; font-weight: 400; color: var(--color-text-2) }
 .docs-pager-next { text-align: end }
-.docs-outline-title { padding-inline-start: 12px; font-size: 0.75rem; color: var(--color-text-2) }
+.docs-outline-title { padding-inline-start: 16px; font-size: 0.75rem; color: var(--color-text-2) }
 .docs-outline li, .docs-toc li { position: relative; margin-block-start: 2px }
 .docs-outline li.depth-3 a, .docs-toc li.depth-3 { padding-inline-start: 28px }
 /* Ant Anchor: a 2px rail down the left, and a primary segment beside the heading in view. */
 .docs-outline ul { position: relative; margin-block-start: 8px; border-inline-start: 2px solid var(--color-line-1) }
-.docs-outline a { display: block; padding: 5px 0 5px 12px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+.docs-outline a { display: block; padding: 5px 0 5px 16px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 /* The language reference heads an entry with the name itself, and a name can be one
    unbreakable token wider than the outline's 220px (@builtin("local_invocation_index")). It
    wraps instead of running past the column. */
@@ -553,7 +553,7 @@ body > main { flex: 1 }
   .docs-local, .docs-toc { display: none }
   .docs { grid-template-columns: 240px minmax(0, 1fr); gap: 48px }
   .docs-sidebar { display: block; border-inline-end: 1px solid var(--color-line-1) }
-  .docs-sidebar-in { position: sticky; inset-block-start: 0; max-block-size: 100vh; overflow-y: auto; padding-block: 24px 48px; padding-inline-end: 16px; scrollbar-width: thin }
+  .docs-sidebar-in { position: sticky; inset-block-start: 0; max-block-size: 100vh; overflow-y: auto; padding-block: 24px 48px; padding-inline-end: 24px; scrollbar-width: thin }
   .docs-content { padding-block: 40px 24px }
 }
 @media (min-width: 80rem) {
