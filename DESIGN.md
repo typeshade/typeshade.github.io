@@ -424,12 +424,20 @@ why lives on its own page.
     to GPU values, entry points and shader modules, and where WebGPU begins.
   - Examples: `/guide/examples/`, the gallery of every example in both corpora, grouped by
     category, each tile linking to that example's own page at `/guide/examples/<id>/`. A page
-    there opens with the shader running over its build-time still, then the file it is
-    written in, then the WGSL and the two GLSL ES 3.00 stages the compiler baked into
-    `examples/__emit-goldens__/` at the pinned commit, and closes with the file on GitHub, the
-    Playground for a `"use typeshade"` example, and previous and next inside its own group.
-    An example the page cannot draw says in one sentence why, from the reason
-    `scripts/artifacts.mjs` records for it.
+    there is laid out the way ShaderToy lays one out: one card split down the middle, the
+    shader running over its build-time still on the left and its text on the right, and
+    nothing else in either pane. The card is the showcase card the front page's hero already
+    is (`.live-card`). The right pane carries its own Ant tab bar over one of four texts, the
+    source file first and then every target the compiler emits, the WGSL and the two GLSL ES
+    3.00 stages it baked into `examples/__emit-goldens__/` at the pinned commit; it opens on
+    the line the shader starts at, since several of those files begin with a banner comment.
+    Which backend drew the frame, or why nothing did, and where the emitted text comes from
+    are written under the card, because a label inside a pane makes that pane read as a
+    figure. The card is its own container, so the panes go side by side once the card is wide
+    enough and stack with the picture first when it is not. Under it the page closes with the
+    file on GitHub, the Playground for a `"use typeshade"` example, and previous and next
+    inside its own group. An example the page cannot draw says in one sentence why, from the
+    reason `scripts/artifacts.mjs` records for it.
   - Reference: the API reference (`/api/…`, below), then Compiler internals, then Language
     service. Compiler internals is the compiler's AUTHORING.md, rendered from the vendored
     checkout at the pinned commit. A custom content loader (`src/content.config.ts`) cuts the

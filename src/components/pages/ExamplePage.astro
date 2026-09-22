@@ -1,8 +1,16 @@
 ---
-// One example, on a page of its own: the shader running, the file it is written in, and the
-// shader text the compiler emits from it. The gallery's tiles link here, so a reader who
-// clicks an example stays on the site and sees it draw; the file on GitHub is one link in
+// One example, on a page of its own, laid out the way ShaderToy lays one out: one card split
+// in two, the shader running on the left and its text on the right, and nothing else in
+// either pane. The right pane carries its own tab bar over one of four texts, the file first
+// and then each target the compiler emits from it. The gallery's tiles link here, so a reader
+// who clicks an example stays on the site and sees it draw; the file on GitHub is one link in
 // the row at the foot of the page.
+//
+// The card is the front page's own showcase card (.live-card in src/styles/global.css) and
+// the tab bar is the Ant tab head the "one file, two targets" section uses, down to
+// src/scripts/target-tabs.ts driving it. What a reader is told about the frame, which backend
+// drew it or why nothing did, and where the emitted text comes from, is written under the
+// card: a pane with a label in it reads as a figure, and this is a result panel.
 //
 // Everything on it is read at build time by src/lib/example-pages.ts. The emitted text comes
 // from examples/__emit-goldens__/ at the pinned commit, which is the compiler's own output,
@@ -18,7 +26,6 @@ import { editCopy, links } from '../../lib/links.ts'
 import { checkedBlurbs } from '../../lib/examples.ts'
 import { checkedShade } from '../../lib/shade-examples.ts'
 import { examplePage, examplePath, exampleSourceHref, noPictureReasons } from '../../lib/example-pages.ts'
-import { slugify } from '../../lib/slug.ts'
 
 interface Props {
   locale: Locale
@@ -86,17 +93,27 @@ if (description.length < META_MIN || description.length > META_MAX) {
   throw new Error(`[example-page] '${id}' has a ${description.length}-character description, outside ${META_MIN} to ${META_MAX}`)
 }
 
-const headings = [
-  { depth: 2, slug: slugify(p.source), text: p.source },
-  { depth: 2, slug: slugify(p.emitted), text: p.emitted },
-]
-
-const caption: CanvasText = t.front.gallery.tile(name)
+const caption: CanvasText = p.canvas(name)
 const sourceHref = exampleSourceHref(example.file)
 const playgroundHref = `${localePath(locale, links.playground.href)}#example=${example.id}`
 const pager = (which: string | undefined) => (which ? { label: nameOf(which), href: localePath(locale, examplePath(which)) } : undefined)
 const glsl = example.emitted.glsl
-const tabId = (part: string): string => `emitted-${part}`
+
+// The tabs, in the order a reader meets them: the file first, then what it becomes. A
+// WGSL-only example has the two it has. The source tab is named by its file, which is not
+// copy and reads the same in every language, the way every code frame on the site names its
+// file; the emitted tabs are named by their target.
+const panes = [
+  { key: 'source', label: example.file, region: `${p.source}, ${example.file}`, code: example.source, lang: 'ts' },
+  { key: 'wgsl', label: p.wgsl, region: p.wgsl, code: example.emitted.wgsl, lang: 'wgsl' },
+  ...(glsl
+    ? [
+        { key: 'vertex', label: p.glslVertex, region: p.glslVertex, code: glsl.vertex, lang: 'glsl' },
+        { key: 'fragment', label: p.glslFragment, region: p.glslFragment, code: glsl.fragment, lang: 'glsl' },
+      ]
+    : []),
+]
+const paneId = (key: string): string => `example-pane-${key}`
 ---
 
 <Docs
@@ -104,7 +121,6 @@ const tabId = (part: string): string => `emitted-${part}`
   path={examplePath(id)}
   title={title}
   description={description}
-  headings={headings}
   editHref={editCopy(locale, 'examples')}
   label={name}
   previous={pager(example.previous)}
@@ -113,59 +129,62 @@ const tabId = (part: string): string => `emitted-${part}`
   <h1>{name}</h1>
   <p><Rich text={blurb} locale={locale} /></p>
 
-  {example.drawn ? (
-    <ShaderCanvas locale={locale} example={example.id} aspect="3/2" caption={caption} eager class="example-page-figure" />
-  ) : (
-    <figure class="figure example-page-figure">
-      <div class="figure-frame" style="aspect-ratio: 3/2">
-        <span class="example-tile-blank">
-          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-            <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
-            <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
-            <circle cx="14.5" cy="15.5" r="2.25" />
-          </svg>
-        </span>
-      </div>
-      <figcaption class="figure-caption">{p.noPicture[example.reason!]}</figcaption>
-    </figure>
-  )}
+  <div class="example-stage" data-front-tabs data-shader-scope>
+    <div class="live-card">
+      <div class="example-stage-body">
+        <div class="example-stage-view">
+          {example.drawn ? (
+            <ShaderCanvas locale={locale} example={example.id} aspect="auto" caption={caption} eager externalCaption />
+          ) : (
+            <div class="figure-frame">
+              <span class="example-tile-blank">
+                <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                  <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
+                  <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
+                  <circle cx="14.5" cy="15.5" r="2.25" />
+                </svg>
+              </span>
+            </div>
+          )}
+        </div>
 
-  <section>
-    <h2 id={slugify(p.source)}>{p.source}</h2>
-    <CodeFrame label={`${p.source}, ${example.file}`}>
-      <Code code={example.source} lang="ts" title={example.file} locale={locale} wrap />
-    </CodeFrame>
-  </section>
+        <div class="example-stage-code">
+          <div class="front-tabs-head" role="tablist" aria-label={p.tabs}>
+            {panes.map((pane, i) => (
+              <button
+                type="button"
+                role="tab"
+                id={`${paneId(pane.key)}-tab`}
+                aria-controls={paneId(pane.key)}
+                aria-selected={i === 0 ? 'true' : 'false'}
+              >{pane.label}</button>
+            ))}
+          </div>
+          {/* The tab already names the pane, so the frame inside it carries no title bar of
+              its own; the label stays as the code region's accessible name. The source pane
+              opens on the line the shader starts at (src/scripts/example-stage.ts). */}
+          <div class="example-stage-panels" data-example-panels>
+            {panes.map((pane) => (
+              <div
+                class="front-tabs-panel"
+                role="tabpanel"
+                id={paneId(pane.key)}
+                aria-labelledby={`${paneId(pane.key)}-tab`}
+                data-entry-line={pane.key === 'source' ? String(example.entryLine) : undefined}
+              >
+                <CodeFrame label={pane.region}><Code code={pane.code} lang={pane.lang} locale={locale} wrap /></CodeFrame>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <section>
-    <h2 id={slugify(p.emitted)}>{p.emitted}</h2>
-    <p><Rich text={p.emittedNote} locale={locale} /></p>
-    {glsl ? (
-      <div class="example-emitted" data-front-tabs>
-        <div class="front-tabs-head" role="tablist" aria-label={p.emitted}>
-          <button type="button" role="tab" id={`${tabId('wgsl')}-tab`} aria-controls={tabId('wgsl')} aria-selected="true">{p.wgsl}</button>
-          <button type="button" role="tab" id={`${tabId('vertex')}-tab`} aria-controls={tabId('vertex')} aria-selected="false">{p.glslVertex}</button>
-          <button type="button" role="tab" id={`${tabId('fragment')}-tab`} aria-controls={tabId('fragment')} aria-selected="false">{p.glslFragment}</button>
-        </div>
-        {/* The tab already names the target, so the frame inside the panel carries no title
-            bar of its own; the label stays as the code region's accessible name. */}
-        <div class="front-tabs-panel" role="tabpanel" id={tabId('wgsl')} aria-labelledby={`${tabId('wgsl')}-tab`}>
-          <CodeFrame label={p.wgsl}><Code code={example.emitted.wgsl} lang="wgsl" locale={locale} wrap /></CodeFrame>
-        </div>
-        <div class="front-tabs-panel" role="tabpanel" id={tabId('vertex')} aria-labelledby={`${tabId('vertex')}-tab`}>
-          <CodeFrame label={p.glslVertex}><Code code={glsl.vertex} lang="glsl" locale={locale} wrap /></CodeFrame>
-        </div>
-        <div class="front-tabs-panel" role="tabpanel" id={tabId('fragment')} aria-labelledby={`${tabId('fragment')}-tab`}>
-          <CodeFrame label={p.glslFragment}><Code code={glsl.fragment} lang="glsl" locale={locale} wrap /></CodeFrame>
-        </div>
-      </div>
-    ) : (
-      <div class="example-emitted">
-        <p>{p.wgslOnlyNote}</p>
-        <CodeFrame label={p.wgsl}><Code code={example.emitted.wgsl} lang="wgsl" title={p.wgsl} locale={locale} wrap /></CodeFrame>
-      </div>
-    )}
-  </section>
+    <div class="example-stage-notes">
+      <p>{example.drawn ? <span data-shader-caption>{caption.neutral}</span> : p.noPicture[example.reason!]}</p>
+      <p><Rich text={p.emittedNote} locale={locale} /></p>
+    </div>
+  </div>
 
   <p class="example-page-links">
     <a href={sourceHref}>{p.github}</a>
@@ -174,12 +193,9 @@ const tabId = (part: string): string => `emitted-${part}`
 </Docs>
 
 <script>
-  // The tabs over the emitted targets, shared with the front page's own section.
+  // The tabs over the source and the emitted targets, shared with the front page's own
+  // section, and then the code pane opened on the line the shader starts at. The order
+  // matters: the pane has to be the selected one before it can be measured.
   import '../../scripts/target-tabs.ts'
+  import '../../scripts/example-stage.ts'
 </script>
-
-<style>
-  .example-page-figure { margin-block-start: 24px }
-  .example-emitted { display: grid; gap: 16px; align-content: start; margin-block-start: 16px }
-  .example-page-links { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-block-start: 32px }
-</style>
