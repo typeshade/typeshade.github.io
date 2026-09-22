@@ -1,23 +1,149 @@
 ---
-// Language guide: the FromWgsl mapping page. Content lives in language.mapping.fromWgsl
-// (src/i18n/en.ts, src/i18n/ko.ts). The page carries its introduction while the construct
-// tables are written; the sections come next, one <MappingTable> each
-// (src/components/MappingTable.astro documents the props and the CSS classes), with the
-// rows read from the compiler at build time the way the builtin table's are.
+// Language guide: WGSL construct by construct, with the TypeShade spelling of each one. The
+// words live in language.mapping.fromWgsl (src/i18n/en.ts, src/i18n/ko.ts); the rows do not.
+// Every row is measured at build time by src/lib/target-mapping.ts, which hands the pinned
+// compiler a `"use typeshade"` file and reads back the WGSL it writes, so no spelling on this
+// page is typed by hand. The tables render through MappingTable.astro, whose header comment
+// documents its props and the CSS classes it uses.
+import { Code } from 'astro-expressive-code/components'
 import Docs from '../../layouts/Docs.astro'
+import MappingTable from '../MappingTable.astro'
 import Rich from '../Rich.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
+import { wgslMapping, type MappingRowData, type WgslTableId } from '../../lib/target-mapping.ts'
 
 interface Props { locale: Locale }
 const { locale } = Astro.props
-const content = copyFor(locale).language.mapping.fromWgsl
-const headings = [{ depth: 2, slug: 'covers', text: content.h }]
+const c = copyFor(locale).language.mapping.fromWgsl
+const mapping = wgslMapping()
+
+// A cell the compiler left empty carries a sentence from the copy instead, and a row whose
+// sentence nobody wrote stops the build here: an empty cell in a mapping table reads as a
+// blank the reader has to fill.
+const refusal = (table: WgslTableId, row: MappingRowData): string => {
+  const key = `${table}.${row.id}`
+  const written = c.refusals[key]
+  if (!written) throw new Error(`[from-wgsl] the row '${key}' has an empty cell and no sentence for it`)
+  return written
+}
+
+// [WGSL, TypeShade], the two columns every construct table has. An empty cell means the one
+// language has no form for the row, and the compiler's own message fills it where it has one.
+const fill = (table: WgslTableId, row: MappingRowData) =>
+  ({ note: row.message.length > 0 ? row.message : refusal(table, row) })
+const pair = (table: WgslTableId) =>
+  mapping.tables[table].map((row) => [row.target ?? fill(table, row), row.source ?? fill(table, row)])
+
+// The same, with the note the copy carries for that row as a third column.
+const noted = (table: WgslTableId) => {
+  const cells = pair(table)
+  return mapping.tables[table].map((row, i) => [...cells[i]!, { note: c.notes[`${table}.${row.id}`] ?? '' }])
+}
+
+const wgslFirst = ['wgsl', 'ts'] as const
+
+const headings = [
+  { depth: 2, slug: 'reading', text: c.readingH },
+  { depth: 2, slug: 'types', text: c.typesH },
+  { depth: 3, slug: 'scalars', text: c.scalarsH },
+  { depth: 3, slug: 'vectors', text: c.vectorsH },
+  { depth: 3, slug: 'matrices', text: c.matricesH },
+  { depth: 3, slug: 'arrays', text: c.arraysH },
+  { depth: 3, slug: 'textures', text: c.texturesH },
+  { depth: 2, slug: 'resources', text: c.resourcesH },
+  { depth: 2, slug: 'entries', text: c.stagesH },
+  { depth: 2, slug: 'statements', text: c.statementsH },
+  { depth: 2, slug: 'functions', text: c.functionsH },
+]
 ---
 
-<Docs locale={locale} path={links.languageFromWgsl.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'language')}>
-  <h1>{content.h1}</h1>
-  <h2 id="covers">{content.h}</h2>
-  <p><Rich text={content.p} locale={locale} /></p>
-  <p>{content.pending}</p>
+<Docs
+  locale={locale}
+  path={links.languageFromWgsl.href}
+  title={c.title}
+  description={c.description}
+  headings={headings}
+  editHref={editCopy(locale, 'language')}
+>
+  <h1>{c.h1}</h1>
+  <p><Rich text={c.intro} locale={locale} /></p>
+
+  <h2 id="reading">{c.readingH}</h2>
+  <p><Rich text={c.readingP} locale={locale} /></p>
+
+  <h2 id="types">{c.typesH}</h2>
+  <p><Rich text={c.typesP} locale={locale} /></p>
+
+  <h3 id="scalars">{c.scalarsH}</h3>
+  <MappingTable locale={locale} caption={c.scalarsH} columns={[c.colWgsl, c.colSource]} lang={wgslFirst} rows={pair('scalars')} />
+  <p><Rich text={c.f64P} locale={locale} /></p>
+  <Code code={mapping.f64Lane} lang="wgsl" locale={locale} wrap />
+
+  <h3 id="vectors">{c.vectorsH}</h3>
+  <MappingTable locale={locale} caption={c.vectorsH} columns={[c.colWgsl, c.colSource]} lang={wgslFirst} rows={pair('vectors')} />
+  <p><Rich text={c.vectorsP} locale={locale} /></p>
+
+  <h3 id="matrices">{c.matricesH}</h3>
+  <MappingTable locale={locale} caption={c.matricesH} columns={[c.colWgsl, c.colSource]} lang={wgslFirst} rows={pair('matrices')} />
+  <p><Rich text={c.matricesP} locale={locale} /></p>
+
+  <h3 id="arrays">{c.arraysH}</h3>
+  <MappingTable locale={locale} caption={c.arraysH} columns={[c.colWgsl, c.colSource]} lang={wgslFirst} rows={pair('arrays')} />
+  <p><Rich text={c.arraysP} locale={locale} /></p>
+
+  <h3 id="textures">{c.texturesH}</h3>
+  <MappingTable locale={locale} caption={c.texturesH} columns={[c.colWgsl, c.colSource]} lang={wgslFirst} rows={pair('textures')} />
+  <p><Rich text={c.texturesP} locale={locale} /></p>
+
+  <h2 id="resources">{c.resourcesH}</h2>
+  <p><Rich text={c.resourcesP} locale={locale} /></p>
+  <MappingTable locale={locale} caption={c.resourcesH} columns={[c.colWgsl, c.colSource]} lang={wgslFirst} widths={['1.15fr', '1fr']} rows={pair('resources')} />
+  <p><Rich text={c.slotsP} locale={locale} /></p>
+
+  <h2 id="entries">{c.stagesH}</h2>
+  <p><Rich text={c.stagesP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.stagesH}
+    columns={[c.colWgsl, c.colSource, c.colNote]}
+    lang={['wgsl', 'ts', null]}
+    widths={['1fr', '1fr', '1.05fr']}
+    rows={noted('stages')}
+  />
+  <p><Rich text={c.returnsP} locale={locale} /></p>
+
+  <p><Rich text={c.builtinValuesP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.builtinValuesH}
+    columns={[c.colSource, c.colType]}
+    lang={['ts', 'wgsl']}
+    widths={['1.35fr', '0.65fr']}
+    rows={mapping.builtinIds.map((b) => [b.source, b.type ?? { note: c.clipDistancesP }])}
+  />
+
+  <p><Rich text={c.absentP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.absentH}
+    columns={[c.colWgsl, c.colInstead]}
+    lang={wgslFirst}
+    widths={['0.8fr', '1.4fr']}
+    rows={pair('absentBuiltins')}
+  />
+
+  <h2 id="statements">{c.statementsH}</h2>
+  <p><Rich text={c.statementsP} locale={locale} /></p>
+  <MappingTable
+    locale={locale}
+    caption={c.statementsH}
+    columns={[c.colWgsl, c.colSource, c.colNote]}
+    lang={['wgsl', 'ts', null]}
+    widths={['1fr', '1fr', '1.2fr']}
+    rows={noted('statements')}
+  />
+
+  <h2 id="functions">{c.functionsH}</h2>
+  <p><Rich text={c.functionsP} locale={locale} /></p>
 </Docs>

@@ -49,6 +49,7 @@ export const links = {
   languageBuiltins: { label: 'Builtin functions', href: '/guide/language/builtins/' },
   legacyAuthoring: { label: 'Compiler authoring guide', href: '/guide/authoring/' },
   internals: { label: 'Compiler internals', href: '/guide/internals/' },
+  internalsGlslShader: { label: 'Migrating a GLSL shader', href: '/guide/internals/migrating-a-glsl-shader/' },
   languageService: { label: 'Language service', href: '/guide/language-service/' },
   languageServiceDesign: { label: 'Language service design document', href: at('docs/language-service-api.md') },
   checks: { label: 'Verification', href: '/guide/checks/' },
