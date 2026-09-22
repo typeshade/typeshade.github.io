@@ -336,13 +336,10 @@ body > main { flex: 1 }
 .site-menu-drop summary::-webkit-details-marker { display: none }
 .site-menu-drop summary:hover, .site-menu-drop[open] summary { color: var(--color-text-1); background: var(--fill-3) }
 .site-menu-drop .chevron { inline-size: 12px; block-size: 12px; color: var(--color-text-3) }
-/* The version reads as an Ant tag: a 24px chip in the mono face, with tabular figures. */
-.site-version summary {
-  block-size: 24px; padding-inline: 7px; gap: 4px;
-  border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-surface-1);
-  font-family: var(--font-mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--color-text-2);
-}
-.site-version summary:hover, .site-version[open] summary { background: var(--color-surface-1); border-color: var(--color-accent); color: var(--color-accent) }
+/* The version is one of the tools, so it takes the same 32px box, radius and hover fill as the
+   language menu beside it. The mono face and tabular figures stay at the row's own 14px: the
+   digits name a release. */
+.site-version summary { font-family: var(--font-mono); font-variant-numeric: tabular-nums }
 .site-drop-list {
   position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 6px); z-index: 40; min-inline-size: 160px;
   padding: 4px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
@@ -383,7 +380,6 @@ body > main { flex: 1 }
 }
 .site-search-phone:hover { color: var(--color-text-1); background: var(--fill-3) }
 .site-search-phone .icon { inline-size: 18px; block-size: 18px }
-@media (min-width: 48rem) { .site-search-phone { display: none } }
 .site-theme, .site-social {
   display: inline-flex; align-items: center; justify-content: center; inline-size: 32px; block-size: 32px;
   border: 0; border-radius: var(--radius); background: none; color: var(--color-text-2); cursor: pointer;
@@ -425,9 +421,12 @@ body > main { flex: 1 }
 /* The version row carries the same links as the version menu, so the row wraps. */
 .site-screen-langs { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 2px 14px }
 .site-screen-langs a { color: var(--color-accent); text-decoration: none }
+/* From 48rem the whole phone row goes, box included. Leaving the empty box in the flow gave
+   `justify-content: space-between` a third item to space, which held the tools 243px short of
+   the gutter at 1440 and moved the nav's left edge with the viewport. */
 @media (min-width: 48rem) {
   .site-bar { display: flex }
-  .site-menu { display: none }
+  .site-mobile-tools { display: none }
 }
 
 /* The search dialog: Pagefind's own UI, dressed in the site's tokens through the variables
