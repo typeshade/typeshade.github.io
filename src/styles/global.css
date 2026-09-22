@@ -534,6 +534,10 @@ body > main { flex: 1 }
 /* Ant Anchor: a 2px rail down the left, and a primary segment beside the heading in view. */
 .docs-outline ul { position: relative; margin-block-start: 8px; border-inline-start: 2px solid var(--color-line-1) }
 .docs-outline a { display: block; padding: 5px 0 5px 16px; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
+/* The language reference heads an entry with the name itself, and a name can be one
+   unbreakable token wider than the outline's 220px (@builtin("local_invocation_index")). It
+   wraps instead of running past the column. */
+.docs-outline a, .docs-toc a { overflow-wrap: anywhere }
 .docs-outline a::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: -2px; inline-size: 2px; background: transparent; transition: background-color var(--motion) }
 .docs-toc a { display: block; padding: 5px 0; font-size: var(--text-ui); line-height: 1.5; color: var(--color-text-2); text-decoration: none; transition: color var(--motion) }
 .docs-outline a:hover, .docs-toc a:hover { color: var(--color-text-1) }
@@ -1248,4 +1252,43 @@ body > main { flex: 1 }
   .site-menu-bar { background: CanvasText }
   .docs-group a[aria-current='page'] { color: LinkText }
   .button-primary { border: 1px solid CanvasText }
+}
+
+/* The language reference (src/components/ReferenceEntry.astro): one entry per documented
+   name on /reference/<kind>/. A page runs from thirty to a hundred and forty of them, so an
+   entry is a band separated by a hairline instead of a card, and its name is set at the
+   heading size one step under the page's sections whatever level the markup gives it: the
+   functions page runs its entries under a family heading and the other five run them at the
+   top level. Every measure is relative to the entry, so an entry stays inside the document
+   column (DESIGN.md, the Container Rule) at every width, and a long signature wraps inside
+   its own frame. */
+.doc .ref-entry { margin-block-start: 28px; padding-block-start: 24px; border-block-start: 1px solid var(--color-line-1) }
+.doc .ref-entry:first-of-type { margin-block-start: 24px; padding-block-start: 0; border-block-start: none }
+.doc .ref-entry-name {
+  margin: 0; font-size: var(--text-h4); line-height: var(--text-h4--line-height);
+  font-weight: 600; letter-spacing: normal; scroll-margin-block-start: 88px; overflow-wrap: anywhere;
+}
+.doc .ref-entry-name code { font-size: 1em; color: inherit }
+.doc .ref-entry-summary { margin-block-start: 8px; color: var(--color-text-2) }
+.doc .ref-entry-code { margin-block-start: 12px; overflow-wrap: anywhere }
+.doc .ref-entry-code code { font-size: var(--text-code) }
+.doc .ref-entry-meta { margin-block-start: 10px; font-size: var(--text-ui); color: var(--color-text-3) }
+.ref-label { font-weight: 600; color: var(--color-text-2) }
+/* The link back to the builtin table sits under every builtin function, so it reads as a
+   footnote and takes the accent only under the pointer. */
+.doc .ref-entry-meta a { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
+.doc .ref-entry-meta a:hover { color: var(--color-accent); text-decoration-color: currentColor }
+/* The two target spellings under a builtin function: the target's name in the label column
+   and the text that backend writes beside it. Below 30rem the pair stacks, since a GLSL cell
+   can hold a whole inlined expression and needs the row's width to itself. */
+.doc .ref-emits {
+  margin-block-start: 12px; display: grid; gap: 4px 16px;
+  grid-template-columns: max-content minmax(0, 1fr); font-size: var(--text-ui);
+}
+.doc .ref-emits dt { font-weight: 600; color: var(--color-text-2) }
+.doc .ref-emits dd { margin: 0; min-width: 0; color: var(--color-text-2); overflow-wrap: anywhere }
+.doc .ref-emits dd code { font-size: var(--text-code) }
+@media (max-width: 30rem) {
+  .doc .ref-emits { grid-template-columns: minmax(0, 1fr); gap: 2px }
+  .doc .ref-emits dt { margin-block-start: 6px }
 }
