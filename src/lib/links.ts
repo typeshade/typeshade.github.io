@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { apiCategories, apiSlugByName } from './api-nav.ts'
 import { facts } from './examples.ts'
+import { languageSections } from './language-reference.ts'
 import { shadeExampleList } from './shade-examples.ts'
 import { translationDir } from './guide-translations.ts'
 import { apiCategoryCopy, copyFor, localePath, type Locale } from '../i18n/index.ts'
@@ -54,7 +55,8 @@ export const links = {
   languageServiceDesign: { label: 'Language service design document', href: at('docs/language-service-api.md') },
   checks: { label: 'Verification', href: '/guide/checks/' },
   examples: { label: 'Examples', href: '/guide/examples/' },
-  api: { label: 'API reference', href: '/api/' },
+  api: { label: 'Compiler API reference', href: '/api/' },
+  reference: { label: 'Language reference', href: '/reference/' },
   guideSource: { label: 'Compiler guide source (AUTHORING.md)', href: at('AUTHORING.md') },
   surfaceSource: { label: 'TypeShade surface specification', href: at('docs/use-typeshade-surface.md') },
   mirror: { label: 'GitHub', href: mirror },
@@ -142,7 +144,7 @@ export function navLinks(locale: Locale): readonly Destination[] {
     { label: labels.use, href: localePath(locale, links.quickStart.href) },
     { label: labels.playground, href: localePath(locale, links.playground.href) },
     { label: labels.language, href: localePath(locale, links.guide.href) },
-    { label: labels.api, href: localePath(locale, links.api.href) },
+    { label: labels.reference, href: localePath(locale, links.reference.href) },
     { label: labels.examples, href: localePath(locale, links.examples.href) },
   ]
 }
@@ -169,13 +171,14 @@ export function docsPages(locale: Locale): readonly Destination[] {
     docsPage(locale, 'conceptsWebgpu'),
     docsPage(locale, 'conceptsWgsl'),
     docsPage(locale, 'examples'),
+    docsPage(locale, 'reference'),
     docsPage(locale, 'internals'),
     docsPage(locale, 'languageService'),
     docsPage(locale, 'checks'),
   ]
 }
 
-type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'languageFromTypescript' | 'languageFromWgsl' | 'languageFromGlsl' | 'languageBuiltins' | 'concepts' | 'conceptsCpuGpu' | 'conceptsPipeline' | 'conceptsWebgpu' | 'conceptsWgsl' | 'examples' | 'internals' | 'languageService' | 'checks'
+type DocsPageKey = 'motivation' | 'quickStart' | 'playground' | 'guide' | 'languageFromTypescript' | 'languageFromWgsl' | 'languageFromGlsl' | 'languageBuiltins' | 'concepts' | 'conceptsCpuGpu' | 'conceptsPipeline' | 'conceptsWebgpu' | 'conceptsWgsl' | 'examples' | 'reference' | 'internals' | 'languageService' | 'checks'
 /** One page of the guide as the sidebar and the footer name it, in one language. */
 function docsPage(locale: Locale, key: DocsPageKey): Destination {
   const d = copyFor(locale).docs
@@ -194,6 +197,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     conceptsWebgpu: d.labels.conceptPages.webgpuAndWebgl2,
     conceptsWgsl: d.labels.conceptPages.wgslAndGlsl,
     examples: d.examples,
+    reference: d.labels.languageReference,
     internals: d.labels.internals,
     languageService: d.labels.languageService,
     checks: d.checks,
@@ -230,7 +234,14 @@ export function sidebar(locale: Locale, sections: readonly Destination[] = [], o
     { ...page('languageFromGlsl'), depth: 1 },
     { ...page('languageBuiltins'), depth: 1 },
   ]
-  const reference: SidebarItem[] = [{ label: d.api.h1, href: localePath(locale, links.api.href) }]
+  // The Reference group opens with the language reference, the surface a shader author
+  // writes, and its six kind pages one level in; then the compiler's own API reference with
+  // its categories, then the internals and the language service.
+  const reference: SidebarItem[] = [page('reference')]
+  for (const section of languageSections()) {
+    reference.push({ label: d.reference.kinds[section.kind].name, href: localePath(locale, `/reference/${section.slug}/`), depth: 1 })
+  }
+  reference.push({ label: d.api.h1, href: localePath(locale, links.api.href) })
   for (const { category, members } of apiCategories()) {
     reference.push({ label: apiCategoryCopy(locale, category.slug).name, href: localePath(locale, `/api/${category.slug}/`) })
     if (category.slug !== openCategory) continue

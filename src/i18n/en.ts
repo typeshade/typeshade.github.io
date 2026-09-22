@@ -113,10 +113,11 @@ export const en = {
         use: 'Use TypeShade',
         playground: 'Playground',
         language: 'Language',
-        api: 'API',
+        reference: 'Reference',
         examples: 'Examples'
       },
       languageGuide: 'Language guide',
+      languageReference: 'Language reference',
       internals: 'Compiler internals',
       concepts: 'TypeScript & WebGPU',
       languageService: 'Language service',
@@ -169,10 +170,11 @@ export const en = {
     api: {
       // Lengthened past the review's 45-character floor for a reference title (the SEO
       // review, onpage, title length); the description below is unaffected.
-      title: 'TypeShade API reference: functions, types and interfaces',
-      description: 'Every public export of TypeShade on its own page: syntax, parameters, return value, examples and which targets support it.',
-      h1: 'API reference',
+      title: 'TypeShade compiler API reference for host applications',
+      description: 'Every public export of the TypeShade compiler on its own page: syntax, parameters, return value, examples and which targets support it.',
+      h1: 'Compiler API reference',
       intro: `Every export of the typeshade package, generated from the compiler at commit ${facts.pinnedCommit}. One page per function, type, interface and class.`,
+      audience: 'This is the surface a host application and the [`fn()`](apiFn) builder call. A shader author writes the [language reference](reference) instead.',
       reference: 'Reference',
       breadcrumbs: 'Breadcrumbs',
       // The title names the export, its kind and its category, and grows a suffix only as
@@ -224,6 +226,89 @@ export const en = {
       targetNames: { wgsl: 'WGSL (WebGPU)', glsl: `${glsl} (WebGL2)`, cpu: 'CPU oracle' },
       support: { native: 'Supported', emulated: 'Emulated', stub: 'Stub', none: 'Not supported', 'n/a': 'Does not apply' },
       categories: apiCategories,
+    },
+    // The language reference at /reference/: the words around the entries generated from the
+    // compiler's own language service (src/lib/language-reference.ts). The signature and the
+    // sentence under every name are the compiler's, in English on every locale, the way the
+    // API reference already carries its JSDoc.
+    reference: {
+      title: 'TypeShade language reference for shader authors',
+      description: `Every name a \`"use typeshade"\` file can write, ${facts.languageEntries} of them: types, attributes, builtin values, functions, constants and \`Math\` members.`,
+      h1: 'Language reference',
+      intro: `The language a file that starts with \`"use typeshade"\` is written in. ${facts.languageEntries} names, read from the compiler's own language service at commit ${facts.pinnedCommit}, which is the table the editor answers a hover from.`,
+      audience: 'This is the reference for shader authors. The surface a host application and the [`fn()`](apiFn) builder call is the [compiler API reference](api).',
+      reference: 'Reference',
+      breadcrumbs: 'Breadcrumbs',
+      note: `The signature and the sentence under each name are the compiler's own text at commit ${facts.pinnedCommit}.`,
+      readingH: 'Reading an entry',
+      readingP: `An entry holds the declaration the editor loads for that name, the compiler's sentence about it, and for a builtin function the WGSL and the ${glsl} text each backend writes. The [builtin table](languageBuiltins) is the scanning view over the same calls, four columns wide.`,
+      sourceP: 'Every entry on these pages is read from the compiler at the pinned commit, and none of it is typed here.',
+      entries: (n: number) => `${n} names`,
+      signature: 'Signature',
+      emits: 'Emits',
+      wgsl: 'WGSL',
+      glsl,
+      noForm: 'No form on this target.',
+      preEmit: 'Rewritten into a pair of `f32` lanes before either backend runs.',
+      inTable: 'Builtin table',
+      validIn: 'Valid in',
+      anyStage: 'The compiler holds this id to no stage of the pipeline.',
+      stageRule: (stage: string, direction: string) => `${stage} ${direction}`,
+      stages: { vertex: 'vertex', fragment: 'fragment', compute: 'compute' },
+      directions: { input: 'input', output: 'output' },
+      // The title of a kind page, with the longest suffix that stays inside the 60 characters
+      // check-seo.mjs allows; the shortest name plus the shortest suffix stays over its
+      // 45-character floor.
+      kindTitle: (name: string) => {
+        const suffixes = [', the TypeShade language reference for shaders', ', the TypeShade language reference', ', TypeShade language reference', ', TypeShade']
+        return name + (suffixes.find((suffix) => (name + suffix).length <= 60) ?? '')
+      },
+      kinds: {
+        type: {
+          name: 'Types',
+          summary: 'The scalar, vector, matrix and memory types a declaration names.',
+          description: `The ${facts.languageTypes} types a \`"use typeshade"\` file declares a value with: the scalars, the vectors, the two matrix names, and the memory the GPU holds.`,
+        },
+        attribute: {
+          name: 'Attributes',
+          summary: 'The decorators that mark an entry point and bind a field to the pipeline.',
+          description: `The ${facts.languageAttributes} decorators the compiler reads: the three that mark an entry point, and the two that bind a field or a parameter to the pipeline.`,
+        },
+        builtin: {
+          name: 'Builtin values',
+          summary: 'The `@builtin(...)` ids the pipeline supplies, with the stage each belongs to.',
+          description: `The ${facts.languageBuiltinValues} \`@builtin(...)\` ids the pipeline hands a shader or takes back from it, each with the type WGSL fixes for it and the stage it belongs to.`,
+        },
+        function: {
+          name: 'Functions',
+          summary: 'The functions a shader calls, by family, with the text each backend writes.',
+          description: `The ${facts.languageFunctions} functions a shader calls, by family, each with its signature and with the WGSL and ${glsl} text the compiler writes for it.`,
+        },
+        constant: {
+          name: 'Constants',
+          summary: 'The compile-time literals the compiler inlines, and `discard`.',
+          description: `The ${facts.languageConstants} names a shader reads without declaring them: the maths literals the compiler inlines at compile time, and the fragment \`discard\`.`,
+        },
+        math: {
+          name: 'Math members',
+          summary: 'The `Math` members a shader may reach, each routed to a builtin or a literal.',
+          description: `The ${facts.languageMathMembers} \`Math\` members a shader may reach. Each one routes to a builtin call or to an inlined literal, so a familiar name compiles to the target's own.`,
+        },
+      },
+      families: {
+        maths: 'Maths',
+        geometry: 'Geometry',
+        derivatives: 'Derivatives',
+        bits: 'Bit operations',
+        packing: 'Packing',
+        casts: 'Casts',
+        textures: 'Textures and storage',
+        atomics: 'Atomics',
+        barriers: 'Barriers',
+        f64: 'Emulated double',
+        constructors: 'Constructors',
+        resources: 'Arrays and bindings',
+      },
     },
   },
   // The Playground at /playground/: the words around the Monaco editor and the WGSL the
