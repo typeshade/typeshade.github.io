@@ -783,8 +783,10 @@ body > main { flex: 1 }
 .front-targets-src, .front-targets-out { display: flex; flex-direction: column; gap: 16px; min-inline-size: 0 }
 .front-targets-src > .expressive-code, .front-tabs-panel { flex: 1 1 auto; min-block-size: 0 }
 .front-tabs-panel > .expressive-code { block-size: 100% }
-.front-targets-grid .frame { display: flex; flex-direction: column; block-size: 100% }
-.front-targets-grid .frame pre { flex: 1 1 auto; min-block-size: 0; overflow: auto }
+/* One selector deeper than Expressive Code's own `.expressive-code .frame`, whose stylesheet
+   is injected after this one and would otherwise keep the frame a block box. */
+.front-targets-grid .expressive-code .frame { display: flex; flex-direction: column; block-size: 100% }
+.front-targets-grid .expressive-code .frame pre { flex: 1 1 auto; min-block-size: 0; overflow: auto }
 .front-tabs-head { display: none; gap: 16px; border-block-end: 1px solid var(--color-line-1) }
 [data-front-tabs][data-ready] .front-tabs-head { display: flex }
 /* The source's head is not a tablist and needs no script, so it is on screen from the start.
@@ -870,10 +872,14 @@ body > main { flex: 1 }
 }
 .doc .construct-cards, .doc .example-grid { max-inline-size: none }
 /* A block that shows one thing stops at the wide measure: a figure keeps a 3:1 pass from
-   growing into a band as tall as the screen, and a table of short code cells keeps columns
-   a row can be read across. A code frame and a card grid still take the whole column, since
-   a code line has no width of its own and a grid answers the extra width with more cards. */
-.doc figure, .doc .figure-pair, .doc table, .doc .mapping-table { max-inline-size: var(--wide) }
+   growing into a band as tall as the screen, a table of short code cells keeps columns a row
+   can be read across, and a code frame keeps 115 characters of the code font instead of
+   holding a 50-character line across 1300px. The cap sits on the document's own blocks, so a
+   frame inside a card, a mapping cell or a figure keeps the box it is in. A grid of cards
+   takes the whole column, because it answers the extra width with more cards. */
+.doc figure, .doc .figure-pair, .doc table, .doc .mapping-table,
+.doc > :is(.expressive-code, .example-emitted),
+.doc > section > :is(.expressive-code, .example-emitted) { max-inline-size: var(--wide) }
 .doc a { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
 .doc a:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px }
 .doc code { font-family: var(--font-mono); font-size: 0.875em }

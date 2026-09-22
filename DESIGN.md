@@ -300,9 +300,10 @@ element is fully round except the two-axis pad's dot.
   grid, the examples gallery and the Playground run the width of the viewport, held off it by
   the gutter alone: 8px, 12px from 40rem. Two measures work inside that shell. Running text
   stops at 740px. A block that shows one thing stops at the wide measure, 960px: a figure, a
-  pair of figures, a table, the builtin table, and the front page's source beside its output,
-  which takes two of that measure side by side. A code frame and a grid of cards take the whole
-  column they sit in, and a grid answers a wider column with more cards, each at its own size.
+  pair of figures, a table, the builtin table, a code frame the document itself carries, and
+  the front page's source beside its output, which takes two of that measure side by side. A
+  grid of cards takes the whole column, and answers a wider column with more cards, each at
+  its own size.
 - The front page is a sequence of sections across the shell, separated by space with no rule
   between them: 64px, 80px from 40rem. Its hero is a two-column grid from 64rem, 5fr text and
   7fr stage, 48px apart; under that the columns stack with the text first.
@@ -330,8 +331,8 @@ element is fully round except the two-axis pad's dot.
   caption above it.
 
 **The Container Rule.** Every page is laid out edge to edge behind the gutter. Running text is
-laid out in the 740px measure and a figure, a table or a pair of code panes in the 960px one. A
-third measure needs a reason.
+laid out in the 740px measure and a figure, a table or a code frame in the 960px one. A grid of
+cards takes the column. A third measure needs a reason.
 
 ## Components
 
