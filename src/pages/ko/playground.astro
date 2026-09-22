@@ -25,10 +25,10 @@ const t = copyFor(locale)
 <style>
   /* A tool page, so the heading is one line above the tool and not a landing page above it:
      the editor and the canvas are what the reader came for, and both fit the first screen.
-     The region runs the width of the viewport behind the site's gutters, the way the header,
-     the footer and the documentation grid do, and the space over the heading is the space a
-     documentation page gives its own h1. */
-  .playground-page { padding: 32px var(--gutter-x) 64px; }
+     The region sits in the site's shell, the same measure the header, the footer and the
+     documentation grid take, so the tool's edges line up with the header's over it, and the
+     space over the heading is the space a documentation page gives its own h1. */
+  .playground-page { max-inline-size: var(--container); margin-inline: auto; padding: 32px var(--gutter-x) 64px; }
   /* The intro sits on the tool's content edge and not on the region's: the tool's 1px border
      and the 14px its toolbar is padded by, so the heading, the sentence and the two links
      line up with the file name in the toolbar under them. */
