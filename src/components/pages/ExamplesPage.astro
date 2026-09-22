@@ -9,6 +9,7 @@ import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
 import { checkedBlurbs, facts, hero } from '../../lib/examples.ts'
 import { checkedShade, shadeExampleList, SHADE_GROUPS } from '../../lib/shade-examples.ts'
+import { examplePath } from '../../lib/example-pages.ts'
 import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
 import { SHADE_STILL_EXAMPLES, STILL_EXAMPLES } from '../../../scripts/artifacts.mjs'
 import { slugify } from '../../lib/slug.ts'
@@ -42,7 +43,7 @@ const rows = examples.map((x) => ({
   id: x.id,
   still: stills.has(x.id),
   title: x.title,
-  href: `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/examples/${x.file}`,
+  href: localePath(locale, examplePath(x.id)),
   category: e.categories[x.category],
   wgslOnly: x.id === facts.wgslOnlyExample.id,
   blurb: blurbs[x.id]!,
@@ -50,7 +51,8 @@ const rows = examples.map((x) => ({
 const groups = order.map((c) => rows.filter((r) => r.category === e.categories[c]))
 
 // The other corpus. Same tile, same still rule; the picture is there for the ones the page
-// can draw and the plain mark stands in for the rest.
+// can draw and the plain mark stands in for the rest. Every tile opens the example's own
+// page (src/components/pages/ExamplePage.astro), which runs it and shows what it emits.
 const shadeTitleFor = checkedShade('title', e.shade.titles)
 const shadeTextFor = checkedShade('description', e.shade.descriptions)
 const shadeStills = new Set<string>(SHADE_STILL_EXAMPLES)
@@ -64,7 +66,7 @@ const shadeGroups = SHADE_GROUPS.map((g) => ({
       id,
       still: shadeStills.has(id),
       title: shadeTitleFor[id]!,
-      href: `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/examples/${x.file}`,
+      href: localePath(locale, examplePath(id)),
       wgslOnly: !x.renderable,
       blurb: shadeTextFor[id]!,
     }

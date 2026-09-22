@@ -38,7 +38,7 @@ const table = [
   { dest: links.conceptsPipeline, note: 'what each stage is handed, what it produces and what interpolation between stages means' },
   { dest: links.conceptsWebgpu, note: 'what the host application owns, what the compiler owns, and where WebGL2 differs' },
   { dest: links.conceptsWgsl, note: `the same source emitted as WGSL and as ${facts.glslTarget}, with the differences between the targets` },
-  { dest: links.examples, note: `the ${facts.examples} examples, the GLSL emit and the emulated-double demo` },
+  { dest: links.examples, note: `the ${facts.totalExamples} examples, one page each with the shader running and the text it emits, the GLSL emit and the emulated-double demo` },
   { dest: links.api, note: 'the API reference, one page per public export' },
   { dest: links.internals, note: 'the compiler internals, one page per section of AUTHORING.md' },
   { dest: links.languageService, note: 'the editor-neutral language service behind the Playground, for language servers and editor extensions' },
@@ -54,7 +54,10 @@ const table = [
 
 // Every page the sidebar names under /guide/, and the Playground beside them, has to be in
 // the table above. A page added to the site and missed here would leave the file a model
-// reads describing a smaller site than the one that shipped.
+// reads describing a smaller site than the one that shipped. The per-example pages under
+// /guide/examples/<id>/ are one set the gallery already lists and links every member of, so
+// the gallery's row covers them; the sidebar names that gallery page alone, which is what
+// the check below reads.
 const listed = new Set<string>(table.map((r) => r.dest.href))
 const missing = sidebar(defaultLocale)
   .flatMap((g) => g.items)
