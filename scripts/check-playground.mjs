@@ -23,8 +23,8 @@
 //      box it is drawn in the size it was
 //  13. changing the resolution under a running draw retires it: the result reported is the
 //      new grid's, and the old draw's never lands
-//  14. the source and the result columns are one height, and the canvas is on the first
-//      screen beside the code, not below the reflection
+//  14. the source and the result columns are one height, the tab strip is at the top of the
+//      result column, and the canvas is on the first screen beside the code
 //  15. a vector times a scalar compiles: nothing is reported and the broadcast reaches the WGSL
 //  16. a vector times a string still draws TypeScript's own arithmetic diagnostic
 //  17. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
@@ -421,8 +421,13 @@ async function checkRoute(browser, origin, route) {
       if (shape.canvas.bottom > shape.viewport) {
         problems.push(`the canvas ends at ${shape.canvas.bottom}px, below the first ${shape.viewport}px screen`)
       }
-      if (shape.canvas.top > shape.editor.top + 40) {
-        problems.push(`the canvas starts at ${shape.canvas.top}px, well below the editor at ${shape.editor.top}px: it is not beside the code`)
+      // Beside the code, which is the whole point of the two columns: the canvas starts in
+      // the top half of the editor, so it is next to the source and not under it. The tab
+      // strip and the controls the Result tab owns sit over it, and those take a second row
+      // where the column is too narrow for both, so the slack is the editor's own height
+      // and not a fixed number of pixels.
+      if (shape.canvas.top > shape.editor.top + shape.editor.height / 2) {
+        problems.push(`the canvas starts at ${shape.canvas.top}px, past the middle of the ${shape.editor.height}px editor at ${shape.editor.top}px: it is not beside the code`)
       }
       if (shape.tabs.top > shape.source.top + 1) {
         problems.push(`the tab strip starts at ${shape.tabs.top}px, below the top of the source column at ${shape.source.top}px: it is not at the top of the result column`)

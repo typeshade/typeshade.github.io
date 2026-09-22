@@ -601,8 +601,6 @@ function mount(root: HTMLElement): void {
     }
   };
   if (
-    !(examplePicker instanceof HTMLSelectElement) ||
-    !(exampleNote instanceof HTMLElement) ||
     !(share instanceof HTMLButtonElement) ||
     !(copyOutput instanceof HTMLButtonElement) ||
     !(sizeLabel instanceof HTMLElement) ||
@@ -1368,17 +1366,24 @@ function mount(root: HTMLElement): void {
       .catch(() => {});
   });
 
+  /** Which example the editor was last filled from. On a page that names the example there
+   *  is no picker to read it off, so the id is held here and Reset uses it. */
+  let openedExample = root.dataset.defaultExample ?? '';
+
   const showExample = (id: string): void => {
     const example = examples.find((candidate) => candidate.id === id);
     if (!example || !editor) return;
-    examplePicker.value = example.id;
-    exampleNote.textContent = example.description;
+    openedExample = example.id;
+    if (examplePicker instanceof HTMLSelectElement) examplePicker.value = example.id;
+    if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
     editor.setValue(example.source);
     writeHash('example', example.id, currentChoice());
     render();
   };
 
-  examplePicker.addEventListener('change', () => showExample(examplePicker.value));
+  if (examplePicker instanceof HTMLSelectElement) {
+    examplePicker.addEventListener('change', () => showExample(examplePicker.value));
+  }
 
   const applyOptions = (): void => {
     levelNote.hidden = levelPicker.value === 'O2';
@@ -1499,9 +1504,10 @@ function mount(root: HTMLElement): void {
       // Colourising bakes the theme into the markup, so the pane is painted again on a change.
       followSiteTheme(monaco, paintOutput);
       if (opening.example) {
-        examplePicker.value = opening.example.id;
-        exampleNote.textContent = opening.example.description;
-      } else {
+        openedExample = opening.example.id;
+        if (examplePicker instanceof HTMLSelectElement) examplePicker.value = opening.example.id;
+        if (exampleNote instanceof HTMLElement) exampleNote.textContent = opening.example.description;
+      } else if (exampleNote instanceof HTMLElement) {
         exampleNote.textContent = '';
       }
       model = monaco.editor.createModel(opening.source, 'typescript', monaco.Uri.parse(documentUri));
@@ -1694,7 +1700,7 @@ function mount(root: HTMLElement): void {
         });
       });
       reset.addEventListener('click', () => {
-        showExample(examplePicker.value);
+        showExample(openedExample);
         editor.focus();
       });
       levelNote.hidden = levelPicker.value === 'O2';

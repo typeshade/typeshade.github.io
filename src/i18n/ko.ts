@@ -1183,6 +1183,8 @@ export const ko: Copy = {
       glslFragment: `${glsl} 프래그먼트`,
       github: 'GitHub의 파일',
       playground: 'Playground에서 열기',
+      editable: '편집기에는 이 예제의 파일이 들어 있습니다. 내용을 고치면 브라우저에서 다시 컴파일하고, 편집기 옆의 탭이 따라 바뀝니다.',
+      builder: '이 예제는 `fn()` 빌더 API로 작성해서 [Playground](playground)의 편집기가 받지 않습니다.',
       noPicture: {
         'no-glsl': `이 예제는 ${glsl} 형태가 없고 캔버스는 두 백엔드에서 같은 프로그램을 돌리므로, 이 페이지에는 그림이 없습니다.`,
         control: '이 예제를 움직이는 컨트롤에 페이지가 넣을 값이 없어서, 이 페이지에는 그림이 없습니다.',

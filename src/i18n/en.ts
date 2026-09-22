@@ -1017,6 +1017,11 @@ export const en = {
       glslFragment: `${glsl} fragment`,
       github: 'File on GitHub',
       playground: 'Open in the Playground',
+      /** The line over the tool on a `.shade.ts` example's page, which carries the whole
+       *  Playground seeded with that file. */
+      editable: 'The editor holds this example\'s own file. An edit recompiles it in your browser, and the tabs beside the editor follow.',
+      /** The line on an `fn()` example's page, which carries the static card instead. */
+      builder: 'This example is written against the `fn()` builder API, which the editor in the [Playground](playground) does not take.',
       /** What the page says where it draws no picture, one line per reason in
        *  NO_STILL_REASONS (scripts/artifacts.mjs). */
       noPicture: {

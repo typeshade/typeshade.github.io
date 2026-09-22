@@ -2,8 +2,13 @@
 import { copyFor, type Locale } from '../i18n/index.ts';
 import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts';
 
-interface Props { locale: Locale; }
-const { locale } = Astro.props;
+interface Props {
+  locale: Locale;
+  /** The example to open, for a page that already names one. The picker goes with it and
+   *  the page carries that example's source alone instead of all of them. */
+  seed?: string;
+}
+const { locale, seed } = Astro.props;
 const t = copyFor(locale).playground;
 
 // The examples arrive from the vendored checkout at build time: the source text from the
@@ -11,12 +16,18 @@ const t = copyFor(locale).playground;
 // filesystem, so the browser half never imports it. The words are the gallery's, under
 // `examples.shade`, so the picker and the tile on /guide/examples/ cannot disagree.
 const shade = copyFor(locale).examples.shade;
-const examples = playgroundExamples().map((example) => ({
+const all = playgroundExamples().map((example) => ({
   id: example.id,
   source: example.source,
   title: shade.titles[example.id]!,
   description: shade.descriptions[example.id]!,
 }));
+if (seed && !all.some((example) => example.id === seed)) {
+  throw new Error(`[playground] no .shade.ts example '${seed}' to seed the editor with`);
+}
+const examples = seed ? all.filter((example) => example.id === seed) : all;
+// The name over the toolbar is the file the editor holds, so a seeded page names its own.
+const fileName = seed ? `${seed}.shade.ts` : t.fileName;
 const sample = `"use typeshade";
 
 class Clip {
@@ -42,7 +53,7 @@ export function fs(): Color {
 // The words the browser half needs once it is running. It reads them off the element, since
 // the script that holds the logic is a bundled module and takes no `define:vars`.
 const runtimeCopy = {
-  fileName: t.fileName,
+  fileName,
   idle: t.idle,
   ready: t.ready,
   errors: t.errors,
@@ -95,19 +106,21 @@ const runtimeCopy = {
   data-playground
   data-sample={sample}
   data-examples={JSON.stringify(examples)}
-  data-default-example={defaultPlaygroundExample}
+  data-default-example={seed ?? defaultPlaygroundExample}
   data-copy={JSON.stringify(runtimeCopy)}
 >
   <div class="playground-toolbar">
     <div class="playground-pick">
-      <strong>{t.fileName}</strong>
-      <div class="pick-row">
-        <label for="playground-example">{t.exampleLabel}</label>
-        <select id="playground-example" data-example>
-          {examples.map((example) => <option value={example.id}>{example.title}</option>)}
-        </select>
-      </div>
-      <p data-example-note>{examples[0]?.description}</p>
+      <strong>{fileName}</strong>
+      {!seed && (
+        <div class="pick-row">
+          <label for="playground-example">{t.exampleLabel}</label>
+          <select id="playground-example" data-example>
+            {examples.map((example) => <option value={example.id}>{example.title}</option>)}
+          </select>
+        </div>
+      )}
+      {!seed && <p data-example-note>{examples[0]?.description}</p>}
     </div>
     <div class="playground-actions"><button type="button" data-share>{t.share}</button><button type="button" data-reset>{t.reset}</button><button type="button" class="primary" data-run>{t.run}</button></div>
   </div>
@@ -231,7 +244,10 @@ const runtimeCopy = {
   /* The page field is Ant's layout ground (src/styles/global.css), so the tool's own region
      is a white container on it, the way the docs column is. */
   :global(.playground-page) { background: var(--color-ground) }
-  .ts-playground { border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
+  /* The tool and its left column are `section` elements, and a documentation page puts a
+     section gap in front of every section it holds, so a page that embeds the tool would get
+     that gap twice over and inside the grid. The component owns its own spacing. */
+  .ts-playground { margin: 0; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
   .playground-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
   .playground-toolbar strong { font: 500 .8125rem/1.4 var(--font-mono); }
   .playground-actions { display: flex; gap: 8px; }
@@ -269,16 +285,20 @@ const runtimeCopy = {
      on a page of its own and inside a documentation column on every example page. */
   .ts-playground { container-type: inline-size; }
   .playground-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
-  .pane { min-width: 0; }
+  .pane { margin: 0; min-width: 0; }
   .source-pane { display: flex; flex-direction: column; border-bottom: 1px solid var(--color-line-1); }
   .result-column { display: flex; flex-direction: column; min-width: 0; }
   /* One panel is shown and the rest carry `hidden`. The panels are flex and grid boxes, so
      the attribute is spelled out here; `display` from a class would otherwise win. */
   .result-panels { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
   .result-panels > [hidden] { display: none; }
-  .result-head { gap: 8px; }
-  .result-head .output-tabs { flex: 1 1 auto; overflow-x: auto; scrollbar-width: none; }
+  /* The tabs and the controls the selected tab owns share one row while both fit; where
+     they do not, the controls take a row under the tabs instead of cutting a tab label in
+     half. The tablist's basis is what decides which of the two happens. */
+  .result-head { flex-wrap: wrap; gap: 8px; }
+  .result-head .output-tabs { flex: 1 1 21rem; overflow-x: auto; scrollbar-width: none; }
   .result-head .output-tabs::-webkit-scrollbar { display: none; }
+  .result-head > [data-meta] { margin-inline-start: auto; }
   .pane-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; color: var(--color-text-2); font-size: .75rem; font-weight: 500; background: var(--color-surface-2); }
   .pane-title kbd { color: var(--color-text-3); font: 500 .6875rem/1.3 var(--font-mono); }
   .editor-host, pre { box-sizing: border-box; width: 100%; margin: 0; border: 0; border-radius: 0; background: var(--color-ground); color: var(--color-text-1); font: 400 .8125rem/1.65 var(--font-mono); }
