@@ -10,7 +10,6 @@ import { languageCounts } from './language-reference.ts'
 import { loweringRowCount, loweringTripLimit } from './typescript-lowering.ts'
 import { glslCapabilityCount } from './glsl-mapping.ts'
 import { wgslBuiltinIdCount } from './target-mapping.ts'
-import { shadeCounts } from './shade-examples.ts'
 import { shadeCounts, shadeExampleList } from './shade-examples.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 
@@ -351,13 +350,13 @@ export const facts = {
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
   commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302,
+  goldenGlslPairs: 73,
   builtins: 139, portableBuiltins: 44, glslAbsentBuiltins: 31, mathAliasBuiltins: 27,
   constructRows: 65, forTripLimit: 256,
   wgslBuiltinIds: 15, glslCapabilities: 4,
   languageEntries: 235, languageTypes: 31, languageAttributes: 5, languageBuiltinValues: 15,
   languageFunctions: 140, languageConstants: 8, languageMathMembers: 36,
 }
-const pinned = { commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, goldenGlslPairs: 73, testFiles: 302 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
 if (facts.shadeExamples !== pinned.shadeExamples) drift.push(`shadeExamples ${facts.shadeExamples} != ${pinned.shadeExamples}`)
