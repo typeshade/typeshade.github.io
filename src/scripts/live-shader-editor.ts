@@ -163,12 +163,15 @@ export function mountEditor(
   return {
     value: () => area.value,
     focus(index) {
-      area.focus()
+      // The caret is placed before the field takes focus. Focusing first leaves the caret at
+      // the end of the text, and the browser scrolls the pane to the foot of the file on its
+      // way there, which throws the reader's own line off the screen.
       if (index !== undefined) area.selectionStart = area.selectionEnd = index
+      area.focus()
     },
     goTo(line, character) {
-      area.focus()
       area.selectionStart = area.selectionEnd = offsetOf(line, character)
+      area.focus()
     },
     destroy() {
       boxes.disconnect()
