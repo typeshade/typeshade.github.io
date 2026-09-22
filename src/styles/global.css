@@ -1154,6 +1154,74 @@ body > main { flex: 1 }
 .api-index dd { padding-inline-start: 0 }
 .api-preview { margin-block-start: 12px; padding: 8px 12px; border: 1px solid var(--color-diag); border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-diag) }
 
+/* The construct card (src/components/ConstructCard.astro): one TypeScript construct per card
+   on /guide/language/from-typescript/. An Ant Card, and the card is what separates one
+   construct from the next: the same page as three columns of code put a hairline between
+   rows that ran ten lines tall, and a reader could not see where a construct ended. Two
+   panes instead of three columns also give each one about twice the width a cell had. The
+   head names the construct, the sentence under it runs at the card's full width, and the
+   panes sit side by side from 48rem and stack below it with the TypeScript first. Every
+   measure is relative to the card, so the cards stay inside the document column (DESIGN.md,
+   the Container Rule) at every width. */
+.doc .construct-cards { display: grid; gap: 16px; margin: 24px 0 0; padding: 0; list-style: none }
+.doc .construct-card {
+  margin: 0; padding: 16px;
+  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
+}
+.construct-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px }
+.doc .construct-card-name {
+  margin: 0; font-size: var(--text-h5); line-height: var(--text-h5--line-height);
+  font-weight: 600; color: var(--color-text-1); overflow-wrap: anywhere;
+}
+.construct-card-name code, .construct-card-note code { font-family: var(--font-mono); font-size: 0.9em }
+/* An Ant tag in the shape .example-wgsl-only takes, in the diagnostic red the reference's
+   own "not supported" tag carries, so a refused construct reads as one before it is read. */
+.construct-card-badge {
+  display: inline-block; padding: 0 7px; border-radius: var(--radius-sm);
+  border: 1px solid var(--color-diag); background: none;
+  font-size: 0.75rem; line-height: 1.6667; color: var(--color-diag); white-space: nowrap;
+}
+.doc .construct-card-note {
+  margin-block-start: 8px;
+  font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2);
+}
+.construct-card-panes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-block-start: 12px; align-items: start }
+.construct-card-pane { min-inline-size: 0 }
+/* One selector deeper than `.doc .expressive-code`, whose 24px of space above would open a
+   gap between a pane and the frame in it. */
+.construct-card-pane .expressive-code {
+  margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
+  --ec-codePadBlk: 10px; --ec-codePadInl: 12px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
+}
+.construct-card-pane .expressive-code .copy { display: none }
+/* A pane is about 280px wide in the document column, and a line of a real program is longer
+   than that, so a line wraps at a space and reads on under the hanging indent Expressive
+   Code gives it. A name breaks inside itself only where the name alone is wider than the
+   pane, so a line breaks at a space and reads on under the hanging indent Expressive Code
+   gives it. Two rules keep a break off the middle of a name: <CodeFrame holdTokens> holds a
+   token with a hyphen or an angle bracket in it together, and `overflow-wrap: normal`
+   overrides Expressive Code's own emergency break, so the two lines on this page that carry
+   a name longer than the pane scroll inside their frame instead of cutting the name in two.
+   The width is reset because Expressive Code marks a wrapping block `pre.wrap`, and the
+   site's own layout class of that name would give it the page's measure inside a card. */
+.construct-card-pane .expressive-code pre.wrap { inline-size: auto; margin-inline: 0 }
+.construct-card-pane .expressive-code pre.wrap .ec-line .code { overflow-wrap: normal; min-inline-size: 0 }
+/* No copy button, so the first line keeps no room for one at its end. */
+.construct-card-pane .expressive-code :nth-child(1 of .ec-line) .code { padding-inline-end: var(--ec-codePadInl) }
+/* A refused construct: where the emitting card has a second frame, this one has the
+   compiler's own code and message in the diagnostic colour, under the label that says what
+   it is. It is no code frame, because nothing here was emitted. */
+.doc .construct-card-pane-title {
+  display: flex; align-items: center; margin: 0; min-block-size: 34px;
+  font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-3);
+}
+/* The label stands as tall as a frame's title bar and the message starts where the frame's
+   first line of code starts, so the two panes of a refused construct read as one row. */
+.doc .construct-card-refusal .diagnostic { margin-block-start: 10px }
+@media (min-width: 48rem) {
+  .construct-card-panes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
 }

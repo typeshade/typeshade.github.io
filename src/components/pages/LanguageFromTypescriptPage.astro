@@ -1,27 +1,27 @@
 ---
 // Language guide: TypeScript construct by construct. The words live in
-// language.mapping.fromTypescript (src/i18n/en.ts, src/i18n/ko.ts); the first and the third
-// column of every row are not words at all. Each row carries a short `"use typeshade"`
-// program that src/lib/typescript-lowering.ts compiles with the pinned compiler at build
-// time, the way src/lib/concepts-emit.ts compiles the front page's sample, and the row shows
-// the part of the emit it is about. A row the language refuses shows the compiler's own
-// diagnostic there. The tables render through MappingTable.astro, whose header comment
-// documents its props and the CSS classes it uses.
+// language.mapping.fromTypescript (src/i18n/en.ts, src/i18n/ko.ts); the code in a card's two
+// panes is not words at all. Each construct carries a short `"use typeshade"` program that
+// src/lib/typescript-lowering.ts compiles with the pinned compiler at build time, the way
+// src/lib/concepts-emit.ts compiles the front page's sample, and the card shows the part of
+// the emit it is about. A construct the language refuses shows the compiler's own diagnostic
+// there. The cards render through ConstructCard.astro, whose header comment documents its
+// props and the CSS classes it uses.
 import Docs from '../../layouts/Docs.astro'
-import MappingTable from '../MappingTable.astro'
-import type { MappingCell } from '../MappingTable.astro'
+import ConstructCard from '../ConstructCard.astro'
 import Rich from '../Rich.astro'
 import { copyFor, type Locale } from '../../i18n/index.ts'
 import { editCopy, links } from '../../lib/links.ts'
-import { loweringSections, type LoweringRow } from '../../lib/typescript-lowering.ts'
+import { loweringSections } from '../../lib/typescript-lowering.ts'
 
 interface Props { locale: Locale }
 const { locale } = Astro.props
 const c = copyFor(locale).language.mapping.fromTypescript
 const sections = loweringSections()
 
-// A row with no line about it, or a line about a row that has gone, is a page half written.
-// Both stop the build here, where the generator and the dictionary can be put back in step.
+// A construct with no words about it, or words about a construct that has gone, is a page
+// half written. Both stop the build here, where the generator and the dictionary can be put
+// back in step.
 const ids = sections.flatMap((s) => s.rows.map((r) => r.id))
 const missing = ids.filter((id) => !(id in c.rows))
 const spare = Object.keys(c.rows).filter((id) => !ids.includes(id))
@@ -32,13 +32,6 @@ if (missing.length > 0 || spare.length > 0) {
   ].filter(Boolean)
   throw new Error(`[from-typescript] the dictionary and src/lib/typescript-lowering.ts disagree: ${parts.join('; ')}`)
 }
-
-// The emitted column: the WGSL the compiler wrote, or, on a refused row, the code and the
-// message it answered with. The message is the compiler's, printed as it came.
-const emitted = (row: LoweringRow): MappingCell =>
-  row.wgsl ?? { note: `\`${row.diagnostic!.code}\` ${row.diagnostic!.message}` }
-
-const cellsFor = (row: LoweringRow): MappingCell[] => [row.ts, c.rows[row.id]!, emitted(row)]
 
 const headings = [
   { depth: 2, slug: 'reading', text: c.readingH },
@@ -65,14 +58,22 @@ const headings = [
     <>
       <h2 id={section.key}>{c.sections[section.key].h}</h2>
       <p><Rich text={c.sections[section.key].p} locale={locale} /></p>
-      <MappingTable
-        locale={locale}
-        caption={c.sections[section.key].h}
-        columns={[c.colTs, c.colBecomes, c.colWgsl]}
-        lang={['ts', null, 'wgsl']}
-        widths={['1fr', '0.85fr', '1.05fr']}
-        rows={section.rows.map(cellsFor)}
-      />
+      <ul class="construct-cards">
+        {section.rows.map((row) => (
+          <ConstructCard
+            locale={locale}
+            name={c.rows[row.id]!.name}
+            becomes={c.rows[row.id]!.p}
+            ts={row.ts}
+            tsTitle={c.paneTs}
+            emitTitle={c.paneWgsl}
+            wgsl={row.wgsl}
+            diagnostic={row.diagnostic}
+            refusedLabel={c.refused}
+            diagnosticTitle={c.paneDiagnostic}
+          />
+        ))}
+      </ul>
     </>
   ))}
 
