@@ -396,6 +396,7 @@ export const ko: Copy = {
     editor: 'TypeShade 소스',
     output: '컴파일러 출력',
     wgslTab: 'WGSL',
+    resultTab: '결과',
     glslVertexTab: 'GLSL 버텍스',
     glslFragmentTab: 'GLSL 프래그먼트',
     noGlsl: '이 모듈은 GLSL을 내지 않습니다.',

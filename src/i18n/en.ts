@@ -327,6 +327,9 @@ export const en = {
     reset: 'Reset example',
     editor: 'TypeShade source',
     output: 'Compiler output',
+    // The tabs over the result column: the canvas the module draws, one per file the
+    // compiler emits, and the reflection. `reflection` below names the last one.
+    resultTab: 'Result',
     // One tab per file the compiler emits: the WGSL module, and the two GLSL ES 3.00 stages.
     wgslTab: 'WGSL',
     glslVertexTab: 'GLSL vertex',

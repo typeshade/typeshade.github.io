@@ -111,14 +111,22 @@ interface PlaygroundCopy {
   readonly cpuNoResources: string;
   readonly entryCountOne: string;
   readonly noGlsl: string;
+  readonly resultTab: string;
   readonly starting: string;
   readonly serviceFailed: string;
   readonly sourceTypescript: string;
   readonly sourceTypeshade: string;
 }
 
-/** The files the compiler emits, one per tab over the output pane. */
+/** The files the compiler emits, one per tab over the text panel. */
 type Target = 'wgsl' | 'glslVertex' | 'glslFragment';
+
+/** What the one tab strip over the result column selects: the canvas, one of the three
+ *  emitted files, or the reflection. */
+type View = 'result' | Target | 'reflection';
+
+/** Whether a view is one of the three the text panel holds. */
+const isTarget = (view: View): view is Target => view === 'wgsl' || view === 'glslVertex' || view === 'glslFragment';
 
 // Monaco ships a WGSL grammar. It ships none for GLSL, and GLSL ES 3.00 is close enough to C
 // for Monaco's C++ tokenizer to colour its keywords, types, numbers and `#version` line.
@@ -594,8 +602,10 @@ function mount(root: HTMLElement): void {
   let timer = 0;
   let urlTimer = 0;
   let painted = 0;
-  // What the compiler last emitted, by target, and which tab is showing.
+  // What the compiler last emitted, by target, which tab is showing, and which of the three
+  // texts the text panel holds. The panel keeps its text while another tab is up.
   let emitted: Partial<Record<Target, string>> = {};
+  let view: View = 'result';
   let target: Target = 'wgsl';
   // The last good compile, kept so the CPU button can call into it without compiling again.
   let compiled: { readonly module: ModuleDecl; } | undefined;
@@ -1091,6 +1101,9 @@ function mount(root: HTMLElement): void {
 
   const paintOutput = (): void => {
     const token = ++painted;
+    // The three texts are emitted on every compile whichever tab is up; only the one the
+    // text panel is showing is written into it, and the panel is repainted on a tab switch.
+    if (!isTarget(view)) return;
     const source = emitted[target];
     if (!source) {
       output.textContent = target === 'wgsl' ? copy.noOutput : copy.noGlsl;
@@ -1112,24 +1125,39 @@ function mount(root: HTMLElement): void {
       .catch(() => {});
   };
 
-  /** Switches the pane to one target and moves the selected state onto its tab. */
+  /** The one tab strip over the result column, and the panel and the controls each tab owns. */
   const tabs = [...root.querySelectorAll('[data-target]')].filter(
     (node): node is HTMLButtonElement => node instanceof HTMLButtonElement,
   );
+  const resultPanel = root.querySelector('#pg-panel-result');
+  const metas = [...root.querySelectorAll('[data-meta]')].filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
+  /** Which of the three control groups in the tab row belongs to a view. */
+  const metaFor = (next: View): string => (next === 'result' || next === 'reflection' ? next : 'text');
 
-  const selectTarget = (next: Target, focus = false): void => {
-    target = next;
+  /** Shows one tab's panel and moves the selected state onto its tab. Nothing here compiles,
+   *  emits or draws: every panel already holds what the last compile put in it, and the
+   *  canvas keeps the pixels it was drawn with while it is behind another tab. */
+  const selectView = (next: View, focus = false): void => {
+    view = next;
+    if (isTarget(next)) target = next;
     for (const tab of tabs) {
       const on = tab.dataset.target === next;
       tab.setAttribute('aria-selected', on ? 'true' : 'false');
       // One roving tabindex, so Tab reaches the strip once and the arrows move inside it.
       tab.tabIndex = on ? 0 : -1;
       if (on) {
-        output.setAttribute('aria-labelledby', tab.id);
+        if (isTarget(next)) output.setAttribute('aria-labelledby', tab.id);
         if (focus) tab.focus();
       }
     }
-    paintOutput();
+    if (resultPanel instanceof HTMLElement) resultPanel.hidden = next !== 'result';
+    output.hidden = !isTarget(next);
+    if (reflectionPane instanceof HTMLElement) reflectionPane.hidden = next !== 'reflection';
+    const wanted = metaFor(next);
+    for (const meta of metas) meta.hidden = meta.dataset.meta !== wanted;
+    if (isTarget(next)) paintOutput();
   };
 
   const goTo = (position: TypeshadePosition): void => {
@@ -1612,14 +1640,14 @@ function mount(root: HTMLElement): void {
         });
       }
       tabs.forEach((tab, index) => {
-        tab.addEventListener('click', () => selectTarget((tab.dataset.target ?? 'wgsl') as Target));
+        tab.addEventListener('click', () => selectView((tab.dataset.target ?? 'result') as View));
         tab.addEventListener('keydown', (event) => {
           const steps: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 };
           const next = steps[event.key];
           if (next === undefined) return;
           event.preventDefault();
           const moved = tabs[(next + tabs.length) % tabs.length];
-          selectTarget((moved.dataset.target ?? 'wgsl') as Target, true);
+          selectView((moved.dataset.target ?? 'result') as View, true);
         });
       });
       reset.addEventListener('click', () => {

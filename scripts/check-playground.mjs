@@ -87,11 +87,23 @@ async function typeSource(page, source) {
   await page.waitForTimeout(AFTER_EDIT)
 }
 
+/** Open one tab of the result column. The column is one tab strip over one panel, so every
+ *  read below opens the tab that holds what it is reading. */
+async function openTab(page, name, wait = 150) {
+  await page.click(`[data-target="${name}"]`)
+  await page.waitForTimeout(wait)
+}
+
 /** Read the WGSL pane with its tab open. */
 async function wgslPane(page) {
-  await page.click('[data-target="wgsl"]')
-  await page.waitForTimeout(150)
+  await openTab(page, 'wgsl')
   return (await page.innerText('[data-output]')).trim()
+}
+
+/** Read the reflection panel with its tab open. */
+async function reflectionPane(page, wait = 150) {
+  await openTab(page, 'reflection', wait)
+  return (await page.innerText('[data-reflection]')).trim()
 }
 
 /** Set one control on the options bar and wait for the render it triggers. */
@@ -209,6 +221,7 @@ async function checkRoute(browser, origin, route) {
       // The compiler is bundled into the page, so this is the half that needs no network.
       // innerText is what the reader sees: the pane is coloured markup whose line breaks are
       // <br>, which textContent would run together into one line.
+      await openTab(page, 'wgsl')
       const output = (await page.innerText('[data-output]')).trim()
       if (output.length === 0) problems.push('the WGSL pane is empty')
       else if (!/@vertex|@fragment|fn\s/.test(output)) problems.push(`the WGSL pane holds no WGSL:\n    ${output.slice(0, 200)}`)
@@ -227,7 +240,7 @@ async function checkRoute(browser, origin, route) {
 
       // The reflection pane: what reflect() recovered, and what the entry points return when
       // the CPU oracle runs them. The sample declares a vertex and a fragment entry point.
-      const reflection = (await page.innerText('[data-reflection]')).trim()
+      const reflection = await reflectionPane(page)
       for (const wanted of ['@vertex', '@fragment', 'vec4<f32>', '@builtin(vertex_index)', '@location(0)']) {
         if (!reflection.includes(wanted)) problems.push(`the reflection pane is missing ${wanted}:\n    ${reflection.slice(0, 240)}`)
       }
@@ -268,7 +281,10 @@ async function checkRoute(browser, origin, route) {
         problems.push(`an entry declaring a struct parameter was not called with the struct:\n    ${structRun.slice(0, 300)}`)
       }
 
-      // And the canvas: the vertex entry for three corners, then one fragment call per pixel
+      // And the canvas, which is the Result tab of the one strip over the result column.
+      // Every read below is of that panel, so it stays open to the end of the shape check.
+      await openTab(page, 'result')
+      // The canvas: the vertex entry for three corners, then one fragment call per pixel
       // the triangle covers, with every varying interpolated from what the vertex entry
       // returned. A triangle covers some of the canvas and not all of it. The canvas follows
       // the source, so choosing the example is what drew it; a draw deletes the count when it
@@ -370,7 +386,7 @@ async function checkRoute(browser, origin, route) {
           const rect = document.querySelector(selector).getBoundingClientRect()
           return { top: Math.round(rect.top + window.scrollY), bottom: Math.round(rect.bottom + window.scrollY), height: Math.round(rect.height) }
         }
-        return { source: box('.source-pane'), result: box('.result-column'), canvas: box('[data-canvas]'), editor: box('[data-editor]'), viewport: window.innerHeight }
+        return { source: box('.source-pane'), result: box('.result-column'), canvas: box('[data-canvas]'), editor: box('[data-editor]'), tabs: box('.result-head'), viewport: window.innerHeight }
       })
       if (Math.abs(shape.source.height - shape.result.height) > 1) {
         problems.push(`the source column is ${shape.source.height}px tall and the result column ${shape.result.height}px`)
@@ -381,7 +397,27 @@ async function checkRoute(browser, origin, route) {
       if (shape.canvas.top > shape.editor.top + 40) {
         problems.push(`the canvas starts at ${shape.canvas.top}px, well below the editor at ${shape.editor.top}px: it is not beside the code`)
       }
-      console.log(`  shape: columns ${shape.source.height} and ${shape.result.height} px, canvas ends at ${shape.canvas.bottom} of ${shape.viewport}`)
+      if (shape.tabs.top > shape.source.top + 1) {
+        problems.push(`the tab strip starts at ${shape.tabs.top}px, below the top of the source column at ${shape.source.top}px: it is not at the top of the result column`)
+      }
+      console.log(`  shape: columns ${shape.source.height} and ${shape.result.height} px, canvas ends at ${shape.canvas.bottom} of ${shape.viewport}, tab strip at ${shape.tabs.top}`)
+
+      // One strip, five tabs, one panel shown. The three texts and the reflection are
+      // painted while hidden, so switching to one shows what the last compile put there.
+      const strip = await page.evaluate(() => {
+        const tabs = [...document.querySelectorAll('[role="tab"][data-target]')]
+        const panels = [...document.querySelectorAll('.result-panels > [role="tabpanel"]')]
+        return {
+          names: tabs.map((t) => t.dataset.target),
+          selected: tabs.filter((t) => t.getAttribute('aria-selected') === 'true').map((t) => t.dataset.target),
+          shown: panels.filter((p) => p.offsetParent !== null || p.getClientRects().length > 0).length,
+        }
+      })
+      const wantedTabs = ['result', 'wgsl', 'glslVertex', 'glslFragment', 'reflection']
+      if (strip.names.join(',') !== wantedTabs.join(',')) problems.push(`the result column's tabs are ${strip.names.join(', ')}, not ${wantedTabs.join(', ')}`)
+      if (strip.selected.join(',') !== 'result') problems.push(`the Result tab is not the one selected: ${strip.selected.join(', ') || 'none'}`)
+      if (strip.shown !== 1) problems.push(`${strip.shown} of the result column's panels are shown at once`)
+      console.log(`  tabs: ${strip.names.join(', ')}, showing ${strip.selected.join(', ')}`)
 
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)
@@ -535,7 +571,7 @@ async function checkRoute(browser, origin, route) {
           problems.push(`the compute example's WGSL is missing ${wanted}:\n    ${computeWgsl.slice(0, 300)}`)
         }
       }
-      const computeReflection = (await page.innerText('[data-reflection]')).trim()
+      const computeReflection = await reflectionPane(page)
       if (!computeReflection.includes('@compute')) {
         problems.push(`the reflection pane does not name the compute entry point:\n    ${computeReflection.slice(0, 240)}`)
       }
@@ -752,6 +788,9 @@ async function checkRoute(browser, origin, route) {
         const lines = editor.getModel().getLinesContent()
         const at = lines.findIndex((line) => line.includes('vec4('))
         if (at < 0) return null
+        // Monaco anchors this widget to the line, and places none for a line out of view, so
+        // the line is revealed first: the subject here is the answer, not the scroll position.
+        editor.revealLineInCenter(at + 1)
         editor.setPosition({ lineNumber: at + 1, column: lines[at].indexOf('vec4(') + 'vec4('.length + 1 })
         editor.focus()
         const action = editor.getAction('editor.action.triggerParameterHints')

@@ -81,6 +81,7 @@ const runtimeCopy = {
   cpuNoResources: t.cpuNoResources,
   entryCountOne: t.entryCount(1),
   noGlsl: t.noGlsl,
+  resultTab: t.resultTab,
   copy: t.copy,
   copied: t.copied,
   share: t.share,
@@ -149,53 +150,52 @@ const runtimeCopy = {
         <ul data-diagnostics aria-live="polite"></ul>
       </div>
     </section>
+    {/* One tab strip over the whole result column: the canvas the module draws, the three
+        files the compiler emits from it, and what reflect() recovers. One panel is shown at
+        a time; the other panels keep whatever was last painted into them, so a tab switch
+        paints nothing and re-runs nothing. */}
     <div class="result-column">
-      <section class="pane canvas-pane">
-        <div class="pane-title">
-          <span>{t.canvas}</span>
-          <div class="canvas-meta">
-            <label for="playground-resolution">{t.resolution}</label>
-            <select id="playground-resolution" data-resolution>
-              <option value="64">64 × 64</option>
-              <option value="128">128 × 128</option>
-              <option value="192" selected>192 × 192</option>
-              <option value="384">384 × 384</option>
-              <option value="768">768 × 768</option>
-              <option value="1536">1536 × 1536</option>
-              <option value="3840">3840 × 3840 (4K)</option>
-              <option value="7680">7680 × 7680 (8K)</option>
-            </select>
-            <button type="button" data-draw-cpu disabled>{t.draw}</button>
-          </div>
+      <div class="pane-title result-head">
+        <div class="output-tabs" role="tablist" aria-label={t.output}>
+          <button type="button" role="tab" id="pg-tab-result" aria-controls="pg-panel-result" data-target="result" aria-selected="true" tabindex="0">{t.resultTab}</button>
+          <button type="button" role="tab" id="pg-tab-wgsl" aria-controls="pg-output" data-target="wgsl" aria-selected="false" tabindex="-1">{t.wgslTab}</button>
+          <button type="button" role="tab" id="pg-tab-glslVertex" aria-controls="pg-output" data-target="glslVertex" aria-selected="false" tabindex="-1">{t.glslVertexTab}</button>
+          <button type="button" role="tab" id="pg-tab-glslFragment" aria-controls="pg-output" data-target="glslFragment" aria-selected="false" tabindex="-1">{t.glslFragmentTab}</button>
+          <button type="button" role="tab" id="pg-tab-reflection" aria-controls="pg-panel-reflection" data-target="reflection" aria-selected="false" tabindex="-1">{t.reflection}</button>
         </div>
-        <div class="canvas-host">
+        {/* The controls the selected tab owns, one group per tab, in the row the tabs are in. */}
+        <div class="canvas-meta" data-meta="result">
+          <label for="playground-resolution">{t.resolution}</label>
+          <select id="playground-resolution" data-resolution>
+            <option value="64">64 × 64</option>
+            <option value="128">128 × 128</option>
+            <option value="192" selected>192 × 192</option>
+            <option value="384">384 × 384</option>
+            <option value="768">768 × 768</option>
+            <option value="1536">1536 × 1536</option>
+            <option value="3840">3840 × 3840 (4K)</option>
+            <option value="7680">7680 × 7680 (8K)</option>
+          </select>
+          <button type="button" data-draw-cpu disabled>{t.draw}</button>
+        </div>
+        <div class="output-meta" data-meta="text" hidden>
+          <span data-size></span>
+          <button type="button" data-copy-output>{t.copy}</button>
+        </div>
+        <div class="reflect-meta" data-meta="reflection" hidden>
+          <button type="button" data-run-cpu disabled>{t.runCpu}</button>
+        </div>
+      </div>
+      <div class="result-panels">
+        <div class="canvas-host" id="pg-panel-result" role="tabpanel" aria-labelledby="pg-tab-result">
           <canvas data-canvas width="192" height="192" aria-label={t.canvas}></canvas>
           <p data-canvas-note>{t.canvasIdle}</p>
         </div>
-      </section>
-      <section class="pane output-pane">
-        <div class="pane-title">
-          <div class="output-tabs" role="tablist" aria-label={t.output}>
-            <button type="button" role="tab" id="pg-tab-wgsl" aria-controls="pg-output" data-target="wgsl" aria-selected="true" tabindex="0">{t.wgslTab}</button>
-            <button type="button" role="tab" id="pg-tab-glslVertex" aria-controls="pg-output" data-target="glslVertex" aria-selected="false" tabindex="-1">{t.glslVertexTab}</button>
-            <button type="button" role="tab" id="pg-tab-glslFragment" aria-controls="pg-output" data-target="glslFragment" aria-selected="false" tabindex="-1">{t.glslFragmentTab}</button>
-          </div>
-          <div class="output-meta">
-            <span data-size></span>
-            <button type="button" data-copy-output>{t.copy}</button>
-          </div>
-        </div>
-        <pre id="pg-output" role="tabpanel" aria-labelledby="pg-tab-wgsl" data-output aria-live="polite"></pre>
-      </section>
+        <pre id="pg-output" role="tabpanel" aria-labelledby="pg-tab-wgsl" data-output aria-live="polite" hidden></pre>
+        <div class="reflection" id="pg-panel-reflection" role="tabpanel" aria-labelledby="pg-tab-reflection" data-reflection aria-live="polite" hidden></div>
+      </div>
     </div>
   </div>
-  <section class="pane reflect-pane">
-    <div class="pane-title">
-      <span>{t.reflection}</span>
-      <button type="button" data-run-cpu disabled>{t.runCpu}</button>
-    </div>
-    <div class="reflection" data-reflection aria-live="polite"></div>
-  </section>
 </section>
 
 <script>
@@ -230,26 +230,36 @@ const runtimeCopy = {
   .playground-check input { accent-color: var(--color-accent); }
   .playground-options [data-level-note] { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
 
-  .output-meta { display: flex; align-items: center; gap: 10px; }
+  .output-meta { display: flex; flex: none; align-items: center; gap: 10px; }
   .output-meta [data-size] { color: var(--color-text-3); font: 400 .6875rem/1.3 var(--font-mono); }
   .output-meta button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 3px 8px; background: var(--color-ground); color: var(--color-text-2); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
   .output-meta button:hover { color: var(--color-text-1); }
   .output-tabs button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
 
   /* The source and the result are the two things a reader looks between, so they sit side
-     by side and end on the same line. Each column is a flex column, and the pane that can
-     scroll (the editor on the left, the output on the right) grows to take what the canvas
-     and the diagnostics leave, so neither column runs short of the other. */
+     by side and end on the same line. The left column is the editor over its diagnostics;
+     the right one is a single tab strip over a single panel, so the reader trades the
+     canvas for the emitted text in place instead of scrolling between stacked panes. The
+     column widths follow the tool's own box and not the window's, since the Playground is
+     on a page of its own and inside a documentation column on every example page. */
+  .ts-playground { container-type: inline-size; }
   .playground-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
   .pane { min-width: 0; }
   .source-pane { display: flex; flex-direction: column; border-bottom: 1px solid var(--color-line-1); }
   .result-column { display: flex; flex-direction: column; min-width: 0; }
-  .output-pane { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+  /* One panel is shown and the rest carry `hidden`. The panels are flex and grid boxes, so
+     the attribute is spelled out here; `display` from a class would otherwise win. */
+  .result-panels { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+  .result-panels > [hidden] { display: none; }
+  .result-head { gap: 8px; }
+  .result-head .output-tabs { flex: 1 1 auto; overflow-x: auto; scrollbar-width: none; }
+  .result-head .output-tabs::-webkit-scrollbar { display: none; }
   .pane-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; color: var(--color-text-2); font-size: .75rem; font-weight: 500; background: var(--color-surface-2); }
   .pane-title kbd { color: var(--color-text-3); font: 500 .6875rem/1.3 var(--font-mono); }
   .editor-host, pre { box-sizing: border-box; width: 100%; margin: 0; border: 0; border-radius: 0; background: var(--color-ground); color: var(--color-text-1); font: 400 .8125rem/1.65 var(--font-mono); }
   /* Flex bases of 0 so neither pane's content sets the row height: the editor and the output
-     take the room the row has and scroll inside it. */
+     take the room the row has and scroll inside it. The editor's floor is what sets the row
+     beside it, since the result column is one panel now and no longer two stacked ones. */
   .editor-host { flex: 1 1 0; min-height: 420px; overflow: hidden; }
   pre { flex: 1 1 0; min-height: 320px; padding: 16px; overflow: auto; white-space: pre; }
   /* Under the editor, since that is where a reader looks when the source is wrong, and with
@@ -271,32 +281,31 @@ const runtimeCopy = {
   .has-errors .diagnostics { border-top-color: var(--color-diag); }
   .has-output [data-status] { color: var(--color-accent); }
   .output-tabs { display: flex; gap: 2px; margin: -3px 0; }
-  .output-tabs button { border: 0; border-radius: var(--radius-sm); padding: 3px 8px; background: transparent; color: var(--color-text-3); font: 500 .75rem/1.4 var(--font-sans); cursor: pointer; }
+  .output-tabs button { flex: none; border: 0; border-radius: var(--radius-sm); padding: 3px 8px; background: transparent; color: var(--color-text-3); font: 500 .75rem/1.4 var(--font-sans); white-space: nowrap; cursor: pointer; }
   .output-tabs button:hover { color: var(--color-text-1); }
   .output-tabs button[aria-selected='true'] { background: var(--color-ground); color: var(--color-text-1); }
-  .reflect-pane { border-top: 1px solid var(--color-line-1); }
-  .reflect-pane .pane-title button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
-  .reflect-pane .pane-title button:hover:not(:disabled) { background: var(--color-surface-1); }
-  .reflect-pane .pane-title button:disabled { opacity: .5; cursor: default; }
+  .reflect-meta { display: flex; flex: none; align-items: center; }
+  .reflect-meta button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
+  .reflect-meta button:hover:not(:disabled) { background: var(--color-surface-1); }
+  .reflect-meta button:disabled { opacity: .5; cursor: default; }
   /* The pane's contents are built by src/scripts/playground.ts after the page loads, so those
      nodes never carry Astro's scoping attribute and a plain descendant selector would miss
      them. The scoped parent is .reflection; everything under it is addressed globally. */
-  .canvas-pane { border-bottom: 1px solid var(--color-line-1); }
-  .canvas-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
-  /* The title keeps its line; on a narrow screen the controls wrap among themselves instead. */
-  .canvas-pane .pane-title > span { flex: none; white-space: nowrap; }
+  .canvas-meta { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
   .canvas-meta label { color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
   .canvas-meta select { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 3px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.3 var(--font-mono); }
   .canvas-meta button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
   .canvas-meta button:hover:not(:disabled) { background: var(--color-surface-1); }
   .canvas-meta button:disabled { opacity: .5; cursor: default; }
-  .canvas-host { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px 12px; background: var(--color-ground); }
+  /* The canvas panel takes the room the row has and holds the canvas at the top of it, so
+     the box the picture is drawn in is the same size behind every tab. */
+  .canvas-host { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px 12px; background: var(--color-ground); }
   .canvas-host [data-canvas-note] { margin: 0; min-height: 1.3em; color: var(--color-text-3); font: 400 .6875rem/1.3 var(--font-mono); text-align: center; }
   /* The box stays this size at every resolution, so raising the grid buys detail and does
      not move the layout. `pixelated` is what makes the low end worth offering: at 64 the
      reader sees the fragment entry run once per visible block. */
   .canvas-host canvas { width: min(320px, 100%); height: auto; aspect-ratio: 1; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); image-rendering: pixelated; }
-  .reflection { padding: 14px 16px; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
+  .reflection { flex: 1 1 0; min-height: 320px; padding: 14px 16px; overflow: auto; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
   .reflection :global(.group-title) { margin: 0 0 8px; color: var(--color-text-3); font: 600 .6875rem/1.3 var(--font-sans); letter-spacing: .06em; }
   .reflection :global(.group + .group) { margin-top: 20px; }
   .reflection :global(.entry + .entry) { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--color-line-1); }
@@ -313,7 +322,14 @@ const runtimeCopy = {
   .reflection :global(.arg-name) { align-self: center; color: var(--color-text-3); }
   .reflection :global(.empty) { color: var(--color-text-3); }
   .reflection :global(.failed) { color: var(--color-diag); }
-  @media (min-width: 64rem) { .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; } .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); } }
+  @container (min-width: 48rem) {
+    .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+    .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); }
+    /* Beside the result the editor shows 26 lines of the file at the 21px line height it is
+       created with, so the entry point of an example this long is in view without scrolling
+       and a widget Monaco anchors to a line can be placed. */
+    .editor-host { min-height: 560px; }
+  }
   @media (max-width: 48rem) {
     .playground-toolbar { align-items: stretch; flex-direction: column; }
     .playground-actions { width: 100%; }
