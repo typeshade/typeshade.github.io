@@ -6,6 +6,7 @@ import path from 'node:path'
 import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/index.ts'
 import { shortBlurb } from './blurb.ts'
 import { builtinCounts } from './builtin-table.ts'
+import { loweringRowCount } from './typescript-lowering.ts'
 import { shadeCounts } from './shade-examples.ts'
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts'
 
@@ -291,6 +292,9 @@ export const facts = {
   portableBuiltins: builtins.portable,
   glslAbsentBuiltins: builtins.noGlsl,
   mathAliasBuiltins: builtins.aliased,
+  /** The construct rows on /guide/language/from-typescript/, counted from the generator that
+   *  compiles one program per row (src/lib/typescript-lowering.ts). */
+  constructRows: loweringRowCount(),
   layoutStandards: layoutStandards(),
   runtimeDeps: runtimeDeps().length,
   /** The names behind that count, so a sentence can say which one it is. */
@@ -318,6 +322,7 @@ export const facts = {
 const pinned = {
   commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302,
   builtins: 139, portableBuiltins: 44, glslAbsentBuiltins: 31, mathAliasBuiltins: 27,
+  constructRows: 65,
 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
@@ -328,6 +333,7 @@ if (facts.builtins !== pinned.builtins) drift.push(`builtins ${facts.builtins} !
 if (facts.portableBuiltins !== pinned.portableBuiltins) drift.push(`portableBuiltins ${facts.portableBuiltins} != ${pinned.portableBuiltins}`)
 if (facts.glslAbsentBuiltins !== pinned.glslAbsentBuiltins) drift.push(`glslAbsentBuiltins ${facts.glslAbsentBuiltins} != ${pinned.glslAbsentBuiltins}`)
 if (facts.mathAliasBuiltins !== pinned.mathAliasBuiltins) drift.push(`mathAliasBuiltins ${facts.mathAliasBuiltins} != ${pinned.mathAliasBuiltins}`)
+if (facts.constructRows !== pinned.constructRows) drift.push(`constructRows ${facts.constructRows} != ${pinned.constructRows}`)
 if (drift.length > 0) {
   throw new Error(
     `[examples] the pinned mirror (${facts.pinnedCommit}) no longer matches the copy written at ${pinned.commit}: ${drift.join('; ')}`,
