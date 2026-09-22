@@ -1,0 +1,185 @@
+---
+// One example, on a page of its own: the shader running, the file it is written in, and the
+// shader text the compiler emits from it. The gallery's tiles link here, so a reader who
+// clicks an example stays on the site and sees it draw; the file on GitHub is one link in
+// the row at the foot of the page.
+//
+// Everything on it is read at build time by src/lib/example-pages.ts. The emitted text comes
+// from examples/__emit-goldens__/ at the pinned commit, which is the compiler's own output,
+// so a page costs nothing to show and cannot disagree with the compiler.
+import { Code } from 'astro-expressive-code/components'
+import Docs from '../../layouts/Docs.astro'
+import CodeFrame from '../CodeFrame.astro'
+import Rich from '../Rich.astro'
+import ShaderCanvas from '../ShaderCanvas.astro'
+import type { CanvasText } from '../ShaderCanvas.astro'
+import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts'
+import { editCopy, links } from '../../lib/links.ts'
+import { checkedBlurbs } from '../../lib/examples.ts'
+import { checkedShade } from '../../lib/shade-examples.ts'
+import { examplePage, examplePath, exampleSourceHref, noPictureReasons } from '../../lib/example-pages.ts'
+import { slugify } from '../../lib/slug.ts'
+
+interface Props {
+  locale: Locale
+  id: string
+}
+const { locale, id } = Astro.props
+const t = copyFor(locale)
+const e = t.examples
+const p = e.page
+const example = examplePage(id)
+
+// Every reason NO_STILL_REASONS can hand a page has a sentence in this language. A reason
+// added upstream without one would print nothing under an empty frame.
+for (const reason of noPictureReasons) {
+  if (!p.noPicture[reason]) throw new Error(`[example-page] src/i18n has no sentence for the reason '${reason}'`)
+}
+
+// The registry's own English titles are what the gallery shows in every language; the
+// `.shade.ts` corpus writes its titles and its lines in each dictionary.
+const shadeTitles = checkedShade('title', e.shade.titles)
+const shadeBlurbs = checkedShade('description', e.shade.descriptions)
+const blurbs = checkedBlurbs(e.blurbs)
+const nameOf = (which: string): string => (examplePage(which).corpus === 'shade' ? shadeTitles[which]! : examplePage(which).title)
+const blurbOf = (which: string): string => (examplePage(which).corpus === 'shade' ? shadeBlurbs[which]! : blurbs[which]!)
+
+const name = nameOf(id)
+const blurb = blurbOf(id)
+
+// A meta description is plain text, so the code marks and links the gallery's own line
+// carries come off it first.
+const plain = (text: string): string => text.replace(/`([^`]*)`/g, '$1').replace(/\[([^\]]*)\]\(([^)]+)\)/g, '$1')
+const META_MIN = 70
+const META_MAX = localeSettings[locale].metaDescriptionMax
+const HARD_MAX = 160
+// The same cut the reference makes: at the end of a sentence, else at a clause, else at a
+// word. A short registry line leaves the description under the floor the SEO checks want, so
+// the dictionary's own sentence about the page fills it out.
+const markEnd = (window: string, marks: readonly string[]): number => {
+  let best = -1
+  for (const mark of marks) {
+    const withSpace = window.lastIndexOf(`${mark} `)
+    if (withSpace >= 0) best = Math.max(best, withSpace + mark.length)
+    if (window.endsWith(mark)) best = Math.max(best, window.length)
+  }
+  return best
+}
+const cutAt = (text: string, limit: number): string | null => {
+  const window = text.slice(0, limit)
+  const sentenceEnd = markEnd(window, ['.', '!', '?'])
+  if (sentenceEnd >= META_MIN) return window.slice(0, sentenceEnd)
+  const clauseEnd = markEnd(window, [',', ';', ':'])
+  if (clauseEnd >= META_MIN) return `${window.slice(0, clauseEnd - 1)}…`
+  return null
+}
+const truncate = (text: string, max: number): string =>
+  text.length <= max ? text : cutAt(text, max) ?? cutAt(text, HARD_MAX) ?? `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`
+
+const title = p.title(name)
+if (title.length < 45 || title.length > 60) {
+  throw new Error(`[example-page] '${id}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`)
+}
+const composed = plain(p.description(name, blurb))
+const description = truncate(composed.length < META_MIN ? `${composed} ${plain(p.descriptionPad)}` : composed, META_MAX)
+if (description.length < META_MIN || description.length > META_MAX) {
+  throw new Error(`[example-page] '${id}' has a ${description.length}-character description, outside ${META_MIN} to ${META_MAX}`)
+}
+
+const headings = [
+  { depth: 2, slug: slugify(p.source), text: p.source },
+  { depth: 2, slug: slugify(p.emitted), text: p.emitted },
+]
+
+const caption: CanvasText = t.front.gallery.tile(name)
+const sourceHref = exampleSourceHref(example.file)
+const playgroundHref = `${localePath(locale, links.playground.href)}#example=${example.id}`
+const pager = (which: string | undefined) => (which ? { label: nameOf(which), href: localePath(locale, examplePath(which)) } : undefined)
+const glsl = example.emitted.glsl
+const tabId = (part: string): string => `emitted-${part}`
+---
+
+<Docs
+  locale={locale}
+  path={examplePath(id)}
+  title={title}
+  description={description}
+  headings={headings}
+  editHref={editCopy(locale, 'examples')}
+  label={name}
+  previous={pager(example.previous)}
+  next={pager(example.next)}
+>
+  <h1>{name}</h1>
+  <p><Rich text={blurb} locale={locale} /></p>
+
+  {example.drawn ? (
+    <ShaderCanvas locale={locale} example={example.id} aspect="3/2" caption={caption} eager class="example-page-figure" />
+  ) : (
+    <figure class="figure example-page-figure">
+      <div class="figure-frame" style="aspect-ratio: 3/2">
+        <span class="example-tile-blank">
+          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+            <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
+            <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
+            <circle cx="14.5" cy="15.5" r="2.25" />
+          </svg>
+        </span>
+      </div>
+      <figcaption class="figure-caption">{p.noPicture[example.reason!]}</figcaption>
+    </figure>
+  )}
+
+  <section>
+    <h2 id={slugify(p.source)}>{p.source}</h2>
+    <CodeFrame label={`${p.source}, ${example.file}`}>
+      <Code code={example.source} lang="ts" title={example.file} locale={locale} wrap />
+    </CodeFrame>
+  </section>
+
+  <section>
+    <h2 id={slugify(p.emitted)}>{p.emitted}</h2>
+    <p><Rich text={p.emittedNote} locale={locale} /></p>
+    {glsl ? (
+      <div class="example-emitted" data-front-tabs>
+        <div class="front-tabs-head" role="tablist" aria-label={p.emitted}>
+          <button type="button" role="tab" id={`${tabId('wgsl')}-tab`} aria-controls={tabId('wgsl')} aria-selected="true">{p.wgsl}</button>
+          <button type="button" role="tab" id={`${tabId('vertex')}-tab`} aria-controls={tabId('vertex')} aria-selected="false">{p.glslVertex}</button>
+          <button type="button" role="tab" id={`${tabId('fragment')}-tab`} aria-controls={tabId('fragment')} aria-selected="false">{p.glslFragment}</button>
+        </div>
+        {/* The tab already names the target, so the frame inside the panel carries no title
+            bar of its own; the label stays as the code region's accessible name. */}
+        <div class="front-tabs-panel" role="tabpanel" id={tabId('wgsl')} aria-labelledby={`${tabId('wgsl')}-tab`}>
+          <CodeFrame label={p.wgsl}><Code code={example.emitted.wgsl} lang="wgsl" locale={locale} wrap /></CodeFrame>
+        </div>
+        <div class="front-tabs-panel" role="tabpanel" id={tabId('vertex')} aria-labelledby={`${tabId('vertex')}-tab`}>
+          <CodeFrame label={p.glslVertex}><Code code={glsl.vertex} lang="glsl" locale={locale} wrap /></CodeFrame>
+        </div>
+        <div class="front-tabs-panel" role="tabpanel" id={tabId('fragment')} aria-labelledby={`${tabId('fragment')}-tab`}>
+          <CodeFrame label={p.glslFragment}><Code code={glsl.fragment} lang="glsl" locale={locale} wrap /></CodeFrame>
+        </div>
+      </div>
+    ) : (
+      <div class="example-emitted">
+        <p>{p.wgslOnlyNote}</p>
+        <CodeFrame label={p.wgsl}><Code code={example.emitted.wgsl} lang="wgsl" title={p.wgsl} locale={locale} wrap /></CodeFrame>
+      </div>
+    )}
+  </section>
+
+  <p class="example-page-links">
+    <a href={sourceHref}>{p.github}</a>
+    {example.inPlayground && <a href={playgroundHref}>{p.playground}</a>}
+  </p>
+</Docs>
+
+<script>
+  // The tabs over the emitted targets, shared with the front page's own section.
+  import '../../scripts/target-tabs.ts'
+</script>
+
+<style>
+  .example-page-figure { margin-block-start: 24px }
+  .example-emitted { display: grid; gap: 16px; align-content: start; margin-block-start: 16px }
+  .example-page-links { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-block-start: 32px }
+</style>
