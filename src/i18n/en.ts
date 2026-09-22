@@ -874,6 +874,47 @@ export const en = {
       titles: shadeTitles(),
       descriptions: shadeDescriptions(),
     },
+    /** The page one example gets, at /guide/examples/<id>/. Every tile in the gallery links
+     *  here, and the file on GitHub is one link in the row at the foot of the page. */
+    page: {
+      // The title names the example and takes the longest suffix that still fits under the
+      // 60-character ceiling check-seo.mjs enforces, the way docs.api.pageTitle does. The
+      // shortest example name is 6 characters and the longest 41, so the suffixes step down
+      // by no more than 15 and every name lands over the SEO review's 45-character floor.
+      // src/components/pages/ExamplePage.astro asserts both ends for all of them.
+      title: (name: string) => {
+        const suffixes = [
+          ', a TypeShade example with its source and emitted code',
+          ', a TypeShade example and the code it emits',
+          ', a TypeShade shader example',
+          ' in TypeShade',
+        ]
+        const fitting = suffixes.find((suffix) => (name + suffix).length <= 60)
+        return fitting ? name + fitting : name
+      },
+      description: (name: string, blurb: string) => `${name}, a TypeShade example. ${blurb}`,
+      /** Added when an example's own line leaves the description under the 70 characters the
+       *  SEO checks want. */
+      descriptionPad: `The source, the WGSL it emits and the ${glsl} stages, on one page.`,
+      source: 'Source',
+      emitted: 'Emitted output',
+      emittedNote: `The text below is the compiler's own output at commit ${facts.pinnedCommit}, read from the goldens its emit suite bakes ([emit-goldens.test.ts](goldens)).`,
+      wgsl: 'WGSL',
+      glslVertex: `${glsl} vertex`,
+      glslFragment: `${glsl} fragment`,
+      wgslOnlyNote: `This example has no ${glsl} form, so the compiler bakes its WGSL alone.`,
+      github: 'File on GitHub',
+      playground: 'Open in the Playground',
+      /** What the page says where it draws no picture, one line per reason in
+       *  NO_STILL_REASONS (scripts/artifacts.mjs). */
+      noPicture: {
+        'no-glsl': `This example has no ${glsl} form, and the canvas runs one program on both backends, so the page shows no picture.`,
+        control: 'This example is steered by a control the page has no value for, so the page shows no picture.',
+        texture: 'This example reads a texture the page has no data for, so the page shows no picture.',
+        uniform: 'This example declares a uniform field the page has no value for, so the page shows no picture.',
+        'vertex-buffer': 'This example reads its vertex attributes from a buffer the page does not bind, so the page shows no picture.',
+      },
+    },
     printIntro: 'From a checkout of the repository, the first command prints WGSL, GLSL and reflection for every example; the second does one by id.',
     glsl: {
       h: `The gradient pass in ${glsl}`,

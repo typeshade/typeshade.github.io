@@ -1060,6 +1060,38 @@ export const ko: Copy = {
         'gradient-twin': '`gradient-pass.ts`를 `fn()` / `module()`로 만드는 대신 소스 언어로 다시 쓴 예제입니다.',
       },
     },
+    page: {
+      // 영어와 같은 방식입니다. 60자 상한에 들어가는 가장 긴 꼬리말을 고르고, 꼬리말 사이 간격을
+      // 15자 이하로 두어 어떤 예제 이름이 와도 45자 아래로 내려가지 않게 했습니다.
+      title: (name: string) => {
+        const suffixes = [
+          ', TypeShade 예제 소스와 컴파일러가 낸 셰이더 코드를 한 화면에서 봅니다',
+          ', TypeShade 예제와 컴파일러가 낸 셰이더 코드',
+          ', TypeShade 셰이더 예제',
+          ' 예제, TypeShade',
+        ]
+        const fitting = suffixes.find((suffix) => (name + suffix).length <= 60)
+        return fitting ? name + fitting : name
+      },
+      description: (name: string, blurb: string) => `TypeShade 예제 ${name}. ${blurb}`,
+      descriptionPad: `소스와 WGSL 출력, ${glsl} 단계까지 한 페이지에 모았습니다.`,
+      source: '소스',
+      emitted: '출력 결과',
+      emittedNote: `아래 코드는 커밋 ${facts.pinnedCommit}의 컴파일러가 직접 낸 출력입니다. 컴파일러의 출력 검사가 구워 둔 골든 파일에서 그대로 읽어 왔습니다([emit-goldens.test.ts](goldens)).`,
+      wgsl: 'WGSL',
+      glslVertex: `${glsl} 버텍스`,
+      glslFragment: `${glsl} 프래그먼트`,
+      wgslOnlyNote: `이 예제는 ${glsl} 형태가 없어서 컴파일러가 WGSL만 구워 둡니다.`,
+      github: 'GitHub의 파일',
+      playground: 'Playground에서 열기',
+      noPicture: {
+        'no-glsl': `이 예제는 ${glsl} 형태가 없고 캔버스는 두 백엔드에서 같은 프로그램을 돌리므로, 이 페이지에는 그림이 없습니다.`,
+        control: '이 예제를 움직이는 컨트롤에 페이지가 넣을 값이 없어서, 이 페이지에는 그림이 없습니다.',
+        texture: '이 예제가 읽는 텍스처에 페이지가 넣을 데이터가 없어서, 이 페이지에는 그림이 없습니다.',
+        uniform: '이 예제가 선언한 유니폼 필드에 페이지가 넣을 값이 없어서, 이 페이지에는 그림이 없습니다.',
+        'vertex-buffer': '이 예제는 버텍스 속성을 버퍼에서 읽는데 페이지가 그 버퍼를 바인딩하지 않아서, 그림이 없습니다.',
+      },
+    },
     printIntro: '저장소를 받아 둔 디렉터리에서 실행합니다. 첫 번째 명령은 모든 예제의 WGSL, GLSL, 리플렉션을 출력하고, 두 번째는 id로 하나만 출력합니다.',
     glsl: {
       h: `gradient 패스의 ${glsl} 출력`,
