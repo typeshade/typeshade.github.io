@@ -1285,11 +1285,109 @@ export const ko: Copy = {
     mapping: {
       fromTypescript: {
         title: 'TypeScript 문법과 그 변환 결과',
-        description: '"use typeshade" 파일에서 TypeScript 문법 하나하나가 무엇이 되는지 정리합니다. 선언, 함수, class, 제어 흐름, 그리고 컴파일러가 생성하는 셰이더 코드를 함께 봅니다.',
+        description: `"use typeshade" 파일에서 TypeScript 문법 ${facts.constructRows}가지가 각각 무엇이 되는지 정리합니다. 선언, 함수, class, 제어 흐름, 그리고 컴파일러가 생성하는 셰이더 코드를 함께 싣습니다.`,
         h1: 'TypeScript 문법',
-        h: '이 페이지가 다루는 것',
-        p: '`"use typeshade"` 파일은 TypeScript로 씁니다. 그 안의 문법은 GPU에서 저마다 뜻이 하나씩 있거나, 왜 안 되는지를 밝히는 거절을 받습니다. 이 페이지는 문법마다 무엇으로 하향 변환되는지와 컴파일러가 생성한 WGSL을 나란히 놓습니다. 생성 결과 칸은 빌드 시점에 컴파일해 얻으므로 컴파일러와 어긋날 수 없습니다.',
-        pending: '문법별 표는 지금 작성하고 있습니다. 선언, 함수, class, 제어 흐름, 식과 타입 순서로 절을 나눠 싣습니다.'
+        intro: `TypeShade는 셰이더 컴파일러가 검사하는 TypeScript 문법입니다. 문법 하나는 셰이더 코드로 하향 변환되거나, 이유가 붙은 거절을 받습니다. 아래 표의 셋째 칸은 고정된 커밋의 컴파일러가 생성한 코드이며, 여기에 ${facts.constructRows}가지를 실었습니다.`,
+        readingH: '한 행을 읽는 법',
+        readingP: '첫째 칸은 TypeScript입니다. 이 페이지를 빌드할 때 컴파일하는 `"use typeshade"` 프로그램에서 그대로 가져옵니다. 둘째 칸은 그것이 무엇이 되는지 말합니다. 셋째 칸은 생성된 WGSL이며, 그 프로그램에서 이름으로 잘라 낸 부분입니다. 거절되는 행에는 그 자리에 컴파일러가 낸 코드와 메시지가 들어갑니다.',
+        guidesP: '표의 한 행은 무슨 일이 일어나는지만 말합니다. 왜 그런지는 앞선 페이지들이 설명합니다. [타입](languageTypes), [함수](languageFunctions), [제어 흐름](languageControlFlow), [GPU 타입](languageGpuTypes), [리소스](languageResources)를 보십시오. 내장 함수는 [별도의 표](languageBuiltins)에 있습니다.',
+        colTs: 'TypeScript',
+        colBecomes: '변환 결과',
+        colWgsl: '생성된 WGSL',
+        sections: {
+          declarations: {
+            h: '선언',
+            p: '선언은 상수나 변수나 레이아웃에 이름을 붙입니다. 셋 중 무엇이냐에 따라 생성되는 코드가 있는지 없는지가 갈립니다.'
+          },
+          functions: {
+            h: '함수',
+            p: '모든 함수는 모듈의 함수입니다. 함수 값도, 가둬 둘 환경도, 호출 스택도 없습니다.'
+          },
+          classes: {
+            h: 'class',
+            p: 'class는 함수를 두른 구조체입니다. 디스패치가 정적이라 상속과 믹스인과 제네릭은 파일을 컴파일하는 동안 다 정해집니다.'
+          },
+          controlFlow: {
+            h: '제어 흐름',
+            p: '루프는 GPU가 끝낼 수 있는 모양이어야 하고, 두 값 중 하나를 고르는 식은 타깃에 연산자가 있는 모양이어야 합니다.'
+          },
+          expressions: {
+            h: '식과 타입',
+            p: '타입 주장은 지워집니다. GPU에 대응하는 말이 있는 모양은 남습니다. TypeScript가 실행 시점에 만들 값은 적힌 자리에서 거절합니다.'
+          },
+          double: {
+            h: '배정밀도 에뮬레이션',
+            p: `두 타깃 모두 64비트 부동소수점이 없습니다. \`f64\`는 \`f32\` 두 워드 쌍이며, 백엔드가 보기 전에 \`vec2<f32>\`와 \`df64_\` 호출로 바뀝니다. [fp64-lane-stripes](shadeLaneStripes)가 ${split[0]} 경로와 ${split[1]} 경로를 나란히 그립니다.`
+          }
+        },
+        rows: {
+          constScalar: '모듈 상수입니다. 스칼라는 선언 자리에서 값 하나로 접힙니다. [module-const](shadeModuleConst)',
+          constVector: '벡터나 배열 상수는 값을 식으로 지니고, 백엔드가 그 식을 평가합니다. [palette-const](shadePaletteConst)',
+          letNoInit: '변경 가능한 지역 변수입니다. 타입은 표기가 정하고, WGSL은 영으로 채워 둡니다. [bitfield-bands](shadeBitfieldBands)',
+          moduleLet: '모듈 변수입니다. 호출마다 하나씩 생깁니다. [private-state](shadePrivateState)',
+          varRefused: '거절합니다. 호출별 변수는 `let`, 모듈 상수는 `const`입니다.',
+          enumRow: '멤버마다 모듈 상수가 하나씩 생깁니다. 이름은 `Enum_Member`, 타입은 `i32`입니다.',
+          constEnum: '같은 상수가 생깁니다. 여기서 `const enum`은 다르지 않습니다.',
+          typeAlias: '대상을 가리키는 다른 이름입니다. 타입이 올 수 있는 자리마다 풀립니다.',
+          interfaceRow: '구조체입니다. 같은 필드를 쓴 class와 결과가 같습니다.',
+          classStruct: '구조체입니다. 필드가 호스트의 메모리 레이아웃을 정합니다. [ray-class](shadeRayClass)',
+          namespaceRow: '멤버는 `Ns_member`로 펼쳐지고, namespace 자체는 아무것도 생성하지 않습니다.',
+          topFunction: '이름과 매개변수와 반환 타입이 같은 모듈 함수가 됩니다.',
+          localFunction: '모듈의 함수가 됩니다. 이름은 이를 선언한 함수에서 따옵니다.',
+          noCapture: '거절합니다. 셰이더 함수에는 인자와 모듈만 있고, 이름을 담아 둘 환경이 없습니다.',
+          defaultArgs: '매개변수는 모두 남고, 빠뜨린 인자는 호출 지점에 적힙니다. [default-args](shadeDefaultArgs)',
+          overloads: '시그니처는 건너뛰고 구현 하나만 하향 변환합니다.',
+          recursion: '거절합니다. WGSL에는 호출 스택이 없고, 검사는 호출 그래프를 읽습니다.',
+          callStatement: '문 하나가 됩니다. 값을 돌려주는 내장 함수가 홀로 서면 계산하는 것이 없어 최적화가 지웁니다.',
+          phonyAssign: '값을 돌려주면서 효과도 있는 내장 함수에는 WGSL의 `_ =` 대입이 붙습니다. Tint가 반환값을 반드시 쓰도록 요구하기 때문입니다. [atomic-histogram](shadeAtomicHistogram)',
+          mathAlias: '`Math.sin`은 `sin`과 같은 내장 함수이고, `Math.PI`는 값으로 접힙니다.',
+          constructorNew: '`new`는 `Ray_new` 호출입니다. 구조체를 지어 돌려줍니다.',
+          method: '첫 매개변수가 구조체인 함수가 되고, `this`는 그 매개변수로 읽힙니다.',
+          staticFn: '수신자가 없는 함수가 되며, class 이름을 앞에 답니다.',
+          thisAssign: `객체를 바꾸는 메서드는 WGSL에서 포인터로, ${glsl}에서 \`inout\`으로 객체를 받습니다. [orbit-inout](shadeOrbitInout)`,
+          extendsSuper: '기반 class의 필드가 앞에 오고, 물려받은 메서드는 다시 하향 변환됩니다. `super`는 자기 함수가 됩니다. [shape-inheritance](shadeShapeInheritance)',
+          abstractRow: 'abstract class에는 구조체가 없습니다. 하위 class가 저마다 필드와 메서드 복사본을 가집니다.',
+          implementsRow: 'TypeScript만 검사합니다. 구조체는 그 class 자신의 필드입니다.',
+          accessModifiers: '받아들이지만 셰이더에는 아무 뜻이 없습니다. 강제하는 쪽은 TypeScript입니다.',
+          getterRefused: '거절합니다. static 필드와 `abstract` 메서드 등 TS8035 목록이 함께 걸립니다. 메서드로 쓰십시오.',
+          mixin: '함수는 컴파일하는 동안 실행됩니다. 멤버는 class에 끼워 넣고, `Tinted`는 어디에도 생성되지 않습니다. [mixin-surface](shadeMixinSurface)',
+          genericFunction: '파일이 쓰는 타입 인자 조합마다 함수가 하나씩 생기고, `pick`이라는 이름은 없습니다. [generic-helpers](shadeGenericHelpers)',
+          genericClass: '타입 인자 조합마다 구조체가 하나씩 생기고, 메서드도 조합마다 따로 생깁니다. [generic-class](shadeGenericClass)',
+          ifRow: '적은 그대로 `if`입니다.',
+          forRow: '횟수가 정해진 루프입니다. 정수 변수, 상수 경계, 상수 증가, 최대 256회입니다. [block-scope](shadeBlockScope)',
+          forRefused: '거절합니다. 반복 횟수가 루프에 허용된 한도를 넘습니다.',
+          whileRow: '컴파일러가 카운터를 붙인 루프가 됩니다. 본문이 경계로 다가가는지는 아무것도 검사하지 않습니다.',
+          switchRow: '`switch`가 됩니다. TypeScript가 요구하는 `break`는 사라지고, 본문은 다음 case로 흘러가지 않습니다. [bitfield-bands](shadeBitfieldBands)',
+          ternaryScalar: `WGSL에서는 \`select\`가 되고, ${glsl}에서는 삼항 연산자가 됩니다.`,
+          ternaryStruct: '두 타깃 모두 이런 연산자가 없어서, 값을 슬롯 하나와 `if`로 끌어올립니다. [pick-composite](shadePickComposite)',
+          breakRow: '`break`입니다. 횟수가 정해진 루프를 일찍 빠져나오는 방법입니다. [julia-twin](shadeJuliaTwin)',
+          continueRow: '`continue`입니다. 루프가 감싸지 않은 `switch` 안에서는 거절합니다.',
+          discardRow: '`discard`입니다. 프래그먼트 진입점이나 그 진입점이 부르는 함수에 씁니다. [cutout](shadeCutout)',
+          destructuring: '이름마다 선언이 하나씩, 적힌 순서대로 풀립니다.',
+          spread: '구조체의 필드마다 읽기가 하나씩 생기고, 뒤에 적은 필드가 그 위를 덮습니다.',
+          arrayLiteral: '배열 초기자입니다. 선언이 `array<T, N>`을 밝힌 자리에서만 씁니다. [array-literal-ramp](shadeArrayLiteralRamp)',
+          tuple: '튜플은 타입이 길이를 고정한 배열입니다. 반환 자리에서도 그렇습니다. [tuple-and-brand](shadeTupleAndBrand)',
+          literalUnion: '멤버가 모두 한 타입을 가리키는 유니온은 그 타입을 가리킵니다.',
+          brand: '브랜드는 지워지고 매개변수는 `f32`입니다. [tuple-and-brand](shadeTupleAndBrand)',
+          typeClaims: '타입에 대한 주장일 뿐 변환이 아니라서, 피연산자가 생성하는 코드를 그대로 생성합니다.',
+          power: '두 타깃 모두 `pow`입니다.',
+          logicalScalar: '두 타깃이 모두 가진 연산자이며, 한 번에 `bool` 하나를 다룹니다.',
+          logicalVector: '거절합니다. 마스크는 `all`이나 `any`나 `select`로 묶으십시오. [bool-select](shadeBoolSelect)',
+          optionalMember: '거절합니다. 구조체 필드는 호스트가 채우는 메모리에 언제나 있습니다.',
+          stringValue: '거절합니다. GPU에 문자열은 없습니다. 경우를 enum으로 적으십시오.',
+          numberType: '거절합니다. GPU의 수에는 너비가 있습니다.',
+          booleanType: '거절합니다. 셰이더 표기는 `bool`입니다.',
+          integerLiteral: '리터럴은 그 자리가 밝힌 타입을 따르고, 그 타입으로 접힙니다.',
+          increment: '값이 한 걸음 옮겨 간 결과를 대입합니다.',
+          f64Scalar: '`f32` 두 워드의 쌍이 되고, 연산마다 `df64_` 호출이 붙습니다. [fp64-lane-stripes](shadeLaneStripes)',
+          f64Literal: '`f64`라고 밝힌 자리의 리터럴은 배정밀도 값을 그대로 지닙니다.',
+          f64Vector: '배정밀도 벡터입니다. hi 평면과 lo 평면으로 하향 변환됩니다. `vec2d`는 `vec2f64`의 짧은 표기입니다.',
+          f64Builtin: '스칼라에서 내장 함수 열 개, 벡터에서 열세 개가 에뮬레이션 본체를 가집니다.',
+          f64Refused: '호출 자리에서 거절하며, 그 열 개와 좁히는 방법을 함께 알려 줍니다.',
+          f64Guard: '`_fp64` 텍스처가 주입됩니다. 호스트가 1.0으로 채우고, 리플렉션이 다른 바인딩처럼 보여 줍니다.',
+          f64Varying: '거절합니다. 배정밀도 값은 필요한 스테이지에서 읽거나, 경계에서 `f32`로 좁히십시오.'
+        },
+        sourceP: '이 페이지의 프로그램은 사이트를 빌드할 때 고정된 커밋에서 모두 컴파일합니다. 컴파일되지 않는 코드가 생기면 빌드가 멈춥니다. 문법 자체는 [작성 인터페이스 문서](surfaceSource)에 있습니다.'
       },
       fromWgsl: {
         title: 'WGSL을 TypeShade로: 타입, 리소스, 진입점',

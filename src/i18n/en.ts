@@ -1111,11 +1111,109 @@ export const en = {
     mapping: {
       fromTypescript: {
         title: 'TypeScript constructs and what each one lowers to',
-        description: 'What each TypeScript construct becomes in a "use typeshade" file: declarations, functions, classes, control flow, and the shader text the compiler writes.',
+        description: `What ${facts.constructRows} TypeScript constructs become in a "use typeshade" file: declarations, functions, classes, control flow, and the shader text the compiler writes.`,
         h1: 'TypeScript constructs',
-        h: 'What this page covers',
-        p: 'A `"use typeshade"` file is written in TypeScript, and every construct in it has one meaning on the GPU or a refusal that says why. This page puts each construct beside what it lowers to and beside the WGSL the compiler emits for it, compiled at build time so the emitted column cannot drift from the compiler.',
-        pending: 'The construct tables are being written, one section each for declarations, functions, classes, control flow, and expressions and types.'
+        intro: `TypeShade is TypeScript's syntax, checked by a shader compiler. A construct either lowers to shader code or is refused with a reason, and the third column of every table below is what the compiler wrote at the pinned commit. There are ${facts.constructRows} of them here.`,
+        readingH: 'How to read a row',
+        readingP: 'The first column is the TypeScript, taken from a `"use typeshade"` program that is compiled while this page is built. The second says what becomes of it. The third is the emitted WGSL, cut out of that program by name, and a refused row carries the compiler\'s own code and message there instead.',
+        guidesP: 'A row says what happens. The pages before this one say why: [types](languageTypes), [functions](languageFunctions), [control flow](languageControlFlow), [GPU types](languageGpuTypes) and [resources](languageResources). The builtins have [a table of their own](languageBuiltins).',
+        colTs: 'TypeScript',
+        colBecomes: 'What it becomes',
+        colWgsl: 'Emitted WGSL',
+        sections: {
+          declarations: {
+            h: 'Declarations',
+            p: 'A declaration names a constant, a variable or a layout. Which of the three it is decides whether anything is emitted for it at all.'
+          },
+          functions: {
+            h: 'Functions',
+            p: 'Every function is a function of the module. There are no function values, no environment to close over and no call stack.'
+          },
+          classes: {
+            h: 'Classes',
+            p: 'A class is a struct with functions around it. Dispatch is static, so inheritance, a mixin and a generic are settled while the file is compiled.'
+          },
+          controlFlow: {
+            h: 'Control flow',
+            p: 'A loop has to be one the GPU can finish, and a choice between two values has to be one the target has an operator for.'
+          },
+          expressions: {
+            h: 'Expressions and types',
+            p: 'A type claim is erased, a shape the GPU has a word for is kept, and a value TypeScript would build at run time is refused where it is written.'
+          },
+          double: {
+            h: 'Emulated double',
+            p: `Neither target has a 64-bit float. An \`f64\` is a pair of \`f32\` words, rewritten into \`vec2<f32>\` and \`df64_\` calls before either backend sees it. [fp64-lane-stripes](shadeLaneStripes) draws the ${split[0]} and ${split[1]} paths side by side.`
+          }
+        },
+        rows: {
+          constScalar: 'A module constant. A scalar folds to one value at its declaration. [module-const](shadeModuleConst)',
+          constVector: 'A vector or array constant carries its value as an expression each backend evaluates. [palette-const](shadePaletteConst)',
+          letNoInit: 'A mutable local. The annotation carries the type, and WGSL gives it a zero. [bitfield-bands](shadeBitfieldBands)',
+          moduleLet: 'A module variable, one per invocation. [private-state](shadePrivateState)',
+          varRefused: 'Refused. `let` is the per-invocation variable and `const` the module constant.',
+          enumRow: 'One module constant per member, named `Enum_Member` and typed `i32`.',
+          constEnum: 'The same constants. A `const enum` is no different here.',
+          typeAlias: 'Another name for its target, resolved wherever a type may stand.',
+          interfaceRow: 'A struct, the same one a class of those fields would give.',
+          classStruct: 'A struct, whose fields lay out the memory the host fills. [ray-class](shadeRayClass)',
+          namespaceRow: 'The members flatten to `Ns_member`, and the namespace itself emits nothing.',
+          topFunction: 'A module function of the same name, parameters and return type.',
+          localFunction: 'A function of the module, named after the function that declares it.',
+          noCapture: 'Refused. A shader function has its arguments and the module, and no environment to hold a name in.',
+          defaultArgs: 'Every parameter stays, and the argument left out is written at the call. [default-args](shadeDefaultArgs)',
+          overloads: 'The signatures are skipped and the implementation is lowered once.',
+          recursion: 'Refused. WGSL has no call stack, and the check reads the call graph.',
+          callStatement: 'A statement of its own. A value-returning builtin standing alone computes nothing, so the optimizer drops it.',
+          phonyAssign: 'A builtin that returns a value and has an effect takes WGSL\'s phony assignment, `_ =`, since Tint treats it as must-use. [atomic-histogram](shadeAtomicHistogram)',
+          mathAlias: '`Math.sin` is the same builtin as `sin`, and `Math.PI` folds to its value.',
+          constructorNew: '`new` is a call of `Ray_new`, which builds the struct and hands it back.',
+          method: 'A function whose first parameter is the struct, and `this` reads as that parameter.',
+          staticFn: 'A function with no receiver, under the class name.',
+          thisAssign: `A method that writes its object takes it by pointer on WGSL, and by \`inout\` on ${glsl}. [orbit-inout](shadeOrbitInout)`,
+          extendsSuper: 'The base\'s fields come first, an inherited method is lowered again, and `super` is a function of its own. [shape-inheritance](shadeShapeInheritance)',
+          abstractRow: 'No struct for the abstract class. Each subclass carries the fields and its own copy of the method.',
+          implementsRow: 'Checked by TypeScript alone. The struct is the class\'s own fields.',
+          accessModifiers: 'Accepted, and they mean nothing to the shader. TypeScript is what enforces them.',
+          getterRefused: 'Refused, with a static field, an `abstract` method and the rest of the TS8035 list. Write a method.',
+          mixin: 'The function runs while the file is compiled. Its members are spliced in, and `Tinted` is emitted nowhere. [mixin-surface](shadeMixinSurface)',
+          genericFunction: 'One function per set of type arguments the file uses, and nothing called `pick`. [generic-helpers](shadeGenericHelpers)',
+          genericClass: 'One struct per set of type arguments, each with its own copy of every method. [generic-class](shadeGenericClass)',
+          ifRow: 'An `if`, as written.',
+          forRow: 'A counted loop: an integer variable, a constant bound, a constant step, at most 256 trips. [block-scope](shadeBlockScope)',
+          forRefused: 'Refused. The trip count is over the limit a loop may run.',
+          whileRow: 'A loop with a counter the compiler adds. Nothing checks that the body moves toward the bound.',
+          switchRow: 'A `switch`. The `break` TypeScript asks for is dropped, and a body does not fall through. [bitfield-bands](shadeBitfieldBands)',
+          ternaryScalar: `A \`select\` on WGSL, and the ternary each ${glsl} driver has.`,
+          ternaryStruct: 'Neither target has an operator for it, so the value is hoisted into a slot and an `if`. [pick-composite](shadePickComposite)',
+          breakRow: 'A `break`, which is how a counted loop leaves early. [julia-twin](shadeJuliaTwin)',
+          continueRow: 'A `continue`. In a `switch` that no loop encloses it is refused.',
+          discardRow: 'A `discard`, in a fragment entry or in a function one calls. [cutout](shadeCutout)',
+          destructuring: 'One declaration per name, in the order written.',
+          spread: 'One read per field of the struct, with the fields written after it over them.',
+          arrayLiteral: 'An array initializer, and only where the declaration states `array<T, N>`. [array-literal-ramp](shadeArrayLiteralRamp)',
+          tuple: 'A tuple is an array of a length the type fixes, a return included. [tuple-and-brand](shadeTupleAndBrand)',
+          literalUnion: 'A union whose members all name one type names that type.',
+          brand: 'The brand is erased and the parameter is an `f32`. [tuple-and-brand](shadeTupleAndBrand)',
+          typeClaims: 'A claim about a type, not a conversion, so each emits what its operand emits.',
+          power: '`pow` on both targets.',
+          logicalScalar: 'The operator both targets have, on one `bool` at a time.',
+          logicalVector: 'Refused. Combine masks with `all`, `any` or a `select`. [bool-select](shadeBoolSelect)',
+          optionalMember: 'Refused. A struct field is always there in the memory the host fills.',
+          stringValue: 'Refused. There is no string on the GPU; write the cases as an enum.',
+          numberType: 'Refused. A number on the GPU has a width.',
+          booleanType: 'Refused. The shader spelling is `bool`.',
+          integerLiteral: 'The literal takes the type its position declares, and folds in it.',
+          increment: 'An assignment of the value one step on.',
+          f64Scalar: 'A pair of `f32` words, with a `df64_` call for each operation. [fp64-lane-stripes](shadeLaneStripes)',
+          f64Literal: 'A literal in a declared `f64` position keeps the whole double.',
+          f64Vector: 'A vector of doubles, lowered into a hi plane and a lo plane. `vec2d` is the short spelling of `vec2f64`.',
+          f64Builtin: 'Ten builtins have an emulated body on a scalar and thirteen on a vector.',
+          f64Refused: 'Refused at the call, which names the ten and the narrow to write.',
+          f64Guard: 'A `_fp64` texture is injected, which the host fills with 1.0. Reflection lists it like any binding.',
+          f64Varying: 'Refused. Read the double in the stage that needs it, or narrow it to an `f32` at the boundary.'
+        },
+        sourceP: 'Every program on this page is compiled at the pinned commit while the site is built, and a snippet that stops compiling stops the build. The grammar itself is [the surface document](surfaceSource).'
       },
       fromWgsl: {
         title: 'WGSL in TypeShade: types, resources and entries',
