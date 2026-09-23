@@ -202,6 +202,11 @@ const DEFAULTS: Readonly<
  *  buffer. `f64` and the matrices are the ones a sample can still declare. */
 export const isControllable = (type: string): boolean => type in DEFAULTS
 
+/** Whether a `vec3` or `vec4` field is a colour by its name, for a surface with no author to
+ *  say so: the Playground shows such a field as a colour picker. A live example is told by its
+ *  `color` prop and never reads this. */
+export const suggestsColour = (name: string): boolean => /colou?r|tint|albedo|rgba?\b|(?:^|_)(?:top|bottom|sky|ground|fog)(?:$|_)/i.test(name)
+
 const spread = (v: number | readonly number[] | undefined, n: number, fallback: number): number[] =>
   v === undefined
     ? Array.from({ length: n }, () => fallback)

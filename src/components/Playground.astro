@@ -8,8 +8,11 @@ interface Props {
   /** The example to open, for a page that already names one. The picker goes with it and
    *  the page carries that example's source alone instead of all of them. */
   seed?: string;
+  /** The build-time still of the seeded example, shown in the frame until the reader's own
+   *  program has drawn a frame over it. */
+  still?: string;
 }
-const { locale, seed } = Astro.props;
+const { locale, seed, still } = Astro.props;
 const t = copyFor(locale).playground;
 
 // The examples arrive from the vendored checkout at build time: the source text from the
@@ -92,8 +95,14 @@ const runtimeCopy = {
   gpuNeedsStages: t.gpuNeedsStages,
   gpuNeedsAttributes: t.gpuNeedsAttributes,
   gpuNeedsBindings: t.gpuNeedsBindings,
-  gpuZeroed: t.gpuZeroed,
-  uniforms: t.uniforms,
+  gpuNoWebgpu: t.gpuNoWebgpu,
+  gpuNoWebgl2: t.gpuNoWebgl2,
+  gpuNoGlsl: t.gpuNoGlsl,
+  gpuFailed: t.gpuFailed,
+  computeNeedsWebgpu: t.computeNeedsWebgpu,
+  computeRan: t.computeRan,
+  cpuTextures: t.cpuTextures,
+  bindings: t.bindings,
   canvasNeedsVertex: t.canvasNeedsVertex,
   canvasFlat: t.canvasFlat,
   canvasFlatInputs: t.canvasFlatInputs,
@@ -220,19 +229,21 @@ const runtimeCopy = {
         <div class="canvas-meta" data-meta="result">
           <label for="playground-engine">{t.engine}</label>
           <select id="playground-engine" data-engine>
-            <option value="gpu" selected>{t.engineGpu}</option>
+            <option value="auto" selected>{t.engineGpu}</option>
+            <option value="webgpu">WebGPU</option>
+            <option value="webgl2">WebGL2</option>
             <option value="cpu">{t.engineCpu}</option>
           </select>
           <label for="playground-resolution" data-cpu-only hidden>{t.resolution}</label>
           <select id="playground-resolution" data-resolution data-cpu-only hidden>
-            <option value="64">64 × 64</option>
-            <option value="128">128 × 128</option>
-            <option value="192" selected>192 × 192</option>
-            <option value="384">384 × 384</option>
-            <option value="768">768 × 768</option>
-            <option value="1536">1536 × 1536</option>
-            <option value="3840">3840 × 3840 (4K)</option>
-            <option value="7680">7680 × 7680 (8K)</option>
+            <option value="64">64 × 48</option>
+            <option value="128">128 × 96</option>
+            <option value="192" selected>192 × 144</option>
+            <option value="384">384 × 288</option>
+            <option value="768">768 × 576</option>
+            <option value="1536">1536 × 1152</option>
+            <option value="3840">3840 × 2880 (4K)</option>
+            <option value="7680">7680 × 5760 (8K)</option>
           </select>
           <button type="button" data-draw-cpu data-cpu-only hidden disabled>{t.draw}</button>
         </div>
@@ -251,16 +262,18 @@ const runtimeCopy = {
             question and is the fallback where there is no GPU API at all. A canvas takes one
             context and these take two, so they are two elements and not one. */}
         <div class="canvas-host" id="pg-panel-result" role="tabpanel" aria-labelledby="pg-tab-result">
+          {/* One frame for every engine, the width of the column at 4:3. The still of a seeded
+              example sits under the canvas until the reader's program has drawn. */}
           <div class="gpu-frame" data-gpu-frame>
+            {still && <img src={still} alt="" loading="eager" decoding="async" />}
             <canvas data-gpu-canvas data-backend="none" role="img" aria-label={t.canvas}></canvas>
+            <canvas data-canvas width="192" height="144" aria-label={t.canvas} data-cpu-only hidden></canvas>
           </div>
           <p data-gpu-note>{t.gpuIdle}</p>
-          {/* One handle per uniform field the module declares and the page does not fill
-              itself. Without them a module whose look is steered by a uniform runs at 0 and
-              reads as a flat square, which is what the note under it used to have to say. */}
-          <div class="gpu-controls" data-gpu-controls hidden aria-label={t.uniforms}></div>
-          <canvas data-canvas width="192" height="192" aria-label={t.canvas} data-cpu-only hidden></canvas>
           <p data-canvas-note data-cpu-only hidden>{t.canvasIdle}</p>
+          {/* Every binding and override the module declares, each with what the reader
+              supplies it with. Built by src/scripts/playground-bindings.ts after a compile. */}
+          <div class="bindings" data-bindings hidden role="group" aria-label={t.bindings.title}></div>
         </div>
         <pre id="pg-output" role="tabpanel" aria-labelledby="pg-tab-wgsl" data-output aria-live="polite" hidden></pre>
         <div class="reflection" id="pg-panel-reflection" role="tabpanel" aria-labelledby="pg-tab-reflection" data-reflection aria-live="polite" hidden></div>
@@ -378,26 +391,49 @@ const runtimeCopy = {
   .canvas-meta button:disabled { opacity: .5; cursor: default; }
   /* The canvas panel takes the room the row has and holds the canvas at the top of it, so
      the box the picture is drawn in is the same size behind every tab. */
-  .canvas-host { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px 12px; background: var(--color-ground); }
-  .canvas-host [data-canvas-note], .canvas-host [data-gpu-note] { margin: 0; min-height: 1.3em; max-width: 52ch; color: var(--color-text-3); font: 400 .6875rem/1.45 var(--font-mono); text-align: center; }
+  .canvas-host { display: flex; flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 8px; padding: 14px 16px 12px; background: var(--color-ground); }
+  .canvas-host [data-canvas-note], .canvas-host [data-gpu-note] { align-self: center; margin: 0; min-height: 1.3em; max-width: 60ch; color: var(--color-text-2); font: 400 .6875rem/1.45 var(--font-mono); text-align: center; }
   .canvas-host [hidden] { display: none; }
-  /* The GPU canvas is sized by its box, the way every other canvas on the site is: the
-     runtime matches the drawing buffer to the box and the capped device pixel ratio. */
-  .gpu-frame { position: relative; width: min(320px, 100%); aspect-ratio: 1; overflow: hidden; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); background: var(--color-surface-2); }
-  .gpu-frame > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .gpu-frame > canvas[data-backend='none'] { opacity: 0; }
-  /* The handles are built by src/scripts/playground.ts after the page loads, so they carry
-     no scoping attribute and are addressed globally under the scoped parent. */
-  .gpu-controls { width: 100%; max-width: 420px; }
-  .gpu-controls :global(.uniform-row) { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
-  .gpu-controls :global(.uniform-row + .uniform-row) { margin-top: 2px; }
-  .gpu-controls :global(.uniform-name) { flex: none; min-width: 7rem; color: var(--color-text-2); font: 400 .6875rem/1.4 var(--font-mono); overflow-wrap: anywhere; }
-  .gpu-controls :global(.uniform-axes) { display: flex; flex: 1 1 auto; gap: 6px; min-width: 0; }
-  .gpu-controls :global(input[type='range']) { flex: 1 1 0; min-width: 0; accent-color: var(--color-accent); }
-  /* The box stays this size at every resolution, so raising the grid buys detail and does
-     not move the layout. `pixelated` is what makes the low end worth offering: at 64 the
-     reader sees the fragment entry run once per visible block. */
-  .canvas-host canvas { width: min(320px, 100%); height: auto; aspect-ratio: 1; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); image-rendering: pixelated; }
+  /* The picture takes the width of its column at 4:3, the way a Shadertoy pane does, and
+     every engine draws into the same box. The runtime matches a GPU canvas's drawing buffer
+     to the box; the rasteriser's grid is its own, shown at the box's size. */
+  .gpu-frame { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); background: var(--color-surface-2); }
+  .gpu-frame > canvas, .gpu-frame > img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .gpu-frame > img { object-fit: cover; }
+  .gpu-frame > canvas[data-gpu-canvas][data-backend='none'] { opacity: 0; }
+  .gpu-frame > canvas[data-canvas] { image-rendering: pixelated; }
+  /* The still is the seeded example's picture at the pin. It goes when the reader's program
+     has a frame up, and for good once they have edited it, since from then on it shows
+     something else. */
+  .gpu-frame:has(> canvas[data-gpu-canvas]:not([data-backend='none'])) > img, .gpu-frame[data-drawn] > img { display: none; }
+
+  /* The bindings panel: one block per binding, its slot and name on a line, and the
+     controls under it. Built after the page loads, so its contents are addressed globally
+     under the scoped parent. */
+  .bindings { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--color-line-1); }
+  .bindings :global(.bindings-title) { margin: 0; color: var(--color-text-2); font: 600 .75rem/1.4 var(--font-sans); }
+  .bindings :global(.binding-rows) { display: flex; flex-direction: column; gap: 10px; }
+  .bindings :global(.binding) { display: flex; flex-direction: column; gap: 4px; }
+  .bindings :global(.binding.dragging), .bindings :global(.binding-line.dragging) { outline: 2px dashed var(--color-accent); outline-offset: 2px; }
+  .bindings :global(.binding-head) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font: 400 .6875rem/1.5 var(--font-mono); }
+  .bindings :global(.binding-slot) { color: var(--color-text-3); }
+  .bindings :global(.binding-name) { color: var(--color-text-1); font: 500 .75rem/1.5 var(--font-mono); }
+  .bindings :global(.binding-kind) { color: var(--color-text-2); }
+  .bindings :global(.binding-line) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding-inline-start: 12px; }
+  .bindings :global(.binding-field) { flex: none; min-width: 6.5rem; color: var(--color-text-2); font: 400 .6875rem/1.4 var(--font-mono); overflow-wrap: anywhere; }
+  .bindings :global(.binding-field:empty) { display: none; }
+  .bindings :global(.binding-controls) { display: flex; flex: 1 1 14rem; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+  .bindings :global(.binding-label) { color: var(--color-text-3); font: 400 .6875rem/1.4 var(--font-sans); }
+  .bindings :global(.binding-runtime), .bindings :global(.binding-note) { margin: 0; color: var(--color-text-2); font: 400 .6875rem/1.45 var(--font-sans); }
+  .bindings :global(input[type='range']) { flex: 1 1 5rem; min-width: 4rem; accent-color: var(--color-accent); }
+  .bindings :global(input[type='number']) { width: 6.5ch; min-width: 0; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 2px 4px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.4 var(--font-mono); }
+  .bindings :global(input[type='color']) { width: 32px; height: 22px; padding: 0 2px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-ground); }
+  .bindings :global(input[type='file']) { max-width: 100%; font: 400 .6875rem/1.4 var(--font-sans); color: var(--color-text-2); }
+  .bindings :global(select) { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 2px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.3 var(--font-mono); }
+  .bindings :global(.binding-matrix) { display: grid; grid-template-rows: repeat(var(--rows), auto); grid-auto-flow: column; gap: 2px; }
+  .bindings :global(.binding-result) { margin: 0; padding: 6px 8px; max-height: 12rem; overflow: auto; border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-1); font: 400 .6875rem/1.5 var(--font-mono); white-space: pre; }
+  .bindings :global(.binding-storage) { display: flex; flex-direction: column; gap: 4px; }
+  .bindings :global(.binding-storage > .binding-label) { padding-inline-start: 12px; }
   .reflection { flex: 1 1 0; min-height: 320px; padding: 14px 16px; overflow: auto; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
   .reflection :global(.group-title) { margin: 0 0 8px; color: var(--color-text-3); font: 600 .6875rem/1.3 var(--font-sans); letter-spacing: .06em; }
   .reflection :global(.group + .group) { margin-top: 20px; }

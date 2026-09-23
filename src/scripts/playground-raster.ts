@@ -41,6 +41,13 @@ export interface RasterPlan {
   readonly vertex: ReflectedEntry;
   readonly fragment: ReflectedEntry;
   readonly structs: readonly DeclaredStruct[];
+  /** A value for every uniform and storage binding the module reads, in the oracle's own
+   *  shape, keyed by binding name. The bindings panel fills them, so the CPU draws from the
+   *  numbers the GPU does. */
+  readonly bindings?: Readonly<Record<string, unknown>>;
+  /** The three values of each `@location` input of the vertex entry, by input name: the same
+   *  vertices the GPU canvas draws from. */
+  readonly attributes?: Readonly<Record<string, readonly (number | readonly number[])[]>>;
 }
 
 /** The zero of a reflected type, for calling an entry point with something valid. A type this
@@ -89,18 +96,24 @@ export function cornersOf(cpu: CpuFunctions, plan: RasterPlan): Corners | undefi
   const indexAt = flat.findIndex((field) => field.builtin === 'vertex_index');
   const positionName = plan.vertex.io?.outputs?.find((field) => field.builtin === 'position')?.name;
   const run = cpu[plan.vertex.name];
-  if (indexAt < 0 || !positionName || !run) return undefined;
+  // Three vertices come from `vertex_index` or from the vertex buffer the page generated;
+  // an entry that reads neither has no corners to give.
+  if ((indexAt < 0 && !plan.attributes) || !positionName || !run) return undefined;
 
-  const outputs = [0, 1, 2].map(
-    (index) =>
-      run(
+  const outputs = [0, 1, 2].map((index) => {
+    const returned = run(
         ...(entryArguments(plan.vertex, plan.structs, (at) => {
           if (at === indexAt) return index;
+          const given = flat[at]?.name ? plan.attributes?.[flat[at]!.name!]?.[index] : undefined;
+          if (given !== undefined) return given;
           const zero = zeroFor(flat[at]?.type);
           return zero.ok ? zero.value : 0;
         }) as never[]),
-      ) as Record<string, unknown>,
-  );
+    );
+    // A vertex entry that returns a bare `vec4` hands back the position itself, which the
+    // reflection names `_ret`; it is filed under that name so the fragment half finds it.
+    return (Array.isArray(returned) ? { [positionName]: returned } : returned) as Record<string, unknown>;
+  });
   const screen = outputs.map((corner) => {
     const [x, y, , w] = corner[positionName] as number[];
     return [((x / w) * 0.5 + 0.5) * plan.width, (1 - ((y / w) * 0.5 + 0.5)) * plan.height];
@@ -162,7 +175,10 @@ export function drawTile(
         return w0 * (at[0] as number) + w1 * (at[1] as number) + w2 * (at[2] as number);
       });
       const returned = run(...(entryArguments(plan.fragment, plan.structs, (at) => values[at]) as never[]));
-      const colour = (colourField ? (returned as Record<string, unknown>)[colourField] : returned) as number[];
+      // A fragment entry that returns a bare `vec4` is reflected with one output named `_ret`,
+      // and the oracle hands back the vector itself, so only a struct is read by field name.
+      // Reading `_ret` off the vector is how a covered canvas came back fully transparent.
+      const colour = (Array.isArray(returned) ? returned : colourField ? (returned as Record<string, unknown>)[colourField] : returned) as number[];
       if (!Array.isArray(colour)) continue;
       const offset = ((py - y0) * tileWidth + (px - x0)) * 4;
       for (let channel = 0; channel < 3; channel += 1) {
