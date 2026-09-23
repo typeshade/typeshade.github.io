@@ -9,5 +9,5 @@ When a pull request moves the compiler pin (`vendor/shader-dsl`) past a proposal
 work is done on that branch and its id is recorded below. Record one list item per proposal: the
 id first, then the pull request that did the work.
 
-- 0001 — a `for` loop takes a runtime bound and `while` is an open loop: the constructs page,
+- 0001: a `for` loop takes a runtime bound and `while` is an open loop: the constructs page,
   the TS8006 and TS8007 copy and the TS8006 example, handled in #60.
