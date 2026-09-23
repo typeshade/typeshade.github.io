@@ -1,7 +1,7 @@
 ---
 id: capabilities-extensions
-source: 66e999586747b6b0281071eb1e9a85ea3f103b94bd28d82b355756ce95ba40ce
-sourceLine: 1823
+source: bf0828e97c430083d9752e1c9eba863c07c4718b64945345fd4d82d945b9e47a
+sourceLine: 1857
 ---
 
 이 절을 읽고 나면 모듈에 필요한 GPU 기능을 선언하고, 그 기능이 타깃마다 어떤 비용이
@@ -28,10 +28,10 @@ module({ enables: ['floatRenderTarget'], funcs: [vs, fs] })
 
 ### id별 타깃 요구 사항
 
-id 하나 뒤에는 서로 다른 비용 두 가지가 숨어 있습니다. *호스트 기능*(host feature)은
+id 하나 뒤에는 서로 다른 비용 두 가지가 숨어 있습니다. _호스트 기능_(host feature)은
 호스트가 파이프라인을 만들기 전에 미리 켜 두어야 하는 쪽입니다. WebGL2에서는
 `gl.getExtension('EXT_color_buffer_float')`, WebGPU에서는 `requiredFeatures` 항목이 여기에
-해당합니다. *소스 지시문*(source directive)은 생성된 셰이더 코드 자체에 들어가야 하는
+해당합니다. _소스 지시문_(source directive)은 생성된 셰이더 코드 자체에 들어가야 하는
 토큰입니다. GLSL ES 3.00에서는 `#extension … : require`, WGSL에서는 `enable …;`인데,
 백엔드가 중복을 걸러내고 정렬해서 대신 적어 줍니다. GLSL에서는 `#version` 줄 바로 뒤에,
 WGSL에서는 선언부 앞에 들어갑니다.
@@ -39,14 +39,31 @@ WGSL에서는 선언부 앞에 들어갑니다.
 기능에 따라 이 둘 중 하나만 필요할 수도, 둘 다 필요할 수도, 둘 다 필요 없을 수도
 있습니다.
 
-| `enables` id | WebGL2 및 GLSL ES 3.00 | WebGPU 및 WGSL |
-| --- | --- | --- |
-| `floatRenderTarget` | 호스트 기능 `EXT_color_buffer_float` | 코어 사양, 따로 요청할 것 없음 |
-| `float32Blend` | 호스트 기능 `EXT_float_blend` | 호스트 기능 `float32-blendable` |
-| `float32Filterable` | 호스트 기능 `OES_texture_float_linear` | 호스트 기능 `float32-filterable` |
-| `multiview` | 지시문 `GL_OVR_multiview2`와 호스트 기능 `OVR_multiview2` | 미지원, fail closed로 실패 |
-| `f16` | 미지원, fail closed로 실패 | 지시문 `f16`과 호스트 기능 `shader-f16` |
-| `subgroups` | 미지원, fail closed로 실패 | 지시문 `subgroups`와 호스트 기능 `subgroups` |
+| `enables` id         | WebGL2 및 GLSL ES 3.00                                    | WebGPU 및 WGSL                                                     |
+| -------------------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
+| `floatRenderTarget`  | 호스트 기능 `EXT_color_buffer_float`                      | 코어 사양, 따로 요청할 것 없음                                     |
+| `float32Blend`       | 호스트 기능 `EXT_float_blend`                             | 호스트 기능 `float32-blendable`                                    |
+| `float32Filterable`  | 호스트 기능 `OES_texture_float_linear`                    | 호스트 기능 `float32-filterable`                                   |
+| `multiview`          | 지시문 `GL_OVR_multiview2`와 호스트 기능 `OVR_multiview2` | 미지원, fail closed로 실패                                         |
+| `f16`                | 미지원, fail closed로 실패                                | 지시문 `f16`과 호스트 기능 `shader-f16`                            |
+| `subgroups`          | 미지원, fail closed로 실패                                | 지시문 `subgroups`와 호스트 기능 `subgroups`                       |
+| `clipDistances`      | 미지원, fail closed로 실패                                | 지시문 `clip_distances`와 호스트 기능 `clip-distances`             |
+| `primitiveIndex`     | 미지원, fail closed로 실패                                | 지시문 `primitive_index`와 호스트 기능 `primitive-index`           |
+| `dualSourceBlending` | 미지원, fail closed로 실패                                | 지시문 `dual_source_blending`과 호스트 기능 `dual-source-blending` |
+| `bgra8unormStorage`  | 미지원, fail closed로 실패                                | 호스트 기능 `bgra8unorm-storage`, 파생                             |
+| `packed4x8Dot`       | 미지원, fail closed로 실패                                | 코어 사양, 파생. 언어 기능 하나를 확인해야 함                      |
+
+아래쪽 다섯 행은 아무도 직접 선언하지 않는 기능입니다. `@builtin("clip_distances")`,
+`@builtin("primitive_index")`, `@blend_src(n)`을 적으면 해당 기능이 파생됩니다. WGSL은
+이 셋을 저마다 짝이 맞는 `enable` 없이는 거부하기 때문입니다. `"bgra8unorm"` 스토리지
+텍스처와 packed 4x8 계열 함수 호출도 각각 바인딩과 호출에서 기능을 끌어냅니다. 어떤
+사용으로도 파생되지 않는 두 기능은 `"use typeshade"` 파일에서 `"use typeshade"` 옆에
+문자열 지시문으로 적습니다.
+
+```ts
+'use typeshade'
+'enable subgroups'
+```
 
 호스트 기능만 있고 소스 지시문이 없는 기능은 선언해도 생성되는 셰이더가 한 바이트도
 달라지지 않습니다. `float32Blend`와 `float32Filterable` 이름에 붙은 `32`에는 이유가
@@ -71,21 +88,43 @@ capabilityMatrix([wgslBackend, glslEs300Backend])
 
 표의 행을 그대로 믿기 전에 알아 둘 점이 두 가지 있습니다.
 
-- 지원한다는 것과 실제로 쓸 수 있다는 것은 다릅니다. `f16`, `subgroups`, `multiview`는
-  표에 적힌 타깃에서 지원되지만, 지금은 셋 중 어느 것도 셰이더에서 쓸 방법이 없습니다.
-  `f16` 스칼라 타입도, 서브그룹 내장 함수도 없고, `layout(num_views = N) in;`을 적거나
-  `gl_ViewID_OVR`을 읽을 길도 없기 때문입니다. `multiview`를 선언한 모듈은 지시문만
-  생성하고 여전히 단일 뷰로 렌더링합니다.
+- 지원한다는 것과 실제로 쓸 수 있다는 것은 다릅니다. `f16`과 `multiview`는 표에 적힌
+  타깃에서 지원되지만, 지금은 둘 다 셰이더에서 쓸 방법이 없습니다. `f16` 스칼라 타입이
+  없고, `layout(num_views = N) in;`을 적거나 `gl_ViewID_OVR`을 읽을 길도 없기 때문입니다.
+  `multiview`를 선언한 모듈은 지시문만 생성하고 여전히 단일 뷰로 렌더링합니다. 나머지는
+  쓸 수 있습니다. `clipDistances`, `primitiveIndex`, `dualSourceBlending`은 각 속성에
+  필요한 기능입니다. `subgroups`는 컴퓨트나 프래그먼트 진입점에
+  `@builtin("subgroup_invocation_id")`이나 `@builtin("subgroup_size")`를 적으면 쓰게
+  됩니다. 다만 서브그룹 내장 함수(`subgroupAdd` 등)는 아직 없는데, 이는 기능과는 별개인
+  빈자리입니다. 어떤 어댑터가 이 가운데 하나를 실제로 갖추었는지 알려면
+  `reflect().requiredFeatures`를 씁니다. 디바이스는 `requestDevice`에서 요청받은 선택
+  기능만 갖습니다. 컴파일 게이트가 바로 그렇게 코퍼스에서 목록을 뽑아 요청하며,
+  `examples/clip-planes.shade.ts`가 게이트의 Tint에서 컴파일되는 것도 그 덕분입니다. 이
+  소프트웨어 어댑터는 `clip-distances`와 `subgroups`는 제공하지만 `primitive-index`는
+  제공하지 않으므로, 그 한 행의 호스트 문자열은 여기서 확인하지 못했습니다.
 - 미지원 칸은 의도적으로 넘어갈 수 없게 막아 둔 것이라, 생성하려 하면 오류를 던집니다.
   생성 전에 미리 확인하고 싶으면 `diagnose(m, { backend })`를 쓰면 됩니다. 같은 누락
   기능을 `SD0030` 진단으로 보고하되 오류는 던지지 않습니다.
 
 ### 파생 기능과 암시적 기능
 
-세 가지 기능은 직접 선언하지 않고 모듈의 모양에서 저절로 파생됩니다. 스토리지 바인딩은
+몇몇 기능은 직접 선언하지 않고 모듈의 모양에서 저절로 파생됩니다. 스토리지 바인딩은
 `storageBuffer`를, 컴퓨트 진입점은 `compute`를, 멀티샘플 텍스처 로드는
-`msaaTextureLoad`를 암시합니다. `enables`의 타입에서 이 셋은 빠져 있으므로, 하나라도
-적으면 컴파일 오류가 납니다.
+`msaaTextureLoad`를, 스토리지 텍스처 바인딩은 `storageTexture`를, 1D 텍스처는
+`texture1d`를, 큐브 배열 텍스처는 `textureCubeArray`를, `textureGather` 호출은
+`textureGather`를 암시합니다. packed 4x8 정수 내장 함수 여덟 개 가운데 하나를 호출하면
+`packed4x8Dot`이 따라옵니다. `bgra8unormStorage`는 바인딩의 종류가 아니라 포맷에서
+파생됩니다. `bgra8unorm`은 코어 사양에 들지 않는 유일한 스토리지 포맷이라, 디바이스는
+`bgra8unorm-storage`를 요청받지 않았으면 바인드 그룹 레이아웃을 거부합니다. 이는 실측한
+결과이며, Tint는 어느 쪽이든 모듈을 컴파일하므로 이 요구 사항을 호스트에 전하는 것은 이
+기능뿐입니다. `enables`의 타입에서 파생 기능 id는 모두 빠져 있으므로, 하나라도 적으면
+컴파일 오류가 납니다.
+
+호스트가 확인해야 할 것이 기능만은 아닙니다. WGSL *언어* 기능(language feature)은
+디바이스가 아니라 브라우저의 셰이딩 언어 구현이 갖는 속성입니다. 그래서 `requestDevice`에서
+요청하는 대상이 아니며, 생성된 모듈에 이를 알리는 지시문도 없습니다.
+`reflect().requiredLanguageFeatures`는 모듈 소스가 쓰는 언어 기능을 나열하고, 지원 여부는
+`navigator.gpu.wgslLanguageFeatures`가 답합니다.
 
 한 기능이 다른 기능을 암시할 수도 있습니다. `float32Blend`는 `floatRenderTarget`을 함께
 끌어옵니다. float 타깃에 블렌딩하려면 먼저 그 타깃이 색상 어태치먼트로 렌더링 가능한

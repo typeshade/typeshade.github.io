@@ -1,7 +1,7 @@
 ---
 id: your-first-shader
-source: 03178c82393a313851e1a2963ab674d63e6c866e1466a144bb5a3c1fd0ae98d2
-sourceLine: 134
+source: 1c51aa59a1ec0b4c74a40ef1c85d5aaf84ff6265f319383bf9a888388daa3a7e
+sourceLine: 152
 ---
 
 이 페이지를 마치면 진입점이 두 개인 셰이더 모듈을 TypeScript로 작성하고, 같은 모듈을 WebGPU용

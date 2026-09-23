@@ -1,6 +1,6 @@
 ---
 id: overview
-source: 130d7f11cac5ef89dce95de2e95c7781ff12624394fe0a20c0f97fed104aeeec
+source: 0f2066454e496501eff6a02f215ab9fd6c0ecad2f0a3a5acdbbb88e56020231c
 sourceLine: 1
 ---
 
@@ -24,7 +24,17 @@ TypeShade의 공식 작성 방식은 일반적인 `.ts` 파일에서 첫 문장�
 - `reflect`는 호스트가 파이프라인을 만들 때 필요한 바인딩, std140과 std430 레이아웃, 버텍스 속성, 진입점 시그니처를 반환합니다.
 
 ```ts
-import { fn, module, abs, length, f32T, vec2fT, emitModule, compileModule, reflect } from 'typeshade'
+import {
+  fn,
+  module,
+  abs,
+  length,
+  f32T,
+  vec2fT,
+  emitModule,
+  compileModule,
+  reflect,
+} from 'typeshade'
 
 // One helper. The return type is inferred from the value the body returns.
 const ringMask = fn('ring_mask', { uv: vec2fT, radius: f32T }, (p) =>
@@ -54,7 +64,15 @@ fn ring_mask(uv: vec2<f32>, radius: f32) -> f32 {
 
 ```ts
 import { fn, module, vec4, If, Switch, when, emitModule, reflect } from 'typeshade'
-import { ioStruct, uniformStruct, structDecl, builtin, location, storageBuffer, resource } from 'typeshade'
+import {
+  ioStruct,
+  uniformStruct,
+  structDecl,
+  builtin,
+  location,
+  storageBuffer,
+  resource,
+} from 'typeshade'
 ```
 
 `typeshade/dev`에는 개발용 진단과 최적화 측정, 오류의 소스 위치가 있고, `typeshade/emit-prod`에는 배포용 이름 변경과 압축 및 난독화 도구가 있습니다. `typeshade/compute`에는 호스트의 백엔드에서 compute 커널을 실행하는 도구가 있습니다. `typeshade/debug`는 `"use typeshade"` 셰이더의 인보케이션 하나를 CPU 오라클 위에서 한 문장씩 진행합니다. 작성자가 쓴 문장마다 멈춰 소스 구간과 프레임의 지역 변수를 보고하고, 중단점을 줄 번호로 찾아 줍니다. 실행 하나를 데이터로 적어 두는 실행 구성도 함께 담는데, 인수 위치가 아니라 진입점이 선언한 이름을 키로 삼으며, `launch.json`용 JSON Schema와 값을 작성자가 쓴 셰이더 타입으로 보여 주는 포매터가 들어 있습니다. 편집기의 디버그 어댑터와 Playground의 단계 실행 패널이 모두 이것을 바탕으로 만들어졌습니다. 자세한 내용은 `docs/debugging.md`를 보십시오. 실제 셰이더는 사용하는 저장소에 두고 이 패키지를 다른 의존성과 같은 방식으로 가져옵니다.

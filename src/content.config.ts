@@ -9,7 +9,7 @@ import type { Loader } from 'astro/loaders'
 import { z } from 'astro/zod'
 import { promoteHeadings } from './lib/authoring.ts'
 import { GUIDE_FILE, guideSections } from './lib/guide.ts'
-import { guideTranslations, translationDir } from './lib/guide-translations.ts'
+import { guideTranslations, staleGuideTranslations, staleMessage, translationDir } from './lib/guide-translations.ts'
 import { apiLoader } from './lib/api-loader.ts'
 
 const SECTIONS_MIN = 10
@@ -34,8 +34,8 @@ const authoring: Loader = {
 }
 
 // A translation of the guide: the same section ids, the body from content/guide/<locale>/.
-// The reader (src/lib/guide-translations.ts) refuses a file whose recorded English hash is
-// not the pinned section's, so a stale translation stops the build. A section with no file is
+// The reader (src/lib/guide-translations.ts) leaves out a file whose recorded English hash is
+// not the pinned section's. A section with no current translation, stale or never made, is
 // shown in English on that locale, under the note that says so.
 const translated = (locale: string): Loader => ({
   name: `authoring-guide-${locale}`,
@@ -47,6 +47,7 @@ const translated = (locale: string): Loader => ({
       const data = { order: t.order, sourceLine: t.sourceLine, source: t.source }
       store.set({ id: t.id, data, body: t.body, rendered: await renderMarkdown(promoteHeadings(t.body), { fileURL }) })
     }
+    for (const t of staleGuideTranslations(locale)) logger.warn(staleMessage(t))
     const missing = guideSections.filter((s) => !entries.has(s.id)).map((s) => s.id)
     if (missing.length) logger.warn(`${locale}: ${missing.length} section(s) without a translation, shown in English: ${missing.join(', ')}`)
     logger.info(`${entries.size} sections from ${translationDir(locale)}`)

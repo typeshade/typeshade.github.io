@@ -101,9 +101,12 @@ one. Rules:
 
 The authoring guide's Korean is not in the dictionary: it is `content/guide/ko/<section>.md`,
 one file per section of the pinned AUTHORING.md, with front matter `id`, `source` (the sha256
-of the English body it was translated from) and `sourceLine`. The build refuses a file whose
-`source` is not the pinned section's hash, so moving the pin means translating the changed
-sections again and recording the new hash. `bun run check:guide` checks the rest: the fenced
+of the English body it was translated from) and `sourceLine`. A file whose `source` is not the
+pinned section's hash is stale: the build leaves it out, serves that section in English under
+the untranslated note, and names it as a warning, so a stale translation never holds the pin
+back. Moving the pin means translating the changed sections again and recording the new hash;
+the pull request `.github/workflows/pin-compiler.yml` opens lists the ones it leaves stale.
+`bun run check:guide` checks the rest: the fenced
 code blocks byte for byte, every inline code span the same number of times, the numerals, the
 link targets, the heading count, and the Korean rules above. Translate meaning first with
 `content/guide/GLOSSARY.md` as the term list, and add to the glossary any term you decide on.

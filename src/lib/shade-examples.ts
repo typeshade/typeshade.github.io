@@ -6,16 +6,17 @@
 // gallery groups these by the language feature each file is there to demonstrate, and the
 // Playground opens any of them in the editor.
 //
-// Why the registry is parsed and not imported. `examples/_shade.ts` finds its own directory
+// Why the registry is read and not imported. `examples/_shade.ts` finds its own directory
 // through `import.meta.url` and reads the files from there. Vite bundles a module the site
 // imports into a chunk under dist/, where that URL is the chunk's, so the read misses. Every
 // other build-time read here resolves from the site root instead (src/lib/api.ts,
-// src/lib/guide.ts, src/lib/playground-examples.ts all say so), and this one does the same:
-// the registration list is read out of the registry's own source with the TypeScript parser
-// the reference already uses, and each file is compiled from its bytes.
+// src/lib/guide.ts, src/lib/playground-examples.ts all say so), and this one does the same.
+// Each file registers itself: the hand-written half of its registration (title, blurb,
+// renderable, twinOf) is a JSON block in a comment after the directive, `/* @example {…} */`,
+// and the registry is every file in the directory, sorted by id. This reads the same block
+// with the same rules, and each file is compiled from its bytes.
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import ts from 'typescript'
 import { compile } from '../../vendor/shader-dsl/src/index.ts'
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts'
 import { shortBlurb } from './blurb.ts'
@@ -23,7 +24,8 @@ import { shortBlurb } from './blurb.ts'
 const EXT = '.shade.ts'
 const examplesDir = path.resolve(process.cwd(), 'vendor/shader-dsl/examples')
 const REGISTRY = 'vendor/shader-dsl/examples/_shade.ts'
-const ORDER_NAME = 'SHADE_ORDER'
+/** The block every file carries, matched the way the registry matches it: the first one wins. */
+const EXAMPLE_BLOCK = /\/\*\s*@example\s*([\s\S]*?)\*\//
 
 /** One `.shade.ts` example as a page shows it. */
 export interface ShadeExample {
@@ -39,58 +41,32 @@ export interface ShadeExample {
   readonly twinOf?: string
 }
 
-/** The text of a string property, whether it is written as one literal, as a template with
- *  nothing in it, or as literals joined with `+` across several lines. */
-function stringOf(node: ts.Expression): string | undefined {
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text
-  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-    const left = stringOf(node.left)
-    const right = stringOf(node.right)
-    return left === undefined || right === undefined ? undefined : left + right
-  }
-  return undefined
-}
-
 function readRegistry(): readonly ShadeExample[] {
-  const file = path.resolve(process.cwd(), REGISTRY)
-  const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.ESNext, true)
-  let array: ts.ArrayLiteralExpression | undefined
-  for (const statement of source.statements) {
-    if (!ts.isVariableStatement(statement)) continue
-    for (const decl of statement.declarationList.declarations) {
-      if (!ts.isIdentifier(decl.name) || decl.name.text !== ORDER_NAME || !decl.initializer) continue
-      const init = ts.isAsExpression(decl.initializer) ? decl.initializer.expression : decl.initializer
-      if (ts.isArrayLiteralExpression(init)) array = init
-    }
-  }
-  if (!array) throw new Error(`[shade] ${REGISTRY} declares no ${ORDER_NAME} array`)
-
-  return array.elements.map((element) => {
-    if (!ts.isObjectLiteralExpression(element)) throw new Error(`[shade] ${ORDER_NAME} holds something other than an object literal`)
-    const fields = new Map<string, ts.Expression>()
-    for (const property of element.properties) {
-      if (!ts.isPropertyAssignment(property) || !ts.isIdentifier(property.name)) continue
-      fields.set(property.name.text, property.initializer)
+  const ids = readdirSync(examplesDir).filter((n) => n.endsWith(EXT)).map((n) => n.slice(0, -EXT.length)).sort()
+  return ids.map((id) => {
+    const file = `${id}${EXT}`
+    const block = EXAMPLE_BLOCK.exec(readFileSync(path.join(examplesDir, file), 'utf8'))
+    if (!block) throw new Error(`[shade] ${file} carries no @example block, so ${REGISTRY} does not register it`)
+    let spec: Record<string, unknown>
+    try {
+      spec = JSON.parse(block[1] ?? '') as Record<string, unknown>
+    } catch (error) {
+      throw new Error(`[shade] ${file}'s @example block is not JSON: ${error instanceof Error ? error.message : String(error)}`)
     }
     const text = (key: string): string => {
-      const node = fields.get(key)
-      const value = node ? stringOf(node) : undefined
-      if (value === undefined) throw new Error(`[shade] an entry of ${ORDER_NAME} has no string '${key}'`)
+      const value = spec[key]
+      if (typeof value !== 'string' || value === '') throw new Error(`[shade] ${file}'s @example block has no string '${key}'`)
       return value
     }
-    const renderable = fields.get('renderable')
-    if (!renderable || (renderable.kind !== ts.SyntaxKind.TrueKeyword && renderable.kind !== ts.SyntaxKind.FalseKeyword)) {
-      throw new Error(`[shade] '${text('id')}' has no boolean 'renderable'`)
-    }
-    const twin = fields.get('twinOf')
-    const id = text('id')
+    if (typeof spec.renderable !== 'boolean') throw new Error(`[shade] ${file}'s @example block has no boolean 'renderable'`)
+    if (spec.twinOf !== undefined && typeof spec.twinOf !== 'string') throw new Error(`[shade] ${file}'s 'twinOf' is not a string`)
     return {
       id,
       title: text('title'),
       blurb: text('blurb'),
-      file: `${id}${EXT}`,
-      renderable: renderable.kind === ts.SyntaxKind.TrueKeyword,
-      ...(twin ? { twinOf: stringOf(twin) } : {}),
+      file,
+      renderable: spec.renderable,
+      ...(spec.twinOf ? { twinOf: spec.twinOf } : {}),
     }
   })
 }
@@ -99,19 +75,6 @@ export const shadeExampleList: readonly ShadeExample[] = readRegistry()
 
 /** Every id, in the registry's own order. */
 export const shadeExampleIds: readonly string[] = shadeExampleList.map((e) => e.id)
-
-// The registry against the directory, in both directions, the way the compiler's own drift
-// test does it: a file nobody registered, or a registration with no file, stops the build.
-{
-  const onDisk = readdirSync(examplesDir).filter((n) => n.endsWith(EXT)).map((n) => n.slice(0, -EXT.length))
-  const missing = shadeExampleIds.filter((id) => !onDisk.includes(id))
-  const unlisted = onDisk.filter((id) => !shadeExampleIds.includes(id))
-  const parts = [
-    missing.length > 0 ? `registered with no file: ${missing.join(', ')}` : '',
-    unlisted.length > 0 ? `in the directory with no registration: ${unlisted.join(', ')}` : '',
-  ].filter(Boolean)
-  if (parts.length > 0) throw new Error(`[shade] ${REGISTRY} and ${examplesDir} disagree (${parts.join('; ')})`)
-}
 
 /** What the copy counts: the corpus, and how much of it has a second target. */
 export const shadeCounts = {
@@ -140,12 +103,16 @@ export function shadeModule(id: string): ModuleDecl {
  *  inheritance or for a texture wants them apart. Each group's heading is copy and lives in
  *  the dictionaries under `examples.shade.groups`. */
 export const SHADE_GROUPS = [
-  { key: 'stages', ids: ['hello', 'hello-vsout', 'hello-vsin', 'bare-position', 'twin-structs'] },
+  {
+    key: 'stages',
+    ids: ['hello', 'hello-vsout', 'hello-vsin', 'bare-position', 'twin-structs', 'id-pick', 'clip-planes'],
+  },
   {
     key: 'resources',
     ids: [
       'hello-uniform', 'hello-uniform-struct', 'hello-camera', 'textured-quad', 'array-length',
       'storage-texture', 'shadow-compare', 'cube-env', 'cube-array-gather', 'msaa-resolve',
+      'uniform-array', 'sample-branch',
     ],
   },
   {
@@ -153,7 +120,7 @@ export const SHADE_GROUPS = [
     ids: [
       'module-const', 'palette-const', 'array-literal-ramp', 'convert-grid', 'normal-matrix',
       'fp64-lane-stripes', 'bitfield-bands', 'block-scope', 'pick-composite', 'cutout',
-      'default-args', 'bit-bump', 'bool-select',
+      'default-args', 'bit-bump', 'bool-select', 'integer-math', 'packing-bitcast', 'packed-bytes',
     ],
   },
   {
@@ -165,13 +132,20 @@ export const SHADE_GROUPS = [
   },
   {
     key: 'compute',
-    ids: ['private-state', 'workgroup-scratch', 'workgroup-reduce', 'atomic-histogram', 'compute-reduction-twin'],
+    ids: [
+      'private-state', 'workgroup-scratch', 'workgroup-reduce', 'atomic-histogram', 'compute-sync',
+      'compute-reduction-twin',
+    ],
   },
   {
     key: 'twins',
     ids: [
       'hillshade-twin', 'plasma-twin', 'julia-twin', 'mandelbrot-twin', 'domain-warp-twin',
       'tunnel-twin', 'ocean-twin', 'starfield-twin', 'kaleidoscope-twin', 'gradient-twin',
+      'voronoi-twin', 'fp64-deep-zoom-twin', 'fp64-checker-plane-twin', 'fp64-loran-twin',
+      'fp64-rtc-twin', 'fp64-julia-twin', 'fp64-burning-ship-twin', 'fp64-newton-twin',
+      'fp64-mandelbrot-de-twin', 'fp64-clock-twin', 'fp64-cancellation-twin',
+      'fp64-sine-sweep-twin',
     ],
   },
 ] as const
