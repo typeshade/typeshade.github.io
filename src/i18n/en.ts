@@ -1312,9 +1312,9 @@ export const en = {
         'What follows: recursion is rejected, and a helper is an ordinary function the compiler can follow to its leaves. [Functions](languageFunctions) states what a call may be.',
       loopsH: 'Loops',
       loopsP:
-        'The invocations of a stage move through a loop together, and the ones that leave early wait for the rest. A bound the compiler can read is what keeps that wait knowable, and it is also what lets a backend unroll the body when the target asks for it.',
+        'The invocations of a stage move through a loop together, and the ones that leave early wait for the rest. A counted loop compares its counter to a bound the body does not write and steps toward it, which is what the compiler checks; the bound itself may be a value the program learns at run time.',
       loopsRule:
-        'What follows: a loop counts over a value the compiler already holds. [Control flow](languageControlFlow) states which conditions and loops compile.',
+        'What follows: a `for` counts toward a bound its body does not move, and a `while` ends where its condition or a `break` says. [Control flow](languageControlFlow) states which conditions and loops compile.',
       typesH: 'Value types',
       typesP:
         'A GPU register has a width and a layout, fixed when the shader is compiled. A variable therefore holds one value type from its declaration to the end of its scope, with no union of two value types and nothing at run time that could choose between them.',

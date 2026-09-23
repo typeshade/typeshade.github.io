@@ -626,10 +626,7 @@ const EXPLAINERS: readonly {
   },
 ];
 
-/** The fingerprint each rule's explaining pages were last read against. Rules 7.5, 7.9, 8.7
- *  and 8.17 are left out on purpose: at eb0dde6 the pages that explain them still describe
- *  the rules before that commit (a constant loop bound, the TS8006 and TS8026 programs, a
- *  closure refused), so the build asks for them until those pages are brought in line. */
+/** The fingerprint each rule's explaining pages were last read against, at eb0dde6. */
 const READ_AGAINST: Readonly<Record<string, string>> = {
   '2.2': 'ft22a-MSTFWryqEI0XdmYtccGGb1bj7gOvH0dGZq4P4=',
   '2.3': 'r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=',
@@ -656,12 +653,15 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '7.2': 'MsiWPYwPERClCwZiHmFO92g026d2ISFia9yHUB6UlPs=',
   '7.3': 'pH-_jeLIvcUhp6gjCddmM-5iY5thzCos9ghwnhEPTn4=',
   '7.4': 'Uv0vLGCbLp5zz7Re_EgMql76iLGf_NAzyMWkXNxIdZA=',
+  '7.5': 'nqBwI0SYq4CP-U2QthdxHSUD-wRJ6XOJkdVx1YoTOzQ=',
   '7.7': 'kON3mL43W1KVB2ZQljAWM1zYeptophGfCHpHRmE6Big=',
+  '7.9': 'UpGm8F5JgS5WQlBC5kAnWimxBVHC7js1iLkcnKDlIMk=',
   '8.1': 'H1wCXs_NQPF7wMxgl8OGv3K-wybB6bXXiXjf4QV5xhs=',
   '8.3': '8-VNyGyWMJ4PWRrTYIljKv0l0ZT1SwzPno1x1EM6jvY=',
   '8.4': 'b77wiRGwK90RYWjEtfAedxCUcx_TL2CqithFmAw78sE=',
   '8.5': '1h5vBQRdqRKKvtKVMBrWBx00AMFvHHiuPtJNOIeGJG8=',
   '8.6': 'BO3vqhgBS_YWTjq77un7y50EwHpwwqXpatg4GRGnjII=',
+  '8.7': 'FYpP5pg4_Ct5BfBIVI4VaTEc8VskMuT5JgT4arrvVCg=',
   '8.8': 'fGl2usKOuxv4fYuYXZZag__a0zKw7gZ_BnWvDycDCGE=',
   '8.9': 'JX5wNrSwFwlLyj18Vxw80gubuysb93viBaa9xXT2wOQ=',
   '8.10': '5whorQr8zFXxn9m3x5g2Mp91eZsw6HnoF5QsLFB6Eo8=',
@@ -671,6 +671,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '8.14': 'SP-Fa9DtpBru_e2Zuh3x8ZUFrqweaTrNrJs-c8RHbE0=',
   '8.15': '0FrSw2QS2IA5gidXWeBTDqS3K7OeMxTUm2tRcR7ZSo0=',
   '8.16': '4o-oQhesBW9n9XwG1L78TuLDzJ4ugP2K2qE8LS2K06E=',
+  '8.17': 'bmgiPFsEG2Yblp2DIpYIO5VBhGkKFOOZm3PGAYCW__U=',
   '8.18': '2LSNG1tUQoIRQeepkXuuojw-R1qsrEjxra8UMHO2TZM=',
   '8.19': 'OCq7PSGDLXGtZqQU9cpA9hOGOR3muiAUQTxDGlF-AEk=',
   '9.2': '339eZZfy9yGzKCPdS_SPXUoXdLtmmkSkQee-1Jumx1w=',
