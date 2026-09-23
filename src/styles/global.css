@@ -858,19 +858,19 @@ body > main { flex: 1 }
    it (src/lib/remark-doc-tables.mjs); example-table, the layout table and the API reference's
    own targets table keep their own, purpose-built mobile layout instead. */
 @media (max-width: 44.999rem) {
-  .doc table:not(.layout-table):not(.api-targets) {
+  .doc table:not(.layout-table):not([data-own-stack]) {
     display: block; overflow-x: visible;
   }
-  .doc table:not(.layout-table):not(.api-targets) tbody { display: block }
-  .doc table:not(.layout-table):not(.api-targets) thead { display: none }
-  .doc table:not(.layout-table):not(.api-targets) tr {
+  .doc table:not(.layout-table):not([data-own-stack]) tbody { display: block }
+  .doc table:not(.layout-table):not([data-own-stack]) thead { display: none }
+  .doc table:not(.layout-table):not([data-own-stack]) tr {
     display: block; padding-block: 12px; border-block-end: 1px solid var(--color-line-1);
   }
-  .doc table:not(.layout-table):not(.api-targets) th,
-  .doc table:not(.layout-table):not(.api-targets) td {
+  .doc table:not(.layout-table):not([data-own-stack]) th,
+  .doc table:not(.layout-table):not([data-own-stack]) td {
     display: block; padding: 3px 0; border: 0; white-space: normal; background: none;
   }
-  .doc table:not(.layout-table):not(.api-targets) td[data-label]::before {
+  .doc table:not(.layout-table):not([data-own-stack]) td[data-label]::before {
     content: attr(data-label); display: block; font-size: var(--text-ui); color: var(--color-text-3);
   }
 }
@@ -1067,23 +1067,8 @@ body > main { flex: 1 }
 .api-type { color: var(--color-text-3) }
 .api-type a { color: inherit; text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
 .api-type a:hover { color: var(--color-accent); text-decoration-color: currentColor }
-/* The import line under the summary, quiet: it is one line of code a reader copies by eye. */
-.api-import { margin-block-start: 10px; font-size: var(--text-ui); color: var(--color-text-2) }
 .api-optional { font-size: 0.75rem; line-height: 1.6667; padding: 0 7px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-2) }
 .doc h1 .api-optional { margin-inline-start: 10px; vertical-align: middle }
-.api-targets th[scope='row'] { font-weight: 600; color: var(--color-text-1); white-space: nowrap; background: none }
-/* On a phone the target name wraps instead of taking half the row: the notes need the width
-   more than "GLSL ES 3.00 (WebGL2)" needs one line. */
-@media (max-width: 30rem) {
-  .api-targets th[scope='row'] { white-space: normal }
-  .api-targets thead th:first-child { width: 30% }
-  .api-targets thead th:nth-child(2) { width: 27% }
-}
-.api-support { display: inline-block; padding: 0 7px; border-radius: var(--radius-sm); font-size: 0.75rem; line-height: 1.6667; border: 1px solid var(--color-line-2); background: var(--color-surface-1); color: var(--color-text-2); white-space: nowrap }
-.api-targets td p { margin-block-start: 0 }
-.api-support-native { color: var(--color-accent); border-color: var(--color-primary-border); background: var(--color-primary-bg) }
-.api-support-emulated, .api-support-stub { color: var(--color-text-2) }
-.api-support-none { color: var(--color-diag); border-color: var(--color-diag); background: none }
 .api-see-also li { break-inside: avoid }
 /* Two columns only where an identifier still fits one: a phone gets one column. */
 @media (min-width: 40rem) { .api-see-also { columns: 2; column-gap: 24px } }
@@ -1093,7 +1078,6 @@ body > main { flex: 1 }
 .api-index dt a { color: var(--color-accent); text-decoration: none; font-weight: 600 }
 .api-index dt a:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px }
 .api-index dd { padding-inline-start: 0 }
-.api-preview { margin-block-start: 12px; padding: 8px 12px; border: 1px solid var(--color-diag); border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-diag) }
 
 /* The construct card (src/components/ConstructCard.astro): one TypeScript construct per card
    on /guide/language/from-typescript/. An Ant Card, and the card is what separates one

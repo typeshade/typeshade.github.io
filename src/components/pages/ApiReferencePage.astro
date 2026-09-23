@@ -117,6 +117,14 @@ const guideLabel = (link: { label: string; href: string }): string => {
 }
 const supportLabel = (s: string) => a.support[s as keyof typeof a.support] ?? s
 const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames] ?? s
+// A target's support state as an Ant tag: the primary's wash where the target has the name,
+// the red border where it does not, and the neutral tag for the rest.
+const tag = 'inline-block rounded-sm border px-[7px] text-label whitespace-nowrap'
+const supportTag: Record<string, string> = {
+  native: `${tag} border-(--color-primary-border) bg-(--color-primary-bg) text-accent`,
+  none: `${tag} border-diag bg-transparent text-diag`,
+}
+const supportClass = (s: string) => supportTag[s] ?? `${tag} border-line-2 bg-surface-1 text-text-2`
 ---
 
 <Docs
@@ -139,7 +147,7 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
   ]}
   dateModified={facts.pinnedDate}
 >
-  {entry.preview && <p class="api-preview" lang={locale}>{a.previewNote}</p>}
+  {entry.preview && <p class="rounded border border-diag px-3 py-2 text-(length:--text-ui) text-diag" lang={locale}>{a.previewNote}</p>}
   <nav class="api-crumbs" aria-label={a.breadcrumbs} lang={locale}>
     <a href={localePath(locale, '/api/')}>{a.reference}</a>
     <span aria-hidden="true">›</span>
@@ -148,7 +156,7 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
   <h1><code>{heading}</code>{entry.deprecated && <span class="api-optional" lang={locale}>{a.deprecated}</span>}</h1>
   <p class="api-kind" lang={locale} data-pagefind-meta={`${a.kindMeta}:${a.kinds[entry.kind]}`}>{a.kindLine(a.kinds[entry.kind], category.name)}</p>
   <p class="api-summary">{entry.summary}</p>
-  <p class="api-import"><code>{importLine}</code></p>
+  <p class="text-(length:--text-ui) text-text-2"><code>{importLine}</code></p>
   <p class="guide-note" lang={locale}><Rich text={a.note} locale={locale} /></p>
 
   {sections.some((s) => s.id === 'syntax') && (
@@ -219,13 +227,13 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
   {entry.targets.length > 0 && (
     <section>
       <h2 id="targets" lang={locale}>{a.targets}</h2>
-      <table class="api-targets">
+      <table class="api-targets" data-own-stack>
         <thead lang={locale}><tr><th>{a.target}</th><th>{a.supportHeading}</th><th>{a.notes}</th></tr></thead>
         <tbody>
           {entry.targets.map((s, i) => (
             <tr>
               <th scope="row">{targetLabel(s.target)}</th>
-              <td><span class={`api-support api-support-${s.support}`} lang={locale}>{supportLabel(s.support)}</span></td>
+              <td><span class={supportClass(s.support)} lang={locale}>{supportLabel(s.support)}</span></td>
               <td>{html.targets[i] ? <Fragment set:html={html.targets[i]} /> : ''}</td>
             </tr>
           ))}
@@ -295,3 +303,17 @@ const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames
     <p><a href={sourceHref}><code>{entry.source.file}</code>, {a.line(entry.source.line)}</a>, {a.atCommit(facts.pinnedCommit)}</p>
   </section>
 </Docs>
+
+<style>
+  /* The targets table: the row's own header is the target's name, set like the head over it,
+     and these outrank the document's `.doc th` and `.doc p`. */
+  .api-targets th[scope='row'] { font-weight: 600; color: var(--color-text-1); white-space: nowrap; background: none }
+  .api-targets td :global(p) { margin-block-start: 0 }
+  /* On a phone the target name wraps instead of taking half the row: the notes need the width
+     more than "GLSL ES 3.00 (WebGL2)" needs one line. */
+  @media (max-width: 30rem) {
+    .api-targets th[scope='row'] { white-space: normal }
+    .api-targets thead th:first-child { width: 30% }
+    .api-targets thead th:nth-child(2) { width: 27% }
+  }
+</style>
