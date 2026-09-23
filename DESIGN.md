@@ -459,7 +459,7 @@ why lives on its own page.
     compiles, so their page carries the Playground itself, seeded with that file and with the
     picker gone, since the page already names the example. One line under the tool says the
     editor holds the example's own file and that an edit recompiles it in the reader's
-    browser. The 37 `fn()` examples are TypeScript against the compiler's builder API, which
+    browser. The 36 `fn()` examples are TypeScript against the compiler's builder API, which
     that editor does not take, so their page keeps the card, laid out the way ShaderToy lays
     one out: one card split down the middle, the shader running over its build-time still on
     the left and its text on the right, and nothing else in either pane. The card is the
@@ -476,10 +476,9 @@ why lives on its own page.
     narrow column, and it carries there the 32px fade on its trailing edge that the panels
     carry at their foot. The file is the tab that gives way when the four ask for more than
     the head has, down to 16 characters, since the file name is the one tab text the site
-    does not choose. Which backend drew the
-    frame, or why nothing did, where the emitted text comes from, and that the example is
-    written against `fn()` are written under the card, because a label inside a pane makes
-    that pane read as a figure. The card is its own container, so the panes go side by side
+    does not choose. Which backend drew the frame, or why nothing did, where the emitted text
+    comes from, and that the example is written against `fn()` are written under the card,
+    because a label inside a pane makes that pane read as a figure. The card is its own container, so the panes go side by side
     once the card is wide enough and stack with the picture first when it is not. Under it
     the page closes with the file on GitHub and previous and next inside its own group. An
     example the page cannot draw says in one sentence why, from the reason
