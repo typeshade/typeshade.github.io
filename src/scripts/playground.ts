@@ -163,6 +163,21 @@ type Target = 'wgsl' | 'glslVertex' | 'glslFragment';
  *  emitted files, or the reflection. */
 type View = 'result' | Target | 'reflection';
 
+/** What scripts/check-playground.mjs reads off the tool's element. */
+interface PlaygroundHandle {
+  /** Hold the shader clock at `seconds` on both engines, or let it run with null. */
+  freeze(seconds: number | null): void;
+  /** The rasteriser's RGBA at each pixel of a `width` by `height` grid, one 1-pixel tile each,
+   *  or null where the triangle does not cover it; a sentence when it cannot run at all. */
+  cpuPixels(points: readonly (readonly [number, number])[], width: number, height: number): (number[] | null)[] | string;
+}
+
+declare global {
+  interface HTMLElement {
+    __playground?: PlaygroundHandle;
+  }
+}
+
 /** Whether a view is one of the three the text panel holds. */
 const isTarget = (view: View): view is Target => view === 'wgsl' || view === 'glslVertex' || view === 'glslFragment';
 
@@ -846,7 +861,29 @@ function mount(root: HTMLElement): void {
     const resourceGroup = el('div', 'group');
     resourceGroup.append(el('p', 'group-title', copy.resources));
     if (resources.length === 0) resourceGroup.append(el('p', 'empty', copy.noResources));
-    else for (const r of resources) resourceGroup.append(ioRow(r.label, r.text));
+    else {
+      for (const r of resources) {
+        const row = ioRow(r.label, r.text);
+        // A binding is supplied in the panel under the canvas, so its row here goes there.
+        const name = r.text.split(':')[0]!.trim();
+        if (r.label !== 'override' && name !== '_fp64') {
+          const go = document.createElement('button');
+          go.type = 'button';
+          go.className = 'to-binding';
+          go.textContent = copy.bindings.title;
+          go.addEventListener('click', () => {
+            selectView('result');
+            const target = root.querySelector(`[data-bindings] [data-binding-name="${CSS.escape(name)}"]`);
+            if (target instanceof HTMLElement) {
+              target.scrollIntoView({ block: 'nearest' });
+              target.focus({ preventScroll: true });
+            }
+          });
+          row.append(go);
+        }
+        resourceGroup.append(row);
+      }
+    }
     reflectionPane.append(resourceGroup);
 
     const features: readonly string[] = reflection?.requiredFeatures ?? [];
@@ -889,7 +926,7 @@ function mount(root: HTMLElement): void {
         // The IR is compiled to the oracle here the way the raster worker compiles it, and the
         // entry is called directly; the old `compiled.eval` did the same work per call.
         const oracle = compileModule(compiled.module, { gpuStubs: true });
-        for (const [name, value] of Object.entries(bindings.cpuBindings(0, 1, 1, pointer))) oracle.setBinding(name, value as never);
+        for (const [name, value] of Object.entries(bindings.cpuBindings(frozen ?? 0, 1, 1, pointer))) oracle.setBinding(name, value as never);
         const run = (oracle.fns as CpuFunctions)[entry.name];
         if (!run) throw new Error(entry.name);
         const value = run(...(entryArguments(entry, compiled.module.structs, (i) => args[i]) as never[]));
@@ -1047,6 +1084,11 @@ function mount(root: HTMLElement): void {
   /** The pointer over the canvas, 0 to 1 from the bottom left, which is the space the
    *  prelude's `uv` is in. A canvas nobody has touched holds the middle. */
   let pointer: readonly [number, number] = [0.5, 0.5];
+  /** The shader clock when it is held: under `prefers-reduced-motion`, at the three seconds a
+   *  live example holds it at, or wherever a check pins it to compare two engines on one
+   *  frame. Null lets it run. The rasteriser draws at this time, or at 0 when it runs. */
+  let frozen: number | null =
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 3 : null;
   let mounted: MountedShader | undefined;
   /** The engine and the program the mount is running, so a compile that changes neither does
    *  not rebuild the pipeline. */
@@ -1238,7 +1280,7 @@ function mount(root: HTMLElement): void {
       // under `prefers-reduced-motion` the way a live example does and redraws on a change.
       interactive: true,
       ...(picked === 'webgpu' || picked === 'webgl2' ? { backend: picked } : {}),
-      uniformValues: (name, seconds) => bindings.renderValue(name, seconds, target.width, target.height, pointer),
+      uniformValues: (name, seconds) => bindings.renderValue(name, frozen ?? seconds, target.width, target.height, pointer),
     });
     if (mine !== resultRun) {
       next.stop();
@@ -1407,16 +1449,61 @@ function mount(root: HTMLElement): void {
   /** Run whatever the Result tab should show for the module that compiled last, then mark
    *  the frame with the document version it shows. A check that selects an example waits for
    *  that mark to reach the editor's version, so it never photographs the example before. */
+  let lastResult = 0;
   const runResult = async (): Promise<void> => {
     const at = analysedVersion;
+    // A picked example is painted twice, once for the pick and once when the debounced edit
+    // lands, and the first run gives way to the second. Only the latest may mark the frame.
+    const mine = ++lastResult;
+    if (frame instanceof HTMLElement) delete frame.dataset.settled;
     if (isComputeModule()) await runCompute();
     else if (engineIsCpu()) {
       resultRun += 1;
       stopMount();
       if (moduleDrawable && canvasFits) drawOnCpu();
     } else await runOnGpu();
-    if (frame instanceof HTMLElement && at === analysedVersion) frame.dataset.settled = String(at);
+    if (frame instanceof HTMLElement && at === analysedVersion && mine === lastResult) frame.dataset.settled = String(at);
   };
+
+  // The handle scripts/check-playground.mjs reads. It pins the clock, and asks the rasteriser
+  // for single pixels at the GPU canvas's own size, so the two engines are compared on the
+  // same pixels of the same frame.
+  const handle: PlaygroundHandle = {
+    freeze: (seconds) => {
+      frozen = seconds;
+      mounted?.redraw();
+    },
+    cpuPixels: (points, width, height) => {
+      if (!compiled) return 'no module';
+      const vertex = entries.find((entry) => entry.stage === 'vertex');
+      const fragment = entries.find((entry) => entry.stage === 'fragment');
+      if (!vertex || !fragment) return 'no vertex and fragment pair';
+      const attributes = bindings.cpuAttributes();
+      const plan: RasterPlan = {
+        width,
+        height,
+        vertex,
+        fragment,
+        structs: compiled.module.structs.map((struct) => ({ name: struct.name, fields: struct.fields.map((f) => ({ name: f.name })) })),
+        bindings: bindings.cpuBindings(frozen ?? 0, width, height, pointer),
+        ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
+      };
+      try {
+        const oracle = compileModule(compiled.module, { gpuStubs: true });
+        for (const [name, value] of Object.entries(plan.bindings ?? {})) oracle.setBinding(name, value as never);
+        const cpu = oracle.fns as CpuFunctions;
+        const corners = cornersOf(cpu, plan);
+        if (!corners) return 'no triangle';
+        return points.map(([x, y]) => {
+          const tile = drawTile(cpu, plan, corners, x, y, x + 1, y + 1);
+          return tile.covered > 0 ? Array.from(tile.pixels) : null;
+        });
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    },
+  };
+  root.__playground = handle;
 
   /** Show the canvas the picked engine draws on, and draw on it. Nothing is compiled here: the
    *  program is the one the last compile emitted. */
@@ -1467,7 +1554,7 @@ function mount(root: HTMLElement): void {
       vertex,
       fragment,
       structs: compiled.module.structs.map((struct) => ({ name: struct.name, fields: struct.fields.map((f) => ({ name: f.name })) })),
-      bindings: bindings.cpuBindings(0, canvas.width, canvas.height, pointer),
+      bindings: bindings.cpuBindings(frozen ?? 0, canvas.width, canvas.height, pointer),
       ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
     };
   };
@@ -1962,6 +2049,9 @@ function mount(root: HTMLElement): void {
     if (examplePicker instanceof HTMLSelectElement) examplePicker.value = example.id;
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
     editor.setValue(example.source);
+    // The edit handler queued a render for the new text; this one is immediate, so that one
+    // is dropped and the example is painted once.
+    window.clearTimeout(timer);
     writeHash('example', example.id, currentChoice());
     render();
   };

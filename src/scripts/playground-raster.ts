@@ -159,7 +159,6 @@ export function drawTile(
       const w1 = ((c[0] - x) * (a[1] - y) - (a[0] - x) * (c[1] - y)) / corners.area;
       const w2 = 1 - w0 - w1;
       if (w0 < 0 || w1 < 0 || w2 < 0) continue;
-      covered += 1;
       const values = fragmentFlat.map((field) => {
         if (field.builtin === 'position') return [x, y, 0, 1];
         const from = vertexOuts.find((candidate) => candidate.name === field.name);
@@ -180,6 +179,8 @@ export function drawTile(
       // Reading `_ret` off the vector is how a covered canvas came back fully transparent.
       const colour = (Array.isArray(returned) ? returned : colourField ? (returned as Record<string, unknown>)[colourField] : returned) as number[];
       if (!Array.isArray(colour)) continue;
+      // Counted once its colour is written, so the note never claims a pixel it dropped.
+      covered += 1;
       const offset = ((py - y0) * tileWidth + (px - x0)) * 4;
       for (let channel = 0; channel < 3; channel += 1) {
         const value = colour[channel];

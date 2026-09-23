@@ -1,5 +1,5 @@
-// Dependency-free WebGPU / WebGL2 runner for one emitted example: a single
-// fullscreen-triangle pass.
+// Dependency-free WebGPU / WebGL2 runner for one emitted example: a single pass of three
+// vertices, from `vertex_index` or from a vertex buffer the host hands it.
 //
 // This file imports nothing from the compiler. The WGSL, the GLSL ES 3.00 stages, the
 // std140 field offsets and the entry-point names are emitted at build time by
@@ -68,10 +68,9 @@ export interface ShaderLayout {
   /** WGSL entry points. GLSL ES 3.00 always emits `main`. */
   readonly vertexEntry: string
   readonly fragmentEntry: string
-  /** Texture bindings the module declares. Today this is only the compiler's auto-injected
-   *  `_fp64` fast-math guard, which wants a 1×1 opaque-white texel; `hero-shader.ts` throws
-   *  at build time on any other texture, so a data-texture example can never reach here and
-   *  get a white square instead of its data. */
+  /** The compiler's auto-injected `_fp64` fast-math guard, which wants a 1×1 opaque-white
+   *  texel. `hero-shader.ts` throws at build time on any other texture, so a figure never
+   *  reaches here with one; a texture with data of its own arrives in `resources`. */
   readonly textures: readonly { readonly name: string; readonly binding: number }[]
   /** Every other resource the module binds, with the data to fill it: the textures and
    *  samplers the Playground's bindings panel supplies. A build-time payload has none, so a
@@ -305,7 +304,8 @@ let devicePromise: Promise<GPUDevice | null> | null = null
 export function sharedDevice(): Promise<GPUDevice | null> {
   if (devicePromise) return devicePromise
   const pending = (async (): Promise<GPUDevice | null> => {
-    if (typeof navigator === 'undefined' || !('gpu' in navigator)) return null
+    // `in` alone is not enough: a browser can carry the property and hold nothing in it.
+    if (typeof navigator === 'undefined' || !('gpu' in navigator) || !navigator.gpu) return null
     const adapter = await navigator.gpu.requestAdapter()
     if (!adapter) return null
     const device = await adapter.requestDevice()

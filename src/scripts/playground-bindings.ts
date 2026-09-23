@@ -828,6 +828,8 @@ export class BindingsModel {
 
     const head = (binding: Binding, kind: string): HTMLElement => {
       const row = el('div', 'binding');
+      row.dataset.bindingName = binding.name;
+      row.tabIndex = -1;
       const name = el('div', 'binding-head');
       name.append(el('span', 'binding-slot', `@group(${binding.group}) @binding(${binding.binding})`));
       name.append(el('code', 'binding-name', binding.name));

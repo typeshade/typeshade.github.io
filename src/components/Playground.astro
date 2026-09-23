@@ -426,7 +426,7 @@ const runtimeCopy = {
   .bindings :global(.binding-label) { color: var(--color-text-3); font: 400 .6875rem/1.4 var(--font-sans); }
   .bindings :global(.binding-runtime), .bindings :global(.binding-note) { margin: 0; color: var(--color-text-2); font: 400 .6875rem/1.45 var(--font-sans); }
   .bindings :global(input[type='range']) { flex: 1 1 5rem; min-width: 4rem; accent-color: var(--color-accent); }
-  .bindings :global(input[type='number']) { width: 6.5ch; min-width: 0; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 2px 4px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.4 var(--font-mono); }
+  .bindings :global(input[type='number']) { width: 9ch; min-width: 0; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 2px 4px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.4 var(--font-mono); }
   .bindings :global(input[type='color']) { width: 32px; height: 22px; padding: 0 2px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-ground); }
   .bindings :global(input[type='file']) { max-width: 100%; font: 400 .6875rem/1.4 var(--font-sans); color: var(--color-text-2); }
   .bindings :global(select) { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 2px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.3 var(--font-mono); }
@@ -450,6 +450,8 @@ const runtimeCopy = {
   .reflection :global(.arg-row .io-value) { display: flex; flex-wrap: wrap; gap: 8px; }
   .reflection :global(.arg-name) { align-self: center; color: var(--color-text-3); }
   .reflection :global(.empty) { color: var(--color-text-3); }
+  .reflection :global(.to-binding) { flex: none; margin-inline-start: auto; border: 0; padding: 0 2px; background: none; color: var(--color-accent); font: 400 .6875rem/1.6 var(--font-sans); cursor: pointer; }
+  .reflection :global(.to-binding:hover) { text-decoration: underline; }
   .reflection :global(.failed) { color: var(--color-diag); }
   @container (min-width: 48rem) {
     .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }

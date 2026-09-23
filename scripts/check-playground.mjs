@@ -56,6 +56,16 @@
 //      frame, which is the claim nothing tested before
 //  35. the tool on an example's own page: no picker, the editor seeded with that example's
 //      file, and a keystroke there reaching the emitted text and the frame as well
+//  36. the backend picker: WebGL2 and WebGPU by name each draw the same program, a switch
+//      mounts again without compiling or touching the editor, and the pick joins the link
+//  37. a browser with no WebGPU, asked for WebGPU by the link, draws nothing and says so in
+//      the page's own words instead of falling back to WebGL2
+//  38. the bindings panel reaches the frame: a matrix preset turns a flat uniform-struct
+//      example into a picture, and the CPU oracle draws a uniform struct it used to stop on
+//  39. a texture and a sampler bind, and changing the texture's source changes the frame
+//  40. an override moved in the panel is pinned in the GLSL and changes the frame
+//  41. a compute entry is dispatched on WebGPU and on the oracle, plotted, and what it wrote
+//      is shown under its buffer; and a value the reader set survives an edit
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -87,16 +97,29 @@ const CDN = 'cdn.jsdelivr.net'
 const ROUTES = ['/playground/', '/ko/playground/']
 
 // How many of the examples in the picker the Result tab has to paint, and how many of them a
-// backend has to run at all. Measured, never typed: on 2026-09-23, at the commit that added
-// this, 34 of the 51 put more than one colour on the canvas and 36 of them got a backend,
-// against 10 that drew before the tab ran on the GPU. The rest are refused by name, and the
-// list under the count says which and why.
+// backend has to run at all. Measured, never typed. The first floors, on 2026-09-23 when the
+// tab moved to the GPU, were 34 painted and 36 run, against 10 that drew before. The bindings
+// panel raised them: at the commit that added it, 46 of the 51 put more than one colour on a
+// canvas a backend drew and 48 got a backend. The five that do not are listed under the count
+// with the reason the page gives for each.
 //
 // These are floors and the build defends them. A change that lowers one is a change that
 // stopped an example drawing: find out which, from the list this prints, and fix that. Do
 // not lower the number to get a green build, and do not skip an example to reach it.
-const PAINTED_FLOOR = 34
-const RAN_FLOOR = 36
+const PAINTED_FLOOR = 46
+const RAN_FLOOR = 48
+
+// Of the examples the GPU paints, how many the CPU backend paints too, and how many draw the
+// same pixels on both engines. The CPU is f64 JavaScript and the GPU f32, and the two
+// backends' own `sin` differ in their last bits, so a pixel agrees when every channel is
+// within AGREE_UNITS of eight-bit value of the GPU's, at the same pixel of the same frame or
+// one beside it. Measured, like the floors above: at the commit that added them, 37 of the 41
+// agreed, and 41 painted on the CPU. The ones that differ are listed by name: a texture the
+// oracle cannot sample, and the three passes whose noise is a hash of `sin`, which no two
+// implementations of `sin` agree on past a few digits.
+const AGREE_UNITS = 6
+const CPU_PAINTED_FLOOR = 41
+const AGREE_FLOOR = 37
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000)
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1'
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
@@ -153,7 +176,18 @@ async function wgslPane(page) {
  *  note is not evidence: a note reading "36864 px in 249 ms" over a fully transparent canvas
  *  is how five of these examples read before this. */
 async function sampleCanvas(page) {
-  const shot = await page.locator('[data-gpu-canvas]').screenshot()
+  // A change of backend or a dispatch puts a new canvas element in the frame, so the one the
+  // locator found can leave the page mid-photograph; it is photographed again, fresh.
+  let shot
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      shot = await page.locator('[data-gpu-canvas]').screenshot({ timeout: 5_000 })
+      break
+    } catch (error) {
+      if (attempt >= 3) throw error
+      await page.waitForTimeout(300)
+    }
+  }
   const meta = await sharp(shot).metadata()
   const pad = Math.round(Math.min(meta.width, meta.height) * 0.08)
   const { data } = await sharp(shot)
@@ -192,17 +226,47 @@ async function canvasColours(page, samples = 8, gap = 400) {
 async function settleResult(page) {
   await page.waitForFunction(
     () => {
+      // The frame carries the document version it last showed, and the tool the version the
+      // editor holds; until the two agree the canvas may still hold the file before.
+      const tool = document.querySelector('[data-playground]')
+      const frame = document.querySelector('[data-gpu-frame]')
+      if (!tool || !frame || frame.dataset.settled !== tool.dataset.version) return false
       const canvas = document.querySelector('[data-gpu-canvas]')
       if (!canvas) return false
+      // A dispatch plots onto a 2D canvas, which has no frame counter.
+      if (canvas.dataset.plotted === '1') return true
       const backend = canvas.dataset.backend
       if (backend && backend !== 'none') return (canvas.__shader?.frames ?? 0) > 0
       // No backend: the note says why, and it is written before the backend is cleared.
       return (document.querySelector('[data-gpu-note]')?.textContent ?? '').length > 0
     },
     null,
-    { timeout: 20_000 },
+    { timeout: 30_000 },
   )
 }
+
+/** The editor's document version, which moves on every change to the file. */
+const versionOf = (page) => page.evaluate(() => Number(document.querySelector('[data-playground]')?.dataset.version ?? 0))
+
+/** Pick an example and wait until the canvas shows it: the version has moved past the one
+ *  before, and the frame has caught up with it. */
+async function pickExample(page, id) {
+  const before = await versionOf(page)
+  await page.selectOption('[data-example]', id)
+  await page.waitForFunction((b) => Number(document.querySelector('[data-playground]')?.dataset.version ?? 0) > b, before, { timeout: 15_000 })
+  await settleResult(page)
+}
+
+/** The backend, the note and the plot flag of the Result tab's canvas right now. */
+const resultState = (page) =>
+  page.evaluate(() => {
+    const canvas = document.querySelector('[data-gpu-canvas]')
+    return {
+      backend: canvas?.dataset.backend ?? 'none',
+      plotted: canvas?.dataset.plotted === '1',
+      note: (document.querySelector('[data-gpu-note]')?.textContent ?? '').trim(),
+    }
+  })
 
 /** Read the reflection panel with its tab open. */
 async function reflectionPane(page, wait = 150) {
@@ -320,6 +384,259 @@ async function openPage(browser) {
     })
   }
   return { page, pageErrors, cdnFailures }
+}
+
+// ── the two engines agree ──────────────────────────────────────────────────────────────
+
+/** For every example the GPU paints: the CPU backend paints it too, and a dozen pixels of one
+ *  frame agree between the two. The rasteriser is asked for those pixels at the GPU canvas's
+ *  own size and clock through the tool's handle, so the comparison is of one program at one
+ *  time on one grid. This is what would have caught the rasteriser reading a bare `vec4`
+ *  return by the name `_ret` and leaving five canvases transparent. */
+async function checkEnginesAgree(page, problems, ids) {
+  const cpuPainted = []
+  const agree = []
+  const differ = []
+  const noCpu = []
+  for (const id of ids) {
+    await pickExample(page, id)
+    // Three seconds in, the time every build-time still is captured at, so the frame compared
+    // is the one a reader sees on the gallery tile.
+    await page.evaluate(() => document.querySelector('[data-playground]').__playground.freeze(3))
+    await page.waitForTimeout(400)
+    const state = await page.evaluate(() => {
+      const canvas = document.querySelector('[data-gpu-canvas]')
+      const frame = document.querySelector('[data-gpu-frame]')
+      return { width: canvas.width, height: canvas.height, ground: getComputedStyle(frame).backgroundColor }
+    })
+    const shot = await page.locator('[data-gpu-canvas]').screenshot()
+    const { data, info } = await sharp(shot).raw().ensureAlpha().toBuffer({ resolveWithObject: true })
+    const points = []
+    for (const v of [0.25, 0.5, 0.75]) for (const u of [0.2, 0.4, 0.6, 0.8]) points.push([Math.floor(u * state.width), Math.floor(v * state.height)])
+    const cpu = await page.evaluate(([p, w, h]) => document.querySelector('[data-playground]').__playground.cpuPixels(p, w, h), [points, state.width, state.height])
+    const ground = (state.ground.match(/\d+/g) ?? [0, 0, 0]).map(Number)
+    if (typeof cpu === 'string') {
+      differ.push(`${id} (the rasteriser: ${cpu})`)
+    } else {
+      // The GPU canvas is premultiplied over the frame's ground, so the CPU's colour is put
+      // over the same ground before it is compared.
+      let worst = 0
+      points.forEach(([x, y], i) => {
+        const sx = Math.round(((x + 0.5) * info.width) / state.width - 0.5)
+        const sy = Math.round(((y + 0.5) * info.height) / state.height - 0.5)
+        const c = cpu[i]
+        const want = c ? [0, 1, 2].map((k) => Math.min(255, c[k] + ground[k] * (1 - c[3] / 255))) : ground
+        let best = Infinity
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const px = Math.min(info.width - 1, Math.max(0, sx + dx))
+            const py = Math.min(info.height - 1, Math.max(0, sy + dy))
+            const at = (py * info.width + px) * 4
+            best = Math.min(best, Math.max(...[0, 1, 2].map((k) => Math.abs(data[at + k] - want[k]))))
+          }
+        }
+        worst = Math.max(worst, best)
+      })
+      if (worst <= AGREE_UNITS) agree.push(id)
+      else differ.push(`${id} (by up to ${worst} of 255)`)
+    }
+
+    // And the CPU backend itself paints more than one colour, at the same held clock: a pass
+    // that is one colour at the start of its cycle is not a canvas the rasteriser left blank.
+    // Counted the way the GPU's photograph is, the transparent ground being one colour of it.
+    await page.selectOption('[data-engine]', 'cpu')
+    const drew = await page
+      .waitForFunction(() => document.querySelector('[data-canvas-note]').dataset.px !== undefined, null, { timeout: 60_000 })
+      .then(() => true, () => false)
+    const colours = drew
+      ? await page.evaluate(() => {
+          const node = document.querySelector('[data-canvas]')
+          const pixels = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
+          const set = new Set()
+          for (let i = 0; i < pixels.length; i += 4) set.add(`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]},${pixels[i + 3]}`)
+          return set.size
+        })
+      : 0
+    if (colours > 1) cpuPainted.push(id)
+    else noCpu.push(`${id} (${drew ? `${colours} colour(s)` : (await page.textContent('[data-canvas-note]')).trim()})`)
+    await page.selectOption('[data-engine]', 'auto')
+    await page.evaluate(() => document.querySelector('[data-playground]').__playground.freeze(null))
+  }
+  console.log(`  engines: ${cpuPainted.length} of ${ids.length} the GPU paints the CPU paints too, ${agree.length} of ${ids.length} agree within ${AGREE_UNITS} of 255`)
+  if (noCpu.length > 0) console.log(`    the CPU paints nothing for ${noCpu.join(', ')}`)
+  if (differ.length > 0) console.log(`    the engines differ on ${differ.join(', ')}`)
+  if (cpuPainted.length < CPU_PAINTED_FLOOR) {
+    problems.push(`${cpuPainted.length} of ${ids.length} examples paint on the CPU, and ${CPU_PAINTED_FLOOR} did when this check was written. Do not lower the floor: ${noCpu.join(', ')}`)
+  }
+  if (agree.length < AGREE_FLOOR) {
+    problems.push(`${agree.length} of ${ids.length} examples draw the same pixels on both engines, and ${AGREE_FLOOR} did when this check was written. Do not lower the floor: ${differ.join(', ')}`)
+  }
+}
+
+// ── the backend picker ─────────────────────────────────────────────────────────────────
+
+/** Wait for a mount on the backend the picker asked for: a frame drawn, or a note that says
+ *  why none was. */
+async function settleBackend(page) {
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector('[data-gpu-canvas]')
+      if (!canvas) return false
+      if (canvas.dataset.backend && canvas.dataset.backend !== 'none') return (canvas.__shader?.frames ?? 0) > 0
+      const note = (document.querySelector('[data-gpu-note]')?.textContent ?? '').trim()
+      return note.length > 0 && !/^Running on|에서 실행 중입니다/.test(note)
+    },
+    null,
+    { timeout: 20_000 },
+  )
+  await page.waitForTimeout(300)
+}
+
+/** Each backend by name draws the same program, a switch mounts again without compiling or
+ *  touching the editor, the pick joins the link, and a pick the browser cannot honour is
+ *  said as that on the canvas instead of drawn on the other backend. */
+async function checkBackends(page, problems) {
+  await pickExample(page, 'gradient-twin')
+  const version = await versionOf(page)
+  const source = await sourceOf(page)
+  const seen = []
+  for (const [pick, want] of [['webgl2', 'webgl2'], ['webgpu', 'webgpu'], ['auto', null]]) {
+    await page.selectOption('[data-engine]', pick)
+    await settleBackend(page)
+    const state = await resultState(page)
+    const drawn = await canvasColours(page)
+    seen.push(`${pick} on ${state.backend} in ${drawn.colours} colours`)
+    if (want && state.backend !== want) problems.push(`picking ${pick} drew on ${state.backend}: ${state.note}`)
+    if (!want && state.backend === 'none') problems.push(`the runtime's own order drew nothing: ${state.note}`)
+    if (drawn.colours < 2) problems.push(`on ${pick} the gradient came out ${drawn.colours} colour(s)`)
+    const hash = await page.evaluate(() => window.location.hash)
+    if (want && !hash.includes(`backend=${pick}`)) problems.push(`picking ${pick} left the link without it: ${hash}`)
+    if (!want && hash.includes('backend=')) problems.push(`the default backend still names one in the link: ${hash}`)
+  }
+  if ((await versionOf(page)) !== version) problems.push('switching the backend compiled the file again')
+  if ((await sourceOf(page)) !== source) problems.push('switching the backend changed what the editor holds')
+  console.log(`  backends: ${seen.join(', ')}`)
+}
+
+/** A browser with no WebGPU, asked for WebGPU by the link: nothing draws, and the canvas says
+ *  that in the page's own words instead of falling back to WebGL2 behind the reader's back. */
+async function checkMissingWebGpu(browser, origin, problems) {
+  const { page, pageErrors } = await openPage(browser)
+  try {
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, 'gpu', { get: () => undefined, configurable: true })
+    })
+    await page.goto(`${origin}/playground/#example=gradient-twin&backend=webgpu`, { waitUntil: 'load' })
+    await page.waitForSelector('.monaco-editor', { timeout: EDITOR_TIMEOUT })
+    await settleResult(page)
+    await settleBackend(page)
+    const state = await resultState(page)
+    const said = await page.evaluate(() => JSON.parse(document.querySelector('[data-playground]').dataset.copy).gpuNoWebgpu)
+    const picked = await page.evaluate(() => document.querySelector('[data-engine]').value)
+    if (picked !== 'webgpu') problems.push(`the link asked for WebGPU and the picker reads ${picked}`)
+    if (state.backend !== 'none') problems.push(`with no WebGPU and WebGPU picked, the canvas drew on ${state.backend}`)
+    if (state.note !== said) problems.push(`with no WebGPU and WebGPU picked, the canvas says "${state.note}"`)
+    console.log(`  WebGPU picked with none: ${state.backend}, "${state.note.slice(0, 60)}"`)
+    for (const message of pageErrors) problems.push(`the page with no WebGPU threw: ${message}`)
+  } finally {
+    await page.close()
+  }
+}
+
+// ── the bindings panel ─────────────────────────────────────────────────────────────────
+
+/** Set a range input and fire what a drag fires. */
+const slide = (page, selector, value) =>
+  page.$eval(selector, (input, v) => {
+    input.value = String(v)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  }, value)
+
+/** One previously flat example of each kind the panel supplies now draws, and the panel's
+ *  controls reach the frame: a matrix preset, a texture source, an override, a dispatch's
+ *  buffers on both engines, and a value that survives a recompile. */
+async function checkBindings(page, problems) {
+  // A uniform struct with a matrix in it. Under the identity the normal points at the viewer
+  // and the fragment is one colour; turned about Y it is not.
+  await pickExample(page, 'normal-matrix')
+  const flat = await canvasColours(page, 1)
+  await page.selectOption('[data-bindings] select[aria-label^="model "]', 'turn')
+  await page.waitForTimeout(600)
+  const turned = await canvasColours(page)
+  if (turned.colours <= flat.colours) problems.push(`the matrix preset did not reach the frame: ${flat.colours} colour(s) before, ${turned.colours} after`)
+  console.log(`  uniform matrix: normal-matrix ${flat.colours} colour(s) at the identity, ${turned.colours} turned`)
+
+  // The same uniform struct on the CPU oracle, which used to stop at `unbound u`.
+  await pickExample(page, 'hello-uniform-struct')
+  await page.selectOption('[data-engine]', 'cpu')
+  await page.waitForFunction(() => document.querySelector('[data-canvas-note]').dataset.px !== undefined, null, { timeout: 30_000 })
+  const cpuNote = (await page.textContent('[data-canvas-note]')).trim()
+  const cpuColours = await page.evaluate(() => {
+    const node = document.querySelector('[data-canvas]')
+    const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
+    const set = new Set()
+    for (let i = 0; i < data.length; i += 4) if (data[i + 3] > 0) set.add(`${data[i]},${data[i + 1]},${data[i + 2]}`)
+    return set.size
+  })
+  if (/unbound|uniform or a storage/.test(cpuNote)) problems.push(`the CPU oracle still has no value for the uniform: ${cpuNote}`)
+  if (cpuColours < 2) problems.push(`the CPU oracle drew hello-uniform-struct in ${cpuColours} colour(s)`)
+  console.log(`  uniform on the CPU: hello-uniform-struct in ${cpuColours} colours, "${cpuNote}"`)
+  await page.selectOption('[data-engine]', 'auto')
+  await settleBackend(page)
+
+  // A texture and a sampler, and the two overrides beside them.
+  await pickExample(page, 'textured-quad')
+  const checker = await canvasColours(page)
+  const textured = await resultState(page)
+  if (textured.backend === 'none' || checker.colours < 2) problems.push(`textured-quad did not draw its texture: ${textured.note}`)
+  await page.selectOption('[data-texture-source="tex"]', 'solid')
+  await settleBackend(page)
+  const solid = await canvasColours(page)
+  if (solid.colours >= checker.colours) problems.push(`a solid texture drew as many colours as the checker: ${checker.colours} and ${solid.colours}`)
+  await page.selectOption('[data-texture-source="tex"]', 'checker')
+  await settleBackend(page)
+  console.log(`  texture: textured-quad on ${textured.backend}, ${checker.colours} colours from the checker, ${solid.colours} from a solid colour`)
+
+  await page.fill('[data-override="tint"]', '0')
+  await page.press('[data-override="tint"]', 'Enter')
+  await page.waitForTimeout(AFTER_EDIT)
+  await settleBackend(page)
+  await openTab(page, 'glslFragment')
+  const pinned = (await page.innerText('[data-output]')).trim()
+  await openTab(page, 'result')
+  const dimmed = await canvasColours(page)
+  if (!/#define tint 0(?:\.0*)?(?![\d.])/.test(pinned)) problems.push(`the override did not reach the GLSL as a define:\n    ${pinned.split('\n').filter((l) => /tint/.test(l)).join('\n    ')}`)
+  if (dimmed.colours >= checker.colours) problems.push(`tint 0 drew as many colours as tint 0.85: ${checker.colours} and ${dimmed.colours}`)
+  console.log(`  override: tint 0 pinned in the GLSL, ${checker.colours} colours to ${dimmed.colours}`)
+
+  // A compute entry: dispatched on WebGPU and on the oracle, and what it wrote shown twice.
+  await pickExample(page, 'array-length')
+  for (const engine of ['auto', 'cpu']) {
+    if (engine === 'cpu') {
+      await page.selectOption('[data-engine]', 'cpu')
+      await page.waitForFunction(() => {
+        const canvas = document.querySelector('[data-gpu-canvas]')
+        return canvas?.dataset.plotted === '1' && canvas.dataset.backend === 'cpu'
+      }, null, { timeout: 20_000 })
+    }
+    const state = await resultState(page)
+    const plot = await canvasColours(page)
+    const rows = await page.evaluate(() => document.querySelector('[data-result="dst"]')?.textContent ?? '')
+    if (!state.plotted || plot.colours < 2) problems.push(`array-length on ${engine} plotted nothing: ${state.note}`)
+    if (!/\[0\]/.test(rows) || !/\[1\]/.test(rows)) problems.push(`array-length on ${engine} showed no rows for dst: "${rows.slice(0, 80)}"`)
+    console.log(`  compute: array-length on ${state.backend}, ${plot.colours} colours, dst ${rows.split('\n').slice(0, 2).join(' ')}`)
+  }
+  await page.selectOption('[data-engine]', 'auto')
+
+  // A value the reader set survives an edit that keeps its field.
+  await pickExample(page, 'hillshade-twin')
+  await slide(page, '[data-bindings] input[aria-label="sun_az"]', 0.9)
+  await typeSource(page, `${await sourceOf(page)}\n// an edit that keeps every binding\n`)
+  await settleResult(page)
+  const kept = Number(await page.$eval('[data-bindings] input[aria-label="sun_az"]', (input) => input.value))
+  if (Math.abs(kept - 0.9) > 1e-6) problems.push(`the value set on sun_az did not survive a recompile: 0.9 became ${kept}`)
+  console.log(`  a value across an edit: sun_az held at ${kept}`)
 }
 
 async function checkRoute(browser, origin, route) {
@@ -523,7 +840,7 @@ async function checkRoute(browser, origin, route) {
       }
       if (retired.button !== 'enabled') problems.push('the draw button is not available after a retired draw')
       console.log(`  retired mid-draw: grid ${retired.grid}, reported ${retired.reported} px, button ${retired.button}`)
-      await page.selectOption('[data-engine]', 'gpu')
+      await page.selectOption('[data-engine]', 'auto')
       await page.waitForTimeout(AFTER_EDIT)
 
       // ── the shape of the page ────────────────────────────────────────────────────────────
@@ -1208,30 +1525,31 @@ async function checkRoute(browser, origin, route) {
         if (ids.length === 0) problems.push('the example picker offers nothing to draw')
         const drawn = []
         for (const id of ids) {
-          await page.selectOption('[data-example]', id)
-          // The compile is debounced, so the canvas still holds the example before this one
-          // until it lands. Without this wait a fast example is photographed as its
-          // predecessor and the count is of the wrong pictures.
-          await page.waitForTimeout(AFTER_EDIT)
+          // The compile is debounced, so the canvas holds the example before this one until
+          // it lands. The wait is on the frame's own mark of which version it shows, so a
+          // fast example is never photographed as its predecessor.
           try {
-            await settleResult(page)
+            await pickExample(page, id)
           } catch {
             problems.push(`'${id}' never settled: the Result tab neither drew a frame nor said why not`)
           }
           const seen = await canvasColours(page)
           const state = await page.evaluate(() => ({
             backend: document.querySelector('[data-gpu-canvas]')?.dataset.backend ?? 'none',
+            plotted: document.querySelector('[data-gpu-canvas]')?.dataset.plotted === '1',
             note: (document.querySelector('[data-gpu-note]')?.textContent ?? '').trim(),
             status: (document.querySelector('[data-status]')?.textContent ?? '').trim(),
           }))
           drawn.push({ id, ...state, ...seen })
         }
         const ran = drawn.filter((row) => row.backend !== 'none')
-        const painted = drawn.filter((row) => row.colours > 1)
+        // A picture is more than one colour on a canvas a backend drew. A canvas with no
+        // backend is transparent over the frame, so a count there would be of the frame.
+        const painted = drawn.filter((row) => row.colours > 1 && row.backend !== 'none')
         console.log(`  examples: ${painted.length} of ${drawn.length} paint more than one colour, ${ran.length} of ${drawn.length} get a backend`)
         // Grouped by what the page says about them, so a count that moves names what moved.
         const byReason = new Map()
-        for (const row of drawn.filter((r) => r.colours <= 1)) {
+        for (const row of drawn.filter((r) => r.colours <= 1 || r.backend === 'none')) {
           const reason = row.backend === 'none' ? row.note : `${row.note} (a backend ran it and it came out one flat colour)`
           byReason.set(reason, [...(byReason.get(reason) ?? []), row.id])
         }
@@ -1247,8 +1565,7 @@ async function checkRoute(browser, origin, route) {
         // editable. A build that compiles is not evidence; a keystroke that reaches the
         // emitted text and the frame is. `plasma-twin` is a fullscreen pass whose look
         // follows its own arithmetic, so an edit to it has to move both.
-        await page.selectOption('[data-example]', 'plasma-twin')
-        await settleResult(page)
+        await pickExample(page, 'plasma-twin')
         await page.waitForTimeout(AFTER_EDIT)
         const beforeFrame = await canvasColours(page)
         const beforeWgsl = await wgslPane(page)
@@ -1274,8 +1591,11 @@ async function checkRoute(browser, origin, route) {
           problems.push(`typing into the editor did not repaint the canvas: ${beforeFrame.colours} colours before and after`)
         }
         console.log(`  an edit reaches the output: WGSL ${beforeWgsl.length} B to ${afterWgsl.length} B, canvas ${beforeFrame.colours} colours to ${afterFrame.colours}`)
-        await page.selectOption('[data-example]', 'hello')
-        await page.waitForTimeout(AFTER_EDIT)
+
+        await checkEnginesAgree(page, problems, painted.filter((row) => !row.plotted).map((row) => row.id))
+        await checkBackends(page, problems)
+        await checkBindings(page, problems)
+        await pickExample(page, 'hello')
       }
     }
 
@@ -1376,6 +1696,10 @@ try {
   }
   console.log(`[playground] ${SEEDED_ROUTE}`)
   results.push(await checkSeeded(browser, server.url))
+  console.log('[playground] /playground/ with no WebGPU')
+  const missing = []
+  await checkMissingWebGpu(browser, server.url, missing)
+  results.push({ route: '/playground/ with no WebGPU', problems: missing, cdnFailures: [], cdnOnly: false })
 } finally {
   await browser.close()
   server.close()
