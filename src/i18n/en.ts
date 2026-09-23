@@ -344,8 +344,8 @@ export const en = {
         },
         attribute: {
           name: 'Attributes',
-          summary: 'The decorators that mark an entry point and bind a field to the pipeline.',
-          description: `The ${facts.languageAttributes} decorators the compiler reads: the three that mark an entry point, and the two that bind a field or a parameter to the pipeline.`,
+          summary: 'The decorators that mark an entry point, bind a field to the pipeline and qualify it.',
+          description: `The ${facts.languageAttributes} decorators the compiler reads: three mark an entry point, two bind a field to the pipeline, three qualify it, and one sets a diagnostic rule.`,
         },
         builtin: {
           name: 'Builtin values',
@@ -887,7 +887,7 @@ export const en = {
       entryNote: 'Reading a signature therefore tells you which stage the function belongs to, what the pipeline has to supply, and what the pipeline receives.',
       interpolationH: 'Interpolation',
       interpolationP: 'Between the vertex stage and the fragment stage the rasterizer works out which fragments a primitive covers. For each of them it weighs the values the vertices produced by how near the fragment lies to each vertex, and hands the fragment stage the result. A vertex entry writes a value per vertex and a fragment entry reads a value per fragment, so the two are different values with the same name.',
-      interpolationNote: 'Every `@location` field is weighed this way. A field that has to arrive unweighed has no spelling yet, and `@interpolate` is not one of the attributes the compiler takes. [Types](languageTypes) states the field decorators.',
+      interpolationNote: 'Every float `@location` field is weighed this way unless it says otherwise. `@interpolate("flat")` hands every fragment the value of one vertex, and an integer field is `flat` without being asked, since neither target can weigh an integer. [Types](languageTypes) states the field decorators.',
       computeH: 'Compute',
       computeP: 'A compute stage has no rasterizer in front of it and no attachment behind it. The host dispatches a grid of work items, the entry point reads its own coordinates in that grid from a builtin parameter, and everything it produces goes through a storage resource. [Resources](languageResources) states how a writable resource is declared.',
       furtherH: 'Further reading',
@@ -1061,7 +1061,7 @@ export const en = {
      *  a translation writes its own against the same keys. */
     shade: {
       h: 'Written as TypeScript source',
-      p: `${facts.shadeExamples} more examples in the same directory are TypeScript files that open with \`"use typeshade"\`, compiled by \`compile()\` from the file's own bytes. Each one is there for one part of the language, and they are grouped here that way. ${facts.shadeRenderable} have a ${glsl} form and carry a picture; the others emit WGSL alone.`,
+      p: `${facts.shadeExamples} more examples in the same directory are TypeScript files that open with \`"use typeshade"\`, compiled by \`compile()\` from the file's own bytes. Each one is there for one part of the language, and they are grouped here that way. ${facts.shadeRenderable} have a ${glsl} form and the others emit WGSL alone. The ones the page can draw carry a picture.`,
       groups: {
         stages: 'Stages and IO structs',
         resources: 'Resources',
@@ -1229,7 +1229,7 @@ export const en = {
         struct: '2. A class is a struct and its functions',
         structP: 'A TypeShade class is a GPU struct and the functions written with it. The fields are the bytes the host writes. A constructor, a method and a static function each lower to a plain function, so `new Ray(o, d)` calls `Ray_new` and `r.at(t)` calls `Ray_at(r, t)`. Nothing keeps an object alive between them.',
         attrs: '3. Field decorators describe layout',
-        attrsP: 'A field takes `@location` and `@builtin`, and those two are the ones the compiler applies to a field. `@align` is read and refused, and `@size`, `@offset`, `@interpolate` and `@ignore` are not attributes it knows. The whole set it accepts is `@vertex`, `@fragment`, `@compute`, `@builtin` and `@location`.',
+        attrsP: 'A field takes `@location` or `@builtin` to bind it to the pipeline, and three more qualify it: `@interpolate` on a `@location` varying, `@invariant` on the position and `@blend_src` on a fragment output. `@align` is read and refused, and `@size`, `@offset` and `@ignore` are not attributes it knows. The whole set it accepts is `@vertex`, `@fragment`, `@compute`, `@builtin`, `@location`, `@interpolate`, `@invariant`, `@blend_src` and `@diagnostic`.',
         boundary: '4. Where TypeScript classes stop',
         boundaryItems: ['An entry point is a top-level function, not a method.', 'A class with no fields is not a struct, so write its functions as functions.', 'A getter, a setter and a second constructor are each refused by name.', '`new` builds a value inside a function body, and a module constant takes an object literal.', 'Prefer a type alias when no field needs a decorator.'],
         mapping: '5. Concept mapping',
@@ -1566,7 +1566,7 @@ export const en = {
         functionsH: 'Builtin functions',
         functionsP: 'Every builtin the compiler can spell, with the WGSL text it writes for each one, is on [the builtin table](languageBuiltins). A function the file declares wins over a builtin of the same name.',
         refusals: {
-          'scalars.f16': 'No name in this surface. WGSL asks the module for `enable f16;` and the device for the `shader-f16` feature, and a `"use typeshade"` file has no way to ask for either.',
+          'scalars.f16': 'No name in this surface. A file can write `"enable f16"` under `"use typeshade"`, which emits `enable f16;` and asks the device for the `shader-f16` feature, and there is still no type to declare a value with.',
           'scalars.f64': 'WGSL has no 64-bit float. The pass below rewrites the declaration before the writer sees it.',
           'vectors.vec3d': 'WGSL has no 64-bit vector either, and the same pass rewrites this one.',
         },
@@ -1582,7 +1582,7 @@ export const en = {
           'statements.var': 'A WGSL `var` is a local that changes. `let b: f32` with no initializer declares one and leaves the value for a later assignment; WGSL zeroes it and GLSL leaves it undefined, so assign before you read.',
           'statements.for': 'A `for` is counted: an integer induction variable, a constant bound, a constant step and at most 256 trips. The step may be `+=`, `-=`, `*=` or `/=`.',
           'statements.while': 'A `while` takes the place of `loop`. It needs a compile-time-constant bound in its condition and reaches the target as a `for` over a counter the compiler adds.',
-          'statements.switch': 'A case ends with the `break` TypeScript requires, and the lowering drops it. No case falls through, and a label is an integer constant that may appear once.',
+          'statements.switch': 'A case ends with a `break`, and the lowering drops it. Labels stacked with nothing between them are one clause, which WGSL writes as `case 0, 1:`. A label is an integer constant that may appear once.',
           'statements.select': 'WGSL has no ternary, so a scalar or vector conditional becomes `select`, whose first argument is the arm the condition does not choose. A conditional on a struct or an array is hoisted into a slot and an `if`, since neither target has an operator for that.',
           'statements.call': 'A function called for what it does, with its result dropped.',
           'statements.phony': 'A value-returning builtin dropped the same way takes the phony assignment, because Tint reads every such builtin as `@must_use`.',
@@ -1648,7 +1648,7 @@ export const en = {
         varyingsP: 'A value that travels from the vertex stage to the fragment stage is a `@location(n)` field on both sides. This target links them by name and WebGPU by number, so the field name is what has to match in the emitted GLSL.',
         capabilitiesH: 'Extensions and capabilities',
         capabilitiesP: `An \`#extension\` line is one half of a GPU feature and the host's \`getExtension\` call is the other. The profile for this target has ${facts.glslCapabilities} rows, and one of them puts a directive in the source; everything with no row at all fails the module closed here before any text is written.`,
-        enablesP: 'A `"use typeshade"` file has no spelling for the list a module declares these under. The three a module\'s shape implies, a storage binding, a compute entry and a multisampled texture load, are derived from the file, and the rest reach the compiler through the `fn()` surface.',
+        enablesP: 'A `"use typeshade"` file has no spelling for these rows. Its `"enable ..."` directive takes a WGSL extension name, and none of the rows has one. What a module\'s shape implies, such as a storage binding, a compute entry or a multisampled texture load, is derived from the file, and the rest reach the compiler through the `fn()` surface.',
         variablesH: 'Builtin variables',
         variablesP: 'A `gl_*` global is a `@builtin(...)` attribute on a parameter, on a class field or on the return. The attribute says which value it is and the writer decides which global that becomes, which is how one file reaches both targets.',
         absentH: 'Variables neither writer takes',
@@ -1707,7 +1707,7 @@ export const en = {
         intro: `A builtin is a function the GPU already has. A call carries one neutral name through the compiler, and each backend writes its own spelling for that name, so the call is written once and emitted twice. The registry holds ${facts.builtins} names.`,
         readingH: 'How to read a row',
         readingP: `The first column is the name the call carries, with a placeholder argument in each position it takes. The next two are the text the WGSL backend and the ${glsl} backend write for that call, run from the compiler's own spelling table at the pinned commit. ${facts.portableBuiltins} of the names are spelled the same way on both targets, and ${facts.glslAbsentBuiltins} have no ${glsl} form at all, where the cell carries the compiler's own message. ${facts.mathAliasBuiltins} answer to a \`Math.\` name as well, which the last column of the maths and cast tables shows.`,
-        idsP: 'A few of these names are chosen by the compiler and never written by hand. A layered texture read, a depth comparison and a storage fetch each take a name of their own, so the argument order of a call never depends on the texture it landed on.',
+        idsP: `A few of these names are chosen by the compiler and never written by hand. A layered texture read, a depth comparison, a storage fetch and a texel read at an unsigned coordinate each take a name of their own, so the argument order of a call never depends on the texture it landed on. An \`abs\` of an unsigned value and an integer \`dot\` take one too, because ${glsl} has no overload for either.`,
         precedenceH: 'A name the file declares',
         precedenceP: 'A function the file declares wins over a builtin of the same name. Such a name meant the author\'s own function before it was a builtin, and an addition does not change what a program already means.',
         colName: 'TypeShade',

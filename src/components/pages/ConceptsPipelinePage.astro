@@ -37,7 +37,7 @@ const headings = [c.stagesH, c.entryH, c.interpolationH, c.computeH, c.furtherH]
   <section>
     <h2 id={slugify(c.interpolationH)}>{c.interpolationH}</h2>
     <p>{c.interpolationP}</p>
-    <TypeShadeCode code={`class VsOut {\n  @builtin("position") pos: vec4\n  @location(0) @interpolate("linear") uv: vec2\n}`} />
+    <TypeShadeCode code={`class VsOut {\n  @builtin("position") pos: vec4\n  @location(0) uv: vec2\n  @location(1) @interpolate("flat") tint: vec3\n}`} />
     <p><Rich text={c.interpolationNote} locale={locale} /></p>
   </section>
 
