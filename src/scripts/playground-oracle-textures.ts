@@ -20,7 +20,12 @@
 // read on the face the direction points at, clamped to that face's edge, where a GPU blends
 // across the seam; only the texels on a face's border can tell the two apart.
 import { GPU_STUBS } from '../../vendor/shader-dsl/src/core/cpu-runtime.ts';
-import type { SamplerSpec, TextureSpec } from '../lib/shader-bindings.ts';
+import {
+  TEXEL_BYTES,
+  type SamplerSpec,
+  type StorageTextureSpec,
+  type TextureSpec,
+} from '../lib/shader-bindings.ts';
 
 type Value = unknown;
 
@@ -251,6 +256,129 @@ function gather(
   return [at(ax.i0, ay.i1), at(ax.i1, ay.i1), at(ax.i1, ay.i0), at(ax.i0, ay.i0)];
 }
 
+// ── Storage textures ───────────────────────────────────────────────────────────────────
+// A storage texture is memory the shader writes by texel and reads back. The oracle's copy
+// holds the texels in the format's own bytes, laid out the way a WebGPU readback of the same
+// texture is, so a dispatch on the CPU shows the same image and the same rows as one on the
+// GPU. It starts at zero, as a texture the runtime creates does.
+
+/** A storage texture as the oracle holds it: the panel's description and the texel bytes,
+ *  written in place by `textureStore`. The bindings panel makes one. */
+type OracleStorageTexture = StorageTextureSpec & { readonly bytes: Uint8Array<ArrayBuffer> };
+
+const isStorage = (v: Value): v is OracleStorageTexture =>
+  typeof v === 'object' &&
+  v !== null &&
+  (v as { kind?: unknown }).kind === 'storage-texture' &&
+  (v as { bytes?: unknown }).bytes instanceof Uint8Array;
+
+/** An f32 as the bits of the nearest binary16, for a 16-bit float format. */
+function f16Bits(value: number): number {
+  const f = new Float32Array([value]);
+  const x = new Uint32Array(f.buffer)[0]!;
+  const sign = (x >>> 16) & 0x8000;
+  const exp = ((x >>> 23) & 0xff) - 127 + 15;
+  const mant = x & 0x7fffff;
+  if (((x >>> 23) & 0xff) === 0xff) return sign | 0x7c00 | (mant ? 0x200 : 0);
+  if (exp >= 0x1f) return sign | 0x7c00;
+  if (exp <= 0) {
+    if (exp < -10) return sign;
+    const m = (mant | 0x800000) >> (1 - exp);
+    return sign | ((m + 0x1000) >> 13);
+  }
+  return sign | ((exp << 10) + ((mant + 0x1000) >> 13));
+}
+
+function fromF16Bits(bits: number): number {
+  const sign = bits & 0x8000 ? -1 : 1;
+  const exp = (bits >> 10) & 0x1f;
+  const mant = bits & 0x3ff;
+  if (exp === 0) return sign * mant * 2 ** -24;
+  if (exp === 0x1f) return mant ? NaN : sign * Infinity;
+  return sign * (1 + mant / 1024) * 2 ** (exp - 15);
+}
+
+/** How a format lays out a texel: its channel count, and the scalar each channel is. */
+function channelsOf(format: string): { count: number; kind: string } {
+  const m = /^(r|rg|rgba)(8|16|32)(unorm|snorm|uint|sint|float)$/.exec(format);
+  if (!m) return { count: 4, kind: '8unorm' };
+  return { count: m[1]!.length, kind: `${m[2]}${m[3]}` };
+}
+
+/** The texel index a coordinate addresses, or -1 when it is outside the texture. */
+function storageIndex(t: OracleStorageTexture, coords: Value): number {
+  const c = vec(coords);
+  const x = Math.trunc(c[0] ?? 0);
+  const y = Math.trunc(c[1] ?? 0);
+  if (x < 0 || y < 0 || x >= t.width || y >= t.height) return -1;
+  return y * t.width + x;
+}
+
+/** Write one texel, converted to the format the way a store converts it. A store outside the
+ *  texture is dropped, which WebGPU allows. */
+function storeTexel(t: OracleStorageTexture, coords: Value, value: Value): void {
+  const at = storageIndex(t, coords);
+  if (at < 0) return;
+  const v = vec(value);
+  const { count, kind } = channelsOf(t.format);
+  const view = new DataView(t.bytes.buffer, t.bytes.byteOffset, t.bytes.byteLength);
+  const size = TEXEL_BYTES[t.format] ?? 4;
+  const base = at * size;
+  const step = size / count;
+  for (let k = 0; k < count; k++) {
+    const n = v[k] ?? 0;
+    const o = base + k * step;
+    if (kind === '8unorm')
+      view.setUint8(o, Math.round(Math.fround(Math.min(1, Math.max(0, n)) * 255)));
+    else if (kind === '8snorm')
+      view.setInt8(o, Math.round(Math.fround(Math.min(1, Math.max(-1, n)) * 127)));
+    else if (kind === '8uint') view.setUint8(o, n & 0xff);
+    else if (kind === '8sint') view.setInt8(o, (n << 24) >> 24);
+    else if (kind === '16float') view.setUint16(o, f16Bits(n), true);
+    else if (kind === '16uint') view.setUint16(o, n & 0xffff, true);
+    else if (kind === '16sint') view.setInt16(o, (n << 16) >> 16, true);
+    else if (kind === '32float') view.setFloat32(o, n, true);
+    else if (kind === '32uint') view.setUint32(o, n >>> 0, true);
+    else view.setInt32(o, n | 0, true);
+  }
+}
+
+/** Read one texel back as the four numbers a load returns: a missing channel is 0, a missing
+ *  alpha 1. Outside the texture a load returns zero, one of the answers WebGPU allows. */
+function loadTexel(t: OracleStorageTexture, coords: Value): number[] {
+  const at = storageIndex(t, coords);
+  const out = [0, 0, 0, 1];
+  if (at < 0) return [0, 0, 0, 0];
+  const { count, kind } = channelsOf(t.format);
+  const view = new DataView(t.bytes.buffer, t.bytes.byteOffset, t.bytes.byteLength);
+  const size = TEXEL_BYTES[t.format] ?? 4;
+  const step = size / count;
+  for (let k = 0; k < count; k++) {
+    const o = at * size + k * step;
+    out[k] =
+      kind === '8unorm'
+        ? view.getUint8(o) / 255
+        : kind === '8snorm'
+          ? Math.max(-1, view.getInt8(o) / 127)
+          : kind === '8uint'
+            ? view.getUint8(o)
+            : kind === '8sint'
+              ? view.getInt8(o)
+              : kind === '16float'
+                ? fromF16Bits(view.getUint16(o, true))
+                : kind === '16uint'
+                  ? view.getUint16(o, true)
+                  : kind === '16sint'
+                    ? view.getInt16(o, true)
+                    : kind === '32float'
+                      ? view.getFloat32(o, true)
+                      : kind === '32uint'
+                        ? view.getUint32(o, true)
+                        : view.getInt32(o, true);
+  }
+  return /float|norm/.test(kind) ? out.map(Math.fround) : out;
+}
+
 type Read = (...args: Value[]) => Value;
 
 /** The reads, by the oracle's own id, each taking the arguments in the order WGSL spells
@@ -302,7 +430,7 @@ const READS: Readonly<Record<string, Read>> = {
       ? gather(t, isSampler(s) ? s : undefined, c, layer, (x) => (num(ref) <= x[0]! ? 1 : 0))
       : undefined,
 
-  textureLoad: (t, c, level) => loadOrUndefined(t, c, 0, level),
+  textureLoad: (t, c, level) => (isStorage(t) ? loadTexel(t, c) : loadOrUndefined(t, c, 0, level)),
   textureLoadU: (t, c, level) => loadOrUndefined(t, c, 0, level),
   textureLoad3dU: (t, c, level) => loadOrUndefined(t, c, 0, level),
   textureLoadArray: (t, c, layer) => loadOrUndefined(t, c, layer),
@@ -312,7 +440,15 @@ const READS: Readonly<Record<string, Read>> = {
   textureLoadMs: (t, c) => loadOrUndefined(t, c, 0),
   textureLoadDepthMs: (t, c) => loadOrUndefined(t, c, 0),
 
-  textureDimensions: (t) => (isTexture(t) ? [t.width, t.height] : undefined),
+  textureDimensions: (t) => (isTexture(t) || isStorage(t) ? [t.width, t.height] : undefined),
+  // The runtime makes every storage texture a single 2D layer.
+  textureNumLayersStorage: (t) => (isStorage(t) ? 1 : undefined),
+  // The value is the last argument: an array texture puts its layer before it.
+  textureStore: (t, c, ...rest) => {
+    if (!isStorage(t)) return undefined;
+    storeTexel(t, c, rest[rest.length - 1]);
+    return 0;
+  },
   textureDimensionsMs: (t) => (isTexture(t) ? [t.width, t.height] : undefined),
   textureDimensions3d: (t) => (isTexture(t) ? [t.width, t.height, t.layers] : undefined),
   textureDimensions1d: (t) => (isTexture(t) ? t.width : undefined),

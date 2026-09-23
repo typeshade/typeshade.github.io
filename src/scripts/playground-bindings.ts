@@ -33,6 +33,8 @@ import {
   type ResourceSpec,
   type SampleKind,
   type SamplerSpec,
+  type StorageTextureSpec,
+  TEXEL_BYTES,
   type StoragePattern,
   type TextureDim,
   type TextureSource,
@@ -606,20 +608,22 @@ export class BindingsModel {
         bytes: this.packStorage(b),
       });
     }
-    for (const t of this.storageTextures) {
-      const side = this.storageSizes.get(t.name) ?? 128;
-      out.push({
-        kind: 'storage-texture',
-        name: t.name,
-        group: t.group,
-        binding: t.binding,
-        format: t.storageFormat ?? 'rgba8unorm',
-        access: t.storageAccess ?? 'write-only',
-        width: side,
-        height: side,
-      });
-    }
+    for (const t of this.storageTextures) out.push(this.storageTextureSpec(t));
     return out;
+  }
+
+  private storageTextureSpec(t: Binding): StorageTextureSpec {
+    const side = this.storageSizes.get(t.name) ?? 128;
+    return {
+      kind: 'storage-texture',
+      name: t.name,
+      group: t.group,
+      binding: t.binding,
+      format: t.storageFormat ?? 'rgba8unorm',
+      access: t.storageAccess ?? 'write-only',
+      width: side,
+      height: side,
+    };
   }
 
   /** The value of every override, by name, for the WebGPU pipeline and the GLSL emit. */
@@ -709,9 +713,15 @@ export class BindingsModel {
     // the filter and address mode. src/scripts/playground-oracle-textures.ts reads them.
     for (const t of this.textures) out[t.name] = this.textureSpec(t);
     for (const s of this.samplers) out[s.name] = this.samplerSpec(s);
-    // The oracle has no storage texture: its reads return a placeholder once the name they
-    // take resolves to something, so each is bound to a marker.
-    for (const t of this.storageTextures) out[t.name] = { binding: t.name };
+    // A storage texture is the texels a dispatch writes, zero to start with as the GPU's are,
+    // in the format's own bytes; src/scripts/playground-oracle-textures.ts reads and writes them.
+    for (const t of this.storageTextures) {
+      const spec = this.storageTextureSpec(t);
+      out[t.name] = {
+        ...spec,
+        bytes: new Uint8Array(spec.width * spec.height * (TEXEL_BYTES[spec.format] ?? 4)),
+      };
+    }
     return out;
   }
 
