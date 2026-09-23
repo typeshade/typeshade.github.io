@@ -169,6 +169,7 @@ export const SHADE_GROUPS = [
       'closures',
       'higher-order',
       'inferred-returns',
+      'array-methods',
       'loops-over-data',
       'path-tracer',
     ],

@@ -51,7 +51,7 @@ export function main(@location(0) uv: vec2): vec4 {
   <h2 id="matrix">{content.matrix}</h2><p>{content.matrixP}</p>
   <TypeShadeCode code={`type Camera = {\n  view: mat4\n}`} />
   <h2 id="arrays">{content.arrays}</h2><p>{content.arraysP}</p>
-  <TypeShadeCode code={`declare let pixels: storage<array<f32>>`} />
+  <TypeShadeCode code={`declare const pixels: storage<array<f32>, "read_write">`} />
   <h2 id="live">{content.live}</h2><p><Rich text={content.liveP} locale={locale} /></p>
   <LiveShader
     locale={locale}
