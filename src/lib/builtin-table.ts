@@ -76,11 +76,12 @@ const FAMILY_OF: Readonly<Record<string, BuiltinFamily>> = {
   floor: 'maths', ceil: 'maths', abs: 'maths', sqrt: 'maths', fract: 'maths', trunc: 'maths',
   sign: 'maths', radians: 'maths', degrees: 'maths',
   min: 'maths', max: 'maths', pow: 'maths', clamp: 'maths', mix: 'maths', smoothstep: 'maths',
-  step: 'maths', any: 'maths', all: 'maths',
+  step: 'maths', any: 'maths', all: 'maths', absU: 'maths', quantizeToF16: 'maths',
+  quantizeToF16Vec2: 'maths', quantizeToF16Vec3: 'maths', quantizeToF16Vec4: 'maths',
   // geometry
   faceForward: 'geometry', reflect: 'geometry', refract: 'geometry', normalize: 'geometry',
   length: 'geometry', dot: 'geometry', distance: 'geometry', cross: 'geometry',
-  transpose: 'geometry', determinant: 'geometry',
+  transpose: 'geometry', determinant: 'geometry', dotI: 'geometry', dotU: 'geometry',
   // derivatives
   dpdx: 'derivatives', dpdy: 'derivatives', fwidth: 'derivatives',
   dpdxCoarse: 'derivatives', dpdxFine: 'derivatives', dpdyCoarse: 'derivatives',
@@ -88,11 +89,13 @@ const FAMILY_OF: Readonly<Record<string, BuiltinFamily>> = {
   // bit operations
   countOneBits: 'bits', reverseBits: 'bits', countLeadingZeros: 'bits',
   countTrailingZeros: 'bits', firstLeadingBit: 'bits', firstTrailingBit: 'bits',
-  extractBits: 'bits', insertBits: 'bits',
+  extractBits: 'bits', insertBits: 'bits', dot4U8Packed: 'bits', dot4I8Packed: 'bits',
   // packing
   pack2x16float: 'packing', unpack2x16float: 'packing', pack2x16unorm: 'packing',
   unpack2x16unorm: 'packing', pack2x16snorm: 'packing', unpack2x16snorm: 'packing',
-  pack4x8unorm: 'packing', unpack4x8unorm: 'packing',
+  pack4x8unorm: 'packing', unpack4x8unorm: 'packing', pack4x8snorm: 'packing',
+  unpack4x8snorm: 'packing', pack4xU8: 'packing', pack4xI8: 'packing', pack4xU8Clamp: 'packing',
+  pack4xI8Clamp: 'packing', unpack4xU8: 'packing', unpack4xI8: 'packing',
   // casts
   f32: 'casts', i32: 'casts', u32: 'casts', bitcastU32: 'casts', bitcastF32: 'casts',
   // textures and storage
@@ -113,10 +116,13 @@ const FAMILY_OF: Readonly<Record<string, BuiltinFamily>> = {
   textureDimensions: 'textures', textureDimensions1d: 'textures',
   textureDimensions3d: 'textures', textureDimensionsMs: 'textures',
   textureNumLayers: 'textures', textureNumSamples: 'textures', arrayLength: 'textures',
+  textureLoadU: 'textures', textureLoadArrayU: 'textures', textureLoad3dU: 'textures',
+  textureNumLayersStorage: 'textures',
   storageFetchF32: 'textures', storageFetchU32: 'textures', storageFetchI32: 'textures',
   // barriers. The atomics are not listed: the compiler keeps its own list of them in
   // ATOMIC_INTRINSICS, and familyOf() reads the family off that.
-  workgroupBarrier: 'barriers', storageBarrier: 'barriers',
+  workgroupBarrier: 'barriers', storageBarrier: 'barriers', textureBarrier: 'barriers',
+  workgroupUniformLoad: 'barriers',
   // f64
   f64: 'f64', f64FromParts: 'f64', f64Parts: 'f64', f64Guard: 'f64',
 }
@@ -131,6 +137,10 @@ const ARITY_OF: Readonly<Record<string, number>> = {
   bitcastU32: 1, bitcastF32: 1,
   pack2x16float: 1, unpack2x16float: 1, pack2x16unorm: 1, unpack2x16unorm: 1,
   pack2x16snorm: 1, unpack2x16snorm: 1, pack4x8unorm: 1, unpack4x8unorm: 1,
+  pack4x8snorm: 1, unpack4x8snorm: 1, pack4xU8: 1, pack4xI8: 1, pack4xU8Clamp: 1,
+  pack4xI8Clamp: 1, unpack4xU8: 1, unpack4xI8: 1, dot4U8Packed: 2, dot4I8Packed: 2,
+  absU: 1, dotI: 2, dotU: 2, quantizeToF16: 1, quantizeToF16Vec2: 1, quantizeToF16Vec3: 1,
+  quantizeToF16Vec4: 1,
   // A sampled read takes the texture, the sampler, the coordinate, and then whatever the
   // form adds: a level, a bias, a pair of gradients, a layer, a depth reference.
   textureSample: 3, textureSampleLevel: 4, textureSampleBias: 4, textureSampleGrad: 5,
@@ -146,11 +156,12 @@ const ARITY_OF: Readonly<Record<string, number>> = {
   textureGather: 4, textureGatherArray: 5, textureGatherDepth: 3, textureGatherDepthArray: 4,
   textureGatherCompare: 4, textureGatherCompareArray: 5,
   textureLoad: 3, textureLoadArray: 4, textureLoadMs: 3, textureLoadDepthMs: 3,
+  textureLoadU: 3, textureLoadArrayU: 4, textureLoad3dU: 3,
   textureStore: 3,
   textureDimensions: 1, textureDimensions1d: 1, textureDimensions3d: 1, textureDimensionsMs: 1,
-  textureNumLayers: 1, textureNumSamples: 1,
+  textureNumLayers: 1, textureNumSamples: 1, textureNumLayersStorage: 1,
   arrayLength: 1, storageFetchF32: 2, storageFetchU32: 2, storageFetchI32: 2,
-  workgroupBarrier: 0, storageBarrier: 0,
+  workgroupBarrier: 0, storageBarrier: 0, textureBarrier: 0, workgroupUniformLoad: 1,
   f64: 1, f64FromParts: 2, f64Parts: 1, f64Guard: 0,
 }
 
@@ -235,7 +246,10 @@ function build(): Tables {
   const mathNameOf = new Map<string, string>()
   for (const [jsName, id] of Object.entries(alias)) if (!mathNameOf.has(id)) mathNameOf.set(id, `Math.${jsName}`)
 
-  const ids = [...new Set([...Object.keys(intrinsics), ...portable, ...preEmit])].sort((a, b) =>
+  // The registry also holds the operators that are spelt as a prefix on both targets and not
+  // as a call (`~`, the bitwise complement). An author writes them as operators, so they are
+  // not builtins and the page lists none of them: an id that is not a name is an operator.
+  const ids = [...new Set([...Object.keys(intrinsics), ...portable, ...preEmit])].filter((id) => /^[A-Za-z_]/.test(id)).sort((a, b) =>
     a.toLowerCase().localeCompare(b.toLowerCase(), 'en') || a.localeCompare(b, 'en'),
   )
 

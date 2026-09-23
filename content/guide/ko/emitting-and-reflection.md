@@ -1,7 +1,7 @@
 ---
 id: emitting-and-reflection
-source: 3833337ef0f7eb277b6bca724ffb7cf455334456ee396d7f756930de525459aa
-sourceLine: 1188
+source: 6c82986946f2bac53c9cd7ac496872bc267216ec4f107bf3bc10d87a5a479a0e
+sourceLine: 1210
 ---
 
 이 페이지를 읽고 나면 모듈을 WGSL로, GLSL 스테이지 둘로, 또는 호스트가 자기 프로그램에
@@ -151,7 +151,10 @@ for (const group of reflect(m).bindGroups) {
 }
 
 // The same reachability question for an entry set you choose yourself:
-const reach = reachFrom(m, m.funcs.filter((f) => stageOf(f) === 'fragment'))
+const reach = reachFrom(
+  m,
+  m.funcs.filter((f) => stageOf(f) === 'fragment'),
+)
 reach.bindings // Set { 'U' }, the binding names that stage reads
 reach.fns // the call-graph closure from those entries, the entries included
 ```

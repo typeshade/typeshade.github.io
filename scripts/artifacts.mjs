@@ -18,9 +18,9 @@ export const STILL_EXAMPLES = [
   'raymarch-boxes', 'raymarch-sphere', 'starfield', 'truchet', 'tunnel', 'voronoi',
 ]
 
-/** The `.shade.ts` examples the same runtime can draw. The eight with a GLSL ES 3.00 form
+/** The `.shade.ts` examples the same runtime can draw. The ones with a GLSL ES 3.00 form
  *  that are left out are listed in NO_STILL_REASONS below, with the reason each one gives.
- *  Those eight keep the gallery's plain tile, the way a registry example the runtime cannot
+ *  Those keep the gallery's plain tile, the way a registry example the runtime cannot
  *  draw already does. A list for the same reason as the one above: plain Node reads this
  *  file before the build. */
 export const SHADE_STILL_EXAMPLES = [
@@ -31,6 +31,8 @@ export const SHADE_STILL_EXAMPLES = [
   'mandelbrot-twin', 'mixin-surface', 'module-const', 'ocean-twin', 'orbit-inout',
   'palette-const', 'pick-composite', 'plasma-twin', 'private-state', 'ray-class',
   'shape-inheritance', 'starfield-twin', 'tunnel-twin', 'tuple-and-brand', 'twin-structs',
+  'fp64-cancellation-twin', 'fp64-clock-twin', 'fp64-deep-zoom-twin', 'fp64-sine-sweep-twin',
+  'id-pick', 'packing-bitcast', 'voronoi-twin',
 ]
 
 /** Why one example has no still, keyed by id, for every example of either corpus that is not
@@ -80,6 +82,19 @@ export const NO_STILL_REASONS = {
   'bit-bump': 'uniform',
   'normal-matrix': 'uniform',
   'fp64-lane-stripes': 'uniform',
+  'clip-planes': 'no-glsl',
+  'compute-sync': 'no-glsl',
+  'packed-bytes': 'no-glsl',
+  'fp64-checker-plane-twin': 'control',
+  'fp64-loran-twin': 'control',
+  'fp64-rtc-twin': 'control',
+  'fp64-julia-twin': 'control',
+  'fp64-burning-ship-twin': 'control',
+  'fp64-newton-twin': 'control',
+  'fp64-mandelbrot-de-twin': 'control',
+  'integer-math': 'uniform',
+  'sample-branch': 'uniform',
+  'uniform-array': 'uniform',
 }
 
 /** The reason keys above, so a dictionary can be held to one sentence for each. */

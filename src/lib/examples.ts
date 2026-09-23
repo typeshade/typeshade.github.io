@@ -349,13 +349,13 @@ export const facts = {
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
-  commit: 'ee71d18', examples: 36, shadeExamples: 51, bothTargets: 35, testFiles: 302,
-  goldenGlslPairs: 73,
-  builtins: 139, portableBuiltins: 44, glslAbsentBuiltins: 31, mathAliasBuiltins: 27,
+  commit: 'c5a134e', examples: 36, shadeExamples: 71, bothTargets: 35, testFiles: 302,
+  goldenGlslPairs: 90,
+  builtins: 163, portableBuiltins: 44, glslAbsentBuiltins: 43, mathAliasBuiltins: 27,
   constructRows: 65, forTripLimit: 256,
-  wgslBuiltinIds: 15, glslCapabilities: 4,
-  languageEntries: 235, languageTypes: 31, languageAttributes: 5, languageBuiltinValues: 15,
-  languageFunctions: 140, languageConstants: 8, languageMathMembers: 36,
+  wgslBuiltinIds: 16, glslCapabilities: 4,
+  languageEntries: 262, languageTypes: 30, languageAttributes: 9, languageBuiltinValues: 16,
+  languageFunctions: 163, languageConstants: 8, languageMathMembers: 36,
 }
 const drift: string[] = []
 if (facts.examples !== pinned.examples) drift.push(`examples ${facts.examples} != ${pinned.examples}`)
