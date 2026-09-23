@@ -858,21 +858,24 @@ body > main { flex: 1 }
    worse scrolled, so it becomes a vertical block, and each cell gets its own column header
    back as a small label, from the data-label the loader copies onto it
    (src/lib/remark-doc-tables.mjs). A table the site writes with a phone layout of its own
-   (the layout table, the API reference's targets) carries data-own-stack and is left alone. */
+   (the layout table, the API reference's targets) carries data-own-stack and is left alone.
+   The mark is tested three times to keep the weight the rule had when it named three tables
+   by class: a live example's reflection table, whose own scoped cell rule is one class
+   lighter, stacks with the rest. */
 @media (max-width: 44.999rem) {
-  .doc table:not([data-own-stack]) {
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) {
     display: block; overflow-x: visible;
   }
-  .doc table:not([data-own-stack]) tbody { display: block }
-  .doc table:not([data-own-stack]) thead { display: none }
-  .doc table:not([data-own-stack]) tr {
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) tbody { display: block }
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) thead { display: none }
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) tr {
     display: block; padding-block: 12px; border-block-end: 1px solid var(--color-line-1);
   }
-  .doc table:not([data-own-stack]) th,
-  .doc table:not([data-own-stack]) td {
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) th,
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) td {
     display: block; padding: 3px 0; border: 0; white-space: normal; background: none;
   }
-  .doc table:not([data-own-stack]) td[data-label]::before {
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) td[data-label]::before {
     content: attr(data-label); display: block; font-size: var(--text-ui); color: var(--color-text-3);
   }
 }
