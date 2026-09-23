@@ -193,8 +193,8 @@ const pkg = JSON.parse(readFileSync(path.join(vendorRoot, 'package.json'), 'utf8
  *  `optionalDependencies`, and every `peerDependencies` entry not marked optional in
  *  `peerDependenciesMeta`. An optional peer installs nothing and does not count.
  *  devDependencies is the compiler's own CI toolchain and never reaches an install.
- *  At the pinned commit the one name is `typescript`, a required peer since the language
- *  service compiles TypeScript source; every core subpath does without it. A name outside
+ *  At the pinned commit the one name is `typescript`, a required peer since `compile()` on the
+ *  main entry and the language service both parse TypeScript source. A name outside
  *  this list stops the build, because the copy counts these and names them. */
 const RUNTIME_DEPS = ['typescript']
 function runtimeDeps(): readonly string[] {
