@@ -795,8 +795,8 @@ body > main { flex: 1 }
    frame inside a card, a mapping cell or a figure keeps the box it is in. A grid of cards
    takes the whole column, because it answers the extra width with more cards. */
 .doc figure, .doc .figure-pair, .doc table,
-.doc > :is(.expressive-code, .example-emitted),
-.doc > section > :is(.expressive-code, .example-emitted) { max-inline-size: var(--wide) }
+.doc > .expressive-code,
+.doc > section > .expressive-code { max-inline-size: var(--wide) }
 .doc a { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
 .doc a:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px }
 .doc code { font-family: var(--font-mono); font-size: 0.875em }
@@ -850,26 +850,25 @@ body > main { flex: 1 }
 .doc th, .doc td { padding: 12px 16px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-line-1) }
 .doc th { font-weight: 600; color: var(--color-text-1); background: var(--color-surface-1) }
 .doc thead th { border-block-end: 1px solid var(--color-line-1) }
-/* Below 45rem, a plain Markdown table follows the precedent .example-table sets: a row is
-   unreadable squeezed to the column and worse scrolled, so it stacks into a vertical block
-   instead. A Markdown table carries no row header the way .example-table does, so each cell
-   gets its own column header back as a small label, from the data-label the loader copies onto
-   it (src/lib/remark-doc-tables.mjs); example-table, the layout table and the API reference's
-   own targets table keep their own, purpose-built mobile layout instead. */
+/* Below 45rem a plain Markdown table stacks: a row is unreadable squeezed to the column and
+   worse scrolled, so it becomes a vertical block, and each cell gets its own column header
+   back as a small label, from the data-label the loader copies onto it
+   (src/lib/remark-doc-tables.mjs). A table the site writes with a phone layout of its own
+   (the layout table, the API reference's targets) carries data-own-stack and is left alone. */
 @media (max-width: 44.999rem) {
-  .doc table:not(.layout-table):not([data-own-stack]) {
+  .doc table:not([data-own-stack]) {
     display: block; overflow-x: visible;
   }
-  .doc table:not(.layout-table):not([data-own-stack]) tbody { display: block }
-  .doc table:not(.layout-table):not([data-own-stack]) thead { display: none }
-  .doc table:not(.layout-table):not([data-own-stack]) tr {
+  .doc table:not([data-own-stack]) tbody { display: block }
+  .doc table:not([data-own-stack]) thead { display: none }
+  .doc table:not([data-own-stack]) tr {
     display: block; padding-block: 12px; border-block-end: 1px solid var(--color-line-1);
   }
-  .doc table:not(.layout-table):not([data-own-stack]) th,
-  .doc table:not(.layout-table):not([data-own-stack]) td {
+  .doc table:not([data-own-stack]) th,
+  .doc table:not([data-own-stack]) td {
     display: block; padding: 3px 0; border: 0; white-space: normal; background: none;
   }
-  .doc table:not(.layout-table):not([data-own-stack]) td[data-label]::before {
+  .doc table:not([data-own-stack]) td[data-label]::before {
     content: attr(data-label); display: block; font-size: var(--text-ui); color: var(--color-text-3);
   }
 }
@@ -932,7 +931,6 @@ body > main { flex: 1 }
   position: absolute; inset-block: 0; inset-inline-start: 50%; inline-size: 2px; translate: -1px 0;
   background: #fff; mix-blend-mode: difference; pointer-events: none;
 }
-.scroll-region { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin }
 
 /* A tile's cover, on the front page and in the gallery: the build-time still at 3:2 over the
    canvas grey, with a hairline under it. The page scales it on hover. */
@@ -954,15 +952,6 @@ body > main { flex: 1 }
 /* Diagnostic */
 .diagnostic { margin-block-start: 12px; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); color: var(--color-text-2); overflow-wrap: anywhere }
 .diagnostic b { color: var(--color-diag); font-weight: 500 }
-
-/* Layout table: it sits at its natural width, with a visible caption above it */
-.layout-table { margin-block-start: 24px; border-collapse: collapse; inline-size: auto; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); font-variant-numeric: tabular-nums; color: var(--color-text-2) }
-.layout-table th, .layout-table td { padding: 8px 28px 8px 0; text-align: start; border-block-start: 1px solid var(--color-line-1); background: none }
-.layout-table th { font-weight: 500; color: var(--color-text-3); border-block-start: 0 }
-.layout-table [data-align='end'] { text-align: end; white-space: nowrap }
-.layout-table th:last-child, .layout-table td:last-child { padding-inline-end: 0 }
-.layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-ui); color: var(--color-text-2) }
-
 /* Footer: the site map in three groups on the container's white, held off the page field by
    its #f0f0f0 top rule, then the licence, the copyright and the commit. The three groups sit
    at their own widths across the shell, and Documentation's 19 links run down two columns
