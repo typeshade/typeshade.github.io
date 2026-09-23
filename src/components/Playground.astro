@@ -1,6 +1,7 @@
 ---
 import Rich from './Rich.astro';
-import { copyFor, type Locale } from '../i18n/index.ts';
+import { copyFor, localePath, type Locale } from '../i18n/index.ts';
+import { links } from '../lib/links.ts';
 import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts';
 import { twinUniformDefaults } from '../lib/hero-shader.ts';
 import { shadeExampleList } from '../lib/shade-examples.ts';
@@ -128,6 +129,7 @@ const runtimeCopy = {
   share: t.share,
   shared: t.shared,
   emit: t.emit,
+  errorsHref: localePath(locale, links.errors.href),
 };
 ---
 
@@ -370,7 +372,12 @@ const runtimeCopy = {
   /* The rows are built by the script after the page loads, so they carry no scoping attribute
      and a plain descendant selector would miss them, the way .reflection's contents do. */
   [data-diagnostics] :global(li + li) { margin-top: 2px; }
-  [data-diagnostics] :global(button) { display: block; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 2px 4px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  /* A row is the message, which jumps to its line, and the code after it, which links to the
+     code's page the way an editor's problems list prints a code after the message. */
+  [data-diagnostics] :global(li) { display: flex; align-items: baseline; gap: 8px; }
+  [data-diagnostics] :global(.diag-code) { flex: none; color: var(--color-text-3); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 2px; }
+  [data-diagnostics] :global(.diag-code:hover) { color: var(--color-accent); text-decoration-color: currentColor; }
+  [data-diagnostics] :global(button) { display: block; flex: 1 1 auto; min-width: 0; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 2px 4px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   [data-diagnostics] :global(button:hover) { background: var(--color-surface-2); }
   [data-diagnostics] :global(.at) { color: var(--color-text-3); }
   /* Which half of the pipeline raised the row: TypeScript over the ambient lib, or the TypeShade front end. */

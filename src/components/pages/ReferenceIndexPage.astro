@@ -1,6 +1,7 @@
 ---
 // The language reference's front door: the six tables the compiler documents the language
-// with, each with the number of names in it and one line on what it holds. The sections and
+// with, each with the number of names in it and one line on what it holds, and the error
+// codes after them. The sections and
 // their counts come from the compiler (src/lib/language-reference.ts); the words come from
 // the dictionary, so a Korean reader gets Korean around English identifiers.
 import Docs from '../../layouts/Docs.astro'
@@ -16,8 +17,17 @@ const r = copyFor(locale).docs.reference
 const kinds = languageSections().map((section) => ({
   ...r.kinds[section.kind],
   href: localePath(locale, `/reference/${section.slug}/`),
-  count: section.entries.length,
+  count: r.entries(section.entries.length),
 }))
+// The error codes follow the six tables, counted from the compiler's two registries.
+const x = copyFor(locale).docs.errors
+kinds.push({
+  name: x.h1,
+  summary: x.summary,
+  description: x.description,
+  href: localePath(locale, links.errors.href),
+  count: x.codes(facts.errorCodesTs + facts.errorCodesSd),
+})
 const headings = [{ depth: 2, slug: 'reading', text: r.readingH }]
 ---
 
@@ -38,7 +48,7 @@ const headings = [{ depth: 2, slug: 'reading', text: r.readingH }]
   <dl class="api-list api-index">
     {kinds.map((k) => (
       <>
-        <dt><a href={k.href}>{k.name}</a> <span class="api-type">{r.entries(k.count)}</span></dt>
+        <dt><a href={k.href}>{k.name}</a> <span class="api-type">{k.count}</span></dt>
         <dd><Rich text={k.summary} locale={locale} /></dd>
       </>
     ))}

@@ -126,7 +126,7 @@ const next = siblings.next
   ? { label: siblings.next.title, href: localePath(locale, languageEntryPath(kind, siblings.next.name)) }
   : nextSection
     ? { label: r.kinds[nextSection.kind].name, href: localePath(locale, `/reference/${nextSection.slug}/`) }
-    : undefined
+    : { label: copyFor(locale).docs.errors.h1, href: localePath(locale, links.errors.href) }
 // What a search result calls the page: the name with its kind, so a hit reads mix (function).
 const meta = `title:${entry.name} (${kindWord})`
 ---

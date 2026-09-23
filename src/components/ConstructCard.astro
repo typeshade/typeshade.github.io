@@ -32,7 +32,8 @@
 import { Code } from 'astro-expressive-code/components'
 import CodeFrame from './CodeFrame.astro'
 import Rich from './Rich.astro'
-import type { Locale } from '../i18n/index.ts'
+import { localePath, type Locale } from '../i18n/index.ts'
+import { errorCodePath } from '../lib/error-codes.ts'
 
 // Named on a line of its own: the Astro compiler hoists an exported type alias by taking the
 // text up to its last closing brace, the way MappingTable.astro's header comment describes.
@@ -62,6 +63,8 @@ if ((wgsl === null) === (diagnostic === null)) {
 // name are markup for Rich and have no place in a label.
 const plain = name.replace(/`/g, '')
 const region = (title: string): string => `${title}, ${plain}`
+// The compiler's code on a refused construct links to that code's page.
+const errorPage = diagnostic && errorCodePath(diagnostic.code) ? localePath(locale, errorCodePath(diagnostic.code)!) : undefined
 ---
 
 <li class="construct-card rounded-md border border-line-1 bg-(--color-elevated)">
@@ -85,7 +88,7 @@ const region = (title: string): string => `${title}, ${plain}`
     ) : (
       <div class="construct-card-refusal min-inline-0">
         <p class="construct-card-pane-title flex min-block-[34px] items-center text-ui text-text-3">{diagnosticTitle}</p>
-        <p class="diagnostic">{diagnostic!.code.length > 0 && <b>{diagnostic!.code}</b>} {diagnostic!.message}</p>
+        <p class="diagnostic">{diagnostic!.code.length > 0 && <b>{errorPage ? <a href={errorPage}>{diagnostic!.code}</a> : diagnostic!.code}</b>} {diagnostic!.message}</p>
       </div>
     )}
   </div>
@@ -136,4 +139,6 @@ const region = (title: string): string => `${title}, ${plain}`
      so the two panes of a refused construct read as one row. */
   .construct-card-pane-title { margin: 0 }
   .construct-card-refusal .diagnostic { margin-block-start: 10px }
+  /* The code keeps the diagnostic's red as a link, underlined so it reads as one. */
+  .construct-card-refusal .diagnostic b a { color: inherit; text-decoration: underline; text-underline-offset: 3px }
 </style>

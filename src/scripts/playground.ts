@@ -37,6 +37,7 @@ import {
 import { codeOnly, FRAGMENT_PRELUDE, sampleShape } from '../lib/live-shader-contract.ts';
 import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
+import { errorLink } from './error-links.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
 // what this page already holds after a compile.
@@ -96,6 +97,8 @@ interface PlaygroundCopy {
   readonly copied: string;
   readonly share: string;
   readonly shared: string;
+  /** The error codes' index in the page's language, which a code links under. */
+  readonly errorsHref: string;
   readonly emit: {
     readonly title: string;
     readonly optimization: string;
@@ -617,6 +620,8 @@ const emitGlsl = (
  *  prelude points nowhere, since the editor does not hold that line. */
 interface DiagnosticRow {
   readonly message: string;
+  /** The compiler's code: `TS8022` and the like from TypeShade, a number from TypeScript. */
+  readonly code: string;
   readonly severity: TypeshadeDiagnostic['severity'];
   readonly source: TypeshadeDiagnostic['source'];
   readonly start: TypeshadePosition;
@@ -1891,6 +1896,7 @@ function mount(root: HTMLElement): void {
    *  file with no directive, is the page's own sentence, so it reads in the page's language. */
   const toRow = (diagnostic: TypeshadeDiagnostic): DiagnosticRow => ({
     message: diagnostic.code === 'TS8001' ? copy.directive : diagnostic.message,
+    code: String(diagnostic.code ?? ''),
     severity: diagnostic.severity,
     source: diagnostic.source,
     start: diagnostic.range.start,
@@ -1913,6 +1919,9 @@ function mount(root: HTMLElement): void {
       else button.disabled = true;
       const item = el('li');
       item.append(button);
+      // The code sits outside the button, since a link inside one is not a link.
+      const code = errorLink(copy.errorsHref, row.code, 'diag-code');
+      if (code) item.append(code);
       diagnosticsPane.append(item);
     }
   };
@@ -1930,7 +1939,7 @@ function mount(root: HTMLElement): void {
     const rows = found.map(toRow);
     // The compiler stays quiet about a file with no directive, so the Playground says it.
     if (!analysis.hasDirective && rows.length === 0) {
-      rows.push({ message: copy.directive, severity: 'error', source: 'typeshade', start: { line: 0, character: 0 }, located: true });
+      rows.push({ message: copy.directive, code: 'TS8001', severity: 'error', source: 'typeshade', start: { line: 0, character: 0 }, located: true });
     }
 
     // One marker owner, fed from the service alone. Monaco's own TypeScript checking is off,

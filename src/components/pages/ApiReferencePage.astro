@@ -13,6 +13,7 @@ import { PACKAGE_NAME } from '../../lib/api.ts'
 import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts'
 import { apiCategoryCopy, assertApiCategories, copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts'
 import { apiSiblings } from '../../lib/api-nav.ts'
+import { errorCodePath } from '../../lib/error-codes.ts'
 import { facts } from '../../lib/examples.ts'
 import { links } from '../../lib/links.ts'
 import { META_MIN, fitDescription } from '../../lib/meta-description.ts'
@@ -26,9 +27,9 @@ interface Props {
   path: string
 }
 const { locale, entry, path } = Astro.props
-// Markdown is rendered once, so its links name the English reference; a Korean page keeps
-// the reader in Korean chrome by prefixing them.
-const localize = (s: string | undefined): string => (!s ? '' : locale === 'en' ? s : s.replace(/href="\/api\//g, `href="/${locale}/api/`))
+// Markdown is rendered once, so its links name the English reference and error pages; a
+// Korean page keeps the reader in Korean chrome by prefixing them.
+const localize = (s: string | undefined): string => (!s ? '' : locale === 'en' ? s : s.replace(/href="\/(api|reference\/errors)\//g, `href="/${locale}/$1/`))
 const raw = entry.html
 const html = {
   summary: localize(raw.summary),
@@ -196,7 +197,7 @@ const supportClass = (s: string) => supportTag[s] ?? `${tag} border-line-2 bg-su
       <dl class="api-list">
         {entry.exceptions.map((e, i) => (
           <>
-            <dt><code>{e.name}</code></dt>
+            <dt>{errorCodePath(e.name) ? <a href={localePath(locale, errorCodePath(e.name)!)}><code>{e.name}</code></a> : <code>{e.name}</code>}</dt>
             <dd><Fragment set:html={html.exceptions[i]} /></dd>
           </>
         ))}
