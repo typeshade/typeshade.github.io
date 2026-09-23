@@ -1391,6 +1391,7 @@ function mount(root: HTMLElement): void {
           fragmentEntry: fragment.name,
           textures: guards,
           resources: bindings.resources(false),
+          moreBlocks: bindings.moreBlocks(),
           ...(vertexBuffer ? { vertexBuffer } : {}),
         },
         controls: {},
@@ -1455,8 +1456,15 @@ function mount(root: HTMLElement): void {
         : emitted.glslVertex
           ? {}
           : { backend: 'webgpu' as const }),
-      uniformValues: (name, seconds) =>
-        bindings.renderValue(name, frozen ?? seconds, target.width, target.height, pointer),
+      uniformValues: (name, seconds, instance) =>
+        bindings.renderValue(
+          name,
+          frozen ?? seconds,
+          target.width,
+          target.height,
+          pointer,
+          instance,
+        ),
     });
     if (mine !== resultRun) {
       next.stop();
