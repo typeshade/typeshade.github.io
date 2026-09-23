@@ -225,13 +225,17 @@ const EMIT_TARGET_BY_FILE: Readonly<Record<string, 'wgsl' | 'glsl' | 'cpu'>> = {
 };
 
 // Acronyms and spellings that stay as they are when a capitalised word is lower-cased. An
-// identifier the source itself writes in a code span is kept too, found in the text.
+// identifier the source itself writes in a code span is kept too, found in the text. The
+// last row is names the source writes bare: the ANGLE translator, the fn() EDSL, and WebGL's
+// RENDERER string.
 // prettier-ignore
 const ACRONYMS = new Set([ // <!-- ok -->
   'WGSL', 'GLSL', 'IR', 'GPU', 'CPU', 'IO', 'API', 'CSP', 'JS', 'TS', 'ESM', 'TSL', 'DSL', 'ES',
   'GL', 'UI', 'DX', 'SD', 'PI', 'TAU', 'UV', 'LUT', 'LOD', 'RGBA', 'MSAA', 'SSBO', 'UBO', 'LHS',
   'MVP', 'ECEF', 'DSFUN', 'EFT', 'MSL', 'HLSL', 'IEEE', 'CSE', 'LICM', 'ABI', 'RHI', 'FXC',
-  'JSON', 'HTML', 'URL', 'CI', 'PR', 'NPM', 'MIT', 'SPIR', 'AST', 'ID',
+  'JSON', 'HTML', 'URL', 'CI', 'PR', 'NPM', 'MIT', 'SPIR', 'AST', 'ID', 'UTF', 'ULP', 'LSP',
+  'HTTP', 'GPGPU',
+  'ANGLE', 'EDSL', 'RENDERER',
 ]);
 
 const abs = (rel: string): string => path.resolve(process.cwd(), ROOT, rel);
@@ -446,12 +450,17 @@ function rewriteReferences(text: string): string {
 const tidyProse = (text: string): string =>
   text.replace(/:\s*\(([^():]+)\)/g, ': $1').replace(/[,;]\s*\)/g, ')');
 
+// What follows a document's name: an extension ("AUTHORING.md") or a section ("AUTHORING §7").
+const DOCUMENT_NAME = /^(?:\.[a-z]{1,4}\b|\s*§)/;
+
 /** A word the source writes in capitals for emphasis, in lower case. An acronym, an identifier
- *  the source spells in a code span, and anything with a digit or an underscore stay. */
+ *  the source spells in a code span, a file or document name, and anything with a digit or an
+ *  underscore stay. */
 function lowerEmphasis(text: string, identifiers: ReadonlySet<string>): string {
   return outsideCode(text, (prose) =>
     prose.replace(/(?<![A-Za-z0-9_#$])[A-Z]{2,}(?![A-Za-z0-9_])/g, (word, at: number) => {
       if (ACRONYMS.has(word) || identifiers.has(word)) return word;
+      if (DOCUMENT_NAME.test(prose.slice(at + word.length))) return word;
       const lower = word.toLowerCase();
       // A word that opens a sentence keeps its capital.
       const before = prose.slice(0, at).trimEnd();
@@ -538,12 +547,11 @@ const dropExportedFrom = (markdown: string): string =>
 
 /** The compiler's prose the way every reference page prints it: the release name, no issue
  *  numbers, no aside or sentence that names a consumer, and no capitals for emphasis. The
- *  error code pages put the two registries' text through it (src/lib/error-codes.ts), and
- *  `keep` names the capitalised words that text writes as names: `ANGLE`, `AUTHORING.md`. */
-export function referenceProse(text: string, keep: readonly string[] = []): string {
+ *  error code pages put the two registries' text through it too (src/lib/error-codes.ts). */
+export function referenceProse(text: string): string {
   return lowerEmphasis(
     dropConsumerText(tidyProse(rewriteReferences(text))),
-    new Set([...codeSpanWords(text), ...keep]),
+    codeSpanWords(text),
   ).trim();
 }
 
@@ -1139,7 +1147,7 @@ function extract(input: ExtractInput): Extracted {
     targets: targetsOf({ name, file, decls, kind, parameters, tables }),
     members: membersOf(decl, name, md),
     guideSections: guideLinksFor(name),
-    seeAlso: [...links, ...seeTagLinks],
+    seeAlso: uniqueByHref([...links, ...seeTagLinks]),
     source: { file, line: lineOf(decl) },
   };
   return { entry, unresolved, seeTagLinks };
@@ -1263,6 +1271,17 @@ function withoutConsumerComments(code: string): string {
     .filter((line): line is string => line !== null)
     .join('\n')
     .trim();
+}
+
+/** A name the description links with `{@link}` and also names in `@see` is one See also
+ *  entry, at the place it first appears. */
+function uniqueByHref(links: readonly ApiLink[]): ApiLink[] {
+  const seen = new Set<string>();
+  return links.filter((l) => {
+    if (seen.has(l.href)) return false;
+    seen.add(l.href);
+    return true;
+  });
 }
 
 /** `@see` targets that are reference pages of their own. */

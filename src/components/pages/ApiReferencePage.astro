@@ -8,6 +8,7 @@
 import { Code } from 'astro-expressive-code/components';
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import ApiType from '../ApiType.astro';
+import LinkColumns from '../LinkColumns.astro';
 import Rich from '../Rich.astro';
 import { PACKAGE_NAME } from '../../lib/api.ts';
 import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts';
@@ -295,7 +296,7 @@ const supportClass = (s: string) => supportTag[s] ?? `${tag} border-line-2 bg-su
   {entry.seeAlso.length > 0 && (
     <section>
       <h2 id="see-also" lang={locale}>{a.seeAlso}</h2>
-      <ul class="api-see-also">{entry.seeAlso.map((l) => <li><a href={localePath(locale, l.href)}><code>{l.label}</code></a></li>)}</ul>
+      <LinkColumns>{entry.seeAlso.map((l) => <li><a href={localePath(locale, l.href)}><code>{l.label}</code></a></li>)}</LinkColumns>
     </section>
   )}
 
