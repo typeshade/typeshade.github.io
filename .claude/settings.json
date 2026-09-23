@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && { [ ! -f vendor/shader-dsl/scripts/downstream-impact.ts ] || bun vendor/shader-dsl/scripts/downstream-impact.ts --hook --repo typeshade.github.io --submodule vendor/shader-dsl; }",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
