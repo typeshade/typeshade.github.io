@@ -74,6 +74,8 @@
 //      draws on WebGL2, on WebGPU and on the CPU, and a leaf's control reaches the frame
 //  45. storage textures on the CPU oracle: the storage-texture example dispatched on the CPU
 //      plots the image it wrote, and the image is the one WebGPU wrote, texel for texel
+//  46. every example in the picker opens with no error, the compute kernels that paint
+//      nothing included
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -2361,6 +2363,12 @@ async function checkRoute(browser, origin, route) {
             plotted: document.querySelector('[data-gpu-canvas]')?.dataset.plotted === '1',
             note: (document.querySelector('[data-gpu-note]')?.textContent ?? '').trim(),
             status: (document.querySelector('[data-status]')?.textContent ?? '').trim(),
+            errors:
+              document.querySelector('[data-playground]')?.classList.contains('has-errors') ??
+              false,
+            first: (document.querySelector('[data-diagnostics] li')?.textContent ?? '')
+              .replace(/\s+/g, ' ')
+              .trim(),
           }));
           drawn.push({ id, ...state, ...seen });
         }
@@ -2390,6 +2398,18 @@ async function checkRoute(browser, origin, route) {
         if (ran.length < RAN_FLOOR) {
           problems.push(
             `${ran.length} of ${drawn.length} examples get a backend, and ${RAN_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped running in the list above`,
+          );
+        }
+        // Every example in the picker is a program the compiler and the editor both accept,
+        // so none opens with an error. The counts above cannot see this for a compute kernel,
+        // which paints nothing either way: four of them opened with TypeScript's TS2454 on
+        // their workgroup memory, because the language service ran on this site's TypeScript
+        // 5.9 and the compiler's own tests run 5.6 (typeshade/typeshade#247).
+        const errored = drawn.filter((row) => row.errors);
+        console.log(`  errors: ${errored.length} of ${drawn.length} examples open with one`);
+        if (errored.length > 0) {
+          problems.push(
+            `${errored.length} example(s) open with an error, and every example in the picker is a program the compiler accepts: ${errored.map((row) => `${row.id} (${row.first})`).join('; ')}`,
           );
         }
 
