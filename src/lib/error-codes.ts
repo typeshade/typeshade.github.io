@@ -475,10 +475,6 @@ function readSdRegistry(): RawCode[] {
   });
 }
 
-// Capitalised words the registries write as names, which the emphasis rule would lower: the
-// ANGLE translator, the fn() EDSL, and the AUTHORING.md the compiler's guide is rendered from.
-const KEEP_CAPITALS = ['ANGLE', 'EDSL', 'AUTHORING'];
-
 /** A registry's text as the pages print it, through the prose rules the API reference already
  *  applies to the same compiler's JSDoc (src/lib/api.ts referenceProse). A paragraph with
  *  nothing left is dropped. */
@@ -486,7 +482,7 @@ function printable(code: RawCode): RawCode {
   // The package's pre-release name, written bare, reads as the release name the way the live
   // examples already print it (src/scripts/live-shader-compile.ts).
   const prose = (text: string): string =>
-    referenceProse(text, KEEP_CAPITALS).replace(/\bshader-dsl\b/g, 'typeshade');
+    referenceProse(text).replace(/\bshader-dsl\b/g, 'typeshade');
   return {
     ...code,
     docs: code.docs.map(prose).filter((p) => p.length > 0),
