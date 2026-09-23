@@ -348,10 +348,10 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
       pick: ['Sphere', 'Sphere_hit'],
     },
     {
-      id: 'getterRefused',
+      id: 'getter',
       ts: "class Disc {\n  radius: f32\n  get area(): f32 {\n    return this.radius * this.radius\n  }\n}",
-      after: "export function cover(d: Disc): f32 {\n  return d.radius\n}",
-      refused: true,
+      after: "export function cover(d: Disc): f32 {\n  return d.area\n}",
+      pick: ['Disc', 'Disc_get_area'],
     },
     {
       id: 'mixin',

@@ -127,7 +127,7 @@ export const SHADE_GROUPS = [
     key: 'classes',
     ids: [
       'ray-class', 'orbit-inout', 'particle-step', 'shape-inheritance', 'mixin-surface',
-      'generic-helpers', 'generic-class', 'tuple-and-brand',
+      'generic-helpers', 'generic-class', 'tuple-and-brand', 'class-syntax', 'rng-method',
     ],
   },
   {

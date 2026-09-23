@@ -116,6 +116,7 @@ export const links = {
   shadeDefaultArgs: shade('default-args'),
   shadeAtomicHistogram: shade('atomic-histogram'),
   shadeOrbitInout: shade('orbit-inout'),
+  shadeClassSyntax: shade('class-syntax'),
   shadeShapeInheritance: shade('shape-inheritance'),
   shadeMixinSurface: shade('mixin-surface'),
   shadeGenericHelpers: shade('generic-helpers'),

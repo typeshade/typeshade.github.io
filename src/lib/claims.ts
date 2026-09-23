@@ -17,7 +17,7 @@ export const claims: readonly Claim[] = [
     source: { label: `every *.test.ts in the tree at ${facts.pinnedCommit}`, href: links.commit.href },
   },
   {
-    text: `${facts.runtimeDeps} runtime dependency, ${facts.runtimeDepNames.join(', ')}, which the language service needs and no core subpath does.`,
+    text: `${facts.runtimeDeps} runtime dependency, ${facts.runtimeDepNames.join(', ')}, which the main entry's compile() and the language service both need.`,
     source: links.packageJson,
   },
   {

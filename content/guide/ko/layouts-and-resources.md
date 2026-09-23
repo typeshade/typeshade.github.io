@@ -1,7 +1,7 @@
 ---
 id: layouts-and-resources
-source: 095950dbbd1c76dc6040f7e90ee6095185fd308fe7c2045126b136c04c5e1a2a
-sourceLine: 975
+source: c5028c6c3af5612c787546afdbebc7ee7901529afafc4131724cc55a354dcb0d
+sourceLine: 997
 ---
 
 이 절을 읽고 나면 버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고, 그 선언
@@ -19,12 +19,14 @@ sourceLine: 975
 
 IO 구조체는 스테이지 경계를 넘어가는 필드 묶음입니다. 버텍스 스테이지가 반환하고,
 프래그먼트 스테이지가 매개변수로 받습니다. `ioStruct`는 이름과 필드 맵으로 IO 구조체를
-선언하며, 필드마다 스테이지 속성이 붙습니다. `builtin(name, type)`은 하드웨어가 직접
+선언하며, 필드마다 스테이지 속성이 붙습니다. `builtin(name)`은 하드웨어가 직접
 공급하는 값을 선언하고, `'position'`이나 `'vertex_index'`처럼 WGSL 내장 식별자를 인자로
 받습니다. 이 인자의 타입은 닫힌 유니온이므로, WGSL에 없는 이름을 쓰면 `tsc` 오류가
 됩니다. `location(n, type)`은 번호가 있는 슬롯을 선언합니다. 보간 모드는 `'flat'`,
-`'linear'`, `'perspective'` 중 하나를 골라 붙일 수 있고, 생략해도 됩니다. 두 타깃이 모두
-지원하는 모드는 `'flat'`입니다.
+`'linear'`, `'perspective'` 중 하나를 골라 붙일 수 있고, 생략해도 됩니다. 정수 필드에는 따로 지정하지 않아도
+`flat`이 붙습니다. WGSL이 정수 varying에는 이 모드를 요구하기 때문입니다. 두 타깃이 모두
+지원하는 모드는 `'flat'`과 `'perspective'`입니다. `'linear'`는 GLSL ES 3.00에 대응하는 형태가
+없으므로, 이를 쓰는 모듈은 그 타깃에서 fail closed 방식으로 실패합니다.
 
 ```ts
 const VsOut = ioStruct('VsOut', {
