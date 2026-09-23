@@ -694,6 +694,8 @@ export const en = {
       written: 'After the dispatch',
       size: 'size',
       noControl: 'No control for',
+      hostOwned:
+        'The host owns this binding. Here the page supplies a stand-in value, which you can change.',
       vertices:
         'The vertex entry reads these from a buffer. The page gives it the three corners of a triangle, each input filled by what it is called.',
     },

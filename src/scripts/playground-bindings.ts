@@ -63,17 +63,26 @@ export interface BindingsCopy {
   readonly written: string;
   readonly size: string;
   readonly noControl: string;
+  readonly hostOwned: string;
   readonly vertices: string;
 }
 
 type Binding = Reflection['bindGroups'][number]['entries'][number];
 
-/** One uniform field the panel packs: where it sits and what shape its numbers take. */
+/** One uniform field the panel packs: where it sits and what shape its numbers take. A
+ *  field of a nested struct or of an array of structs is one of these per leaf, named by its
+ *  path (`key.dir`, `fills[1].colour`), so each gets the control its own type gets. */
 interface PackedField {
   readonly name: string;
   readonly type: string;
   readonly offset: number;
   readonly shape: FieldShape;
+  /** The last name on the path, which the controls are chosen by: `colour` for
+   *  `fills[1].colour`. */
+  readonly leaf: string;
+  /** Where the value sits in the oracle's value of the binding: struct fields by name,
+   *  array elements by index. Empty for a bare value, which is the binding itself. */
+  readonly path: readonly (string | number)[];
 }
 
 /** One uniform buffer, a struct or a bare value, with its std140 fields. */
@@ -321,6 +330,8 @@ export class BindingsModel {
   private storageTextures: Binding[] = [];
   /** Bindings the panel has nothing to put in, by name. */
   private unfillable: string[] = [];
+  /** Bindings the module marks as the host's, which the panel fills with a stand-in. */
+  private hostOwned = new Set<string>();
   /** The vertex entry's `@location` inputs, which read a vertex buffer. */
   private vertexInputs: { name: string; type: string; location: number }[] = [];
 
@@ -360,6 +371,7 @@ export class BindingsModel {
     this.textures = [];
     this.storageTextures = [];
     this.unfillable = [];
+    this.hostOwned = new Set();
     this.results = new Map();
     this.vertexInputs = [];
     if (!reflection) return;
@@ -374,10 +386,9 @@ export class BindingsModel {
       for (const entry of group.entries) {
         // The compiler's fp64 guard is the runtime's to fill, and the page never shows it.
         if (entry.name === '_fp64') continue;
-        if (entry.owner === 'host') {
-          this.unfillable.push(entry.name);
-          continue;
-        }
+        // A binding the host owns is declared in the emitted program all the same, so the
+        // page fills it like any other of its kind and says whose it is.
+        if (entry.owner === 'host') this.hostOwned.add(entry.name);
         switch (entry.resourceKind) {
           case 'uniform-buffer': {
             const block = this.uniformBlock(entry, typeOf(entry.name));
@@ -440,28 +451,91 @@ export class BindingsModel {
   private uniformBlock(entry: Binding, type: ShaderType | undefined): UniformBlock | undefined {
     if (entry.structName) {
       const layout = this.reflection?.uniforms.find((u) => u.name === entry.structName);
+      const decl = this.structs.get(entry.structName);
       if (!layout) return undefined;
       const fields: PackedField[] = [];
-      for (const f of layout.fields) {
+      for (const [i, f] of layout.fields.entries()) {
         const shape = fieldShape(f.type);
-        if (!shape) return undefined;
-        fields.push({ name: f.name, type: f.type, offset: f.offset, shape });
+        if (shape) {
+          fields.push({
+            name: f.name,
+            type: f.type,
+            offset: f.offset,
+            shape,
+            leaf: f.name,
+            path: [f.name],
+          });
+          continue;
+        }
+        // A nested struct or an array of them: one field per leaf, at the leaf's own offset.
+        const declared = decl?.fields[i];
+        const leaves =
+          declared?.name === f.name
+            ? this.leaves(declared.type as ShaderType, f.name, f.offset, [f.name])
+            : null;
+        if (!leaves) return undefined;
+        fields.push(...leaves);
       }
       return { binding: entry, struct: entry.structName, size: layout.size, fields, bare: false };
     }
     // A bare value bound as a uniform, `var<uniform> scale: f32`. It lays out like a struct of
     // one field at offset 0, which is what the runtime packs.
-    const key = type ? keyOf(type) : '';
-    const shape = fieldShape(key);
-    if (!shape || !type) return undefined;
+    if (!type) return undefined;
+    const fields = this.leaves(type, entry.name, 0, []);
+    if (!fields) return undefined;
     const { size } = layoutOf(type, this.structs, 'std140');
     return {
       binding: entry,
       struct: '',
       size: roundUp(Math.max(size, 4), 16),
-      fields: [{ name: entry.name, type: key, offset: 0, shape }],
-      bare: true,
+      fields,
+      bare: fields.length === 1 && fields[0]!.path.length === 0,
     };
+  }
+
+  /** A uniform value as the fields the panel packs: itself when it has a control of its own,
+   *  and otherwise every field of a struct and every element of a fixed array, down to the
+   *  values that do, at their std140 offsets. Null for a value with a leaf nothing can fill,
+   *  an emulated double inside a struct among them, whose layout the fp64 lowering owns. */
+  private leaves(
+    t: ShaderType,
+    name: string,
+    offset: number,
+    path: readonly (string | number)[],
+  ): PackedField[] | null {
+    const key = keyOf(t);
+    const shape = fieldShape(key);
+    const leaf = String(path.findLast((step) => typeof step === 'string') ?? name);
+    if (shape && (path.length <= 1 || shape.scalar !== 'f64'))
+      return [{ name, type: key, offset, shape, leaf, path }];
+    if (t.kind === 'struct') {
+      const decl = this.structs.get(t.name);
+      if (!decl) return null;
+      const layout = wgslLayout(decl, 'std140', this.structs);
+      const out: PackedField[] = [];
+      for (const [i, f] of decl.fields.entries()) {
+        const inner = this.leaves(
+          f.type as ShaderType,
+          `${name}.${f.name}`,
+          offset + layout.fields[i]!.offset,
+          [...path, f.name],
+        );
+        if (!inner) return null;
+        out.push(...inner);
+      }
+      return out;
+    }
+    if (t.kind === 'array' && t.size !== undefined) {
+      const stride = roundUp(layoutOf(t.elem, this.structs, 'std140').size, 16);
+      const out: PackedField[] = [];
+      for (let i = 0; i < t.size; i++) {
+        const inner = this.leaves(t.elem, `${name}[${i}]`, offset + i * stride, [...path, i]);
+        if (!inner) return null;
+        out.push(...inner);
+      }
+      return out;
+    }
+    return null;
   }
 
   private storageBlock(entry: Binding, type: ShaderType | undefined): StorageBlock | undefined {
@@ -486,7 +560,7 @@ export class BindingsModel {
     if (shape.array) {
       // An array starts every element where a lone field of its type would.
       const one = controlFor({
-        name: field.name,
+        name: field.leaf,
         type: shape.rows === 1 ? shape.scalar : `vec${shape.rows}<${shape.scalar}>`,
         offset: 0,
       });
@@ -500,7 +574,7 @@ export class BindingsModel {
     }
     if (shape.columns > 1) return matrixPreset('identity', shape);
     if (shape.scalar === 'f32' && shape.rows >= 3) return [...nextColour()].slice(0, shape.rows);
-    const control = controlFor({ name: field.name, type: field.type, offset: field.offset });
+    const control = controlFor({ name: field.leaf, type: field.type, offset: field.offset });
     if (control) return [...control.value];
     return Array.from({ length: componentCount(shape) }, () => 0);
   }
@@ -704,9 +778,26 @@ export class BindingsModel {
         }
         return field.shape.rows === 1 && field.shape.columns === 1 ? (v[0] ?? 0) : v;
       };
-      if (block.bare) out[block.binding.name] = valueOf(block.fields[0]!);
-      else
-        out[block.binding.name] = Object.fromEntries(block.fields.map((f) => [f.name, valueOf(f)]));
+      // Each value is put where its path says, so a nested struct arrives as nested objects
+      // and an array of structs as a list of them, the shape the oracle reads a struct in.
+      let value: unknown = undefined;
+      for (const field of block.fields) {
+        if (field.path.length === 0) {
+          value = valueOf(field);
+          continue;
+        }
+        value ??= typeof field.path[0] === 'number' ? [] : {};
+        let at = value as Record<string | number, unknown>;
+        field.path.forEach((step, k) => {
+          if (k === field.path.length - 1) {
+            at[step] = valueOf(field);
+            return;
+          }
+          at[step] ??= typeof field.path[k + 1] === 'number' ? [] : {};
+          at = at[step] as Record<string | number, unknown>;
+        });
+      }
+      out[block.binding.name] = value;
     }
     for (const b of this.storage) out[b.binding.name] = this.cpuStorage(b);
     // A texture and a sampler are bound as the same data the GPU is handed: the texels, and
@@ -1034,6 +1125,8 @@ export class BindingsModel {
       name.append(el('code', 'binding-name', binding.name));
       name.append(el('span', 'binding-kind', kind));
       row.append(name);
+      if (this.hostOwned.has(binding.name))
+        row.append(el('p', 'binding-note', this.copy.hostOwned));
       rows.append(row);
       return row;
     };
@@ -1119,7 +1212,7 @@ export class BindingsModel {
         const item = el('span', 'binding-controls');
         item.append(el('code', 'binding-label', `[${e}]`));
         const one = controlFor({
-          name: field.name,
+          name: field.leaf,
           type: shape.rows === 1 ? shape.scalar : `vec${shape.rows}<${shape.scalar}>`,
           offset: 0,
         });
@@ -1218,7 +1311,7 @@ export class BindingsModel {
       return row;
     }
 
-    const control = controlFor({ name: field.name, type: field.type, offset: field.offset });
+    const control = controlFor({ name: field.leaf, type: field.type, offset: field.offset });
     if (!control) {
       controls.append(el('span', 'binding-runtime', this.copy.noControl));
       return row;
@@ -1234,7 +1327,7 @@ export class BindingsModel {
       controls.append(box);
       return row;
     }
-    if (shape.rows >= 3 && suggestsColour(field.name)) {
+    if (shape.rows >= 3 && suggestsColour(field.leaf)) {
       // A colour, by the contract's rule: one picker for the channels, and a slider for alpha.
       const picker = document.createElement('input');
       picker.type = 'color';

@@ -70,6 +70,8 @@
 //      twelve pixels of one frame held at three seconds match within a few units of 255
 //  43. a module with two uniform blocks: on WebGL2 and on WebGPU the second block's reserved
 //      `time` and its own slider both reach the frame, with no rebuild of the pass
+//  44. a uniform struct holding a struct and an array of structs gets a control per leaf,
+//      draws on WebGL2, on WebGPU and on the CPU, and a leaf's control reaches the frame
 //  45. storage textures on the CPU oracle: the storage-texture example dispatched on the CPU
 //      plots the image it wrote, and the image is the one WebGPU wrote, texel for texel
 //
@@ -783,6 +785,92 @@ async function checkUniformBlocks(page, problems) {
   await page.selectOption('[data-engine]', 'auto');
   await settleBackend(page);
   console.log(`  two uniform blocks: ${seen.join(', ')}`);
+}
+
+// A uniform struct that nests a struct and an array of them. Before the panel filled each
+// leaf, it had no control for `scene` and the canvas drew nothing.
+const NESTED_UNIFORM = `"use typeshade"
+
+class Light {
+  dir: vec3
+  colour: vec3
+}
+
+class Scene {
+  key: Light
+  fills: array<Light, 2>
+  ambient: f32
+}
+
+declare const scene: uniform<Scene>
+
+@fragment
+export function fs(@location(0) uv: vec2): vec4 {
+  const n = normalize(vec3(uv * 2. - 1., 1.))
+  let c = scene.key.colour * max(dot(n, normalize(scene.key.dir)), 0.)
+  c = c + scene.fills[0].colour * max(dot(n, normalize(scene.fills[0].dir)), 0.)
+  c = c + scene.fills[1].colour * max(dot(n, normalize(scene.fills[1].dir)), 0.)
+  return vec4(c + vec3(scene.ambient, scene.ambient, scene.ambient), 1.)
+}
+`;
+
+/** A uniform struct of structs: a control for every leaf, a frame on every engine, and a
+ *  leaf's control that moves the frame. */
+async function checkNestedUniform(page, problems) {
+  await typeSource(page, NESTED_UNIFORM);
+  await settleResult(page);
+  const panel = await page.evaluate(() => ({
+    text: document.querySelector('[data-bindings]')?.textContent ?? '',
+    leaf: document.querySelector('[data-bindings] input[aria-label="fills[1].colour"]') !== null,
+  }));
+  if (!panel.leaf) problems.push('the nested uniform has no control for fills[1].colour');
+  const note = JSON.parse(
+    await page.evaluate(() => document.querySelector('[data-playground]').dataset.copy),
+  ).bindings.noControl;
+  if (panel.text.includes(note))
+    problems.push(`the nested uniform still reads "${note}" in the panel`);
+  const seen = [];
+  for (const engine of ['webgl2', 'webgpu']) {
+    await page.selectOption('[data-engine]', engine);
+    await settleBackend(page);
+    const state = await resultState(page);
+    const drawn = await canvasColours(page);
+    if (state.backend !== engine || drawn.colours < 2)
+      problems.push(
+        `the nested uniform on ${engine} drew ${drawn.colours} colour(s): ${state.note}`,
+      );
+    seen.push(`${engine} ${drawn.colours} colours`);
+  }
+  await holdAt(page, 1);
+  const before = await frameDigest(page);
+  await slide(page, '[data-bindings] input[aria-label="ambient"]', 0.05);
+  await holdAt(page, 1);
+  if ((await frameDigest(page)) === before)
+    problems.push('the nested uniform: moving ambient did not reach the frame');
+  await page.selectOption('[data-engine]', 'cpu');
+  const cpu = await page
+    .waitForFunction(
+      () => document.querySelector('[data-canvas-note]').dataset.px !== undefined,
+      null,
+      { timeout: 30_000 },
+    )
+    .then(() =>
+      page.evaluate(() => {
+        const node = document.querySelector('[data-canvas]');
+        const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
+        const set = new Set();
+        for (let i = 0; i < data.length; i += 4)
+          if (data[i + 3] > 0) set.add(`${data[i]},${data[i + 1]},${data[i + 2]}`);
+        return set.size;
+      }),
+    )
+    .catch(() => 0);
+  if (cpu < 2) problems.push(`the nested uniform drew ${cpu} colour(s) on the CPU`);
+  seen.push(`CPU ${cpu} colours`);
+  await page.evaluate(() => document.querySelector('[data-playground]').__playground.freeze(null));
+  await page.selectOption('[data-engine]', 'auto');
+  await settleBackend(page);
+  console.log(`  nested uniform: ${seen.join(', ')}, ambient reaches the frame`);
 }
 
 /** The plotted canvas's pixels at a grid of points, once a dispatch on `backend` has plotted. */
@@ -2355,6 +2443,7 @@ async function checkRoute(browser, origin, route) {
         await checkBackends(page, problems);
         await checkBindings(page, problems);
         await checkUniformBlocks(page, problems);
+        await checkNestedUniform(page, problems);
         await checkStorageTextures(page, problems);
         await pickExample(page, 'hello');
       }
