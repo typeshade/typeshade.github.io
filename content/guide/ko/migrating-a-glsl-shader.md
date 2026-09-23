@@ -1,7 +1,7 @@
 ---
 id: migrating-a-glsl-shader
-source: 449625bb86c70551bbd5affa8d3c03cec5ced26e97850a119484da4c4ce59a3c
-sourceLine: 2666
+source: e1387c57184729ebf3dcd3df63fe0e17c11efd653032082551f170e7bee59eeb
+sourceLine: 2739
 ---
 
 이 페이지를 읽고 나면 지금 보고 있는 GLSL 구성 요소를 DSL에서 어떻게 표기하는지 찾아보고,
@@ -16,22 +16,22 @@ sourceLine: 2666
 하나하나 챙겨야 하는 GLSL 소스의 한 부분을 뜻합니다. 해당하는 행을 찾아 표기법 칸의 링크를
 따라 설명 페이지로 가고, 무엇이 달라지는지는 설명 칸에서 확인하십시오.
 
-| GLSL 구성 요소 | DSL 표기법 | WGSL 결과 | 설명 |
-| --- | --- | --- | --- |
-| 이 모듈이 소유하는 `uniform Block { … }` | [`uniformStruct`](/guide/authoring/layouts-and-resources/) | `@group`/`@binding` `var<uniform>` | std140 레이아웃은 `reflect()`에서 얻으므로 오프셋을 손으로 셀 일이 없습니다 |
-| 호스트 프리앰블이 이미 선언해 둔 `uniform float u_x;` | `externVar` | 같은 참조를 타깃별 표기로 | 아무것도 생성하지 않으며 `reflect().requires`에 나타납니다 |
-| 이 모듈이 선언하고 호스트가 소유하는 `uniform float u_x;` | `hostUniform` | `@group`/`@binding` `var<uniform>` | GLSL에서는 블록 대신 기본 블록의 느슨한 유니폼 하나를 생성하며, `reflect()`는 이를 `owner: 'host'`로 표시합니다 |
-| 호스트가 소유하는 블록 전체 | `hostBlock` | `@group`/`@binding` `var<uniform>` 하나 | `glsl: 'loose'`는 멤버마다 유니폼 하나씩으로 펼치고, IR에서 `blk.field`를 `field`로 다시 씁니다. 기본값인 `'std140-block'`은 블록을 그대로 둡니다. 호스트 바인드 그룹은 하나의 단위이므로 WGSL은 어느 쪽이든 블록을 유지합니다 |
-| 호스트가 제공하는 함수 | `externFn` | 두 타깃 모두에서 같은 호출 | 호출 지점에서 타입을 정하며, 선언은 생성하지 않습니다 |
-| `#ifdef FEATURE`: 이 모듈이 결정하는 경우 | [빌더 매개변수와 평범한 `if`](/guide/authoring/conditional-programs/) | 전처리기 없음 | 고르지 않은 분기는 아예 빌드하지 않으므로 그쪽 바인딩도 선언하지 않습니다 |
-| `#ifdef FEATURE`: 호스트가 결정하는 경우 | [`variantFamily`](/guide/authoring/conditional-programs/) | 행렬의 각 지점마다 모듈 하나씩 | `emitGuarded`는 define을 소유한 GLSL 호스트를 위해 조건이 줄줄이 이어지는 `#if` ladder를 생성하며, 각 분기는 따로 만든 변형과 바이트 단위로 같습니다. `#include` 안에 들어갈 ladder가 필요하면 `emitGuardedFragment`가 같은 ladder를 프리앰블과 함께 데이터로 돌려줍니다 |
-| 값 하나만 달라지는 변형 | [`overrideConst`와 `overrideValues`](/guide/authoring/conditional-programs/) | `override`와 파이프라인 상수 | 이런 경우 별도 변형을 만들면 파이프라인만 쓸데없이 늘어납니다 |
-| `#include "helper.glsl"` | [`emitGlslFragment`와 `emitFragment`](/guide/authoring/emitting-and-reflection/) | 호스트가 이어 붙이는 모듈 조각(module fragment) | 헤더는 `preamble`에 데이터로 담겨 돌아옵니다 |
-| 모듈 하나 안에서 문(statement) 자리에 들어가는 변형 슬롯 | [`composeModule`과 `placeholder`](/guide/authoring/conditional-programs/) | 동일 | 문 자리에 들어가는 슬롯만 지원하므로 `#include`를 대신하지는 못합니다 |
-| 선언 하나에 붙는 `precision highp …` | `hostUniform`의 `precision` 옵션 | 없음(WGSL에는 정밀도 한정자가 없습니다) | [스테이지 프리앰블](/guide/authoring/glsl-float-precision/)이 기본값입니다. 이 옵션은 호스트 프로그램에 끼워 넣는 모듈 조각을 위한 것입니다 |
-| `usampler2D` and `isampler2D` | [`texture2duT`와 `texture2diT`](/guide/authoring/layouts-and-resources/) | `texture_2d<u32>` and `texture_2d<i32>` | 샘플러 정밀도 줄은 알아서 생성해 줍니다 |
-| `#extension … : require` | [`enables`](/guide/authoring/capabilities-extensions/) | `enable …;` | 프로필에 이 기능의 행이 없는 백엔드에서는 드라이버가 거부할 소스를 만드는 대신 컴파일 시점에 SD0030으로 실패합니다. 이런 동작을 fail closed라고 부릅니다. 어떤 기능이 WGSL에서 살아남는지도 그 페이지에서 설명합니다 |
-| 옵티마이저 패스를 거친 뒤 두 생성 결과를 비교하는 경우 | [`semanticDiff`](/guide/authoring/production-emit/) | 동일 | IR과 리플렉션을 비교하므로 폴딩이나 이름 변경 때문에 diff가 흐려지지 않습니다. 운영 플러그인을 `transforms`로 선언해 두면 그 플러그인이 바꾼 부분은 `explained`로 분류합니다 |
+| GLSL 구성 요소                                            | DSL 표기법                                                                       | WGSL 결과                                       | 설명                                                                                                                                                                                                                                                                     |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 이 모듈이 소유하는 `uniform Block { … }`                  | [`uniformStruct`](/guide/authoring/layouts-and-resources/)                       | `@group`/`@binding` `var<uniform>`              | std140 레이아웃은 `reflect()`에서 얻으므로 오프셋을 손으로 셀 일이 없습니다                                                                                                                                                                                              |
+| 호스트 프리앰블이 이미 선언해 둔 `uniform float u_x;`     | `externVar`                                                                      | 같은 참조를 타깃별 표기로                       | 아무것도 생성하지 않으며 `reflect().requires`에 나타납니다                                                                                                                                                                                                               |
+| 이 모듈이 선언하고 호스트가 소유하는 `uniform float u_x;` | `hostUniform`                                                                    | `@group`/`@binding` `var<uniform>`              | GLSL에서는 블록 대신 기본 블록의 느슨한 유니폼 하나를 생성하며, `reflect()`는 이를 `owner: 'host'`로 표시합니다                                                                                                                                                          |
+| 호스트가 소유하는 블록 전체                               | `hostBlock`                                                                      | `@group`/`@binding` `var<uniform>` 하나         | `glsl: 'loose'`는 멤버마다 유니폼 하나씩으로 펼치고, IR에서 `blk.field`를 `field`로 다시 씁니다. 기본값인 `'std140-block'`은 블록을 그대로 둡니다. 호스트 바인드 그룹은 하나의 단위이므로 WGSL은 어느 쪽이든 블록을 유지합니다                                           |
+| 호스트가 제공하는 함수                                    | `externFn`                                                                       | 두 타깃 모두에서 같은 호출                      | 호출 지점에서 타입을 정하며, 선언은 생성하지 않습니다                                                                                                                                                                                                                    |
+| `#ifdef FEATURE`: 이 모듈이 결정하는 경우                 | [빌더 매개변수와 평범한 `if`](/guide/authoring/conditional-programs/)            | 전처리기 없음                                   | 고르지 않은 분기는 아예 빌드하지 않으므로 그쪽 바인딩도 선언하지 않습니다                                                                                                                                                                                                |
+| `#ifdef FEATURE`: 호스트가 결정하는 경우                  | [`variantFamily`](/guide/authoring/conditional-programs/)                        | 행렬의 각 지점마다 모듈 하나씩                  | `emitGuarded`는 define을 소유한 GLSL 호스트를 위해 조건이 줄줄이 이어지는 `#if` ladder를 생성하며, 각 분기는 따로 만든 변형과 바이트 단위로 같습니다. `#include` 안에 들어갈 ladder가 필요하면 `emitGuardedFragment`가 같은 ladder를 프리앰블과 함께 데이터로 돌려줍니다 |
+| 값 하나만 달라지는 변형                                   | [`overrideConst`와 `overrideValues`](/guide/authoring/conditional-programs/)     | `override`와 파이프라인 상수                    | 이런 경우 별도 변형을 만들면 파이프라인만 쓸데없이 늘어납니다                                                                                                                                                                                                            |
+| `#include "helper.glsl"`                                  | [`emitGlslFragment`와 `emitFragment`](/guide/authoring/emitting-and-reflection/) | 호스트가 이어 붙이는 모듈 조각(module fragment) | 헤더는 `preamble`에 데이터로 담겨 돌아옵니다                                                                                                                                                                                                                             |
+| 모듈 하나 안에서 문(statement) 자리에 들어가는 변형 슬롯  | [`composeModule`과 `placeholder`](/guide/authoring/conditional-programs/)        | 동일                                            | 문 자리에 들어가는 슬롯만 지원하므로 `#include`를 대신하지는 못합니다                                                                                                                                                                                                    |
+| 선언 하나에 붙는 `precision highp …`                      | `hostUniform`의 `precision` 옵션                                                 | 없음(WGSL에는 정밀도 한정자가 없습니다)         | [스테이지 프리앰블](/guide/authoring/glsl-float-precision/)이 기본값입니다. 이 옵션은 호스트 프로그램에 끼워 넣는 모듈 조각을 위한 것입니다                                                                                                                              |
+| `usampler2D` and `isampler2D`                             | [`texture2duT`와 `texture2diT`](/guide/authoring/layouts-and-resources/)         | `texture_2d<u32>` and `texture_2d<i32>`         | 샘플러 정밀도 줄은 알아서 생성해 줍니다                                                                                                                                                                                                                                  |
+| `#extension … : require`                                  | [`enables`](/guide/authoring/capabilities-extensions/)                           | `enable …;`                                     | 프로필에 이 기능의 행이 없는 백엔드에서는 드라이버가 거부할 소스를 만드는 대신 컴파일 시점에 SD0030으로 실패합니다. 이런 동작을 fail closed라고 부릅니다. 어떤 기능이 WGSL에서 살아남는지도 그 페이지에서 설명합니다                                                     |
+| 옵티마이저 패스를 거친 뒤 두 생성 결과를 비교하는 경우    | [`semanticDiff`](/guide/authoring/production-emit/)                              | 동일                                            | IR과 리플렉션을 비교하므로 폴딩이나 이름 변경 때문에 diff가 흐려지지 않습니다. 운영 플러그인을 `transforms`로 선언해 두면 그 플러그인이 바꾼 부분은 `explained`로 분류합니다                                                                                             |
 
 옮기기 시작할 때 가장 흔히 만나는 행은 이 모듈이 소유하는 블록입니다. `uniformStruct`는
 WGSL 타입 이름과 슬롯, 필드 맵을 받아 타입이 맞는 필드 접근을 돌려줍니다.
@@ -56,16 +56,16 @@ const mvp = camera.field.u_matrix
 같은 이름이나 오타를 쓰면 `tsc`가 그 유니온 타입을 짚어 주는 오류를 냅니다. 각 백엔드는
 그 뒤에 해당 id를 자기 방식대로 표기합니다.
 
-| GLSL 전역 변수 | DSL 표기법 | 설명 |
-| --- | --- | --- |
-| `gl_Position` | 버텍스 출력에 쓰는 `builtin('position', vec4fT)` | GLSL에서는 `gl_Position`에 값을 씁니다 |
-| `gl_FragCoord` | 프래그먼트 입력에 쓰는 `builtin('position', vec4fT)` | GLSL에서는 `gl_FragCoord`를 읽습니다. y축 원점에 주의해야 합니다. GL 윈도우 좌표는 왼쪽 아래가 원점이고 WGSL 프레임버퍼 좌표는 왼쪽 위가 원점이므로, `.y`를 쓰기 전에 타깃마다 뒤집거나 위아래가 바뀌어도 같은 값이 나오도록 계산해 두어야 합니다 |
-| `gl_VertexID` | `builtin('vertex_index', u32T)` | GLSL에서는 읽을 때 `uint(gl_VertexID)`로 감쌉니다. DSL은 이 값을 u32로 두지만 GLSL에서는 int이기 때문입니다 |
-| `gl_InstanceID` | `builtin('instance_index', u32T)` | 마찬가지로 `uint()`로 감쌉니다 |
-| `gl_FrontFacing` | `builtin('front_facing', boolT)` | |
-| `gl_FragDepth` | 반환 속성으로 쓰는 `builtin('frag_depth', f32T)` | |
-| `gl_PointSize` and `gl_PointCoord` | 두 생성기 모두 지원하지 않음 | 포인트 크기 상한은 벤더마다 다르며, WebGPU의 점 프리미티브는 항상 한 픽셀입니다. 버텍스 스테이지에서 인스턴싱한 쿼드를 펼치고, 모서리 uv는 `@location(n)`으로 넘겨 보간하십시오 |
-| float `mod(x, y)` | 독립 함수 `mod()` | 이쪽은 floor-mod입니다. `.mod()`와 `%`는 WGSL 의미론대로 trunc-mod이며, GLSL 타깃에서도 같은 뜻을 지키도록 생성합니다. 음수 피연산자에서 어떤 결과를 원하는지에 따라 고르면 됩니다 |
+| GLSL 전역 변수                     | DSL 표기법                                           | 설명                                                                                                                                                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gl_Position`                      | 버텍스 출력에 쓰는 `builtin('position', vec4fT)`     | GLSL에서는 `gl_Position`에 값을 씁니다                                                                                                                                                                                                            |
+| `gl_FragCoord`                     | 프래그먼트 입력에 쓰는 `builtin('position', vec4fT)` | GLSL에서는 `gl_FragCoord`를 읽습니다. y축 원점에 주의해야 합니다. GL 윈도우 좌표는 왼쪽 아래가 원점이고 WGSL 프레임버퍼 좌표는 왼쪽 위가 원점이므로, `.y`를 쓰기 전에 타깃마다 뒤집거나 위아래가 바뀌어도 같은 값이 나오도록 계산해 두어야 합니다 |
+| `gl_VertexID`                      | `builtin('vertex_index', u32T)`                      | GLSL에서는 읽을 때 `uint(gl_VertexID)`로 감쌉니다. DSL은 이 값을 u32로 두지만 GLSL에서는 int이기 때문입니다                                                                                                                                       |
+| `gl_InstanceID`                    | `builtin('instance_index', u32T)`                    | 마찬가지로 `uint()`로 감쌉니다                                                                                                                                                                                                                    |
+| `gl_FrontFacing`                   | `builtin('front_facing', boolT)`                     |                                                                                                                                                                                                                                                   |
+| `gl_FragDepth`                     | 반환 속성으로 쓰는 `builtin('frag_depth', f32T)`     |                                                                                                                                                                                                                                                   |
+| `gl_PointSize` and `gl_PointCoord` | 두 생성기 모두 지원하지 않음                         | 포인트 크기 상한은 벤더마다 다르며, WebGPU의 점 프리미티브는 항상 한 픽셀입니다. 버텍스 스테이지에서 인스턴싱한 쿼드를 펼치고, 모서리 uv는 `@location(n)`으로 넘겨 보간하십시오                                                                   |
+| float `mod(x, y)`                  | 독립 함수 `mod()`                                    | 이쪽은 floor-mod입니다. `.mod()`와 `%`는 WGSL 의미론대로 trunc-mod이며, GLSL 타깃에서도 같은 뜻을 지키도록 생성합니다. 음수 피연산자에서 어떤 결과를 원하는지에 따라 고르면 됩니다                                                                |
 
 프래그먼트 스테이지는 버텍스 스테이지가 값을 써 넣는 바로 그 `position` 내장값에서
 프레임버퍼 좌표를 읽습니다.

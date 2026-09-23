@@ -1,9 +1,13 @@
 // The authoring guide in other languages: content/guide/<locale>/<section>.md, one file per
 // section of AUTHORING.md, translated by hand from the English at the pinned commit. A file's
 // front matter records the sha256 of the English body it was translated from. When the pin
-// moves and a section's English changes, the build stops here and names the section, so a
-// translation cannot drift from its source unnoticed. scripts/check-guide-translations.ts
-// checks the rest: code blocks, code spans, numerals, links, headings and register.
+// moves and a section's English changes, the translation is stale: it describes a compiler
+// the site no longer builds against, so it is not served. That section is shown in English on
+// that locale, under the note a section with no translation gets, and the build names it
+// (staleGuideTranslations) until it is translated again. A stale file does not stop the build,
+// because a pin that cannot move until every section is re-translated leaves the whole site on
+// the old compiler, and every other page with it. scripts/check-guide-translations.ts checks
+// the rest: code blocks, code spans, numerals, links, headings and register.
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -33,11 +37,33 @@ export function translationDir(locale: string): string {
   return `${GUIDE_TRANSLATIONS_DIR}/${locale}`
 }
 
-/** Every translated section of one locale, keyed by section id. Empty when the locale has none. */
+/** A translation made from an English body the pinned AUTHORING.md no longer has. */
+export interface StaleGuideTranslation {
+  readonly id: string
+  readonly file: string
+  /** The sha256 the front matter records. */
+  readonly recorded: string
+  /** The sha256 of the pinned English. */
+  readonly pinned: string
+}
+
+/** Every translated section of one locale that is current with the pinned English, keyed by
+ *  section id. Empty when the locale has none. A stale file is left out; see
+ *  staleGuideTranslations. */
 export function guideTranslations(locale: string): ReadonlyMap<string, GuideTranslation> {
+  return read(locale).current
+}
+
+/** Every translated section of one locale whose English changed after it was translated. */
+export function staleGuideTranslations(locale: string): readonly StaleGuideTranslation[] {
+  return read(locale).stale
+}
+
+function read(locale: string): { current: ReadonlyMap<string, GuideTranslation>; stale: readonly StaleGuideTranslation[] } {
   const dir = path.resolve(process.cwd(), translationDir(locale))
   const out = new Map<string, GuideTranslation>()
-  if (!existsSync(dir)) return out
+  const stale: StaleGuideTranslation[] = []
+  if (!existsSync(dir)) return { current: out, stale }
   const sections = new Map(guideSections.map((s) => [s.id, s]))
   for (const name of readdirSync(dir).filter((n) => n.endsWith('.md')).sort()) {
     const file = `${translationDir(locale)}/${name}`
@@ -55,12 +81,15 @@ export function guideTranslations(locale: string): ReadonlyMap<string, GuideTran
     if (!section) throw new Error(`[guide] ${file}: AUTHORING.md at the pinned commit has no section '${id}'`)
     const hash = englishHash(section.body)
     if (meta.source !== hash) {
-      throw new Error(
-        `[guide] ${file} was translated from an older '${id}' (source ${String(meta.source).slice(0, 12)}, the pinned English is ${hash.slice(0, 12)}); ` +
-          'translate the section again from the pinned AUTHORING.md and record the new hash in its front matter',
-      )
+      stale.push({ id, file, recorded: String(meta.source), pinned: hash })
+      continue
     }
     out.set(id, { id, locale, body: text.slice(m[0].length), source: hash, sourceLine: section.sourceLine, order: section.order, file })
   }
-  return out
+  return { current: out, stale }
 }
+
+/** The line the build prints for one stale translation. */
+export const staleMessage = (t: StaleGuideTranslation): string =>
+  `${t.file} was translated from an older '${t.id}' (source ${t.recorded.slice(0, 12)}, the pinned English is ${t.pinned.slice(0, 12)}); ` +
+  'it is shown in English until the section is translated again from the pinned AUTHORING.md and the new hash recorded in its front matter'

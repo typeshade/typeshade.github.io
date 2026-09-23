@@ -55,17 +55,19 @@ jobs:
       # OpenSEO's audit engine over dist, pinned; see scripts/openseo-audit.mts.
       - run: bun run qa:openseo
       # Pages is only configured for deployment runs on main; PRs still execute every build/QA check above.
+      # A manual dispatch on another branch (pin-compiler.yml sends one for the pull request it
+      # opens, which starts no pull_request run) builds and checks the same way and publishes nothing.
       - uses: actions/configure-pages@v5
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           enablement: true
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           path: dist
 
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:
