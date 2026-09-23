@@ -284,13 +284,13 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     {
       id: 'callStatement',
       before:
-        'declare let dst: storage<array<f32>>\n\nfunction store(i: u32, v: f32): void {\n  dst[i] = v\n}',
+        'declare const dst: storage<array<f32>, "read_write">\n\nfunction store(i: u32, v: f32): void {\n  dst[i] = v\n}',
       ts: '@compute([64, 1, 1])\nexport function main_k(\n  @builtin("global_invocation_id") gid: vec3u\n): void {\n  store(gid.x, 1.)\n}',
       pick: ['main_k'],
     },
     {
       id: 'phonyAssign',
-      before: 'declare let hits: storage<array<atomic<u32>>>',
+      before: 'declare const hits: storage<array<atomic<u32>>, "read_write">',
       ts: '@compute([64, 1, 1])\nexport function main_k(\n  @builtin("global_invocation_id") gid: vec3u\n): void {\n  atomicAdd(hits[gid.x], 1)\n}',
       pick: ['main_k'],
     },

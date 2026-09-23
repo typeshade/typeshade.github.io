@@ -173,7 +173,7 @@ const declOf = (name: string, p: TypeProbe): string =>
   p.space === 'handle'
     ? `declare const ${name}: ${p.source}`
     : p.space === 'storage'
-      ? `declare let ${name}: storage<${p.source}>`
+      ? `declare const ${name}: storage<${p.source}, "read_write">`
       : p.space === 'private'
         ? `let ${name}: ${p.source}`
         : `declare const ${name}: uniform<${p.source}>`;
@@ -264,7 +264,7 @@ export const INTEGER_TEXTURES: readonly TypeProbe[] = [
 const RESOURCE_SNIPPET = `class Camera { view: mat4 }
 declare const camera: uniform<Camera>
 declare const src: storage<array<f32>>
-declare let dst: storage<array<f32>>
+declare const dst: storage<array<f32>, "read_write">
 declare const tex: texture_2d<f32>
 declare const smp: sampler
 const tint: override<f32> = 0.85
@@ -293,7 +293,7 @@ export function fs(@location(0) uv: vec2): vec4 {
 }
 `;
 
-const COMPUTE_SNIPPET = `declare let dst: storage<array<f32>>
+const COMPUTE_SNIPPET = `declare const dst: storage<array<f32>, "read_write">
 
 @compute([64, 1, 1])
 export function k(@builtin("global_invocation_id") gid: vec3u): void {
@@ -301,7 +301,7 @@ export function k(@builtin("global_invocation_id") gid: vec3u): void {
 }
 `;
 
-const STATEMENT_SNIPPET = `declare let dst: storage<array<f32>>
+const STATEMENT_SNIPPET = `declare const dst: storage<array<f32>, "read_write">
 
 function bump(i: u32): void {
   dst[i] = dst[i] + 1.
@@ -336,8 +336,8 @@ export function fs(@location(0) uv: vec2): vec4 {
 }
 `;
 
-const PHONY_SNIPPET = `declare let counter: storage<atomic<u32>>
-declare let dst: storage<array<f32>>
+const PHONY_SNIPPET = `declare const counter: storage<atomic<u32>, "read_write">
+declare const dst: storage<array<f32>, "read_write">
 
 @compute([64, 1, 1])
 export function k(@builtin("global_invocation_id") gid: vec3u): void {
@@ -523,7 +523,7 @@ function buildWgsl(): WgslMapping {
       row(
         'storageWrite',
         pick(resources, 'storage, read_write>', 'resource snippet'),
-        'declare let dst: storage<array<f32>>',
+        'declare const dst: storage<array<f32>, "read_write">',
       ),
       row(
         'texture',

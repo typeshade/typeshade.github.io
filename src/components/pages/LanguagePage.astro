@@ -31,7 +31,7 @@ const headings = [
 
   <h2 id="gpu">{content.gpuH}</h2>
   <p><Rich text={content.gpuP} locale={locale} /></p>
-  <TypeShadeCode code={'declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}'} lang="ts" title="compute.ts" />
+  <TypeShadeCode code={'declare const camera: uniform<Camera>\ndeclare const pixels: storage<array<f32>, "read_write">\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x\n  pixels[i] = pixels[i] + camera.pos.x\n}'} lang="ts" title="compute.ts" />
   <p><Rich text={content.gpuNote} locale={locale} /></p>
 
   <h2 id="functions">{content.functionH}</h2>
@@ -41,7 +41,7 @@ const headings = [
 
   <h2 id="resources">{content.resourceH}</h2>
   <p><Rich text={content.resourceP} locale={locale} /></p>
-  <TypeShadeCode code={'declare const camera: uniform<Camera>\ndeclare const source: storage<f32>\ndeclare let pixels: storage<f32>'} lang="ts" title="resources" />
+  <TypeShadeCode code={'declare const camera: uniform<Camera>\ndeclare const source: storage<f32>\ndeclare const pixels: storage<f32, "read_write">'} lang="ts" title="resources" />
   <p><Rich text={content.resourceNote} locale={locale} /></p>
 
   <h2 id="stages">{content.stageH}</h2>
@@ -50,7 +50,7 @@ const headings = [
 
   <h2 id="complete">{content.completeH}</h2>
   <p>{content.completeP}</p>
-  <TypeShadeCode code={'"use typeshade";\n\nclass Camera {\n  view: mat4;\n  pos: vec3;\n}\n\ndeclare const camera: uniform<Camera>;\ndeclare let pixels: storage<array<f32>>;\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x;\n  pixels[i] = pixels[i] + camera.pos.x;\n}'} lang="ts" title="paint.ts" />
+  <TypeShadeCode code={'"use typeshade";\n\nclass Camera {\n  view: mat4;\n  pos: vec3;\n}\n\ndeclare const camera: uniform<Camera>;\ndeclare const pixels: storage<array<f32>, "read_write">;\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  const i = gid.x;\n  pixels[i] = pixels[i] + camera.pos.x;\n}'} lang="ts" title="paint.ts" />
 
   <h2 id="typescript">{content.tsH}</h2>
   <ConceptDoc locale={locale} rows={content.tsRows} columns={['TypeScript', 'TypeShade']} />

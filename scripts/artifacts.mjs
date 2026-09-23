@@ -91,6 +91,7 @@ export const SHADE_STILL_EXAMPLES = [
   'closures',
   'higher-order',
   'inferred-returns',
+  'array-methods',
 ];
 
 /** Why one example has no still, keyed by id, for every example of either corpus that is not

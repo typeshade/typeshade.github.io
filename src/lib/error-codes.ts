@@ -915,7 +915,7 @@ export function main(@location(0) uv: vec2): vec4 {
   TS8015: {
     trigger: `"use typeshade"
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([64])
 export function double(@builtin("global_invocation_id") id: vec3u): void {
@@ -929,7 +929,7 @@ export function main(@location(0) uv: vec2): vec4 {
 `,
     fix: `"use typeshade"
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([64])
 export function double(@builtin("global_invocation_id") id: vec3u): void {
@@ -1157,7 +1157,7 @@ export function main(@builtin("position") p: vec4): vec4 {
   TS8026: {
     trigger: `"use typeshade"
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([32, 16, 1])
 export function main(@builtin("global_invocation_id") id: vec3u): void {
@@ -1166,7 +1166,7 @@ export function main(@builtin("global_invocation_id") id: vec3u): void {
 `,
     fix: `"use typeshade"
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([16, 16, 1])
 export function main(@builtin("global_invocation_id") id: vec3u): void {
@@ -1403,7 +1403,7 @@ export function main(@location(0) uv: vec2): vec4 {
   TS8037: {
     trigger: `"use typeshade"
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute(64)
 export function main(@builtin("global_invocation_id") id: vec3u): void {
@@ -1412,7 +1412,7 @@ export function main(@builtin("global_invocation_id") id: vec3u): void {
 `,
     fix: `"use typeshade"
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([64])
 export function main(@builtin("global_invocation_id") id: vec3u): void {
@@ -1462,7 +1462,7 @@ export function main(@location(0) uv: vec2): vec4 {
     trigger: `"use typeshade"
 "enable f61";
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([64])
 export function main(@builtin("global_invocation_id") id: vec3u): void {
@@ -1472,7 +1472,7 @@ export function main(@builtin("global_invocation_id") id: vec3u): void {
     fix: `"use typeshade"
 "enable f16";
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([64])
 export function main(@builtin("global_invocation_id") id: vec3u): void {
@@ -1613,7 +1613,7 @@ export function main(@location(0) uv: vec2): vec4 {
   SD0030: {
     trigger: `"use typeshade"
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([64])
 export function double(@builtin("global_invocation_id") id: vec3u): void {
@@ -1627,7 +1627,7 @@ export function main(@location(0) uv: vec2): vec4 {
 `,
     fix: `"use typeshade"
 
-declare let data: storage<array<f32>>
+declare const data: storage<array<f32>, "read_write">
 
 @compute([64])
 export function double(@builtin("global_invocation_id") id: vec3u): void {

@@ -60,6 +60,7 @@ export const playgroundExampleIds = [
   'closures',
   'higher-order',
   'inferred-returns',
+  'array-methods',
   'loops-over-data',
   'path-tracer',
   'ray-class',
