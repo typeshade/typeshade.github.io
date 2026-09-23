@@ -65,15 +65,20 @@ const tiles = TILE_IDS.map((id) => {
 })
 
 const playground = localePath(locale, links.playground.href)
+// A section's heading and the sentence under it, the same on every section. The heading stops
+// at 24ch and the sentence at 62ch, so neither runs the width of the shell.
+const heading = 'm-0 max-inline-[24ch] text-h2 font-semibold tracking-[-0.01em] text-balance'
+const lead = 'mbs-3 max-inline-[62ch] text-prose text-text-2 text-pretty'
+const section = 'front-section wide-in mbs-(--front-gap)'
 const quickStart = localePath(locale, links.quickStart.href)
 ---
 
 <Base locale={locale} path="/" searchable searchTitle={f.searchTitle}>
-  <div class="front-hero wide-in">
-    <div class="front-hero-text">
-      <h1 class="front-title">{f.title}</h1>
-      <p class="front-lede"><Rich text={f.lede} locale={locale} /></p>
-      <p class="front-actions">
+  <div class="wide-in grid grid-cols-1 gap-10 pbs-12 sm:pbs-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12 lg:pbs-16">
+    <div class="self-center">
+      <h1 class="front-title m-0 text-[clamp(2rem,1.4rem+2.4vw,3rem)] leading-[1.15] font-semibold tracking-[-0.02em] text-balance min-[90rem]:text-[3.25rem]">{f.title}</h1>
+      <p class="front-lede mbs-4 max-inline-[52ch] text-prose text-text-2 text-pretty lg:mbs-5"><Rich text={f.lede} locale={locale} /></p>
+      <p class="mbs-8 flex flex-wrap gap-3">
         <a class="button button-lg button-primary" href={playground}>
           {f.playground}
           <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z" /></svg>
@@ -82,7 +87,7 @@ const quickStart = localePath(locale, links.quickStart.href)
       </p>
     </div>
 
-    <section class="front-stage" aria-label={f.stageAria}>
+    <section class="min-inline-0" aria-label={f.stageAria}>
       <LiveShader
         variant="hero"
         locale={locale}
@@ -101,20 +106,20 @@ const quickStart = localePath(locale, links.quickStart.href)
     </section>
   </div>
 
-  <section class="front-section front-targets wide-in">
-    <h2>{f.targets.h}</h2>
-    <p><Rich text={f.targets.p} locale={locale} /></p>
-    <div class="front-targets-grid">
+  <section class={section}>
+    <h2 class={heading}>{f.targets.h}</h2>
+    <p class={lead}><Rich text={f.targets.p} locale={locale} /></p>
+    <div class="front-targets-grid mbs-6 grid max-inline-[calc(2*var(--wide)+24px)] gap-4 lg:grid-cols-[minmax(0,6fr)_minmax(0,6fr)] lg:gap-6">
       {/* The file name is the source column's own head, in the shape the tabs opposite make
           and the one the hero card gives the same file. The frame under it carries no title
           bar of its own, so the first line of code sits at the same height in both columns. */}
-      <div class="front-targets-src">
-        <p class="tabs-head front-targets-file"><span class="live-file">hello.shade.ts</span></p>
+      <div class="front-targets-src flex min-inline-0 flex-col gap-4 lg:gap-6">
+        <p class="flex block-[41px] items-center gap-4 border-be border-line-1"><span class="live-file">hello.shade.ts</span></p>
         <CodeFrame label={f.targets.source}>
           <Code code={useTypeshadeSample} lang="ts" locale={locale} wrap />
         </CodeFrame>
       </div>
-      <div class="front-targets-out" data-front-tabs>
+      <div class="flex min-inline-0 flex-col gap-4 lg:gap-6" data-front-tabs>
         <div class="tabs-head" role="tablist" aria-label={f.targets.h}>
           <button type="button" role="tab" id="targets-tab-wgsl" aria-controls="targets-panel-wgsl" aria-selected="true">{f.targets.wgsl}</button>
           <button type="button" role="tab" id="targets-tab-glsl" aria-controls="targets-panel-glsl" aria-selected="false">{f.targets.glsl}</button>
@@ -135,53 +140,53 @@ const quickStart = localePath(locale, links.quickStart.href)
     </div>
   </section>
 
-  <section class="front-section front-gallery wide-in">
-    <div class="front-gallery-head">
-      <h2>{f.gallery.h}</h2>
-      <a class="front-gallery-all" href={localePath(locale, links.examples.href)}>{f.gallery.all}</a>
-      <p><Rich text={f.gallery.p} locale={locale} /></p>
+  <section class={section}>
+    <div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6">
+      <h2 class={heading}>{f.gallery.h}</h2>
+      <a class="text-(length:--text-ui) font-semibold whitespace-nowrap text-accent no-underline transition-[color] hover:text-(--color-primary-text-hover)" href={localePath(locale, links.examples.href)}>{f.gallery.all}</a>
+      <p class={`front-gallery-lead col-span-full ${lead}`}><Rich text={f.gallery.p} locale={locale} /></p>
     </div>
-    <ul class="front-tiles">
+    <ul class="mbs-6 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
       {tiles.map((tile) => (
-        <li>
-          <a class="front-tile" href={tile.href}>
+        <li class="front-tile min-inline-0 overflow-hidden rounded-md border border-line-1 bg-(--color-elevated) transition-[box-shadow,border-color]">
+          <a class="group block rounded-md text-inherit no-underline" href={tile.href}>
             <span class="tile-cover">
               <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" />
             </span>
-            <span class="front-tile-name">{tile.title}</span>
+            <span class="block p-4 text-h5 font-semibold text-text-1 transition-[color] group-hover:text-accent">{tile.title}</span>
           </a>
         </li>
       ))}
     </ul>
   </section>
 
-  <section class="front-section front-map wide-in">
-    <h2>{f.map.h}</h2>
-    <p><Rich text={f.map.p} locale={locale} /></p>
-    <dl class="front-map-list">
+  <section class={section}>
+    <h2 class={heading}>{f.map.h}</h2>
+    <p class={lead}><Rich text={f.map.p} locale={locale} /></p>
+    <dl class="mbs-6">
       {f.map.rows.map(([ts, shade, body]) => (
-        <div class="front-map-row">
-          <dt><Code code={ts} lang="ts" locale={locale} wrap /></dt>
-          <dd>
-            <strong><Rich text={shade} locale={locale} /></strong>
-            <p><Rich text={body} locale={locale} /></p>
+        <div class="front-map-row grid gap-x-8 gap-y-2 border-be border-line-1 py-5 first:border-bs md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:items-start">
+          <dt class="self-start justify-self-start max-inline-full min-inline-0"><Code code={ts} lang="ts" locale={locale} wrap /></dt>
+          <dd class="pbs-[2px]">
+            <strong class="block text-h5 font-semibold text-text-1"><Rich text={shade} locale={locale} /></strong>
+            <p class="mbs-1 leading-[1.5714] text-text-2"><Rich text={body} locale={locale} /></p>
           </dd>
         </div>
       ))}
     </dl>
   </section>
 
-  <section class="front-section front-oracle wide-in">
-    <h2>{f.oracle.h}</h2>
-    <p><Rich text={f.oracle.p} locale={locale} /></p>
+  <section class={`front-oracle ${section}`}>
+    <h2 class={heading}>{f.oracle.h}</h2>
+    <p class={lead}><Rich text={f.oracle.p} locale={locale} /></p>
     <div class="figure-pair">
       <ShaderCanvas locale={locale} example="gradient" aspect="3/1" still caption={f.oracle.webgpu} stillId="gradient" />
       <ShaderCanvas locale={locale} example="gradient" aspect="3/1" still forceWebGl2 caption={f.oracle.webgl2} stillId="gradient-webgl2" />
     </div>
   </section>
 
-  <section class="front-section front-install wide-in">
-    <h2>{f.install.h}</h2>
+  <section class={`front-install ${section}`}>
+    <h2 class={heading}>{f.install.h}</h2>
     <div class="alert alert-info">
       <svg class="alert-icon" viewBox="0 0 1024 1024" aria-hidden="true" focusable="false">
         <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" />
@@ -190,12 +195,63 @@ const quickStart = localePath(locale, links.quickStart.href)
       <p><Rich text={f.install.p} locale={locale} /></p>
     </div>
     <InstallCommand locale={locale} />
-    <p class="front-actions">
+    <p class="mbs-6 flex flex-wrap gap-3">
       <a class="button button-lg button-primary" href={playground}>{f.playground}</a>
       <a class="button button-lg" href={quickStart}>{f.quickStart}</a>
     </p>
   </section>
 </Base>
+
+<style>
+  /* What the utilities in the markup cannot say: the Korean type the global :lang(ko) heading
+     rule would otherwise take, the children Rich and Expressive Code render, and the tiles'
+     hover state. */
+  .front-title:lang(ko) { letter-spacing: -0.01em; line-height: 1.3 }
+  .front-section h2:lang(ko) { letter-spacing: 0; line-height: 1.4 }
+  /* Inline code in the copy. Expressive Code's own `pre > code` keeps its face and size. */
+  .front-lede :global(code), .front-section :global(:not(pre) > code) { font-family: var(--font-mono); font-size: 0.9em }
+  .front-section > p :global(a:not(.button)), .front-gallery-lead :global(a:not(.button)), .front-map-row dd :global(a) {
+    color: var(--color-accent); text-decoration: none; transition: color var(--motion);
+  }
+  .front-section > p :global(a:not(.button):hover), .front-gallery-lead :global(a:not(.button):hover), .front-map-row dd :global(a:hover) {
+    color: var(--color-primary-text-hover);
+  }
+  .front-section :global(.expressive-code) { margin: 0 }
+  /* The two columns read as one row: each is a 40px head over a code frame, so the first line
+     of code sits at the same height on both sides, and the frames stretch to the taller of the
+     two, which is the source at 21 lines. A pane whose emit is shorter sits against the same
+     box and a longer one scrolls inside it, the way the hero card's code pane does, so the
+     section keeps its height when the tab changes. */
+  .front-targets-src > :global(.expressive-code) { flex: 1 1 auto; min-block-size: 0 }
+  /* One selector deeper than Expressive Code's own `.expressive-code .frame`, whose stylesheet
+     is injected after this one and would otherwise keep the frame a block box. */
+  .front-targets-grid :global(.expressive-code .frame) { display: flex; flex-direction: column; block-size: 100% }
+  .front-targets-grid :global(.expressive-code .frame pre) { flex: 1 1 auto; min-block-size: 0; overflow: auto }
+  /* The tile gains depth without gaining weight, and the still scales under a fine pointer. */
+  .front-tile:hover, .front-tile:has(a:focus-visible) { border-color: transparent; box-shadow: var(--shadow-elevated) }
+  @media (hover: hover) and (pointer: fine) { .front-tile a:hover .tile-cover img { transform: scale(1.03) } }
+  /* What carries over: the TypeScript is an Expressive Code frame with the chrome taken off
+     (no copy button, the chip's own padding) so it reads as a tag, not a file. */
+  .front-map-row dt :global(.expressive-code) {
+    margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
+    --ec-codePadBlk: 10px; --ec-codePadInl: 14px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
+  }
+  .front-map-row dt :global(.expressive-code .copy) { display: none }
+  .front-map-row dd strong :global(code) { font-size: 0.95em }
+  /* No copy button, so the first line keeps no room for one at its end. */
+  .front-map-row dt :global(.expressive-code :nth-child(1 of .ec-line) .code) { padding-inline-end: var(--ec-codePadInl) }
+  /* The gradient pass drawn by each backend: two cards, the picture as the cover. */
+  .front-oracle :global(.figure) {
+    gap: 0; overflow: hidden;
+    border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
+  }
+  .front-oracle :global(.figure-frame) { border: 0; border-radius: 0; border-block-end: 1px solid var(--color-line-1) }
+  .front-oracle :global(.figure-caption) { padding: 16px; font-size: var(--text-ui); color: var(--color-text-2) }
+  /* The close: the one command, and the action again. Both outrank the alert's and the
+     section's own margins. */
+  .front-install > .alert { max-inline-size: 760px; margin-block-start: 12px }
+  .front-install :global(.expressive-code) { margin-block-start: 24px; max-inline-size: 760px }
+</style>
 
 <script>
   // The tabs over the emitted targets, shared with every per-example page.
