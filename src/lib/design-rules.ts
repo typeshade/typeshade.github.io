@@ -626,13 +626,13 @@ const EXPLAINERS: readonly {
   {
     page: '/guide/language/from-typescript/functions/',
     source:
-      'the localFunction, noCapture and recursion rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
+      'the localFunction, closure and recursion rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
     rules: ['8.4', '8.17'],
   },
   {
     page: '/guide/language/from-typescript/control-flow/',
     source:
-      'the forRow, forRefused, whileRow and switchRow rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
+      'the forRow, forRuntime, whileRow and switchRow rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
     rules: ['7.2', '7.3', '7.5'],
   },
   {
