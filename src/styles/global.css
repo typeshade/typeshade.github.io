@@ -1164,11 +1164,27 @@ body > main { flex: 1 }
   overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
   border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-1);
 }
+/* The head scrolls wherever the tabs are wider than the pane, which is every width under
+   48rem, and a 32px fade at its trailing edge says so, the way the panels' foot does. It is
+   a sticky strip of the head's own ground and not a mask, because a mask over the box would
+   take the hairline under the tabs with it for those 32px. */
+.example-stage .front-tabs-head::after {
+  content: ''; flex: none; position: sticky; inset-inline-end: 0;
+  inline-size: 32px; margin-inline-start: -32px;
+  background: linear-gradient(to right, transparent, var(--color-surface-1));
+}
 .example-stage .front-tabs-head::-webkit-scrollbar { display: none }
 .example-stage .front-tabs-head button { flex: none; block-size: auto; white-space: nowrap }
 /* The file is where the pane rests, so it leads and a rule sets it apart from the three
-   texts the compiler makes out of it. */
-.example-stage .front-tabs-head button:first-child { padding-inline-end: 20px; position: relative }
+   texts the compiler makes out of it. It is also the one tab whose text the site does not
+   choose: an example's file name runs to 29 characters, and four tabs at their full length
+   are wider than the half of the card this pane gets. So the file is the tab that gives way
+   and ends in an ellipsis, down to a floor of 9 characters, and the three the compiler emits
+   stay whole, since a tab a reader cannot see is a text they will not know the page holds. */
+.example-stage .front-tabs-head button:first-child {
+  padding-inline-end: 20px; position: relative;
+  flex: 0 1 auto; min-inline-size: 9ch; overflow: hidden; text-overflow: ellipsis;
+}
 .example-stage .front-tabs-head button:first-child::after {
   content: ''; position: absolute; inset-block: 13px; inset-inline-end: 0;
   inline-size: 1px; background: var(--color-line-1);
@@ -1223,13 +1239,12 @@ body > main { flex: 1 }
 
 /* Footer: the site map in three groups on the container's white, held off the page field by
    its #f0f0f0 top rule, then the licence, the copyright and the commit. The three groups sit
-   at their own widths beside each other at the left of the shell, and Documentation's 19
-   links run down two columns 32px apart. The band is 607px wide in English and 552px in
-   Korean at every width from 48rem, so the three headings stay in one glance and a reader
-   sees which links each one covers.
-   Tracks of one width across the shell spread the groups instead: Documentation flowed into
-   five columns 1328px wide at 1920 with Project and Languages at the far edge, and the four
-   columns with no heading over them read as four more groups. */
+   at their own widths across the shell, and Documentation's 19 links run down two columns
+   32px apart. What spreads is the space between one group and the next; a group stays as
+   narrow as its own longest link, so the heading nearest a link is the one it belongs to.
+   Tracks of one width spread the links instead: Documentation flowed into five columns
+   1328px wide at 1920, and the four columns with no heading over them read as four more
+   groups. */
 .site-footer { margin-block-start: 96px; border-block-start: 1px solid var(--color-line-1); background: var(--color-ground) }
 .site-map { padding: 32px var(--gutter-x) 24px; max-inline-size: var(--container); margin-inline: auto; display: grid; gap: 24px 32px }
 .site-map h2 { font-size: var(--text-ui); font-weight: 600; line-height: 1.5; color: var(--color-text-1) }
@@ -1252,10 +1267,16 @@ body > main { flex: 1 }
 .site-legal a:hover { color: var(--color-accent) }
 /* One group per row on a phone, where 19 links down one column is what a phone footer does.
    From 40rem Documentation splits into two columns, and from 48rem the three groups go side
-   by side, each as wide as its own longest link. The 64px between groups is twice the 32px
-   between Documentation's two columns, which is what tells the eye where a group ends. */
+   by side, each as wide as its own longest link, spread across the shell so the last one
+   ends on its right edge. The space goes between the groups and never inside one:
+   Documentation's two columns stay 32px apart at every width while the groups stand 120px
+   apart at 768 and 376px at 1920, so the heading a link sits under is the near one. The 64px
+   column gap is the floor under that distribution, for a width where the three groups and
+   their own widths leave little to spread. */
 @media (min-width: 40rem) { .site-map-docs ul { columns: 2; column-gap: 32px } }
-@media (min-width: 48rem) { .site-map { grid-template-columns: repeat(3, minmax(0, max-content)); column-gap: 64px } }
+@media (min-width: 48rem) {
+  .site-map { grid-template-columns: repeat(3, minmax(0, max-content)); column-gap: 64px; justify-content: space-between }
+}
 
 /* API reference page: the crumbs, the kind line, definition lists for parameters and members,
    the targets table, the see-also list */

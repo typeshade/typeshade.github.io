@@ -102,14 +102,17 @@ const glsl = example.emitted.glsl
 // The tabs, in the order a reader meets them: the file first, then what it becomes. A
 // WGSL-only example has the two it has. The source tab is named by its file, which is not
 // copy and reads the same in every language, the way every code frame on the site names its
-// file; the emitted tabs are named by their target.
+// file; the emitted tabs are named by their target. A GLSL tab carries the language and the
+// stage, because four tabs share the card's right half and the full target name spells the
+// head past the pane's width. The pane under it keeps that name, and the line under the card
+// says which commit emitted the text.
 const panes = [
   { key: 'source', label: example.file, region: `${p.source}, ${example.file}`, code: example.source, lang: 'ts' },
   { key: 'wgsl', label: p.wgsl, region: p.wgsl, code: example.emitted.wgsl, lang: 'wgsl' },
   ...(glsl
     ? [
-        { key: 'vertex', label: p.glslVertex, region: p.glslVertex, code: glsl.vertex, lang: 'glsl' },
-        { key: 'fragment', label: p.glslFragment, region: p.glslFragment, code: glsl.fragment, lang: 'glsl' },
+        { key: 'vertex', label: p.glslVertexTab, region: p.glslVertex, code: glsl.vertex, lang: 'glsl' },
+        { key: 'fragment', label: p.glslFragmentTab, region: p.glslFragment, code: glsl.fragment, lang: 'glsl' },
       ]
     : []),
 ]
