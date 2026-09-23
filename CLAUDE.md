@@ -28,6 +28,14 @@ pin is a step with checks, not a memory:
 The compiler's `AGENTS.md` (section "Docs follow the code") describes the conventions these
 checks come from.
 
+## Before pushing
+
+Run `bun run format:check` and `bun run build`, then the `qa:*` passes over `dist/`: the same
+steps as CI's build job (README.md, Checks; the full review procedure is in the skill).
+`.claude/settings.json` also runs the fast ones (prettier, check-style, check-copy and
+check-i18n, `scripts/commit-gate.mjs`) before every `git commit` and blocks the commit while one
+fails.
+
 ## Merging
 
 `main` is protected by a GitHub ruleset: a pull request, a Code Owner review (`.github/CODEOWNERS`)
@@ -40,3 +48,10 @@ through the owner's account can too, so the rule is written here:
   merge that pull request. The owner cannot approve their own pull request, so their go-ahead
   is the review.
 - Never push to `main` directly, and never force-push it.
+- The ruleset, the secrets and every other repository setting are the owner's to change: an
+  agent has no admin access to them. When one must change, write the owner a script for the
+  GitHub CLI (`gh auth login`, then `gh api`), in PowerShell, since the owner works on Windows.
+  Never ask for a token in the conversation: a token pasted there is a leaked token.
+- Each required check is a job's `name:` in `.github/workflows/deploy.yml`. Renaming or removing
+  that job leaves every pull request waiting on a check that never reports, so the ruleset
+  (Settings > Rules > Rulesets > `main`) changes in the same step.

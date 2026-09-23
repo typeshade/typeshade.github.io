@@ -8,6 +8,11 @@
             "type": "command",
             "command": "cd \"$CLAUDE_PROJECT_DIR\" && { [ ! -f vendor/shader-dsl/scripts/downstream-impact.ts ] || bun vendor/shader-dsl/scripts/downstream-impact.ts --hook --repo typeshade.github.io --submodule vendor/shader-dsl; }",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node scripts/commit-gate.mjs",
+            "timeout": 90
           }
         ]
       }
