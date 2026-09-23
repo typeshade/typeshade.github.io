@@ -32,6 +32,7 @@ import {
   type MatrixPreset,
   type ResourceSpec,
   type SampleKind,
+  type SamplerSpec,
   type StoragePattern,
   type TextureDim,
   type TextureSource,
@@ -594,18 +595,7 @@ export class BindingsModel {
       });
     });
     for (const t of this.textures) out.push(this.textureSpec(t));
-    for (const s of this.samplers) {
-      const choice = this.samplerChoice(s);
-      out.push({
-        kind: 'sampler',
-        name: s.name,
-        group: s.group,
-        binding: s.binding,
-        comparison: s.samplerComparison === true,
-        filter: choice.filter,
-        address: choice.address,
-      });
-    }
+    for (const s of this.samplers) out.push(this.samplerSpec(s));
     for (const b of this.storage) {
       out.push({
         kind: 'storage-buffer',
@@ -680,10 +670,6 @@ export class BindingsModel {
     return this.storage.length > 0 || this.storageTextures.length > 0;
   }
 
-  hasTextures(): boolean {
-    return this.textures.length > 0;
-  }
-
   /** The uniform and storage values in the CPU oracle's own shape: a struct as an object, a
    *  vector as an array, a matrix as its columns run together, an array as a list. Keyed by
    *  binding name, for `setBinding`. */
@@ -719,10 +705,13 @@ export class BindingsModel {
         out[block.binding.name] = Object.fromEntries(block.fields.map((f) => [f.name, valueOf(f)]));
     }
     for (const b of this.storage) out[b.binding.name] = this.cpuStorage(b);
-    // The oracle has no texture unit: its texture reads return a placeholder once the names
-    // they take resolve to something. Each texture and sampler is bound to a marker so they do.
-    for (const t of [...this.textures, ...this.samplers, ...this.storageTextures])
-      out[t.name] = { binding: t.name };
+    // A texture and a sampler are bound as the same data the GPU is handed: the texels, and
+    // the filter and address mode. src/scripts/playground-oracle-textures.ts reads them.
+    for (const t of this.textures) out[t.name] = this.textureSpec(t);
+    for (const s of this.samplers) out[s.name] = this.samplerSpec(s);
+    // The oracle has no storage texture: its reads return a placeholder once the name they
+    // take resolves to something, so each is bound to a marker.
+    for (const t of this.storageTextures) out[t.name] = { binding: t.name };
     return out;
   }
 
@@ -958,6 +947,19 @@ export class BindingsModel {
     };
     this.texelCache.set(key, spec);
     return spec;
+  }
+
+  private samplerSpec(s: Binding): SamplerSpec {
+    const choice = this.samplerChoice(s);
+    return {
+      kind: 'sampler',
+      name: s.name,
+      group: s.group,
+      binding: s.binding,
+      comparison: s.samplerComparison === true,
+      filter: choice.filter,
+      address: choice.address,
+    };
   }
 
   private samplerChoice(s: Binding): SamplerChoice {
