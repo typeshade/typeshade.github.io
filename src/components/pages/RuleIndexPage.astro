@@ -10,7 +10,7 @@ import Rich from '../Rich.astro';
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
 import { facts } from '../../lib/examples.ts';
-import { VERIFICATIONS, assertRuleChapters, assertRuleReadings, designRules, ruleChapters, type DesignRule } from '../../lib/design-rules.ts';
+import { VERIFICATIONS, assertRuleChapters, assertRuleReadings, ruleChapters, type DesignRule } from '../../lib/design-rules.ts';
 import type { RuleHtml } from '../../lib/rules-loader.ts';
 
 interface Props { locale: Locale }
@@ -20,7 +20,7 @@ const r = d.reference;
 const x = d.rules;
 const en = copyFor('en').docs;
 assertRuleChapters(en.rules.chapters, x.chapters);
-assertRuleReadings(Object.keys(en.errors.lines));
+assertRuleReadings(copyFor('en'));
 
 const stored = new Map((await getCollection('rules')).map((s) => [s.id, (s.data as { html: RuleHtml }).html]));
 // A row's line is Markdown rendered once, so its links name the English pages.
@@ -32,8 +32,7 @@ const page = (rule: DesignRule): string => localePath(locale, `/reference/rules/
 const chapters = ruleChapters();
 const id = (n: number): string => `chapter-${n}`;
 const headings: Heading[] = chapters.map((c) => ({ depth: 2, slug: id(c.chapter), text: x.chapterH(c.chapter, x.chapters[c.chapter]!) }));
-const first = designRules()[0];
-const next = first ? { label: x.entry.heading(first.number), href: page(first) } : undefined;
+const next = { label: x.guarantees.h1, href: localePath(locale, links.rulesGuarantees.href) };
 ---
 
 <Docs
@@ -62,6 +61,7 @@ const next = first ? { label: x.entry.heading(first.number), href: page(first) }
       <li><span class="api-optional">{x.kinds[v]}</span> <Rich text={x.kindCounts[v]} locale={locale} /></li>
     ))}
   </ul>
+  <p lang={locale}><Rich text={x.guaranteesP} locale={locale} /></p>
   <p class="guide-note" lang={locale}><Rich text={x.note} locale={locale} /></p>
 
   {chapters.map((c) => (

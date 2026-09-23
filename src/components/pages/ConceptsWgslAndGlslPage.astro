@@ -44,7 +44,7 @@ const headings = [c.sourceH, c.wgslH, c.glslH, c.diffH, c.furtherH].map((h) => (
 
   <section>
     <h2 id={slugify(c.diffH)}>{c.diffH}</h2>
-    <p>{c.diffP}</p>
+    <p><Rich text={c.diffP} locale={locale} /></p>
     <ConceptDoc locale={locale} rows={c.diffRows} columns={c.diffColumns} />
   </section>
 

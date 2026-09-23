@@ -29,7 +29,7 @@ const x = d.rules;
 const e = x.entry;
 const en = copyFor('en').docs;
 assertRuleChapters(en.rules.chapters, x.chapters);
-assertRuleReadings(Object.keys(en.errors.lines));
+assertRuleReadings(copyFor('en'));
 
 const rule = designRule(slug);
 const stored = await getEntry('rules', slug);
@@ -92,11 +92,13 @@ const sections = [
 ].filter((s) => s.show);
 const headings: Heading[] = sections.map((s) => ({ depth: 2, slug: s.id, text: s.label }));
 
-// Previous and next walk the rules in the design document's order, and step out to the index
-// at the front and to the API reference at the end, which is what the sidebar lists next.
+// Previous and next walk the rules in the design document's order, and step out to what is
+// guaranteed at the front, which follows the index, and to the API reference at the end, which
+// is what the sidebar lists next.
 const before = all[at - 1];
 const after = all[at + 1];
-const previous = before ? ruleLink(before.number) : index;
+const guarantees = { label: x.guarantees.h1, href: localePath(locale, links.rulesGuarantees.href) };
+const previous = before ? ruleLink(before.number) : guarantees;
 const next = after ? ruleLink(after.number) : { label: d.api.h1, href: localePath(locale, links.api.href) };
 const kind = x.kinds[rule.verification];
 ---

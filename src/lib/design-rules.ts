@@ -221,11 +221,35 @@ function bodyParts(
 // ── rule mentions ──────────────────────────────────────────────────────────────────────
 
 const NUMBER = String.raw`\d{1,2}\.\d{1,2}(?![\d]|\.\d)`;
-/** "Rule 4.8", "Rules 7.2, 7.5", "Rules 8.9 and 8.13", "Rules 8.11 to 8.14": a mention in prose. */
-const MENTION = new RegExp(
-  String.raw`\bRules? (${NUMBER})((?:(?:,| and| or| to|, and|, or) ${NUMBER})*)`,
-  'g',
-);
+
+/** How one language names a rule in prose: the words that lead a mention ("Rule", "Rules")
+ *  and the words that join a further number to it (", ", " and ", " to "). A language's words
+ *  live in its dictionary (docs.rules.mention); English is the default, and the only words
+ *  the compiler's own text uses. */
+export interface MentionWords {
+  readonly leads: readonly string[];
+  readonly joins: readonly string[];
+}
+export const ENGLISH_MENTION: MentionWords = {
+  leads: ['Rules', 'Rule'],
+  joins: [', and', ', or', ',', ' and', ' or', ' to'],
+};
+
+const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const longestFirst = (xs: readonly string[]): string[] =>
+  [...new Set(xs)].sort((a, b) => b.length - a.length).map(escape);
+
+/** "Rule 4.8", "Rules 7.2, 7.5", "Rules 8.9 and 8.13", "Rules 8.11 to 8.14": a mention in
+ *  prose, in any of the languages given. A lead is a whole word: nothing that is a letter or a
+ *  digit comes before it. */
+function mentionPattern(words: readonly MentionWords[]): RegExp {
+  const leads = longestFirst(words.flatMap((w) => w.leads)).join('|');
+  const joins = longestFirst(words.flatMap((w) => w.joins)).join('|');
+  return new RegExp(
+    String.raw`(?<![\p{L}\p{N}_])(?:${leads}) (${NUMBER})((?:(?:${joins}) ?${NUMBER})*)`,
+    'gu',
+  );
+}
 
 export type MentionPart =
   | { readonly kind: 'text'; readonly value: string }
@@ -233,8 +257,13 @@ export type MentionPart =
 
 /** A piece of prose cut at every rule it names: "Rules 7.2, 7.5" is a mention written
  *  "Rules 7.2" for 7.2, the text ", ", and a mention written "7.5" for 7.5. The words stay as
- *  written. A number no rule carries stays text. */
-export function mentionParts(text: string, known: (n: string) => boolean): MentionPart[] {
+ *  written. A number no rule carries stays text. `words` are the languages whose words for a
+ *  rule the text may use; English by default. */
+export function mentionParts(
+  text: string,
+  known: (n: string) => boolean,
+  words: readonly MentionWords[] = [ENGLISH_MENTION],
+): MentionPart[] {
   const out: MentionPart[] = [];
   let last = 0;
   const push = (value: string): void => {
@@ -243,7 +272,7 @@ export function mentionParts(text: string, known: (n: string) => boolean): Menti
     if (prev?.kind === 'text') out[out.length - 1] = { kind: 'text', value: prev.value + value };
     else out.push({ kind: 'text', value });
   };
-  for (const m of text.matchAll(MENTION)) {
+  for (const m of text.matchAll(mentionPattern(words))) {
     push(text.slice(last, m.index));
     const whole = m[0];
     const first = m[1]!;
@@ -546,6 +575,28 @@ export function rulesForCode(code: string): readonly DesignRule[] {
   return designRules().filter((r) => r.codes.includes(code));
 }
 
+/** The rule a number names, or undefined for a number no rule carries. */
+export function ruleByNumber(number: string): DesignRule | undefined {
+  return designRules().find((r) => r.number === number);
+}
+
+/** The ways of holding a rule that leave it open: nothing in the compiler checks the rule yet.
+ *  A guide page that names one of these rules says so beside the name (src/components/Rich.astro). */
+export const OPEN_VERIFICATIONS: readonly Verification[] = ['pending', 'code'];
+
+/** Every rule, grouped by how it is verified, in the order reqs/README.md defines the four
+ *  values, each group in the design document's order. /reference/rules/guarantees/ lists
+ *  them, a group under an anchor named for its value. */
+export function rulesByVerification(): readonly {
+  readonly verification: Verification;
+  readonly rules: readonly DesignRule[];
+}[] {
+  return VERIFICATIONS.map((verification) => ({
+    verification,
+    rules: designRules().filter((r) => r.verification === verification),
+  }));
+}
+
 export function rulePaths(): { params: { rule: string }; props: { slug: string } }[] {
   return designRules().map((r) => ({ params: { rule: r.slug }, props: { slug: r.slug } }));
 }
@@ -583,13 +634,16 @@ export function ruleCounts(): {
 // against the rule's new text, fix what no longer holds, then write the new fingerprint here.
 // It is the site's end of what Doorstop calls a suspect link.
 //
-// Two kinds of page explain a rule:
+// Three kinds of page explain a rule:
 //   - the error code pages whose program is written by hand (EXAMPLES and COUNTERPARTS in
 //     src/lib/error-codes.ts), for every code the rule is enforced by. These are derived: a
 //     pin that links a rule to such a code asks for the rule's fingerprint here;
-//   - the pages in EXPLAINERS, whose copy or generator states what a rule says.
+//   - the copy that names a rule, "Rule 7.6" anywhere in the dictionary, which is derived too:
+//     a string that names a rule states something about it, and Rich links the name;
+//   - the pages in EXPLAINERS, whose copy or generator states what a rule says without
+//     naming it.
 
-/** Pages whose copy or generator states a rule, beyond the error code pages. */
+/** Pages whose copy or generator states a rule without naming it, beyond the error code pages. */
 const EXPLAINERS: readonly {
   readonly page: string;
   readonly source: string;
@@ -628,6 +682,7 @@ const EXPLAINERS: readonly {
 
 /** The fingerprint each rule's explaining pages were last read against, at eb0dde6. */
 const READ_AGAINST: Readonly<Record<string, string>> = {
+  '1.2': 't6OvP1FlcnvK4mIZKbcPULikBSKQ5LJ59oSe_GWWSio=',
   '2.2': 'ft22a-MSTFWryqEI0XdmYtccGGb1bj7gOvH0dGZq4P4=',
   '2.3': 'r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=',
   '3.1': 'GwRVg6t7KmJpp0wZ6aUBEEzhkylEXMXi7S6JNbboZ2M=',
@@ -654,6 +709,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '7.3': 'pH-_jeLIvcUhp6gjCddmM-5iY5thzCos9ghwnhEPTn4=',
   '7.4': 'Uv0vLGCbLp5zz7Re_EgMql76iLGf_NAzyMWkXNxIdZA=',
   '7.5': 'nqBwI0SYq4CP-U2QthdxHSUD-wRJ6XOJkdVx1YoTOzQ=',
+  '7.6': 'm4mWGf9QgS6Ru5ZCXxLWnPz_fSECO5xWs7hGS_XZAVI=',
   '7.7': 'kON3mL43W1KVB2ZQljAWM1zYeptophGfCHpHRmE6Big=',
   '7.9': 'UpGm8F5JgS5WQlBC5kAnWimxBVHC7js1iLkcnKDlIMk=',
   '8.1': 'H1wCXs_NQPF7wMxgl8OGv3K-wybB6bXXiXjf4QV5xhs=',
@@ -676,6 +732,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '8.19': 'OCq7PSGDLXGtZqQU9cpA9hOGOR3muiAUQTxDGlF-AEk=',
   '9.2': '339eZZfy9yGzKCPdS_SPXUoXdLtmmkSkQee-1Jumx1w=',
   '10.1': 'd8TWuezE06vSk0zrFfeQ9pKxFXYk_P4q_IC94Ny_CF8=',
+  '11.5': 'K5GJo9hNFgdx3uz9sYCSGUVhUfFmjaxdcr223qtGFgE=',
   '12.3': '8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=',
   '12.4': 'M67urBX-KXu5b1DvQCHnPyAhfBmIOUazJl9YuDlXUSw=',
   '12.6': '5AqWk_RZn5D9KSAm4587ArG3n4vla3VsBvzc7K2GHcM=',
@@ -683,32 +740,65 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
 
 let guarded = false;
 
-/** Stops the build when a rule some page explains has changed since the page was read. The
- *  error code pages with words of their own are the ones whose program is written by hand, and
- *  the front-end codes whose line the dictionary writes (`docs.errors.lines`, by constant
- *  name); the page that renders them hands those names in. */
-export function assertRuleReadings(dictionaryLines: readonly string[]): void {
-  if (guarded) return;
-  const rules = designRules();
-  const byNumber = new Map(rules.map((r) => [r.number, r]));
+/** As much of the English dictionary as the guard reads: the front-end codes whose line it
+ *  writes, and every string in it, for the rules a string names. */
+export interface GuardedCopy {
+  readonly docs: { readonly errors: { readonly lines: Readonly<Record<string, string>> } };
+}
+
+/** One place that explains a rule: a page, and what on it states the rule. `key` is the
+ *  dictionary key of copy that names the rule, which every language writes at the same key. */
+export interface RuleExplanation {
+  readonly where: string;
+  readonly key?: string;
+}
+
+/** Every string of a dictionary with its dotted key, arrays by index. */
+function copyStrings(value: unknown, key = ''): [string, string][] {
+  if (typeof value === 'string') return [[key, value]];
+  if (!value || typeof value !== 'object') return [];
+  return Object.entries(value).flatMap(([k, v]) => copyStrings(v, key ? `${key}.${k}` : k));
+}
+
+/** The places that explain each rule, by rule number: the error code pages with words of their
+ *  own (the ones whose program is written by hand, and the front-end codes whose line the
+ *  dictionary writes, `docs.errors.lines` by constant name), every string of the dictionary
+ *  that names the rule, and EXPLAINERS. */
+export function ruleExplanations(
+  english: GuardedCopy,
+): ReadonlyMap<string, readonly RuleExplanation[]> {
   const names = tsCodeNames();
   const written = new Set(writtenExampleCodes());
-  for (const name of dictionaryLines) {
+  for (const name of Object.keys(english.docs.errors.lines)) {
     const code = names.get(name);
     if (code) written.add(code);
   }
-  const pages = new Map<string, string[]>();
-  const add = (n: string, page: string): void => {
-    pages.set(n, [...(pages.get(n) ?? []), page]);
+  const out = new Map<string, RuleExplanation[]>();
+  const add = (n: string, e: RuleExplanation): void => {
+    out.set(n, [...(out.get(n) ?? []), e]);
   };
-  for (const r of rules)
+  for (const r of designRules())
     for (const code of r.codes)
       if (written.has(code))
-        add(
-          r.number,
-          `/reference/errors/${code.toLowerCase()}/ (its program in src/lib/error-codes.ts, or its line in docs.errors.lines)`,
-        );
-  for (const e of EXPLAINERS) for (const n of e.rules) add(n, `${e.page} (${e.source})`);
+        add(r.number, {
+          where: `/reference/errors/${code.toLowerCase()}/ (its program in src/lib/error-codes.ts, or its line in docs.errors.lines)`,
+        });
+  for (const [key, text] of copyStrings(english))
+    for (const n of new Set(mentioned(text)))
+      add(n, { where: `the copy at ${key} in src/i18n, which names the rule`, key });
+  for (const e of EXPLAINERS) for (const n of e.rules) add(n, { where: `${e.page} (${e.source})` });
+  return out;
+}
+
+/** Stops the build when a rule some page explains has changed since the page was read
+ *  (ruleExplanations says which pages). The pages that render the rules and the codes hand in
+ *  the English dictionary. */
+export function assertRuleReadings(english: GuardedCopy): void {
+  if (guarded) return;
+  const byNumber = new Map(designRules().map((r) => [r.number, r]));
+  const pages = new Map(
+    [...ruleExplanations(english)].map(([n, list]) => [n, list.map((e) => e.where)]),
+  );
 
   const problems: string[] = [];
   for (const [n, list] of pages) {
@@ -716,7 +806,7 @@ export function assertRuleReadings(dictionaryLines: readonly string[]): void {
     const read = READ_AGAINST[n];
     if (!rule) {
       problems.push(
-        `Rule ${n} is gone from reqs/ at the pin. Read again: ${list.join('; ')}. Then drop it from EXPLAINERS.`,
+        `Rule ${n} is gone from reqs/ at the pin. Read again: ${list.join('; ')}. Then drop it from EXPLAINERS, or the mention from the copy.`,
       );
       continue;
     }

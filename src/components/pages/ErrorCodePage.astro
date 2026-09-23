@@ -42,7 +42,7 @@ const x = d.errors;
 const e = x.entry;
 const entry = errorCode(slug);
 assertErrorLines(x.lines);
-assertRuleReadings(Object.keys(copyFor('en').docs.errors.lines));
+assertRuleReadings(copyFor('en'));
 
 const siteLine = entry.name ? (x.lines as Record<string, string>)[entry.name] ?? '' : '';
 // The lead: the registry's first sentence, or where the registry documents nothing, the
