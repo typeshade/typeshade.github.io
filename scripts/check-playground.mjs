@@ -72,6 +72,8 @@
 //      `time` and its own slider both reach the frame, with no rebuild of the pass
 //  44. a uniform struct holding a struct and an array of structs gets a control per leaf,
 //      draws on WebGL2, on WebGPU and on the CPU, and a leaf's control reaches the frame
+//  45. storage textures on the CPU oracle: the storage-texture example dispatched on the CPU
+//      plots the image it wrote, and the image is the one WebGPU wrote, texel for texel
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -869,6 +871,64 @@ async function checkNestedUniform(page, problems) {
   await page.selectOption('[data-engine]', 'auto');
   await settleBackend(page);
   console.log(`  nested uniform: ${seen.join(', ')}, ambient reaches the frame`);
+}
+
+/** The plotted canvas's pixels at a grid of points, once a dispatch on `backend` has plotted. */
+async function plottedPixels(page, backend) {
+  await page.waitForFunction(
+    (b) => {
+      const canvas = document.querySelector('[data-gpu-canvas]');
+      return canvas?.dataset.plotted === '1' && canvas.dataset.backend === b;
+    },
+    backend,
+    { timeout: 60_000 },
+  );
+  return page.evaluate(() => {
+    const node = document.querySelector('[data-gpu-canvas]');
+    const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
+    const out = [];
+    for (let y = 0.05; y < 1; y += 0.1)
+      for (let x = 0.05; x < 1; x += 0.1) {
+        const at = (Math.floor(y * node.height) * node.width + Math.floor(x * node.width)) * 4;
+        out.push([data[at], data[at + 1], data[at + 2]]);
+      }
+    return { width: node.width, height: node.height, points: out };
+  });
+}
+
+/** A compute entry that writes storage textures runs on the CPU oracle: it loads and stores
+ *  texels there, and the image it plots is the one WebGPU wrote. */
+async function checkStorageTextures(page, problems) {
+  await pickExample(page, 'storage-texture');
+  const gpu = await plottedPixels(page, 'webgpu');
+  await page.selectOption('[data-engine]', 'cpu');
+  const cpu = await plottedPixels(page, 'cpu').catch(() => undefined);
+  const note = (await resultState(page)).note;
+  const rows = await page.evaluate(
+    () => document.querySelector('[data-bindings]')?.textContent ?? '',
+  );
+  await page.selectOption('[data-engine]', 'auto');
+  await settleResult(page);
+  if (!cpu) {
+    problems.push(`storage-texture did not plot on the CPU: ${note}`);
+    return;
+  }
+  let worst = 0;
+  const colours = new Set();
+  cpu.points.forEach((c, i) => {
+    colours.add(c.join(','));
+    const g = gpu.points[i];
+    worst = Math.max(worst, ...c.map((v, k) => Math.abs(v - g[k])));
+  });
+  if (colours.size < 2)
+    problems.push(`storage-texture plotted ${colours.size} colour(s) on the CPU: ${note}`);
+  if (worst > 1)
+    problems.push(`storage-texture on the CPU differs from WebGPU by up to ${worst} of 255`);
+  if (!/128 × 128 rgba8unorm/.test(rows))
+    problems.push('storage-texture on the CPU left no row under its storage textures');
+  console.log(
+    `  storage textures on the CPU: storage-texture in ${colours.size} colours at ${cpu.points.length} points, within ${worst} of 255 of WebGPU`,
+  );
 }
 
 /** One previously flat example of each kind the panel supplies now draws, and the panel's
@@ -2384,6 +2444,7 @@ async function checkRoute(browser, origin, route) {
         await checkBindings(page, problems);
         await checkUniformBlocks(page, problems);
         await checkNestedUniform(page, problems);
+        await checkStorageTextures(page, problems);
         await pickExample(page, 'hello');
       }
     }

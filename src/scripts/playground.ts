@@ -1593,7 +1593,12 @@ function mount(root: HTMLElement): void {
     try {
       if (picked === 'cpu') {
         const started = performance.now();
-        const cpu = compileModule(compiled.module, { precision: RASTER_PRECISION });
+        // With the GPU-only reads allowed: a texture read and a storage texture's load and
+        // store answer from the panel's data (src/scripts/playground-oracle-textures.ts).
+        const cpu = compileModule(compiled.module, {
+          gpuStubs: true,
+          precision: RASTER_PRECISION,
+        });
         const values = bindings.cpuBindings(0, 0, 0, pointer);
         for (const [name, value] of Object.entries(values)) cpu.setBinding(name, value as never);
         cpu.dispatch(entry.name, groups);
@@ -1602,6 +1607,16 @@ function mount(root: HTMLElement): void {
           const read = bindings.readCpu(name, values[name]);
           results.set(name, read.rows.join('\n'));
           series ??= read.series;
+        }
+        // The storage textures, in the same bytes and rows a readback from the GPU gives.
+        for (const spec of bindings.resources(true)) {
+          if (spec.kind !== 'storage-texture') continue;
+          const held = values[spec.name] as { bytes?: Uint8Array } | undefined;
+          if (!held?.bytes) continue;
+          const texture = { width: spec.width, height: spec.height, format: spec.format };
+          if (spec.name === bindings.firstStorageTexture())
+            image = { ...texture, bytes: held.bytes };
+          results.set(spec.name, `${spec.width} × ${spec.height} ${spec.format}`);
         }
         ranOn = 'cpu';
       } else {

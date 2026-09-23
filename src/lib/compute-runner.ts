@@ -5,7 +5,7 @@
 //
 // It shares the page's one device and the resource builders with src/lib/shader-runtime.ts,
 // and like that file it imports nothing from the compiler.
-import type { ResourceSpec } from './shader-bindings.ts';
+import { TEXEL_BYTES, type ResourceSpec } from './shader-bindings.ts';
 import { gpuLayoutEntry, gpuResource, sharedDevice } from './shader-runtime.ts';
 
 export interface ComputeJob {
@@ -34,26 +34,6 @@ export interface ComputeResult {
   >;
   readonly ms: number;
 }
-
-/** Bytes per texel of the storage formats a module can declare, for the readback's rows. */
-const TEXEL_BYTES: Readonly<Record<string, number>> = {
-  rgba8unorm: 4,
-  rgba8snorm: 4,
-  rgba8uint: 4,
-  rgba8sint: 4,
-  r32float: 4,
-  r32uint: 4,
-  r32sint: 4,
-  rg32float: 8,
-  rg32uint: 8,
-  rg32sint: 8,
-  rgba16float: 8,
-  rgba16uint: 8,
-  rgba16sint: 8,
-  rgba32float: 16,
-  rgba32uint: 16,
-  rgba32sint: 16,
-};
 
 /** Run one dispatch. Throws with the device's own words when the module, the layout or a
  *  resource is refused, and when there is no WebGPU device at all. */
