@@ -40,3 +40,32 @@ through the owner's account can too, so the rule is written here:
   merge that pull request. The owner cannot approve their own pull request, so their go-ahead
   is the review.
 - Never push to `main` directly, and never force-push it.
+- `.claude/skills/land-pr/SKILL.md` is the procedure, from reading the diff to the live page.
+
+## Layout and CSS changes
+
+DESIGN.md (Layout, the Container Rule) sets the shell, the measures and the grids. A request to
+remove or reduce whitespace, to tighten or to widen asks for the smallest change that closes the
+gap the maintainer can see:
+
+- Never remove a container's `max-width` (`max-inline-size` in this CSS) or change a grid's
+  column count unless the request says so in those words. "Reduce the whitespace" was once read
+  as "remove": the shell lost its `max-width`, the page ran edge to edge, and a later change had
+  to cap it at 1320px again.
+- Measure the elements the change touches (width, height, column count) at 1440 and 390, before
+  and after, and report both. The screenshots in the typeshade-site skill's procedure (step 5)
+  show the result; the numbers show what moved.
+
+## Delegating to an agent
+
+Hand an agent the outcome a reader sees and the invariants that must not move ("the footer
+keeps its three groups; nothing else on the page moves"). A bare number is a target an agent can
+hit the wrong way: given a footer height, one reached it by laying the footer out in seven
+columns. Measure or screenshot what comes back before the pull request is marked ready.
+
+## Tracking requests
+
+Keep a list of every distinct request the maintainer makes in a session. Before a batch of
+merges, and whenever asked, report each one as done, in progress or not started. Merge and CI
+housekeeping never takes the place of an unfinished request: in one long session it crowded out
+the editable Playground the maintainer wanted most, until they asked where it was.
