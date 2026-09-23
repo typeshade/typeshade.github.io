@@ -9,6 +9,7 @@
 import { Code } from 'astro-expressive-code/components';
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import CodeFrame from '../CodeFrame.astro';
+import LinkColumns from '../LinkColumns.astro';
 import Rich from '../Rich.astro';
 import { copyFor, guideSection, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import { facts } from '../../lib/examples.ts';
@@ -242,12 +243,12 @@ const gapText = entry.gap === 'retired' ? e.retired : entry.gap === 'builder' ? 
         })}
       </dl>
     )}
-    <ul class="api-see-also">
+    <LinkColumns>
       {guide && <li><a href={localePath(locale, guide.href)} lang={locale}><Rich text={guide.label} locale={locale} /></a></li>}
       {entry.family === 'sd' && <li><a href={localePath(locale, apiPage('TypeShadeError'))} lang="en"><code>TypeShadeError</code></a></li>}
       {referenceLinks.map((l) => <li><a href={l.href} lang="en"><code>{l.label}</code></a></li>)}
       <li><a href={index.href} lang={locale}>{x.h1}</a></li>
-    </ul>
+    </LinkColumns>
   </section>
 
   <section>

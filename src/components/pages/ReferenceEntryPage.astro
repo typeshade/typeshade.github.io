@@ -11,6 +11,7 @@
 import { Code } from 'astro-expressive-code/components';
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import LanguageType from '../LanguageType.astro';
+import LinkColumns from '../LinkColumns.astro';
 import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import { apiSlugByName } from '../../lib/api-nav.ts';
@@ -259,17 +260,17 @@ const meta = `title:${entry.name} (${kindWord})`;
   {shows('examples') && (
     <section>
       <h2 id="examples" lang={locale}>{e.examples}</h2>
-      <ul class="api-see-also">
+      <LinkColumns>
         {examples.map((x) => <li><a href={localePath(locale, x.href)}><code>{x.file}</code></a></li>)}
-      </ul>
+      </LinkColumns>
     </section>
   )}
 
   <section>
     <h2 id="see-also" lang={locale}>{e.seeAlso}</h2>
-    <ul class="api-see-also">
+    <LinkColumns>
       {seeAlso.map((s) => <li><a href={s.href} lang={s.code ? 'en' : locale}>{s.code ? <code>{s.label}</code> : s.label}</a></li>)}
-    </ul>
+    </LinkColumns>
   </section>
 </Docs>
 
