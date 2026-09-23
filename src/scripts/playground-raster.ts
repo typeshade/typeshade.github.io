@@ -6,6 +6,13 @@
 // compiled functions arrive as a parameter for that reason: whoever calls in has already
 // decided where the module was compiled.
 
+/** The oracle's precision for everything the Result tab draws or dispatches on the CPU: every
+ *  f32 operation rounded to f32, the way the GPU computes it. The oracle's default keeps full
+ *  JavaScript doubles, which is the reference the reflection's return values report, and a
+ *  picture drawn that way hides what an f32 program actually does: the fp64 examples exist
+ *  to show f32 losing digits the emulated double keeps. */
+export const RASTER_PRECISION = 'f32' as const;
+
 /** One parameter or result of an entry point, as reflect() reports it. */
 export interface ReflectedField {
   readonly name?: string;
@@ -167,6 +174,9 @@ export function drawTile(
           return zero.ok ? zero.value : 0;
         }
         const at = corners.outputs.map((corner) => corner[from.name as string]);
+        // An integer varying is never interpolated: WGSL makes it flat, and a flat varying
+        // takes the first vertex's value, which is WebGPU's provoking vertex.
+        if (/^(?:[iu]32|vec[234]<[iu]32>)$/.test(field.type ?? '')) return at[0];
         if (Array.isArray(at[0])) {
           const first = at[0] as number[];
           return first.map((_, k) => w0 * first[k] + w1 * (at[1] as number[])[k] + w2 * (at[2] as number[])[k]);

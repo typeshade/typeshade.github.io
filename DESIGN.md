@@ -419,8 +419,12 @@ cards takes the column. A third measure needs a reason.
   Shadertoy pane does. A picker beside the tabs chooses what draws it: the GPU in the
   runtime's own order, WebGPU alone, WebGL2 alone, or the CPU oracle's rasteriser. The GPU
   half goes through `src/lib/shader-runtime.ts`, the runtime every figure on the site draws
-  through. A backend the browser lacks is said by name on the canvas, and the pick joins the
-  share link. Under the canvas is the bindings panel: a row for every binding and override
+  through. A backend the browser lacks, or a WebGPU feature the module needs and the GPU does
+  not offer, is said by name on the canvas, and the pick joins the share link. The GPU is
+  handed one frame at a time, and a program too heavy for it draws at fewer pixels, down to
+  an eighth of the box's side, so the page keeps its own frames. The rasteriser runs the
+  oracle at f32, the precision the GPU computes in, so the two engines draw one picture; the
+  reflection's return values stay at the oracle's full double precision. Under the canvas is the bindings panel: a row for every binding and override
   the module declares, headed by its slot and name in code, with what the reader supplies it
   with. A uniform field gets a slider, a colour picker where the contract calls it a colour,
   or a matrix with presets; a texture a built-in picture or the reader's own image; a

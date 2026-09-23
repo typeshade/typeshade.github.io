@@ -298,6 +298,8 @@ export class BindingsModel {
   private readonly overrideValues = new Map<string, number>();
   /** Built texels by binding, so a redraw that did not change a texture does not rebuild it. */
   private readonly texelCache = new Map<string, TextureSpec>();
+  /** Starting values an example brings for the next module read, by field name. */
+  private pendingSeed: Readonly<Record<string, readonly number[]>> | undefined;
   /** What the last dispatch wrote, by binding name, for the rows under each buffer. */
   private results = new Map<string, string>();
 
@@ -305,6 +307,12 @@ export class BindingsModel {
     private readonly copy: BindingsCopy,
     private readonly hooks: BindingsHooks,
   ) {}
+
+  /** Hand over the starting values of the example about to be opened. They are applied on the
+   *  next `update`, the compile of that example's file. */
+  seed(values: Readonly<Record<string, readonly number[]>>): void {
+    this.pendingSeed = values;
+  }
 
   /** Read a newly compiled module. Values the reader set survive for every binding and field
    *  that still exists with the same type. */
@@ -358,6 +366,17 @@ export class BindingsModel {
             this.storageTextures.push(entry);
             break;
         }
+      }
+    }
+    // An example that was just opened brings its own starting values, and they win over
+    // whatever the fields held under the example before.
+    const seed = this.pendingSeed;
+    this.pendingSeed = undefined;
+    const first = this.uniforms[0];
+    if (seed && first) {
+      for (const field of first.fields) {
+        const v = seed[first.bare ? first.binding.name : field.name];
+        if (v && v.length === componentCount(field.shape)) this.values.set(this.fieldKey(first, field), [...v]);
       }
     }
     // Start every value that is not already set, in the order the fields appear, so the start

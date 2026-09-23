@@ -100,29 +100,30 @@ const ROUTES = ['/playground/', '/ko/playground/']
 
 // How many of the examples in the picker the Result tab has to paint, and how many of them a
 // backend has to run at all. Measured, never typed. The first floors, on 2026-09-23 when the
-// tab moved to the GPU, were 34 painted and 36 run, against 10 that drew before. The bindings
-// panel raised them: at the commit that added it, 46 of the 51 put more than one colour on a
-// canvas a backend drew and 48 got a backend. The five that do not are listed under the count
-// with the reason the page gives for each.
+// tab moved to the GPU, were 34 painted and 36 run of 51, against 10 that drew before. The
+// bindings panel took them to 46 and 48 of 51. On the tree merged with main at 5843b61, 73
+// examples in the picker, measured twice with the same result: 66 put more than one colour
+// on a canvas a backend drew and 69 got a backend. The seven that do not are listed under
+// the count with the reason the page gives for each.
 //
 // These are floors and the build defends them. A change that lowers one is a change that
 // stopped an example drawing: find out which, from the list this prints, and fix that. Do
 // not lower the number to get a green build, and do not skip an example to reach it.
-const PAINTED_FLOOR = 46
-const RAN_FLOOR = 48
+const PAINTED_FLOOR = 66
+const RAN_FLOOR = 69
 
 // Of the examples the GPU paints, how many the CPU backend paints too, and how many draw the
-// same pixels on both engines. The CPU is f64 JavaScript and the GPU f32, and the two
-// backends' own `sin` differ in their last bits, so a pixel agrees when every channel is
-// within AGREE_UNITS of eight-bit value of the GPU's, at the same pixel of the same frame or
-// one beside it. Measured twice on 2026-09-23 at the commit that added them, the same both
-// times: of the 41 the GPU paints, 35 paint on the CPU and 34 agree. Under them are the five
-// that sample a texture, which the oracle cannot do; julia-twin, which the CPU draws in one
-// colour at the held clock; and domain-warp-twin and kaleidoscope-twin, whose noise is a hash
-// of `sin` that no two implementations of `sin` agree on past a few digits.
+// same pixels on both engines. The rasteriser runs the oracle at f32, the GPU's precision, and
+// the two backends' own `sin` still differ in their last bits, so a pixel agrees when every
+// channel is within AGREE_UNITS of eight-bit value of the GPU's, at the same pixel of the same
+// frame or one beside it. Measured twice on the same tree as the floors above, the same both
+// times: of the 61 the GPU paints at the held clock, 55 paint on the CPU and 49 agree. Under
+// them are the six that sample a texture, which the oracle cannot do; the four passes whose
+// noise is a hash of `sin`, which no two implementations of `sin` agree on past a few digits;
+// and two fp64 fractals that differ by a few units at a pixel on the edge of the set.
 const AGREE_UNITS = 6
-const CPU_PAINTED_FLOOR = 35
-const AGREE_FLOOR = 34
+const CPU_PAINTED_FLOOR = 55
+const AGREE_FLOOR = 49
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000)
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1'
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
@@ -421,7 +422,13 @@ async function checkEnginesAgree(page, problems, ids) {
     // Three seconds in, the time every build-time still is captured at, so the frame compared
     // is the one a reader sees on the gallery tile.
     await page.evaluate(() => document.querySelector('[data-playground]').__playground.freeze(3))
-    await page.waitForTimeout(400)
+    // Held, the buffer goes back to the box's full size; two frames drawn after that are at
+    // it. A program this runner draws slowly may take seconds for them.
+    const framesAt = await page.evaluate(() => document.querySelector('[data-gpu-canvas]').__shader?.frames ?? 0)
+    await page
+      .waitForFunction((n) => (document.querySelector('[data-gpu-canvas]').__shader?.frames ?? 0) >= n + 2, framesAt, { timeout: 60_000 })
+      .catch(() => {})
+    await page.waitForTimeout(200)
     const state = await page.evaluate(() => {
       const canvas = document.querySelector('[data-gpu-canvas]')
       const frame = document.querySelector('[data-gpu-frame]')

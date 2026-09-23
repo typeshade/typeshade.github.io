@@ -181,8 +181,9 @@ export interface MountedShader {
   /** The fraction of the box's pixels the drawing buffer holds: 1, unless an adaptive mount
    *  has lowered it. */
   readonly scale: number
-  /** Hold the drawing buffer at the scale it has, or let an adaptive mount steer it again. A
-   *  check that compares this canvas with another engine pixel for pixel holds it first. */
+  /** Hold the drawing buffer at the box's full size, or let an adaptive mount steer it again.
+   *  A check that compares this canvas with another engine pixel for pixel holds it first, so
+   *  the comparison is at the resolution a reader on a fast GPU sees. */
   holdScale(hold: boolean): void
   /** Run a newly emitted program on the same canvas and the same backend. The pass that is
    *  drawing stays up until the new one has drawn a frame, so a program that fails to build
@@ -1176,6 +1177,10 @@ export async function mountShader(
       },
       holdScale(hold: boolean) {
         scaleHeld = hold
+        if (hold && state.scale !== 1) {
+          state.scale = 1
+          state.resize()
+        }
       },
       swap,
       redraw,
@@ -1220,6 +1225,11 @@ export async function mountShader(
       }
       const previous = live
       live = built
+      // The loop may have moved the scale while this pass was building.
+      if (frame.scale !== state.scale) {
+        frame.scale = state.scale
+        frame.resize()
+      }
       state = frame
       previous.dispose(false)
       qa.failure = ''

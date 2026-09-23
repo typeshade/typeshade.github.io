@@ -2,6 +2,8 @@
 import Rich from './Rich.astro';
 import { copyFor, type Locale } from '../i18n/index.ts';
 import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts';
+import { twinUniformDefaults } from '../lib/hero-shader.ts';
+import { shadeExampleList } from '../lib/shade-examples.ts';
 
 interface Props {
   locale: Locale;
@@ -25,6 +27,9 @@ const all = playgroundExamples().map((example) => ({
   source: example.source,
   title: shade.titles[example.id]!,
   description: shade.descriptions[example.id]!,
+  // Where a source twin's uniform fields start: its `fn()` original's values, the frame its
+  // still shows. The panel starts every other field from its own defaults.
+  defaults: twinUniformDefaults(shadeExampleList.find((entry) => entry.id === example.id)?.twinOf),
 }));
 if (seed && !all.some((example) => example.id === seed)) {
   throw new Error(`[playground] no .shade.ts example '${seed}' to seed the editor with`);

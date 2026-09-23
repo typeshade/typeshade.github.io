@@ -44,6 +44,7 @@ import { mountShader, type MountedShader, type ShaderData } from '../lib/shader-
 import {
   cornersOf,
   drawTile,
+  RASTER_PRECISION,
   entryArguments,
   zeroFor,
   type CpuFunctions,
@@ -60,6 +61,8 @@ interface PlaygroundExample {
   readonly source: string;
   readonly title: string;
   readonly description: string;
+  /** Where a source twin's uniform fields start, by field name. */
+  readonly defaults?: Readonly<Record<string, readonly number[]>>;
 }
 
 /** What the options bar is set to. Every field is a value the compiler's emit API takes. */
@@ -1413,7 +1416,7 @@ function mount(root: HTMLElement): void {
     try {
       if (picked === 'cpu') {
         const started = performance.now();
-        const cpu = compileModule(compiled.module);
+        const cpu = compileModule(compiled.module, { precision: RASTER_PRECISION });
         const values = bindings.cpuBindings(0, 0, 0, pointer);
         for (const [name, value] of Object.entries(values)) cpu.setBinding(name, value as never);
         cpu.dispatch(entry.name, groups);
@@ -1521,7 +1524,7 @@ function mount(root: HTMLElement): void {
         ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
       };
       try {
-        const oracle = compileModule(compiled.module, { gpuStubs: true });
+        const oracle = compileModule(compiled.module, { gpuStubs: true, precision: RASTER_PRECISION });
         for (const [name, value] of Object.entries(plan.bindings ?? {})) oracle.setBinding(name, value as never);
         const cpu = oracle.fns as CpuFunctions;
         const corners = cornersOf(cpu, plan);
@@ -1604,7 +1607,7 @@ function mount(root: HTMLElement): void {
   };
 
   const drawHere = async (plan: RasterPlan, context: CanvasRenderingContext2D, mine: number): Promise<void> => {
-    const oracle = compileModule(compiled!.module, { gpuStubs: true });
+    const oracle = compileModule(compiled!.module, { gpuStubs: true, precision: RASTER_PRECISION });
     for (const [name, value] of Object.entries(plan.bindings ?? {})) oracle.setBinding(name, value as never);
     const cpu = oracle.fns as CpuFunctions;
     const corners = cornersOf(cpu, plan);
@@ -2082,6 +2085,7 @@ function mount(root: HTMLElement): void {
     openedExample = example.id;
     if (examplePicker instanceof HTMLSelectElement) examplePicker.value = example.id;
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
+    bindings.seed(example.defaults ?? {});
     editor.setValue(example.source);
     // The edit handler queued a render for the new text; this one is immediate, so that one
     // is dropped and the example is painted once.
@@ -2230,6 +2234,7 @@ function mount(root: HTMLElement): void {
       followSiteTheme(monaco, paintOutput);
       if (opening.example) {
         openedExample = opening.example.id;
+        bindings.seed(opening.example.defaults ?? {});
         if (examplePicker instanceof HTMLSelectElement) examplePicker.value = opening.example.id;
         if (exampleNote instanceof HTMLElement) exampleNote.textContent = opening.example.description;
       } else if (exampleNote instanceof HTMLElement) {

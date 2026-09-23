@@ -97,7 +97,10 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
     const canvas = figure.locator('canvas')
     await page.waitForFunction((at) => document.querySelector(at)?.__liveShader != null, `[data-live-id="${id}"]`, { timeout: TIMEOUT })
 
-    // 1. A backend, or the fallback the page promises instead.
+    // 1. A backend, or the fallback the page promises instead. The canvas is brought into
+    // view first: the runtime draws nothing for a canvas out of view, so a count taken below
+    // the fold measured only the frames that slipped in before the page said so.
+    await figure.evaluate((node) => node.scrollIntoView({ block: 'center' }))
     await page.waitForTimeout(1500)
     const backend = await canvas.getAttribute('data-backend')
     mounted = backend === 'webgpu' || backend === 'webgl2'
