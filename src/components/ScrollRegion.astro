@@ -7,6 +7,6 @@ interface Props {
 const { label, class: className } = Astro.props
 ---
 
-<div class:list={['scroll-region', className]} role="region" tabindex="0" aria-label={label}>
+<div class:list={['overflow-x-auto overscroll-x-contain [scrollbar-width:thin]', className]} role="region" tabindex="0" aria-label={label}>
   <slot />
 </div>

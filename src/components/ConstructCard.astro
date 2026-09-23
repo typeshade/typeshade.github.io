@@ -64,29 +64,76 @@ const plain = name.replace(/`/g, '')
 const region = (title: string): string => `${title}, ${plain}`
 ---
 
-<li class="construct-card">
-  <div class="construct-card-head">
-    <h3 class="construct-card-name"><Rich text={name} locale={locale} /></h3>
-    {diagnostic && <span class="construct-card-badge">{refusedLabel}</span>}
+<li class="construct-card rounded-md border border-line-1 bg-(--color-elevated)">
+  <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+    <h3 class="construct-card-name font-semibold text-text-1 wrap-anywhere"><Rich text={name} locale={locale} /></h3>
+    {diagnostic && <span class="inline-block rounded-sm border border-diag bg-transparent px-[7px] text-label whitespace-nowrap text-diag">{refusedLabel}</span>}
   </div>
-  <p class="construct-card-note"><Rich text={becomes} locale={locale} /></p>
-  <div class="construct-card-panes">
-    <div class="construct-card-pane">
+  <p class="construct-card-note max-inline-[62ch] text-ui text-text-2"><Rich text={becomes} locale={locale} /></p>
+  <div class="mbs-3 grid grid-cols-1 items-start gap-3 md:grid-cols-2">
+    <div class="construct-card-pane min-inline-0">
       <CodeFrame label={region(tsTitle)} holdTokens>
         <Code code={ts} lang="ts" title={tsTitle} locale={locale} wrap />
       </CodeFrame>
     </div>
     {wgsl !== null ? (
-      <div class="construct-card-pane">
+      <div class="construct-card-pane min-inline-0">
         <CodeFrame label={region(emitTitle)} holdTokens>
           <Code code={wgsl} lang="wgsl" title={emitTitle} locale={locale} wrap />
         </CodeFrame>
       </div>
     ) : (
-      <div class="construct-card-pane construct-card-refusal">
-        <p class="construct-card-pane-title">{diagnosticTitle}</p>
+      <div class="construct-card-refusal min-inline-0">
+        <p class="construct-card-pane-title flex min-block-[34px] items-center text-ui text-text-3">{diagnosticTitle}</p>
         <p class="diagnostic">{diagnostic!.code.length > 0 && <b>{diagnostic!.code}</b>} {diagnostic!.message}</p>
       </div>
     )}
   </div>
 </li>
+
+<style>
+  /* One TypeScript construct per card on /guide/language/from-typescript/. An Ant Card, and
+     the card is what separates one construct from the next: the same page as three columns of
+     code put a hairline between rows that ran ten lines tall, and a reader could not see where
+     a construct ended. The head names the construct, the sentence under it runs at the card's
+     full width, and the panes sit side by side from 48rem and stack below it with the
+     TypeScript first. Every measure is relative to the card, so the cards stay inside the
+     document column (DESIGN.md, the Container Rule) at every width.
+
+     The card sits in the document column, so its list item, heading and paragraphs meet
+     `.doc li`, `.doc h3` and `.doc p`; the margins and the heading's size outrank them here. */
+  .construct-card { margin: 0; padding: 16px }
+  .construct-card-name { margin: 0; font-size: var(--text-h5); line-height: var(--text-h5--line-height) }
+  .construct-card-name :global(code), .construct-card-note :global(code) { font-family: var(--font-mono); font-size: 0.9em }
+  /* The card is as wide as two panes need and a card at the head of a wide column can be the
+     whole column; the sentence under the name keeps the measure a front page paragraph keeps,
+     so it does not run 130 characters across a card nobody meant to be a page. */
+  .construct-card-note { margin-block-start: 8px }
+  /* This outranks `.doc .expressive-code`, whose 24px of space above would open a gap between
+     a pane and the frame in it. */
+  .construct-card-pane :global(.expressive-code) {
+    margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
+    --ec-codePadBlk: 10px; --ec-codePadInl: 12px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
+  }
+  .construct-card-pane :global(.expressive-code .copy) { display: none }
+  /* A pane is about 280px wide in the document column, and a line of a real program is longer
+     than that, so a line wraps at a space and reads on under the hanging indent Expressive
+     Code gives it. A name breaks inside itself only where the name alone is wider than the
+     pane. Two rules keep a break off the middle of a name: <CodeFrame holdTokens> holds a
+     token with a hyphen or an angle bracket in it together, and `overflow-wrap: normal`
+     overrides Expressive Code's own emergency break, so the two lines on this page that carry
+     a name longer than the pane scroll inside their frame instead of cutting the name in two.
+     The width is reset because Expressive Code marks a wrapping block `pre.wrap`, and the
+     site's own layout class of that name would give it the page's measure inside a card. */
+  .construct-card-pane :global(.expressive-code pre.wrap) { inline-size: auto; margin-inline: 0 }
+  .construct-card-pane :global(.expressive-code pre.wrap .ec-line .code) { overflow-wrap: normal; min-inline-size: 0 }
+  /* No copy button, so the first line keeps no room for one at its end. */
+  .construct-card-pane :global(.expressive-code :nth-child(1 of .ec-line) .code) { padding-inline-end: var(--ec-codePadInl) }
+  /* A refused construct: where the emitting card has a second frame, this one has the
+     compiler's own code and message in the diagnostic colour, under the label that says what
+     it is. It is no code frame, because nothing here was emitted. The label stands as tall as
+     a frame's title bar and the message starts where the frame's first line of code starts,
+     so the two panes of a refused construct read as one row. */
+  .construct-card-pane-title { margin: 0 }
+  .construct-card-refusal .diagnostic { margin-block-start: 10px }
+</style>

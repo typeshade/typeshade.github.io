@@ -47,8 +47,43 @@ for (const file of files) {
   })
 }
 
+// global.css holds the tokens, the fonts, the base element rules, dark mode, the chrome every
+// page shares and the rules for markup the site does not author (Expressive Code's frames,
+// Pagefind's dialog, the Markdown the loaders render). A page's or a component's own styling
+// is Tailwind utilities on its markup, or that component's scoped <style> (DESIGN.md,
+// Styling). So every class a selector in global.css names has to be one of these roots, or
+// start with one and a hyphen.
+const GLOBAL_CLASS_ROOTS = {
+  chrome: ['site', 'docs', 'doc', 'skip', 'wrap', 'wide', 'visually-hidden', 'icon', 'chevron', 'depth', 'header-anchor', 'search', 'guide-note'],
+  shared: [
+    'button', 'alert', 'figure', 'tabs', 'tile-cover', 'no-still', 'diagnostic',
+    // The reference's vocabulary, drawn by the /api/ pages and the language reference alike.
+    'api-crumbs', 'api-kind', 'api-summary', 'api-list', 'api-index', 'api-type', 'api-optional', 'api-see-also',
+  ],
+  // Expressive Code's output.
+  foreign: ['expressive-code', 'ec', 'frame', 'header', 'title', 'has-title', 'is-terminal', 'code', 'copy'],
+  // LiveShader's rules move out with the Playground's, once the Playground's own branch lands.
+  deferred: ['live'],
+}
+const roots = Object.values(GLOBAL_CLASS_ROOTS).flat()
+const globalCss = path.join(root, 'src/styles/global.css')
+const css = readFileSync(globalCss, 'utf8')
+// Blank out comments without moving a line, so a hit keeps its line number.
+const bare = css.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
+for (const m of bare.matchAll(/([^{};]+)\{/g)) {
+  const selector = m[1].trim()
+  if (selector.startsWith('@')) continue
+  const line = bare.slice(0, m.index + m[0].indexOf(selector)).split('\n').length
+  for (const [, name] of selector.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) {
+    if (roots.some((r) => name === r || name.startsWith(`${r}-`))) continue
+    hits.push(
+      `src/styles/global.css:${line}  page or component class in global.css: .${name} belongs on that page's or component's markup as Tailwind utilities, or in its scoped <style>. global.css holds tokens, fonts, base rules, shared chrome and rules for markup the site does not author (DESIGN.md, Styling); a class that really is shared goes into GLOBAL_CLASS_ROOTS in scripts/check-style.mjs.`,
+    )
+  }
+}
+
 if (hits.length > 0) {
   console.error(`check-style: ${hits.length} hit(s)\n` + hits.join('\n'))
   process.exit(1)
 }
-console.log(`check-style: ${files.length} files clean`)
+console.log(`check-style: ${files.length} files clean, global.css names only shared classes`)

@@ -69,7 +69,7 @@ The production build verifies generated artifacts, documentation consistency, li
 
 `bun run build` runs, in order:
 
-- `check-style`: the voice rules in `DESIGN.md`, over `src/`, `scripts/` and the Markdown files.
+- `check-style`: the voice rules in `DESIGN.md`, over `src/`, `scripts/` and the Markdown files, and that `src/styles/global.css` names only shared classes (DESIGN.md, Styling).
 - `check-copy`: numerals, links and code spans equal in English and Korean; label widths.
 - `check-i18n`: every string in the dictionaries, every locale URL through `localePath()`, no Hangul or locale literal outside `src/i18n/`, route parity between `src/pages` and `src/pages/ko`, one-line route files.
 - `check-guide`: the Korean guide translations against the pinned English.
