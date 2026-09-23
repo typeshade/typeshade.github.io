@@ -222,8 +222,7 @@ and its Empty mark), the reference's shared vocabulary (`api-list`, `api-index` 
 classes the /api/ pages and the language reference both draw), and the rules for markup the
 site does not author: Expressive Code's frames, Pagefind's dialog and the Markdown the loaders
 render under `.doc`. `bun run check:style` fails the build on a selector there that names any
-other class, and says where it belongs. LiveShader's rules are still in the file, marked as
-deferred in the check, until they move with the Playground's.
+other class, and says where it belongs.
 
 ## Type
 
