@@ -11,7 +11,8 @@
 // Putting one on a page: see "Live examples" in DESIGN.md.
 import { Code } from 'astro-expressive-code/components';
 import Rich from './Rich.astro';
-import { copyFor, type Locale } from '../i18n/index.ts';
+import { copyFor, localePath, type Locale } from '../i18n/index.ts';
+import { links } from '../lib/links.ts';
 import { liveShader, livePayloadJson } from '../lib/live-shader-emit.ts';
 import type { ControlProps } from '../lib/live-shader-contract.ts';
 import type { StateStrings } from '../lib/shader-runtime.ts';
@@ -82,6 +83,7 @@ const runtimeCopy = {
   aria,
   lineAt: l.lineAt,
   component: l.component,
+  errorsHref: localePath(locale, links.errors.href),
 };
 
 const payloadId = `live-payload-${id}`;
@@ -267,6 +269,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
     border: 0; padding: 0; margin-inline-end: 6px; background: none; color: inherit;
     font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
   }
+  .live-diagnostics :global(.live-error-code) { color: inherit; text-decoration: underline; text-underline-offset: 2px }
   .live-diagnostics :global(.live-note) { margin-block-start: 4px; color: var(--color-text-2); font-size: var(--text-meta) }
 
   @media (min-width: 40rem) {

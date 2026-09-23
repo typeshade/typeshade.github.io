@@ -93,6 +93,7 @@ export const links = {
   examples: { label: 'Examples', href: '/guide/examples/' },
   api: { label: 'Compiler API reference', href: '/api/' },
   reference: { label: 'Language reference', href: '/reference/' },
+  errors: { label: 'Error codes', href: '/reference/errors/' },
   guideSource: { label: 'Compiler guide source (AUTHORING.md)', href: at('AUTHORING.md') },
   surfaceSource: {
     label: 'TypeShade surface specification',
@@ -444,6 +445,9 @@ export function sidebar(
       depth: 1,
     });
   }
+  // The diagnostic codes sit with the language reference: a code is what a reader of a
+  // `"use typeshade"` file meets when the file does not compile.
+  reference.push({ label: d.errors.h1, href: localePath(locale, links.errors.href), depth: 1 });
   reference.push({ label: d.api.h1, href: localePath(locale, links.api.href) });
   for (const { category, members } of apiCategories()) {
     reference.push({

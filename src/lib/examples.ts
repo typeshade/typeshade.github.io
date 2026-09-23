@@ -7,6 +7,7 @@ import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/i
 import { shortBlurb } from './blurb.ts';
 import { builtinCounts } from './builtin-table.ts';
 import { languageCounts } from './language-reference.ts';
+import { errorCodeCounts } from './error-codes.ts';
 import { loweringRowCount, loweringTripLimit } from './typescript-lowering.ts';
 import { glslCapabilityCount } from './glsl-mapping.ts';
 import { wgslBuiltinIdCount } from './target-mapping.ts';
@@ -302,6 +303,7 @@ function layoutStandards(): readonly string[] {
 
 const builtins = builtinCounts();
 const languageSurface = languageCounts();
+const errorCounts = errorCodeCounts();
 
 export const facts = {
   examples: examples.length,
@@ -382,6 +384,12 @@ export const facts = {
   languageFunctions: languageSurface.function,
   languageConstants: languageSurface.constant,
   languageMathMembers: languageSurface.math,
+  /** The diagnostic codes at the pin, counted from the compiler's two registries
+   *  (src/lib/error-codes.ts): the front end's TS_CODES, the core's CODES catalogue, and the
+   *  front-end numbers its header calls retired. /reference/errors/ has a page for each. */
+  errorCodesTs: errorCounts.ts,
+  errorCodesSd: errorCounts.sd,
+  errorCodesRetired: errorCounts.retired,
 };
 
 // The copy was written against these values, at the commit this names. Every count is
@@ -410,6 +418,9 @@ const pinned = {
   languageFunctions: 163,
   languageConstants: 8,
   languageMathMembers: 36,
+  errorCodesTs: 44,
+  errorCodesSd: 35,
+  errorCodesRetired: 1,
 };
 const drift: string[] = [];
 if (facts.examples !== pinned.examples)
@@ -454,6 +465,12 @@ if (facts.languageConstants !== pinned.languageConstants)
   drift.push(`languageConstants ${facts.languageConstants} != ${pinned.languageConstants}`);
 if (facts.languageMathMembers !== pinned.languageMathMembers)
   drift.push(`languageMathMembers ${facts.languageMathMembers} != ${pinned.languageMathMembers}`);
+if (facts.errorCodesTs !== pinned.errorCodesTs)
+  drift.push(`errorCodesTs ${facts.errorCodesTs} != ${pinned.errorCodesTs}`);
+if (facts.errorCodesSd !== pinned.errorCodesSd)
+  drift.push(`errorCodesSd ${facts.errorCodesSd} != ${pinned.errorCodesSd}`);
+if (facts.errorCodesRetired !== pinned.errorCodesRetired)
+  drift.push(`errorCodesRetired ${facts.errorCodesRetired} != ${pinned.errorCodesRetired}`);
 if (drift.length > 0) {
   throw new Error(
     `[examples] the pinned mirror (${facts.pinnedCommit}) no longer matches the copy written at ${pinned.commit}: ${drift.join('; ')}`,

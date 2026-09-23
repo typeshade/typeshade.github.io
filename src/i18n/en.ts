@@ -444,6 +444,141 @@ export const en = {
         resources: 'Arrays and bindings',
       },
     },
+    // The error codes at /reference/errors/: one page per code in the compiler's two
+    // registries (src/lib/error-codes.ts). The registry text and every compiler message stay
+    // the compiler's own English in every language; these are the words around them.
+    errors: {
+      title: 'TypeShade error codes: every compiler diagnostic, by code',
+      description: `The ${facts.errorCodesTs} front-end codes and ${facts.errorCodesSd} core codes the TypeShade compiler reports, each with its meaning and, where a program can raise it, that program fixed.`,
+      summary: 'The code on a diagnostic, what it means and how to fix it.',
+      h1: 'Error codes',
+      intro: `Every code the compiler puts on a diagnostic, read from its two registries at commit ${facts.pinnedCommit}. The \`"use typeshade"\` front end has ${facts.errorCodesTs} codes and the core IR layer under it has ${facts.errorCodesSd}.`,
+      verified: (n: number) =>
+        `${n} pages carry a program that raises the code and the same program fixed. Both are compiled at build time against the pinned compiler, and the build stops when a program no longer raises its code or a fix no longer compiles clean. A row with an Example tag is one of them.`,
+      note: "The registry text and every compiler message on these pages are the compiler's own English.",
+      codes: (n: number) => `${n} codes`,
+      frontEndH: 'Front-end codes',
+      frontEndP:
+        'The `TS80xx` codes, from `TS_CODES` in the front end. A `"use typeshade"` file is checked against these before any IR is built.',
+      coreH: 'Core codes',
+      coreP:
+        'The `SDxxxx` codes, from the `CODES` catalogue in `typeshade/dev`. The core IR layer raises them under the [`fn()`](apiFn) builder and under a `"use typeshade"` file alike, and the front end refuses many of the same mistakes first under a code of its own.',
+      numberingH: 'Numbering',
+      numberingP: "The front end's registry explains its numbers in its own header:",
+      exampleTag: 'Example',
+      groups: {
+        file: 'The file',
+        types: 'Types and names',
+        functions: 'Functions and classes',
+        controlFlow: 'Control flow',
+        entries: 'Entry points and IO',
+        resources: 'Resources and memory',
+        f64: 'Emulated double',
+        targets: 'Targets',
+        builder: 'Builder calls',
+        lint: 'Lint rules',
+        portable: 'Portable kernels',
+        retired: 'Retired numbers',
+        other: 'Other codes',
+      },
+      // One code on a page of its own, at /reference/errors/<code>/. The page keeps MDN's
+      // order for an error: the code and what it means, when it fires, an example, how to
+      // fix it and see also, then the source lines, and leaves out a section with nothing
+      // true to put in it.
+      entry: {
+        // The first candidate that lands inside the 45 to 60 characters check-seo.mjs allows.
+        // An SD code carries its summary, a TS code its constant, and a retired number only
+        // itself. Measured over every code at the pin, the titles run from 45 to 60.
+        title: (head: string, summary: string) => {
+          const candidates = [
+            ...(summary
+              ? [
+                  `${head}: ${summary}, a TypeShade error code`,
+                  `${head}: ${summary} in TypeShade`,
+                  `${head}: ${summary}`,
+                ]
+              : []),
+            `${head}: an error code of the TypeShade compiler`,
+            `${head}: a TypeShade compiler error code`,
+            `${head}: TypeShade error code`,
+          ];
+          return (
+            candidates.find((t) => t.length >= 45 && t.length <= 60) ??
+            candidates[candidates.length - 1]!
+          );
+        },
+        description: (head: string, line: string) =>
+          `${head}, an error code of the TypeShade compiler. ${line}`,
+        fill: 'Its page quotes the registry, shows where the compiler raises it and how to fix it.',
+        kindTs: 'Front-end code',
+        kindSd: 'Core code',
+        kindRetired: 'Retired number',
+        kindMeta: 'Kind',
+        undocumented:
+          'The registry has no documentation comment for this constant, so the line above is written by this site from the messages the compiler raises it with.',
+        whenH: 'When it fires',
+        exampleH: 'Example',
+        fixH: 'How to fix it',
+        frontEndH: 'In the front end',
+        seeAlsoH: 'See also',
+        sourceH: 'Source',
+        compiled: 'Compiled at build time against the pinned compiler, this program gets:',
+        backend:
+          'Compiled at build time against the pinned compiler, this program gets a `TS8015` diagnostic, the front end reporting a backend that refused the module. The error the backend threw carries the code:',
+        diagnose:
+          '`compile()` does not run the lint rules. `diagnose()` from `typeshade/dev` does, on the module `compile()` returns, and reports:',
+        deprecations:
+          'Compiled with `{ deprecations: true }`, the option that turns this warning on.',
+        hint: "The registry's hint:",
+        fixed: 'The same program, corrected. It compiles with no diagnostic.',
+        fixedDiagnose:
+          'The same program, corrected. It compiles with no diagnostic, and `diagnose()` no longer reports the code.',
+        lineAt: (line: number) => `line ${line}`,
+        retired:
+          'This number is retired. No diagnostic carries it, and the registry never gives it to another rule.',
+        frontEnd:
+          'A `"use typeshade"` file never reaches this check with the same mistake: the front end refuses it first, under its own code. This program, compiled at build time, gets:',
+        builder:
+          'No `"use typeshade"` program on this site raises this code, so the page has no example. The [`fn()`](apiFn) builder builds the IR directly and reaches the check at the lines under Source.',
+        internal:
+          'The registry calls this an internal invariant: it means the compiler itself went wrong, and no program is meant to raise it.',
+        unwritten: 'No example is written for this code at this commit yet.',
+        sourceP: (commit: string) =>
+          `Where the compiler raises this code at commit ${commit}, one line per file:`,
+        sites: (n: number) => (n === 1 ? 'one site' : `${n} sites`),
+        noSites: 'The compiler source names this code nowhere outside its registry.',
+        index: 'Error codes',
+        builderPage: 'The `fn()` builder',
+      },
+      // The line a front-end code leads with where its constant has no JSDoc. When the
+      // registry documents one of these, the build stops and asks for its line to go.
+      lines: {
+        MISSING_DIRECTIVE:
+          'A file compiled as TypeShade that does not start with the `"use typeshade"` directive.',
+        UNKNOWN_TYPE: 'A type name the compiler does not know.',
+        TYPE_MISMATCH:
+          'Two types that do not fit where they meet: an operator, a declaration, a return or an argument.',
+        UNKNOWN_FN: 'A call to a function the file neither declares nor imports.',
+        CONST_ASSIGN:
+          'An assignment to a name that cannot change, such as a `const` or a read-only resource.',
+        LOOP_BOUND:
+          'A counted `for` loop whose exit does not compare its counter to a constant bound.',
+        LOOP_INFINITE: 'A loop whose condition is always true.',
+        LOOP_INDUCTION:
+          'A `for` loop whose counter is not one `let` of type `i32` or `u32`, or whose update is not a constant step.',
+        BREAK_OUTSIDE: 'A `break` with no loop or `switch` around it.',
+        STRUCT_FIELD:
+          "A struct literal or an entry's IO that does not match its declaration: a field missing, a field the struct does not have, or a `@location` that does not line up.",
+        HOST_API: 'A JavaScript host API, such as `window` or `fetch`, named inside a shader file.',
+        HOST_STMT:
+          'A JavaScript statement a shader has no form for, such as `try`, `throw` or `await`.',
+        TOP_LEVEL:
+          'Something at the top level of the file the compiler cannot declare: a bare statement, or a module-level declaration of a shape it refuses.',
+        BACKEND:
+          "A backend that refused to emit a module the front end accepted. The message is the backend's own.",
+        INDEX_OOB: 'A constant index outside the length of what it indexes.',
+      },
+    },
   },
   // The Playground at /playground/: the words around the Monaco editor and the WGSL the
   // compiler writes from what is typed into it. Monaco carries its own English inside the

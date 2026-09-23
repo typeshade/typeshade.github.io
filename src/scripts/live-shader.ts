@@ -22,6 +22,7 @@ import {
 } from '../lib/live-shader-contract.ts';
 import { mountEditor, type LiveEditor } from './live-shader-editor.ts';
 import { highlight } from './live-shader-highlight.ts';
+import { errorLink, linkedMessage } from './error-links.ts';
 
 /** What LiveShader.astro inlined for one example. */
 interface LivePayload {
@@ -43,6 +44,8 @@ interface LiveCopy {
   readonly aria: StateStrings;
   readonly lineAt: string;
   readonly component: readonly string[];
+  /** The error codes' index in the page's language, which a code in a message links under. */
+  readonly errorsHref: string;
 }
 
 /** One message under the canvas. */
@@ -51,6 +54,8 @@ interface Message {
   /** The line in the reader's own text, when the compiler gave one. A message about the whole
    *  module has none, and is not labelled with a line it does not have. */
   readonly line?: number;
+  /** The compiler's code, which links to its page. */
+  readonly code?: string;
 }
 
 /** The handle scripts/check-live.mjs reads. One per instance, parked on the root element. */
@@ -394,15 +399,19 @@ function setUp(root: HTMLElement): void {
     messages.textContent = '';
     for (const message of list) {
       const line = el('div', 'live-message');
-      if (message.line === undefined) {
-        line.textContent = message.text;
-      } else {
+      if (message.line !== undefined) {
         // A located message walks the reader to the line, which is what the line number is for.
         const jump = el('button', 'live-jump', copy.lineAt.replace('{line}', String(message.line)));
         jump.setAttribute('type', 'button');
         jump.addEventListener('click', () => editor?.goTo(message.line!, 1));
-        line.append(jump, document.createTextNode(`  ${message.text}`));
+        line.append(jump, document.createTextNode('  '));
       }
+      // The code leads the message and links to its page, the way the reference prints one.
+      const code = message.code
+        ? errorLink(copy.errorsHref, message.code, 'live-error-code')
+        : null;
+      if (code) line.append(code, document.createTextNode(' '));
+      line.append(...linkedMessage(copy.errorsHref, message.text, 'live-error-code'));
       messages.append(line);
     }
     if (note) messages.append(el('div', 'live-note', note));
@@ -429,6 +438,7 @@ function setUp(root: HTMLElement): void {
     handle.compiles++;
     const report: Message[] = result.diagnostics.map((d) => ({
       text: d.message,
+      code: d.code,
       ...(d.located ? { line: d.line } : {}),
     }));
     if (!result.data || !result.controls) {

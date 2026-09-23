@@ -536,6 +536,17 @@ const dropExportedFrom = (markdown: string): string =>
     .filter((paragraph) => !/^Exported from [`\w@/,\s.]+$/.test(paragraph.trim()))
     .join('\n\n');
 
+/** The compiler's prose the way every reference page prints it: the release name, no issue
+ *  numbers, no aside or sentence that names a consumer, and no capitals for emphasis. The
+ *  error code pages put the two registries' text through it (src/lib/error-codes.ts), and
+ *  `keep` names the capitalised words that text writes as names: `ANGLE`, `AUTHORING.md`. */
+export function referenceProse(text: string, keep: readonly string[] = []): string {
+  return lowerEmphasis(
+    dropConsumerText(tidyProse(rewriteReferences(text))),
+    new Set([...codeSpanWords(text), ...keep]),
+  ).trim();
+}
+
 /** Every identifier the text itself writes in a code span, so capitals inside one are kept. A
  *  fenced block is left out: its prose is the example's comments, not identifiers. */
 function codeSpanWords(text: string): Set<string> {

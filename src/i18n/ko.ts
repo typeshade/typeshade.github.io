@@ -509,6 +509,123 @@ export const ko: Copy = {
         resources: '배열과 바인딩',
       },
     },
+    errors: {
+      title: 'TypeShade 오류 코드: 컴파일러가 진단에 붙이는 코드를 모두 모아 코드별로 정리한 목록',
+      description: `TypeShade 컴파일러가 내는 프런트엔드 코드 ${facts.errorCodesTs}개와 코어 코드 ${facts.errorCodesSd}개입니다. 코드마다 뜻을 싣고, 프로그램으로 낼 수 있는 코드는 그 프로그램과 고친 모습도 보여 줍니다.`,
+      summary: '진단에 붙는 코드와 그 뜻, 고치는 법입니다.',
+      h1: '오류 코드',
+      intro: `컴파일러가 진단에 붙이는 코드를 모두 모았습니다. 커밋 ${facts.pinnedCommit}의 레지스트리 두 곳에서 읽어 왔습니다. \`"use typeshade"\` 프런트엔드의 코드가 ${facts.errorCodesTs}개, 그 아래 코어 IR 계층의 코드가 ${facts.errorCodesSd}개입니다.`,
+      verified: (n: number) =>
+        `${n}개 페이지에는 코드를 내는 프로그램과 그 프로그램을 고친 모습이 함께 실려 있습니다. 둘 다 빌드할 때 고정된 컴파일러로 컴파일하므로, 프로그램이 더는 그 코드를 내지 않거나 고친 프로그램에 진단이 남으면 빌드가 멈춥니다. 예제 태그가 붙은 행이 그런 페이지입니다.`,
+      note: '레지스트리 설명과 컴파일러 메시지는 컴파일러 원문이라 한국어 페이지에서도 영어로 둡니다.',
+      codes: (n: number) => `코드 ${n}개`,
+      frontEndH: '프런트엔드 코드',
+      frontEndP:
+        '`TS80xx` 코드는 프런트엔드의 `TS_CODES`에 들어 있습니다. `"use typeshade"` 파일은 IR을 만들기 전에 이 코드들로 먼저 검사받습니다.',
+      coreH: '코어 코드',
+      coreP:
+        '`SDxxxx` 코드는 `typeshade/dev`가 내보내는 `CODES` 카탈로그에 들어 있습니다. 코어 IR 계층은 [`fn()`](apiFn) 빌더에서도 `"use typeshade"` 파일에서도 이 코드를 냅니다. 다만 같은 실수 가운데 상당수는 프런트엔드가 자기 코드로 먼저 거부합니다.',
+      numberingH: '번호 매기기',
+      numberingP:
+        '프런트엔드 레지스트리는 번호를 매기는 방식을 파일 머리 주석에 직접 적어 두었습니다.',
+      exampleTag: '예제',
+      groups: {
+        file: '파일',
+        types: '타입과 이름',
+        functions: '함수와 클래스',
+        controlFlow: '제어 흐름',
+        entries: '진입점과 입출력',
+        resources: '리소스와 메모리',
+        f64: '에뮬레이션 배정밀도',
+        targets: '대상',
+        builder: '빌더 호출',
+        lint: '린트 규칙',
+        portable: '이식형 커널',
+        retired: '폐기된 번호',
+        other: '그 밖의 코드',
+      },
+      entry: {
+        // 영어와 같은 이유로 45자에서 60자 사이에 드는 첫 후보를 씁니다.
+        title: (head: string, summary: string) => {
+          const candidates = [
+            ...(summary ? [`${head}: ${summary}, TypeShade 오류 코드`, `${head}: ${summary}`] : []),
+            `${head}: TypeShade 컴파일러가 진단에 붙이는 오류 코드와 그 뜻, 고치는 법`,
+            `${head}: TypeShade 컴파일러가 진단에 붙이는 오류 코드 한 가지`,
+            `${head}: TypeShade 컴파일러가 진단에 붙이는 오류 코드`,
+            `${head}: TypeShade 컴파일러의 오류 코드`,
+            `${head}: TypeShade 오류 코드`,
+          ];
+          return (
+            candidates.find((t) => t.length >= 45 && t.length <= 60) ??
+            candidates[candidates.length - 1]!
+          );
+        },
+        description: (head: string, line: string) =>
+          `${head}, TypeShade 컴파일러의 오류 코드입니다. ${line}`,
+        fill: '이 페이지에는 레지스트리 원문과 컴파일러가 이 코드를 내는 곳, 고치는 법이 있습니다.',
+        kindTs: '프런트엔드 코드',
+        kindSd: '코어 코드',
+        kindRetired: '폐기된 번호',
+        kindMeta: '종류',
+        undocumented:
+          '레지스트리에는 이 상수에 대한 문서 주석이 없습니다. 그래서 위 설명은 컴파일러가 이 코드와 함께 내는 메시지를 보고 이 사이트가 쓴 것입니다.',
+        whenH: '발생 조건',
+        exampleH: '예제',
+        fixH: '고치는 법',
+        frontEndH: '프런트엔드에서',
+        seeAlsoH: '함께 보기',
+        sourceH: '소스',
+        compiled: '빌드할 때 고정된 컴파일러로 이 프로그램을 컴파일하면 다음 진단이 나옵니다.',
+        backend:
+          '빌드할 때 고정된 컴파일러로 이 프로그램을 컴파일하면 `TS8015` 진단이 나옵니다. 백엔드가 모듈을 거부했다고 프런트엔드가 알리는 진단입니다. 백엔드가 던진 오류에 이 코드가 들어 있습니다.',
+        diagnose:
+          '`compile()`은 린트 규칙을 돌리지 않습니다. `typeshade/dev`의 `diagnose()`가 `compile()`이 돌려준 모듈에 린트 규칙을 돌려 다음을 알립니다.',
+        deprecations: '이 경고를 켜는 옵션인 `{ deprecations: true }`를 주고 컴파일했습니다.',
+        hint: '레지스트리의 힌트:',
+        fixed: '같은 프로그램을 고친 모습입니다. 진단 없이 컴파일됩니다.',
+        fixedDiagnose:
+          '같은 프로그램을 고친 모습입니다. 진단 없이 컴파일되고, `diagnose()`도 더는 이 코드를 알리지 않습니다.',
+        lineAt: (line: number) => `${line}행`,
+        retired:
+          '폐기된 번호입니다. 이 코드를 단 진단은 없고, 레지스트리는 이 번호를 다른 규칙에 다시 주지 않습니다.',
+        frontEnd:
+          '같은 실수를 한 `"use typeshade"` 파일은 이 검사까지 오지 않습니다. 프런트엔드가 자기 코드로 먼저 거부하기 때문입니다. 빌드할 때 컴파일한 아래 프로그램에는 다음 진단이 나옵니다.',
+        builder:
+          '이 사이트의 `"use typeshade"` 프로그램 가운데 이 코드를 내는 것이 없어서 이 페이지에는 예제가 없습니다. [`fn()`](apiFn) 빌더는 IR을 직접 만들기 때문에 소스 절에 적힌 줄의 검사에 닿습니다.',
+        internal:
+          '레지스트리는 이 코드를 내부 불변식이라고 부릅니다. 이 코드가 나왔다면 컴파일러 자체가 잘못된 것이고, 어떤 프로그램도 이 코드를 내도록 되어 있지 않습니다.',
+        unwritten: '이 커밋에는 아직 이 코드의 예제가 없습니다.',
+        sourceP: (commit: string) =>
+          `커밋 ${commit}에서 컴파일러가 이 코드를 내는 곳입니다. 파일마다 한 줄씩 적었습니다.`,
+        sites: (n: number) => `${n}곳`,
+        noSites: '컴파일러 소스는 레지스트리 밖 어디에서도 이 코드를 쓰지 않습니다.',
+        index: '오류 코드',
+        builderPage: '`fn()` 빌더',
+      },
+      lines: {
+        MISSING_DIRECTIVE:
+          'TypeShade로 컴파일하는 파일이 `"use typeshade"` 지시문으로 시작하지 않습니다.',
+        UNKNOWN_TYPE: '컴파일러가 모르는 타입 이름입니다.',
+        TYPE_MISMATCH:
+          '연산자나 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않습니다.',
+        UNKNOWN_FN: '파일이 선언하지도 가져오지도 않은 함수를 부릅니다.',
+        CONST_ASSIGN: '`const`나 읽기 전용 리소스처럼 바뀔 수 없는 이름에 값을 대입합니다.',
+        LOOP_BOUND: '횟수를 세는 `for` 루프의 종료 조건이 카운터를 상수 경계와 비교하지 않습니다.',
+        LOOP_INFINITE: '조건이 늘 참인 루프입니다.',
+        LOOP_INDUCTION:
+          '`for` 루프의 카운터가 `i32`나 `u32` 타입의 `let` 하나가 아니거나, 갱신이 상수만큼 움직이지 않습니다.',
+        BREAK_OUTSIDE: '감싸는 루프나 `switch`가 없는 곳에 `break`를 썼습니다.',
+        STRUCT_FIELD:
+          '구조체 리터럴이나 진입점의 입출력이 선언과 맞지 않습니다. 필드가 빠졌거나, 구조체에 없는 필드가 있거나, `@location`이 서로 어긋난 경우입니다.',
+        HOST_API: '셰이더 파일 안에서 `window`나 `fetch` 같은 JavaScript 호스트 API를 가리킵니다.',
+        HOST_STMT: '`try`, `throw`, `await`처럼 셰이더에 대응하는 형태가 없는 JavaScript 문입니다.',
+        TOP_LEVEL:
+          '파일 최상위에 컴파일러가 선언으로 받을 수 없는 것이 있습니다. 선언이 아닌 문이거나, 거부하는 형태의 모듈 수준 선언입니다.',
+        BACKEND:
+          '프런트엔드가 받아들인 모듈을 백엔드가 출력하지 못하고 거부했습니다. 메시지는 백엔드가 쓴 그대로입니다.',
+        INDEX_OOB: '상수 인덱스가 대상의 길이를 벗어납니다.',
+      },
+    },
   },
   playground: {
     h1: 'Playground',

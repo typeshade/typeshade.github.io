@@ -3,7 +3,9 @@
 // backticks. `key` names a record in src/lib/links.ts, or a page ('home', 'motivation',
 // 'checks', 'examples', and the reference pages the copy names), which the locale prefixes.
 // An unknown key fails the build, and so does a reference page for a name the compiler has
-// stopped exporting.
+// stopped exporting. Inline code that is exactly a diagnostic code the compiler's registries
+// carry, `TS8010` or `SD0030`, links to that code's page.
+import { errorCodePath } from '../lib/error-codes.ts';
 import { apiPage, links } from '../lib/links.ts';
 import { localePath, type Locale } from '../i18n/index.ts';
 
@@ -37,7 +39,7 @@ const PAGES: Record<string, string> = {
 type Part =
   | { kind: 'text'; value: string }
   | { kind: 'code'; value: string }
-  | { kind: 'link'; value: string; href: string; code: boolean };
+  | { kind: 'link'; value: string; href: string; code: boolean; auto?: true };
 
 const parts: Part[] = [];
 const re = /\[([^\]]+)\]\(([A-Za-z][A-Za-z0-9]*)\)|`([^`]+)`/g;
@@ -45,7 +47,8 @@ let last = 0;
 for (const m of text.matchAll(re)) {
   if (m.index! > last) parts.push({ kind: 'text', value: text.slice(last, m.index) });
   if (m[3] !== undefined) {
-    parts.push({ kind: 'code', value: m[3] });
+    const errorPage = /^(?:TS8\d{3}|SD\d{4})$/.test(m[3]) ? errorCodePath(m[3]) : undefined;
+    parts.push(errorPage ? { kind: 'link', value: m[3], href: localePath(locale, errorPage), code: true, auto: true } : { kind: 'code', value: m[3] });
   } else {
     const key = m[2]!;
     const href = key in PAGES ? localePath(locale, PAGES[key]!) : (links as Record<string, { href: string }>)[key]?.href;
@@ -63,7 +66,7 @@ if (last < text.length) parts.push({ kind: 'text', value: text.slice(last) });
 // square brackets, and nothing else would notice. Count what the copy wrote against what
 // this file turned into a link, and stop the build when they disagree.
 const written = (text.match(/\[[^\]]+\]\([^)]+\)/g) ?? []).length;
-const rendered = parts.filter((p) => p.kind === 'link').length;
+const rendered = parts.filter((p) => p.kind === 'link' && !p.auto).length;
 if (written !== rendered) {
   throw new Error(`[Rich] ${written} link(s) written, ${rendered} rendered; a key may hold a character the pattern refuses: ${text.slice(0, 80)}`);
 }

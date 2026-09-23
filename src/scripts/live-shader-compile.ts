@@ -21,6 +21,8 @@ import type { ShaderData } from '../lib/shader-runtime.ts';
  *  has no line behind it; a page that printed one would send the reader to the wrong place. */
 export interface LiveDiagnostic {
   readonly message: string;
+  /** The compiler's code, `TS8022` or the like. Empty on a message the page wrote itself. */
+  readonly code: string;
   readonly line: number;
   readonly character: number;
   readonly located: boolean;
@@ -41,6 +43,7 @@ const unlocated = (
   category: LiveDiagnostic['category'] = 'error',
 ): LiveDiagnostic => ({
   message: renamed(message),
+  code: '',
   line: 1,
   character: 1,
   located: false,
@@ -73,6 +76,7 @@ export function compileLive(
 
   const diagnostics: LiveDiagnostic[] = result.diagnostics.map((d) => ({
     message: renamed(d.message),
+    code: d.code ?? '',
     line: Math.max(1, d.line - offset),
     character: d.character,
     // A diagnostic whose line falls inside the prelude belongs to the module and not to a
