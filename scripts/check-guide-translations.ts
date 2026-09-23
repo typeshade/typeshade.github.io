@@ -9,6 +9,9 @@
 //   2. Korean prose in 합쇼체 with no exclamation marks, none of the countable translation
 //      tells the im-not-ai rulebook lists, and no five sentences in a row on the same ending.
 //   3. No prose paragraph left in English.
+//   4. A translation and the design rules it explains: each translated section, and the
+//      locale's dictionary pages, record the fingerprint of every rule they explain, and a pin
+//      that changes one names the translation to translate again (src/lib/rule-translations.ts).
 import { guideSections } from '../src/lib/guide.ts';
 import {
   guideTranslations,
@@ -17,6 +20,8 @@ import {
   GUIDE_TRANSLATIONS_DIR,
 } from '../src/lib/guide-translations.ts';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { ruleTranslationProblems } from '../src/lib/rule-translations.ts';
+import { copyFor } from '../src/i18n/index.ts';
 import path from 'node:path';
 
 const SPAN_MAX = 120;
@@ -218,6 +223,12 @@ for (const locale of locales) {
       push(`${latin.length} prose paragraph(s) left in English: ${latin[0].trim().slice(0, 60)}`);
   }
 }
+let ruleProblems = 0;
+for (const locale of locales)
+  for (const p of ruleTranslationProblems(locale, copyFor('en'))) {
+    ruleProblems += 1;
+    problems.push(p);
+  }
 if (problems.length) {
   for (const p of problems) console.error(`  ${p.file}: ${p.what}`);
   console.error(`check-guide-translations: ${problems.length} problem(s)`);
@@ -225,5 +236,5 @@ if (problems.length) {
 }
 const staleNote = staleFiles ? `; ${staleFiles} stale section(s) shown in English` : '';
 console.log(
-  `check-guide-translations: ${files} translated section(s) in ${locales.length} language(s), no problems${staleNote}`,
+  `check-guide-translations: ${files} translated section(s) in ${locales.length} language(s), no problems${staleNote}; every translation that explains a design rule was read against the rule at the pin`,
 );

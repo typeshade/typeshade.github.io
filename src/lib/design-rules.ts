@@ -284,8 +284,8 @@ export function mentionParts(
   return out;
 }
 
-/** Every rule number a text names. */
-const mentioned = (text: string): string[] =>
+/** Every rule number a text names, in English. */
+export const mentioned = (text: string): string[] =>
   mentionParts(text, () => true)
     .filter((p) => p.kind === 'rule')
     .map((p) => (p as { number: string }).number);
@@ -729,6 +729,9 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '12.6': '5AqWk_RZn5D9KSAm4587ArG3n4vla3VsBvzc7K2GHcM=',
 };
 
+/** The fingerprint the English pages that explain a rule were last read against, if any. */
+export const readAgainst = (n: string): string | undefined => READ_AGAINST[n];
+
 let guarded = false;
 
 /** As much of the English dictionary as the guard reads: the front-end codes whose line it
@@ -737,11 +740,13 @@ export interface GuardedCopy {
   readonly docs: { readonly errors: { readonly lines: Readonly<Record<string, string>> } };
 }
 
-/** One place that explains a rule: a page, and what on it states the rule. `key` is the
- *  dictionary key of copy that names the rule, which every language writes at the same key. */
+/** One place that explains a rule: a page, and what on it states the rule. `translated` says
+ *  where another language's words for it live, the page and the dictionary key, for the
+ *  translation check (src/lib/rule-translations.ts); it is missing where the page has no words
+ *  of its own in that language, an error code page whose program is written by hand. */
 export interface RuleExplanation {
   readonly where: string;
-  readonly key?: string;
+  readonly translated?: (locale: string) => string;
 }
 
 /** Every string of a dictionary with its dotted key, arrays by index. */
@@ -760,24 +765,43 @@ export function ruleExplanations(
 ): ReadonlyMap<string, readonly RuleExplanation[]> {
   const names = tsCodeNames();
   const written = new Set(writtenExampleCodes());
+  // The front-end codes whose line the dictionary writes, by code: the constant name is its key.
+  const lined = new Map<string, string>();
   for (const name of Object.keys(english.docs.errors.lines)) {
     const code = names.get(name);
-    if (code) written.add(code);
+    if (code) {
+      written.add(code);
+      lined.set(code, name);
+    }
   }
   const out = new Map<string, RuleExplanation[]>();
   const add = (n: string, e: RuleExplanation): void => {
     out.set(n, [...(out.get(n) ?? []), e]);
   };
   for (const r of designRules())
-    for (const code of r.codes)
-      if (written.has(code))
-        add(r.number, {
-          where: `/reference/errors/${code.toLowerCase()}/ (its program in src/lib/error-codes.ts, or its line in docs.errors.lines)`,
-        });
+    for (const code of r.codes) {
+      if (!written.has(code)) continue;
+      const page = `/reference/errors/${code.toLowerCase()}/`;
+      const name = lined.get(code);
+      add(r.number, {
+        where: `${page} (its program in src/lib/error-codes.ts, or its line in docs.errors.lines)`,
+        translated: name
+          ? (locale) => `/${locale}${page} (docs.errors.lines.${name} in src/i18n/${locale}.ts)`
+          : undefined,
+      });
+    }
   for (const [key, text] of copyStrings(english))
     for (const n of new Set(mentioned(text)))
-      add(n, { where: `the copy at ${key} in src/i18n, which names the rule`, key });
-  for (const e of EXPLAINERS) for (const n of e.rules) add(n, { where: `${e.page} (${e.source})` });
+      add(n, {
+        where: `the copy at ${key} in src/i18n, which names the rule`,
+        translated: (locale) => `the copy at ${key} in src/i18n/${locale}.ts`,
+      });
+  for (const e of EXPLAINERS)
+    for (const n of e.rules)
+      add(n, {
+        where: `${e.page} (${e.source})`,
+        translated: (locale) => `/${locale}${e.page} (${e.source})`,
+      });
   return out;
 }
 

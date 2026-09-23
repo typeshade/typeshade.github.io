@@ -26,6 +26,24 @@ export interface GuideTranslation {
   readonly order: number;
   /** The file, relative to the site root. */
   readonly file: string;
+  /** The design rules the section explains, each with the fingerprint (Doorstop's `reviewed`)
+   *  of the version the translation was read against: front matter
+   *  `rules: 8.7 FYpP…=, 7.6 m4mW…=`. src/lib/rule-translations.ts checks them. */
+  readonly rules: ReadonlyMap<string, string>;
+}
+
+/** `8.7 FYpP…=, 7.6 m4mW…=` as rule number to fingerprint; a fingerprint is base64url, so it
+ *  holds no comma and no space. */
+function ruleStamps(file: string, raw: string | undefined): ReadonlyMap<string, string> {
+  const out = new Map<string, string>();
+  for (const entry of (raw ?? '').split(',')) {
+    const e = entry.trim();
+    if (!e) continue;
+    const m = /^(\d{1,2}\.\d{1,2}) ([A-Za-z0-9_=-]+)$/.exec(e);
+    if (!m) throw new Error(`[guide] ${file}: 'rules' entry '${e}' is not '<rule> <fingerprint>'`);
+    out.set(m[1]!, m[2]!);
+  }
+  return out;
 }
 
 const FRONT = /^---\n([\s\S]*?)\n---\n/;
@@ -102,6 +120,7 @@ function read(locale: string): {
       sourceLine: section.sourceLine,
       order: section.order,
       file,
+      rules: ruleStamps(file, meta.rules),
     });
   }
   return { current: out, stale };
