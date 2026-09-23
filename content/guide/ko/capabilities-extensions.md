@@ -1,6 +1,6 @@
 ---
 id: capabilities-extensions
-source: d357930bfc694c653423bafbf108d8acc35ad25d3bf0d235772e8b1a2b555ee0
+source: 015958b71ab83b0f1bec4f7ac7f0d80be8152786f254dab0749e1d8e90355de1
 sourceLine: 1861
 ---
 
@@ -83,8 +83,9 @@ capabilityMatrix([wgslBackend, glslEs300Backend])
 //      declarable: true }]
 ```
 
-결과는 기능마다 한 행씩 고정된 순서로 나오며, 모듈의 모양에서 파생되어 직접 선언할 일이 없는
-일곱 기능(`storageBuffer`부터 `textureGather`까지)도 `declarable: false`로 함께 들어 있습니다.
+결과는 기능마다 한 행씩, 열여덟 행이 고정된 순서로 나오며, 모듈의 모양에서 파생되어 직접 선언할 일이 없는
+아홉 기능(`storageBuffer`부터 `textureGather`까지, 그리고 `bgra8unormStorage`와 `packed4x8Dot`)도
+`declarable: false`로 함께 들어 있습니다.
 
 표의 행을 그대로 믿기 전에 알아 둘 점이 두 가지 있습니다.
 
