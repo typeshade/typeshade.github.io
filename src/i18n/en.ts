@@ -449,6 +449,8 @@ export const en = {
     gpuNoWebgpu: 'You picked WebGPU, and this browser has no WebGPU device, so nothing drew. GPU falls back to WebGL2.',
     gpuNoWebgl2: 'You picked WebGL2, and this browser has no WebGL2 context, so nothing drew.',
     gpuNoGlsl: 'This module has no GLSL ES 3.00 form, so WebGL2 has nothing to run. WebGPU runs its WGSL.',
+    gpuNoGlslFeatures: 'GLSL ES 3.00 has no {features}, which this module needs, so WebGL2 has nothing to run. WebGPU runs its WGSL.',
+    gpuNoFeature: 'This GPU does not offer the WebGPU feature {features}, which this module needs, so nothing drew.',
     gpuFailed: '{backend} could not run this program: {reason}',
     gpuNeedsStages: 'Drawing needs a vertex entry and a fragment entry. This module has no such pair.',
     gpuNeedsAttributes: 'The canvas draws three vertices and binds no vertex buffer. This module reads {fields} from one, so the GPU cannot run it here.',

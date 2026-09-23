@@ -287,8 +287,11 @@ export interface FieldShape {
   readonly scalar: 'f32' | 'i32' | 'u32' | 'f64' | 'bool'
   /** Components per column. */
   readonly rows: number
-  /** Columns, one for a scalar or a vector. */
+  /** Columns, one for a scalar or a vector; the element count of an array. */
   readonly columns: number
+  /** A fixed-size array of scalars or vectors: its elements take `columns`, and std140 gives
+   *  each one sixteen bytes whatever it holds. */
+  readonly array?: true
 }
 
 /** The shape of a DSL type key, or null for one this cannot fill (a struct, an array). */
@@ -300,6 +303,12 @@ export function fieldShape(type: string): FieldShape | null {
   if (vec) return { scalar: vec[2] as FieldShape['scalar'], rows: Number(vec[1]), columns: 1 }
   const mat = /^mat([234])x([234])<f32>$/.exec(type)
   if (mat) return { scalar: 'f32', rows: Number(mat[2]), columns: Number(mat[1]) }
+  const array = /^array<(.+),\s*(\d+)>$/.exec(type)
+  if (array) {
+    const inner = fieldShape(array[1]!)
+    if (!inner || inner.columns !== 1 || inner.scalar === 'f64') return null
+    return { scalar: inner.scalar, rows: inner.rows, columns: Number(array[2]), array: true }
+  }
   return null
 }
 

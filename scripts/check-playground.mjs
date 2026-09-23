@@ -178,13 +178,27 @@ async function wgslPane(page) {
  *  canvas nothing painted, or one a shader filled flat; two or more is a picture. The status
  *  note is not evidence: a note reading "36864 px in 249 ms" over a fully transparent canvas
  *  is how five of these examples read before this. */
+/** A photograph of the Result tab's canvas, taken from its box on the page. An element
+ *  photograph first waits for the box to hold still across two animation frames, and a
+ *  program that takes seconds a frame on a software GPU gives it no two frames to compare,
+ *  though the box never moves. */
+async function photographCanvas(page) {
+  const box = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-gpu-canvas]')
+    canvas.scrollIntoView({ block: 'center' })
+    const r = canvas.getBoundingClientRect()
+    return { x: r.x, y: r.y, width: r.width, height: r.height }
+  })
+  return page.screenshot({ clip: box, timeout: 15_000 })
+}
+
 async function sampleCanvas(page) {
-  // A change of backend or a dispatch puts a new canvas element in the frame, so the one the
-  // locator found can leave the page mid-photograph; it is photographed again, fresh.
+  // A change of backend or a dispatch puts a new canvas element in the frame, so the one
+  // measured can leave the page mid-photograph; it is measured and photographed again.
   let shot
   for (let attempt = 0; ; attempt += 1) {
     try {
-      shot = await page.locator('[data-gpu-canvas]').screenshot({ timeout: 5_000 })
+      shot = await photographCanvas(page)
       break
     } catch (error) {
       if (attempt >= 3) throw error
@@ -413,7 +427,7 @@ async function checkEnginesAgree(page, problems, ids) {
       const frame = document.querySelector('[data-gpu-frame]')
       return { width: canvas.width, height: canvas.height, ground: getComputedStyle(frame).backgroundColor }
     })
-    const shot = await page.locator('[data-gpu-canvas]').screenshot()
+    const shot = await photographCanvas(page)
     const { data, info } = await sharp(shot).raw().ensureAlpha().toBuffer({ resolveWithObject: true })
     const gpuColours = new Set()
     for (let i = 0; i < data.length; i += 4) gpuColours.add(`${data[i]},${data[i + 1]},${data[i + 2]}`)

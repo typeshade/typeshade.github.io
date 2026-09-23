@@ -491,6 +491,8 @@ export const ko: Copy = {
     gpuNoWebgpu: 'WebGPU를 골랐지만 이 브라우저에는 WebGPU 장치가 없어서 아무것도 그리지 못했습니다. GPU를 고르면 WebGL2로 넘어갑니다.',
     gpuNoWebgl2: 'WebGL2를 골랐지만 이 브라우저에는 WebGL2 컨텍스트가 없어서 아무것도 그리지 못했습니다.',
     gpuNoGlsl: '이 모듈은 GLSL ES 3.00 형태가 없어서 WebGL2로 실행할 것이 없습니다. WebGPU는 이 모듈의 WGSL을 실행합니다.',
+    gpuNoGlslFeatures: 'GLSL ES 3.00에는 이 모듈에 필요한 {features}이(가) 없어서 WebGL2로 실행할 것이 없습니다. WebGPU는 이 모듈의 WGSL을 실행합니다.',
+    gpuNoFeature: '이 GPU는 이 모듈에 필요한 WebGPU 기능 {features}을(를) 제공하지 않아 아무것도 그리지 못했습니다.',
     gpuFailed: '{backend}에서 이 프로그램을 실행하지 못했습니다: {reason}',
     gpuNeedsStages: '그리려면 버텍스 진입점과 프래그먼트 진입점이 함께 있어야 합니다. 이 모듈에는 그 짝이 없습니다.',
     gpuNeedsAttributes: '캔버스는 꼭짓점 세 개를 그리고 버텍스 버퍼는 바인딩하지 않습니다. 이 모듈은 {fields}을(를) 버퍼에서 읽으므로 여기서는 GPU로 실행할 수 없습니다.',

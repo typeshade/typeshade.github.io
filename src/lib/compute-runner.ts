@@ -15,6 +15,8 @@ export interface ComputeJob {
   readonly workgroups: readonly [number, number, number]
   readonly resources: readonly ResourceSpec[]
   readonly constants?: Readonly<Record<string, number>>
+  /** The optional WebGPU features the module needs. */
+  readonly features?: readonly string[]
 }
 
 export interface ComputeResult {
@@ -48,7 +50,7 @@ const TEXEL_BYTES: Readonly<Record<string, number>> = {
 /** Run one dispatch. Throws with the device's own words when the module, the layout or a
  *  resource is refused, and when there is no WebGPU device at all. */
 export async function runComputeOnGpu(job: ComputeJob): Promise<ComputeResult> {
-  const device = await sharedDevice()
+  const device = await sharedDevice(job.features ?? [])
   if (!device) throw new Error('no WebGPU device')
   const started = performance.now()
   const visibility = GPUShaderStage.COMPUTE

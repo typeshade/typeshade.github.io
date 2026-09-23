@@ -98,6 +98,8 @@ const runtimeCopy = {
   gpuNoWebgpu: t.gpuNoWebgpu,
   gpuNoWebgl2: t.gpuNoWebgl2,
   gpuNoGlsl: t.gpuNoGlsl,
+  gpuNoGlslFeatures: t.gpuNoGlslFeatures,
+  gpuNoFeature: t.gpuNoFeature,
   gpuFailed: t.gpuFailed,
   computeNeedsWebgpu: t.computeNeedsWebgpu,
   computeRan: t.computeRan,
@@ -430,6 +432,7 @@ const runtimeCopy = {
   .bindings :global(input[type='color']) { width: 32px; height: 22px; padding: 0 2px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-ground); }
   .bindings :global(input[type='file']) { max-width: 100%; font: 400 .6875rem/1.4 var(--font-sans); color: var(--color-text-2); }
   .bindings :global(select) { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 2px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.3 var(--font-mono); }
+  .bindings :global(.binding-array) { display: flex; flex: 1 1 100%; flex-direction: column; gap: 4px; }
   .bindings :global(.binding-matrix) { display: grid; grid-template-rows: repeat(var(--rows), auto); grid-auto-flow: column; gap: 2px; }
   .bindings :global(.binding-result) { margin: 0; padding: 6px 8px; max-height: 12rem; overflow: auto; border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-1); font: 400 .6875rem/1.5 var(--font-mono); white-space: pre; }
   .bindings :global(.binding-storage) { display: flex; flex-direction: column; gap: 4px; }

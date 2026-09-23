@@ -8,7 +8,8 @@
 // do: the page's own chunk is Monaco's glue, the emitters, reflection and the CPU oracle, and
 // the compiler lives in the language worker alone. The raster worker imports `core/oracle.ts`
 // this way for the same reason.
-import { emitModule, emitModuleAt } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import { emitModule, emitModuleAt, wgslBackend } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import { hostFeaturesFor } from '../../vendor/shader-dsl/src/core/backend.ts';
 import { emitGlslStages, type GlslEmitOptions } from '../../vendor/shader-dsl/src/core/backends/glsl.ts';
 import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
@@ -132,6 +133,8 @@ interface PlaygroundCopy {
   readonly gpuNoWebgpu: string;
   readonly gpuNoWebgl2: string;
   readonly gpuNoGlsl: string;
+  readonly gpuNoGlslFeatures: string;
+  readonly gpuNoFeature: string;
   readonly gpuFailed: string;
   readonly computeNeedsWebgpu: string;
   readonly computeRan: string;
@@ -590,7 +593,7 @@ const emitGlsl = (
   module: Parameters<typeof emitGlslStages>[0],
   choice: EmitChoice,
   overrideValues?: Readonly<Record<string, number>>,
-): { vertex: string; fragment: string; } | undefined => {
+): { vertex: string; fragment: string; } | { failed: string } => {
   // An override the reader moved is pinned as a hard `#define`; one left at its default keeps
   // the `#ifndef` guard the emit writes, so an untouched module emits the bytes it always did.
   const options: GlslEmitOptions = {
@@ -600,9 +603,10 @@ const emitGlsl = (
   };
   try {
     return emitGlslStages(module, options);
-  } catch {
-    // A module the GLSL backend cannot express at all, a uniform scalar among them.
-    return undefined;
+  } catch (error) {
+    // A module the GLSL backend cannot express at all, a uniform scalar among them. The
+    // reason is kept, since WebGL2 has to say why it has nothing to run.
+    return { failed: error instanceof Error ? error.message : String(error) };
   }
 };
 
@@ -766,6 +770,8 @@ function mount(root: HTMLElement): void {
   // The last good compile, kept so the CPU button can call into it without compiling again.
   let compiled: { readonly module: ModuleDecl; } | undefined;
   let reflection: ReturnType<typeof reflect> | undefined;
+  /** Why the GLSL backend emitted nothing for the last module, or ''. */
+  let glslFailure = '';
   let entries: readonly ReflectedEntry[] = [];
   /** What the reader last typed into each argument field, keyed by entry and field name, so a
    *  recompile does not throw their values away. */
@@ -1188,6 +1194,9 @@ function mount(root: HTMLElement): void {
     if (backend === 'webgpu') return copy.gpuWebgpu;
     if (backend === 'webgl2') return copy.gpuWebgl2;
     const failure = mounted?.failure ?? '';
+    const feature = /missing WebGPU feature: (.+)/.exec(failure)?.[1];
+    if (feature) return fillNumbers(copy.gpuNoFeature, { features: feature });
+    if (picked === 'auto' && !emitted.glslVertex && /no WebGPU/.test(failure)) return `${copy.gpuNone} ${noGlslNote()}`;
     if (picked === 'webgpu' && /no WebGPU/.test(failure)) return copy.gpuNoWebgpu;
     if (picked === 'webgl2' && /no WebGL2/.test(failure)) return copy.gpuNoWebgl2;
     if (picked === 'auto' && (/no WebGL2/.test(failure) || failure === '')) return copy.gpuNone;
@@ -1212,7 +1221,7 @@ function mount(root: HTMLElement): void {
         .map((field, index) => field.name ?? `arg${index}`);
       return { why: fillNumbers(copy.gpuNeedsAttributes, { fields: attributes.join(', ') }) };
     }
-    if (picked === 'webgl2' && !emitted.glslVertex) return { why: copy.gpuNoGlsl };
+    if (picked === 'webgl2' && !emitted.glslVertex) return { why: noGlslNote() };
     const block = bindings.renderBlock();
     const guards = reflection.bindGroups
       .flatMap((group) => group.entries)
@@ -1242,8 +1251,19 @@ function mount(root: HTMLElement): void {
         },
         controls: {},
         constants: bindings.constants(),
+        features: gpuFeatures(),
       },
     };
+  };
+
+  /** The optional WebGPU features the module asks for, as WebGPU names them. */
+  const gpuFeatures = (): string[] => [...hostFeaturesFor(wgslBackend, reflection?.requiredFeatures ?? [])];
+
+  /** Why WebGL2 has nothing to run: the capabilities GLSL ES 3.00 lacks when the emit names
+   *  them, and the plain sentence otherwise. */
+  const noGlslNote = (): string => {
+    const missing = /missing capabilities?:\s*([\w, ]+)/.exec(glslFailure)?.[1]?.trim();
+    return missing ? fillNumbers(copy.gpuNoGlslFeatures, { features: missing }) : copy.gpuNoGlsl;
   };
 
   /** Put the program the last compile emitted on the canvas, on the backend the reader
@@ -1279,7 +1299,12 @@ function mount(root: HTMLElement): void {
       // The Playground's canvas is the reader's own program running, so it keeps its clock
       // under `prefers-reduced-motion` the way a live example does and redraws on a change.
       interactive: true,
-      ...(picked === 'webgpu' || picked === 'webgl2' ? { backend: picked } : {}),
+      // A reader's program can be far heavier than any figure on the site, so the buffer
+      // gives up pixels before the page gives up its frames.
+      adaptive: true,
+      // With no GLSL there is nothing for WebGL2 to try, so the order is WebGPU alone and the
+      // reason printed is WebGPU's own.
+      ...(picked === 'webgpu' || picked === 'webgl2' ? { backend: picked } : emitted.glslVertex ? {} : { backend: 'webgpu' as const }),
       uniformValues: (name, seconds) => bindings.renderValue(name, frozen ?? seconds, target.width, target.height, pointer),
     });
     if (mine !== resultRun) {
@@ -1406,6 +1431,7 @@ function mount(root: HTMLElement): void {
           workgroups: [groups, 1, 1],
           resources: bindings.resources(true),
           constants: bindings.constants(),
+          features: gpuFeatures(),
         });
         ms = result.ms;
         for (const name of bindings.writableStorage()) {
@@ -1425,8 +1451,11 @@ function mount(root: HTMLElement): void {
       const node = freshCanvas();
       if (node) node.dataset.backend = 'none';
       const message = error instanceof Error ? error.message : String(error);
+      const feature = /missing WebGPU feature: (.+)/.exec(message)?.[1];
       sayGpu(
-        picked !== 'cpu' && /no WebGPU/.test(message)
+        feature
+          ? fillNumbers(copy.gpuNoFeature, { features: feature })
+          : picked !== 'cpu' && /no WebGPU/.test(message)
           ? copy.gpuNoWebgpu
           : fillNumbers(copy.gpuFailed, { backend: backendName(picked === 'auto' ? 'webgpu' : picked), reason: message }),
       );
@@ -1952,9 +1981,11 @@ function mount(root: HTMLElement): void {
     // for a binding that survived the edit, because the GLSL tabs spell an override the
     // reader moved as a `#define` of that value.
     bindings.update(reflection, compiled?.module);
-    const glsl = compiled
+    const glslOrWhy = compiled
       ? emitGlsl(compiled.module, choice, bindings.overridesMoved() ? bindings.constants() : undefined)
       : undefined;
+    const glsl = glslOrWhy && 'vertex' in glslOrWhy ? glslOrWhy : undefined;
+    glslFailure = glslOrWhy && 'failed' in glslOrWhy ? glslOrWhy.failed : '';
     emitted = {
       wgsl: compiled ? emitWgsl(compiled.module, choice) : undefined,
       glslVertex: glsl?.vertex,

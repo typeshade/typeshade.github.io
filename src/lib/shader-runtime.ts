@@ -13,6 +13,10 @@ const MAX_DPR = 1.5
 /** The clock value of the single frame drawn under `prefers-reduced-motion: reduce` ,
  *  far enough in for the noise-driven examples to have settled into their steady look. */
 const STILL_SECONDS = 3
+/** What an adaptive mount aims a frame at, in milliseconds, and the least of the box it will
+ *  draw at: an eighth of its side. */
+const FRAME_BUDGET = 33
+const MIN_SCALE = 0.125
 
 /** How the host fills one uniform-struct field each frame.
  *
@@ -95,6 +99,9 @@ export interface ShaderData {
   /** A value for each WGSL `override`, by name, handed to the WebGPU pipeline. The GLSL
    *  stages carry theirs as `#define`s already, written at emit. */
   readonly constants?: Readonly<Record<string, number>>
+  /** The optional WebGPU features the module needs, as WebGPU names them (`clip-distances`).
+   *  The device is asked for them; an adapter without one refuses the mount by name. */
+  readonly features?: readonly string[]
 }
 
 export type Backend = 'webgpu' | 'webgl2' | 'none'
@@ -153,6 +160,12 @@ export interface MountOptions {
    *  drives every field through this, the reserved three included, so its controls can move
    *  while the shader runs; the front page passes nothing and keeps the packer it had. */
   readonly uniformValues?: (name: string, seconds: number) => readonly number[] | null
+  /** Lower the drawing buffer's resolution while a frame takes longer than a budget to draw,
+   *  and raise it back once frames are cheap. A program too heavy for this GPU then draws at
+   *  fewer pixels and leaves the page responsive, where it would otherwise hold every frame
+   *  of the page for as long as it takes. The Playground sets this: it runs whatever a reader
+   *  writes. */
+  readonly adaptive?: boolean
 }
 
 export interface MountedShader {
@@ -165,6 +178,9 @@ export interface MountedShader {
   /** Why the last backend tried could not draw, or '' when one did. A page that asked for
    *  one backend by name prints this instead of guessing. */
   readonly failure: string
+  /** The fraction of the box's pixels the drawing buffer holds: 1, unless an adaptive mount
+   *  has lowered it. */
+  readonly scale: number
   /** Run a newly emitted program on the same canvas and the same backend. The pass that is
    *  drawing stays up until the new one has drawn a frame, so a program that fails to build
    *  leaves the last good frame on screen and resolves false. A live example recompiles this
@@ -196,7 +212,10 @@ interface FrameState {
   /** Packed std140 bytes for the current frame; null when the module binds no block. */
   readonly data: Float32Array<ArrayBuffer> | null
   readonly byteLength: number
-  /** Match the drawing buffer to the CSS box × capped DPR. True when it changed. */
+  /** The fraction of the box's device pixels the drawing buffer takes. 1 unless an adaptive
+   *  mount has lowered it for a program this GPU draws slowly. */
+  scale: number
+  /** Match the drawing buffer to the CSS box × capped DPR × `scale`. True when it changed. */
   resize(): boolean
   /** Repack every uniform field at shader time `seconds`. */
   pack(seconds: number): void
@@ -263,8 +282,9 @@ function createFrameState(
   return {
     data: buf,
     byteLength,
+    scale: 1,
     resize(): boolean {
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR) * this.scale
       const w = Math.max(1, Math.round(canvas.clientWidth * dpr))
       const h = Math.max(1, Math.round(canvas.clientHeight * dpr))
       if (canvas.width === w && canvas.height === h) return false
@@ -287,6 +307,11 @@ function createFrameState(
 /** One compiled, bound, ready-to-draw fullscreen pass. */
 interface Pass {
   draw(): void
+  /** Whether the frame last submitted is still being drawn. The loop waits for it, so the GPU
+   *  is never handed a second frame while the first is running. */
+  busy(): boolean
+  /** How long the last frame the GPU finished took, submit to done, in milliseconds. */
+  lastFrameMs(): number
   /** Drop this pass's own objects. `release` also gives up the canvas's rendering context,
    *  which is what puts the canvas back to transparent; a swap passes false, so the frame the
    *  old pass drew stays on screen until the new pass draws over it. */
@@ -301,23 +326,45 @@ interface Pass {
 // mount asks for a fresh one.
 let devicePromise: Promise<GPUDevice | null> | null = null
 
-export function sharedDevice(): Promise<GPUDevice | null> {
-  if (devicePromise) return devicePromise
+/** The WebGPU features the shared device was asked for. A module that needs one it lacks
+ *  gets a new device with the union; the old one stays with the mounts already on it. */
+let deviceFeatures: readonly string[] = []
+
+/** The page's WebGPU device, holding every optional feature in `features`. A feature the
+ *  adapter does not offer is refused by name, and the device every other canvas is drawing
+ *  on is left as it was. */
+export function sharedDevice(features: readonly string[] = []): Promise<GPUDevice | null> {
+  const wanted = [...new Set([...deviceFeatures, ...features])]
+  if (devicePromise && wanted.length === deviceFeatures.length) return devicePromise
   const pending = (async (): Promise<GPUDevice | null> => {
     // `in` alone is not enough: a browser can carry the property and hold nothing in it.
     if (typeof navigator === 'undefined' || !('gpu' in navigator) || !navigator.gpu) return null
     const adapter = await navigator.gpu.requestAdapter()
     if (!adapter) return null
-    const device = await adapter.requestDevice()
+    const absent = features.filter((f) => !adapter.features.has(f))
+    if (absent.length > 0) throw new Error(`missing WebGPU feature: ${absent.join(', ')}`)
+    const device = await adapter.requestDevice(
+      wanted.length > 0 ? { requiredFeatures: wanted as GPUFeatureName[] } : undefined,
+    )
     void device.lost.then(() => {
-      if (devicePromise === pending) devicePromise = null
+      if (devicePromise === pending) {
+        devicePromise = null
+        deviceFeatures = []
+      }
     })
     return device
   })()
+  const previous = devicePromise
+  const previousFeatures = deviceFeatures
   devicePromise = pending
-  // A failed request must not be remembered: the next mount asks again.
+  deviceFeatures = wanted
+  // A failed request must not be remembered: the next mount asks again, and a device that
+  // was working before it goes on serving.
   void pending.catch(() => {
-    if (devicePromise === pending) devicePromise = null
+    if (devicePromise === pending) {
+      devicePromise = previous
+      deviceFeatures = previousFeatures
+    }
   })
   return pending
 }
@@ -548,6 +595,10 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
     }
   }
 
+  // A fence after each frame says when the GPU has finished it.
+  let fence: WebGLSync | null = null
+  let submitted = 0
+  let frameMs = 0
   return {
     draw(): void {
       if (ubo && state.data) {
@@ -558,7 +609,20 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
       gl.clearColor(0, 0, 0, 0)
       gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
+      if (fence) gl.deleteSync(fence)
+      fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
+      submitted = performance.now()
+      gl.flush()
     },
+    busy(): boolean {
+      if (!fence) return false
+      if (gl.getSyncParameter(fence, gl.SYNC_STATUS) !== gl.SIGNALED) return true
+      gl.deleteSync(fence)
+      fence = null
+      frameMs = performance.now() - submitted
+      return false
+    },
+    lastFrameMs: () => frameMs,
     dispose(release: boolean): void {
       // Clear before tearing down, so a stopped mount shows the still image beneath it. A
       // swap keeps the frame: the new pass is about to draw over it.
@@ -566,6 +630,7 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
         gl.clearColor(0, 0, 0, 0)
         gl.clear(gl.COLOR_BUFFER_BIT)
       }
+      if (fence) gl.deleteSync(fence)
       for (const t of guards) gl.deleteTexture(t)
       bound.dispose()
       if (vbo) gl.deleteBuffer(vbo)
@@ -791,7 +856,7 @@ async function createWebGpuPass(
   data: ShaderData,
   state: FrameState,
 ): Promise<Pass> {
-  const device = await sharedDevice()
+  const device = await sharedDevice(data.features ?? [])
   if (!device) throw new Error('no WebGPU device')
   const ctx = canvas.getContext('webgpu')
   if (!ctx) throw new Error('no WebGPU canvas context')
@@ -936,7 +1001,11 @@ async function createWebGpuPass(
   }
 
   let disposed = false
+  let inFlight = false
+  let frameMs = 0
   return {
+    busy: () => inFlight,
+    lastFrameMs: () => frameMs,
     draw(): void {
       if (disposed) return
       if (uniBuf && state.data) device.queue.writeBuffer(uniBuf, 0, state.data)
@@ -957,6 +1026,12 @@ async function createWebGpuPass(
       pass.draw(3)
       pass.end()
       device.queue.submit([encoder.finish()])
+      inFlight = true
+      const submitted = performance.now()
+      void device.queue.onSubmittedWorkDone().then(() => {
+        inFlight = false
+        frameMs = performance.now() - submitted
+      })
     },
     dispose(release: boolean): void {
       disposed = true
@@ -1080,6 +1155,9 @@ export async function mountShader(
       get failure() {
         return qa.failure
       },
+      get scale() {
+        return state.scale
+      },
       swap,
       redraw,
       uniformBytes,
@@ -1106,6 +1184,7 @@ export async function mountShader(
   const swap = async (next: ShaderData): Promise<boolean> => {
     if (stopped || qa.backend === 'none') return false
     const frame = createFrameState(canvas, next, opts.uniformValues)
+    frame.scale = state.scale
     frame.resize()
     try {
       const built = await build(qa.backend, next, frame)
@@ -1157,6 +1236,16 @@ export async function mountShader(
     raf = requestAnimationFrame(tick)
     seconds += (now - last) / 1000
     last = now
+    // One frame on the GPU at a time. Submitting another every animation frame while the
+    // first is still being drawn queues work faster than it drains, and a GPU process that
+    // is never idle composites nothing else: the whole page stops, not just this canvas.
+    try {
+      if (live.busy()) return
+    } catch {
+      stop()
+      return
+    }
+    if (opts.adaptive) adapt(live.lastFrameMs())
     // A driver that fails mid-flight must not spray the console: stop, go transparent, and
     // relabel, `stop()` does all three.
     try {
@@ -1164,6 +1253,18 @@ export async function mountShader(
     } catch {
       stop()
     }
+  }
+  /** Steer the drawing buffer toward a frame that takes FRAME_BUDGET: a frame's cost goes
+   *  with its pixel count, so the side scales by the square root of the ratio. It drops at
+   *  once and climbs back slowly, so a program on the edge settles instead of pumping. */
+  const adapt = (ms: number): void => {
+    if (ms <= 0) return
+    let next = state.scale
+    if (ms > FRAME_BUDGET * 2) next = Math.max(MIN_SCALE, state.scale * Math.max(0.25, Math.sqrt(FRAME_BUDGET / ms)))
+    else if (ms < FRAME_BUDGET / 2 && state.scale < 1) next = Math.min(1, state.scale * 1.1)
+    if (Math.abs(next - state.scale) < 0.01) return
+    state.scale = next
+    state.resize()
   }
   const start = (): void => {
     if (running || stopped) return

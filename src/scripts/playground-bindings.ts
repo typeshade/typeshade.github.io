@@ -420,6 +420,13 @@ export class BindingsModel {
 
   private startValue(field: PackedField, nextColour: () => readonly number[]): number[] {
     const { shape } = field;
+    if (shape.array) {
+      // An array starts every element where a lone field of its type would.
+      const one = controlFor({ name: field.name, type: shape.rows === 1 ? shape.scalar : `vec${shape.rows}<${shape.scalar}>`, offset: 0 });
+      return Array.from({ length: shape.columns }, (_, i) =>
+        shape.scalar === 'f32' && shape.rows >= 3 ? [...nextColour()].slice(0, shape.rows) : [...(one?.value ?? [0])].map((v) => v * (shape.rows === 1 ? (i + 1) / shape.columns : 1)),
+      ).flat();
+    }
     if (shape.columns > 1) return matrixPreset('identity', shape);
     if (shape.scalar === 'f32' && shape.rows >= 3) return [...nextColour()].slice(0, shape.rows);
     const control = controlFor({ name: field.name, type: field.type, offset: field.offset });
@@ -464,12 +471,17 @@ export class BindingsModel {
   private std140Numbers(field: PackedField, raw: readonly number[]): number[] {
     const { shape } = field;
     if (shape.scalar === 'f64') {
-      const x = raw[0] ?? 0;
-      const hi = Math.fround(x);
-      return [hi, Math.fround(x - hi)];
+      // An emulated double is two floats, the value rounded and what the rounding lost. A
+      // vector of them is its hi half and then its lo half, the lo one on the next vec2 or
+      // vec4 boundary, the way the lowering lays the struct out.
+      const hi = Array.from({ length: shape.rows }, (_, i) => Math.fround(raw[i] ?? 0));
+      const lo = hi.map((h, i) => Math.fround((raw[i] ?? 0) - h));
+      if (shape.rows === 1) return [hi[0]!, lo[0]!];
+      const half = shape.rows === 2 ? 2 : 4;
+      return [...hi, ...Array.from({ length: half - shape.rows }, () => 0), ...lo];
     }
     if (shape.columns === 1) return [...raw];
-    const stride = shape.rows === 2 ? 2 : 4;
+    const stride = shape.array || shape.rows !== 2 ? 4 : 2;
     const out: number[] = [];
     for (let c = 0; c < shape.columns; c++) {
       for (let r = 0; r < stride; r++) out.push(r < shape.rows ? (raw[c * shape.rows + r] ?? 0) : 0);
@@ -578,6 +590,10 @@ export class BindingsModel {
           v = [...r, ...Array.from({ length: Math.max(0, componentCount(field.shape) - r.length) }, () => 0)];
         } else {
           v = this.values.get(this.fieldKey(block, field)) ?? [];
+        }
+        if (field.shape.array) {
+          const { rows, columns } = field.shape;
+          return Array.from({ length: columns }, (_, i) => (rows === 1 ? (v[i] ?? 0) : v.slice(i * rows, i * rows + rows)));
         }
         return field.shape.rows === 1 && field.shape.columns === 1 ? (v[0] ?? 0) : v;
       };
@@ -903,6 +919,32 @@ export class BindingsModel {
     const { shape } = field;
     const controls = el('span', 'binding-controls');
     row.append(controls);
+
+    if (shape.array) {
+      // An array: one line per element, each with the control a lone field of its type gets.
+      const list = el('span', 'binding-array');
+      for (let e = 0; e < shape.columns; e++) {
+        const item = el('span', 'binding-controls');
+        item.append(el('code', 'binding-label', `[${e}]`));
+        const one = controlFor({ name: field.name, type: shape.rows === 1 ? shape.scalar : `vec${shape.rows}<${shape.scalar}>`, offset: 0 });
+        for (let c = 0; c < shape.rows; c++) {
+          const i = e * shape.rows + c;
+          if (!one || one.kind === 'stepper') {
+            const box = numberBox(value[i] ?? 0, `${field.name}[${e}] ${c}`, shape.scalar === 'f32' ? 'any' : '1');
+            box.addEventListener('input', () => {
+              const n = Number(box.value);
+              if (Number.isFinite(n)) set(i, n);
+            });
+            item.append(box);
+          } else {
+            item.append(this.slider(shape.rows > 1 ? `${field.name}[${e}] ${'xyzw'[c]}` : `${field.name}[${e}]`, value[i] ?? 0, one.min[c] ?? 0, one.max[c] ?? 1, one.step[c] ?? 0.002, (n) => set(i, n)));
+          }
+        }
+        list.append(item);
+      }
+      controls.append(list);
+      return row;
+    }
 
     if (shape.columns > 1) {
       // A matrix: a preset, and the numbers themselves, one column per row of inputs, since the
