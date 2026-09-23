@@ -1,7 +1,7 @@
 ---
 id: values-and-mutation
-source: d518a7e05c711a4b026988c3d6a60badb483c8a6a1e30e260376ac3f5d70ba66
-sourceLine: 335
+source: e60a98523054921e277f280b6e7a64f6c5802c3f2aa85afee08dd337f8f52cdd
+sourceLine: 353
 ---
 
 이 절을 다 읽고 나면 중간값을 작성하고, 코드에 타입이 필요한 자리에 타입을 지정하고, 값을

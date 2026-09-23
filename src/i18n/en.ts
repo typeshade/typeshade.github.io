@@ -1078,8 +1078,11 @@ export const en = {
     page: {
       // The title names the example and takes the longest suffix that still fits under the
       // 60-character ceiling check-seo.mjs enforces, the way docs.api.pageTitle does. The
-      // shortest example name is 6 characters and the longest 41, so the suffixes step down
-      // by no more than 15 and every name lands over the SEO review's 45-character floor.
+      // suffixes step down by no more than 15, so every name up to 47 characters lands over the
+      // SEO review's 45-character floor. A longer name is the compiler's own title written as
+      // a sentence ("An integer varying, and the interpolation it has no choice about"), and
+      // no suffix fits it; the title then takes the name up to its first comma, which names
+      // the example on its own, and the page's heading keeps the whole of it.
       // src/components/pages/ExamplePage.astro asserts both ends for all of them.
       title: (name: string) => {
         const suffixes = [
@@ -1088,8 +1091,11 @@ export const en = {
           ', a TypeShade shader example',
           ' in TypeShade',
         ]
-        const fitting = suffixes.find((suffix) => (name + suffix).length <= 60)
-        return fitting ? name + fitting : name
+        const fit = (n: string): string | undefined => {
+          const suffix = suffixes.find((s) => (n + s).length <= 60)
+          return suffix === undefined ? undefined : n + suffix
+        }
+        return fit(name) ?? fit(name.split(', ')[0]!) ?? name
       },
       description: (name: string, blurb: string) => `${name}, a TypeShade example. ${blurb}`,
       /** Added when an example's own line leaves the description under the 70 characters the

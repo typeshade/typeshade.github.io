@@ -46,14 +46,14 @@ const GLSL_SCALARS: readonly TypeProbe[] = [
   probe('f32', 'f32'),
   probe('i32', 'i32'),
   probe('u32', 'u32'),
-  probe('bool', 'bool'),
+  probe('bool', 'bool', 'private'),
 ]
 
 const GLSL_VECTORS: readonly TypeProbe[] = [
   probe('vec3f', 'vec3'),
   probe('vec3i', 'vec3i'),
   probe('vec3u', 'vec3u'),
-  probe('vec3b', 'vec3b'),
+  probe('vec3b', 'vec3b', 'private'),
 ]
 
 const GLSL_MATRICES: readonly TypeProbe[] = [

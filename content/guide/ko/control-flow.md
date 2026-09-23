@@ -1,7 +1,7 @@
 ---
 id: control-flow
-source: f2b6dfb34a6f250dd5274cb527ed537a3ad797453b8c43a043a620a84a3782e1
-sourceLine: 752
+source: 5d7c48acb7feb6c132a960347ab1d34926c3fc660003ef9763b7e135de46f28d
+sourceLine: 770
 ---
 
 이 절을 읽고 나면 TypeShade 셰이더 본문에서 TypeScript와 비슷한 분기와 반복을 GPU 제어 흐름으로 작성하고, 문 형태와 값 형태를 구분해 적절한 디스패치와 조기 종료를 선택할 수 있습니다. 문 형태는 `If`와 `Loop`처럼 작성 중인 본문에 코드를 쌓아 올릴 뿐, 바인딩할 수 있는 값을 돌려주지 않습니다. 값 형태는 `when`과 `matchEnum`처럼 내부에서 같은 분기를 만들어 내고, 그 결과를 `const`에 바인딩할 수 있는 노드로 돌려줍니다. 분기가 값을 고르기 위해 있다면 값 형태를 쓰고, 무언가를 하기 위해 있다면 문 형태를 씁니다.
@@ -84,12 +84,16 @@ case를 빠져나갑니다. `Continue()`는 가장 가까운 루프의 다음 �
 ```ts
 const dists = Var('dists', arrayT(f32T, 64))
 
-Loop(u32(0), (i) => i.lt(count), (i) => {
-  const d = Let(dists.at(i)) // an array node knows its own element type
-  If(d.lt(0), () => Continue()) // no distance recorded, next iteration
-  If(d.lt(0.001), () => Break()) // close enough, leave the loop
-  nearest.assign(min(nearest, d))
-})
+Loop(
+  u32(0),
+  (i) => i.lt(count),
+  (i) => {
+    const d = Let(dists.at(i)) // an array node knows its own element type
+    If(d.lt(0), () => Continue()) // no distance recorded, next iteration
+    If(d.lt(0.001), () => Break()) // close enough, leave the loop
+    nearest.assign(min(nearest, d))
+  },
+)
 
 If(alpha.lt(0.01), () => {
   Discard()

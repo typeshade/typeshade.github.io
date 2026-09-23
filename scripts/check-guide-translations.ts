@@ -1,7 +1,8 @@
 // Every translated guide section against its English source, before the build (bun run
 // check:guide, part of bun run build). The reader (src/lib/guide-translations.ts) has already
-// refused a file whose recorded hash is not the pinned section's. This script checks what a
-// translation must keep and what it must not carry:
+// left out a file whose recorded hash is not the pinned section's; this script names each one,
+// as a warning, since that section is served in English until it is translated again. It then
+// checks what a current translation must keep and what it must not carry:
 //   1. The fenced code blocks, byte for byte and in the same order; every inline code span of
 //      the English present the same number of times; the same numerals; the same link targets;
 //      the same number of headings.
@@ -9,7 +10,7 @@
 //      tells the im-not-ai rulebook lists, and no five sentences in a row on the same ending.
 //   3. No prose paragraph left in English.
 import { guideSections } from '../src/lib/guide.ts'
-import { guideTranslations, GUIDE_TRANSLATIONS_DIR } from '../src/lib/guide-translations.ts'
+import { guideTranslations, staleGuideTranslations, staleMessage, GUIDE_TRANSLATIONS_DIR } from '../src/lib/guide-translations.ts'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -90,7 +91,12 @@ const english = new Map(guideSections.map((s) => [s.id, s.body]))
 const root = path.resolve(process.cwd(), GUIDE_TRANSLATIONS_DIR)
 const locales = existsSync(root) ? readdirSync(root, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name) : []
 let files = 0
+let staleFiles = 0
 for (const locale of locales) {
+  for (const t of staleGuideTranslations(locale)) {
+    staleFiles += 1
+    console.warn(`  stale: ${staleMessage(t)}`)
+  }
   for (const t of guideTranslations(locale).values()) {
     files += 1
     const en = english.get(t.id)!
@@ -142,4 +148,5 @@ if (problems.length) {
   console.error(`check-guide-translations: ${problems.length} problem(s)`)
   process.exit(1)
 }
-console.log(`check-guide-translations: ${files} translated section(s) in ${locales.length} language(s), no problems`)
+const staleNote = staleFiles ? `; ${staleFiles} stale section(s) shown in English` : ''
+console.log(`check-guide-translations: ${files} translated section(s) in ${locales.length} language(s), no problems${staleNote}`)

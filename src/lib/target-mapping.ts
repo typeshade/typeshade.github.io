@@ -57,7 +57,7 @@ function declaredTypes(source: string): ReadonlyMap<string, ShaderType> {
   if (errors.length > 0) {
     throw new Error(`[target-mapping] a type probe failed: ${errors.map((e) => e.message).join('; ')}`)
   }
-  return new Map(result.bindings.map((b) => [b.name, b.type]))
+  return new Map([...result.bindings, ...result.vars].map((b) => [b.name, b.type]))
 }
 
 /** What one backend writes for a type, or null with the reason when it has none. The message
@@ -133,10 +133,11 @@ export function pickBlock(text: string, marker: string, end: string, where: stri
 
 // ── types ──
 
-/** A type probe: the TypeShade annotation, and the `declare` that gives it a binding to hang
+/** A type probe: the TypeShade annotation, and the declaration that gives it a name to hang
  *  on. A value type needs a `uniform<T>` wrapper, a handle stands bare, and an atomic or a
- *  runtime-sized array lives in storage. */
-export type Space = 'value' | 'handle' | 'storage'
+ *  runtime-sized array lives in storage. A `bool` is no host-shareable type, so WGSL refuses
+ *  it in a uniform; it is declared as a top-level `let`, a per-invocation variable, instead. */
+export type Space = 'value' | 'handle' | 'storage' | 'private'
 
 export interface TypeProbe {
   readonly id: string
@@ -151,7 +152,9 @@ const declOf = (name: string, p: TypeProbe): string =>
     ? `declare const ${name}: ${p.source}`
     : p.space === 'storage'
       ? `declare let ${name}: storage<${p.source}>`
-      : `declare const ${name}: uniform<${p.source}>`
+      : p.space === 'private'
+        ? `let ${name}: ${p.source}`
+        : `declare const ${name}: uniform<${p.source}>`
 
 /** Every probe compiled in one file, then spelled by one backend. */
 export function typeRows(backend: Backend, probes: readonly TypeProbe[]): readonly MappingRowData[] {
@@ -169,7 +172,7 @@ export const SCALARS: readonly TypeProbe[] = [
   probe('f32', 'f32'),
   probe('i32', 'i32'),
   probe('u32', 'u32'),
-  probe('bool', 'bool'),
+  probe('bool', 'bool', 'private'),
 ]
 
 export const VECTORS: readonly TypeProbe[] = [
@@ -177,7 +180,7 @@ export const VECTORS: readonly TypeProbe[] = [
   probe('vec3f', 'vec3f'),
   probe('vec3u', 'vec3u'),
   probe('vec3i', 'vec3i'),
-  probe('vec3b', 'vec3b'),
+  probe('vec3b', 'vec3b', 'private'),
 ]
 
 const MATRIX_SHAPES: readonly (readonly [2 | 3 | 4, 2 | 3 | 4])[] = [

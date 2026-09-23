@@ -1,7 +1,7 @@
 ---
 id: the-cpu-oracle
-source: 48e9daa3c0663f49dc15760db5707854745272f8f0715830a55291ef68f55c14
-sourceLine: 1357
+source: a216bab0180bddf118e74cd9cad596284a4143e3f08a09605fc5773f99c62a23
+sourceLine: 1382
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -144,7 +144,16 @@ for (let i = 0; i < gpuOut.length; i++) {
 먼저 읽기 때문입니다.
 
 ```ts
-import { module, fn, resource, texture2dfT, samplerT, vec2fT, textureSample, compileModule } from 'typeshade'
+import {
+  module,
+  fn,
+  resource,
+  texture2dfT,
+  samplerT,
+  vec2fT,
+  textureSample,
+  compileModule,
+} from 'typeshade'
 
 const tex = resource('tex', texture2dfT, { group: 0, binding: 0 })
 const smp = resource('smp', samplerT, { group: 0, binding: 1 })

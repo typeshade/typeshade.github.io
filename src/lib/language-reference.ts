@@ -72,7 +72,7 @@ export const LANGUAGE_FAMILIES: readonly LanguageFamily[] = [
 // names the CPU oracle and the front end lower without an intrinsic. A documented function
 // in neither the registry nor this table stops the build in build().
 const FAMILY_OF: Readonly<Record<string, LanguageFamily>> = {
-  bool: 'casts',
+  bool: 'casts', bitcast: 'casts',
   log10: 'maths', log1p: 'maths', expm1: 'maths', cbrt: 'maths', hypot: 'maths', random: 'maths',
   vec2: 'constructors', vec3: 'constructors', vec4: 'constructors',
   vec2f: 'constructors', vec3f: 'constructors', vec4f: 'constructors',
