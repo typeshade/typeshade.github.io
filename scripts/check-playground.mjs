@@ -1825,8 +1825,8 @@ async function checkRoute(browser, origin, route) {
 
       // ── the compute example ─────────────────────────────────────────────────────────────
       // The language service used to report TS2542 on this example's `output[idx] = sum`,
-      // because the ambient `array<T>` index signature was read-only while a `declare let`
-      // storage binding is writable in TypeShade. typeshade/typeshade#39 drops the readonly,
+      // because the ambient `array<T>` index signature was read-only while a storage binding
+      // the shader writes is writable in TypeShade. typeshade/typeshade#39 drops the readonly,
       // so the example is clean, which is the other half of what the Playground was reported
       // broken for. The store is followed all the way into the WGSL so a service that goes
       // quiet by dropping the assignment would still fail here. GLSL ES 3.00 has no compute

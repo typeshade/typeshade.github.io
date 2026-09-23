@@ -19,10 +19,10 @@ const headings = [
 <Docs locale={locale} path={links.languageResources.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'language')}>
   <h1>{content.h1}</h1><p><Rich text={content.intro} locale={locale} /></p>
   <h2 id="mapping">{content.mapping}</h2><p><Rich text={content.mappingP} locale={locale} /></p>
-  <TypeShadeCode code={`declare const camera: uniform<Camera>\ndeclare let pixels: storage<array<f32>>`} />
+  <TypeShadeCode code={`declare const camera: uniform<Camera>\ndeclare const pixels: storage<array<f32>, "read_write">`} />
   <h2 id="decl"><Rich text={content.decl} locale={locale} /></h2><p>{content.declP}</p>
   <h2 id="access">{content.access}</h2><p><Rich text={content.accessP} locale={locale} /></p>
-  <table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td data-label="Declaration"><code>declare const x: uniform&lt;T&gt;</code></td><td data-label="Space">uniform</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare const x: storage&lt;T&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare let x: storage&lt;T&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read_write</td></tr></tbody></table>
+  <table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td data-label="Declaration"><code>declare const x: uniform&lt;T&gt;</code></td><td data-label="Space">uniform</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare const x: storage&lt;T&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare const x: storage&lt;T, "read_write"&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read_write</td></tr></tbody></table>
   <h2 id="slots">{content.slots}</h2><p>{content.slotsP}</p>
   <h2 id="invalid">{content.invalid}</h2><ul>{content.invalidItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <p><a href={localePath(locale, links.languageStages.href)}>{content.next}</a></p>

@@ -1044,7 +1044,7 @@ export const ko: Copy = {
         [
           'declare const u: uniform<Camera>',
           'declare가 호스트가 채우는 리소스를 선언합니다',
-          '`uniform<T>`는 유니폼 블록을 읽고, `declare let` 뒤의 `storage<T>`는 쓸 수 있습니다. 초기값은 없습니다. 슬롯은 호스트의 것이고 파일의 선언 순서를 따르며, [`reflect()`](apiReflect)가 그 레이아웃을 알려 줍니다.',
+          '`uniform<T>`는 유니폼 블록을 읽고, `storage<T, "read_write">`는 셰이더가 쓰는 스토리지 버퍼입니다. 초기값은 없습니다. 슬롯은 호스트의 것이고 파일의 선언 순서를 따르며, [`reflect()`](apiReflect)가 그 레이아웃을 알려 줍니다.',
         ],
         [
           '@fragment export function fs(v: VsOut): vec4',
@@ -1760,6 +1760,7 @@ export const ko: Copy = {
         closures: '주변 변수를 읽고 쓰는 로컬 함수',
         'higher-order': '함수를 받는 함수',
         'inferred-returns': '본문이 정하는 반환 타입',
+        'array-methods': '배열의 메서드',
         'loops-over-data': '데이터를 도는 루프',
         'path-tracer': '경로 추적기',
         'workgroup-tile-2d': '이차원 워크그룹',
@@ -1875,6 +1876,8 @@ export const ko: Copy = {
           '`cover`와 `around4`는 거리 필드를 함수 `f: Field`로 받고, 제네릭 함수가 타입 인자 조합마다 한 번 컴파일되듯 호출이 넘기는 함수마다 한 번씩 컴파일됩니다(규칙 8.18).',
         'inferred-returns':
           '반환 타입을 적은 함수가 하나도 없고, TypeScript가 추론하듯 저마다 본문이 돌려주는 것을 돌려줍니다(규칙 8.19).',
+        'array-methods':
+          '`array<Light, 3>`에 든 조명 세 개를 TypeScript 작성자가 먼저 떠올리는 배열 메서드로 비춥니다. 호출마다 배열 타입과 넘긴 함수에 맞춘 카운트 루프가 만들어집니다(규칙 8.18, 표면 문서 §63).',
         'loops-over-data':
           '데이터를 다루는 프로그램이 쓰는 세 가지 루프를 Tint와 실제 WebGL2 컨텍스트로 확인합니다.',
         'path-tracer': '평범한 TypeScript로 쓴 작은 경로 추적기입니다.',
@@ -2043,7 +2046,7 @@ export const ko: Copy = {
       resourceP:
         '`uniform<T>`와 `storage<T>`는 JavaScript 객체가 아니라 호스트가 제공하는 GPU resource입니다. `declare`는 shader가 그 값을 생성하지 않는다는 사실을 코드에 남깁니다.',
       resourceNote:
-        '`const`와 `let`은 여기서 단순한 변수 스타일이 아니라 resource 접근 모드와 연결됩니다.',
+        'resource는 언제나 `const`로 선언합니다. 셰이더가 `storage` 바인딩에 쓸 수 있는지는 그 타입인 `storage<T, "read_write">`에 적습니다.',
       stageH: '6. Entry function은 pipeline의 시작점입니다',
       stageP:
         '`@vertex`, `@fragment`, `@compute`는 함수가 어느 shader stage의 entry인지 선언합니다. builtin은 자동으로 생기는 전역 변수가 아니라 entry parameter로 받아야 합니다.',
@@ -2200,10 +2203,10 @@ export const ko: Copy = {
           'if/else는 계산 경로를 표현합니다. 분기 안에서도 TypeShade가 이해하는 값과 resource만 사용합니다.',
         loop: '3. 반복',
         loopP:
-          '반복문은 GPU에서 컴파일 가능한 형태로 사용합니다. 배열 길이나 런타임 객체를 기준으로 동적으로 실행 구조를 바꾸는 JavaScript 패턴은 피합니다.',
+          'for 루프와 while 루프, 배열을 도는 for...of를 씁니다. for 루프는 유니폼 필드나 배열의 길이처럼 실행 중에야 정해지는 값까지 셀 수 있습니다. 배열의 map, forEach, some, every, reduce도 저마다 카운트 루프로 컴파일되며, map은 길이가 정해진 배열에 씁니다.',
         boundary: '4. JavaScript와의 경계',
         boundaryItems: [
-          '동적 배열 메서드로 실행 길이를 바꾸는 패턴은 사용하지 않습니다.',
+          'filter, find처럼 길이를 바꾸거나 원소를 찾는 배열 메서드는 루프로 씁니다.',
           '일반 runtime 객체에 의존하지 않습니다.',
           '조건과 반복은 GPU에서 계산 가능한 값과 범위로 제한합니다.',
           'TypeScript에서 유효한 제어 흐름이라고 해서 TypeShade shader semantics에서도 자동으로 유효한 것은 아닙니다.',
@@ -2261,16 +2264,16 @@ export const ko: Copy = {
           'TypeScript의 `declare`가 런타임 값을 만들지 않고 타입 수준의 존재를 설명하듯, TypeShade의 `declare`는 호스트가 제공하는 GPU resource를 소스에 표현합니다. 다만 TypeShade에서는 `uniform<T>`와 `storage<T>`가 GPU 메모리 의미까지 지정합니다.',
         decl: '2. `declare`로 resource 선언',
         declP: 'initializer 없이 resource의 타입과 접근 권한을 선언합니다.',
-        access: '3. const와 let은 접근 권한을 나타냅니다',
+        access: '3. 접근 권한은 타입에 씁니다',
         accessP:
-          'uniform은 읽기 전용이므로 `declare const`만 허용됩니다. storage는 `const`면 read-only, `let`이면 read-write입니다.',
+          'uniform은 읽기 전용이고 `uniform<T>`는 타입 인자를 하나만 받습니다. storage는 `storage<T>`면 읽기 전용이고, `storage<T, "read_write">`면 읽고 쓸 수 있습니다. 접근 권한은 WGSL에서처럼 두 번째 타입 인자로 씁니다. resource는 모두 `const`로 선언합니다.',
         slots: '4. binding 순서와 호스트 계약',
         slotsP:
           'resource slot은 파일의 declare 순서와 연결됩니다. 실제 binding 번호를 코드에 흩뿌리기보다 컴파일러와 호스트의 reflection 결과를 계약으로 사용하는 방향이 기본입니다.',
         invalid: '5. 자주 하는 실수',
         invalidItems: [
           '`declare const x: f32`처럼 `uniform<T>`나 `storage<T>` 없이 선언하지 않습니다.',
-          '`declare let x: uniform<T>`는 허용되지 않습니다.',
+          'resource를 `let`으로 선언하지 않습니다. 컴파일러는 `declare let x: storage<T>`를 거부하고, 대신 쓸 `declare const` 줄을 알려 줍니다.',
           'read-only resource에 대입하지 않습니다.',
           'resource를 class의 bind group처럼 모델링하지 않습니다.',
         ],
@@ -2679,7 +2682,7 @@ export const ko: Copy = {
           '텍스처와 샘플러는 주소 공간 래퍼 없이 그냥 적습니다. 핸들은 어느 주소 공간에도 놓이지 않기 때문입니다. 샘플링 텍스처는 `f32`나 `i32`나 `u32`를 받고, 그 요소 타입이 WGSL 표기와 적용 가능한 읽기 방식을 함께 결정합니다. 스토리지 텍스처는 포맷과 접근 모드를 문자열 리터럴 타입으로 받으므로 이 컴파일러보다 `tsc`가 먼저 검사합니다.',
         resourcesH: '리소스와 주소 공간',
         resourcesP:
-          '리소스는 `declare`로 적습니다. 다른 쪽이 제공하는 값을 가리키는 TypeScript의 표현이 그것입니다. 주소 공간과 접근 모드는 타입 주석의 래퍼 타입이 나타내고, 나머지는 `const`와 `let`의 차이가 맡습니다. 셰이더가 쓰는 `storage` 바인딩은 `declare let`입니다.',
+          '리소스는 `declare`로 적습니다. 다른 쪽이 제공하는 값을 가리키는 TypeScript의 표현이 그것입니다. 주소 공간과 접근 모드는 타입 주석의 래퍼 타입이 나타냅니다. 셰이더가 쓰는 `storage` 바인딩은 `storage<T, "read_write">`이고, 리소스는 모두 `const`입니다.',
         slotsP:
           '`@group`이나 `@binding`은 적지 않습니다. 슬롯 번호는 파일 안 `declare`의 등장 순서이고, 위의 WGSL이 그 결과입니다. 텍스처와 샘플러도 같은 방식으로 다음 슬롯을 가져갑니다.',
         stagesH: '진입점과 속성',

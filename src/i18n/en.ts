@@ -1053,7 +1053,7 @@ export const en = {
         [
           'declare const u: uniform<Camera>',
           'declare names a resource the host fills',
-          '`uniform<T>` reads a uniform block, and `storage<T>` behind `declare let` is writable. There is no initializer: the host owns the slot, in the order the file declares them, and [`reflect()`](apiReflect) reports its layout.',
+          '`uniform<T>` reads a uniform block, and `storage<T, "read_write">` is a storage buffer the shader writes. There is no initializer: the host owns the slot, in the order the file declares them, and [`reflect()`](apiReflect) reports its layout.',
         ],
         [
           '@fragment export function fs(v: VsOut): vec4',
@@ -1871,7 +1871,7 @@ export const en = {
       resourceP:
         '`uniform<T>` and `storage<T>` are GPU resources supplied by the host, not JavaScript objects created by the shader. `declare` records that ownership boundary in source.',
       resourceNote:
-        '`const` and `let` are not just local-variable style here; they participate in the resource access model.',
+        'A resource is always declared `const`. Whether the shader may write a `storage` binding is part of its type, `storage<T, "read_write">`.',
       stageH: '6. Entry functions start a pipeline stage',
       stageP:
         '`@vertex`, `@fragment` and `@compute` declare which shader stage owns an entry function. Builtins are explicit parameters instead of automatically injected globals.',
@@ -2028,10 +2028,10 @@ export const en = {
           'Use if/else to express calculation paths. Inside a branch, keep values and resources within the TypeShade GPU model.',
         loop: '3. Loops',
         loopP:
-          'Use loops in forms the compiler can lower to GPU code. Avoid JavaScript patterns that dynamically change execution structure from runtime objects or array methods.',
+          "Write a for loop, a while loop, or for...of over an array. A for loop may count to a value known only at run time, such as a uniform field or the length of an array. An array's map, forEach, some, every and reduce compile too, each to a counted loop, and map takes an array with a fixed length.",
         boundary: '4. Where JavaScript control flow stops',
         boundaryItems: [
-          'Do not use dynamic array methods to determine execution length.',
+          'Write filter, find and the other array methods that change a length or search for an element as a loop.',
           'Do not rely on general runtime objects.',
           'Keep conditions and loop ranges based on GPU-compilable values.',
           'A control-flow pattern valid in TypeScript is not automatically valid under TypeShade shader semantics.',
@@ -2089,16 +2089,16 @@ export const en = {
           'Just as TypeScript `declare` describes a value at the type level without creating a runtime value, TypeShade `declare` describes a GPU resource supplied by the host. TypeShade additionally uses `uniform<T>` and `storage<T>` to express GPU memory semantics.',
         decl: '2. Declare resources with `declare`',
         declP: 'Declare the resource type and access mode without an initializer.',
-        access: '3. const and let express access',
+        access: '3. The type states the access',
         accessP:
-          'Uniform resources are read-only and therefore use `declare const`. Storage resources are read-only with `const` and read-write with `let`.',
+          'A uniform is read-only, and `uniform<T>` takes one type argument. A storage binding is read-only as `storage<T>` and read-write as `storage<T, "read_write">`. The access mode is the second type argument, where WGSL writes it too. Every resource is declared with `const`.',
         slots: '4. Resource slots are a host contract',
         slotsP:
           'Resource slots follow declaration order in the file. Keep binding details as part of the compiler/host reflection contract instead of scattering binding numbers through shader code.',
         invalid: '5. Common mistakes',
         invalidItems: [
           'Do not declare `declare const x: f32`; a resource needs a space such as `uniform<T>` or `storage<T>`.',
-          'Do not use `declare let x: uniform<T>`.',
+          'Do not declare a resource with `let`. The compiler refuses `declare let x: storage<T>` and names the `declare const` line to write instead.',
           'Do not assign to a read-only resource.',
           'Do not model a resource as a class or bind-group instance.',
         ],
@@ -2520,7 +2520,7 @@ export const en = {
           'A texture and a sampler are written bare, with no address-space wrapper, because a handle lives in no address space. A sampled texture takes `f32`, `i32` or `u32`, and the element decides both the WGSL spelling and which reads apply to it. A storage texture takes a format and an access mode as string literal types, which `tsc` checks before this compiler does.',
         resourcesH: 'Resources and address spaces',
         resourcesP:
-          'A resource is a `declare`, which is TypeScript for a value something else provides. The address space and the access mode are the wrapper type on the annotation, and `const` against `let` carries the rest: a `storage` binding a shader writes is a `declare let`.',
+          'A resource is a `declare`, which is TypeScript for a value something else provides. The address space and the access mode are the wrapper type on the annotation: a `storage` binding a shader writes is `storage<T, "read_write">`, and every resource is a `const`.',
         slotsP:
           'There is no `@group` or `@binding` to write. The slot index is the source order of the `declare` in the file, and the WGSL above shows what that came out as. A texture or a sampler takes the next slot the same way.',
         stagesH: 'Entry points and attributes',
