@@ -446,6 +446,15 @@ why lives on its own page.
     source file first and then every target the compiler emits, the WGSL and the two GLSL ES
     3.00 stages it baked into `examples/__emit-goldens__/` at the pinned commit; it opens on
     the line the shader starts at, since several of those files begin with a banner comment.
+    A GLSL tab reads `GLSL vertex` and `GLSL fragment`: the pane is 490px from a 1320
+    viewport and the full target name puts the four tabs at 539px in English and 543px in
+    Korean, so the last tab was cut off at every desktop width. The full name is in the line
+    under the card and in the pane's own accessible name. The head is a scroller wherever it
+    is under about 420px, which is the phone layout and the widths where the card splits in
+    a narrow column, and it carries there the 32px fade on its trailing edge that the panels
+    carry at their foot. The file is the tab that gives way when the four ask for more than
+    the head has, down to 16 characters, since the file name is the one tab text the site
+    does not choose.
     Which backend drew the frame, or why nothing did, and where the emitted text comes from
     are written under the card, because a label inside a pane makes that pane read as a
     figure. The card is its own container, so the panes go side by side once the card is wide
@@ -491,10 +500,12 @@ tokens through the CSS variables its stylesheet reads.
 
 The header is the one every library site has: the name on the left; Use TypeShade, Playground,
 Language, API and Examples; then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
-groups (Documentation, Project, Languages) at the left of the shell, then the licence, the
-copyright and the commit the page was built from. Documentation carries 19 links and runs them
-down two columns 32px apart, with 64px between one group and the next, so the wider gap tells a
-reader where a group ends. Headings are single nouns or short noun phrases: Motivation, Verification, Quick
+groups (Documentation, Project, Languages) across the shell, then the licence, the copyright
+and the commit the page was built from. Documentation carries 19 links and runs them down two
+columns 32px apart, and the three groups spread to the shell's two edges: 120px between one
+group and the next at a 768 viewport and 396px from 1440 up in English, 148px and 424px in
+Korean, with 64px as the floor. The space that grows is the space between groups, so the wider
+gap tells a reader where a group ends. Headings are single nouns or short noun phrases: Motivation, Verification, Quick
 start.
 
 ## Versions

@@ -45,9 +45,9 @@ The site follows the shapes readers already know, and nothing else:
   is fixed upstream and arrives at the next pin, never by editing the site. What the site does
   write is the words around it, `docs.api` in every dictionary, including a name and a
   sentence for every category (`docs.api.categories`, keyed by the extractor's slug).
-- **Footer**: vuejs.org. A site map in three groups at the left of the shell, Documentation's
-  links down two columns, then the licence, the copyright and the commit the page was built
-  from.
+- **Footer**: vuejs.org. A site map in three groups spread across the shell, Documentation's
+  links down two columns 32px apart, then the licence, the copyright and the commit the page
+  was built from.
 - **Search**: Pagefind, the way VitePress sites carry a search box. `bun run build` writes the
   index into `dist/pagefind/` after Astro, so search works on the built site and not on `astro
   dev`. The `data-pagefind-body` and `data-pagefind-ignore` attributes in `Base.astro` and
