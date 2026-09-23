@@ -113,6 +113,16 @@ link targets, the heading count, and the Korean rules above. Translate meaning f
 Nothing about the reference's body is translated; a Korean reference page is Korean chrome
 around the compiler's own JSDoc.
 
+A translation that explains a design rule also records the rule it was read against, by the
+rule's fingerprint (`reviewed` in the compiler's `reqs/rules/RULE-xxxx.md`). A section does it in
+its front matter, `rules: 8.7 FYpP…=`, for every rule its English section names or enforces
+through an error code it names. The Korean words in the dictionary do it in
+`content/guide/ko/rules.json`, one fingerprint per rule, for the pages `ruleExplanations()` in
+`src/lib/design-rules.ts` lists. When a pin changes one of those rules, `bun run check:guide`
+fails and names the Korean section or dictionary key to translate again, even when the English
+section did not change. Read the Korean against the rule's page, fix what no longer holds, then
+write the fingerprint the message gives (`src/lib/rule-translations.ts`).
+
 ## Live examples
 
 A guide or concept page can carry a shader the reader edits, the way The Book of Shaders does:
