@@ -629,6 +629,39 @@ export const en = {
         13: 'Change control',
       } as Record<number, string>,
       chapterH: (n: number, title: string) => `${n}. ${title}`,
+      guaranteesP:
+        '[What is guaranteed](rulesGuarantees) lists the rules of each kind, with the files that verify each one.',
+      // The note a guide page shows beside a rule it names that nothing checks yet, by the
+      // rule's `verification` at the pin. A rule a test or review holds gets none.
+      flags: {
+        pending: 'not yet enforced by the compiler',
+        code: 'no test checks this yet',
+      },
+      // The rules grouped by how each is verified, at /reference/rules/guarantees/.
+      guarantees: {
+        title: 'What TypeShade guarantees: its design rules, by verification',
+        description: `How each of the ${facts.rules} TypeShade design rules is held: ${facts.rulesTest} checked by a test, ${facts.rulesCode} by the implementation alone, ${facts.rulesPending} not yet enforced and ${facts.rulesReview} by review, with the files that verify each.`,
+        h1: 'What is guaranteed',
+        lead: `The compiler's traceability tree records how each design rule is held at commit ${facts.pinnedCommit}: a test checks it, only the code that carries it out names it, nothing checks it yet, or review holds it. Below, the ${facts.rules} rules under those four headings, each with its first sentence and the files that verify it at the pin.`,
+        heads: {
+          test: 'Checked by a test',
+          code: 'Implementation only, no test yet',
+          pending: 'Not yet enforced',
+          review: 'Held by review',
+        },
+        // One sentence under each heading, led by the count.
+        groups: {
+          test: `${facts.rulesTest} rules. A test, a gate script or a CI workflow names each one, and the compiler's traceability check fails when a listed file stops naming its rule.`,
+          code: `${facts.rulesCode} rules. The implementation names each one in an \`Implements:\` tag, and no test checks it yet: each is a gap for a test to close. A guide page that names one of these rules says so beside the name.`,
+          pending: `${facts.rulesPending} rule. Appendix B of the design document lists it as not yet enforced, and no file checks it. A guide page that names it says so beside the name.`,
+          review: `${facts.rulesReview} rules. Each one says review holds it, and no file checks it.`,
+        },
+        none: 'No rule is held this way at the pin.',
+        filesLabel: {
+          test: 'Verified by',
+          code: 'Implemented in',
+        },
+      },
       // One rule on a page of its own, at /reference/rules/<n-m>/.
       entry: {
         // The first candidate that lands inside the 45 to 60 characters check-seo.mjs allows.
@@ -1205,7 +1238,7 @@ export const en = {
     intro:
       "The repository's CI runs these on every push and pull request, in [the CI workflow](ciGates):",
     items: [
-      'The same module compiles to a CPU function that runs in f64 arithmetic. In its default mode only its equality tests round to f32 first, so they agree with the GPU; an f32 mode that rounds after every operation is opt-in. The test suite checks that function against known answers and against a second CPU backend, generated JavaScript, which must match it bit for bit. It says nothing about what rounding does on a driver, and no GPU output is compared against it in this repository. [src/core/oracle.ts](oracle)',
+      `The same module compiles to a CPU function that runs in f64 arithmetic. In its default mode only its equality tests round to f32 first, so they agree with the GPU; an f32 mode that rounds after every operation is opt-in. The test suite checks that function against known answers and against a second CPU backend, generated JavaScript, which must match it bit for bit. It says nothing about what rounding does on a driver, and no GPU output is compared against it in this repository. Where WGSL fixes a result and ${glsl} does not, the oracle follows WGSL (Rule 11.5). [src/core/oracle.ts](oracle)`,
       `The compile gate emits every registered example, hands each WGSL emit to Tint inside headless Chromium, and compiles and links both ${glsl} stages of every renderable example on a real WebGL2 context. It also hands each compiler a shader that cannot compile: if either accepts that non-program, the gate fails and the verdicts on the examples do not count. [scripts/compile-gate.ts](compileGate)`,
       'Golden files hold the emitted bytes of every example, so any change in a backend surfaces as a diff in review. [emit-goldens.test.ts](goldens)',
     ],
@@ -1486,7 +1519,7 @@ export const en = {
       glslVertexLabel: `The emitted ${facts.glslTarget} vertex shader`,
       glslFragmentLabel: `The emitted ${facts.glslTarget} fragment shader`,
       diffH: 'Where the targets differ',
-      diffP: 'Each difference is named by the page of the guide that handles it.',
+      diffP: `Each difference is named by the page of the guide that handles it. Where the two disagree, WGSL defines what a construct means, and ${facts.glslTarget} is a target the compiler writes to (Rule 1.2).`,
       diffColumns: ['What differs', 'WGSL', `${facts.glslTarget}`],
       diffRows: [
         [
@@ -2510,7 +2543,7 @@ export const en = {
           'statements.let':
             'A WGSL `let` is a value that stays as it was, which is what `const` says in TypeScript.',
           'statements.var':
-            'A WGSL `var` is a local that changes. `let b: f32` with no initializer declares one and leaves the value for a later assignment; WGSL zeroes it and GLSL leaves it undefined, so assign before you read.',
+            'A WGSL `var` is a local that changes. `let b: f32` with no initializer declares one and leaves the value for a later assignment; WGSL zeroes it and GLSL leaves it undefined, so assign before you read (Rule 7.6).',
           'statements.for':
             'A `for` is counted: an integer induction variable, a constant step, and an exit that compares it to a bound the body does not write. The start and the bound may be runtime values, and no trip count is too many. The step may be `+=`, `-=`, `*=` or `/=`.',
           'statements.while':

@@ -95,6 +95,7 @@ export const links = {
   reference: { label: 'Language reference', href: '/reference/' },
   errors: { label: 'Error codes', href: '/reference/errors/' },
   rules: { label: 'Design rules', href: '/reference/rules/' },
+  rulesGuarantees: { label: 'What is guaranteed', href: '/reference/rules/guarantees/' },
   guideSource: { label: 'Compiler guide source (AUTHORING.md)', href: at('AUTHORING.md') },
   surfaceSource: {
     label: 'TypeShade surface specification',
@@ -453,6 +454,14 @@ export function sidebar(
   // The design rules follow the codes: a code's page names the rule it enforces, and a rule's
   // page the codes that enforce it.
   reference.push({ label: d.rules.h1, href: localePath(locale, links.rules.href), depth: 1 });
+  // What the rules guarantee opens one level further in, only while the reader is among the
+  // rules, the way a mapping set opens its sections.
+  if (path?.startsWith(links.rules.href))
+    reference.push({
+      label: d.rules.guarantees.h1,
+      href: localePath(locale, links.rulesGuarantees.href),
+      depth: 2,
+    });
   reference.push({ label: d.api.h1, href: localePath(locale, links.api.href) });
   for (const { category, members } of apiCategories()) {
     reference.push({
