@@ -3,9 +3,10 @@
 // error: the code, its constant and what it means; When it fires, the registry's own
 // documentation; an Example, a "use typeshade" program compiled at build time with what the
 // compiler reported; How to fix it, the registry's hint first and the program corrected;
-// See also; and the Source lines that raise it. A section with nothing true in it is left
-// out, and a code with no example says why under its summary. Everything about the code is
-// src/lib/error-codes.ts; the words around it are docs.errors in every dictionary.
+// The rule this enforces, from the design rules (src/lib/design-rules.ts); See also; and the
+// Source lines that raise it. A section with nothing true in it is left out, and a code with
+// no example says why under its summary. Everything about the code is src/lib/error-codes.ts;
+// the words around it are docs.errors in every dictionary.
 import { Code } from 'astro-expressive-code/components';
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import CodeFrame from '../CodeFrame.astro';
@@ -24,6 +25,9 @@ import {
   type ReportedDiagnostic,
 } from '../../lib/error-codes.ts';
 import { languageEntries, languageEntryPath } from '../../lib/language-reference.ts';
+import { assertRuleReadings, rulePath, rulesForCode } from '../../lib/design-rules.ts';
+import type { RuleHtml } from '../../lib/rules-loader.ts';
+import { getEntry } from 'astro:content';
 import { apiPage, editCopy, links } from '../../lib/links.ts';
 import { META_MIN, fitDescription } from '../../lib/meta-description.ts';
 
@@ -38,6 +42,7 @@ const x = d.errors;
 const e = x.entry;
 const entry = errorCode(slug);
 assertErrorLines(x.lines);
+assertRuleReadings(Object.keys(copyFor('en').docs.errors.lines));
 
 const siteLine = entry.name ? (x.lines as Record<string, string>)[entry.name] ?? '' : '';
 // The lead: the registry's first sentence, or where the registry documents nothing, the
@@ -103,6 +108,20 @@ for (const span of entry.spans) {
 const related = entry.related.map((code) => ({ code, href: localePath(locale, errorCodePath(code)!), entry: errorCode(code.toLowerCase()) }));
 const guide = GUIDE[entry.group];
 
+// The design rules this code enforces, each with the first sentence of its text. That line is
+// Markdown rendered once (src/lib/rules-loader.ts), so its links name the English pages.
+const rules = await Promise.all(
+  rulesForCode(entry.code).map(async (rule) => {
+    const stored = await getEntry('rules', rule.slug);
+    const html = (stored?.data as { html: RuleHtml } | undefined)?.html.line ?? '';
+    return {
+      rule,
+      href: localePath(locale, rulePath(rule.number)!),
+      line: locale === 'en' ? html : html.replace(/href="\/(api|reference\/errors|reference\/rules)\//g, `href="/${locale}/$1/`),
+    };
+  }),
+);
+
 const lineFor = (other: ErrorCodeEntry): { text: string; lang: string } =>
   other.line ? { text: other.line, lang: 'en' } : { text: (other.name && (x.lines as Record<string, string>)[other.name]) || '', lang: locale };
 
@@ -111,20 +130,21 @@ const sections = [
   { id: 'example', label: e.exampleH, show: example !== null },
   { id: 'in-the-front-end', label: e.frontEndH, show: counterpart !== null },
   { id: 'how-to-fix-it', label: e.fixH, show: showFix },
+  { id: 'rules', label: e.ruleH(rules.length), show: rules.length > 0 },
   { id: 'see-also', label: e.seeAlsoH, show: true },
   { id: 'source', label: e.sourceH, show: true },
 ].filter((s) => s.show);
 const headings: Heading[] = sections.map((s) => ({ depth: 2, slug: s.id, text: s.label }));
 
 // Previous and next walk the codes in the index's order, and step out to the index at the
-// front and to the API reference at the end, which is what the sidebar lists next.
+// front and to the design rules at the end, which is what the sidebar lists next.
 const order = errorPageOrder();
 const at = order.findIndex((o) => o.code === entry.code);
 const index = { label: x.h1, href: localePath(locale, links.errors.href) };
 const before = order[at - 1];
 const after = order[at + 1];
 const previous = before ? { label: before.code, href: localePath(locale, `/reference/errors/${before.slug}/`) } : index;
-const next = after ? { label: after.code, href: localePath(locale, `/reference/errors/${after.slug}/`) } : { label: d.api.h1, href: localePath(locale, links.api.href) };
+const next = after ? { label: after.code, href: localePath(locale, `/reference/errors/${after.slug}/`) } : { label: d.rules.h1, href: localePath(locale, links.rules.href) };
 const meta = `title:${head}`;
 const gapText = entry.gap === 'retired' ? e.retired : entry.gap === 'builder' ? e.builder : entry.gap === 'internal' ? e.internal : entry.gap === 'unwritten' ? e.unwritten : '';
 ---
@@ -222,6 +242,23 @@ const gapText = entry.gap === 'retired' ? e.retired : entry.gap === 'builder' ? 
           </CodeFrame>
         </>
       )}
+    </section>
+  )}
+
+  {rules.length > 0 && (
+    <section>
+      <h2 id="rules" lang={locale}>{e.ruleH(rules.length)}</h2>
+      <dl class="api-list api-index">
+        {rules.map((o) => (
+          <>
+            <dt>
+              <a href={o.href} lang={locale}>{d.rules.entry.heading(o.rule.number)}</a>
+              <span class="api-optional" lang={locale}>{d.rules.kinds[o.rule.verification]}</span>
+            </dt>
+            <dd lang="en"><Fragment set:html={o.line} /></dd>
+          </>
+        ))}
+      </dl>
     </section>
   )}
 

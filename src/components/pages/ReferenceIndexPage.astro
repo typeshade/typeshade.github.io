@@ -1,7 +1,7 @@
 ---
 // The language reference's front door: the six tables the compiler documents the language
 // with, each with the number of names in it and one line on what it holds, and the error
-// codes after them. The sections and
+// codes and the design rules after them. The sections and
 // their counts come from the compiler (src/lib/language-reference.ts); the words come from
 // the dictionary, so a Korean reader gets Korean around English identifiers.
 import Docs from '../../layouts/Docs.astro';
@@ -27,6 +27,15 @@ kinds.push({
   description: x.description,
   href: localePath(locale, links.errors.href),
   count: x.codes(facts.errorCodesTs + facts.errorCodesSd),
+});
+// Then the design rules, counted from the compiler's traceability tree.
+const rules = copyFor(locale).docs.rules;
+kinds.push({
+  name: rules.h1,
+  summary: rules.summary,
+  description: rules.description,
+  href: localePath(locale, links.rules.href),
+  count: rules.rulesCount(facts.rules),
 });
 const headings = [{ depth: 2, slug: 'reading', text: r.readingH }];
 ---

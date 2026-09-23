@@ -4,10 +4,13 @@
 // 'checks', 'examples', and the reference pages the copy names), which the locale prefixes.
 // An unknown key fails the build, and so does a reference page for a name the compiler has
 // stopped exporting. Inline code that is exactly a diagnostic code the compiler's registries
-// carry, `TS8010` or `SD0030`, links to that code's page.
+// carry, `TS8010` or `SD0030`, links to that code's page. A design rule named in the prose,
+// "Rule 4.8" or "Rules 7.2, 7.5" or the Korean for it, links to that rule's page, the first mention of each rule
+// on a page only and never on the rule's own page, with the words as written.
 import { errorCodePath } from '../lib/error-codes.ts';
+import { mentionParts, rulePath } from '../lib/design-rules.ts';
 import { apiPage, links } from '../lib/links.ts';
-import { localePath, type Locale } from '../i18n/index.ts';
+import { localePath, ruleWords, type Locale } from '../i18n/index.ts';
 
 interface Props {
   text: string;
@@ -62,18 +65,34 @@ for (const m of text.matchAll(re)) {
 }
 if (last < text.length) parts.push({ kind: 'text', value: text.slice(last) });
 
+// A rule named in the text. Every Rich on a page shares the page's locals, so a rule is linked
+// the first time the page names it; the page of the rule itself links nothing to it.
+const locals = Astro.locals as { linkedRules?: Set<string> };
+const linkedRules = (locals.linkedRules ??= new Set<string>());
+const here = Astro.url.pathname;
+const withRules: Part[] = parts.flatMap((p): Part[] => {
+  if (p.kind !== 'text') return [p];
+  return mentionParts(p.value, (n) => rulePath(n) !== undefined, ruleWords()).map((m): Part => {
+    if (m.kind === 'text' || linkedRules.has(m.number)) return { kind: 'text', value: m.value };
+    const href = localePath(locale, rulePath(m.number)!);
+    if (href === here) return { kind: 'text', value: m.value };
+    linkedRules.add(m.number);
+    return { kind: 'link', value: m.value, href, code: false, auto: true };
+  });
+});
+
 // A link whose key the pattern above does not accept would reach the page as its own
 // square brackets, and nothing else would notice. Count what the copy wrote against what
 // this file turned into a link, and stop the build when they disagree.
 const written = (text.match(/\[[^\]]+\]\([^)]+\)/g) ?? []).length;
-const rendered = parts.filter((p) => p.kind === 'link' && !p.auto).length;
+const rendered = withRules.filter((p) => p.kind === 'link' && !p.auto).length;
 if (written !== rendered) {
   throw new Error(`[Rich] ${written} link(s) written, ${rendered} rendered; a key may hold a character the pattern refuses: ${text.slice(0, 80)}`);
 }
 ---
 
 {
-  parts.map((p) =>
+  withRules.map((p) =>
     p.kind === 'text' ? (
       p.value
     ) : p.kind === 'code' ? (

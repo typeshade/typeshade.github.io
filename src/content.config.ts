@@ -16,6 +16,7 @@ import {
   translationDir,
 } from './lib/guide-translations.ts';
 import { apiLoader } from './lib/api-loader.ts';
+import { rulesLoader } from './lib/rules-loader.ts';
 
 const SECTIONS_MIN = 10;
 
@@ -78,6 +79,8 @@ const translated = (locale: string): Loader => ({
 export const collections = {
   // The API reference: one entry per public export, markdown fields rendered to HTML.
   api: defineCollection({ loader: apiLoader() }),
+  // The design rules: one entry per rule of the compiler's reqs/, its text rendered to HTML.
+  rules: defineCollection({ loader: rulesLoader() }),
   guideKo: defineCollection({
     loader: translated('ko'),
     schema: z.object({ order: z.number(), sourceLine: z.number(), source: z.string() }),

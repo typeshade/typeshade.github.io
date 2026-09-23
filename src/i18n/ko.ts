@@ -575,6 +575,7 @@ export const ko: Copy = {
         frontEndH: '프런트엔드에서',
         seeAlsoH: '함께 보기',
         sourceH: '소스',
+        ruleH: () => '이 코드가 적용하는 규칙',
         compiled: '빌드할 때 고정된 컴파일러로 이 프로그램을 컴파일하면 다음 진단이 나옵니다.',
         backend:
           '빌드할 때 고정된 컴파일러로 이 프로그램을 컴파일하면 `TS8015` 진단이 나옵니다. 백엔드가 모듈을 거부했다고 프런트엔드가 알리는 진단입니다. 백엔드가 던진 오류에 이 코드가 들어 있습니다.',
@@ -626,6 +627,94 @@ export const ko: Copy = {
         BACKEND:
           '프런트엔드가 받아들인 모듈을 백엔드가 출력하지 못하고 거부했습니다. 메시지는 백엔드가 쓴 그대로입니다.',
         INDEX_OOB: '상수 인덱스가 대상의 길이를 벗어납니다.',
+      },
+    },
+    rules: {
+      title:
+        'TypeShade 설계 규칙: 셰이더 언어가 따르는 규칙과 그 근거, 검증 방식을 장별로 모은 목록',
+      description: `TypeShade 언어를 설계한 규칙 ${facts.rules}개입니다. 규칙마다 근거와 출처, 검증 방식, 그 규칙을 적용하는 오류 코드를 함께 싣습니다.`,
+      summary:
+        '언어가 담을 수 있는 것과 언어가 바뀌는 방식을 정한 규칙을 한 페이지에 하나씩 싣습니다.',
+      h1: '설계 규칙',
+      intro: `컴파일러 설계 문서 \`docs/language-design.md\`의 규칙을 모두 모았습니다. 커밋 ${facts.pinnedCommit}의 추적 트리에서 읽어 왔습니다. 규칙은 \`"use typeshade"\` 파일을 쓰는 사람이나 컴파일러 자신을 제약합니다. 규칙 하나에는 요구 사항 하나와 그 이유, 출처, 컴파일러가 규칙을 적용하는 곳이 들어 있습니다.`,
+      verifiedP: '추적 트리에 기록된 규칙별 검증 방식입니다.',
+      note: '규칙 본문과 그 아래 항목은 설계 문서에 적힌 컴파일러 원문이라 한국어 페이지에서도 영어로 둡니다.',
+      rulesCount: (n: number) => `규칙 ${n}개`,
+      kinds: {
+        test: '테스트',
+        code: '구현만',
+        pending: '적용 전',
+        review: '리뷰',
+      },
+      kindCounts: {
+        test: `규칙 ${facts.rulesTest}개: 테스트나 게이트 스크립트, CI 워크플로가 규칙을 가리킵니다.`,
+        code: `규칙 ${facts.rulesCode}개: 구현만 규칙을 따르고, 아직 확인하는 테스트는 없습니다.`,
+        pending: `규칙 ${facts.rulesPending}개: 설계 문서 부록 B에 아직 적용하지 않은 규칙으로 올라 있습니다.`,
+        review: `규칙 ${facts.rulesReview}개: 리뷰로 지키며, 확인하는 파일은 없습니다.`,
+      },
+      chapters: {
+        1: '소개',
+        2: '표면 이름의 출처',
+        3: '텍스트 구조와 이름',
+        4: '타입',
+        5: '리터럴과 타입 결정',
+        6: '선언과 리소스',
+        7: '표현식과 문',
+        8: '함수와 진입점',
+        9: '내장 함수와 TypeShade 확장',
+        10: '확장과 기능',
+        11: '대상과 오라클',
+        12: '진단',
+        13: '변경 관리',
+      } as Record<number, string>,
+      chapterH: (n: number, title: string) => `${n}. ${title}`,
+      entry: {
+        // 영어와 같은 이유로 45자에서 60자 사이에 드는 첫 후보를 씁니다.
+        title: (rule: string, chapter: string) => {
+          const candidates = [
+            `규칙 ${rule}: ${chapter}, TypeShade 셰이더 언어 설계 규칙과 그 근거, 출처, 검증 방식`,
+            `규칙 ${rule}: ${chapter}, TypeShade 셰이더 언어 설계 규칙과 그 근거, 검증 방식`,
+            `규칙 ${rule}: ${chapter}, TypeShade 셰이더 언어 설계 규칙과 그 근거`,
+            `규칙 ${rule}: TypeShade 셰이더 언어 설계 규칙과 그 근거, 출처, 검증 방식`,
+          ];
+          return (
+            candidates.find((t) => t.length >= 45 && t.length <= 60) ??
+            candidates[candidates.length - 1]!
+          );
+        },
+        heading: (rule: string) => `규칙 ${rule}`,
+        description: (rule: string, chapter: string, line: string) =>
+          `TypeShade 언어 설계 규칙 ${rule}(${chapter})입니다. ${line}`,
+        fill: '이 페이지에는 근거와 출처, 규칙을 지키는 파일과 오류 코드가 있습니다.',
+        kindLine: (n: number, title: string) => `${n}장, ${title}`,
+        kindMeta: '검증 방식',
+        rationaleH: '근거',
+        derivesH: '출처',
+        verifiedH: '검증 방식',
+        explainedH: '설명하는 절',
+        codesH: '적용하는 오류 코드',
+        seeAlsoH: '함께 보기',
+        sourceH: '소스',
+        how: {
+          test: '테스트로 확인합니다. 테스트나 게이트 스크립트, CI 워크플로가 이 규칙을 가리키고, 아래 파일 가운데 하나라도 규칙을 더는 가리키지 않으면 추적 검사가 실패합니다.',
+          code: '구현만 이 규칙을 따르고, 아직 확인하는 테스트는 없습니다. 아래 파일이 `Implements:` 태그로 규칙을 가리킵니다.',
+          pending:
+            '아직 적용하지 않은 규칙입니다. 설계 문서 부록 B에 올라 있고, 확인하는 파일은 없습니다.',
+          review:
+            '리뷰로 지킵니다. 확인하는 파일은 없고, 규칙 스스로 리뷰가 지킨다고 적어 두었습니다.',
+        },
+        enforcedP: '컴파일러가 이 규칙을 적용하는 곳을 규칙이 직접 적은 내용입니다.',
+        filesP: (commit: string) =>
+          `커밋 ${commit}에서 이 규칙을 확인하는 파일입니다. 파일마다 규칙을 처음 가리키는 줄로 연결했습니다.`,
+        evidence: '컴파일러의 자체 테스트가 확인',
+        explainedP: (commit: string) =>
+          `커밋 ${commit}의 표면 문서에서 이 규칙을 설명하는 절입니다.`,
+        section: (n: number, title: string) => `§${n} ${title}`,
+        codesP:
+          '규칙이 Enforced by 항목에서 가리키는 진단 코드와, 레지스트리 설명에서 이 규칙을 가리키는 진단 코드입니다.',
+        sourceP: (commit: string) => `커밋 ${commit}의 규칙 원문:`,
+        designDoc: '설계 문서',
+        item: '추적 항목',
       },
     },
   },
@@ -1201,9 +1290,9 @@ export const ko: Copy = {
         '여기에서 규칙이 나옵니다. 재귀는 컴파일러가 거부하고, 헬퍼 함수는 컴파일러가 끝까지 따라갈 수 있는 평범한 함수입니다. 호출이 무엇일 수 있는지는 [함수](languageFunctions)가 적어 두었습니다.',
       loopsH: '루프',
       loopsP:
-        '한 스테이지의 인보케이션들은 루프를 함께 지나가고, 먼저 빠져나온 쪽은 나머지를 기다립니다. 컴파일러가 읽을 수 있는 상한이 있어야 그 기다림의 크기를 가늠할 수 있고, 타깃이 요구할 때 백엔드가 본문을 펼칠 수도 있습니다.',
+        '한 스테이지의 인보케이션들은 루프를 함께 지나가고, 먼저 빠져나온 쪽은 나머지를 기다립니다. 횟수를 세는 루프는 본문이 바꾸지 않는 상한과 카운터를 비교하며 그 상한 쪽으로 나아가고, 컴파일러는 바로 이 점을 검사합니다. 상한 자체는 프로그램이 실행 중에 알게 되는 값이어도 됩니다.',
       loopsRule:
-        '여기에서 규칙이 나옵니다. 루프는 컴파일러가 이미 아는 값을 셉니다. 어떤 조건과 반복이 컴파일되는지는 [제어 흐름](languageControlFlow)이 적어 두었습니다.',
+        '여기에서 규칙이 나옵니다. `for`는 본문이 움직이지 않는 상한까지 세고, `while`은 조건이나 `break`가 정한 곳에서 끝납니다. 어떤 조건과 반복이 컴파일되는지는 [제어 흐름](languageControlFlow)이 적어 두었습니다.',
       typesH: '값 타입',
       typesP:
         'GPU 레지스터의 폭과 배치는 셰이더를 컴파일할 때 정해집니다. 그래서 변수는 선언된 자리부터 스코프 끝까지 값 타입 하나를 담습니다. 값 타입 두 개를 합친 유니온도 없고, 실행 중에 둘 사이를 고를 방법도 없습니다.',

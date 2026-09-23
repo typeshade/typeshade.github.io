@@ -8,6 +8,7 @@ import { shortBlurb } from './blurb.ts';
 import { builtinCounts } from './builtin-table.ts';
 import { languageCounts } from './language-reference.ts';
 import { errorCodeCounts } from './error-codes.ts';
+import { ruleCounts } from './design-rules.ts';
 import { loweringRowCount } from './typescript-lowering.ts';
 import { glslCapabilityCount } from './glsl-mapping.ts';
 import { wgslBuiltinIdCount } from './target-mapping.ts';
@@ -304,6 +305,7 @@ function layoutStandards(): readonly string[] {
 const builtins = builtinCounts();
 const languageSurface = languageCounts();
 const errorCounts = errorCodeCounts();
+const rules = ruleCounts();
 
 export const facts = {
   examples: examples.length,
@@ -388,6 +390,17 @@ export const facts = {
   errorCodesTs: errorCounts.ts,
   errorCodesSd: errorCounts.sd,
   errorCodesRetired: errorCounts.retired,
+  /** The design rules at the pin, counted from the compiler's traceability tree
+   *  (src/lib/design-rules.ts): every rule, the rules held each of the four ways reqs/README.md
+   *  names (a test, the implementation alone, listed as not yet enforced, review), and the
+   *  sections of the surface document that explain one. /reference/rules/ has a page for each
+   *  rule. */
+  rules: rules.total,
+  rulesTest: rules.test,
+  rulesCode: rules.code,
+  rulesPending: rules.pending,
+  rulesReview: rules.review,
+  rulesSurfaceSections: rules.surfaceSections,
 };
 
 // The copy was written against these values, at the commit this names. Every count is
@@ -418,6 +431,12 @@ const pinned = {
   errorCodesTs: 44,
   errorCodesSd: 36,
   errorCodesRetired: 1,
+  rules: 99,
+  rulesTest: 91,
+  rulesCode: 3,
+  rulesPending: 1,
+  rulesReview: 4,
+  rulesSurfaceSections: 29,
 };
 const drift: string[] = [];
 if (facts.examples !== pinned.examples)
@@ -466,6 +485,16 @@ if (facts.errorCodesSd !== pinned.errorCodesSd)
   drift.push(`errorCodesSd ${facts.errorCodesSd} != ${pinned.errorCodesSd}`);
 if (facts.errorCodesRetired !== pinned.errorCodesRetired)
   drift.push(`errorCodesRetired ${facts.errorCodesRetired} != ${pinned.errorCodesRetired}`);
+for (const key of [
+  'rules',
+  'rulesTest',
+  'rulesCode',
+  'rulesPending',
+  'rulesReview',
+  'rulesSurfaceSections',
+] as const) {
+  if (facts[key] !== pinned[key]) drift.push(`${key} ${facts[key]} != ${pinned[key]}`);
+}
 if (drift.length > 0) {
   throw new Error(
     `[examples] the pinned mirror (${facts.pinnedCommit}) no longer matches the copy written at ${pinned.commit}: ${drift.join('; ')}`,

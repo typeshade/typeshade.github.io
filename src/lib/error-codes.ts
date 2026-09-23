@@ -509,6 +509,26 @@ export function errorCodeCounts(): {
   };
 }
 
+/** Every code's registry text as the compiler writes it, docs and hint together. Cheap:
+ *  nothing is compiled. src/lib/design-rules.ts reads the rules a code's text names here. */
+export function registryTexts(): ReadonlyMap<string, string> {
+  return new Map(
+    [...readTsRegistry().codes, ...readSdRegistry()].map((c) => [
+      c.code,
+      [...c.docs, c.hint].join(' '),
+    ]),
+  );
+}
+
+/** The front end's codes by constant name, `LAYOUT` to `TS8051`. */
+export function tsCodeNames(): ReadonlyMap<string, string> {
+  return new Map(
+    readTsRegistry()
+      .codes.filter((c) => c.name)
+      .map((c) => [c.name!, c.code]),
+  );
+}
+
 const slugOf = (code: string): string => code.toLowerCase();
 
 let pathCache: ReadonlyMap<string, string> | null = null;
@@ -1903,6 +1923,13 @@ export function fs(v: VsOut): vec4 {
 `,
   },
 };
+
+/** The codes whose page carries a program written by hand here, an example or a front-end
+ *  counterpart. A page like that explains the rules its code enforces, so the drift guard in
+ *  src/lib/design-rules.ts asks for those rules' fingerprints. */
+export function writtenExampleCodes(): ReadonlySet<string> {
+  return new Set([...Object.keys(EXAMPLES), ...Object.keys(COUNTERPARTS)]);
+}
 
 // The SD codes the registry itself calls an internal invariant: a program is not meant to
 // raise one. The hint says so in the registry's own words, which the page quotes.
