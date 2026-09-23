@@ -32,7 +32,7 @@ export const SHADE_STILL_EXAMPLES = [
   'palette-const', 'pick-composite', 'plasma-twin', 'private-state', 'ray-class',
   'shape-inheritance', 'starfield-twin', 'tunnel-twin', 'tuple-and-brand', 'twin-structs',
   'fp64-cancellation-twin', 'fp64-clock-twin', 'fp64-deep-zoom-twin', 'fp64-sine-sweep-twin',
-  'id-pick', 'packing-bitcast', 'voronoi-twin',
+  'id-pick', 'packing-bitcast', 'voronoi-twin', 'class-syntax', 'rng-method',
 ]
 
 /** Why one example has no still, keyed by id, for every example of either corpus that is not

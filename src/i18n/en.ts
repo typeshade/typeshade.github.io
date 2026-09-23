@@ -1465,7 +1465,7 @@ export const en = {
           abstractRow: { name: '`abstract` class', p: 'No struct for the abstract class. Each subclass carries the fields and its own copy of the method.' },
           implementsRow: { name: '`implements`', p: 'Checked by TypeScript alone. The struct is the class\'s own fields.' },
           accessModifiers: { name: 'Access modifiers', p: 'Accepted, and they mean nothing to the shader. TypeScript is what enforces them.' },
-          getterRefused: { name: 'Getter', p: 'A static field, an `abstract` method and the rest of the TS8035 list go the same way. Write a method.' },
+          getter: { name: 'Getter and setter', p: 'Each half is a function of the module, `Disc_get_area` and `Disc_set_area`, and a read or a write calls it. [class-syntax](shadeClassSyntax)' },
           mixin: { name: 'Mixin function', p: 'The function runs while the file is compiled. Its members are spliced in, and `Tinted` is emitted nowhere. [mixin-surface](shadeMixinSurface)' },
           genericFunction: { name: 'Generic function', p: 'One function per set of type arguments the file uses, and nothing called `pick`. [generic-helpers](shadeGenericHelpers)' },
           genericClass: { name: 'Generic class', p: 'One struct per set of type arguments, each with its own copy of every method. [generic-class](shadeGenericClass)' },
