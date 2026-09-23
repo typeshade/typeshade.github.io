@@ -6,9 +6,29 @@
 //
 // A fade at the top says there is more above, once there is: the pane starts with only the
 // foot faded, and the head fades in as soon as the pane is scrolled off its first line.
+//
+// The tab bar over the pane is a scroller too, and it gets the same treatment on the inline
+// axis: a fade at its trailing edge while the four tabs are wider than the pane, which is
+// the phone layout and the widths where the card splits inside a narrow column. The flag is
+// measured here and not written into the stylesheet, because the width the tabs want is the
+// file name's, and that is different on every example page.
 
 /** Room between the pane's top edge and the line it opens on. */
 const AIR = 12
+
+for (const head of document.querySelectorAll<HTMLElement>('[data-example-tabs]')) {
+  const mark = (): void => {
+    if (head.scrollWidth - head.clientWidth > 1) head.dataset.overflow = ''
+    else delete head.dataset.overflow
+  }
+  // The head's own box changes with the window, and a tab's box changes when it is picked,
+  // since the selected tab is the one at weight 600.
+  const sizes = new ResizeObserver(mark)
+  sizes.observe(head)
+  for (const tab of head.children) sizes.observe(tab)
+  void document.fonts?.ready.then(mark)
+  mark()
+}
 
 for (const panel of document.querySelectorAll<HTMLElement>('[data-entry-line]')) {
   const scroller = panel.closest<HTMLElement>('[data-example-panels]')
