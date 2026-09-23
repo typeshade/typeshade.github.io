@@ -465,7 +465,7 @@ why lives on its own page.
   - Concepts: `/guide/typescript-and-webgpu/`, how TypeScript types, functions and modules map
     to GPU values, entry points and shader modules, and where WebGPU begins.
   - Examples: `/guide/examples/`, the gallery of every example in both corpora, grouped by
-    category, each tile linking to that example's own page at `/guide/examples/<id>/`. The 51
+    category, each tile linking to that example's own page at `/guide/examples/<id>/`. The 73
     `.shade.ts` examples are `"use typeshade"` files, which is what the Playground's editor
     compiles, so their page carries the Playground itself, seeded with that file and with the
     picker gone, since the page already names the example. One line under the tool says the
