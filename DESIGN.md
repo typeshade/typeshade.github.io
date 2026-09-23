@@ -366,9 +366,10 @@ element is fully round except the two-axis pad's dot.
   (`bun run capture:stills`), so the page never shows an empty frame. The still goes the
   moment a backend takes the canvas, since it is the fallback for a browser with no GPU API,
   a reader with no script and a social preview, and it comes back on its own where a mount
-  dies, because `degrade()` puts `data-backend` back to `none`. The Playground's canvas has
-  no still: the reader edits the file, so a picture of what it drew at the pin would be a
-  picture of something else.
+  dies, because `degrade()` puts `data-backend` back to `none`. The Playground on an
+  example's page shows that example's still until the reader's program has drawn a frame,
+  and drops it for good at the first keystroke, since from then on it is a picture of a
+  file the editor no longer holds.
 - A table sits at the wide measure inside the document column, scrolls inside itself, and
   stacks into labelled rows below 45rem. The layout table keeps its natural width and a
   caption above it.
@@ -444,12 +445,26 @@ cards takes the column. A third measure needs a reason.
   own width. The left column is the Monaco editor over its diagnostics. The right one is a
   single Ant tab strip over a single panel, Result first and then WGSL, GLSL vertex, GLSL
   fragment and Reflection, with the controls the selected tab owns at the right of that same
-  row. Result holds the canvas, drawn through `src/lib/shader-runtime.ts`, the runtime every
-  figure on the site draws through, with the CPU oracle's rasteriser as the other engine in
-  a picker beside it and one slider per uniform field under it. A tab switch shows a panel
+  row. Result holds the canvas, which takes the width of its column at 4:3 the way a
+  Shadertoy pane does. A picker beside the tabs chooses what draws it: the GPU in the
+  runtime's own order, WebGPU alone, WebGL2 alone, or the CPU oracle's rasteriser. The GPU
+  half goes through `src/lib/shader-runtime.ts`, the runtime every figure on the site draws
+  through. A backend the browser lacks, or a WebGPU feature the module needs and the GPU does
+  not offer, is said by name on the canvas, and the pick joins the share link. The GPU is
+  handed one frame at a time, and a program too heavy for it draws at fewer pixels, down to
+  an eighth of the box's side, so the page keeps its own frames. The rasteriser runs the
+  oracle at f32, the precision the GPU computes in, so the two engines draw one picture; the
+  reflection's return values stay at the oracle's full double precision. Under the canvas is the bindings panel: a row for every binding and override
+  the module declares, headed by its slot and name in code, with what the reader supplies it
+  with. A uniform field gets a slider, a colour picker where the contract calls it a colour,
+  or a matrix with presets; a texture a built-in picture or the reader's own image; a
+  sampler its filter and address mode; a storage buffer a fill pattern and a length; an
+  override its value. A module whose only entry is `@compute` is dispatched, and the canvas
+  plots what it wrote while the panel lists it under its buffer. A tab switch shows a panel
   and compiles nothing: every panel holds what the last compile put in it. Under 48rem the
   columns stack with the editor first. A page that names its example passes `seed`, which
-  fills the editor from that file and drops the picker.
+  fills the editor from that file and drops the picker, and `still`, the example's
+  build-time still.
 
 ## Structure of the site
 
@@ -819,6 +834,10 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   in a real browser. It selects every example in the picker in turn, photographs the Result
   tab's canvas and counts the colours in it, and fails where fewer of them paint than the
   floor in the file, which is what was measured when it was written. It then types into the
-  editor and asserts the emitted WGSL and the canvas both moved. A runner with no route to
-  the Monaco CDN is reported on its own.
+  editor and asserts the emitted WGSL and the canvas both moved, picks each backend by name,
+  and moves a control of every kind the bindings panel has and asserts the frame followed.
+  For every example the GPU paints, the CPU backend has to paint it too, and a dozen pixels
+  of one frame, held at three seconds, have to agree between the two engines; both counts
+  are floors in the file, and the examples under them are listed by name. A runner with no
+  route to the Monaco CDN is reported on its own.
 - `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).

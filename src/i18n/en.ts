@@ -435,10 +435,10 @@ export const en = {
     argsInvalid: 'That argument is not a number or a list of numbers.',
     cpuNoResources: 'The CPU oracle takes entry arguments only, so an entry that reads a uniform or a storage binding cannot run here yet.',
     canvas: 'CPU canvas',
-    // The Result tab draws with one of two engines. The GPU runs the very program the WGSL
-    // and GLSL tabs hold, through the runtime every figure on the site uses. The CPU oracle
-    // runs the fragment entry once per pixel, which answers a different question and is
-    // what a browser with no GPU API has.
+    // The Result tab draws on the backend the reader picks: the GPU in the runtime's own
+    // order, WebGPU alone, WebGL2 alone, or the CPU oracle, which runs the fragment entry once
+    // per pixel. The GPU runs the very program the WGSL and GLSL tabs hold, through the
+    // runtime every figure on the site uses. `WebGPU` and `WebGL2` are the options' own names.
     engine: 'Draw with',
     engineGpu: 'GPU',
     engineCpu: 'CPU oracle',
@@ -446,13 +446,49 @@ export const en = {
     gpuWebgpu: 'Running on WebGPU.',
     gpuWebgl2: 'Running on WebGL2.',
     gpuNone: 'This browser has no WebGPU and no WebGL2, so nothing drew. The CPU oracle still runs.',
+    gpuNoWebgpu: 'You picked WebGPU, and this browser has no WebGPU device, so nothing drew. GPU falls back to WebGL2.',
+    gpuNoWebgl2: 'You picked WebGL2, and this browser has no WebGL2 context, so nothing drew.',
+    gpuNoGlsl: 'This module has no GLSL ES 3.00 form, so WebGL2 has nothing to run. WebGPU runs its WGSL.',
+    gpuNoGlslFeatures: 'GLSL ES 3.00 has no {features}, which this module needs, so WebGL2 has nothing to run. WebGPU runs its WGSL.',
+    gpuNoFeature: 'This GPU does not offer the WebGPU feature {features}, which this module needs, so nothing drew.',
+    gpuFailed: '{backend} could not run this program: {reason}',
     gpuNeedsStages: 'Drawing needs a vertex entry and a fragment entry. This module has no such pair.',
     gpuNeedsAttributes: 'The canvas draws three vertices and binds no vertex buffer. This module reads {fields} from one, so the GPU cannot run it here.',
-    gpuNeedsBindings: 'The canvas fills a uniform block, and the f64 guard the compiler injects, and nothing else. This module asks for {names}, so the GPU cannot run it here.',
-    gpuZeroed: 'The page fills time, resolution and mouse every frame. This module also declares {fields}, which no handle covers, so they stay at 0.',
-    // The group of handles under the canvas, one per uniform field the page does not fill
-    // itself. Each row prints the field's own name in code beside its handle.
-    uniforms: 'Uniforms',
+    gpuNeedsBindings: 'The bindings panel has no value for {names}, so this module cannot run here.',
+    computeNeedsWebgpu: 'A compute entry runs on WebGPU or on the CPU oracle. GLSL ES 3.00 has no compute stage.',
+    computeRan: 'Ran {entry} over {invocations} invocations on {backend} in {ms} ms. The canvas plots what it wrote.',
+    cpuTextures: 'The CPU oracle has no texture unit, so every texture read here returns black.',
+    // The panel under the canvas: one block per binding the module declares, with what the
+    // reader supplies it with. The texture sources and matrix presets are the choices a
+    // select offers; the filter and address values are WebGPU's own words and stay in code.
+    bindings: {
+      title: 'Bindings',
+      empty: 'This module binds nothing.',
+      runtime: 'filled by the page every frame',
+      overrides: 'Overrides',
+      source: 'source',
+      sources: {
+        checker: 'UV checker',
+        gradient: 'Gradient',
+        noise: 'Noise',
+        solid: 'Solid colour',
+        faces: 'Cube faces',
+        image: 'Your image',
+      },
+      dropImage: 'image file',
+      depthRamp: 'A depth ramp from 0 at the top left to 1 at the bottom right.',
+      filter: 'filter',
+      address: 'address',
+      compare: 'compare',
+      preset: 'preset',
+      presets: { identity: 'Identity', camera: 'Camera on the origin', turn: 'Turn about Y' },
+      fill: 'fill',
+      elements: 'elements',
+      written: 'After the dispatch',
+      size: 'size',
+      noControl: 'No control for',
+      vertices: 'The vertex entry reads these from a buffer. The page gives it the three corners of a triangle, each input filled by what it is called.',
+    },
     draw: 'Draw on the CPU',
     stop: 'Stop',
     canvasIdle: 'Run the fragment entry once per pixel, with no GPU.',

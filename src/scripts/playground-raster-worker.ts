@@ -11,6 +11,7 @@ import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
 import {
   cornersOf,
   drawTile,
+  RASTER_PRECISION,
   type Corners,
   type CpuFunctions,
   type RasterPlan,
@@ -36,7 +37,9 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
     try {
       // Compiled once per module, never per band and never per pixel. `evalEntry` in the
       // compiler compiles on every call, which at one call per pixel is a compile per pixel.
-      cpu = compileModule(request.module as never, { gpuStubs: true }).fns as CpuFunctions;
+      const compiledModule = compileModule(request.module as never, { gpuStubs: true, precision: RASTER_PRECISION });
+      for (const [name, value] of Object.entries(plan.bindings ?? {})) compiledModule.setBinding(name, value as never);
+      cpu = compiledModule.fns as CpuFunctions;
       corners = cornersOf(cpu, plan);
       if (!corners) {
         reply({ kind: 'failed', job, message: 'no triangle' });

@@ -142,7 +142,7 @@ const editable = example.corpus === 'shade'
 
   {editable ? (
     <div class="example-playground">
-      <Playground locale={locale} seed={id} />
+      <Playground locale={locale} seed={id} still={example.drawn ? `/stills/${id}.webp` : undefined} />
       <p class="max-inline-(--content) text-label text-text-2">{p.editable}</p>
     </div>
   ) : (

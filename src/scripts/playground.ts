@@ -8,7 +8,8 @@
 // do: the page's own chunk is Monaco's glue, the emitters, reflection and the CPU oracle, and
 // the compiler lives in the language worker alone. The raster worker imports `core/oracle.ts`
 // this way for the same reason.
-import { emitModule, emitModuleAt } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import { emitModule, emitModuleAt, wgslBackend } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import { hostFeaturesFor } from '../../vendor/shader-dsl/src/core/backend.ts';
 import { emitGlslStages, type GlslEmitOptions } from '../../vendor/shader-dsl/src/core/backends/glsl.ts';
 import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
@@ -33,19 +34,9 @@ import {
   type Analysis,
   type LanguageClient,
 } from './playground-language.ts';
-import {
-  clamp,
-  codeOnly,
-  controlsFor,
-  FRAGMENT_PRELUDE,
-  initialValues,
-  isControllable,
-  isReserved,
-  layoutFor,
-  reservedValue,
-  sampleShape,
-  type LiveControl,
-} from '../lib/live-shader-contract.ts';
+import { codeOnly, FRAGMENT_PRELUDE, sampleShape } from '../lib/live-shader-contract.ts';
+import { runComputeOnGpu } from '../lib/compute-runner.ts';
+import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
 // what this page already holds after a compile.
@@ -53,6 +44,7 @@ import { mountShader, type MountedShader, type ShaderData } from '../lib/shader-
 import {
   cornersOf,
   drawTile,
+  RASTER_PRECISION,
   entryArguments,
   zeroFor,
   type CpuFunctions,
@@ -69,6 +61,8 @@ interface PlaygroundExample {
   readonly source: string;
   readonly title: string;
   readonly description: string;
+  /** Where a source twin's uniform fields start, by field name. */
+  readonly defaults?: Readonly<Record<string, readonly number[]>>;
 }
 
 /** What the options bar is set to. Every field is a value the compiler's emit API takes. */
@@ -82,6 +76,9 @@ interface EmitChoice {
   /** Which primitives back the emulated-double helpers, for the emit and for reflect(). */
   readonly fp64Flavor: Fp64Flavor;
   readonly floatPrecision: 'highp' | 'mediump';
+  /** The backend the Result tab draws on. Not an emit option, but it rides in the link with
+   *  them, so a link shows the canvas the sender was looking at. */
+  readonly backend: 'auto' | 'webgpu' | 'webgl2' | 'cpu';
 }
 
 /** The words the component wrote into `data-copy`; they live in src/i18n. */
@@ -136,8 +133,16 @@ interface PlaygroundCopy {
   readonly gpuNeedsStages: string;
   readonly gpuNeedsAttributes: string;
   readonly gpuNeedsBindings: string;
-  readonly gpuZeroed: string;
-  readonly uniforms: string;
+  readonly gpuNoWebgpu: string;
+  readonly gpuNoWebgl2: string;
+  readonly gpuNoGlsl: string;
+  readonly gpuNoGlslFeatures: string;
+  readonly gpuNoFeature: string;
+  readonly gpuFailed: string;
+  readonly computeNeedsWebgpu: string;
+  readonly computeRan: string;
+  readonly cpuTextures: string;
+  readonly bindings: BindingsCopy;
   readonly canvasNeedsVertex: string;
   readonly canvasFlat: string;
   readonly canvasFlatInputs: string;
@@ -163,6 +168,21 @@ type Target = 'wgsl' | 'glslVertex' | 'glslFragment';
 /** What the one tab strip over the result column selects: the canvas, one of the three
  *  emitted files, or the reflection. */
 type View = 'result' | Target | 'reflection';
+
+/** What scripts/check-playground.mjs reads off the tool's element. */
+interface PlaygroundHandle {
+  /** Hold the shader clock at `seconds` on both engines, or let it run with null. */
+  freeze(seconds: number | null): void;
+  /** The rasteriser's RGBA at each pixel of a `width` by `height` grid, one 1-pixel tile each,
+   *  or null where the triangle does not cover it; a sentence when it cannot run at all. */
+  cpuPixels(points: readonly (readonly [number, number])[], width: number, height: number): (number[] | null)[] | string;
+}
+
+declare global {
+  interface HTMLElement {
+    __playground?: PlaygroundHandle;
+  }
+}
 
 /** Whether a view is one of the three the text panel holds. */
 const isTarget = (view: View): view is Target => view === 'wgsl' || view === 'glslVertex' || view === 'glslFragment';
@@ -275,7 +295,9 @@ const PRELUDE_DECLARES = /^[\t ]*(?:export[\t ]+)?(?:class|function|const|let|va
 function compose(source: string): { readonly text: string; readonly at: number; readonly lines: number } {
   const directive = DIRECTIVE_LINE.exec(source);
   const code = codeOnly(source);
-  if (!directive || sampleShape(source) === 'module' || PRELUDE_DECLARES.test(code)) {
+  // A file with no fragment entry has nothing for the triangle to hand a `uv` to: a compute
+  // kernel gets no vertex half it would never run.
+  if (!directive || sampleShape(source) === 'module' || !/@fragment\b/.test(code) || PRELUDE_DECLARES.test(code)) {
     return { text: source, at: 0, lines: 0 };
   }
   const head = source.slice(0, directive[0].length);
@@ -536,6 +558,7 @@ function writeHash(key: string, value: string, choice?: EmitChoice): void {
     if (choice.obfuscate) parts.push('obfuscate=1');
     if (choice.fp64Flavor !== 'float') parts.push(`fp64=${choice.fp64Flavor}`);
     if (choice.floatPrecision !== 'highp') parts.push(`precision=${choice.floatPrecision}`);
+    if (choice.backend !== 'auto') parts.push(`backend=${choice.backend}`);
   }
   const url = new URL(window.location.href);
   url.hash = parts.join('&');
@@ -572,13 +595,21 @@ const emitWgsl = (module: Parameters<typeof emitModule>[0], choice: EmitChoice):
 const emitGlsl = (
   module: Parameters<typeof emitGlslStages>[0],
   choice: EmitChoice,
-): { vertex: string; fragment: string; } | undefined => {
-  const options: GlslEmitOptions = { ...sharedEmitOptions(choice), floatPrecision: choice.floatPrecision };
+  overrideValues?: Readonly<Record<string, number>>,
+): { vertex: string; fragment: string; } | { failed: string } => {
+  // An override the reader moved is pinned as a hard `#define`; one left at its default keeps
+  // the `#ifndef` guard the emit writes, so an untouched module emits the bytes it always did.
+  const options: GlslEmitOptions = {
+    ...sharedEmitOptions(choice),
+    floatPrecision: choice.floatPrecision,
+    ...(overrideValues ? { overrideValues } : {}),
+  };
   try {
     return emitGlslStages(module, options);
-  } catch {
-    // A module the GLSL backend cannot express at all, a uniform scalar among them.
-    return undefined;
+  } catch (error) {
+    // A module the GLSL backend cannot express at all, a uniform scalar among them. The
+    // reason is kept, since WebGL2 has to say why it has nothing to run.
+    return { failed: error instanceof Error ? error.message : String(error) };
   }
 };
 
@@ -663,10 +694,8 @@ function mount(root: HTMLElement): void {
   const preludeNote = root.querySelector('[data-prelude-note]');
   const canvas = root.querySelector('[data-canvas]');
   const canvasNote = root.querySelector('[data-canvas-note]');
-  const gpuCanvas = root.querySelector('[data-gpu-canvas]');
   const gpuNote = root.querySelector('[data-gpu-note]');
   const enginePicker = root.querySelector('[data-engine]');
-  const gpuControls = root.querySelector('[data-gpu-controls]');
   const cpuOnly = [...root.querySelectorAll('[data-cpu-only]')].filter((node): node is HTMLElement => node instanceof HTMLElement);
   const drawCpu = root.querySelector('[data-draw-cpu]');
   const resolutionPicker = root.querySelector('[data-resolution]');
@@ -723,6 +752,11 @@ function mount(root: HTMLElement): void {
     obfuscate: obfuscateToggle.checked,
     fp64Flavor: fp64Picker.value === 'integer' ? 'integer' : 'float',
     floatPrecision: precisionPicker.value === 'mediump' ? 'mediump' : 'highp',
+    backend:
+      enginePicker instanceof HTMLSelectElement &&
+      (enginePicker.value === 'webgpu' || enginePicker.value === 'webgl2' || enginePicker.value === 'cpu')
+        ? enginePicker.value
+        : 'auto',
   });
 
   let editor: any;
@@ -739,6 +773,8 @@ function mount(root: HTMLElement): void {
   // The last good compile, kept so the CPU button can call into it without compiling again.
   let compiled: { readonly module: ModuleDecl; } | undefined;
   let reflection: ReturnType<typeof reflect> | undefined;
+  /** Why the GLSL backend emitted nothing for the last module, or ''. */
+  let glslFailure = '';
   let entries: readonly ReflectedEntry[] = [];
   /** What the reader last typed into each argument field, keyed by entry and field name, so a
    *  recompile does not throw their values away. */
@@ -751,8 +787,11 @@ function mount(root: HTMLElement): void {
     if (runCpu instanceof HTMLButtonElement) runCpu.disabled = entries.length === 0;
     if (drawCpu instanceof HTMLButtonElement) {
       const drawable =
-        entries.some((entry) => entry.stage === 'vertex' && (entry.io?.inputs ?? []).some((f) => f.builtin === 'vertex_index')) &&
-        entries.some((entry) => entry.stage === 'fragment');
+        entries.some(
+          (entry) =>
+            entry.stage === 'vertex' &&
+            (entry.io?.inputs ?? []).some((f) => f.builtin === 'vertex_index' || typeof f.location === 'number'),
+        ) && entries.some((entry) => entry.stage === 'fragment');
       moduleDrawable = drawable;
       syncDrawButton();
       if (canvasNote instanceof HTMLElement) {
@@ -831,7 +870,29 @@ function mount(root: HTMLElement): void {
     const resourceGroup = el('div', 'group');
     resourceGroup.append(el('p', 'group-title', copy.resources));
     if (resources.length === 0) resourceGroup.append(el('p', 'empty', copy.noResources));
-    else for (const r of resources) resourceGroup.append(ioRow(r.label, r.text));
+    else {
+      for (const r of resources) {
+        const row = ioRow(r.label, r.text);
+        // A binding is supplied in the panel under the canvas, so its row here goes there.
+        const name = r.text.split(':')[0]!.trim();
+        if (r.label !== 'override' && name !== '_fp64') {
+          const go = document.createElement('button');
+          go.type = 'button';
+          go.className = 'to-binding';
+          go.textContent = copy.bindings.title;
+          go.addEventListener('click', () => {
+            selectView('result');
+            const target = root.querySelector(`[data-bindings] [data-binding-name="${CSS.escape(name)}"]`);
+            if (target instanceof HTMLElement) {
+              target.scrollIntoView({ block: 'nearest' });
+              target.focus({ preventScroll: true });
+            }
+          });
+          row.append(go);
+        }
+        resourceGroup.append(row);
+      }
+    }
     reflectionPane.append(resourceGroup);
 
     const features: readonly string[] = reflection?.requiredFeatures ?? [];
@@ -873,7 +934,9 @@ function mount(root: HTMLElement): void {
       try {
         // The IR is compiled to the oracle here the way the raster worker compiles it, and the
         // entry is called directly; the old `compiled.eval` did the same work per call.
-        const run = (compileModule(compiled.module, { gpuStubs: true }).fns as CpuFunctions)[entry.name];
+        const oracle = compileModule(compiled.module, { gpuStubs: true });
+        for (const [name, value] of Object.entries(bindings.cpuBindings(frozen ?? 0, 1, 1, pointer))) oracle.setBinding(name, value as never);
+        const run = (oracle.fns as CpuFunctions)[entry.name];
         if (!run) throw new Error(entry.name);
         const value = run(...(entryArguments(entry, compiled.module.structs, (i) => args[i]) as never[]));
         const shownArgs = inputs.map((f, i) => `${f.name ?? `arg${i}`} = ${formatValue(args[i])}`).join(', ');
@@ -975,7 +1038,14 @@ function mount(root: HTMLElement): void {
   /** Ends the running draw where it is. Moving `job` retires it at every worker and at the
    *  page; clearing `drawing` first makes its own finish a no-op, so the button and the note
    *  are this press's to set and not the retired draw's. */
+  /** Close every worker, so the next draw opens a pool that holds nothing from before. */
+  const retirePool = (): void => {
+    for (const worker of pool) worker.terminate();
+    pool = [];
+  };
+
   const stopDrawing = (): void => {
+    if (drawing !== 0) retirePool();
     job += 1;
     drawing = 0;
     syncDrawButton();
@@ -995,124 +1065,172 @@ function mount(root: HTMLElement): void {
   const fillNumbers = (text: string, values: Record<string, string | number>): string =>
     text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole));
 
-  // ── The GPU canvas ────────────────────────────────────────────────────────────────────
-  // The Result tab draws the program the WGSL and the GLSL tabs hold, through
-  // src/lib/shader-runtime.ts, the runtime every figure on the site already uses: WebGPU
-  // when a device is reachable, WebGL2 behind it, and nothing drawn where neither is. It
-  // takes the emitted text, the std140 offsets and the entry names, all of which this page
-  // has the moment a compile lands, so no second compile happens for it.
-  //
-  // What it cannot do is bind resources. It fills one uniform block and the `_fp64` guard
-  // the f64 lowering injects, so a module that samples a texture of its own or reads a
-  // storage buffer is refused by name instead of drawn wrong or left blank.
-
-  /** The pointer over the GPU canvas, 0 to 1 from the bottom left, which is the space the
-   *  prelude's `uv` is in. A canvas nobody has touched holds the middle. */
-  let pointer: readonly [number, number] = [0.5, 0.5];
-  let mounted: MountedShader | undefined;
-  /** The program the mount is running, so a compile that emits the same text does not
-   *  rebuild the pipeline. */
-  let mountedWgsl = '';
-
-  /** The bindings the runtime has no value for, by name. It fills one uniform block, whose
-   *  std140 layout it takes from the reflection, and the `_fp64` guard. A uniform bound as a
-   *  bare scalar instead of a struct has no layout there, so it is one of these too. */
-  const unfillableBindings = (): readonly string[] =>
-    (reflection?.bindGroups ?? []).flatMap((group) =>
-      (group.entries ?? [])
-        .filter((entry) => {
-          if (entry.name === '_fp64') return false;
-          if (entry.resourceKind !== 'uniform-buffer') return true;
-          return (reflection?.uniforms ?? []).length === 0;
-        })
-        .map((entry) => String(entry.name)),
-    );
-
-  /** The uniform fields no handle covers, so the note can name them instead of leaving a
-   *  reader wondering why the picture is flat. An f64 and a matrix are the ones a module can
-   *  still declare that src/lib/live-shader-contract.ts has no control for. */
-  const zeroedUniformFields = (): readonly string[] => {
-    const block = (reflection?.uniforms ?? [])[0];
-    return (block?.fields ?? [])
-      .filter((field) => !isReserved(String(field.name)) && !isControllable(String(field.type)))
-      .map((field) => String(field.name));
+  /** What the rasteriser says when it is done, and that a texture read came back as the
+   *  oracle's placeholder when the module samples one. */
+  const drawnNote = (px: number, ms: number, workers: number): string => {
+    const drawn = fillNumbers(copy.canvasDrawn, { px, ms: Math.round(ms), workers });
+    return bindings.hasTextures() ? `${drawn} ${copy.cpuTextures}` : drawn;
   };
 
-  // ── The handles under the canvas ──────────────────────────────────────────────────────
-  // A module that reads a uniform of its own runs at 0 without one, which is a flat square
-  // and not the example. The ranges, the steps and the starting values are the contract's
-  // own (src/lib/live-shader-contract.ts), the same ones a live example on a guide page
-  // gets, so the two surfaces cannot disagree about what a field means.
+  // ── The Result tab ──────────────────────────────────────────────────────────────────
+  // The canvas draws the program the WGSL and GLSL tabs hold, on the backend the reader
+  // picked: the GPU in the runtime's own order (WebGPU, then WebGL2), WebGPU alone, WebGL2
+  // alone, or the CPU oracle's rasteriser. The GPU half goes through src/lib/shader-runtime.ts,
+  // the runtime every figure on the site uses; a module whose only entry is `@compute` is
+  // dispatched instead, and the canvas plots what it wrote.
+  //
+  // A canvas holds one kind of context for its whole life, so a change of backend puts a new
+  // canvas element in the frame. Nothing else moves: the source, the editor and the compile
+  // stay as they are, and only the mount is made again.
 
-  /** What each field is set to now, by field name. */
-  let uniformValues: Record<string, number[]> = {};
-  let liveControls: readonly LiveControl[] = [];
+  type Engine = 'auto' | 'webgpu' | 'webgl2' | 'cpu';
+  const engine = (): Engine => {
+    const value = enginePicker instanceof HTMLSelectElement ? enginePicker.value : 'auto';
+    return value === 'webgpu' || value === 'webgl2' || value === 'cpu' ? value : 'auto';
+  };
+  const engineIsCpu = (): boolean => engine() === 'cpu';
 
-  /** Build the handles for one module's block, keeping what the reader had set for a field
-   *  that survived the edit with its type. */
-  const paintUniformControls = (controls: readonly LiveControl[]): void => {
-    if (!(gpuControls instanceof HTMLElement)) return;
-    const previous = new Map(liveControls.map((control) => [control.field, control]));
-    const kept = initialValues(controls);
-    for (const control of controls) {
-      const before = previous.get(control.field);
-      if (before && before.type === control.type && uniformValues[control.field]) {
-        kept[control.field] = [...uniformValues[control.field]!];
+  /** The pointer over the canvas, 0 to 1 from the bottom left, which is the space the
+   *  prelude's `uv` is in. A canvas nobody has touched holds the middle. */
+  let pointer: readonly [number, number] = [0.5, 0.5];
+  /** The shader clock when it is held: under `prefers-reduced-motion`, at the three seconds a
+   *  live example holds it at, or wherever a check pins it to compare two engines on one
+   *  frame. Null lets it run. The rasteriser draws at this time, or at 0 when it runs. */
+  let frozen: number | null =
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 3 : null;
+  let mounted: MountedShader | undefined;
+  /** The engine and the program the mount is running, so a compile that changes neither does
+   *  not rebuild the pipeline. */
+  let mountedEngine: Engine | undefined;
+  let mountedSignature = '';
+  /** Moves on every texture, sampler or buffer change, so the signature above moves too. */
+  let resourceGeneration = 0;
+  /** Each run of the Result tab takes the next number; a run that finds a later one has
+   *  started lets that one finish instead of painting over it. */
+  let resultRun = 0;
+
+  const bindingsHost = root.querySelector('[data-bindings]');
+  let valuesTimer = 0;
+  const bindings = new BindingsModel(copy.bindings, {
+    values: () => {
+      // The frame the GPU is drawing packs the new value on its next frame. The oracle's
+      // rasteriser and a dispatch take their values when they start, so those run again,
+      // once the control has settled.
+      mounted?.redraw();
+      if (engineIsCpu() || isComputeModule()) {
+        window.clearTimeout(valuesTimer);
+        valuesTimer = window.setTimeout(() => void runResult(), 250);
       }
+    },
+    resources: () => {
+      resourceGeneration += 1;
+      void runResult();
+    },
+    overrides: () => {
+      // An override is part of the program: the GLSL tabs spell it as a `#define` and the
+      // WebGPU pipeline takes it as a constant, so the texts are emitted again.
+      render();
+    },
+  });
+
+  /** Whether the module has a compute entry and nothing to draw, which is when the tab
+   *  dispatches it instead. */
+  const isComputeModule = (): boolean =>
+    entries.some((entry) => entry.stage === 'compute') && !entries.some((entry) => entry.stage === 'fragment');
+
+  const frame = root.querySelector('[data-gpu-frame]');
+
+  /** Put a new canvas where the old one was, carrying its name and its handlers. */
+  const freshCanvas = (): HTMLCanvasElement | undefined => {
+    const old = root.querySelector('[data-gpu-canvas]');
+    if (!(old instanceof HTMLCanvasElement)) return undefined;
+    const next = document.createElement('canvas');
+    // Every attribute the page gave it, the stylesheet's scoping one among them: without that
+    // the new element misses the rules that size it to the frame and draws at 300 by 150.
+    for (const { name, value } of [...old.attributes]) {
+      if (name === 'width' || name === 'height' || name === 'data-plotted' || name === 'hidden') continue;
+      next.setAttribute(name, value);
     }
-    liveControls = controls;
-    uniformValues = kept;
-    gpuControls.textContent = '';
-    gpuControls.hidden = controls.length === 0;
-    for (const control of controls) {
-      const row = el('div', 'uniform-row');
-      row.append(el('span', 'uniform-name', control.field));
-      const axes = el('span', 'uniform-axes');
-      for (let i = 0; i < control.components; i += 1) {
-        const input = document.createElement('input');
-        input.type = 'range';
-        input.min = String(control.min[i] ?? 0);
-        input.max = String(control.max[i] ?? 1);
-        input.step = String(control.step[i] ?? 0.002);
-        input.value = String(uniformValues[control.field]?.[i] ?? 0);
-        input.dataset.uniform = `${control.field}/${i}`;
-        input.setAttribute('aria-label', control.components > 1 ? `${control.field} ${i}` : control.field);
-        input.addEventListener('input', () => {
-          const slot = uniformValues[control.field];
-          if (!slot) return;
-          slot[i] = clamp(control, i, Number(input.value));
-          mounted?.redraw();
-        });
-        axes.append(input);
-      }
-      row.append(axes);
-      gpuControls.append(row);
-    }
+    next.dataset.backend = 'none';
+    next.hidden = old.hidden;
+    next.addEventListener('pointermove', (event) => {
+      const box = next.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) return;
+      pointer = [
+        Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)),
+        Math.min(1, Math.max(0, 1 - (event.clientY - box.top) / box.height)),
+      ];
+    });
+    old.replaceWith(next);
+    return next;
+  };
+  const gpuCanvasNow = (): HTMLCanvasElement | undefined => {
+    const node = root.querySelector('[data-gpu-canvas]');
+    return node instanceof HTMLCanvasElement ? node : undefined;
+  };
+
+  const stopMount = (): void => {
+    mounted?.stop();
+    mounted = undefined;
+    mountedEngine = undefined;
+    mountedSignature = '';
+  };
+
+  /** The still under the canvas goes for good once the reader's own program has drawn, or once
+   *  they change the file: past that point it is a picture of something else. */
+  const retireStill = (): void => {
+    if (frame instanceof HTMLElement) frame.dataset.drawn = '';
+  };
+
+  const sayGpu = (text: string): void => {
+    if (gpuNote instanceof HTMLElement) gpuNote.textContent = text;
+  };
+
+  const backendName = (which: Engine | 'none'): string =>
+    which === 'webgpu' ? 'WebGPU' : which === 'webgl2' ? 'WebGL2' : which === 'cpu' ? copy.engineCpu : 'GPU';
+
+  /** What the canvas says after a mount: which backend drew, or why none did, in the terms of
+   *  what the reader picked. A WebGPU pick on a browser with none is said as that, and not as
+   *  a WebGL2 frame under a WebGPU label. */
+  const backendNote = (picked: Engine): string => {
+    const backend = mounted?.backend ?? 'none';
+    if (backend === 'webgpu') return copy.gpuWebgpu;
+    if (backend === 'webgl2') return copy.gpuWebgl2;
+    const failure = mounted?.failure ?? '';
+    const feature = /missing WebGPU feature: ([^;]+)/.exec(failure)?.[1];
+    if (feature) return fillNumbers(copy.gpuNoFeature, { features: feature });
+    if (picked === 'auto' && !emitted.glslVertex && /no WebGPU/.test(failure)) return `${copy.gpuNone} ${noGlslNote()}`;
+    if (picked === 'webgpu' && /no WebGPU/.test(failure)) return copy.gpuNoWebgpu;
+    if (picked === 'webgl2' && /no WebGL2/.test(failure)) return copy.gpuNoWebgl2;
+    if (picked === 'auto' && (/no WebGL2/.test(failure) || failure === '')) return copy.gpuNone;
+    return fillNumbers(copy.gpuFailed, { backend: backendName(picked === 'auto' ? 'none' : picked), reason: failure });
   };
 
   /** What the GPU canvas should run, or why it cannot run this module. */
-  const gpuPayload = (): { readonly data: ShaderData; readonly controls: readonly LiveControl[] } | { readonly why: string } => {
+  const gpuPayload = (picked: Engine): { readonly data: ShaderData } | { readonly why: string } => {
     if (!compiled || !reflection || !emitted.wgsl) return { why: copy.gpuIdle };
-    const unfillable = unfillableBindings();
-    if (unfillable.length > 0) return { why: fillNumbers(copy.gpuNeedsBindings, { names: unfillable.join(', ') }) };
+    const missing = bindings.missing();
+    if (missing.length > 0) return { why: fillNumbers(copy.gpuNeedsBindings, { names: missing.join(', ') }) };
     // The runtime draws three vertices and binds no vertex buffer, so a vertex entry that
     // reads an attribute from one has nothing to read. Saying which attribute beats letting
     // the pipeline fail and reporting that the browser has no GPU API.
-    const attributes = (entries.find((entry) => entry.stage === 'vertex')?.io?.inputs ?? [])
-      .filter((field) => typeof field.location === 'number')
-      .map((field, index) => field.name ?? `arg${index}`);
-    if (attributes.length > 0) return { why: fillNumbers(copy.gpuNeedsAttributes, { fields: attributes.join(', ') }) };
-    let layout;
-    try {
-      layout = layoutFor(fileName, reflection as never);
-    } catch {
-      // layoutFor throws for a module with no vertex or no fragment entry, and for a texture
-      // it cannot fill, which the check above has already named. A compute-only module is
-      // the first of those and lands here.
-      return { why: copy.gpuNeedsStages };
+    const vertex = entries.find((entry) => entry.stage === 'vertex');
+    const fragment = entries.find((entry) => entry.stage === 'fragment');
+    if (!vertex || !fragment) return { why: copy.gpuNeedsStages };
+    const vertexBuffer = bindings.vertexBuffer();
+    if (vertexBuffer === null) {
+      const attributes = (vertex.io?.inputs ?? [])
+        .filter((field) => typeof field.location === 'number')
+        .map((field, index) => field.name ?? `arg${index}`);
+      return { why: fillNumbers(copy.gpuNeedsAttributes, { fields: attributes.join(', ') }) };
     }
+    if (picked === 'webgl2' && !emitted.glslVertex) return { why: noGlslNote() };
+    const block = bindings.renderBlock();
+    const guards = reflection.bindGroups
+      .flatMap((group) => group.entries)
+      .filter((entry) => entry.name === '_fp64')
+      .map((entry) => ({ name: entry.name, binding: entry.binding }));
     return {
-      controls: controlsFor(layout),
       data: {
         id: 'playground',
         title: fileName,
@@ -1121,90 +1239,318 @@ function mount(root: HTMLElement): void {
         // what it loses, and the note says which backend drew when neither is left.
         vertex: emitted.glslVertex ?? '',
         fragment: emitted.glslFragment ?? '',
-        layout,
+        layout: {
+          size: block?.size ?? 0,
+          block: block?.block ?? '',
+          group: block?.group ?? 0,
+          binding: block?.binding ?? 0,
+          instance: block?.instance ?? '',
+          fields: block?.fields ?? [],
+          vertexEntry: vertex.name,
+          fragmentEntry: fragment.name,
+          textures: guards,
+          resources: bindings.resources(false),
+          ...(vertexBuffer ? { vertexBuffer } : {}),
+        },
         controls: {},
+        constants: bindings.constants(),
+        features: gpuFeatures(),
       },
     };
   };
 
-  const backendNote = (): string => {
-    const backend = mounted?.backend ?? 'none';
-    if (backend === 'none') return copy.gpuNone;
-    const zeroed = zeroedUniformFields();
-    const running = backend === 'webgpu' ? copy.gpuWebgpu : copy.gpuWebgl2;
-    return zeroed.length > 0 ? `${running} ${fillNumbers(copy.gpuZeroed, { fields: zeroed.join(', ') })}` : running;
+  /** The optional WebGPU features the module asks for, as WebGPU names them. */
+  const gpuFeatures = (): string[] => [...hostFeaturesFor(wgslBackend, reflection?.requiredFeatures ?? [])];
+
+  /** Why WebGL2 has nothing to run: the capabilities GLSL ES 3.00 lacks when the emit names
+   *  them, and the plain sentence otherwise. */
+  const noGlslNote = (): string => {
+    const missing = /missing capabilities?:\s*([\w, ]+)/.exec(glslFailure)?.[1]?.trim();
+    return missing ? fillNumbers(copy.gpuNoGlslFeatures, { features: missing }) : copy.gpuNoGlsl;
   };
 
-  const sayGpu = (text: string): void => {
-    if (gpuNote instanceof HTMLElement) gpuNote.textContent = text;
-  };
-
-  /** Put the program the last compile emitted on the GPU canvas. The first good module
-   *  mounts; every one after it swaps, so the pass that is drawing stays up until the new
-   *  one has drawn a frame. A module the runtime cannot run stops the mount, because a frame
-   *  of the program before it is a picture of something the reader is no longer looking at. */
+  /** Put the program the last compile emitted on the canvas, on the backend the reader
+   *  picked. The same backend swaps, so the pass that is drawing stays up until the new one
+   *  has drawn; a new backend, or a program the swap cannot take, mounts on a new canvas. */
   const runOnGpu = async (): Promise<void> => {
-    if (!(gpuCanvas instanceof HTMLCanvasElement)) return;
-    const payload = gpuPayload();
+    const mine = ++resultRun;
+    const picked = engine();
+    const payload = gpuPayload(picked);
     if ('why' in payload) {
-      mounted?.stop();
-      mounted = undefined;
-      mountedWgsl = '';
-      gpuCanvas.dataset.backend = 'none';
-      paintUniformControls([]);
+      stopMount();
+      const node = gpuCanvasNow();
+      if (node) node.dataset.backend = 'none';
       sayGpu(payload.why);
       return;
     }
-    paintUniformControls(payload.controls);
-    if (mounted && payload.data.wgsl === mountedWgsl) return;
-    mountedWgsl = payload.data.wgsl;
-    if (mounted) {
-      // A swap keeps the pass that is drawing up until the new one has drawn a frame, and
-      // it answers false where it could not build the new one, which is what a module whose
-      // bind group has a different shape does: the block a module binds and the one before
-      // it bound are two different layouts. That module is mounted from scratch instead.
-      if (await mounted.swap(payload.data)) {
-        sayGpu(backendNote());
+    const signature = `${payload.data.wgsl}\n${payload.data.vertex}\n${payload.data.fragment}\n${resourceGeneration}\n${JSON.stringify(payload.data.constants)}`;
+    if (mounted && mountedEngine === picked && mounted.backend !== 'none') {
+      if (signature === mountedSignature) return;
+      const swapped = await mounted.swap(payload.data);
+      if (mine !== resultRun) return;
+      if (swapped) {
+        mountedSignature = signature;
+        retireStill();
+        sayGpu(backendNote(picked));
         return;
       }
-      mounted.stop();
-      mounted = undefined;
     }
-    mounted = await mountShader(gpuCanvas, payload.data, {
+    stopMount();
+    const target = freshCanvas();
+    if (!target) return;
+    const next = await mountShader(target, payload.data, {
       // The Playground's canvas is the reader's own program running, so it keeps its clock
       // under `prefers-reduced-motion` the way a live example does and redraws on a change.
       interactive: true,
-      uniformValues: (name, seconds) =>
-        reservedValue(name, seconds, gpuCanvas.width, gpuCanvas.height, pointer) ?? uniformValues[name] ?? null,
+      // A reader's program can be far heavier than any figure on the site, so the buffer
+      // gives up pixels before the page gives up its frames.
+      adaptive: true,
+      // With no GLSL there is nothing for WebGL2 to try, so the order is WebGPU alone and the
+      // reason printed is WebGPU's own.
+      ...(picked === 'webgpu' || picked === 'webgl2' ? { backend: picked } : emitted.glslVertex ? {} : { backend: 'webgpu' as const }),
+      uniformValues: (name, seconds) => bindings.renderValue(name, frozen ?? seconds, target.width, target.height, pointer),
     });
-    sayGpu(backendNote());
+    if (mine !== resultRun) {
+      next.stop();
+      return;
+    }
+    mounted = next;
+    mountedEngine = picked;
+    mountedSignature = signature;
+    if (next.backend !== 'none') retireStill();
+    sayGpu(backendNote(picked));
   };
 
-  if (gpuCanvas instanceof HTMLCanvasElement) {
-    gpuCanvas.addEventListener('pointermove', (event) => {
-      const box = gpuCanvas.getBoundingClientRect();
-      if (box.width === 0 || box.height === 0) return;
-      pointer = [
-        Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)),
-        Math.min(1, Math.max(0, 1 - (event.clientY - box.top) / box.height)),
-      ];
-    });
-  }
+  // ── A compute entry, dispatched ───────────────────────────────────────────────────────
 
-  /** Which engine the Result tab draws with. The GPU runs the emitted program; the oracle
-   *  runs the fragment entry once per pixel on this machine. */
-  const engineIsCpu = (): boolean => enginePicker instanceof HTMLSelectElement && enginePicker.value === 'cpu';
+  const accent = (): string => getComputedStyle(root).getPropertyValue('--color-accent').trim() || '#1677ff';
 
-  const syncEngine = (): void => {
-    const cpu = engineIsCpu();
-    for (const node of cpuOnly) node.hidden = !cpu;
-    if (gpuCanvas instanceof HTMLCanvasElement) {
-      const frame = gpuCanvas.closest('[data-gpu-frame]');
-      if (frame instanceof HTMLElement) frame.hidden = cpu;
+  /** Draw a buffer's first number per element as bars, or a storage texture as the image it
+   *  is, onto a new 2D canvas in the frame. */
+  const plot = (values: readonly number[] | undefined, image: { width: number; height: number; format: string; bytes: Uint8Array } | undefined, backend: string): void => {
+    const node = freshCanvas();
+    if (!node) return;
+    const box = node.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    node.width = Math.max(1, Math.round((box.width || 320) * dpr));
+    node.height = Math.max(1, Math.round((box.height || 240) * dpr));
+    const context = node.getContext('2d');
+    if (!context) return;
+    context.fillStyle = getComputedStyle(root).getPropertyValue('--color-ground').trim() || '#ffffff';
+    context.fillRect(0, 0, node.width, node.height);
+    if (image) {
+      const { width, height, format, bytes } = image;
+      const rgba = new Uint8ClampedArray(width * height * 4);
+      const floats = format === 'r32float' ? new Float32Array(bytes.buffer, bytes.byteOffset, width * height) : undefined;
+      let top = 0;
+      if (floats) for (const v of floats) if (Number.isFinite(v)) top = Math.max(top, Math.abs(v));
+      for (let i = 0; i < width * height; i++) {
+        if (floats) {
+          const g = top > 0 ? Math.round((Math.abs(floats[i]!) / top) * 255) : 0;
+          rgba.set([g, g, g, 255], i * 4);
+        } else {
+          rgba.set([bytes[i * 4]!, bytes[i * 4 + 1]!, bytes[i * 4 + 2]!, 255], i * 4);
+        }
+      }
+      const scratch = document.createElement('canvas');
+      scratch.width = width;
+      scratch.height = height;
+      scratch.getContext('2d')?.putImageData(new ImageData(rgba, width, height), 0, 0);
+      const side = Math.min(node.width, node.height);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(scratch, (node.width - side) / 2, (node.height - side) / 2, side, side);
+    } else if (values && values.length > 0) {
+      // A buffer longer than what the entry wrote ends in the zeros it started from, so the
+      // plot stops a little past the last element that is not zero.
+      let last = values.length - 1;
+      while (last > 0 && values[last] === 0) last -= 1;
+      const series = values.slice(0, Math.min(values.length, Math.max(8, last + 1 + Math.ceil((last + 1) / 8))));
+      const shown = series.length > 256 ? Array.from({ length: 256 }, (_, i) => series[Math.floor((i * series.length) / 256)]!) : [...series];
+      const finite = shown.filter(Number.isFinite);
+      const low = Math.min(0, ...finite);
+      const high = Math.max(0, ...finite);
+      const span = high - low || 1;
+      const pad = 12 * dpr;
+      const h = node.height - pad * 2;
+      const zero = pad + h * (high / span);
+      const w = (node.width - pad * 2) / shown.length;
+      context.fillStyle = accent();
+      shown.forEach((v, i) => {
+        if (!Number.isFinite(v)) return;
+        const y = pad + h * ((high - v) / span);
+        context.fillRect(pad + i * w, Math.min(y, zero), Math.max(1, w - (w > 3 ? 1 : 0)), Math.max(1, Math.abs(zero - y)));
+      });
+      context.fillStyle = getComputedStyle(root).getPropertyValue('--color-text-3').trim() || '#999';
+      context.fillRect(pad, zero, node.width - pad * 2, Math.max(1, dpr));
     }
-    if (gpuNote instanceof HTMLElement) gpuNote.hidden = cpu;
-    if (cpu && moduleDrawable && canvasFits) drawOnCpu();
-    if (!cpu) void runOnGpu();
+    node.dataset.backend = backend;
+    node.dataset.plotted = '1';
+    retireStill();
+  };
+
+  const runCompute = async (): Promise<void> => {
+    const mine = ++resultRun;
+    stopMount();
+    const picked = engine();
+    const entry = entries.find((candidate) => candidate.stage === 'compute');
+    if (!compiled || !entry || !emitted.wgsl) return;
+    if (picked === 'webgl2') {
+      const node = freshCanvas();
+      if (node) node.dataset.backend = 'none';
+      sayGpu(copy.computeNeedsWebgpu);
+      return;
+    }
+    const missing = bindings.missing();
+    if (missing.length > 0) {
+      sayGpu(fillNumbers(copy.gpuNeedsBindings, { names: missing.join(', ') }));
+      return;
+    }
+    const size = (entry as { workgroupSize?: number }).workgroupSize ?? 64;
+    const invocations = bindings.invocations();
+    const groups = Math.max(1, Math.ceil(invocations / size));
+    const results = new Map<string, string>();
+    let series: number[] | undefined;
+    let image: { width: number; height: number; format: string; bytes: Uint8Array } | undefined;
+    let ranOn: 'webgpu' | 'cpu';
+    let ms = 0;
+    try {
+      if (picked === 'cpu') {
+        const started = performance.now();
+        const cpu = compileModule(compiled.module, { precision: RASTER_PRECISION });
+        const values = bindings.cpuBindings(0, 0, 0, pointer);
+        for (const [name, value] of Object.entries(values)) cpu.setBinding(name, value as never);
+        cpu.dispatch(entry.name, groups);
+        ms = performance.now() - started;
+        for (const name of bindings.writableStorage()) {
+          const read = bindings.readCpu(name, values[name]);
+          results.set(name, read.rows.join('\n'));
+          series ??= read.series;
+        }
+        ranOn = 'cpu';
+      } else {
+        const result = await runComputeOnGpu({
+          wgsl: emitted.wgsl,
+          entry: entry.name,
+          workgroups: [groups, 1, 1],
+          resources: bindings.resources(true),
+          constants: bindings.constants(),
+          features: gpuFeatures(),
+        });
+        ms = result.ms;
+        for (const name of bindings.writableStorage()) {
+          const bytes = result.buffers.get(name);
+          if (!bytes) continue;
+          const read = bindings.readBack(name, bytes);
+          results.set(name, read.rows.join('\n'));
+          series ??= read.series;
+        }
+        const shown = bindings.firstStorageTexture();
+        if (shown) image = result.textures.get(shown);
+        for (const [name, t] of result.textures) results.set(name, `${t.width} × ${t.height} ${t.format}`);
+        ranOn = 'webgpu';
+      }
+    } catch (error) {
+      if (mine !== resultRun) return;
+      const node = freshCanvas();
+      if (node) node.dataset.backend = 'none';
+      const message = error instanceof Error ? error.message : String(error);
+      const feature = /missing WebGPU feature: ([^;]+)/.exec(message)?.[1];
+      sayGpu(
+        feature
+          ? fillNumbers(copy.gpuNoFeature, { features: feature })
+          : picked !== 'cpu' && /no WebGPU/.test(message)
+          ? copy.gpuNoWebgpu
+          : fillNumbers(copy.gpuFailed, { backend: backendName(picked === 'auto' ? 'webgpu' : picked), reason: message }),
+      );
+      return;
+    }
+    if (mine !== resultRun) return;
+    bindings.showResults(results);
+    if (bindingsHost instanceof HTMLElement) bindings.render(bindingsHost);
+    plot(series, image, ranOn);
+    sayGpu(
+      fillNumbers(copy.computeRan, {
+        entry: entry.name,
+        invocations: groups * size,
+        backend: backendName(ranOn),
+        ms: Math.max(1, Math.round(ms)),
+      }),
+    );
+  };
+
+  /** Run whatever the Result tab should show for the module that compiled last, then mark
+   *  the frame with the document version it shows. A check that selects an example waits for
+   *  that mark to reach the editor's version, so it never photographs the example before. */
+  let lastResult = 0;
+  const runResult = async (): Promise<void> => {
+    const at = analysedVersion;
+    // A picked example is painted twice, once for the pick and once when the debounced edit
+    // lands, and the first run gives way to the second. Only the latest may mark the frame.
+    const mine = ++lastResult;
+    if (frame instanceof HTMLElement) delete frame.dataset.settled;
+    if (isComputeModule()) await runCompute();
+    else if (engineIsCpu()) {
+      resultRun += 1;
+      stopMount();
+      if (moduleDrawable && canvasFits) drawOnCpu();
+    } else await runOnGpu();
+    if (frame instanceof HTMLElement && at === analysedVersion && mine === lastResult) frame.dataset.settled = String(at);
+  };
+
+  // The handle scripts/check-playground.mjs reads. It pins the clock, and asks the rasteriser
+  // for single pixels at the GPU canvas's own size, so the two engines are compared on the
+  // same pixels of the same frame.
+  const handle: PlaygroundHandle = {
+    freeze: (seconds) => {
+      frozen = seconds;
+      // A held frame is held at the size it has, so the pixels a check reads off it and the
+      // grid it asks the rasteriser for are one grid.
+      mounted?.holdScale(seconds !== null);
+      mounted?.redraw();
+    },
+    cpuPixels: (points, width, height) => {
+      if (!compiled) return 'no module';
+      const vertex = entries.find((entry) => entry.stage === 'vertex');
+      const fragment = entries.find((entry) => entry.stage === 'fragment');
+      if (!vertex || !fragment) return 'no vertex and fragment pair';
+      const attributes = bindings.cpuAttributes();
+      const plan: RasterPlan = {
+        width,
+        height,
+        vertex,
+        fragment,
+        structs: compiled.module.structs.map((struct) => ({ name: struct.name, fields: struct.fields.map((f) => ({ name: f.name })) })),
+        bindings: bindings.cpuBindings(frozen ?? 0, width, height, pointer),
+        ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
+      };
+      try {
+        const oracle = compileModule(compiled.module, { gpuStubs: true, precision: RASTER_PRECISION });
+        for (const [name, value] of Object.entries(plan.bindings ?? {})) oracle.setBinding(name, value as never);
+        const cpu = oracle.fns as CpuFunctions;
+        const corners = cornersOf(cpu, plan);
+        if (!corners) return 'no triangle';
+        return points.map(([x, y]) => {
+          const tile = drawTile(cpu, plan, corners, x, y, x + 1, y + 1);
+          return tile.covered > 0 ? Array.from(tile.pixels) : null;
+        });
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    },
+  };
+  root.__playground = handle;
+
+  /** Show the canvas the picked engine draws on, and draw on it. Nothing is compiled here: the
+   *  program is the one the last compile emitted. */
+  const syncEngine = (): void => {
+    const cpu = engineIsCpu() && !isComputeModule();
+    for (const node of cpuOnly) node.hidden = !cpu;
+    const node = gpuCanvasNow();
+    if (node) node.hidden = cpu;
+    if (cpu) retireStill();
+    // A different backend is a different context, so the mount starts over on a new canvas.
+    stopMount();
+    void runResult();
   };
 
   /** What the canvas had no value for when it ran the vertex entry. It runs that entry at
@@ -1234,7 +1580,8 @@ function mount(root: HTMLElement): void {
     const vertex = entries.find((entry) => entry.stage === 'vertex');
     const fragment = entries.find((entry) => entry.stage === 'fragment');
     if (!vertex || !fragment) return undefined;
-    if (!(vertex.io?.inputs ?? []).some((field) => field.builtin === 'vertex_index')) return undefined;
+    const attributes = bindings.cpuAttributes();
+    if (!(vertex.io?.inputs ?? []).some((field) => field.builtin === 'vertex_index') && Object.keys(attributes).length === 0) return undefined;
     if (!vertex.io?.outputs?.some((field) => field.builtin === 'position')) return undefined;
     return {
       width: canvas.width,
@@ -1242,6 +1589,8 @@ function mount(root: HTMLElement): void {
       vertex,
       fragment,
       structs: compiled.module.structs.map((struct) => ({ name: struct.name, fields: struct.fields.map((f) => ({ name: f.name })) })),
+      bindings: bindings.cpuBindings(frozen ?? 0, canvas.width, canvas.height, pointer),
+      ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
     };
   };
 
@@ -1258,7 +1607,9 @@ function mount(root: HTMLElement): void {
   };
 
   const drawHere = async (plan: RasterPlan, context: CanvasRenderingContext2D, mine: number): Promise<void> => {
-    const cpu = compileModule(compiled!.module, { gpuStubs: true }).fns as CpuFunctions;
+    const oracle = compileModule(compiled!.module, { gpuStubs: true, precision: RASTER_PRECISION });
+    for (const [name, value] of Object.entries(plan.bindings ?? {})) oracle.setBinding(name, value as never);
+    const cpu = oracle.fns as CpuFunctions;
     const corners = cornersOf(cpu, plan);
     if (!corners) throw new Error('no triangle');
     const started = performance.now();
@@ -1282,7 +1633,7 @@ function mount(root: HTMLElement): void {
       }
     }
     if (canvasNote instanceof HTMLElement) {
-      canvasNote.textContent = fillNumbers(copy.canvasDrawn, { px: covered, ms: Math.round(performance.now() - started), workers: 1 });
+      canvasNote.textContent = drawnNote(covered, performance.now() - started, 1);
       canvasNote.dataset.px = String(covered);
       canvasNote.dataset.workers = '1';
     }
@@ -1297,7 +1648,10 @@ function mount(root: HTMLElement): void {
       return;
     }
     // Raising the job retires whatever draw is still running; taking `drawing` makes that
-    // draw's finish a no-op, so the button stays Stop across the handover.
+    // draw's finish a no-op, so the button stays Stop across the handover. A worker still
+    // holding the old draw's tiles would take the new one's only after finishing them, which
+    // at a slow shader is seconds of a canvas reading 0 tiles; a new pool costs 130 ms.
+    if (drawing !== 0) retirePool();
     job += 1;
     const mine = job;
     drawing = mine;
@@ -1400,7 +1754,7 @@ function mount(root: HTMLElement): void {
       finished = true;
       flush();
       complete = true;
-      canvasNote.textContent = fillNumbers(copy.canvasDrawn, { px: covered, ms: Math.round(performance.now() - started), workers: pool.length });
+      canvasNote.textContent = drawnNote(covered, performance.now() - started, pool.length);
       canvasNote.dataset.px = String(covered);
       canvasNote.dataset.workers = String(pool.length);
       finish();
@@ -1629,7 +1983,15 @@ function mount(root: HTMLElement): void {
       }
     }
 
-    const glsl = compiled ? emitGlsl(compiled.module, choice) : undefined;
+    // The bindings panel reads the new reflection first, keeping every value the reader set
+    // for a binding that survived the edit, because the GLSL tabs spell an override the
+    // reader moved as a `#define` of that value.
+    bindings.update(reflection, compiled?.module);
+    const glslOrWhy = compiled
+      ? emitGlsl(compiled.module, choice, bindings.overridesMoved() ? bindings.constants() : undefined)
+      : undefined;
+    const glsl = glslOrWhy && 'vertex' in glslOrWhy ? glslOrWhy : undefined;
+    glslFailure = glslOrWhy && 'failed' in glslOrWhy ? glslOrWhy.failed : '';
     emitted = {
       wgsl: compiled ? emitWgsl(compiled.module, choice) : undefined,
       glslVertex: glsl?.vertex,
@@ -1643,11 +2005,13 @@ function mount(root: HTMLElement): void {
     // with edited arguments and redraw. Only the engine the reader is looking at runs: a
     // rasteriser drawing a canvas nobody is shown is the page's own CPU for nothing.
     evaluateOnCpu();
-    if (engineIsCpu()) {
-      if (moduleDrawable && canvasFits) drawOnCpu();
-    } else {
-      void runOnGpu();
-    }
+    if (bindingsHost instanceof HTMLElement) bindings.render(bindingsHost);
+    // A compute module has no rasteriser half, so the engine's canvases are set for it again.
+    const cpu = engineIsCpu() && !isComputeModule();
+    for (const node of cpuOnly) node.hidden = !cpu;
+    const node = gpuCanvasNow();
+    if (node) node.hidden = cpu;
+    void runResult();
   };
 
   /** Hands the worker the document as the editor holds it now. Sent on every change, so the
@@ -1656,6 +2020,7 @@ function mount(root: HTMLElement): void {
   const syncDocument = (): void => {
     if (!editor || !client) return;
     version += 1;
+    root.dataset.version = String(version);
     const composed = compose(editor.getValue());
     preludeAt = composed.at;
     preludeLines = composed.lines;
@@ -1720,7 +2085,11 @@ function mount(root: HTMLElement): void {
     openedExample = example.id;
     if (examplePicker instanceof HTMLSelectElement) examplePicker.value = example.id;
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
+    bindings.seed(example.defaults ?? {});
     editor.setValue(example.source);
+    // The edit handler queued a render for the new text; this one is immediate, so that one
+    // is dropped and the example is painted once.
+    window.clearTimeout(timer);
     writeHash('example', example.id, currentChoice());
     render();
   };
@@ -1756,9 +2125,11 @@ function mount(root: HTMLElement): void {
       // old grid's coordinates. Raising the job retires them at the worker and at the page,
       // so none of them lands on the canvas that is about to replace them. At 8K a draw runs
       // for tens of seconds, so this is a control a reader can reach mid-draw.
+      if (drawing !== 0) retirePool();
       job += 1;
+      // The grid keeps the frame's 4:3, so a pixel of it is square on the page.
       canvas.width = side;
-      canvas.height = side;
+      canvas.height = Math.round((side * 3) / 4);
       const surface = canvas.getContext('2d');
       surface?.clearRect(0, 0, side, side);
       canvasFits = holdsItsPixels(canvas, surface);
@@ -1771,7 +2142,15 @@ function mount(root: HTMLElement): void {
     });
   }
 
-  if (enginePicker instanceof HTMLSelectElement) enginePicker.addEventListener('change', syncEngine);
+  if (enginePicker instanceof HTMLSelectElement) {
+    enginePicker.addEventListener('change', () => {
+      syncEngine();
+      // The backend is part of what a link shows, the way the emit options are.
+      const named = hashParams().get('example');
+      if (named && !hashParams().get('code')) writeHash('example', named, currentChoice());
+      else void publishSource();
+    });
+  }
 
   /** What the page opens with: the source in the link, else the example the link names, else
    *  the first example. */
@@ -1788,6 +2167,10 @@ function mount(root: HTMLElement): void {
     if (params.get('obfuscate') === '1') obfuscateToggle.checked = true;
     if (params.get('fp64') === 'integer') fp64Picker.value = 'integer';
     if (params.get('precision') === 'mediump') precisionPicker.value = 'mediump';
+    const backend = params.get('backend');
+    if (enginePicker instanceof HTMLSelectElement && (backend === 'webgpu' || backend === 'webgl2' || backend === 'cpu')) {
+      enginePicker.value = backend;
+    }
     const code = params.get('code');
     if (code) {
       const source = await decodeSource(code);
@@ -1851,6 +2234,7 @@ function mount(root: HTMLElement): void {
       followSiteTheme(monaco, paintOutput);
       if (opening.example) {
         openedExample = opening.example.id;
+        bindings.seed(opening.example.defaults ?? {});
         if (examplePicker instanceof HTMLSelectElement) examplePicker.value = opening.example.id;
         if (exampleNote instanceof HTMLElement) exampleNote.textContent = opening.example.description;
       } else if (exampleNote instanceof HTMLElement) {
@@ -2033,7 +2417,10 @@ function mount(root: HTMLElement): void {
       // The worker holds the document from the moment the model does.
       syncDocument();
 
-      editor.onDidChangeModelContent(() => {
+      editor.onDidChangeModelContent((event: { isFlush?: boolean }) => {
+        // A keystroke makes the still a picture of a file the editor no longer holds. Loading
+        // an example is a flush and leaves it, so the example's own still covers its first frame.
+        if (!event.isFlush) retireStill();
         syncDocument();
         window.clearTimeout(timer);
         timer = window.setTimeout(render, 350);

@@ -62,6 +62,44 @@ function shadeControls(id: string, twinOf: string | undefined, module: Parameter
   return out
 }
 
+/** The value each uniform field starts at in the Playground's bindings panel, for a source
+ *  twin: what its `fn()` original gives the field, which is the frame the gallery's still
+ *  shows. A field the original drives from a slider starts at the slider's default; a log
+ *  sweep or a pan starts at the coordinate it computes there. The three fields the page fills
+ *  itself are left out, and a file with no twin starts from the panel's own defaults. */
+export function twinUniformDefaults(twinOf: string | undefined): Record<string, number[]> {
+  const twin = twinOf ? examples.find((e) => e.id === twinOf) : undefined
+  const controls = twin?.controls ?? {}
+  const sliderValue = (field: string): number => {
+    const c = controls[field]
+    return c?.kind === 'slider' ? c.value : c?.kind === 'toggle' ? (c.value ? 1 : 0) : 0
+  }
+  const out: Record<string, number[]> = {}
+  for (const [field, c] of Object.entries(controls)) {
+    switch (c.kind) {
+      case 'const':
+        out[field] = [...c.value]
+        break
+      case 'slider':
+        out[field] = [c.value]
+        break
+      case 'toggle':
+        out[field] = [c.value ? 1 : 0]
+        break
+      case 'pan2d':
+        out[field] = [...c.value]
+        break
+      case 'logmag1d':
+        out[field] = [c.base * Math.pow(10, sliderValue(c.magField)) + c.offset]
+        break
+      case 'logmag2d':
+        out[field] = c.base.map((b, i) => b * Math.pow(10, sliderValue(c.magField)) + (c.offset[i] ?? 0))
+        break
+    }
+  }
+  return out
+}
+
 /** The reflected interface of one module, reduced to what the runtime binds against. */
 function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayout {
   const r = reflect(module)
