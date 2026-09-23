@@ -181,19 +181,6 @@ export function loweringRowCount(): number {
   return loweringSections().reduce((n, s) => n + s.rows.length, 0);
 }
 
-/** The most trips a counted loop may run, read out of the refusal the compiler answers a
- *  longer loop with, so the page states a limit it measured. */
-export function loweringTripLimit(): number {
-  const rows = loweringSections().find((s) => s.key === 'controlFlow')?.rows ?? [];
-  const message = rows.find((r) => r.id === 'forRefused')?.diagnostic?.message ?? '';
-  const found = /exceeds (\d+)\./.exec(message);
-  if (!found)
-    throw new Error(
-      `[typescript-lowering] the over-long loop no longer names its limit: ${message}`,
-    );
-  return Number(found[1]);
-}
-
 const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
   declarations: [
     {
@@ -274,9 +261,9 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
       pick: ['ramp_twice', 'ramp'],
     },
     {
-      id: 'noCapture',
+      id: 'closure',
       ts: 'export function ramp(x: f32): f32 {\n  const twice = (v: f32): f32 => v * x\n  return twice(x)\n}',
-      refused: true,
+      pick: ['ramp_twice', 'ramp'],
     },
     {
       id: 'defaultArgs',
@@ -411,9 +398,9 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
       pick: ['ramp'],
     },
     {
-      id: 'forRefused',
-      ts: 'export function ramp(x: f32): f32 {\n  let acc: f32 = 0.\n  for (let i = 0; i < 1024; i += 1) {\n    acc = acc + x\n  }\n  return acc\n}',
-      refused: true,
+      id: 'forRuntime',
+      ts: 'export function ramp(x: f32, n: i32): f32 {\n  let acc: f32 = 0.\n  for (let i = 0; i < n; i += 1) {\n    acc = acc + x\n  }\n  return acc\n}',
+      pick: ['ramp'],
     },
     {
       id: 'whileRow',

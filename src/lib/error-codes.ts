@@ -715,16 +715,12 @@ export function main(@location(0) uv: vec2): vec4 {
   TS8006: {
     trigger: `"use typeshade"
 
-class Uniforms {
-  count: i32
-}
-
-declare const u: uniform<Uniforms>
-
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
   let g = 0.
-  for (let i = 0; i < u.count; i++) {
+  let n: i32 = 8
+  for (let i = 0; i < n; i++) {
+    n -= 1
     g += 0.1
   }
   return vec4(g, g, g, 1.)
@@ -732,19 +728,13 @@ export function main(@location(0) uv: vec2): vec4 {
 `,
     fix: `"use typeshade"
 
-class Uniforms {
-  count: i32
-}
-
-declare const u: uniform<Uniforms>
-
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
   let g = 0.
-  for (let i = 0; i < 16; i++) {
-    if (i >= u.count) {
-      break
-    }
+  let n: i32 = 8
+  const count = n
+  for (let i = 0; i < count; i++) {
+    n -= 1
     g += 0.1
   }
   return vec4(g, g, g, 1.)
@@ -1169,7 +1159,7 @@ export function main(@builtin("position") p: vec4): vec4 {
 
 declare let data: storage<array<f32>>
 
-@compute([8, 8, 1])
+@compute([32, 16, 1])
 export function main(@builtin("global_invocation_id") id: vec3u): void {
   data[id.x] = data[id.x] * 2.
 }
@@ -1178,7 +1168,7 @@ export function main(@builtin("global_invocation_id") id: vec3u): void {
 
 declare let data: storage<array<f32>>
 
-@compute([64, 1, 1])
+@compute([16, 16, 1])
 export function main(@builtin("global_invocation_id") id: vec3u): void {
   data[id.x] = data[id.x] * 2.
 }

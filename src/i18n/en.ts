@@ -566,8 +566,9 @@ export const en = {
         CONST_ASSIGN:
           'An assignment to a name that cannot change, such as a `const` or a read-only resource.',
         LOOP_BOUND:
-          'A counted `for` loop whose exit does not compare its counter to a constant bound.',
-        LOOP_INFINITE: 'A loop whose condition is always true.',
+          'A counted `for` loop whose exit the compiler cannot prove: the counter is not compared to a bound, or the body writes the bound.',
+        LOOP_INFINITE:
+          'A loop that certainly never ends: `while (true)` with no `break` or `return`, or a step that moves the counter away from its bound.',
         LOOP_INDUCTION:
           'A `for` loop whose counter is not one `let` of type `i32` or `u32`, or whose update is not a constant step.',
         BREAK_OUTSIDE: 'A `break` with no loop or `switch` around it.',
@@ -1684,7 +1685,11 @@ export const en = {
           const suffix = suffixes.find((s) => (n + s).length <= 60);
           return suffix === undefined ? undefined : n + suffix;
         };
-        return fit(name) ?? fit(name.split(', ')[0]!) ?? name;
+        // A name over 60 with no comma to cut at ("Local functions that read and write the
+        // variables around them") is cut at a word, and the page's heading keeps the whole.
+        const cut = (n: string): string =>
+          n.length <= 60 ? n : `${n.slice(0, 59).replace(/\s+\S*$/, '')}…`;
+        return fit(name) ?? fit(name.split(', ')[0]!) ?? cut(name);
       },
       description: (name: string, blurb: string) => `${name}, a TypeShade example. ${blurb}`,
       /** Added when an example's own line leaves the description under the 70 characters the
@@ -1859,7 +1864,7 @@ export const en = {
         boundaryItems: [
           'An entry point is a top-level function, not a method.',
           'A class with no fields is not a struct, so write its functions as functions.',
-          'A getter, a setter and a second constructor are each refused by name.',
+          'A getter and a setter each lower to a function of their own, and a class has one constructor, as in TypeScript.',
           '`new` builds a value inside a function body, and a module constant takes an object literal.',
           'Prefer a type alias when no field needs a decorator.',
         ],
@@ -1973,7 +1978,7 @@ export const en = {
         boundary: '4. Where JavaScript control flow stops',
         boundaryItems: [
           'Do not use dynamic array methods to determine execution length.',
-          'Do not rely on closures or general runtime objects.',
+          'Do not rely on general runtime objects.',
           'Keep conditions and loop ranges based on GPU-compilable values.',
           'A control-flow pattern valid in TypeScript is not automatically valid under TypeShade shader semantics.',
         ],
@@ -2203,9 +2208,9 @@ export const en = {
             name: 'Local function',
             p: 'A function of the module, named after the function that declares it.',
           },
-          noCapture: {
+          closure: {
             name: 'Closure over a name',
-            p: 'A shader function has its arguments and the module, and no environment to hold a name in.',
+            p: 'The local function takes each name it reads from the function around it as a parameter, and a name it writes by reference.',
           },
           defaultArgs: {
             name: 'Default argument',
@@ -2282,11 +2287,11 @@ export const en = {
           ifRow: { name: '`if`', p: 'An `if`, as written.' },
           forRow: {
             name: 'Counted `for`',
-            p: `A counted loop: an integer variable, a constant bound, a constant step, at most ${facts.forTripLimit} trips. [block-scope](shadeBlockScope)`,
+            p: 'A counted loop: an integer variable, a constant step, and an exit that compares it to a bound the body does not write. [block-scope](shadeBlockScope)',
           },
-          forRefused: {
-            name: '`for` over the limit',
-            p: 'The trip count is over the limit a loop may run.',
+          forRuntime: {
+            name: '`for` to a runtime bound',
+            p: 'The start and the bound may be values the program learns at run time, and no trip count is too many.',
           },
           whileRow: {
             name: '`while`',
@@ -2507,9 +2512,9 @@ export const en = {
           'statements.var':
             'A WGSL `var` is a local that changes. `let b: f32` with no initializer declares one and leaves the value for a later assignment; WGSL zeroes it and GLSL leaves it undefined, so assign before you read.',
           'statements.for':
-            'A `for` is counted: an integer induction variable, a constant bound, a constant step and at most 256 trips. The step may be `+=`, `-=`, `*=` or `/=`.',
+            'A `for` is counted: an integer induction variable, a constant step, and an exit that compares it to a bound the body does not write. The start and the bound may be runtime values, and no trip count is too many. The step may be `+=`, `-=`, `*=` or `/=`.',
           'statements.while':
-            'A `while` takes the place of `loop`. It needs a compile-time-constant bound in its condition and reaches the target as a `for` over a counter the compiler adds.',
+            'A `while` takes the place of `loop`. It is an open loop: it ends when its condition fails, or at a `break` or a `return`, and `while (true)` needs one of the two in its body.',
           'statements.switch':
             'A case ends with the `break` TypeScript requires, and the lowering drops it. No case falls through, and a label is an integer constant that may appear once. Two labels stacked over one body are one case with two selectors, `case 0, 1:` on WGSL.',
           'statements.select':

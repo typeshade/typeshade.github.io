@@ -98,10 +98,13 @@ jobs:
             echo
             if [ -f vendor/shader-dsl/scripts/downstream-impact.ts ]; then
               echo
-              bun vendor/shader-dsl/scripts/downstream-impact.ts --repo typeshade.github.io \
-                --submodule vendor/shader-dsl --old "$OLD" --new "$NEW" --base HEAD --markdown || true
-              echo
-              echo "Each line above still names what the new compiler removes. The build on this pull request fails until every one is fixed on this branch."
+              impact=$(bun vendor/shader-dsl/scripts/downstream-impact.ts --repo typeshade.github.io \
+                --submodule vendor/shader-dsl --old "$OLD" --new "$NEW" --base HEAD --markdown || true)
+              echo "$impact"
+              if ! grep -q '^Nothing in this repository' <<< "$impact"; then
+                echo
+                echo "Each line above still names what the new compiler removes. The build on this pull request fails until every one is fixed on this branch."
+              fi
               echo
             fi
             echo "The build on this pull request stops on every other page whose copy the new compiler changes; fix those on this branch before merging."
