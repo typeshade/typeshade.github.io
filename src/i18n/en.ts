@@ -435,6 +435,24 @@ export const en = {
     argsInvalid: 'That argument is not a number or a list of numbers.',
     cpuNoResources: 'The CPU oracle takes entry arguments only, so an entry that reads a uniform or a storage binding cannot run here yet.',
     canvas: 'CPU canvas',
+    // The Result tab draws with one of two engines. The GPU runs the very program the WGSL
+    // and GLSL tabs hold, through the runtime every figure on the site uses. The CPU oracle
+    // runs the fragment entry once per pixel, which answers a different question and is
+    // what a browser with no GPU API has.
+    engine: 'Draw with',
+    engineGpu: 'GPU',
+    engineCpu: 'CPU oracle',
+    gpuIdle: 'Compile a module with a vertex entry and a fragment entry to see it drawn.',
+    gpuWebgpu: 'Running on WebGPU.',
+    gpuWebgl2: 'Running on WebGL2.',
+    gpuNone: 'This browser has no WebGPU and no WebGL2, so nothing drew. The CPU oracle still runs.',
+    gpuNeedsStages: 'Drawing needs a vertex entry and a fragment entry. This module has no such pair.',
+    gpuNeedsAttributes: 'The canvas draws three vertices and binds no vertex buffer. This module reads {fields} from one, so the GPU cannot run it here.',
+    gpuNeedsBindings: 'The canvas fills a uniform block, and the f64 guard the compiler injects, and nothing else. This module asks for {names}, so the GPU cannot run it here.',
+    gpuZeroed: 'The page fills time, resolution and mouse every frame. This module also declares {fields}, which no handle covers, so they stay at 0.',
+    // The group of handles under the canvas, one per uniform field the page does not fill
+    // itself. Each row prints the field's own name in code beside its handle.
+    uniforms: 'Uniforms',
     draw: 'Draw on the CPU',
     stop: 'Stop',
     canvasIdle: 'Run the fragment entry once per pixel, with no GPU.',

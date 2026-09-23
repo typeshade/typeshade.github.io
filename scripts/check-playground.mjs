@@ -49,6 +49,11 @@
 //      9, the markers land there, and hover answers about that line
 //  32. a file that declares its own vertex half, and one with no directive at all, are both
 //      left exactly as they were
+//  33. every example in the picker is selected in turn and the Result tab's canvas is
+//      photographed: how many paint more than one colour, and how many get a backend at
+//      all, against the floors below, with the reason printed for each one that does not
+//  34. an example on the page is editable: a keystroke reaches the emitted text and the
+//      frame, which is the claim nothing tested before
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -64,15 +69,32 @@
 //
 // Run: bun run check:playground (after a build, which writes dist/)
 import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchChromium } from './playwright.mjs'
 import { serveDist } from './serve-dist.mjs'
 
+// A WebGPU canvas is not readable through getImageData, so the frame is measured the way a
+// reader sees it: the element is photographed and the pixels are counted here.
+const sharp = createRequire(import.meta.url)('sharp')
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
 const CDN = 'cdn.jsdelivr.net'
 const ROUTES = ['/playground/', '/ko/playground/']
+
+// How many of the examples in the picker the Result tab has to paint, and how many of them a
+// backend has to run at all. Measured, never typed: on 2026-09-22, at the commit that added
+// this, 34 of the 51 put more than one colour on the canvas and 35 of them got a backend,
+// against 10 that drew before the tab ran on the GPU. The rest are refused by name, and the
+// list under the count says which and why.
+//
+// These are floors and the build defends them. A change that lowers one is a change that
+// stopped an example drawing: find out which, from the list this prints, and fix that. Do
+// not lower the number to get a green build, and do not skip an example to reach it.
+const PAINTED_FLOOR = 34
+const RAN_FLOOR = 35
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000)
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1'
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
@@ -106,6 +128,48 @@ async function openTab(page, name, wait = 150) {
 async function wgslPane(page) {
   await openTab(page, 'wgsl')
   return (await page.innerText('[data-output]')).trim()
+}
+
+/** The colours inside the Result tab's canvas, from a photograph of the element. The middle
+ *  of it, so the frame's own rounded corners are not counted as pixels the shader drew. One
+ *  colour is a canvas nothing painted, or one a shader filled flat; two or more is a
+ *  picture. The status note is not evidence: a note reading "36864 px in 249 ms" over a
+ *  fully transparent canvas is how five of these examples read before this. */
+async function canvasColours(page) {
+  const shot = await page.locator('[data-gpu-canvas]').screenshot()
+  const meta = await sharp(shot).metadata()
+  const pad = Math.round(Math.min(meta.width, meta.height) * 0.08)
+  const { data } = await sharp(shot)
+    .extract({ left: pad, top: pad, width: meta.width - 2 * pad, height: meta.height - 2 * pad })
+    .raw()
+    .ensureAlpha()
+    .toBuffer({ resolveWithObject: true })
+  const colours = new Set()
+  let opaque = 0
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] > 0) opaque += 1
+    colours.add(`${data[i]},${data[i + 1]},${data[i + 2]},${data[i + 3]}`)
+  }
+  return { colours: colours.size, opaque }
+}
+
+/** Wait for the Result tab to settle on this module: a backend that is drawing has put a
+ *  frame up, and a module the runtime refuses has said so. Waiting on the page's own state
+ *  instead of a fixed sleep, so a slow machine reads the same as a fast one. */
+async function settleResult(page) {
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector('[data-gpu-canvas]')
+      if (!canvas) return false
+      const backend = canvas.dataset.backend
+      if (backend && backend !== 'none') return (canvas.__shader?.frames ?? 0) > 0
+      // No backend: the note has to be a sentence about this module and not the resting one.
+      const note = document.querySelector('[data-gpu-note]')?.textContent ?? ''
+      return note.length > 0 && document.querySelector('[data-status]')?.dataset.pending !== '1'
+    },
+    null,
+    { timeout: 20_000 },
+  )
 }
 
 /** Read the reflection panel with its tab open. */
@@ -332,7 +396,11 @@ async function checkRoute(browser, origin, route) {
 
       // And the canvas, which is the Result tab of the one strip over the result column.
       // Every read below is of that panel, so it stays open to the end of the shape check.
+      // The tab draws with the GPU by default and the oracle's rasteriser is the other
+      // engine, so the block that measures the rasteriser selects it first.
       await openTab(page, 'result')
+      await page.selectOption('[data-engine]', 'cpu')
+      await page.waitForTimeout(400)
       // The canvas: the vertex entry for three corners, then one fragment call per pixel
       // the triangle covers, with every varying interpolated from what the vertex entry
       // returned. A triangle covers some of the canvas and not all of it. The canvas follows
@@ -423,6 +491,7 @@ async function checkRoute(browser, origin, route) {
       }
       if (retired.button !== 'enabled') problems.push('the draw button is not available after a retired draw')
       console.log(`  retired mid-draw: grid ${retired.grid}, reported ${retired.reported} px, button ${retired.button}`)
+      await page.selectOption('[data-engine]', 'gpu')
       await page.waitForTimeout(AFTER_EDIT)
 
       // ── the shape of the page ────────────────────────────────────────────────────────────
@@ -435,7 +504,7 @@ async function checkRoute(browser, origin, route) {
           const rect = document.querySelector(selector).getBoundingClientRect()
           return { top: Math.round(rect.top + window.scrollY), bottom: Math.round(rect.bottom + window.scrollY), height: Math.round(rect.height) }
         }
-        return { source: box('.source-pane'), result: box('.result-column'), canvas: box('[data-canvas]'), editor: box('[data-editor]'), tabs: box('.result-head'), viewport: window.innerHeight }
+        return { source: box('.source-pane'), result: box('.result-column'), canvas: box('[data-gpu-canvas]'), editor: box('[data-editor]'), tabs: box('.result-head'), viewport: window.innerHeight }
       })
       if (Math.abs(shape.source.height - shape.result.height) > 1) {
         problems.push(`the source column is ${shape.source.height}px tall and the result column ${shape.result.height}px`)
@@ -604,20 +673,13 @@ async function checkRoute(browser, origin, route) {
       const preludeReflection = await reflectionPane(page, 300)
       if (!preludeReflection.includes('fullscreen')) problems.push(`the reflection does not name the fullscreen entry:\n    ${preludeReflection.slice(0, 200)}`)
       await openTab(page, 'result')
-      await page.waitForFunction(() => document.querySelector('[data-canvas-note]').dataset.px !== undefined, null, { timeout: 20_000 })
-      const preludeDrawn = await page.evaluate(() => {
-        const node = document.querySelector('[data-canvas]')
-        const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data
-        let opaque = 0
-        const colours = new Set()
-        for (let i = 0; i < data.length; i += 4) if (data[i + 3] > 0) { opaque += 1; colours.add(`${data[i]},${data[i + 1]},${data[i + 2]}`) }
-        return { opaque, colours: colours.size, total: node.width * node.height }
-      })
-      if (preludeDrawn.opaque < preludeDrawn.total) {
-        problems.push(`the fullscreen triangle covered ${preludeDrawn.opaque} of ${preludeDrawn.total} pixels, and it is meant to cover all of them`)
-      }
-      if (preludeDrawn.colours < 2) problems.push(`the fullscreen triangle drew ${preludeDrawn.colours} colour(s)`)
-      console.log(`  fullscreen half: ${preludeStatus}, WGSL ${preludeWgsl.length} B, canvas ${preludeDrawn.opaque}/${preludeDrawn.total} px in ${preludeDrawn.colours} colours`)
+      await settleResult(page)
+      await page.waitForTimeout(600)
+      const preludeDrawn = await canvasColours(page)
+      const preludeBackend = await page.evaluate(() => document.querySelector('[data-gpu-canvas]')?.dataset.backend)
+      if (preludeBackend === 'none') problems.push('the fullscreen triangle reached no backend')
+      if (preludeDrawn.colours < 2) problems.push(`the fullscreen triangle drew ${preludeDrawn.colours} colour(s), and it stripes the frame`)
+      console.log(`  fullscreen half: ${preludeStatus}, WGSL ${preludeWgsl.length} B, canvas on ${preludeBackend} in ${preludeDrawn.colours} colours`)
       if (!/No diagnostics|진단 없음/.test(preludeDiagnostics)) problems.push(`the fragment program did not compile clean:\n    ${preludeDiagnostics.slice(0, 200)}`)
 
       // The prelude moves the reader's own lines down inside the compiled text, so every
@@ -1101,6 +1163,84 @@ async function checkRoute(browser, origin, route) {
       console.log(`  diagnostics: ${diagnostics}`)
       console.log(`  WGSL: ${output.split('\n').length} lines, ${output.length} characters, ${colours} colours`)
       console.log(`  reflection: ${(reflection.match(/@(?:vertex|fragment|compute)/g) ?? []).length} entry point(s), evaluated on the CPU`)
+
+      // ── every example in the picker, drawn ────────────────────────────────────────────
+      // "The examples run in the Playground" was a claim nobody could check without driving
+      // a browser by hand, which is how it went two hours without a straight answer. This
+      // is that answer, as a number the build defends. The corpus is one list and the same
+      // list in both languages, so it is walked once, on the source locale; the Korean
+      // route runs every other step.
+      if (route === ROUTES[0]) {
+        await openTab(page, 'result')
+        const ids = await page.evaluate(() => [...document.querySelectorAll('[data-example] option')].map((o) => o.value))
+        if (ids.length === 0) problems.push('the example picker offers nothing to draw')
+        const drawn = []
+        for (const id of ids) {
+          await page.selectOption('[data-example]', id)
+          try {
+            await settleResult(page)
+          } catch {
+            problems.push(`'${id}' never settled: the Result tab neither drew a frame nor said why not`)
+          }
+          const seen = await canvasColours(page)
+          const state = await page.evaluate(() => ({
+            backend: document.querySelector('[data-gpu-canvas]')?.dataset.backend ?? 'none',
+            note: (document.querySelector('[data-gpu-note]')?.textContent ?? '').trim(),
+            status: (document.querySelector('[data-status]')?.textContent ?? '').trim(),
+          }))
+          drawn.push({ id, ...state, ...seen })
+        }
+        const ran = drawn.filter((row) => row.backend !== 'none')
+        const painted = drawn.filter((row) => row.colours > 1)
+        console.log(`  examples: ${painted.length} of ${drawn.length} paint more than one colour, ${ran.length} of ${drawn.length} get a backend`)
+        // Grouped by what the page says about them, so a count that moves names what moved.
+        const byReason = new Map()
+        for (const row of drawn.filter((r) => r.colours <= 1)) {
+          const reason = row.backend === 'none' ? row.note : `${row.note} (a backend ran it and it came out one flat colour)`
+          byReason.set(reason, [...(byReason.get(reason) ?? []), row.id])
+        }
+        for (const [reason, names] of byReason) console.log(`    ${names.join(', ')}\n      ${reason}`)
+        if (painted.length < PAINTED_FLOOR) {
+          problems.push(`${painted.length} of ${drawn.length} examples paint the canvas, and ${PAINTED_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped drawing in the list above`)
+        }
+        if (ran.length < RAN_FLOOR) {
+          problems.push(`${ran.length} of ${drawn.length} examples get a backend, and ${RAN_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped running in the list above`)
+        }
+
+        // And the thing the maintainer actually asked for: that an example on the page is
+        // editable. A build that compiles is not evidence; a keystroke that reaches the
+        // emitted text and the frame is. `plasma-twin` is a fullscreen pass whose look
+        // follows its own arithmetic, so an edit to it has to move both.
+        await page.selectOption('[data-example]', 'plasma-twin')
+        await settleResult(page)
+        await page.waitForTimeout(AFTER_EDIT)
+        const beforeFrame = await canvasColours(page)
+        const beforeWgsl = await wgslPane(page)
+        await openTab(page, 'result')
+        const edited = await page.evaluate(() => {
+          const model = window.monaco.editor.getModels()[0]
+          // One number in the pass: the wave count the three sines run at, which is an edit
+          // a reader could make by eye and see in the picture.
+          const next = model.getValue().replaceAll('* 10. +', '* 3. +')
+          const changed = next !== model.getValue()
+          model.setValue(next)
+          return changed
+        })
+        if (!edited) problems.push('the edit the check types found nothing to replace in plasma-twin, so it proved nothing')
+        await page.waitForTimeout(AFTER_EDIT)
+        await settleResult(page)
+        const afterWgsl = await wgslPane(page)
+        await openTab(page, 'result')
+        await page.waitForTimeout(600)
+        const afterFrame = await canvasColours(page)
+        if (afterWgsl === beforeWgsl) problems.push('typing into the editor did not change the emitted WGSL')
+        if (afterFrame.colours === beforeFrame.colours && afterFrame.opaque === beforeFrame.opaque) {
+          problems.push(`typing into the editor did not repaint the canvas: ${beforeFrame.colours} colours before and after`)
+        }
+        console.log(`  an edit reaches the output: WGSL ${beforeWgsl.length} B to ${afterWgsl.length} B, canvas ${beforeFrame.colours} colours to ${afterFrame.colours}`)
+        await page.selectOption('[data-example]', 'hello')
+        await page.waitForTimeout(AFTER_EDIT)
+      }
     }
 
     const realErrors = pageErrors
