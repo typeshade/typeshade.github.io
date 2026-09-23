@@ -143,13 +143,13 @@ const editable = example.corpus === 'shade'
   {editable ? (
     <div class="example-playground">
       <Playground locale={locale} seed={id} />
-      <p class="example-stage-notes">{p.editable}</p>
+      <p class="max-inline-(--content) text-label text-text-2">{p.editable}</p>
     </div>
   ) : (
-    <div class="example-stage" data-front-tabs data-shader-scope>
+    <div class="example-stage @container mbs-6" data-front-tabs data-shader-scope>
       <div class="live-card">
-        <div class="example-stage-body">
-          <div class="example-stage-view">
+        <div class="example-stage-body grid grid-cols-1">
+          <div class="example-stage-view min-inline-0 min-block-0 bg-surface-2">
             {example.drawn ? (
               <ShaderCanvas locale={locale} example={example.id} aspect="auto" caption={caption} eager externalCaption />
             ) : (
@@ -165,7 +165,7 @@ const editable = example.corpus === 'shade'
             )}
           </div>
 
-          <div class="example-stage-code">
+          <div class="example-stage-code flex block-[360px] min-inline-0 min-block-0 flex-col border-bs border-line-1 bg-(--color-elevated)">
             <div class="tabs-head" role="tablist" aria-label={p.tabs} data-example-tabs>
               {panes.map((pane, i) => (
                 <button
@@ -197,7 +197,7 @@ const editable = example.corpus === 'shade'
         </div>
       </div>
 
-      <div class="example-stage-notes">
+      <div class="example-stage-notes mbs-3 max-inline-(--content) text-label text-text-2">
         <p>{example.drawn ? <span data-shader-caption>{caption.neutral}</span> : p.noPicture[example.reason!]}</p>
         <p><Rich text={p.emittedNote} locale={locale} /></p>
         <p><Rich text={p.builder} locale={locale} /></p>
@@ -205,7 +205,7 @@ const editable = example.corpus === 'shade'
     </div>
   )}
 
-  <p class="example-page-links">
+  <p class="flex flex-wrap gap-x-6 gap-y-4">
     <a href={sourceHref}>{p.github}</a>
     {example.inPlayground && !editable && <a href={playgroundHref}>{p.playground}</a>}
   </p>
@@ -215,6 +215,88 @@ const editable = example.corpus === 'shade'
   /* The tool takes the document column the card took, and the line under it sits where the
      card's own notes sit. */
   .example-playground { margin-block-start: 24px }
+
+  /* One example's page, in the shape ShaderToy gives one: a single card split down the middle,
+     the picture on the left and the code on the right, and nothing else in either pane. The
+     card is the showcase card the front page's hero already is (.live-card), and the right
+     pane's tab bar is the site's Ant tab head. What a reader is told about the frame and about
+     where the emitted text comes from is written under the card, because a label inside a
+     pane makes that pane read as a figure.
+
+     The card is its own container, because the width it gets depends on the sidebar and the
+     page's own measure; the split follows the card's width and not the window's. */
+
+  /* Left: the picture, edge to edge. ShaderCanvas writes a <figure> around its frame and the
+     page places the caption itself, so the figure carries no box of its own here. */
+  .example-stage-view :global(.figure) { display: contents }
+  .example-stage-view :global(.figure-frame) {
+    block-size: clamp(220px, 68cqi, 420px); border: 0; border-radius: 0; background: var(--color-surface-2);
+  }
+
+  /* Right: one pane showing one of four texts, under a bar of its own. These outrank the
+     shared .tabs-head in global.css. */
+  .example-stage .tabs-head {
+    --tab-gap: 20px;
+    flex: none; align-items: stretch; gap: var(--tab-gap); block-size: 44px; padding-inline: 16px;
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+    border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-1);
+  }
+  /* At the head's trailing edge is the 32px fade the panels under it carry at their foot, for
+     the widths where the tabs are wider than the pane and the head scrolls. It is a sticky
+     strip of the head's own ground and not a mask, because a mask over the box would take the
+     hairline under the tabs with it for those 32px. Its negative start margin is the strip and
+     the gap in front of it, so the strip costs the head no width of its own. The head carries
+     data-overflow while there is somewhere to scroll to (src/scripts/example-stage.ts): a fade
+     on a head whose tabs fit would sit over the last tab's own letters. */
+  .example-stage .tabs-head[data-overflow]::after {
+    content: ''; flex: none; position: sticky; inset-inline-end: 0;
+    inline-size: 32px; margin-inline-start: calc(-32px - var(--tab-gap));
+    background: linear-gradient(to right, transparent, var(--color-surface-1));
+  }
+  .example-stage .tabs-head::-webkit-scrollbar { display: none }
+  .example-stage .tabs-head button { flex: none; block-size: auto; white-space: nowrap }
+  /* The file is where the pane rests, so it leads and a rule sets it apart from the three
+     texts the compiler makes out of it. It is also the one tab whose text the site does not
+     choose: the longest file name on a card page is 22 characters, which puts the four tabs
+     at 465px in English and 469px in Korean, inside the head's 470px at a 1280 viewport and
+     its 490px from 1320. A longer file name would put them past it, so the file is the tab
+     that gives way, and the three the compiler emits stay whole, since a tab a reader cannot
+     read is a text they will not know the page holds. Its floor is 16 characters: under about
+     450px of head the four tabs do not fit however far the file gives way, so the head scrolls
+     there whatever the floor is, and 16 characters keep the example's own name in the tab. */
+  .example-stage .tabs-head button:first-child {
+    padding-inline-end: var(--tab-gap); position: relative;
+    flex: 0 1 auto; min-inline-size: calc(16ch + var(--tab-gap)); overflow: hidden; text-overflow: ellipsis;
+  }
+  .example-stage .tabs-head button:first-child::after {
+    content: ''; position: absolute; inset-block: 13px; inset-inline-end: 0;
+    inline-size: 1px; background: var(--color-line-1);
+  }
+  /* A 32px fade at the foot hands the cut line to the mask instead of slicing a row of glyphs
+     in half; the head fades the same way once the pane has been scrolled off its first line,
+     which is how a reader is told the banner comment is still up there. With no script the
+     head bar stays hidden and every panel is in this scroller, stacked, which is what the
+     search index reads. */
+  .example-stage-panels {
+    flex: 1; min-block-size: 0; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--color-line-2) transparent;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  }
+  .example-stage-panels[data-scrolled] {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
+  }
+  .example-stage-code :global(.expressive-code) { margin: 0; --ec-brdRad: 0; --ec-brdWd: 0; --ec-frm-shdCol: transparent }
+  /* The notes are three short paragraphs, and these outrank the document's own `.doc p`. */
+  .example-stage-notes p { margin: 0 }
+  .example-stage-notes p + p { margin-block-start: 4px }
+  @container (min-width: 44rem) {
+    /* One height for the row, read off the card's own width, so both panes grow with the page. */
+    .example-stage-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); block-size: clamp(360px, 48cqi, 680px) }
+    .example-stage-view :global(.figure-frame) { block-size: 100% }
+    .example-stage-code { block-size: auto; border-block-start: 0; border-inline-start: 1px solid var(--color-line-1) }
+  }
 </style>
 
 <script>
