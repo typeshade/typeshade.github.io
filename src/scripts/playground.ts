@@ -12,11 +12,12 @@ import { emitModule, emitModuleAt } from '../../vendor/shader-dsl/src/core/backe
 import { emitGlslStages, type GlslEmitOptions } from '../../vendor/shader-dsl/src/core/backends/glsl.ts';
 import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
+import type { Fp64Flavor } from '../../vendor/shader-dsl/src/core/passes/fp64-lower.ts';
 import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
 import type { OptLevel } from '../../vendor/shader-dsl/src/core/passes/opt/optimize.ts';
 import { reflect } from '../../vendor/shader-dsl/src/core/reflect.ts';
 // The ship-time plugins live on their own subpath, the one a host imports for a release build.
-import { minify } from '../../vendor/shader-dsl/src/emit-prod.ts';
+import { minify, obfuscate } from '../../vendor/shader-dsl/src/emit-prod.ts';
 import type {
   TypeshadeCompletionItem,
   TypeshadeDiagnostic,
@@ -32,6 +33,23 @@ import {
   type Analysis,
   type LanguageClient,
 } from './playground-language.ts';
+import {
+  clamp,
+  codeOnly,
+  controlsFor,
+  FRAGMENT_PRELUDE,
+  initialValues,
+  isControllable,
+  isReserved,
+  layoutFor,
+  reservedValue,
+  sampleShape,
+  type LiveControl,
+} from '../lib/live-shader-contract.ts';
+// The runtime every figure on the site draws through. It imports nothing from the compiler:
+// the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
+// what this page already holds after a compile.
+import { mountShader, type MountedShader, type ShaderData } from '../lib/shader-runtime.ts';
 import {
   cornersOf,
   drawTile,
@@ -58,6 +76,11 @@ interface EmitChoice {
   readonly level: OptLevel;
   readonly parens: 'full' | 'minimal';
   readonly minify: boolean;
+  /** `minify({ numbers })`: how a float literal is re-spelled. */
+  readonly numbers: boolean | 'f32';
+  readonly obfuscate: boolean;
+  /** Which primitives back the emulated-double helpers, for the emit and for reflect(). */
+  readonly fp64Flavor: Fp64Flavor;
   readonly floatPrecision: 'highp' | 'mediump';
 }
 
@@ -82,6 +105,9 @@ interface PlaygroundCopy {
     readonly levels: Record<OptLevel, string>;
     readonly parens: string;
     readonly minify: string;
+    readonly numbers: string;
+    readonly obfuscate: string;
+    readonly fp64: string;
     readonly precision: string;
     readonly levelNote: string;
   };
@@ -101,7 +127,20 @@ interface PlaygroundCopy {
   readonly draw: string;
   readonly stop: string;
   readonly canvasIdle: string;
+  readonly engineGpu: string;
+  readonly engineCpu: string;
+  readonly gpuIdle: string;
+  readonly gpuWebgpu: string;
+  readonly gpuWebgl2: string;
+  readonly gpuNone: string;
+  readonly gpuNeedsStages: string;
+  readonly gpuNeedsAttributes: string;
+  readonly gpuNeedsBindings: string;
+  readonly gpuZeroed: string;
+  readonly uniforms: string;
   readonly canvasNeedsVertex: string;
+  readonly canvasFlat: string;
+  readonly canvasFlatInputs: string;
   readonly canvasProgress: string;
   readonly canvasDrawn: string;
   readonly resolution: string;
@@ -111,14 +150,22 @@ interface PlaygroundCopy {
   readonly cpuNoResources: string;
   readonly entryCountOne: string;
   readonly noGlsl: string;
+  readonly resultTab: string;
   readonly starting: string;
   readonly serviceFailed: string;
   readonly sourceTypescript: string;
   readonly sourceTypeshade: string;
 }
 
-/** The files the compiler emits, one per tab over the output pane. */
+/** The files the compiler emits, one per tab over the text panel. */
 type Target = 'wgsl' | 'glslVertex' | 'glslFragment';
+
+/** What the one tab strip over the result column selects: the canvas, one of the three
+ *  emitted files, or the reflection. */
+type View = 'result' | Target | 'reflection';
+
+/** Whether a view is one of the three the text panel holds. */
+const isTarget = (view: View): view is Target => view === 'wgsl' || view === 'glslVertex' || view === 'glslFragment';
 
 // Monaco ships a WGSL grammar. It ships none for GLSL, and GLSL ES 3.00 is close enough to C
 // for Monaco's C++ tokenizer to colour its keywords, types, numbers and `#version` line.
@@ -201,25 +248,84 @@ interface MonacoRange {
   readonly endColumn: number;
 }
 
+// ── The fullscreen vertex half ─────────────────────────────────────────────────────────────
+// A file that declares no `@vertex` entry is compiled behind the fullscreen triangle every
+// Book of Shaders page draws on, which is what `<LiveShader>` does on a guide page and what
+// src/lib/live-shader-contract.ts fixes as the site's one rule for it. So a reader can write
+// a fragment program alone, take the `uv` the triangle hands them, and see it cover the
+// canvas, instead of reading that the canvas needs a vertex entry they did not want to write.
+//
+// The directive has to stay the first thing in the file, so the prelude goes in after it and
+// everything below moves down by its lines. The compiler answers about the composed text and
+// the editor holds the reader's, so the two line numbers differ from that point on, and the
+// four functions below are where they meet.
+
+/** The directive line as the compiler wants it: first in the file. The Playground's own
+ *  sample writes a semicolon after it and the `.shade.ts` examples do not. */
+const DIRECTIVE_LINE = /^[\s\uFEFF]*(['"])use typeshade\1[ \t]*;?[ \t]*\r?\n/;
+
+/** The two top-level names the prelude brings. A file that declares one of its own would get
+ *  a duplicate and stop compiling, so that file keeps what it wrote and the prelude stays
+ *  out. A file that only names one of them gets the prelude and the declaration with it. */
+const PRELUDE_DECLARES = /^[\t ]*(?:export[\t ]+)?(?:class|function|const|let|var|type|interface)[\t ]+(?:VsOut|fullscreen)\b/m;
+
+/** The reader's text as the compiler sees it, and where the prelude went in. A file with no
+ *  directive is left alone: the page's own message about the directive is what that reader
+ *  needs, and it would never appear if a directive were supplied for them. */
+function compose(source: string): { readonly text: string; readonly at: number; readonly lines: number } {
+  const directive = DIRECTIVE_LINE.exec(source);
+  const code = codeOnly(source);
+  if (!directive || sampleShape(source) === 'module' || PRELUDE_DECLARES.test(code)) {
+    return { text: source, at: 0, lines: 0 };
+  }
+  const head = source.slice(0, directive[0].length);
+  const inserted = `\n${FRAGMENT_PRELUDE}\n`;
+  return {
+    text: head + inserted + source.slice(directive[0].length),
+    at: head.split('\n').length - 1,
+    lines: inserted.split('\n').length - 1,
+  };
+}
+
+/** How many lines the prelude took, and the line it went in at. Zero while the reader's file
+ *  declares its own vertex entry, which is when the two texts are the same text. */
+let preludeLines = 0;
+let preludeAt = 0;
+
+/** Whether a line of the compiled text is one of the prelude's, which the editor does not
+ *  hold and the reader never wrote. */
+const inPrelude = (line: number): boolean =>
+  preludeLines > 0 && line >= preludeAt && line < preludeAt + preludeLines;
+
+/** A line of the editor's text, as the compiled text numbers it. */
+const intoDocument = (line: number): number => (preludeLines > 0 && line >= preludeAt ? line + preludeLines : line);
+
+/** A line of the compiled text, back in the editor's. One of the prelude's own lands on the
+ *  directive line, which is the nearest line the reader can see. */
+const outOfDocument = (line: number): number => {
+  if (preludeLines === 0 || line < preludeAt) return line;
+  return line >= preludeAt + preludeLines ? line - preludeLines : Math.max(0, preludeAt - 1);
+};
+
 // ── The one place the two coordinate systems meet ──────────────────────────────────────────
 // Monaco counts lines and columns from 1. The language service counts both from 0, the way
 // the Language Server Protocol does. Every crossing goes through these four functions, so a
-// +1 or a -1 lives here and in no other file.
+// +1 or a -1, and the prelude's own lines, live here and in no other file.
 
 const toServicePosition = (position: MonacoPosition): TypeshadePosition => ({
-  line: position.lineNumber - 1,
+  line: intoDocument(position.lineNumber - 1),
   character: position.column - 1,
 });
 
 const toMonacoPosition = (position: TypeshadePosition): MonacoPosition => ({
-  lineNumber: position.line + 1,
+  lineNumber: outOfDocument(position.line) + 1,
   column: position.character + 1,
 });
 
 const toMonacoRange = (range: TypeshadeRange): MonacoRange => {
-  const startLineNumber = range.start.line + 1;
+  const startLineNumber = outOfDocument(range.start.line) + 1;
   const startColumn = range.start.character + 1;
-  const endLineNumber = range.end.line + 1;
+  const endLineNumber = outOfDocument(range.end.line) + 1;
   const endColumn = range.end.character + 1;
   // A zero-width range draws no squiggle, so an empty one is widened by a column.
   const empty = endLineNumber === startLineNumber && endColumn <= startColumn;
@@ -227,7 +333,7 @@ const toMonacoRange = (range: TypeshadeRange): MonacoRange => {
 };
 
 /** How a diagnostic's position reads in the diagnostics pane: the line and column an editor shows. */
-const toDisplayPosition = (position: TypeshadePosition): string => `${position.line + 1}:${position.character + 1}`;
+const toDisplayPosition = (position: TypeshadePosition): string => `${outOfDocument(position.line) + 1}:${position.character + 1}`;
 
 // ── Monaco, from the CDN ───────────────────────────────────────────────────────────────────
 // The editor is loaded the way its own samples load it, through its AMD loader. `MONACO_VS`
@@ -426,6 +532,9 @@ function writeHash(key: string, value: string, choice?: EmitChoice): void {
     if (choice.level !== 'O2') parts.push(`opt=${choice.level}`);
     if (choice.parens !== 'full') parts.push(`parens=${choice.parens}`);
     if (choice.minify) parts.push('minify=1');
+    if (choice.numbers !== true) parts.push(`numbers=${choice.numbers === 'f32' ? 'f32' : 'false'}`);
+    if (choice.obfuscate) parts.push('obfuscate=1');
+    if (choice.fp64Flavor !== 'float') parts.push(`fp64=${choice.fp64Flavor}`);
     if (choice.floatPrecision !== 'highp') parts.push(`precision=${choice.floatPrecision}`);
   }
   const url = new URL(window.location.href);
@@ -435,11 +544,22 @@ function writeHash(key: string, value: string, choice?: EmitChoice): void {
 
 // ── The emit options ───────────────────────────────────────────────────────────────────────
 
-/** The options both backends share. `minify` is a plugin, so it rides in `plugins`. */
-const sharedEmitOptions = (choice: EmitChoice): EmitOptions => ({
-  parens: choice.parens,
-  ...(choice.minify ? { plugins: [minify()] } : {}),
-});
+/** The options both backends share. `minify` and `obfuscate` are plugins, so they ride in
+ *  `plugins`. `obfuscate()` is the compiler's own preset and expands to four plugins, the
+ *  last of them a `minify({ numbers: 'f32' })`; the reader's own minify follows it, because
+ *  the text-stage hooks run in array order and the reader's number mode is the one they
+ *  chose. Running minify twice changes nothing the first run did not already do. */
+const sharedEmitOptions = (choice: EmitChoice): EmitOptions => {
+  const plugins = [
+    ...(choice.obfuscate ? obfuscate() : []),
+    ...(choice.minify ? [minify({ numbers: choice.numbers })] : []),
+  ];
+  return {
+    parens: choice.parens,
+    fp64Flavor: choice.fp64Flavor,
+    ...(plugins.length > 0 ? { plugins } : {}),
+  };
+};
 
 /** WGSL at the chosen level. `emitModuleAt` takes a level and no other options, and
  *  `emitModule` takes the options at O2, so O0 and O1 reach the compiler with the level
@@ -462,12 +582,14 @@ const emitGlsl = (
   }
 };
 
-/** A row of the diagnostics list: what to say and where it points. */
+/** A row of the diagnostics list: what to say and where it points. A row about a line of the
+ *  prelude points nowhere, since the editor does not hold that line. */
 interface DiagnosticRow {
   readonly message: string;
   readonly severity: TypeshadeDiagnostic['severity'];
   readonly source: TypeshadeDiagnostic['source'];
   readonly start: TypeshadePosition;
+  readonly located: boolean;
 }
 
 function mount(root: HTMLElement): void {
@@ -533,9 +655,19 @@ function mount(root: HTMLElement): void {
   const parensPicker = root.querySelector('[data-opt-parens]');
   const precisionPicker = root.querySelector('[data-opt-precision]');
   const minifyToggle = root.querySelector('[data-opt-minify]');
+  const numbersPicker = root.querySelector('[data-opt-numbers]');
+  const numbersField = root.querySelector('[data-numbers-field]');
+  const obfuscateToggle = root.querySelector('[data-opt-obfuscate]');
+  const fp64Picker = root.querySelector('[data-opt-fp64]');
   const levelNote = root.querySelector('[data-level-note]');
+  const preludeNote = root.querySelector('[data-prelude-note]');
   const canvas = root.querySelector('[data-canvas]');
   const canvasNote = root.querySelector('[data-canvas-note]');
+  const gpuCanvas = root.querySelector('[data-gpu-canvas]');
+  const gpuNote = root.querySelector('[data-gpu-note]');
+  const enginePicker = root.querySelector('[data-engine]');
+  const gpuControls = root.querySelector('[data-gpu-controls]');
+  const cpuOnly = [...root.querySelectorAll('[data-cpu-only]')].filter((node): node is HTMLElement => node instanceof HTMLElement);
   const drawCpu = root.querySelector('[data-draw-cpu]');
   const resolutionPicker = root.querySelector('[data-resolution]');
 
@@ -566,8 +698,6 @@ function mount(root: HTMLElement): void {
     }
   };
   if (
-    !(examplePicker instanceof HTMLSelectElement) ||
-    !(exampleNote instanceof HTMLElement) ||
     !(share instanceof HTMLButtonElement) ||
     !(copyOutput instanceof HTMLButtonElement) ||
     !(sizeLabel instanceof HTMLElement) ||
@@ -575,6 +705,10 @@ function mount(root: HTMLElement): void {
     !(parensPicker instanceof HTMLSelectElement) ||
     !(precisionPicker instanceof HTMLSelectElement) ||
     !(minifyToggle instanceof HTMLInputElement) ||
+    !(numbersPicker instanceof HTMLSelectElement) ||
+    !(numbersField instanceof HTMLElement) ||
+    !(obfuscateToggle instanceof HTMLInputElement) ||
+    !(fp64Picker instanceof HTMLSelectElement) ||
     !(levelNote instanceof HTMLElement)
   ) {
     return;
@@ -585,6 +719,9 @@ function mount(root: HTMLElement): void {
     level: levelPicker.value as OptLevel,
     parens: parensPicker.value === 'minimal' ? 'minimal' : 'full',
     minify: minifyToggle.checked,
+    numbers: numbersPicker.value === 'f32' ? 'f32' : numbersPicker.value !== 'false',
+    obfuscate: obfuscateToggle.checked,
+    fp64Flavor: fp64Picker.value === 'integer' ? 'integer' : 'float',
     floatPrecision: precisionPicker.value === 'mediump' ? 'mediump' : 'highp',
   });
 
@@ -594,8 +731,10 @@ function mount(root: HTMLElement): void {
   let timer = 0;
   let urlTimer = 0;
   let painted = 0;
-  // What the compiler last emitted, by target, and which tab is showing.
+  // What the compiler last emitted, by target, which tab is showing, and which of the three
+  // texts the text panel holds. The panel keeps its text while another tab is up.
   let emitted: Partial<Record<Target, string>> = {};
+  let view: View = 'result';
   let target: Target = 'wgsl';
   // The last good compile, kept so the CPU button can call into it without compiling again.
   let compiled: { readonly module: ModuleDecl; } | undefined;
@@ -620,7 +759,9 @@ function mount(root: HTMLElement): void {
         canvasNote.textContent = !drawable ? copy.canvasNeedsVertex : canvasFits ? copy.canvasIdle : copy.canvasTooBig;
       }
       if (canvas instanceof HTMLCanvasElement) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
-      if (drawable) window.setTimeout(openPool, 0);
+      // The pool is opened ahead of the press only where the reader can press: four workers
+      // for a canvas the GPU is drawing would be four workers doing nothing.
+      if (drawable && engineIsCpu()) window.setTimeout(openPool, 0);
     }
 
     const entryGroup = el('div', 'group');
@@ -854,6 +995,240 @@ function mount(root: HTMLElement): void {
   const fillNumbers = (text: string, values: Record<string, string | number>): string =>
     text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole));
 
+  // ── The GPU canvas ────────────────────────────────────────────────────────────────────
+  // The Result tab draws the program the WGSL and the GLSL tabs hold, through
+  // src/lib/shader-runtime.ts, the runtime every figure on the site already uses: WebGPU
+  // when a device is reachable, WebGL2 behind it, and nothing drawn where neither is. It
+  // takes the emitted text, the std140 offsets and the entry names, all of which this page
+  // has the moment a compile lands, so no second compile happens for it.
+  //
+  // What it cannot do is bind resources. It fills one uniform block and the `_fp64` guard
+  // the f64 lowering injects, so a module that samples a texture of its own or reads a
+  // storage buffer is refused by name instead of drawn wrong or left blank.
+
+  /** The pointer over the GPU canvas, 0 to 1 from the bottom left, which is the space the
+   *  prelude's `uv` is in. A canvas nobody has touched holds the middle. */
+  let pointer: readonly [number, number] = [0.5, 0.5];
+  let mounted: MountedShader | undefined;
+  /** The program the mount is running, so a compile that emits the same text does not
+   *  rebuild the pipeline. */
+  let mountedWgsl = '';
+
+  /** The bindings the runtime has no value for, by name. It fills one uniform block, whose
+   *  std140 layout it takes from the reflection, and the `_fp64` guard. A uniform bound as a
+   *  bare scalar instead of a struct has no layout there, so it is one of these too. */
+  const unfillableBindings = (): readonly string[] =>
+    (reflection?.bindGroups ?? []).flatMap((group) =>
+      (group.entries ?? [])
+        .filter((entry) => {
+          if (entry.name === '_fp64') return false;
+          if (entry.resourceKind !== 'uniform-buffer') return true;
+          return (reflection?.uniforms ?? []).length === 0;
+        })
+        .map((entry) => String(entry.name)),
+    );
+
+  /** The uniform fields no handle covers, so the note can name them instead of leaving a
+   *  reader wondering why the picture is flat. An f64 and a matrix are the ones a module can
+   *  still declare that src/lib/live-shader-contract.ts has no control for. */
+  const zeroedUniformFields = (): readonly string[] => {
+    const block = (reflection?.uniforms ?? [])[0];
+    return (block?.fields ?? [])
+      .filter((field) => !isReserved(String(field.name)) && !isControllable(String(field.type)))
+      .map((field) => String(field.name));
+  };
+
+  // ── The handles under the canvas ──────────────────────────────────────────────────────
+  // A module that reads a uniform of its own runs at 0 without one, which is a flat square
+  // and not the example. The ranges, the steps and the starting values are the contract's
+  // own (src/lib/live-shader-contract.ts), the same ones a live example on a guide page
+  // gets, so the two surfaces cannot disagree about what a field means.
+
+  /** What each field is set to now, by field name. */
+  let uniformValues: Record<string, number[]> = {};
+  let liveControls: readonly LiveControl[] = [];
+
+  /** Build the handles for one module's block, keeping what the reader had set for a field
+   *  that survived the edit with its type. */
+  const paintUniformControls = (controls: readonly LiveControl[]): void => {
+    if (!(gpuControls instanceof HTMLElement)) return;
+    const previous = new Map(liveControls.map((control) => [control.field, control]));
+    const kept = initialValues(controls);
+    for (const control of controls) {
+      const before = previous.get(control.field);
+      if (before && before.type === control.type && uniformValues[control.field]) {
+        kept[control.field] = [...uniformValues[control.field]!];
+      }
+    }
+    liveControls = controls;
+    uniformValues = kept;
+    gpuControls.textContent = '';
+    gpuControls.hidden = controls.length === 0;
+    for (const control of controls) {
+      const row = el('div', 'uniform-row');
+      row.append(el('span', 'uniform-name', control.field));
+      const axes = el('span', 'uniform-axes');
+      for (let i = 0; i < control.components; i += 1) {
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = String(control.min[i] ?? 0);
+        input.max = String(control.max[i] ?? 1);
+        input.step = String(control.step[i] ?? 0.002);
+        input.value = String(uniformValues[control.field]?.[i] ?? 0);
+        input.dataset.uniform = `${control.field}/${i}`;
+        input.setAttribute('aria-label', control.components > 1 ? `${control.field} ${i}` : control.field);
+        input.addEventListener('input', () => {
+          const slot = uniformValues[control.field];
+          if (!slot) return;
+          slot[i] = clamp(control, i, Number(input.value));
+          mounted?.redraw();
+        });
+        axes.append(input);
+      }
+      row.append(axes);
+      gpuControls.append(row);
+    }
+  };
+
+  /** What the GPU canvas should run, or why it cannot run this module. */
+  const gpuPayload = (): { readonly data: ShaderData; readonly controls: readonly LiveControl[] } | { readonly why: string } => {
+    if (!compiled || !reflection || !emitted.wgsl) return { why: copy.gpuIdle };
+    const unfillable = unfillableBindings();
+    if (unfillable.length > 0) return { why: fillNumbers(copy.gpuNeedsBindings, { names: unfillable.join(', ') }) };
+    // The runtime draws three vertices and binds no vertex buffer, so a vertex entry that
+    // reads an attribute from one has nothing to read. Saying which attribute beats letting
+    // the pipeline fail and reporting that the browser has no GPU API.
+    const attributes = (entries.find((entry) => entry.stage === 'vertex')?.io?.inputs ?? [])
+      .filter((field) => typeof field.location === 'number')
+      .map((field, index) => field.name ?? `arg${index}`);
+    if (attributes.length > 0) return { why: fillNumbers(copy.gpuNeedsAttributes, { fields: attributes.join(', ') }) };
+    let layout;
+    try {
+      layout = layoutFor(fileName, reflection as never);
+    } catch {
+      // layoutFor throws for a module with no vertex or no fragment entry, and for a texture
+      // it cannot fill, which the check above has already named. A compute-only module is
+      // the first of those and lands here.
+      return { why: copy.gpuNeedsStages };
+    }
+    return {
+      controls: controlsFor(layout),
+      data: {
+        id: 'playground',
+        title: fileName,
+        wgsl: emitted.wgsl,
+        // A module the GLSL backend cannot express still runs on WebGPU; the WebGL2 half is
+        // what it loses, and the note says which backend drew when neither is left.
+        vertex: emitted.glslVertex ?? '',
+        fragment: emitted.glslFragment ?? '',
+        layout,
+        controls: {},
+      },
+    };
+  };
+
+  const backendNote = (): string => {
+    const backend = mounted?.backend ?? 'none';
+    if (backend === 'none') return copy.gpuNone;
+    const zeroed = zeroedUniformFields();
+    const running = backend === 'webgpu' ? copy.gpuWebgpu : copy.gpuWebgl2;
+    return zeroed.length > 0 ? `${running} ${fillNumbers(copy.gpuZeroed, { fields: zeroed.join(', ') })}` : running;
+  };
+
+  const sayGpu = (text: string): void => {
+    if (gpuNote instanceof HTMLElement) gpuNote.textContent = text;
+  };
+
+  /** Put the program the last compile emitted on the GPU canvas. The first good module
+   *  mounts; every one after it swaps, so the pass that is drawing stays up until the new
+   *  one has drawn a frame. A module the runtime cannot run stops the mount, because a frame
+   *  of the program before it is a picture of something the reader is no longer looking at. */
+  const runOnGpu = async (): Promise<void> => {
+    if (!(gpuCanvas instanceof HTMLCanvasElement)) return;
+    const payload = gpuPayload();
+    if ('why' in payload) {
+      mounted?.stop();
+      mounted = undefined;
+      mountedWgsl = '';
+      gpuCanvas.dataset.backend = 'none';
+      paintUniformControls([]);
+      sayGpu(payload.why);
+      return;
+    }
+    paintUniformControls(payload.controls);
+    if (mounted && payload.data.wgsl === mountedWgsl) return;
+    mountedWgsl = payload.data.wgsl;
+    if (mounted) {
+      // A swap keeps the pass that is drawing up until the new one has drawn a frame, and
+      // it answers false where it could not build the new one, which is what a module whose
+      // bind group has a different shape does: the block a module binds and the one before
+      // it bound are two different layouts. That module is mounted from scratch instead.
+      if (await mounted.swap(payload.data)) {
+        sayGpu(backendNote());
+        return;
+      }
+      mounted.stop();
+      mounted = undefined;
+    }
+    mounted = await mountShader(gpuCanvas, payload.data, {
+      // The Playground's canvas is the reader's own program running, so it keeps its clock
+      // under `prefers-reduced-motion` the way a live example does and redraws on a change.
+      interactive: true,
+      uniformValues: (name, seconds) =>
+        reservedValue(name, seconds, gpuCanvas.width, gpuCanvas.height, pointer) ?? uniformValues[name] ?? null,
+    });
+    sayGpu(backendNote());
+  };
+
+  if (gpuCanvas instanceof HTMLCanvasElement) {
+    gpuCanvas.addEventListener('pointermove', (event) => {
+      const box = gpuCanvas.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) return;
+      pointer = [
+        Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)),
+        Math.min(1, Math.max(0, 1 - (event.clientY - box.top) / box.height)),
+      ];
+    });
+  }
+
+  /** Which engine the Result tab draws with. The GPU runs the emitted program; the oracle
+   *  runs the fragment entry once per pixel on this machine. */
+  const engineIsCpu = (): boolean => enginePicker instanceof HTMLSelectElement && enginePicker.value === 'cpu';
+
+  const syncEngine = (): void => {
+    const cpu = engineIsCpu();
+    for (const node of cpuOnly) node.hidden = !cpu;
+    if (gpuCanvas instanceof HTMLCanvasElement) {
+      const frame = gpuCanvas.closest('[data-gpu-frame]');
+      if (frame instanceof HTMLElement) frame.hidden = cpu;
+    }
+    if (gpuNote instanceof HTMLElement) gpuNote.hidden = cpu;
+    if (cpu && moduleDrawable && canvasFits) drawOnCpu();
+    if (!cpu) void runOnGpu();
+  };
+
+  /** What the canvas had no value for when it ran the vertex entry. It runs that entry at
+   *  the indices 0, 1 and 2 and zeroes every other input, so an input the entry reads comes
+   *  back as three collapsed corners and there is no triangle. Naming them is the difference
+   *  between a reader fixing their shader and reading the page as broken. */
+  const zeroedVertexInputs = (): readonly string[] => {
+    const vertex = entries.find((entry) => entry.stage === 'vertex');
+    return (vertex?.io?.inputs ?? [])
+      .filter((field) => field.builtin !== 'vertex_index')
+      .map((field, index) => field.name ?? `arg${index}`);
+  };
+
+  /** A raster failure as a sentence. The oracle takes entry arguments and no resource
+   *  values, so an entry reading a uniform or a storage binding stops at the name. */
+  const rasterFailure = (message: string): string => {
+    if (message === 'no triangle') {
+      const zeroed = zeroedVertexInputs();
+      return zeroed.length > 0 ? fillNumbers(copy.canvasFlatInputs, { fields: zeroed.join(', ') }) : copy.canvasFlat;
+    }
+    if (/unknown (?:const|var|binding)|unbound/.test(message)) return copy.cpuNoResources;
+    return message || copy.cpuFailed;
+  };
+
   const rasterPlan = (): RasterPlan | undefined => {
     if (!compiled || !(canvas instanceof HTMLCanvasElement)) return undefined;
     const vertex = entries.find((entry) => entry.stage === 'vertex');
@@ -939,13 +1314,13 @@ function mount(root: HTMLElement): void {
 
     if (typeof Worker !== 'function') {
       void drawHere(plan, context, mine).catch((error) => {
-        canvasNote.textContent = error instanceof Error ? error.message : copy.cpuFailed;
+        canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
       }).finally(finish);
       return;
     }
 
     if (!openPool()) {
-      void drawHere(plan, context, mine).catch(() => { canvasNote.textContent = copy.cpuFailed; }).finally(finish);
+      void drawHere(plan, context, mine).catch((error) => { canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : ''); }).finally(finish);
       return;
     }
 
@@ -1061,7 +1436,7 @@ function mount(root: HTMLElement): void {
           return;
         }
         if (message.kind === 'failed') {
-          canvasNote.textContent = message.message === 'no triangle' ? copy.canvasNeedsVertex : message.message;
+          canvasNote.textContent = rasterFailure(message.message);
           finish();
           return;
         }
@@ -1082,7 +1457,7 @@ function mount(root: HTMLElement): void {
         // A worker that cannot start at all leaves the drawing to this thread.
         for (const other of pool) other.terminate();
         pool = [];
-        void drawHere(plan, context, mine).catch(() => { canvasNote.textContent = copy.cpuFailed; }).finally(finish);
+        void drawHere(plan, context, mine).catch((error) => { canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : ''); }).finally(finish);
       };
       worker.postMessage({ kind: 'prepare', job: mine, module, plan } satisfies RasterRequest);
     }
@@ -1091,6 +1466,9 @@ function mount(root: HTMLElement): void {
 
   const paintOutput = (): void => {
     const token = ++painted;
+    // The three texts are emitted on every compile whichever tab is up; only the one the
+    // text panel is showing is written into it, and the panel is repainted on a tab switch.
+    if (!isTarget(view)) return;
     const source = emitted[target];
     if (!source) {
       output.textContent = target === 'wgsl' ? copy.noOutput : copy.noGlsl;
@@ -1112,24 +1490,39 @@ function mount(root: HTMLElement): void {
       .catch(() => {});
   };
 
-  /** Switches the pane to one target and moves the selected state onto its tab. */
+  /** The one tab strip over the result column, and the panel and the controls each tab owns. */
   const tabs = [...root.querySelectorAll('[data-target]')].filter(
     (node): node is HTMLButtonElement => node instanceof HTMLButtonElement,
   );
+  const resultPanel = root.querySelector('#pg-panel-result');
+  const metas = [...root.querySelectorAll('[data-meta]')].filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
+  /** Which of the three control groups in the tab row belongs to a view. */
+  const metaFor = (next: View): string => (next === 'result' || next === 'reflection' ? next : 'text');
 
-  const selectTarget = (next: Target, focus = false): void => {
-    target = next;
+  /** Shows one tab's panel and moves the selected state onto its tab. Nothing here compiles,
+   *  emits or draws: every panel already holds what the last compile put in it, and the
+   *  canvas keeps the pixels it was drawn with while it is behind another tab. */
+  const selectView = (next: View, focus = false): void => {
+    view = next;
+    if (isTarget(next)) target = next;
     for (const tab of tabs) {
       const on = tab.dataset.target === next;
       tab.setAttribute('aria-selected', on ? 'true' : 'false');
       // One roving tabindex, so Tab reaches the strip once and the arrows move inside it.
       tab.tabIndex = on ? 0 : -1;
       if (on) {
-        output.setAttribute('aria-labelledby', tab.id);
+        if (isTarget(next)) output.setAttribute('aria-labelledby', tab.id);
         if (focus) tab.focus();
       }
     }
-    paintOutput();
+    if (resultPanel instanceof HTMLElement) resultPanel.hidden = next !== 'result';
+    output.hidden = !isTarget(next);
+    if (reflectionPane instanceof HTMLElement) reflectionPane.hidden = next !== 'reflection';
+    const wanted = metaFor(next);
+    for (const meta of metas) meta.hidden = meta.dataset.meta !== wanted;
+    if (isTarget(next)) paintOutput();
   };
 
   const goTo = (position: TypeshadePosition): void => {
@@ -1147,6 +1540,7 @@ function mount(root: HTMLElement): void {
     severity: diagnostic.severity,
     source: diagnostic.source,
     start: diagnostic.range.start,
+    located: !inPrelude(diagnostic.range.start.line),
   });
 
   const paintDiagnostics = (rows: readonly DiagnosticRow[]): void => {
@@ -1158,10 +1552,11 @@ function mount(root: HTMLElement): void {
     for (const row of rows) {
       const button = el('button') as HTMLButtonElement;
       button.type = 'button';
-      button.append(el('span', 'at', toDisplayPosition(row.start)));
+      if (row.located) button.append(el('span', 'at', toDisplayPosition(row.start)));
       button.append(el('span', 'source', ` ${row.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade}`));
       button.append(el('span', row.severity === 'error' ? 'error' : undefined, ` ${row.message}`));
-      button.addEventListener('click', () => goTo(row.start));
+      if (row.located) button.addEventListener('click', () => goTo(row.start));
+      else button.disabled = true;
       const item = el('li');
       item.append(button);
       diagnosticsPane.append(item);
@@ -1181,7 +1576,7 @@ function mount(root: HTMLElement): void {
     const rows = found.map(toRow);
     // The compiler stays quiet about a file with no directive, so the Playground says it.
     if (!analysis.hasDirective && rows.length === 0) {
-      rows.push({ message: copy.directive, severity: 'error', source: 'typeshade', start: { line: 0, character: 0 } });
+      rows.push({ message: copy.directive, severity: 'error', source: 'typeshade', start: { line: 0, character: 0 }, located: true });
     }
 
     // One marker owner, fed from the service alone. Monaco's own TypeScript checking is off,
@@ -1191,7 +1586,7 @@ function mount(root: HTMLElement): void {
     monacoApi.editor.setModelMarkers(
       model,
       'typeshade',
-      found.map((diagnostic) => ({
+      found.filter((diagnostic) => !inPrelude(diagnostic.range.start.line)).map((diagnostic) => ({
         ...toMonacoRange(diagnostic.range),
         message: diagnostic.message,
         source: diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
@@ -1214,10 +1609,18 @@ function mount(root: HTMLElement): void {
     compiled = undefined;
     reflection = undefined;
     entries = [];
+    // The panes are emitted from the options bar instead of read off the compile, so the
+    // bar is the one thing that decides what they hold. At its defaults the two agree:
+    // `compile().wgsl` is `emitModule(module)`, which is `emitModuleAt(module, 'O2')`.
+    const choice = currentChoice();
     if (analysis.module) {
       try {
         compiled = { module: analysis.module as ModuleDecl };
-        reflection = reflect(compiled.module);
+        // The same flavour the emit is given. The `float` helpers read an `_fp64` guard
+        // texture the lowering injects and the `integer` ones read none, so a reflection
+        // computed under the other flavour lists a binding the emitted module does not
+        // declare, or leaves out one it does.
+        reflection = reflect(compiled.module, { fp64Flavor: choice.fp64Flavor });
         entries = (reflection.entries ?? []) as readonly ReflectedEntry[];
       } catch {
         compiled = undefined;
@@ -1226,10 +1629,6 @@ function mount(root: HTMLElement): void {
       }
     }
 
-    // The panes are emitted from the options bar instead of read off the compile, so the
-    // bar is the one thing that decides what they hold. At its defaults the two agree:
-    // `compile().wgsl` is `emitModule(module)`, which is `emitModuleAt(module, 'O2')`.
-    const choice = currentChoice();
     const glsl = compiled ? emitGlsl(compiled.module, choice) : undefined;
     emitted = {
       wgsl: compiled ? emitWgsl(compiled.module, choice) : undefined,
@@ -1240,10 +1639,15 @@ function mount(root: HTMLElement): void {
     paintOutput();
     paintReflection();
     // The canvas and the return values follow the source. The oracle's calls are
-    // microseconds, and a draw at the sizes the page opens with is under half a second, so
-    // neither is worth a button press; the buttons re-run with edited arguments and redraw.
+    // microseconds, so the return values are not worth a button press; the buttons re-run
+    // with edited arguments and redraw. Only the engine the reader is looking at runs: a
+    // rasteriser drawing a canvas nobody is shown is the page's own CPU for nothing.
     evaluateOnCpu();
-    if (moduleDrawable && canvasFits) drawOnCpu();
+    if (engineIsCpu()) {
+      if (moduleDrawable && canvasFits) drawOnCpu();
+    } else {
+      void runOnGpu();
+    }
   };
 
   /** Hands the worker the document as the editor holds it now. Sent on every change, so the
@@ -1252,7 +1656,11 @@ function mount(root: HTMLElement): void {
   const syncDocument = (): void => {
     if (!editor || !client) return;
     version += 1;
-    client.update(documentUri, editor.getValue(), version);
+    const composed = compose(editor.getValue());
+    preludeAt = composed.at;
+    preludeLines = composed.lines;
+    if (preludeNote instanceof HTMLElement) preludeNote.hidden = composed.lines === 0;
+    client.update(documentUri, composed.text, version);
   };
 
   /** Asks the worker for the document's analysis and paints it when it arrives. A control on
@@ -1302,20 +1710,28 @@ function mount(root: HTMLElement): void {
       .catch(() => {});
   });
 
+  /** Which example the editor was last filled from. On a page that names the example there
+   *  is no picker to read it off, so the id is held here and Reset uses it. */
+  let openedExample = root.dataset.defaultExample ?? '';
+
   const showExample = (id: string): void => {
     const example = examples.find((candidate) => candidate.id === id);
     if (!example || !editor) return;
-    examplePicker.value = example.id;
-    exampleNote.textContent = example.description;
+    openedExample = example.id;
+    if (examplePicker instanceof HTMLSelectElement) examplePicker.value = example.id;
+    if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
     editor.setValue(example.source);
     writeHash('example', example.id, currentChoice());
     render();
   };
 
-  examplePicker.addEventListener('change', () => showExample(examplePicker.value));
+  if (examplePicker instanceof HTMLSelectElement) {
+    examplePicker.addEventListener('change', () => showExample(examplePicker.value));
+  }
 
   const applyOptions = (): void => {
     levelNote.hidden = levelPicker.value === 'O2';
+    numbersField.hidden = !minifyToggle.checked;
     render();
     // The bar is part of what a link shows, so changing it rewrites the fragment. An
     // untouched example keeps its short `#example=` form.
@@ -1323,7 +1739,7 @@ function mount(root: HTMLElement): void {
     if (named && !hashParams().get('code')) writeHash('example', named, currentChoice());
     else void publishSource();
   };
-  for (const control of [levelPicker, parensPicker, precisionPicker, minifyToggle]) {
+  for (const control of [levelPicker, parensPicker, precisionPicker, minifyToggle, numbersPicker, obfuscateToggle, fp64Picker]) {
     control.addEventListener('change', applyOptions);
   }
 
@@ -1355,6 +1771,8 @@ function mount(root: HTMLElement): void {
     });
   }
 
+  if (enginePicker instanceof HTMLSelectElement) enginePicker.addEventListener('change', syncEngine);
+
   /** What the page opens with: the source in the link, else the example the link names, else
    *  the first example. */
   const openingSource = async (): Promise<{ source: string; example?: PlaygroundExample; }> => {
@@ -1365,6 +1783,10 @@ function mount(root: HTMLElement): void {
     if (level === 'O0' || level === 'O1' || level === 'O2') levelPicker.value = level;
     if (params.get('parens') === 'minimal') parensPicker.value = 'minimal';
     if (params.get('minify') === '1') minifyToggle.checked = true;
+    const numbers = params.get('numbers');
+    if (numbers === 'f32' || numbers === 'false') numbersPicker.value = numbers;
+    if (params.get('obfuscate') === '1') obfuscateToggle.checked = true;
+    if (params.get('fp64') === 'integer') fp64Picker.value = 'integer';
     if (params.get('precision') === 'mediump') precisionPicker.value = 'mediump';
     const code = params.get('code');
     if (code) {
@@ -1428,9 +1850,10 @@ function mount(root: HTMLElement): void {
       // Colourising bakes the theme into the markup, so the pane is painted again on a change.
       followSiteTheme(monaco, paintOutput);
       if (opening.example) {
-        examplePicker.value = opening.example.id;
-        exampleNote.textContent = opening.example.description;
-      } else {
+        openedExample = opening.example.id;
+        if (examplePicker instanceof HTMLSelectElement) examplePicker.value = opening.example.id;
+        if (exampleNote instanceof HTMLElement) exampleNote.textContent = opening.example.description;
+      } else if (exampleNote instanceof HTMLElement) {
         exampleNote.textContent = '';
       }
       model = monaco.editor.createModel(opening.source, 'typescript', monaco.Uri.parse(documentUri));
@@ -1498,9 +1921,12 @@ function mount(root: HTMLElement): void {
         },
       });
 
-      // A location in another document is dropped: the Playground holds one file.
+      // A location in another document is dropped: the Playground holds one file. So is one
+      // inside the prelude, which the editor does not hold either.
       const ownLocations = (locations: readonly { uri: string; range: TypeshadeRange }[] | undefined) =>
-        (locations ?? []).filter((location) => location.uri === documentUri).map((location) => ({ uri: model.uri, range: monacoRange(location.range) }));
+        (locations ?? [])
+          .filter((location) => location.uri === documentUri && !inPrelude(location.range.start.line))
+          .map((location) => ({ uri: model.uri, range: monacoRange(location.range) }));
 
       monaco.languages.registerDefinitionProvider('typescript', {
         provideDefinition: async (currentModel: any, position: MonacoPosition) => {
@@ -1570,6 +1996,10 @@ function mount(root: HTMLElement): void {
           if (!isOurs(currentModel) || !client) return null;
           const edits = await client.request('rename', documentUri, version, { ...here(position), newName });
           if (!edits) return null;
+          // A name the prelude also declares would be renamed in there too, and the editor
+          // holds none of those lines, so the edit has nowhere to land. The rename is
+          // refused whole instead of applied to half the occurrences.
+          if ((edits[documentUri] ?? []).some((edit) => inPrelude(edit.range.start.line))) return null;
           return {
             edits: (edits[documentUri] ?? []).map((edit) => ({
               resource: model.uri,
@@ -1588,7 +2018,14 @@ function mount(root: HTMLElement): void {
         provideDocumentSemanticTokens: async (currentModel: any) => {
           if (!isOurs(currentModel) || !client) return null;
           const tokens = await client.request('semanticTokens', documentUri, version, {});
-          return tokens ? { data: encodeSemanticTokens(tokens) } : null;
+          if (!tokens) return null;
+          // The compiler classified the composed text, so the prelude's tokens come back
+          // too. They are dropped and the rest move up, since the encoding is a delta over
+          // the lines the editor actually holds.
+          const own = tokens
+            .filter((token) => !inPrelude(token.line))
+            .map((token) => ({ ...token, line: outOfDocument(token.line) }));
+          return { data: encodeSemanticTokens(own) };
         },
         releaseDocumentSemanticTokens: () => {},
       });
@@ -1612,21 +2049,23 @@ function mount(root: HTMLElement): void {
         });
       }
       tabs.forEach((tab, index) => {
-        tab.addEventListener('click', () => selectTarget((tab.dataset.target ?? 'wgsl') as Target));
+        tab.addEventListener('click', () => selectView((tab.dataset.target ?? 'result') as View));
         tab.addEventListener('keydown', (event) => {
           const steps: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 };
           const next = steps[event.key];
           if (next === undefined) return;
           event.preventDefault();
           const moved = tabs[(next + tabs.length) % tabs.length];
-          selectTarget((moved.dataset.target ?? 'wgsl') as Target, true);
+          selectView((moved.dataset.target ?? 'result') as View, true);
         });
       });
       reset.addEventListener('click', () => {
-        showExample(examplePicker.value);
+        showExample(openedExample);
         editor.focus();
       });
       levelNote.hidden = levelPicker.value === 'O2';
+      numbersField.hidden = !minifyToggle.checked;
+      syncEngine();
       render();
     })
     .catch((error) => {

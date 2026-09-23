@@ -85,8 +85,9 @@ export function reservedValue(
 export type SampleShape = 'fragment' | 'module'
 
 /** The source with comments and string bodies blanked, for a test that reads code alone. A
- *  sample that says `// the @vertex half is written for you` is still a fragment sample. */
-const codeOnly = (source: string): string =>
+ *  sample that says `// the @vertex half is written for you` is still a fragment sample.
+ *  Exported for the Playground, which reads the source for the same kind of test. */
+export const codeOnly = (source: string): string =>
   source
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/\/\/.*$/gm, ' ')

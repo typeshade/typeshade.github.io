@@ -14,15 +14,17 @@
 //   7. an entry declaring a struct parameter is called with the struct, not with its fields
 //   8. the CPU canvas rasterises the module: a triangle, one fragment call per pixel, drawn
 //      by a pool of workers that says how many of them there were
-//   9. the emit options reach the panes: the level, minify, parens and the GLSL precision
+//   9. the emit options reach the panes: the level, minify and its number mode, parens,
+//      obfuscate, the GLSL precision, and the f64 emulation flavour in both the WGSL and
+//      the reflection
 //  10. dark mode reaches the editor: its background is dark
 //  11. the example picker replaces the source
 //  12. raising the resolution changes the grid the fragment entry runs over and leaves the
 //      box it is drawn in the size it was
 //  13. changing the resolution under a running draw retires it: the result reported is the
 //      new grid's, and the old draw's never lands
-//  14. the source and the result columns are one height, and the canvas is on the first
-//      screen beside the code, not below the reflection
+//  14. the source and the result columns are one height, the tab strip is at the top of the
+//      result column, and the canvas is on the first screen beside the code
 //  15. a vector times a scalar compiles: nothing is reported and the broadcast reaches the WGSL
 //  16. a vector times a string still draws TypeScript's own arithmetic diagnostic
 //  17. an unclosed call reports a diagnostic that carries a position, and the panes stay empty
@@ -41,6 +43,19 @@
 //      their own, not the identifier's
 //  29. the compiler is in the language worker: a worker script was fetched and the page's
 //      own module is a fraction of what it was
+//  30. a file with no @vertex entry is compiled behind the fullscreen triangle: the page
+//      says so, the WGSL and the reflection carry that entry, and the canvas is covered
+//  31. the reader's own lines survive the prelude: a mistake on line 9 is reported on line
+//      9, the markers land there, and hover answers about that line
+//  32. a file that declares its own vertex half, and one with no directive at all, are both
+//      left exactly as they were
+//  33. every example in the picker is selected in turn and the Result tab's canvas is
+//      photographed: how many paint more than one colour, and how many get a backend at
+//      all, against the floors below, with the reason printed for each one that does not
+//  34. an example on the page is editable: a keystroke reaches the emitted text and the
+//      frame, which is the claim nothing tested before
+//  35. the tool on an example's own page: no picker, the editor seeded with that example's
+//      file, and a keystroke there reaching the emitted text and the frame as well
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -56,15 +71,32 @@
 //
 // Run: bun run check:playground (after a build, which writes dist/)
 import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchChromium } from './playwright.mjs'
 import { serveDist } from './serve-dist.mjs'
 
+// A WebGPU canvas is not readable through getImageData, so the frame is measured the way a
+// reader sees it: the element is photographed and the pixels are counted here.
+const sharp = createRequire(import.meta.url)('sharp')
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
 const CDN = 'cdn.jsdelivr.net'
 const ROUTES = ['/playground/', '/ko/playground/']
+
+// How many of the examples in the picker the Result tab has to paint, and how many of them a
+// backend has to run at all. Measured, never typed: on 2026-09-23, at the commit that added
+// this, 34 of the 51 put more than one colour on the canvas and 36 of them got a backend,
+// against 10 that drew before the tab ran on the GPU. The rest are refused by name, and the
+// list under the count says which and why.
+//
+// These are floors and the build defends them. A change that lowers one is a change that
+// stopped an example drawing: find out which, from the list this prints, and fix that. Do
+// not lower the number to get a green build, and do not skip an example to reach it.
+const PAINTED_FLOOR = 34
+const RAN_FLOOR = 36
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000)
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1'
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
@@ -87,11 +119,95 @@ async function typeSource(page, source) {
   await page.waitForTimeout(AFTER_EDIT)
 }
 
+/** Open one tab of the result column. The column is one tab strip over one panel, so every
+ *  read below opens the tab that holds what it is reading. */
+async function openTab(page, name, wait = 150) {
+  await page.click(`[data-target="${name}"]`)
+  await page.waitForTimeout(wait)
+  // A text panel is coloured by Monaco once the tab is up, on a promise nothing here holds,
+  // so a loaded machine can be read while the pane still holds the plain text the colouriser
+  // is about to replace. An empty pane is a pane with nothing to colour.
+  if (name === 'wgsl' || name === 'glslVertex' || name === 'glslFragment') {
+    await page
+      .waitForFunction(
+        () => {
+          const pane = document.querySelector('[data-output]')
+          return !pane || pane.textContent.trim().length === 0 || pane.querySelector('span') !== null
+        },
+        null,
+        { timeout: 5_000 },
+      )
+      .catch(() => {})
+  }
+}
+
 /** Read the WGSL pane with its tab open. */
 async function wgslPane(page) {
-  await page.click('[data-target="wgsl"]')
-  await page.waitForTimeout(150)
+  await openTab(page, 'wgsl')
   return (await page.innerText('[data-output]')).trim()
+}
+
+/** One photograph of the Result tab's canvas, counted. The middle of the element, so the
+ *  frame's own rounded corners are not counted as pixels the shader drew. One colour is a
+ *  canvas nothing painted, or one a shader filled flat; two or more is a picture. The status
+ *  note is not evidence: a note reading "36864 px in 249 ms" over a fully transparent canvas
+ *  is how five of these examples read before this. */
+async function sampleCanvas(page) {
+  const shot = await page.locator('[data-gpu-canvas]').screenshot()
+  const meta = await sharp(shot).metadata()
+  const pad = Math.round(Math.min(meta.width, meta.height) * 0.08)
+  const { data } = await sharp(shot)
+    .extract({ left: pad, top: pad, width: meta.width - 2 * pad, height: meta.height - 2 * pad })
+    .raw()
+    .ensureAlpha()
+    .toBuffer({ resolveWithObject: true })
+  const colours = new Set()
+  let opaque = 0
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] > 0) opaque += 1
+    colours.add(`${data[i]},${data[i + 1]},${data[i + 2]},${data[i + 3]}`)
+  }
+  return { colours: colours.size, opaque }
+}
+
+/** What the canvas holds, over a few frames. A pass whose picture follows its own clock is
+ *  flat for part of its cycle: julia-twin measured 1 colour for the first two seconds and
+ *  then 11, 17, 1, 75, 91, so a single photograph reads it as blank and the count moves
+ *  between runs. Eight photographs over about three seconds cover that dark stretch with
+ *  room to spare. Another photograph is taken only while the canvas is still one colour, so
+ *  a pass that drew costs one screenshot. */
+async function canvasColours(page, samples = 8, gap = 400) {
+  let best = await sampleCanvas(page)
+  for (let i = 1; i < samples && best.colours < 2; i += 1) {
+    await page.waitForTimeout(gap)
+    const next = await sampleCanvas(page)
+    if (next.colours > best.colours) best = next
+  }
+  return best
+}
+
+/** Wait for the Result tab to settle on this module: a backend that is drawing has put a
+ *  frame up, and a module the runtime refuses has said so. Waiting on the page's own state
+ *  instead of a fixed sleep, so a slow machine reads the same as a fast one. */
+async function settleResult(page) {
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector('[data-gpu-canvas]')
+      if (!canvas) return false
+      const backend = canvas.dataset.backend
+      if (backend && backend !== 'none') return (canvas.__shader?.frames ?? 0) > 0
+      // No backend: the note says why, and it is written before the backend is cleared.
+      return (document.querySelector('[data-gpu-note]')?.textContent ?? '').length > 0
+    },
+    null,
+    { timeout: 20_000 },
+  )
+}
+
+/** Read the reflection panel with its tab open. */
+async function reflectionPane(page, wait = 150) {
+  await openTab(page, 'reflection', wait)
+  return (await page.innerText('[data-reflection]')).trim()
 }
 
 /** Set one control on the options bar and wait for the render it triggers. */
@@ -125,6 +241,47 @@ export function fs(v: VsOut): Color {
   const a = v.uv.x * 2. + v.uv.y * 3. - 1.;
   const b = a * a + a * 2.;
   return { color: vec4(b, a - b * 3., a * b + 1., 1.) };
+}
+`
+
+// A float the f32 mode can shorten: 0.30000001192092896 is the f64 printout of the f32
+// nearest 0.3, so `.3` loads the same bits and the lossless mode has to keep every digit.
+const LONG_LITERAL = `"use typeshade";
+
+class Clip {
+  @builtin("position") pos: vec4;
+}
+
+class Color {
+  @location(0) color: vec4;
+}
+
+@vertex
+export function vs(@builtin("vertex_index") i: u32): Clip {
+  const k = 0.30000001192092896;
+  const x = i === 1 ? k : -k;
+  return { pos: vec4(x, k, 0., 1.) };
+}
+
+@fragment
+export function fs(): Color {
+  return { color: vec4(0.30000001192092896, 0., 0., 1.) };
+}
+`
+
+// A fragment program and nothing else: no vertex entry, so the page compiles it behind the
+// fullscreen triangle and the reader gets a picture without writing a vertex half. The
+// mistake below is on its line 9, which is where the diagnostics have to land.
+const FRAGMENT_ONLY = `"use typeshade"
+
+class Color {
+  @location(0) color: vec4
+}
+
+@fragment
+export function fs(@location(0) uv: vec2): Color {
+  const stripe = fract(uv.x * 8.);
+  return { color: vec4(stripe, uv.y, 1. - stripe, 1.) };
 }
 `
 
@@ -209,6 +366,7 @@ async function checkRoute(browser, origin, route) {
       // The compiler is bundled into the page, so this is the half that needs no network.
       // innerText is what the reader sees: the pane is coloured markup whose line breaks are
       // <br>, which textContent would run together into one line.
+      await openTab(page, 'wgsl')
       const output = (await page.innerText('[data-output]')).trim()
       if (output.length === 0) problems.push('the WGSL pane is empty')
       else if (!/@vertex|@fragment|fn\s/.test(output)) problems.push(`the WGSL pane holds no WGSL:\n    ${output.slice(0, 200)}`)
@@ -227,7 +385,7 @@ async function checkRoute(browser, origin, route) {
 
       // The reflection pane: what reflect() recovered, and what the entry points return when
       // the CPU oracle runs them. The sample declares a vertex and a fragment entry point.
-      const reflection = (await page.innerText('[data-reflection]')).trim()
+      const reflection = await reflectionPane(page)
       for (const wanted of ['@vertex', '@fragment', 'vec4<f32>', '@builtin(vertex_index)', '@location(0)']) {
         if (!reflection.includes(wanted)) problems.push(`the reflection pane is missing ${wanted}:\n    ${reflection.slice(0, 240)}`)
       }
@@ -268,7 +426,14 @@ async function checkRoute(browser, origin, route) {
         problems.push(`an entry declaring a struct parameter was not called with the struct:\n    ${structRun.slice(0, 300)}`)
       }
 
-      // And the canvas: the vertex entry for three corners, then one fragment call per pixel
+      // And the canvas, which is the Result tab of the one strip over the result column.
+      // Every read below is of that panel, so it stays open to the end of the shape check.
+      // The tab draws with the GPU by default and the oracle's rasteriser is the other
+      // engine, so the block that measures the rasteriser selects it first.
+      await openTab(page, 'result')
+      await page.selectOption('[data-engine]', 'cpu')
+      await page.waitForTimeout(400)
+      // The canvas: the vertex entry for three corners, then one fragment call per pixel
       // the triangle covers, with every varying interpolated from what the vertex entry
       // returned. A triangle covers some of the canvas and not all of it. The canvas follows
       // the source, so choosing the example is what drew it; a draw deletes the count when it
@@ -358,6 +523,7 @@ async function checkRoute(browser, origin, route) {
       }
       if (retired.button !== 'enabled') problems.push('the draw button is not available after a retired draw')
       console.log(`  retired mid-draw: grid ${retired.grid}, reported ${retired.reported} px, button ${retired.button}`)
+      await page.selectOption('[data-engine]', 'gpu')
       await page.waitForTimeout(AFTER_EDIT)
 
       // ── the shape of the page ────────────────────────────────────────────────────────────
@@ -370,7 +536,7 @@ async function checkRoute(browser, origin, route) {
           const rect = document.querySelector(selector).getBoundingClientRect()
           return { top: Math.round(rect.top + window.scrollY), bottom: Math.round(rect.bottom + window.scrollY), height: Math.round(rect.height) }
         }
-        return { source: box('.source-pane'), result: box('.result-column'), canvas: box('[data-canvas]'), editor: box('[data-editor]'), viewport: window.innerHeight }
+        return { source: box('.source-pane'), result: box('.result-column'), canvas: box('[data-gpu-canvas]'), editor: box('[data-editor]'), tabs: box('.result-head'), viewport: window.innerHeight }
       })
       if (Math.abs(shape.source.height - shape.result.height) > 1) {
         problems.push(`the source column is ${shape.source.height}px tall and the result column ${shape.result.height}px`)
@@ -378,10 +544,35 @@ async function checkRoute(browser, origin, route) {
       if (shape.canvas.bottom > shape.viewport) {
         problems.push(`the canvas ends at ${shape.canvas.bottom}px, below the first ${shape.viewport}px screen`)
       }
-      if (shape.canvas.top > shape.editor.top + 40) {
-        problems.push(`the canvas starts at ${shape.canvas.top}px, well below the editor at ${shape.editor.top}px: it is not beside the code`)
+      // Beside the code, which is the whole point of the two columns: the canvas starts in
+      // the top half of the editor, so it is next to the source and not under it. The tab
+      // strip and the controls the Result tab owns sit over it, and those take a second row
+      // where the column is too narrow for both, so the slack is the editor's own height
+      // and not a fixed number of pixels.
+      if (shape.canvas.top > shape.editor.top + shape.editor.height / 2) {
+        problems.push(`the canvas starts at ${shape.canvas.top}px, past the middle of the ${shape.editor.height}px editor at ${shape.editor.top}px: it is not beside the code`)
       }
-      console.log(`  shape: columns ${shape.source.height} and ${shape.result.height} px, canvas ends at ${shape.canvas.bottom} of ${shape.viewport}`)
+      if (shape.tabs.top > shape.source.top + 1) {
+        problems.push(`the tab strip starts at ${shape.tabs.top}px, below the top of the source column at ${shape.source.top}px: it is not at the top of the result column`)
+      }
+      console.log(`  shape: columns ${shape.source.height} and ${shape.result.height} px, canvas ends at ${shape.canvas.bottom} of ${shape.viewport}, tab strip at ${shape.tabs.top}`)
+
+      // One strip, five tabs, one panel shown. The three texts and the reflection are
+      // painted while hidden, so switching to one shows what the last compile put there.
+      const strip = await page.evaluate(() => {
+        const tabs = [...document.querySelectorAll('[role="tab"][data-target]')]
+        const panels = [...document.querySelectorAll('.result-panels > [role="tabpanel"]')]
+        return {
+          names: tabs.map((t) => t.dataset.target),
+          selected: tabs.filter((t) => t.getAttribute('aria-selected') === 'true').map((t) => t.dataset.target),
+          shown: panels.filter((p) => p.offsetParent !== null || p.getClientRects().length > 0).length,
+        }
+      })
+      const wantedTabs = ['result', 'wgsl', 'glslVertex', 'glslFragment', 'reflection']
+      if (strip.names.join(',') !== wantedTabs.join(',')) problems.push(`the result column's tabs are ${strip.names.join(', ')}, not ${wantedTabs.join(', ')}`)
+      if (strip.selected.join(',') !== 'result') problems.push(`the Result tab is not the one selected: ${strip.selected.join(', ') || 'none'}`)
+      if (strip.shown !== 1) problems.push(`${strip.shown} of the result column's panels are shown at once`)
+      console.log(`  tabs: ${strip.names.join(', ')}, showing ${strip.selected.join(', ')}`)
 
       await page.selectOption('[data-example]', 'hello')
       await page.waitForTimeout(AFTER_EDIT)
@@ -429,8 +620,13 @@ async function checkRoute(browser, origin, route) {
       }
       await setOption(page, '[data-opt-precision]', 'highp')
 
-      // `parens` needs a source the optimizer cannot fold flat.
+      // `parens` needs a source the optimizer cannot fold flat. This one declares its own
+      // `VsOut` and no vertex entry, so it is also what proves the prelude stays out of a
+      // file that would get a duplicate from it.
       await typeSource(page, UNFOLDABLE)
+      if (await page.isVisible('[data-prelude-note]')) {
+        problems.push('a file declaring its own VsOut was compiled behind the prelude, which declares one too')
+      }
       const parensFull = await wgslPane(page)
       if (!/fn\s/.test(parensFull)) {
         // Without this the next comparison reads as the option failing when the source is
@@ -443,6 +639,121 @@ async function checkRoute(browser, origin, route) {
         problems.push(`minimal parentheses dropped none: ${parensFull.length} to ${parensMinimal.length} characters`)
       }
       await setOption(page, '[data-opt-parens]', 'full')
+
+      // The number mode minify runs under, which is a control only while minify is on.
+      if (await page.isVisible('[data-numbers-field]')) problems.push('the number literal mode is shown with minify off')
+      await typeSource(page, LONG_LITERAL)
+      const plainLiteral = await wgslPane(page)
+      await setOption(page, '[data-opt-minify]', true)
+      if (!(await page.isVisible('[data-numbers-field]'))) problems.push('with minify on the number literal mode is still hidden')
+      const canonical = await wgslPane(page)
+      await setOption(page, '[data-opt-numbers]', 'f32')
+      const asF32 = await wgslPane(page)
+      await setOption(page, '[data-opt-numbers]', 'false')
+      const asEmitted = await wgslPane(page)
+      if (!canonical.includes('.30000001192092896')) problems.push(`the lossless number mode dropped a significand digit:\n    ${canonical.slice(0, 200)}`)
+      if (asF32.includes('.30000001192092896')) problems.push(`the f32 number mode left the literal spelled in full:\n    ${asF32.slice(0, 200)}`)
+      if (asF32.length >= canonical.length) problems.push(`the f32 number mode saved nothing: ${canonical.length} to ${asF32.length} characters`)
+      if (asEmitted.length <= canonical.length) problems.push(`leaving the literals alone spelled them shorter than the lossless mode: ${asEmitted.length} to ${canonical.length} characters`)
+      console.log(`  number literals: plain ${plainLiteral.length} B, true ${canonical.length} B, f32 ${asF32.length} B, false ${asEmitted.length} B`)
+      await setOption(page, '[data-opt-numbers]', 'true')
+      await setOption(page, '[data-opt-minify]', false)
+
+      // obfuscate(), the compiler's production preset: renamed identifiers over a compacted
+      // text. It is a plugin array, so it reaches the same `plugins` field minify does.
+      const named = await wgslPane(page)
+      await setOption(page, '[data-opt-obfuscate]', true)
+      const obfuscated = await wgslPane(page)
+      if (obfuscated.includes('Clip')) problems.push(`obfuscate left the struct's authored name in the WGSL:\n    ${obfuscated.slice(0, 200)}`)
+      if (obfuscated.length >= named.length) problems.push(`obfuscate did not shrink the WGSL: ${named.length} to ${obfuscated.length} characters`)
+      console.log(`  obfuscate: ${named.length} B to ${obfuscated.length} B`)
+      await setOption(page, '[data-opt-obfuscate]', false)
+
+      // fp64Flavor, which goes to reflect() as well as to the emit. An f64 module lowered
+      // with the float primitives binds an `_fp64` guard texture the integer ones never
+      // read, so the flavour decides what a host has to bind and the reflection has to say
+      // so. This is the one option whose effect is visible in two panels at once.
+      await page.selectOption('[data-example]', 'fp64-lane-stripes')
+      await page.waitForTimeout(AFTER_EDIT)
+      const floatWgsl = await wgslPane(page)
+      const floatReflection = await reflectionPane(page, 300)
+      await setOption(page, '[data-opt-fp64]', 'integer')
+      const integerWgsl = await wgslPane(page)
+      const integerReflection = await reflectionPane(page, 300)
+      if (floatWgsl === integerWgsl) problems.push('the f64 emulation flavour changed nothing in the WGSL of an f64 module')
+      if (!floatReflection.includes('_fp64')) problems.push(`the float flavour's reflection does not report the _fp64 guard:\n    ${floatReflection.slice(0, 300)}`)
+      if (integerReflection.includes('_fp64')) problems.push(`the integer flavour's reflection still reports the _fp64 guard, which its helpers never read:\n    ${integerReflection.slice(0, 300)}`)
+      console.log(`  f64 flavour: WGSL ${floatWgsl.length} B float, ${integerWgsl.length} B integer; guard in the reflection ${floatReflection.includes('_fp64')} and ${integerReflection.includes('_fp64')}`)
+      await setOption(page, '[data-opt-fp64]', 'float')
+      await page.selectOption('[data-example]', 'hello')
+      await page.waitForTimeout(AFTER_EDIT)
+
+      // ── the fullscreen vertex half ──────────────────────────────────────────────────────
+      // A file with no @vertex entry is compiled behind the fullscreen triangle, the way
+      // <LiveShader> compiles one, so a reader can write a fragment program alone and see
+      // it cover the canvas. The compiler then answers about a text the editor does not
+      // hold, and every line the page prints has to be the reader's own.
+      // The example the options above left in the editor declares its own vertex half, so
+      // it is what the last two steps of this block put back.
+      const moduleShaped = await sourceOf(page)
+      await typeSource(page, FRAGMENT_ONLY)
+      if (!(await page.isVisible('[data-prelude-note]'))) problems.push('a file with no vertex entry does not say it was compiled behind the fullscreen triangle')
+      const preludeStatus = await page.textContent('[data-status]')
+      const preludeDiagnostics = (await page.innerText('[data-diagnostics]')).trim()
+      const preludeWgsl = await wgslPane(page)
+      if (!/fn fullscreen/.test(preludeWgsl)) problems.push(`the fullscreen vertex half did not reach the WGSL:\n    ${preludeWgsl.slice(0, 200)}`)
+      const preludeReflection = await reflectionPane(page, 300)
+      if (!preludeReflection.includes('fullscreen')) problems.push(`the reflection does not name the fullscreen entry:\n    ${preludeReflection.slice(0, 200)}`)
+      await openTab(page, 'result')
+      await settleResult(page)
+      await page.waitForTimeout(600)
+      const preludeDrawn = await canvasColours(page)
+      const preludeBackend = await page.evaluate(() => document.querySelector('[data-gpu-canvas]')?.dataset.backend)
+      if (preludeBackend === 'none') problems.push('the fullscreen triangle reached no backend')
+      if (preludeDrawn.colours < 2) problems.push(`the fullscreen triangle drew ${preludeDrawn.colours} colour(s), and it stripes the frame`)
+      console.log(`  fullscreen half: ${preludeStatus}, WGSL ${preludeWgsl.length} B, canvas on ${preludeBackend} in ${preludeDrawn.colours} colours`)
+      if (!/No diagnostics|진단 없음/.test(preludeDiagnostics)) problems.push(`the fragment program did not compile clean:\n    ${preludeDiagnostics.slice(0, 200)}`)
+
+      // The prelude moves the reader's own lines down inside the compiled text, so every
+      // line the page prints has to be moved back. The mistake is on the reader's line 9.
+      await typeSource(page, FRAGMENT_ONLY.replace('fract(uv.x * 8.)', 'fract(uv.x * "eight")'))
+      const shiftedRows = (await page.innerText('[data-diagnostics]')).trim().split('\n')
+      const shiftedMarkers = await page.evaluate(() => (window.monaco?.editor.getModelMarkers({}) ?? []).map((m) => m.startLineNumber))
+      if (!shiftedRows.some((row) => row.startsWith('9:'))) problems.push(`the mistake on line 9 was not reported there:\n    ${shiftedRows.join('\n    ')}`)
+      if (shiftedMarkers.length === 0 || !shiftedMarkers.includes(9)) problems.push(`the editor drew markers on lines ${shiftedMarkers.join(', ') || 'nothing'}, and the mistake is on line 9`)
+      if (shiftedMarkers.some((line) => line > FRAGMENT_ONLY.split('\n').length)) {
+        problems.push(`a marker landed on line ${Math.max(...shiftedMarkers)}, past the ${FRAGMENT_ONLY.split('\n').length} lines the editor holds`)
+      }
+      console.log(`  shifted lines: diagnostics ${shiftedRows.map((r) => r.split(' ')[0]).join(', ')}, markers ${shiftedMarkers.join(', ')}`)
+
+      // And hover answers about the reader's own line, which is the same shift the other way.
+      await typeSource(page, FRAGMENT_ONLY)
+      const preludeHover = await page.evaluate(async () => {
+        const editor = window.monaco.editor.getEditors()[0]
+        const lines = editor.getModel().getLinesContent()
+        const at = lines.findIndex((line) => line.includes('const stripe'))
+        editor.revealLineInCenter(at + 1)
+        editor.setPosition({ lineNumber: at + 1, column: lines[at].indexOf('stripe') + 2 })
+        editor.focus()
+        editor.trigger('check', 'editor.action.showHover', null)
+        await new Promise((done) => setTimeout(done, 900))
+        return { line: at + 1, text: (document.querySelector('.monaco-hover')?.innerText ?? '').replace(/\s+/g, ' ').trim() }
+      })
+      if (!preludeHover.text.includes('f32')) problems.push(`hover on the reader's own line ${preludeHover.line} answered "${preludeHover.text}", and the local is an f32`)
+      console.log(`  hover past the prelude: line ${preludeHover.line} is ${preludeHover.text.slice(0, 40)}`)
+      await page.keyboard.press('Escape')
+
+      // A file that declares its own vertex half is compiled as written.
+      await typeSource(page, moduleShaped)
+      if (await page.isVisible('[data-prelude-note]')) problems.push('a file with its own vertex entry says it was compiled behind the fullscreen triangle')
+      if (/fn fullscreen/.test(await wgslPane(page))) problems.push('a file with its own vertex entry was compiled behind the fullscreen triangle anyway')
+      // And one with no directive still gets the page's own sentence about the directive,
+      // which supplying a directive for the reader would hide.
+      await typeSource(page, 'class Color {\n  @location(0) color: vec4\n}\n')
+      const noDirective = (await page.innerText('[data-diagnostics]')).trim()
+      if (!/use typeshade/.test(noDirective)) problems.push(`a file with no directive was not told so:\n    ${noDirective.slice(0, 160)}`)
+      await typeSource(page, moduleShaped)
+      await openTab(page, 'result')
 
       // ── dark mode reaches inside the editor ─────────────────────────────────────────────
       await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
@@ -535,7 +846,7 @@ async function checkRoute(browser, origin, route) {
           problems.push(`the compute example's WGSL is missing ${wanted}:\n    ${computeWgsl.slice(0, 300)}`)
         }
       }
-      const computeReflection = (await page.innerText('[data-reflection]')).trim()
+      const computeReflection = await reflectionPane(page)
       if (!computeReflection.includes('@compute')) {
         problems.push(`the reflection pane does not name the compute entry point:\n    ${computeReflection.slice(0, 240)}`)
       }
@@ -752,6 +1063,9 @@ async function checkRoute(browser, origin, route) {
         const lines = editor.getModel().getLinesContent()
         const at = lines.findIndex((line) => line.includes('vec4('))
         if (at < 0) return null
+        // Monaco anchors this widget to the line, and places none for a line out of view, so
+        // the line is revealed first: the subject here is the answer, not the scroll position.
+        editor.revealLineInCenter(at + 1)
         editor.setPosition({ lineNumber: at + 1, column: lines[at].indexOf('vec4(') + 'vec4('.length + 1 })
         editor.focus()
         const action = editor.getAction('editor.action.triggerParameterHints')
@@ -881,6 +1195,88 @@ async function checkRoute(browser, origin, route) {
       console.log(`  diagnostics: ${diagnostics}`)
       console.log(`  WGSL: ${output.split('\n').length} lines, ${output.length} characters, ${colours} colours`)
       console.log(`  reflection: ${(reflection.match(/@(?:vertex|fragment|compute)/g) ?? []).length} entry point(s), evaluated on the CPU`)
+
+      // ── every example in the picker, drawn ────────────────────────────────────────────
+      // "The examples run in the Playground" was a claim nobody could check without driving
+      // a browser by hand, which is how it went two hours without a straight answer. This
+      // is that answer, as a number the build defends. The corpus is one list and the same
+      // list in both languages, so it is walked once, on the source locale; the Korean
+      // route runs every other step.
+      if (route === ROUTES[0]) {
+        await openTab(page, 'result')
+        const ids = await page.evaluate(() => [...document.querySelectorAll('[data-example] option')].map((o) => o.value))
+        if (ids.length === 0) problems.push('the example picker offers nothing to draw')
+        const drawn = []
+        for (const id of ids) {
+          await page.selectOption('[data-example]', id)
+          // The compile is debounced, so the canvas still holds the example before this one
+          // until it lands. Without this wait a fast example is photographed as its
+          // predecessor and the count is of the wrong pictures.
+          await page.waitForTimeout(AFTER_EDIT)
+          try {
+            await settleResult(page)
+          } catch {
+            problems.push(`'${id}' never settled: the Result tab neither drew a frame nor said why not`)
+          }
+          const seen = await canvasColours(page)
+          const state = await page.evaluate(() => ({
+            backend: document.querySelector('[data-gpu-canvas]')?.dataset.backend ?? 'none',
+            note: (document.querySelector('[data-gpu-note]')?.textContent ?? '').trim(),
+            status: (document.querySelector('[data-status]')?.textContent ?? '').trim(),
+          }))
+          drawn.push({ id, ...state, ...seen })
+        }
+        const ran = drawn.filter((row) => row.backend !== 'none')
+        const painted = drawn.filter((row) => row.colours > 1)
+        console.log(`  examples: ${painted.length} of ${drawn.length} paint more than one colour, ${ran.length} of ${drawn.length} get a backend`)
+        // Grouped by what the page says about them, so a count that moves names what moved.
+        const byReason = new Map()
+        for (const row of drawn.filter((r) => r.colours <= 1)) {
+          const reason = row.backend === 'none' ? row.note : `${row.note} (a backend ran it and it came out one flat colour)`
+          byReason.set(reason, [...(byReason.get(reason) ?? []), row.id])
+        }
+        for (const [reason, names] of byReason) console.log(`    ${names.join(', ')}\n      ${reason}`)
+        if (painted.length < PAINTED_FLOOR) {
+          problems.push(`${painted.length} of ${drawn.length} examples paint the canvas, and ${PAINTED_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped drawing in the list above`)
+        }
+        if (ran.length < RAN_FLOOR) {
+          problems.push(`${ran.length} of ${drawn.length} examples get a backend, and ${RAN_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped running in the list above`)
+        }
+
+        // And the thing the maintainer actually asked for: that an example on the page is
+        // editable. A build that compiles is not evidence; a keystroke that reaches the
+        // emitted text and the frame is. `plasma-twin` is a fullscreen pass whose look
+        // follows its own arithmetic, so an edit to it has to move both.
+        await page.selectOption('[data-example]', 'plasma-twin')
+        await settleResult(page)
+        await page.waitForTimeout(AFTER_EDIT)
+        const beforeFrame = await canvasColours(page)
+        const beforeWgsl = await wgslPane(page)
+        await openTab(page, 'result')
+        const edited = await page.evaluate(() => {
+          const model = window.monaco.editor.getModels()[0]
+          // One number in the pass: the wave count the three sines run at, which is an edit
+          // a reader could make by eye and see in the picture.
+          const next = model.getValue().replaceAll('* 10. +', '* 3. +')
+          const changed = next !== model.getValue()
+          model.setValue(next)
+          return changed
+        })
+        if (!edited) problems.push('the edit the check types found nothing to replace in plasma-twin, so it proved nothing')
+        await page.waitForTimeout(AFTER_EDIT)
+        await settleResult(page)
+        const afterWgsl = await wgslPane(page)
+        await openTab(page, 'result')
+        await page.waitForTimeout(600)
+        const afterFrame = await canvasColours(page)
+        if (afterWgsl === beforeWgsl) problems.push('typing into the editor did not change the emitted WGSL')
+        if (afterFrame.colours === beforeFrame.colours && afterFrame.opaque === beforeFrame.opaque) {
+          problems.push(`typing into the editor did not repaint the canvas: ${beforeFrame.colours} colours before and after`)
+        }
+        console.log(`  an edit reaches the output: WGSL ${beforeWgsl.length} B to ${afterWgsl.length} B, canvas ${beforeFrame.colours} colours to ${afterFrame.colours}`)
+        await page.selectOption('[data-example]', 'hello')
+        await page.waitForTimeout(AFTER_EDIT)
+      }
     }
 
     const realErrors = pageErrors
@@ -894,6 +1290,82 @@ async function checkRoute(browser, origin, route) {
   return { route, problems, cdnFailures, cdnOnly }
 }
 
+// The example page that carries the tool seeded with its own file. `plasma-twin` is a
+// fullscreen pass whose picture follows its own arithmetic, so an edit to it moves the frame.
+const SEEDED_ROUTE = '/guide/examples/plasma-twin/'
+
+/** The Playground on an example's own page, which is what "the examples are editable" means.
+ *  The page names the example, so there is no picker and the editor opens on that file. The
+ *  tool is inside a documentation column here and on a page of its own everywhere else, so
+ *  the edit is typed again on this route instead of taken on trust. */
+async function checkSeeded(browser, origin) {
+  const { page, pageErrors, cdnFailures } = await openPage(browser)
+  const problems = []
+  let cdnOnly = false
+  let mounted = true
+  try {
+    await page.goto(`${origin}${SEEDED_ROUTE}`, { waitUntil: 'load' })
+    try {
+      await page.waitForSelector('.monaco-editor', { timeout: EDITOR_TIMEOUT })
+    } catch {
+      mounted = false
+      problems.push('the editor did not mount on the example page: no .monaco-editor appeared')
+    }
+
+    if (mounted) {
+      await page.waitForTimeout(AFTER_EDIT)
+      if (await page.isVisible('[data-example]')) {
+        problems.push('the example page carries the example picker, and the page already names the example')
+      }
+      const seeded = await sourceOf(page)
+      if (!seeded.includes('use typeshade')) {
+        problems.push(`the editor on the example page does not hold a "use typeshade" file:\n    ${seeded.slice(0, 200)}`)
+      }
+      await openTab(page, 'result')
+      try {
+        await settleResult(page)
+      } catch {
+        problems.push('the example page never settled: the Result tab neither drew a frame nor said why not')
+      }
+      const before = await canvasColours(page)
+      const beforeWgsl = await wgslPane(page)
+      await openTab(page, 'result')
+      const edited = await page.evaluate(() => {
+        const model = window.monaco.editor.getModels()[0]
+        const next = model.getValue().replaceAll('* 10. +', '* 3. +')
+        const changed = next !== model.getValue()
+        model.setValue(next)
+        return changed
+      })
+      if (!edited) problems.push('the edit the check types found nothing to replace on the example page, so it proved nothing')
+      await page.waitForTimeout(AFTER_EDIT)
+      try {
+        await settleResult(page)
+      } catch {
+        problems.push('the example page did not settle after an edit')
+      }
+      const afterWgsl = await wgslPane(page)
+      await openTab(page, 'result')
+      await page.waitForTimeout(600)
+      const after = await canvasColours(page)
+      const status = (await page.textContent('[data-status]'))?.trim() ?? ''
+      if (afterWgsl === beforeWgsl) problems.push('typing into the example page\'s editor did not change the emitted WGSL')
+      if (after.colours === before.colours && after.opaque === before.opaque) {
+        problems.push(`typing into the example page's editor did not repaint the canvas: ${before.colours} colours before and after`)
+      }
+      console.log(`  seeded with ${seeded.length} B, ${status}`)
+      console.log(`  an edit reaches the output: WGSL ${beforeWgsl.length} B to ${afterWgsl.length} B, canvas ${before.colours} colours to ${after.colours}`)
+    }
+
+    const realErrors = pageErrors.filter((message) => !/ResizeObserver|Canceled/.test(message))
+    for (const message of realErrors) problems.push(`the page threw: ${message}`)
+    cdnOnly = problems.length > 0 && realErrors.length === 0 && cdnFailures.length > 0 && !mounted
+  } finally {
+    await page.close()
+  }
+  return { route: SEEDED_ROUTE, problems, cdnFailures, cdnOnly }
+}
+
 const server = await serveDist(dist, Number(process.env.PLAYGROUND_PORT ?? 4473))
 const browser = await launchChromium()
 const results = []
@@ -902,6 +1374,8 @@ try {
     console.log(`[playground] ${route}`)
     results.push(await checkRoute(browser, server.url, route))
   }
+  console.log(`[playground] ${SEEDED_ROUTE}`)
+  results.push(await checkSeeded(browser, server.url))
 } finally {
   await browser.close()
   server.close()

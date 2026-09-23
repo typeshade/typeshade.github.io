@@ -19,6 +19,7 @@ import { Code } from 'astro-expressive-code/components'
 import Docs from '../../layouts/Docs.astro'
 import CodeFrame from '../CodeFrame.astro'
 import Rich from '../Rich.astro'
+import Playground from '../Playground.astro'
 import ShaderCanvas from '../ShaderCanvas.astro'
 import type { CanvasText } from '../ShaderCanvas.astro'
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts'
@@ -114,6 +115,12 @@ const panes = [
     : []),
 ]
 const paneId = (key: string): string => `example-pane-${key}`
+
+// A `.shade.ts` example is a `"use typeshade"` file, which is what the Playground's editor
+// compiles, so its page carries the Playground itself, seeded with that file and editable.
+// An `fn()` example is TypeScript calling the compiler's builder API, which that editor does
+// not take, so it keeps the card of stills and baked goldens and says so in one line.
+const editable = example.corpus === 'shade'
 ---
 
 <Docs
@@ -129,68 +136,82 @@ const paneId = (key: string): string => `example-pane-${key}`
   <h1>{name}</h1>
   <p><Rich text={blurb} locale={locale} /></p>
 
-  <div class="example-stage" data-front-tabs data-shader-scope>
-    <div class="live-card">
-      <div class="example-stage-body">
-        <div class="example-stage-view">
-          {example.drawn ? (
-            <ShaderCanvas locale={locale} example={example.id} aspect="auto" caption={caption} eager externalCaption />
-          ) : (
-            <div class="figure-frame">
-              <span class="example-tile-blank">
-                <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-                  <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
-                  <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
-                  <circle cx="14.5" cy="15.5" r="2.25" />
-                </svg>
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div class="example-stage-code">
-          <div class="front-tabs-head" role="tablist" aria-label={p.tabs}>
-            {panes.map((pane, i) => (
-              <button
-                type="button"
-                role="tab"
-                id={`${paneId(pane.key)}-tab`}
-                aria-controls={paneId(pane.key)}
-                aria-selected={i === 0 ? 'true' : 'false'}
-              >{pane.label}</button>
-            ))}
-          </div>
-          {/* The tab already names the pane, so the frame inside it carries no title bar of
-              its own; the label stays as the code region's accessible name. The source pane
-              opens on the line the shader starts at (src/scripts/example-stage.ts). */}
-          <div class="example-stage-panels" data-example-panels>
-            {panes.map((pane) => (
-              <div
-                class="front-tabs-panel"
-                role="tabpanel"
-                id={paneId(pane.key)}
-                aria-labelledby={`${paneId(pane.key)}-tab`}
-                data-entry-line={pane.key === 'source' ? String(example.entryLine) : undefined}
-              >
-                <CodeFrame label={pane.region}><Code code={pane.code} lang={pane.lang} locale={locale} wrap /></CodeFrame>
+  {editable ? (
+    <div class="example-playground">
+      <Playground locale={locale} seed={id} />
+      <p class="example-stage-notes">{p.editable}</p>
+    </div>
+  ) : (
+    <div class="example-stage" data-front-tabs data-shader-scope>
+      <div class="live-card">
+        <div class="example-stage-body">
+          <div class="example-stage-view">
+            {example.drawn ? (
+              <ShaderCanvas locale={locale} example={example.id} aspect="auto" caption={caption} eager externalCaption />
+            ) : (
+              <div class="figure-frame">
+                <span class="example-tile-blank">
+                  <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                    <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
+                    <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
+                    <circle cx="14.5" cy="15.5" r="2.25" />
+                  </svg>
+                </span>
               </div>
-            ))}
+            )}
+          </div>
+
+          <div class="example-stage-code">
+            <div class="front-tabs-head" role="tablist" aria-label={p.tabs}>
+              {panes.map((pane, i) => (
+                <button
+                  type="button"
+                  role="tab"
+                  id={`${paneId(pane.key)}-tab`}
+                  aria-controls={paneId(pane.key)}
+                  aria-selected={i === 0 ? 'true' : 'false'}
+                >{pane.label}</button>
+              ))}
+            </div>
+            {/* The tab already names the pane, so the frame inside it carries no title bar of
+                its own; the label stays as the code region's accessible name. The source pane
+                opens on the line the shader starts at (src/scripts/example-stage.ts). */}
+            <div class="example-stage-panels" data-example-panels>
+              {panes.map((pane) => (
+                <div
+                  class="front-tabs-panel"
+                  role="tabpanel"
+                  id={paneId(pane.key)}
+                  aria-labelledby={`${paneId(pane.key)}-tab`}
+                  data-entry-line={pane.key === 'source' ? String(example.entryLine) : undefined}
+                >
+                  <CodeFrame label={pane.region}><Code code={pane.code} lang={pane.lang} locale={locale} wrap /></CodeFrame>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="example-stage-notes">
-      <p>{example.drawn ? <span data-shader-caption>{caption.neutral}</span> : p.noPicture[example.reason!]}</p>
-      <p><Rich text={p.emittedNote} locale={locale} /></p>
+      <div class="example-stage-notes">
+        <p>{example.drawn ? <span data-shader-caption>{caption.neutral}</span> : p.noPicture[example.reason!]}</p>
+        <p><Rich text={p.emittedNote} locale={locale} /></p>
+        <p><Rich text={p.builder} locale={locale} /></p>
+      </div>
     </div>
-  </div>
+  )}
 
   <p class="example-page-links">
     <a href={sourceHref}>{p.github}</a>
-    {example.inPlayground && <a href={playgroundHref}>{p.playground}</a>}
+    {example.inPlayground && !editable && <a href={playgroundHref}>{p.playground}</a>}
   </p>
 </Docs>
+
+<style>
+  /* The tool takes the document column the card took, and the line under it sits where the
+     card's own notes sit. */
+  .example-playground { margin-block-start: 24px }
+</style>
 
 <script>
   // The tabs over the source and the emitted targets, shared with the front page's own

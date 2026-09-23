@@ -396,6 +396,9 @@ export const en = {
     reset: 'Reset example',
     editor: 'TypeShade source',
     output: 'Compiler output',
+    // The tabs over the result column: the canvas the module draws, one per file the
+    // compiler emits, and the reflection. `reflection` below names the last one.
+    resultTab: 'Result',
     // One tab per file the compiler emits: the WGSL module, and the two GLSL ES 3.00 stages.
     wgslTab: 'WGSL',
     glslVertexTab: 'GLSL vertex',
@@ -432,6 +435,24 @@ export const en = {
     argsInvalid: 'That argument is not a number or a list of numbers.',
     cpuNoResources: 'The CPU oracle takes entry arguments only, so an entry that reads a uniform or a storage binding cannot run here yet.',
     canvas: 'CPU canvas',
+    // The Result tab draws with one of two engines. The GPU runs the very program the WGSL
+    // and GLSL tabs hold, through the runtime every figure on the site uses. The CPU oracle
+    // runs the fragment entry once per pixel, which answers a different question and is
+    // what a browser with no GPU API has.
+    engine: 'Draw with',
+    engineGpu: 'GPU',
+    engineCpu: 'CPU oracle',
+    gpuIdle: 'Compile a module with a vertex entry and a fragment entry to see it drawn.',
+    gpuWebgpu: 'Running on WebGPU.',
+    gpuWebgl2: 'Running on WebGL2.',
+    gpuNone: 'This browser has no WebGPU and no WebGL2, so nothing drew. The CPU oracle still runs.',
+    gpuNeedsStages: 'Drawing needs a vertex entry and a fragment entry. This module has no such pair.',
+    gpuNeedsAttributes: 'The canvas draws three vertices and binds no vertex buffer. This module reads {fields} from one, so the GPU cannot run it here.',
+    gpuNeedsBindings: 'The canvas fills a uniform block, and the f64 guard the compiler injects, and nothing else. This module asks for {names}, so the GPU cannot run it here.',
+    gpuZeroed: 'The page fills time, resolution and mouse every frame. This module also declares {fields}, which no handle covers, so they stay at 0.',
+    // The group of handles under the canvas, one per uniform field the page does not fill
+    // itself. Each row prints the field's own name in code beside its handle.
+    uniforms: 'Uniforms',
     draw: 'Draw on the CPU',
     stop: 'Stop',
     canvasIdle: 'Run the fragment entry once per pixel, with no GPU.',
@@ -440,6 +461,11 @@ export const en = {
     canvasProgress: '{done}/{total} tiles, {running} running, {waiting} waiting',
     canvasDrawn: '{px} px in {ms} ms on {workers} worker(s)',
     canvasNeedsVertex: 'Drawing needs a vertex entry driven by vertex_index and a fragment entry. This module has no such pair, so there is no triangle to cover.',
+    // What the canvas says when the pair is there and the three corners it got have no area.
+    // The canvas runs the vertex entry at the indices 0, 1 and 2 and has no value for any
+    // other input, so it leaves those at zero, and a stage that reads one collapses.
+    canvasFlat: 'The vertex entry returned three corners with no area between them, so there is no triangle to cover.',
+    canvasFlatInputs: 'The canvas runs the vertex entry at the indices 0, 1 and 2 and has no value for {fields}, so it left those at 0. The three corners it got back have no area between them.',
     cpuFailed: 'The CPU oracle could not run this entry point.',
     entryCount: (n: number) => (n === 1 ? '1 entry point' : `${n} entry points`),
     // The example picker. Every example is one of the compiler's own .shade.ts files; the
@@ -450,6 +476,9 @@ export const en = {
     copied: 'Copied',
     share: 'Copy link',
     shared: 'Link copied',
+    // Shown while the file declares no `@vertex` entry of its own, which is when the page
+    // compiles it behind the fullscreen triangle src/lib/live-shader-contract.ts fixes.
+    preludeNote: 'This file declares no `@vertex` entry, so it is compiled behind a fullscreen triangle that hands the fragment stage a `uv` running 0 to 1. The tabs and the canvas show that program.',
     // The emit options the compiler takes, as controls over what the code tabs show.
     emit: {
       title: 'Emit options',
@@ -457,8 +486,11 @@ export const en = {
       levels: { O0: 'O0 (no passes)', O1: 'O1 (value-safe)', O2: 'O2 (default)' },
       parens: 'Parentheses',
       minify: 'Minify',
+      numbers: 'Number literals',
+      obfuscate: 'Obfuscate',
+      fp64: 'f64 emulation',
       precision: `${glsl} float precision`,
-      levelNote: 'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses and minify reach the GLSL tabs only.',
+      levelNote: 'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses, minify, the number literals, obfuscate and the f64 emulation reach the GLSL tabs only. The f64 emulation still reaches the reflection at every level, since `reflect()` takes it on its own.',
     },
   },
 
@@ -1080,6 +1112,11 @@ export const en = {
       glslFragment: `${glsl} fragment`,
       github: 'File on GitHub',
       playground: 'Open in the Playground',
+      /** The line over the tool on a `.shade.ts` example's page, which carries the whole
+       *  Playground seeded with that file. */
+      editable: 'The editor holds this example\'s own file. An edit recompiles it in your browser, and the tabs beside the editor follow.',
+      /** The line on an `fn()` example's page, which carries the static card instead. */
+      builder: 'This example is written against the `fn()` builder API, which the editor in the [Playground](playground) does not take.',
       /** What the page says where it draws no picture, one line per reason in
        *  NO_STILL_REASONS (scripts/artifacts.mjs). */
       noPicture: {
