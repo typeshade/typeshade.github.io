@@ -86,6 +86,11 @@ export const SHADE_STILL_EXAMPLES = [
   'voronoi-twin',
   'class-syntax',
   'rng-method',
+  'class-builder',
+  'class-parts',
+  'closures',
+  'higher-order',
+  'inferred-returns',
 ];
 
 /** Why one example has no still, keyed by id, for every example of either corpus that is not
@@ -148,6 +153,9 @@ export const NO_STILL_REASONS = {
   'integer-math': 'uniform',
   'sample-branch': 'uniform',
   'uniform-array': 'uniform',
+  'loops-over-data': 'uniform',
+  'path-tracer': 'uniform',
+  'workgroup-tile-2d': 'no-glsl',
 };
 
 /** The reason keys above, so a dictionary can be held to one sentence for each. */

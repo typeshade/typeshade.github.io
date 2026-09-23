@@ -8,7 +8,7 @@ import { shortBlurb } from './blurb.ts';
 import { builtinCounts } from './builtin-table.ts';
 import { languageCounts } from './language-reference.ts';
 import { errorCodeCounts } from './error-codes.ts';
-import { loweringRowCount, loweringTripLimit } from './typescript-lowering.ts';
+import { loweringRowCount } from './typescript-lowering.ts';
 import { glslCapabilityCount } from './glsl-mapping.ts';
 import { wgslBuiltinIdCount } from './target-mapping.ts';
 import { shadeCounts, shadeExampleList } from './shade-examples.ts';
@@ -344,8 +344,6 @@ export const facts = {
   /** The construct rows on /guide/language/from-typescript/, counted from the generator that
    *  compiles one program per row (src/lib/typescript-lowering.ts). */
   constructRows: loweringRowCount(),
-  /** The most trips a counted `for` may run, read off the compiler's own refusal. */
-  forTripLimit: loweringTripLimit(),
   /** How many `@builtin(...)` ids the WGSL vocabulary holds (src/core/sot.ts
    *  WGSL_BUILTIN_NAMES). The WGSL mapping page states it and types none of it. */
   wgslBuiltinIds: wgslBuiltinIdCount(),
@@ -397,29 +395,28 @@ export const facts = {
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
-  commit: '6281164',
+  commit: 'eb0dde6',
   examples: 36,
-  shadeExamples: 73,
+  shadeExamples: 81,
   bothTargets: 35,
   testFiles: 302,
-  goldenGlslPairs: 92,
+  goldenGlslPairs: 99,
   builtins: 163,
   portableBuiltins: 44,
   glslAbsentBuiltins: 43,
   mathAliasBuiltins: 27,
   constructRows: 65,
-  forTripLimit: 256,
   wgslBuiltinIds: 16,
   glslCapabilities: 4,
-  languageEntries: 288,
+  languageEntries: 291,
   languageTypes: 56,
   languageAttributes: 9,
   languageBuiltinValues: 16,
-  languageFunctions: 163,
+  languageFunctions: 166,
   languageConstants: 8,
   languageMathMembers: 36,
   errorCodesTs: 44,
-  errorCodesSd: 35,
+  errorCodesSd: 36,
   errorCodesRetired: 1,
 };
 const drift: string[] = [];
@@ -443,8 +440,6 @@ if (facts.mathAliasBuiltins !== pinned.mathAliasBuiltins)
   drift.push(`mathAliasBuiltins ${facts.mathAliasBuiltins} != ${pinned.mathAliasBuiltins}`);
 if (facts.constructRows !== pinned.constructRows)
   drift.push(`constructRows ${facts.constructRows} != ${pinned.constructRows}`);
-if (facts.forTripLimit !== pinned.forTripLimit)
-  drift.push(`forTripLimit ${facts.forTripLimit} != ${pinned.forTripLimit}`);
 if (facts.wgslBuiltinIds !== pinned.wgslBuiltinIds)
   drift.push(`wgslBuiltinIds ${facts.wgslBuiltinIds} != ${pinned.wgslBuiltinIds}`);
 if (facts.glslCapabilities !== pinned.glslCapabilities)
