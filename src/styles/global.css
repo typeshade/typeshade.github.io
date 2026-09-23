@@ -788,7 +788,7 @@ body > main { flex: 1 }
 .doc > section > :is(p, ul, ol, dl, blockquote, h2, h3, h4, .alert) {
   max-inline-size: var(--content);
 }
-.doc .construct-cards, .doc .example-grid { max-inline-size: none }
+.doc .construct-cards { max-inline-size: none }
 /* A block that shows one thing stops at the wide measure: a figure keeps a 3:1 pass from
    growing into a band as tall as the screen, a table of short code cells keeps columns a row
    can be read across, and a code frame keeps 115 characters of the code font instead of
@@ -858,19 +858,19 @@ body > main { flex: 1 }
    it (src/lib/remark-doc-tables.mjs); example-table, the layout table and the API reference's
    own targets table keep their own, purpose-built mobile layout instead. */
 @media (max-width: 44.999rem) {
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) {
+  .doc table:not(.layout-table):not(.api-targets) {
     display: block; overflow-x: visible;
   }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) tbody { display: block }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) thead { display: none }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) tr {
+  .doc table:not(.layout-table):not(.api-targets) tbody { display: block }
+  .doc table:not(.layout-table):not(.api-targets) thead { display: none }
+  .doc table:not(.layout-table):not(.api-targets) tr {
     display: block; padding-block: 12px; border-block-end: 1px solid var(--color-line-1);
   }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) th,
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) td {
+  .doc table:not(.layout-table):not(.api-targets) th,
+  .doc table:not(.layout-table):not(.api-targets) td {
     display: block; padding: 3px 0; border: 0; white-space: normal; background: none;
   }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) td[data-label]::before {
+  .doc table:not(.layout-table):not(.api-targets) td[data-label]::before {
     content: attr(data-label); display: block; font-size: var(--text-ui); color: var(--color-text-3);
   }
 }
@@ -979,58 +979,10 @@ body > main { flex: 1 }
 }
 .scroll-region { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin }
 
-/* The examples gallery: one row per registry example, grouped by category. Every row but one
-   shares the same targets value, so the caption states it once instead of a column repeating
-   it 35 times; the one exception gets a small note in its own row instead. From 45rem the
-   three columns fit the document column. */
-.example-table-caption { margin-block-start: 12px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
-.example-table th[scope='row'], .example-table td:nth-child(2) { white-space: nowrap }
-.example-table td:last-child { min-inline-size: 11rem }
-.example-table tbody + tbody tr:first-child th, .example-table tbody + tbody tr:first-child td {
-  border-block-start: 1px solid var(--color-line-1);
-}
-.example-table th[scope='row'] { font-weight: 400; background: none }
-/* An Ant tag beside the name of the one example that emits a single target. */
-.example-wgsl-only {
-  display: inline-block; margin-inline-start: 8px; padding: 0 7px; border-radius: var(--radius-sm);
-  border: 1px solid var(--color-line-2); background: var(--color-surface-1);
-  font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2);
-  white-space: nowrap;
-}
-/* Below that a description column would be a few characters wide, and the columns to its
-   left would push it off the screen. A row reads as a block instead: the example, its
-   description, then the category. The roles in the markup keep the table a table for a
-   screen reader. */
-@media (max-width: 44.999rem) {
-  .example-table thead { display: none }
-  .example-table, .example-table tbody { display: block }
-  .example-table tr { display: flex; flex-wrap: wrap; column-gap: 14px; padding-block: 12px; border-block-end: 1px solid var(--color-line-1) }
-  .example-table th, .example-table td { display: block; padding: 0; border: 0; white-space: normal }
-  .example-table th[scope='row'] { flex-basis: 100%; font-size: var(--text-h5); color: var(--color-text-1) }
-  .example-table td:last-child { flex-basis: 100%; min-inline-size: 0; order: 1; margin-block-start: 3px }
-  .example-table td:nth-child(2) { order: 2; margin-block-start: 5px; color: var(--color-text-3) }
-  .example-table tbody + tbody tr:first-child th, .example-table tbody + tbody tr:first-child td { border-block-start: 0 }
-}
-
-/* The examples gallery as tiles: an Ant Card each, a picture where the runtime can draw one
-   as the cover, the name and the sentence in the body, the whole tile one link to the source
-   at the pinned commit. */
-.example-group { margin-block-start: 40px }
-/* A tile is a 3:2 cover with a name and a sentence under it, and 260px is the width the two
-   columns in the old 596px document column gave one, so a wider column carries more tiles
-   instead of taller ones. Under 276px of column the track collapses to one, a phone's. */
-.example-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 24px 16px; margin: 24px 0 0; padding: 0; list-style: none }
-.example-grid li { margin: 0; padding: 0 }
-.example-tile {
-  display: flex; flex-direction: column; overflow: hidden; block-size: 100%;
-  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
-  color: inherit; text-decoration: none;
-  transition: box-shadow var(--motion), border-color var(--motion);
-}
-.example-tile:hover { border-color: transparent; box-shadow: var(--shadow-elevated) }
+/* A tile's cover, on the front page and in the gallery: the build-time still at 3:2 over the
+   canvas grey, with a hairline under it. The page scales it on hover. */
 .tile-cover { display: block; position: relative; aspect-ratio: 3 / 2; overflow: hidden; border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-2) }
 .tile-cover img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; transition: transform 400ms var(--ease-out) }
-@media (hover: hover) and (pointer: fine) { .example-tile:hover .tile-cover img { transform: scale(1.03) } }
 /* A tile the runtime cannot draw gets Ant's Empty instead of a bare grey box: the outlined
    mark, and one sentence saying why there is no picture. */
 .empty {
@@ -1043,10 +995,6 @@ body > main { flex: 1 }
   fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
 }
 .empty-note { max-inline-size: 30ch; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
-.example-tile-title { padding: 16px 16px 0; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1); transition: color var(--motion) }
-.example-tile:hover .example-tile-title { color: var(--color-accent) }
-.example-tile-blurb { padding: 4px 16px 16px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
-.example-tile-blurb code { font-family: var(--font-mono); font-size: 0.9em }
 
 /* One example's page, in the shape ShaderToy gives one: a single card split down the middle,
    the picture on the left and the code on the right, and nothing else in either pane. The
@@ -1139,13 +1087,6 @@ body > main { flex: 1 }
   .example-stage-code { block-size: auto; border-block-start: 0; border-inline-start: 1px solid var(--color-line-1) }
 }
 .example-page-links { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-block-start: 32px }
-
-/* The examples page opens with a numbered path through the guide. Each step's own heading
-   carries its number, so the list marker would print it a second time. */
-.learning-path ol { padding-inline-start: 0; list-style: none }
-.learning-path li { margin-block-start: 24px }
-.learning-path li p { margin-block-start: 4px }
-.learning-path li a { display: inline-block; margin-block-start: 4px }
 
 /* Diagnostic */
 .diagnostic { margin-block-start: 12px; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); color: var(--color-text-2); overflow-wrap: anywhere }
