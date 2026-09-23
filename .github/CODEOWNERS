@@ -12,6 +12,7 @@
 
 # The pinned compiler, the checks, and the automation that runs them.
 /vendor/             @Seungup
+/compiler-changes.md @Seungup
 /scripts/            @Seungup
 /.claude/            @Seungup
 /.github/            @Seungup
