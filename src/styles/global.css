@@ -1169,19 +1169,14 @@ body > main { flex: 1 }
   border-block-start: 1px solid var(--color-line-1);
 }
 .example-stage .front-tabs-head {
-  --tab-gap: 16px;
-  flex: none; align-items: stretch; gap: var(--tab-gap); block-size: 44px;
-  padding-inline-start: 16px; padding-inline-end: 8px;
+  --tab-gap: 20px;
+  flex: none; align-items: stretch; gap: var(--tab-gap); block-size: 44px; padding-inline: 16px;
   overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
   border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-1);
 }
-/* The head's start inset is 16px, which puts the first tab's letters over the first letter
-   of the code under it. The end inset is 8px: nothing lines up on that side, and the four
-   tabs want the width.
-
-   At its trailing edge is the 32px fade the panels under it carry at their foot, for the
-   widths where the tabs are wider than the pane and the head scrolls. It is a sticky strip
-   of the head's own ground and not a mask, because a mask over the box would take the
+/* At the head's trailing edge is the 32px fade the panels under it carry at their foot, for
+   the widths where the tabs are wider than the pane and the head scrolls. It is a sticky
+   strip of the head's own ground and not a mask, because a mask over the box would take the
    hairline under the tabs with it for those 32px. Its negative start margin is the strip and
    the gap in front of it, so the strip costs the head no width of its own. The head carries
    data-overflow while there is somewhere to scroll to (src/scripts/example-stage.ts): a fade
@@ -1193,17 +1188,15 @@ body > main { flex: 1 }
 }
 .example-stage .front-tabs-head::-webkit-scrollbar { display: none }
 .example-stage .front-tabs-head button { flex: none; block-size: auto; white-space: nowrap }
-/* The file is where the pane rests, so it leads, and a rule sets it apart from the three
-   texts the compiler makes out of it, in a well of twice the gap with the rule at its
-   middle. It is also the one tab whose text the site does not choose: an example's file name
-   runs to 29 characters, and at that length the four tabs ask for 484px in English and 488px
-   in Korean, which the head's 490px from a 1320 viewport holds and its 470px at 1280 does
-   not. So the file is the tab that gives way, and the three the compiler emits stay whole,
-   since a tab a reader cannot read is a text they will not know the page holds. What the
-   file loses first is the .shade.ts every one of those files ends in. Its floor is 16
-   characters. Under about 420px of head the four tabs do not fit however far the file gives
-   way, so the head scrolls there whatever the floor is, and 16 characters keep the example's
-   own name in the tab with three of the four tabs in view. */
+/* The file is where the pane rests, so it leads and a rule sets it apart from the three
+   texts the compiler makes out of it. It is also the one tab whose text the site does not
+   choose: the longest file name on a card page is 22 characters, which puts the four tabs
+   at 465px in English and 469px in Korean, inside the head's 470px at a 1280 viewport and
+   its 490px from 1320. A longer file name would put them past it, so the file is the tab
+   that gives way, and the three the compiler emits stay whole, since a tab a reader cannot
+   read is a text they will not know the page holds. Its floor is 16 characters: under about
+   450px of head the four tabs do not fit however far the file gives way, so the head scrolls
+   there whatever the floor is, and 16 characters keep the example's own name in the tab. */
 .example-stage .front-tabs-head button:first-child {
   padding-inline-end: var(--tab-gap); position: relative;
   flex: 0 1 auto; min-inline-size: calc(16ch + var(--tab-gap)); overflow: hidden; text-overflow: ellipsis;

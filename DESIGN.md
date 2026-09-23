@@ -468,15 +468,15 @@ why lives on its own page.
     compiler emits, the WGSL and the two GLSL ES 3.00 stages it baked into
     `examples/__emit-goldens__/` at the pinned commit; it opens on the line the shader starts
     at, since several of those files begin with a banner comment. A GLSL tab reads `GLSL
-    vertex` and `GLSL fragment`: the head is 490px from a 1320 viewport and the full target
-    name puts the four tabs at 539px in English and 543px in Korean, so the last tab was cut
-    off at every desktop width. The full name is in the line under the card and in the pane's
-    own accessible name. The head is a scroller wherever it is under about 420px, which is
-    the phone layout and the widths where the card splits inside a narrow column, and it
-    carries there the 32px fade on its trailing edge that the panels carry at their foot. The
-    file is the tab that gives way when the four ask for more than the head has, down to 16
-    characters, since the file name is the one tab text the site does not choose. Which
-    backend drew the
+    vertex` and `GLSL fragment`: the head is 490px from a 1320 viewport and 470px at 1280,
+    and the full target name put the four tabs at 569px in English and 573px in Korean, so
+    the last tab was cut off at every desktop width. The full name is in the line under the
+    card and in the pane's own accessible name. The head is a scroller wherever it is under
+    about 450px, which is the phone layout and the widths where the card splits inside a
+    narrow column, and it carries there the 32px fade on its trailing edge that the panels
+    carry at their foot. The file is the tab that gives way when the four ask for more than
+    the head has, down to 16 characters, since the file name is the one tab text the site
+    does not choose. Which backend drew the
     frame, or why nothing did, where the emitted text comes from, and that the example is
     written against `fn()` are written under the card, because a label inside a pane makes
     that pane read as a figure. The card is its own container, so the panes go side by side

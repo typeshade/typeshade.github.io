@@ -9,8 +9,9 @@
 //
 // The tab bar over the pane is a scroller too, and it gets the same treatment on the inline
 // axis: a fade at its trailing edge while the four tabs are wider than the pane, which is
-// the phone layout. The flag is measured and not written into the stylesheet, because the
-// width the tabs want is the file name's, and that is different on every example page.
+// the phone layout and the widths where the card splits inside a narrow column. The flag is
+// measured here and not written into the stylesheet, because the width the tabs want is the
+// file name's, and that is different on every example page.
 
 /** Room between the pane's top edge and the line it opens on. */
 const AIR = 12
