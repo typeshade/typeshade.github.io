@@ -1,7 +1,7 @@
 ---
 id: production-emit
-source: c4b68090036af9a869567bf96a59435346d5a57122fb2af6e4131c22a03cec65
-sourceLine: 2301
+source: 5d694bc639ae79f31dbadd756871dbe2a46e1fc2ad65888c4a5a676d54c40c05
+sourceLine: 2391
 ---
 
 이 절을 읽고 나면 배포 시점 변환들을 생성 호출 하나에 조합할 수 있고, 바뀐 이름으로
@@ -210,7 +210,7 @@ d.explained // [{ transform: 'inline', bucket: 'controlFlow', line: '…' }, …
 플러그인 배열을 통째로 넘겨도 안전합니다.
 
 이 저장소의 예제 코퍼스에서 `obfuscate()`에 `parens: 'minimal'`을 더하면 일반 생성
-결과 175,673자가 93,490자로 줄어들며, 이 성질은 두 개의 게이트가 지킵니다.
+결과 182,437자가 93,753자로 줄어들며, 이 성질은 두 개의 게이트가 지킵니다.
 `examples/minify-safety.test.ts`는 압축 전후로 토큰 스트림과 모든 리터럴의 f32 값이
 같고, 이 패스를 두 번 적용해도 결과가 같다는(멱등) 점을 검증합니다.
 `examples/reserved-word-safety.test.ts`는 코퍼스를 `obfuscate()`와

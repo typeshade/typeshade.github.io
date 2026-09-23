@@ -31,7 +31,7 @@ const headings = [c.invocationH, c.memoryH, c.callsH, c.loopsH, c.typesH, c.tabl
   <section>
     <h2 id={slugify(c.memoryH)}>{c.memoryH}</h2>
     <p>{c.memoryP}</p>
-    <TypeShadeCode code={`class Camera {\n  @align(16)\n  view: mat4\n  pos: vec3\n}\n\ndeclare const camera: uniform<Camera>`} />
+    <TypeShadeCode code={`class Camera {\n  view: mat4\n  pos: vec3\n}\n\ndeclare const camera: uniform<Camera>`} />
     <p><Rich text={c.memoryRule} locale={locale} /></p>
   </section>
 

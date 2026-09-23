@@ -1,7 +1,7 @@
 ---
 id: emitting-and-reflection
-source: 6c82986946f2bac53c9cd7ac496872bc267216ec4f107bf3bc10d87a5a479a0e
-sourceLine: 1210
+source: bf469fe9302ce5a755da0360bc4d29fbe0ee5b42b59ee4050ee5654de315d218
+sourceLine: 1212
 ---
 
 이 페이지를 읽고 나면 모듈을 WGSL로, GLSL 스테이지 둘로, 또는 호스트가 자기 프로그램에
@@ -120,6 +120,7 @@ r.vertex // { attributes: [{ name, location, type, offset }], arrayStride }
 r.entries // [{ name: 'vs', stage: 'vertex', inputs: ['u32'], output: 'struct:VsOut', io }, …]
 r.overrides // the pipeline constants a host supplies per variant
 r.requiredFeatures // the capabilities a host must have active before it creates a pipeline
+r.requiredLanguageFeatures // the WGSL language features the browser must implement
 r.requires // host-provided globals the module references and does not declare
 ```
 
