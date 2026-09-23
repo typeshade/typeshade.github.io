@@ -610,8 +610,10 @@ export const ko: Copy = {
           '연산자나 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않습니다.',
         UNKNOWN_FN: '파일이 선언하지도 가져오지도 않은 함수를 부릅니다.',
         CONST_ASSIGN: '`const`나 읽기 전용 리소스처럼 바뀔 수 없는 이름에 값을 대입합니다.',
-        LOOP_BOUND: '횟수를 세는 `for` 루프의 종료 조건이 카운터를 상수 경계와 비교하지 않습니다.',
-        LOOP_INFINITE: '조건이 늘 참인 루프입니다.',
+        LOOP_BOUND:
+          '컴파일러가 종료를 증명할 수 없는 `for` 루프입니다. 카운터를 경계와 비교하지 않거나, 본문이 경계를 씁니다.',
+        LOOP_INFINITE:
+          '끝나지 않는 것이 확실한 루프입니다. `break`나 `return`이 없는 `while (true)`, 또는 카운터를 경계에서 멀어지게 하는 증가입니다.',
         LOOP_INDUCTION:
           '`for` 루프의 카운터가 `i32`나 `u32` 타입의 `let` 하나가 아니거나, 갱신이 상수만큼 움직이지 않습니다.',
         BREAK_OUTSIDE: '감싸는 루프나 `switch`가 없는 곳에 `break`를 썼습니다.',
@@ -1616,6 +1618,15 @@ export const ko: Copy = {
         'tuple-and-brand': '튜플과 브랜드 별칭',
         'class-syntax': '게터, 세터, 비공개 이름, 매개변수 프로퍼티',
         'rng-method': '자기 객체를 바꾸고 값을 돌려주는 메서드',
+        'class-builder': '빌더 체인, 접근자의 super, 서브클래스가 물려받는 정적 멤버',
+        'class-parts':
+          '객체 안의 객체, 객체를 담은 const, 함수를 담은 필드, 계약으로서의 인터페이스',
+        closures: '주변 변수를 읽고 쓰는 로컬 함수',
+        'higher-order': '함수를 받는 함수',
+        'inferred-returns': '본문이 정하는 반환 타입',
+        'loops-over-data': '데이터를 도는 루프',
+        'path-tracer': '경로 추적기',
+        'workgroup-tile-2d': '이차원 워크그룹',
         'private-state': '인보케이션별 상태',
         'workgroup-scratch': '워크그룹 스크래치 메모리',
         'workgroup-reduce': '워크그룹 리덕션',
@@ -1718,6 +1729,20 @@ export const ko: Copy = {
         'class-syntax': 'TypeScript 클래스를 쓰는 방식 그대로 작성한 `class Ring`입니다.',
         'rng-method':
           '`next()`가 생성기의 상태를 앞으로 옮기고 뽑은 값을 돌려주는 `class Rng`입니다.',
+        'class-builder':
+          '모든 `return`이 `return this`인 메서드는 자기 객체를 돌려주므로 `a.at(p).tinted(c)`는 호출을 차례로 `a`에서 실행하고, `new Disc().at(p).sized(r)`는 `new`가 만든 값을 임시 변수에 담습니다(규칙 8.10).',
+        'class-parts':
+          '`ring.advance(dt)`는 자신이 담은 `Mover`의 `step`을 불러 고리를 옮깁니다. 그래서 `step`이 어느 클래스의 것이든 `advance`는 자기 객체를 바꾸고 참조로 받습니다(규칙 8.10).',
+        closures:
+          '`ring`은 TypeScript 클로저처럼 프래그먼트 진입점의 `p`와 `width`를 읽고 그 `glow`에 더합니다.',
+        'higher-order':
+          '`cover`와 `around4`는 거리 필드를 함수 `f: Field`로 받고, 제네릭 함수가 타입 인자 조합마다 한 번 컴파일되듯 호출이 넘기는 함수마다 한 번씩 컴파일됩니다(규칙 8.18).',
+        'inferred-returns':
+          '반환 타입을 적은 함수가 하나도 없고, TypeScript가 추론하듯 저마다 본문이 돌려주는 것을 돌려줍니다(규칙 8.19).',
+        'loops-over-data':
+          '데이터를 다루는 프로그램이 쓰는 세 가지 루프를 Tint와 실제 WebGL2 컨텍스트로 확인합니다.',
+        'path-tracer': '평범한 TypeScript로 쓴 작은 경로 추적기입니다.',
+        'workgroup-tile-2d': '`@compute([8, 8])`는 WGSL의 `@workgroup_size(8, 8)`입니다.',
         'private-state':
           '최상위의 평범한 `let seed: u32`는 WGSL의 `var<private>`입니다. 인보케이션마다 복사본이 하나씩 있고, 그 인보케이션의 모든 함수가 함께 씁니다.',
         'workgroup-scratch':
@@ -1929,7 +1954,7 @@ export const ko: Copy = {
         boundaryItems: [
           '진입점은 최상위 함수이고 메서드가 아닙니다.',
           '필드가 없는 class는 struct가 아니므로 그 함수들은 함수로 씁니다.',
-          'getter와 setter, 두 번째 생성자는 각각 이름을 들어 거부됩니다.',
+          'getter와 setter는 각각 제 함수로 내려가고, 생성자는 TypeScript처럼 클래스마다 하나입니다.',
           '`new`는 함수 본문 안에서 값을 만들고, 모듈 상수는 객체 리터럴로 씁니다.',
           '데코레이터가 필요한 필드가 없다면 type alias가 더 명확합니다.',
         ],
@@ -2043,7 +2068,7 @@ export const ko: Copy = {
         boundary: '4. JavaScript와의 경계',
         boundaryItems: [
           '동적 배열 메서드로 실행 길이를 바꾸는 패턴은 사용하지 않습니다.',
-          '클로저와 일반 runtime 객체에 의존하지 않습니다.',
+          '일반 runtime 객체에 의존하지 않습니다.',
           '조건과 반복은 GPU에서 계산 가능한 값과 범위로 제한합니다.',
           'TypeScript에서 유효한 제어 흐름이라고 해서 TypeShade shader semantics에서도 자동으로 유효한 것은 아닙니다.',
         ],
@@ -2265,9 +2290,9 @@ export const ko: Copy = {
             name: '지역 함수',
             p: '모듈의 함수가 됩니다. 이름은 이를 선언한 함수에서 따옵니다.',
           },
-          noCapture: {
+          closure: {
             name: '이름 캡처',
-            p: '셰이더 함수에는 인자와 모듈만 있고, 이름을 담아 둘 환경이 없습니다.',
+            p: '로컬 함수는 바깥 함수에서 읽는 이름을 매개변수로 받고, 쓰는 이름은 참조로 받습니다.',
           },
           defaultArgs: {
             name: '기본 인자',
@@ -2343,12 +2368,12 @@ export const ko: Copy = {
           },
           ifRow: { name: '`if`', p: '적은 그대로 `if`입니다.' },
           forRow: {
-            name: '고정 횟수 `for`',
-            p: `횟수가 정해진 루프입니다. 정수 변수, 상수 경계, 상수 증가, 최대 ${facts.forTripLimit}회입니다. [block-scope](shadeBlockScope)`,
+            name: '횟수를 세는 `for`',
+            p: '횟수를 세는 루프입니다. 정수 변수와 상수 증가가 있고, 종료 조건은 본문이 쓰지 않는 경계와 변수를 비교합니다. [block-scope](shadeBlockScope)',
           },
-          forRefused: {
-            name: '한도를 넘는 `for`',
-            p: '반복 횟수가 루프에 허용된 한도를 넘습니다.',
+          forRuntime: {
+            name: '런타임 경계까지 도는 `for`',
+            p: '시작값과 경계는 실행 중에야 알게 되는 값이어도 되고, 반복 횟수에 상한이 없습니다.',
           },
           whileRow: {
             name: '`while`',
@@ -2563,9 +2588,9 @@ export const ko: Copy = {
           'statements.var':
             'WGSL의 `var`는 바뀌는 지역 변수입니다. 초기값 없는 `let b: f32`가 그것을 선언하고 값은 나중 대입에 맡깁니다. 첫 대입 전에 읽으면 WGSL은 영으로 채운 값을 주고 GLSL은 정해지지 않은 값을 주므로, 읽기 전에 대입하십시오.',
           'statements.for':
-            '`for`는 횟수가 세어지는 형태여야 합니다. 정수 유도 변수, 상수 경계, 상수 증감, 그리고 최대 256회입니다. 증감에는 `+=`, `-=`, `*=`, `/=`를 쓸 수 있습니다.',
+            '`for`는 횟수가 세어지는 형태여야 합니다. 정수 유도 변수와 상수 증감이 있고, 종료 조건은 본문이 쓰지 않는 경계와 변수를 비교합니다. 시작값과 경계는 런타임 값이어도 되고, 반복 횟수에 상한이 없습니다. 증감에는 `+=`, `-=`, `*=`, `/=`를 쓸 수 있습니다.',
           'statements.while':
-            '`while`이 `loop` 자리를 대신합니다. 조건에 컴파일 시점 상수 경계가 있어야 하고, 타깃에는 컴파일러가 덧붙인 카운터를 도는 `for`로 도착합니다.',
+            '`while`이 `loop` 자리를 대신합니다. 열린 루프라서 조건이 거짓이 되거나 `break`나 `return`을 만나면 끝나고, `while (true)`는 본문에 둘 중 하나가 있어야 합니다.',
           'statements.switch':
             'case는 TypeScript가 요구하는 `break`로 끝내고, 하향 변환이 그것을 떼어 냅니다. 어느 case도 다음으로 흘러가지 않으며, 레이블은 한 번만 쓸 수 있는 정수 상수입니다. 본문 하나 위에 레이블 두 개를 겹쳐 쓰면 선택자가 둘인 case 하나가 되며, WGSL에서는 `case 0, 1:`로 나옵니다.',
           'statements.select':

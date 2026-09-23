@@ -97,6 +97,11 @@ const FAMILY_OF: Readonly<Record<string, LanguageFamily>> = {
   cbrt: 'maths',
   hypot: 'maths',
   random: 'maths',
+  // The array operations of compiler #195 (language-design §9.3, "operations"). Their siblings
+  // that fold an array (`any`, `all`, `min`, `max`) are maths in the registry, so these are too.
+  none: 'maths',
+  sum: 'maths',
+  zip: 'maths',
   vec2: 'constructors',
   vec3: 'constructors',
   vec4: 'constructors',

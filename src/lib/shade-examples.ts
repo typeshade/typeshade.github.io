@@ -166,6 +166,11 @@ export const SHADE_GROUPS = [
       'integer-math',
       'packing-bitcast',
       'packed-bytes',
+      'closures',
+      'higher-order',
+      'inferred-returns',
+      'loops-over-data',
+      'path-tracer',
     ],
   },
   {
@@ -181,6 +186,8 @@ export const SHADE_GROUPS = [
       'tuple-and-brand',
       'class-syntax',
       'rng-method',
+      'class-builder',
+      'class-parts',
     ],
   },
   {
@@ -192,6 +199,7 @@ export const SHADE_GROUPS = [
       'atomic-histogram',
       'compute-sync',
       'compute-reduction-twin',
+      'workgroup-tile-2d',
     ],
   },
   {
