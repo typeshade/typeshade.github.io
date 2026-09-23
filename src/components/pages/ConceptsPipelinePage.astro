@@ -3,18 +3,18 @@
 // what it produces, and how an entry point signature maps onto that. Copy lives in
 // `concepts.pipeline` (src/i18n/en.ts, src/i18n/ko.ts); the code samples are not copy, so
 // they stay here.
-import Docs from '../../layouts/Docs.astro'
-import ConceptDoc from '../ConceptDoc.astro'
-import Rich from '../Rich.astro'
-import TypeShadeCode from '../TypeShadeCode.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { slugify } from '../../lib/slug.ts'
+import Docs from '../../layouts/Docs.astro';
+import ConceptDoc from '../ConceptDoc.astro';
+import Rich from '../Rich.astro';
+import TypeShadeCode from '../TypeShadeCode.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { slugify } from '../../lib/slug.ts';
 
 interface Props { locale: Locale }
-const { locale } = Astro.props
-const c = copyFor(locale).concepts.pipeline
-const headings = [c.stagesH, c.entryH, c.interpolationH, c.computeH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const { locale } = Astro.props;
+const c = copyFor(locale).concepts.pipeline;
+const headings = [c.stagesH, c.entryH, c.interpolationH, c.computeH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 
 <Docs locale={locale} path={links.conceptsPipeline.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'concepts')}>

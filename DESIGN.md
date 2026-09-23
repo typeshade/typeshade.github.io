@@ -428,8 +428,7 @@ cards takes the column. A third measure needs a reason.
   elements. The version's summary is one of the header's 32px controls, with the row's radius
   and its 0.04 hover fill; it keeps the mono face and tabular figures at the row's 14px,
   because the digits name a release. An open panel is an 8px card with 4px of padding, the
-  elevation shadow, and 6px rows; the current choice is the primary over its wash at weight
-  600.
+  elevation shadow, and 6px rows; the current choice is the primary over its wash at weight 600.
 - **The showcase card.** The front page's live editor, `<LiveShader variant="hero">`: an 8px
   card with the elevation shadow, a 56px head bar carrying the file name as an active tab (a
   2px inset accent underline) with Edit and Reset as 24px buttons on the right, then a body
@@ -513,7 +512,7 @@ why lives on its own page.
     compiler emits, the WGSL and the two GLSL ES 3.00 stages it baked into
     `examples/__emit-goldens__/` at the pinned commit; it opens on the line the shader starts
     at, since several of those files begin with a banner comment. A GLSL tab reads `GLSL
-    vertex` and `GLSL fragment`: the head is 490px from a 1320 viewport and 470px at 1280,
+vertex` and `GLSL fragment`: the head is 490px from a 1320 viewport and 470px at 1280,
     and the full target name put the four tabs at 569px in English and 573px in Korean, so
     the last tab was cut off at every desktop width. The full name is in the line under the
     card and in the pane's own accessible name. The head is a scroller wherever it is under
@@ -594,22 +593,22 @@ wrong sentence is fixed upstream in the compiler's JSDoc and arrives at the next
 A page follows MDN's reference page, section by section, and leaves out a section with
 nothing to show:
 
-| MDN | Here | Where it comes from |
-| --- | --- | --- |
-| Breadcrumb | Reference › category › name | the category map in `src/lib/api.ts` |
-| Title | the export's name in code, `name()` for a callable | the export |
-| First paragraph | one plain sentence | the first sentence of the JSDoc |
-| Syntax | the signatures, one per overload; a declaration block for an interface, type or class | the declaration |
-| Parameters | name, type, optional, description | the signature and `@param` |
-| Return value | type and description | the signature and `@returns` |
-| Exceptions | the error class or code and when it is thrown | `@throws` and the diagnostics registry |
-| Description | the rest of the JSDoc as markdown, `{@link X}` as links to other pages | the JSDoc |
-| Examples | an h3 and a code block each | `@example` |
-| Browser compatibility | Targets: WGSL, GLSL ES 3.00, CPU oracle, each Supported, Emulated, Stub, Not supported or Does not apply, with the spelling the target emits | the intrinsics registry and the oracle's stub list |
-| Instance properties, Instance methods, Constructor | the members of an interface or class with their JSDoc | the declaration |
-| See also | other reference pages | `{@link}` targets and `@see` |
-| Specifications | In the guide: the guide sections that mention the name | `src/lib/authoring.ts` |
-| Source | file, line and commit on GitHub | the declaration |
+| MDN                                                | Here                                                                                                                                         | Where it comes from                                |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Breadcrumb                                         | Reference › category › name                                                                                                                  | the category map in `src/lib/api.ts`               |
+| Title                                              | the export's name in code, `name()` for a callable                                                                                           | the export                                         |
+| First paragraph                                    | one plain sentence                                                                                                                           | the first sentence of the JSDoc                    |
+| Syntax                                             | the signatures, one per overload; a declaration block for an interface, type or class                                                        | the declaration                                    |
+| Parameters                                         | name, type, optional, description                                                                                                            | the signature and `@param`                         |
+| Return value                                       | type and description                                                                                                                         | the signature and `@returns`                       |
+| Exceptions                                         | the error class or code and when it is thrown                                                                                                | `@throws` and the diagnostics registry             |
+| Description                                        | the rest of the JSDoc as markdown, `{@link X}` as links to other pages                                                                       | the JSDoc                                          |
+| Examples                                           | an h3 and a code block each                                                                                                                  | `@example`                                         |
+| Browser compatibility                              | Targets: WGSL, GLSL ES 3.00, CPU oracle, each Supported, Emulated, Stub, Not supported or Does not apply, with the spelling the target emits | the intrinsics registry and the oracle's stub list |
+| Instance properties, Instance methods, Constructor | the members of an interface or class with their JSDoc                                                                                        | the declaration                                    |
+| See also                                           | other reference pages                                                                                                                        | `{@link}` targets and `@see`                       |
+| Specifications                                     | In the guide: the guide sections that mention the name                                                                                       | `src/lib/authoring.ts`                             |
+| Source                                             | file, line and commit on GitHub                                                                                                              | the declaration                                    |
 
 Under the summary every page prints the line a reader imports the export with, built from the
 barrel and the release name (`import { emitModule } from 'typeshade'`), and a type is imported
@@ -676,19 +675,19 @@ Three uniform field names are reserved and filled by the runtime every frame, so
 control. A sample declares the ones it reads and leaves out the rest, and the note under the
 controls names the ones it declared:
 
-| Field | Type | What it holds |
-| --- | --- | --- |
-| `time` | `f32` | seconds since the canvas started |
-| `resolution` | `vec2` | the drawing buffer in device pixels |
-| `mouse` | `vec2` | the pointer over the canvas, 0 to 1, origin at the bottom left, the space the `uv` parameter is in. A canvas the pointer has not touched holds (0.5, 0.5) |
+| Field        | Type   | What it holds                                                                                                                                             |
+| ------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `time`       | `f32`  | seconds since the canvas started                                                                                                                          |
+| `resolution` | `vec2` | the drawing buffer in device pixels                                                                                                                       |
+| `mouse`      | `vec2` | the pointer over the canvas, 0 to 1, origin at the bottom left, the space the `uv` parameter is in. A canvas the pointer has not touched holds (0.5, 0.5) |
 
 Every other uniform field becomes one control, by its type:
 
-| Field type | Control | Default range |
-| --- | --- | --- |
-| `f32` | slider | 0 to 1, step 0.002 |
-| `i32`, `u32` | stepper, or a checkbox with `toggle: true` | 0 to 16, step 1 |
-| `vec2<f32>` | two-axis pad | 0 to 1 per axis |
+| Field type               | Control                                                         | Default range      |
+| ------------------------ | --------------------------------------------------------------- | ------------------ |
+| `f32`                    | slider                                                          | 0 to 1, step 0.002 |
+| `i32`, `u32`             | stepper, or a checkbox with `toggle: true`                      | 0 to 16, step 1    |
+| `vec2<f32>`              | two-axis pad                                                    | 0 to 1 per axis    |
 | `vec3<f32>`, `vec4<f32>` | one slider per component, or a colour picker with `color: true` | 0 to 1 per channel |
 
 A field of any other type stops the build, so a page cannot ship a uniform it leaves at zero
@@ -719,12 +718,12 @@ page prints it.
 
 So a fragment sample reads the way a GLSL or WGSL author expects:
 
-| GLSL | TypeShade |
-| --- | --- |
-| `uniform vec2 u_resolution;` | `class Uniforms { resolution: vec2 }` and `declare const u: uniform<Uniforms>` |
-| `void main() {` | `@fragment` and `export function main(@location(0) uv: vec2): vec4 {` |
-| `vec2 st = gl_FragCoord.xy / u_resolution;` | `uv` is already 0 to 1 |
-| `gl_FragColor = vec4(c, 1.0);` | `return vec4(c, 1.)` |
+| GLSL                                        | TypeShade                                                                      |
+| ------------------------------------------- | ------------------------------------------------------------------------------ |
+| `uniform vec2 u_resolution;`                | `class Uniforms { resolution: vec2 }` and `declare const u: uniform<Uniforms>` |
+| `void main() {`                             | `@fragment` and `export function main(@location(0) uv: vec2): vec4 {`          |
+| `vec2 st = gl_FragCoord.xy / u_resolution;` | `uv` is already 0 to 1                                                         |
+| `gl_FragColor = vec4(c, 1.0);`              | `return vec4(c, 1.)`                                                           |
 
 `uv` arrives as a `@location(0)` parameter and not as the fragment position, because the two
 backends disagree about that builtin: WGSL counts y down from the top and GLSL's

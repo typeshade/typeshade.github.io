@@ -2,16 +2,16 @@
 // rendered to HTML through the project's markdown pipeline (the same fences, code spans and
 // package-name rewrite the guide gets). The entries come from src/lib/api.ts, read from the
 // compiler's own source at the pinned commit.
-import type { Loader } from 'astro/loaders'
-import type { ApiEntryHtml } from './api-types.ts'
-import { apiEntries } from './api.ts'
+import type { Loader } from 'astro/loaders';
+import type { ApiEntryHtml } from './api-types.ts';
+import { apiEntries } from './api.ts';
 
 export function apiLoader(): Loader {
   return {
     name: 'typeshade-api',
     async load({ store, renderMarkdown, logger }) {
-      store.clear()
-      const md = async (text: string) => (text ? (await renderMarkdown(text)).html : '')
+      store.clear();
+      const md = async (text: string) => (text ? (await renderMarkdown(text)).html : '');
       for (const entry of apiEntries()) {
         const html: ApiEntryHtml = {
           description: await md(entry.description),
@@ -21,10 +21,10 @@ export function apiLoader(): Loader {
           examples: await Promise.all(entry.examples.map((e) => md(e.description))),
           targets: await Promise.all(entry.targets.map((s) => md(s.note))),
           members: await Promise.all(entry.members.map((m) => md(m.description))),
-        }
-        store.set({ id: entry.slug, data: { ...entry, html } })
+        };
+        store.set({ id: entry.slug, data: { ...entry, html } });
       }
-      logger.info(`${store.keys().length} reference entries`)
+      logger.info(`${store.keys().length} reference entries`);
     },
-  }
+  };
 }

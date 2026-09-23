@@ -28,13 +28,16 @@ export interface ReflectedEntry {
   /** The DECLARED parameter types, one per parameter. A struct parameter is one entry here
    *  and several in `io.inputs`, which is what `entryArguments` reconciles. */
   readonly inputs?: readonly string[];
-  readonly io?: { readonly inputs?: readonly ReflectedField[]; readonly outputs?: readonly ReflectedField[]; };
+  readonly io?: {
+    readonly inputs?: readonly ReflectedField[];
+    readonly outputs?: readonly ReflectedField[];
+  };
 }
 
 /** A struct as the module declares it: the field order a struct argument is built in. */
 export interface DeclaredStruct {
   readonly name: string;
-  readonly fields: readonly { readonly name: string; }[];
+  readonly fields: readonly { readonly name: string }[];
 }
 
 /** The entry points a lowered module exposes, by name. */
@@ -59,7 +62,7 @@ export interface RasterPlan {
 
 /** The zero of a reflected type, for calling an entry point with something valid. A type this
  *  has no case for (a matrix or a texture, say) cannot be synthesised. */
-export function zeroFor(type: string | undefined): { ok: true; value: unknown; } | { ok: false; } {
+export function zeroFor(type: string | undefined): { ok: true; value: unknown } | { ok: false } {
   if (!type) return { ok: false };
   if (type === 'bool') return { ok: true, value: false };
   if (/^[uif](?:8|16|32|64)$/.test(type)) return { ok: true, value: 0 };
@@ -109,17 +112,20 @@ export function cornersOf(cpu: CpuFunctions, plan: RasterPlan): Corners | undefi
 
   const outputs = [0, 1, 2].map((index) => {
     const returned = run(
-        ...(entryArguments(plan.vertex, plan.structs, (at) => {
-          if (at === indexAt) return index;
-          const given = flat[at]?.name ? plan.attributes?.[flat[at]!.name!]?.[index] : undefined;
-          if (given !== undefined) return given;
-          const zero = zeroFor(flat[at]?.type);
-          return zero.ok ? zero.value : 0;
-        }) as never[]),
+      ...(entryArguments(plan.vertex, plan.structs, (at) => {
+        if (at === indexAt) return index;
+        const given = flat[at]?.name ? plan.attributes?.[flat[at]!.name!]?.[index] : undefined;
+        if (given !== undefined) return given;
+        const zero = zeroFor(flat[at]?.type);
+        return zero.ok ? zero.value : 0;
+      }) as never[]),
     );
     // A vertex entry that returns a bare `vec4` hands back the position itself, which the
     // reflection names `_ret`; it is filed under that name so the fragment half finds it.
-    return (Array.isArray(returned) ? { [positionName]: returned } : returned) as Record<string, unknown>;
+    return (Array.isArray(returned) ? { [positionName]: returned } : returned) as Record<
+      string,
+      unknown
+    >;
   });
   const screen = outputs.map((corner) => {
     const [x, y, , w] = corner[positionName] as number[];
@@ -146,7 +152,7 @@ export function drawTile(
   y0: number,
   x1: number,
   y1: number,
-): { pixels: Uint8ClampedArray<ArrayBuffer>; covered: number; } {
+): { pixels: Uint8ClampedArray<ArrayBuffer>; covered: number } {
   const tileWidth = x1 - x0;
   const rows = y1 - y0;
   const pixels = new Uint8ClampedArray(tileWidth * rows * 4);
@@ -179,25 +185,39 @@ export function drawTile(
         if (/^(?:[iu]32|vec[234]<[iu]32>)$/.test(field.type ?? '')) return at[0];
         if (Array.isArray(at[0])) {
           const first = at[0] as number[];
-          return first.map((_, k) => w0 * first[k] + w1 * (at[1] as number[])[k] + w2 * (at[2] as number[])[k]);
+          return first.map(
+            (_, k) => w0 * first[k] + w1 * (at[1] as number[])[k] + w2 * (at[2] as number[])[k],
+          );
         }
         return w0 * (at[0] as number) + w1 * (at[1] as number) + w2 * (at[2] as number);
       });
-      const returned = run(...(entryArguments(plan.fragment, plan.structs, (at) => values[at]) as never[]));
+      const returned = run(
+        ...(entryArguments(plan.fragment, plan.structs, (at) => values[at]) as never[]),
+      );
       // A fragment entry that returns a bare `vec4` is reflected with one output named `_ret`,
       // and the oracle hands back the vector itself, so only a struct is read by field name.
       // Reading `_ret` off the vector is how a covered canvas came back fully transparent.
-      const colour = (Array.isArray(returned) ? returned : colourField ? (returned as Record<string, unknown>)[colourField] : returned) as number[];
+      const colour = (
+        Array.isArray(returned)
+          ? returned
+          : colourField
+            ? (returned as Record<string, unknown>)[colourField]
+            : returned
+      ) as number[];
       if (!Array.isArray(colour)) continue;
       // Counted once its colour is written, so the note never claims a pixel it dropped.
       covered += 1;
       const offset = ((py - y0) * tileWidth + (px - x0)) * 4;
       for (let channel = 0; channel < 3; channel += 1) {
         const value = colour[channel];
-        pixels[offset + channel] = Number.isFinite(value) ? Math.round(Math.max(0, Math.min(1, value)) * 255) : 0;
+        pixels[offset + channel] = Number.isFinite(value)
+          ? Math.round(Math.max(0, Math.min(1, value)) * 255)
+          : 0;
       }
       const alpha = colour[3];
-      pixels[offset + 3] = Number.isFinite(alpha) ? Math.round(Math.max(0, Math.min(1, alpha)) * 255) : 255;
+      pixels[offset + 3] = Number.isFinite(alpha)
+        ? Math.round(Math.max(0, Math.min(1, alpha)) * 255)
+        : 255;
     }
   }
   return { pixels, covered };
@@ -209,7 +229,12 @@ export function drawTile(
 // instead of painted over the new picture.
 
 export type RasterRequest =
-  | { readonly kind: 'prepare'; readonly job: number; readonly module: unknown; readonly plan: RasterPlan; }
+  | {
+      readonly kind: 'prepare';
+      readonly job: number;
+      readonly module: unknown;
+      readonly plan: RasterPlan;
+    }
   | {
       readonly kind: 'tile';
       readonly job: number;
@@ -220,8 +245,8 @@ export type RasterRequest =
     };
 
 export type RasterReply =
-  | { readonly kind: 'ready'; readonly job: number; }
-  | { readonly kind: 'failed'; readonly job: number; readonly message: string; }
+  | { readonly kind: 'ready'; readonly job: number }
+  | { readonly kind: 'failed'; readonly job: number; readonly message: string }
   | {
       readonly kind: 'tile';
       readonly job: number;

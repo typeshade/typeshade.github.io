@@ -3,20 +3,20 @@
 // pinned compiler's own output for the sample the front page shows, produced while this page
 // is built (src/lib/concepts-emit.ts), so nothing on the page is a shader typed by hand. Copy
 // lives in `concepts.wgslAndGlsl` (src/i18n/en.ts, src/i18n/ko.ts).
-import Docs from '../../layouts/Docs.astro'
-import ConceptDoc from '../ConceptDoc.astro'
-import Rich from '../Rich.astro'
-import TypeShadeCode from '../TypeShadeCode.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { bothTargets } from '../../lib/concepts-emit.ts'
-import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
-import { slugify } from '../../lib/slug.ts'
+import Docs from '../../layouts/Docs.astro';
+import ConceptDoc from '../ConceptDoc.astro';
+import Rich from '../Rich.astro';
+import TypeShadeCode from '../TypeShadeCode.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { bothTargets } from '../../lib/concepts-emit.ts';
+import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts';
+import { slugify } from '../../lib/slug.ts';
 
 interface Props { locale: Locale }
-const { locale } = Astro.props
-const c = copyFor(locale).concepts.wgslAndGlsl
-const headings = [c.sourceH, c.wgslH, c.glslH, c.diffH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const { locale } = Astro.props;
+const c = copyFor(locale).concepts.wgslAndGlsl;
+const headings = [c.sourceH, c.wgslH, c.glslH, c.diffH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 
 <Docs locale={locale} path={links.conceptsWgsl.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'concepts')}>

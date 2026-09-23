@@ -1,7 +1,7 @@
 ---
-import ExamplePage from '../../../components/pages/ExamplePage.astro'
-import { examplePaths } from '../../../lib/example-pages.ts'
-export const getStaticPaths = examplePaths
+import ExamplePage from '../../../components/pages/ExamplePage.astro';
+import { examplePaths } from '../../../lib/example-pages.ts';
+export const getStaticPaths = examplePaths;
 ---
 
 <ExamplePage locale="en" id={String(Astro.params.id)} />

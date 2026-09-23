@@ -1,18 +1,18 @@
 ---
 // The snippet with the wrong field, marked, and the TypeScript diagnostic it produces.
 // The message is the compiler's own text, from src/lib/typed-error.ts.
-import { Code } from 'astro-expressive-code/components'
-import { typedError } from '../lib/typed-error.ts'
-import CodeFrame from './CodeFrame.astro'
-import { copyFor, type Locale } from '../i18n/index.ts'
+import { Code } from 'astro-expressive-code/components';
+import { typedError } from '../lib/typed-error.ts';
+import CodeFrame from './CodeFrame.astro';
+import { copyFor, type Locale } from '../i18n/index.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
 }
-const { locale } = Astro.props
-const t = copyFor(locale).diagnostic
-const { snippet, wrongLine, diagnostic } = typedError()
-const TITLE = 'typed-error-shader.ts'
+const { locale } = Astro.props;
+const t = copyFor(locale).diagnostic;
+const { snippet, wrongLine, diagnostic } = typedError();
+const TITLE = 'typed-error-shader.ts';
 ---
 
 <div data-diagnostic>

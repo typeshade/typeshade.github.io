@@ -4,24 +4,27 @@
 // as a label; this copies the header row's plain text onto every body cell as a `data-label`
 // attribute mdast-to-hast turns into a real one, since CSS alone cannot read a table's own
 // header into a `::before` on a different cell.
-import { toString } from 'mdast-util-to-string'
-import { visit } from 'unist-util-visit'
+import { toString } from 'mdast-util-to-string';
+import { visit } from 'unist-util-visit';
 
-const GUIDE = 'AUTHORING.md'
+const GUIDE = 'AUTHORING.md';
 
 export default function remarkDocTables() {
   return (tree, file) => {
-    if (!String(file?.path ?? '').endsWith(GUIDE)) return
+    if (!String(file?.path ?? '').endsWith(GUIDE)) return;
     visit(tree, 'table', (table) => {
-      const [head, ...rows] = table.children
-      if (!head) return
-      const labels = head.children.map((cell) => toString(cell))
+      const [head, ...rows] = table.children;
+      if (!head) return;
+      const labels = head.children.map((cell) => toString(cell));
       for (const row of rows) {
         row.children.forEach((cell, i) => {
-          if (!labels[i]) return
-          cell.data = { ...cell.data, hProperties: { ...cell.data?.hProperties, dataLabel: labels[i] } }
-        })
+          if (!labels[i]) return;
+          cell.data = {
+            ...cell.data,
+            hProperties: { ...cell.data?.hProperties, dataLabel: labels[i] },
+          };
+        });
       }
-    })
-  }
+    });
+  };
 }

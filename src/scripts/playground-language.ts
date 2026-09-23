@@ -42,16 +42,24 @@ interface Asked {
 }
 
 export type QueryRequest =
-  | (Asked & { readonly kind: 'analysis'; })
-  | (Asked & { readonly kind: 'hover'; readonly position: TypeshadePosition; })
-  | (Asked & { readonly kind: 'completions'; readonly position: TypeshadePosition; })
-  | (Asked & { readonly kind: 'definition'; readonly position: TypeshadePosition; })
-  | (Asked & { readonly kind: 'references'; readonly position: TypeshadePosition; readonly includeDeclaration: boolean; })
-  | (Asked & { readonly kind: 'symbols'; })
-  | (Asked & { readonly kind: 'signatureHelp'; readonly position: TypeshadePosition; })
-  | (Asked & { readonly kind: 'prepareRename'; readonly position: TypeshadePosition; })
-  | (Asked & { readonly kind: 'rename'; readonly position: TypeshadePosition; readonly newName: string; })
-  | (Asked & { readonly kind: 'semanticTokens'; });
+  | (Asked & { readonly kind: 'analysis' })
+  | (Asked & { readonly kind: 'hover'; readonly position: TypeshadePosition })
+  | (Asked & { readonly kind: 'completions'; readonly position: TypeshadePosition })
+  | (Asked & { readonly kind: 'definition'; readonly position: TypeshadePosition })
+  | (Asked & {
+      readonly kind: 'references';
+      readonly position: TypeshadePosition;
+      readonly includeDeclaration: boolean;
+    })
+  | (Asked & { readonly kind: 'symbols' })
+  | (Asked & { readonly kind: 'signatureHelp'; readonly position: TypeshadePosition })
+  | (Asked & { readonly kind: 'prepareRename'; readonly position: TypeshadePosition })
+  | (Asked & {
+      readonly kind: 'rename';
+      readonly position: TypeshadePosition;
+      readonly newName: string;
+    })
+  | (Asked & { readonly kind: 'semanticTokens' });
 
 export type LanguageRequest = UpdateRequest | QueryRequest;
 
@@ -73,7 +81,8 @@ export interface ResultByKind {
   readonly references: readonly TypeshadeLocation[];
   readonly symbols: readonly TypeshadeDocumentSymbol[];
   readonly signatureHelp: TypeshadeSignatureHelp | undefined;
-  readonly prepareRename: { readonly range: TypeshadeRange; readonly placeholder: string; } | undefined;
+  readonly prepareRename:
+    { readonly range: TypeshadeRange; readonly placeholder: string } | undefined;
   readonly rename: Readonly<Record<string, readonly TypeshadeTextEdit[]>>;
   readonly semanticTokens: readonly TypeshadeSemanticToken[];
 }
@@ -81,8 +90,13 @@ export interface ResultByKind {
 export type QueryKind = QueryRequest['kind'];
 
 export type LanguageReply =
-  | { readonly id: number; readonly version: number; readonly ok: true; readonly result: ResultByKind[QueryKind]; }
-  | { readonly id: number; readonly version: number; readonly ok: false; readonly message: string; };
+  | {
+      readonly id: number;
+      readonly version: number;
+      readonly ok: true;
+      readonly result: ResultByKind[QueryKind];
+    }
+  | { readonly id: number; readonly version: number; readonly ok: false; readonly message: string };
 
 // ── The client ─────────────────────────────────────────────────────────────────────────────
 

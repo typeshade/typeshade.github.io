@@ -1,42 +1,42 @@
 ---
 // The frame every page shares: head metadata, hreflang alternates, header and footer.
-import '../styles/global.css'
-import SiteHeader from '../components/SiteHeader.astro'
-import SiteFooter from '../components/SiteFooter.astro'
-import { facts } from '../lib/examples.ts'
-import { copyFor, defaultLocale, localeSettings, locales, localeUrl, type Locale } from '../i18n/index.ts'
+import '../styles/global.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { facts } from '../lib/examples.ts';
+import { copyFor, defaultLocale, localeSettings, locales, localeUrl, type Locale } from '../i18n/index.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
   /** The locale-neutral route, for example '/checks/'; the 404 passes its file name. */
-  path: string
-  title?: string
-  description?: string
-  noAlternates?: boolean
-  noindex?: boolean
-  searchable?: boolean
-  searchTitle?: string
-  breadcrumbs?: readonly { name: string; href: string }[]
-  dateModified?: string
+  path: string;
+  title?: string;
+  description?: string;
+  noAlternates?: boolean;
+  noindex?: boolean;
+  searchable?: boolean;
+  searchTitle?: string;
+  breadcrumbs?: readonly { name: string; href: string }[];
+  dateModified?: string;
   /** Overrides the language switcher's target per locale, already a real href, for a page
    *  (the 404) whose own path isn't a page that exists in every language. */
-  switchTarget?: Partial<Record<Locale, string>>
+  switchTarget?: Partial<Record<Locale, string>>;
 }
 
-const { locale, path, noAlternates = false, noindex = false, searchable = false, searchTitle, breadcrumbs, dateModified, switchTarget } = Astro.props
-const t = copyFor(locale)
-const siteDescription = copyFor(defaultLocale).meta.description
-const title = Astro.props.title ?? t.meta.title
-const description = Astro.props.description ?? t.meta.description
+const { locale, path, noAlternates = false, noindex = false, searchable = false, searchTitle, breadcrumbs, dateModified, switchTarget } = Astro.props;
+const t = copyFor(locale);
+const siteDescription = copyFor(defaultLocale).meta.description;
+const title = Astro.props.title ?? t.meta.title;
+const description = Astro.props.description ?? t.meta.description;
 
-const settings = localeSettings[locale]
-const site = Astro.site ?? new URL('https://typeshade.dev/')
-const canonical = localeUrl(site, locale, path)
-const ogImage = new URL('/og.png', site).toString()
-const alternates = noAlternates ? [] : locales.map((l) => ({ lang: l, href: localeUrl(site, l, path) }))
+const settings = localeSettings[locale];
+const site = Astro.site ?? new URL('https://typeshade.dev/');
+const canonical = localeUrl(site, locale, path);
+const ogImage = new URL('/og.png', site).toString();
+const alternates = noAlternates ? [] : locales.map((l) => ({ lang: l, href: localeUrl(site, l, path) }));
 
-const organizationId = `${site.origin}/#organization`
-const breadcrumbId = `${canonical}#breadcrumb`
+const organizationId = `${site.origin}/#organization`;
+const breadcrumbId = `${canonical}#breadcrumb`;
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -94,7 +94,7 @@ const jsonLd = {
         ]
       : []),
   ],
-}
+};
 ---
 
 <!doctype html>
@@ -103,16 +103,16 @@ const jsonLd = {
     <!-- Google tag (gtag.js) -->
     <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-PM5GB63EJ7"></script>
     <script is:inline>
-      window.dataLayer = window.dataLayer || []
-      function gtag() { dataLayer.push(arguments) }
-      gtag('js', new Date())
-      gtag('config', 'G-PM5GB63EJ7')
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', 'G-PM5GB63EJ7');
     </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <script is:inline>
-      try { const t = localStorage.getItem('theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t } catch {}
+      try { const t = localStorage.getItem('theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch {}
     </script>
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -204,72 +204,72 @@ const jsonLd = {
       function themeIsDark() {
         return document.documentElement.dataset.theme
           ? document.documentElement.dataset.theme === 'dark'
-          : matchMedia('(prefers-color-scheme: dark)').matches
+          : matchMedia('(prefers-color-scheme: dark)').matches;
       }
       function syncThemeButtons() {
-        const dark = themeIsDark()
+        const dark = themeIsDark();
         for (const b of document.querySelectorAll('[data-theme-toggle]')) {
-          b.setAttribute('aria-pressed', dark ? 'true' : 'false')
+          b.setAttribute('aria-pressed', dark ? 'true' : 'false');
         }
       }
-      syncThemeButtons()
+      syncThemeButtons();
       for (const b of document.querySelectorAll('[data-theme-toggle]')) b.addEventListener('click', () => {
-        const next = themeIsDark() ? 'light' : 'dark'
-        document.documentElement.dataset.theme = next
-        try { localStorage.setItem('theme', next) } catch {}
-        syncThemeButtons()
-      })
+        const next = themeIsDark() ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('theme', next); } catch {}
+        syncThemeButtons();
+      });
       matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        if (!document.documentElement.dataset.theme) syncThemeButtons()
-      })
+        if (!document.documentElement.dataset.theme) syncThemeButtons();
+      });
     </script>
     <script is:inline>
-      const drops = [...document.querySelectorAll('.site-menu-drop')]
-      const panel = document.querySelector('.site-menu')
-      const all = panel ? [...drops, panel] : drops
+      const drops = [...document.querySelectorAll('.site-menu-drop')];
+      const panel = document.querySelector('.site-menu');
+      const all = panel ? [...drops, panel] : drops;
 
       function closeAllBut(except) {
-        for (const d of all) if (d !== except && d.open) d.open = false
+        for (const d of all) if (d !== except && d.open) d.open = false;
       }
-      for (const d of drops) d.addEventListener('toggle', () => { if (d.open) closeAllBut(d) })
+      for (const d of drops) d.addEventListener('toggle', () => { if (d.open) closeAllBut(d); });
 
       document.addEventListener('click', (e) => {
-        for (const d of all) if (d.open && !d.contains(e.target)) d.open = false
-      })
+        for (const d of all) if (d.open && !d.contains(e.target)) d.open = false;
+      });
       document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape') return
-        const open = all.find((d) => d.open)
-        if (open) { open.open = false; open.querySelector('summary')?.focus() }
-      })
+        if (e.key !== 'Escape') return;
+        const open = all.find((d) => d.open);
+        if (open) { open.open = false; open.querySelector('summary')?.focus(); }
+      });
 
       if (panel) {
-        const summary = panel.querySelector(':scope > summary')
-        let restoreOverflow = ''
+        const summary = panel.querySelector(':scope > summary');
+        let restoreOverflow = '';
         panel.addEventListener('toggle', () => {
           if (panel.open) {
-            closeAllBut(panel)
-            restoreOverflow = document.documentElement.style.overflow
-            document.documentElement.style.overflow = 'hidden'
+            closeAllBut(panel);
+            restoreOverflow = document.documentElement.style.overflow;
+            document.documentElement.style.overflow = 'hidden';
           } else {
-            document.documentElement.style.overflow = restoreOverflow
+            document.documentElement.style.overflow = restoreOverflow;
           }
-        })
+        });
         panel.addEventListener('keydown', (e) => {
-          if (!panel.open) return
+          if (!panel.open) return;
           if (e.key === 'Escape') {
-            e.preventDefault()
-            panel.open = false
-            summary?.focus()
-            return
+            e.preventDefault();
+            panel.open = false;
+            summary?.focus();
+            return;
           }
-          if (e.key !== 'Tab') return
-          const focusable = [...panel.querySelectorAll('summary, a[href], button:not([disabled])')].filter((el) => el.offsetParent !== null)
-          if (focusable.length === 0) return
-          const first = focusable[0]
-          const last = focusable[focusable.length - 1]
-          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
-          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
-        })
+          if (e.key !== 'Tab') return;
+          const focusable = [...panel.querySelectorAll('summary, a[href], button:not([disabled])')].filter((el) => el.offsetParent !== null);
+          if (focusable.length === 0) return;
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        });
       }
     </script>
   </body>

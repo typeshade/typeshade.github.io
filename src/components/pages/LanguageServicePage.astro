@@ -3,18 +3,18 @@
 // reads from and a language server will. Copy lives in `languageService` (src/i18n/en.ts,
 // src/i18n/ko.ts); the TypeScript sample is not copy, so it stays here. It imports the
 // package by its release name, the way the reference's import lines do.
-import { Code } from 'astro-expressive-code/components'
-import Docs from '../../layouts/Docs.astro'
-import Rich from '../Rich.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { PACKAGE_NAME } from '../../lib/api.ts'
-import { slugify } from '../../lib/slug.ts'
+import { Code } from 'astro-expressive-code/components';
+import Docs from '../../layouts/Docs.astro';
+import Rich from '../Rich.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { PACKAGE_NAME } from '../../lib/api.ts';
+import { slugify } from '../../lib/slug.ts';
 
 interface Props { locale: Locale }
-const { locale } = Astro.props
-const c = copyFor(locale).languageService
-const headings = [c.layersH, c.requestsH, c.documentsH, c.packagingH, c.exampleH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const { locale } = Astro.props;
+const c = copyFor(locale).languageService;
+const headings = [c.layersH, c.requestsH, c.documentsH, c.packagingH, c.exampleH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 const sample = `import { createTypeshadeLanguageService } from '${PACKAGE_NAME}/language-service'
 
 const service = createTypeshadeLanguageService()
@@ -26,7 +26,7 @@ const hover = service.getHover(uri, cursor)
 const output = service.getCompiledOutput(uri, 'wgsl')
 
 service.updateDocument(uri, nextSource)
-service.closeDocument(uri)`
+service.closeDocument(uri)`;
 ---
 
 <Docs locale={locale} path={links.languageService.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'languageService')}>

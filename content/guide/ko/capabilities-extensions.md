@@ -121,7 +121,7 @@ capabilityMatrix([wgslBackend, glslEs300Backend])
 기능뿐입니다. `enables`의 타입에서 파생 기능 id는 모두 빠져 있으므로, 하나라도 적으면
 컴파일 오류가 납니다.
 
-호스트가 확인해야 할 것이 기능만은 아닙니다. WGSL *언어* 기능(language feature)은
+호스트가 확인해야 할 것이 기능만은 아닙니다. WGSL _언어_ 기능(language feature)은
 디바이스가 아니라 브라우저의 셰이딩 언어 구현이 갖는 속성입니다. 그래서 `requestDevice`에서
 요청하는 대상이 전혀 아닙니다.
 `reflect().requiredLanguageFeatures`는 모듈 소스가 쓰는 언어 기능을 나열하고, 지원 여부는

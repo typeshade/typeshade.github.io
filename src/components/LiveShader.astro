@@ -9,66 +9,66 @@
 // reader's first edit, when src/scripts/live-shader.ts imports it as a chunk of its own.
 //
 // Putting one on a page: see "Live examples" in DESIGN.md.
-import { Code } from 'astro-expressive-code/components'
-import Rich from './Rich.astro'
-import { copyFor, type Locale } from '../i18n/index.ts'
-import { liveShader, livePayloadJson } from '../lib/live-shader-emit.ts'
-import type { ControlProps } from '../lib/live-shader-contract.ts'
-import type { StateStrings } from '../lib/shader-runtime.ts'
+import { Code } from 'astro-expressive-code/components';
+import Rich from './Rich.astro';
+import { copyFor, type Locale } from '../i18n/index.ts';
+import { liveShader, livePayloadJson } from '../lib/live-shader-emit.ts';
+import type { ControlProps } from '../lib/live-shader-contract.ts';
+import type { StateStrings } from '../lib/shader-runtime.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
   /** Names the example. It is the id of its still image and of its inlined payload, so it is
    *  unique across the site. */
-  id: string
+  id: string;
   /** What the canvas is showing, for the accessible name. From the dictionaries. */
-  title: string
+  title: string;
   /** The sample: a whole file, the way a Book of Shaders page shows a whole `.frag`. A sample
    *  that declares no `@vertex` entry is compiled behind the fullscreen-triangle vertex half
    *  (src/lib/live-shader-contract.ts) and takes `uv` as a `@location(0)` parameter; one that
    *  declares both stages is compiled as written. Code is not copy, so it stays on the page
    *  that uses it. */
-  code: string
+  code: string;
   /** The line under the canvas. From the dictionaries. The runtime adds what drew the frame,
    *  the way ShaderCanvas does, so the figure carries one line and not three. */
-  caption: string
+  caption: string;
   /** The name over the block. A file name is not copy, so it is written on the page and reads
    *  the same in every language, the way the other code frames on the site name their file. */
-  file?: string
+  file?: string;
   /** One line saying what the reader is looking at, precise enough to check by eye. It is the
    *  prose form of the "Expected output" comment an MDN interactive example carries. From the
    *  dictionaries. */
-  anchor?: string
+  anchor?: string;
   /** What to try, one line each, with the controls or by editing a line. A live example a
    *  reader does nothing with is a picture. From the dictionaries. */
-  exercises?: readonly string[]
+  exercises?: readonly string[];
   /** Range, step, default and label for one uniform field each. A field the module does not
    *  declare fails the build. */
-  controls?: ControlProps
-  aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2'
+  controls?: ControlProps;
+  aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2';
   /** `figure` is the column a guide page shows: code, then canvas, then controls. `hero` is
    *  the front page's showcase card: a head bar with the file name and the two buttons, the
    *  code pane beside the canvas, then the controls and the caption, with no emitted-output
    *  disclosure (the front page prints that itself). */
-  variant?: 'figure' | 'hero'
+  variant?: 'figure' | 'hero';
 }
 
-const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1', variant = 'figure' } = Astro.props
-const hero = variant === 'hero'
-const t = copyFor(locale)
-const l = t.live
-const payload = liveShader(id, title, code, controls)
-const aria: StateStrings = t.canvas.aria(title)
+const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1', variant = 'figure' } = Astro.props;
+const hero = variant === 'hero';
+const t = copyFor(locale);
+const l = t.live;
+const payload = liveShader(id, title, code, controls);
+const aria: StateStrings = t.canvas.aria(title);
 
 /** The caption, with what drew the frame appended. One line, the way the hero's is. */
-const captionFor = (backend: string): string => `${caption} ${backend}`
+const captionFor = (backend: string): string => `${caption} ${backend}`;
 const captions: StateStrings = {
   webgpu: captionFor(l.backend.webgpu),
   webgl2: captionFor(l.backend.webgl2),
   none: captionFor(l.backend.none),
   'still-webgpu': captionFor(l.backend.webgpu),
   'still-webgl2': captionFor(l.backend.webgl2),
-}
+};
 
 // The words the browser half needs once it is running. It reads them off the element: the
 // module that holds the logic is bundled and takes no `define:vars`. Everything the page
@@ -82,13 +82,13 @@ const runtimeCopy = {
   aria,
   lineAt: l.lineAt,
   component: l.component,
-}
+};
 
-const payloadId = `live-payload-${id}`
-const fields = payload.data.layout.fields
+const payloadId = `live-payload-${id}`;
+const fields = payload.data.layout.fields;
 // The note under the controls names the reserved fields this sample declares, so it describes
 // the file above it. The names go in as code spans, which Rich renders.
-const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).join(', '))
+const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).join(', '));
 ---
 
 <figure

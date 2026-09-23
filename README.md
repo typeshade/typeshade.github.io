@@ -46,11 +46,11 @@ The important concept to understand first is **`"use typeshade"`**. It is the bo
 
 ## Repository layout
 
-| Path | Purpose |
-| --- | --- |
-| `typeshade/` | TypeShade compiler and language implementation |
+| Path                   | Purpose                                               |
+| ---------------------- | ----------------------------------------------------- |
+| `typeshade/`           | TypeShade compiler and language implementation        |
 | `typeshade.github.io/` | Documentation site, examples, and generated reference |
-| `.github/` | CI and repository automation |
+| `.github/`             | CI and repository automation                          |
 
 The documentation site is built with Astro and deployed to GitHub Pages. The compiler is vendored as a git submodule so examples and generated API documentation can be checked against a pinned compiler revision.
 
@@ -66,6 +66,8 @@ bun run dev
 The production build verifies generated artifacts, documentation consistency, links, and SEO before deployment. See `DESIGN.md` for the site's writing and design rules and `.claude/skills/typeshade-site/SKILL.md` for the site maintenance workflow.
 
 ## Checks
+
+`bun run format:check` runs first in CI, and `bun run format` fixes what it reports: Prettier over the TypeScript, CSS, JSON and Markdown, then `scripts/astro-semicolons.ts`, which writes the `;` in each component's frontmatter and `<script>`. Prettier leaves `.astro` files alone, because Astro keeps the whitespace written between tags and a reformatted component renders differently.
 
 `bun run build` runs, in order:
 

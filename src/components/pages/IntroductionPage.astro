@@ -1,23 +1,23 @@
 ---
 // The first conceptual page: explain the language boundary before compiler internals.
-import Docs from '../../layouts/Docs.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import ConceptDoc from '../ConceptDoc.astro'
-import Rich from '../Rich.astro'
-import { editCopy, links } from '../../lib/links.ts'
+import Docs from '../../layouts/Docs.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import ConceptDoc from '../ConceptDoc.astro';
+import Rich from '../Rich.astro';
+import { editCopy, links } from '../../lib/links.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
 }
-const { locale } = Astro.props
-const content = copyFor(locale).motivation.use
+const { locale } = Astro.props;
+const content = copyFor(locale).motivation.use;
 // Korean headings keep their own characters in the slug instead of losing them to a Latin-only pattern.
-const sections = content.sections.map(([h, p]) => ({ h, p, slug: h.toLowerCase().replace(/[^a-z0-9ᄀ-ᇿ㄰-㆏가-힣]+/g, '-').replace(/^-|-$/g, '') })) // i18n-ok
+const sections = content.sections.map(([h, p]) => ({ h, p, slug: h.toLowerCase().replace(/[^a-z0-9ᄀ-ᇿ㄰-㆏가-힣]+/g, '-').replace(/^-|-$/g, '') })); // i18n-ok
 const headings = [
   ...sections.map((s) => ({ depth: 2, slug: s.slug, text: s.h.replace(/`/g, '') })),
   { depth: 2, slug: 'from-typescript', text: content.familiarH },
   { depth: 2, slug: 'further-reading', text: content.furtherH },
-]
+];
 ---
 
 <Docs locale={locale} path={links.motivation.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'motivation')}>

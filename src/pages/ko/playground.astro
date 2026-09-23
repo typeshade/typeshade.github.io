@@ -1,11 +1,11 @@
 ---
-import Playground from '../../components/Playground.astro'
-import Base from '../../layouts/Base.astro'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { links } from '../../lib/links.ts'
+import Playground from '../../components/Playground.astro';
+import Base from '../../layouts/Base.astro';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { links } from '../../lib/links.ts';
 
-const locale = 'ko' as Locale
-const t = copyFor(locale)
+const locale = 'ko' as Locale;
+const t = copyFor(locale);
 ---
 
 <Base locale={locale} path="/playground/" searchable searchTitle="Playground">

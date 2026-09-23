@@ -29,39 +29,39 @@
 // .construct-card-note, .construct-card-panes, .construct-card-pane,
 // .construct-card-pane-title and .construct-card-refusal. The panes sit side by side from
 // 48rem and stack below it, the TypeScript first.
-import { Code } from 'astro-expressive-code/components'
-import CodeFrame from './CodeFrame.astro'
-import Rich from './Rich.astro'
-import type { Locale } from '../i18n/index.ts'
+import { Code } from 'astro-expressive-code/components';
+import CodeFrame from './CodeFrame.astro';
+import Rich from './Rich.astro';
+import type { Locale } from '../i18n/index.ts';
 
 // Named on a line of its own: the Astro compiler hoists an exported type alias by taking the
 // text up to its last closing brace, the way MappingTable.astro's header comment describes.
-export type ConstructDiagnostic = { readonly code: string; readonly message: string }
+export type ConstructDiagnostic = { readonly code: string; readonly message: string };
 
 interface Props {
-  locale: Locale
-  name: string
-  becomes: string
-  ts: string
-  tsTitle: string
-  emitTitle: string
-  wgsl: string | null
-  diagnostic: ConstructDiagnostic | null
-  refusedLabel: string
-  diagnosticTitle: string
+  locale: Locale;
+  name: string;
+  becomes: string;
+  ts: string;
+  tsTitle: string;
+  emitTitle: string;
+  wgsl: string | null;
+  diagnostic: ConstructDiagnostic | null;
+  refusedLabel: string;
+  diagnosticTitle: string;
 }
-const { locale, name, becomes, ts, tsTitle, emitTitle, wgsl, diagnostic, refusedLabel, diagnosticTitle } = Astro.props
+const { locale, name, becomes, ts, tsTitle, emitTitle, wgsl, diagnostic, refusedLabel, diagnosticTitle } = Astro.props;
 
 if ((wgsl === null) === (diagnostic === null)) {
-  const what = wgsl === null ? 'no emit and no diagnostic' : 'an emit and a diagnostic at once'
-  throw new Error(`[ConstructCard] '${name}' carries ${what}`)
+  const what = wgsl === null ? 'no emit and no diagnostic' : 'an emit and a diagnostic at once';
+  throw new Error(`[ConstructCard] '${name}' carries ${what}`);
 }
 
 // The accessible name of a code region: the pane's title and the construct it belongs to, so
 // a reader walking the page's regions hears which card each one is in. The backticks in the
 // name are markup for Rich and have no place in a label.
-const plain = name.replace(/`/g, '')
-const region = (title: string): string => `${title}, ${plain}`
+const plain = name.replace(/`/g, '');
+const region = (title: string): string => `${title}, ${plain}`;
 ---
 
 <li class="construct-card rounded-md border border-line-1 bg-(--color-elevated)">
