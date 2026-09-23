@@ -490,7 +490,7 @@ export const en = {
       obfuscate: 'Obfuscate',
       fp64: 'f64 emulation',
       precision: `${glsl} float precision`,
-      levelNote: 'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses, minify, the number literals and obfuscate reach the GLSL tabs only. The f64 emulation reaches the reflection at every level.',
+      levelNote: 'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses, minify, the number literals, obfuscate and the f64 emulation reach the GLSL tabs only. The f64 emulation still reaches the reflection at every level, since `reflect()` takes it on its own.',
     },
   },
 

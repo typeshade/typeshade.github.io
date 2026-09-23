@@ -54,6 +54,8 @@
 //      all, against the floors below, with the reason printed for each one that does not
 //  34. an example on the page is editable: a keystroke reaches the emitted text and the
 //      frame, which is the claim nothing tested before
+//  35. the tool on an example's own page: no picker, the editor seeded with that example's
+//      file, and a keystroke there reaching the emitted text and the frame as well
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -85,8 +87,8 @@ const CDN = 'cdn.jsdelivr.net'
 const ROUTES = ['/playground/', '/ko/playground/']
 
 // How many of the examples in the picker the Result tab has to paint, and how many of them a
-// backend has to run at all. Measured, never typed: on 2026-09-22, at the commit that added
-// this, 34 of the 51 put more than one colour on the canvas and 35 of them got a backend,
+// backend has to run at all. Measured, never typed: on 2026-09-23, at the commit that added
+// this, 34 of the 51 put more than one colour on the canvas and 36 of them got a backend,
 // against 10 that drew before the tab ran on the GPU. The rest are refused by name, and the
 // list under the count says which and why.
 //
@@ -94,7 +96,7 @@ const ROUTES = ['/playground/', '/ko/playground/']
 // stopped an example drawing: find out which, from the list this prints, and fix that. Do
 // not lower the number to get a green build, and do not skip an example to reach it.
 const PAINTED_FLOOR = 34
-const RAN_FLOOR = 35
+const RAN_FLOOR = 36
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000)
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1'
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
@@ -122,6 +124,21 @@ async function typeSource(page, source) {
 async function openTab(page, name, wait = 150) {
   await page.click(`[data-target="${name}"]`)
   await page.waitForTimeout(wait)
+  // A text panel is coloured by Monaco once the tab is up, on a promise nothing here holds,
+  // so a loaded machine can be read while the pane still holds the plain text the colouriser
+  // is about to replace. An empty pane is a pane with nothing to colour.
+  if (name === 'wgsl' || name === 'glslVertex' || name === 'glslFragment') {
+    await page
+      .waitForFunction(
+        () => {
+          const pane = document.querySelector('[data-output]')
+          return !pane || pane.textContent.trim().length === 0 || pane.querySelector('span') !== null
+        },
+        null,
+        { timeout: 5_000 },
+      )
+      .catch(() => {})
+  }
 }
 
 /** Read the WGSL pane with its tab open. */
@@ -130,12 +147,12 @@ async function wgslPane(page) {
   return (await page.innerText('[data-output]')).trim()
 }
 
-/** The colours inside the Result tab's canvas, from a photograph of the element. The middle
- *  of it, so the frame's own rounded corners are not counted as pixels the shader drew. One
- *  colour is a canvas nothing painted, or one a shader filled flat; two or more is a
- *  picture. The status note is not evidence: a note reading "36864 px in 249 ms" over a
- *  fully transparent canvas is how five of these examples read before this. */
-async function canvasColours(page) {
+/** One photograph of the Result tab's canvas, counted. The middle of the element, so the
+ *  frame's own rounded corners are not counted as pixels the shader drew. One colour is a
+ *  canvas nothing painted, or one a shader filled flat; two or more is a picture. The status
+ *  note is not evidence: a note reading "36864 px in 249 ms" over a fully transparent canvas
+ *  is how five of these examples read before this. */
+async function sampleCanvas(page) {
   const shot = await page.locator('[data-gpu-canvas]').screenshot()
   const meta = await sharp(shot).metadata()
   const pad = Math.round(Math.min(meta.width, meta.height) * 0.08)
@@ -153,6 +170,22 @@ async function canvasColours(page) {
   return { colours: colours.size, opaque }
 }
 
+/** What the canvas holds, over a few frames. A pass whose picture follows its own clock is
+ *  flat for part of its cycle: julia-twin measured 1 colour for the first two seconds and
+ *  then 11, 17, 1, 75, 91, so a single photograph reads it as blank and the count moves
+ *  between runs. Eight photographs over about three seconds cover that dark stretch with
+ *  room to spare. Another photograph is taken only while the canvas is still one colour, so
+ *  a pass that drew costs one screenshot. */
+async function canvasColours(page, samples = 8, gap = 400) {
+  let best = await sampleCanvas(page)
+  for (let i = 1; i < samples && best.colours < 2; i += 1) {
+    await page.waitForTimeout(gap)
+    const next = await sampleCanvas(page)
+    if (next.colours > best.colours) best = next
+  }
+  return best
+}
+
 /** Wait for the Result tab to settle on this module: a backend that is drawing has put a
  *  frame up, and a module the runtime refuses has said so. Waiting on the page's own state
  *  instead of a fixed sleep, so a slow machine reads the same as a fast one. */
@@ -163,9 +196,8 @@ async function settleResult(page) {
       if (!canvas) return false
       const backend = canvas.dataset.backend
       if (backend && backend !== 'none') return (canvas.__shader?.frames ?? 0) > 0
-      // No backend: the note has to be a sentence about this module and not the resting one.
-      const note = document.querySelector('[data-gpu-note]')?.textContent ?? ''
-      return note.length > 0 && document.querySelector('[data-status]')?.dataset.pending !== '1'
+      // No backend: the note says why, and it is written before the backend is cleared.
+      return (document.querySelector('[data-gpu-note]')?.textContent ?? '').length > 0
     },
     null,
     { timeout: 20_000 },
@@ -1177,6 +1209,10 @@ async function checkRoute(browser, origin, route) {
         const drawn = []
         for (const id of ids) {
           await page.selectOption('[data-example]', id)
+          // The compile is debounced, so the canvas still holds the example before this one
+          // until it lands. Without this wait a fast example is photographed as its
+          // predecessor and the count is of the wrong pictures.
+          await page.waitForTimeout(AFTER_EDIT)
           try {
             await settleResult(page)
           } catch {
@@ -1254,6 +1290,82 @@ async function checkRoute(browser, origin, route) {
   return { route, problems, cdnFailures, cdnOnly }
 }
 
+// The example page that carries the tool seeded with its own file. `plasma-twin` is a
+// fullscreen pass whose picture follows its own arithmetic, so an edit to it moves the frame.
+const SEEDED_ROUTE = '/guide/examples/plasma-twin/'
+
+/** The Playground on an example's own page, which is what "the examples are editable" means.
+ *  The page names the example, so there is no picker and the editor opens on that file. The
+ *  tool is inside a documentation column here and on a page of its own everywhere else, so
+ *  the edit is typed again on this route instead of taken on trust. */
+async function checkSeeded(browser, origin) {
+  const { page, pageErrors, cdnFailures } = await openPage(browser)
+  const problems = []
+  let cdnOnly = false
+  let mounted = true
+  try {
+    await page.goto(`${origin}${SEEDED_ROUTE}`, { waitUntil: 'load' })
+    try {
+      await page.waitForSelector('.monaco-editor', { timeout: EDITOR_TIMEOUT })
+    } catch {
+      mounted = false
+      problems.push('the editor did not mount on the example page: no .monaco-editor appeared')
+    }
+
+    if (mounted) {
+      await page.waitForTimeout(AFTER_EDIT)
+      if (await page.isVisible('[data-example]')) {
+        problems.push('the example page carries the example picker, and the page already names the example')
+      }
+      const seeded = await sourceOf(page)
+      if (!seeded.includes('use typeshade')) {
+        problems.push(`the editor on the example page does not hold a "use typeshade" file:\n    ${seeded.slice(0, 200)}`)
+      }
+      await openTab(page, 'result')
+      try {
+        await settleResult(page)
+      } catch {
+        problems.push('the example page never settled: the Result tab neither drew a frame nor said why not')
+      }
+      const before = await canvasColours(page)
+      const beforeWgsl = await wgslPane(page)
+      await openTab(page, 'result')
+      const edited = await page.evaluate(() => {
+        const model = window.monaco.editor.getModels()[0]
+        const next = model.getValue().replaceAll('* 10. +', '* 3. +')
+        const changed = next !== model.getValue()
+        model.setValue(next)
+        return changed
+      })
+      if (!edited) problems.push('the edit the check types found nothing to replace on the example page, so it proved nothing')
+      await page.waitForTimeout(AFTER_EDIT)
+      try {
+        await settleResult(page)
+      } catch {
+        problems.push('the example page did not settle after an edit')
+      }
+      const afterWgsl = await wgslPane(page)
+      await openTab(page, 'result')
+      await page.waitForTimeout(600)
+      const after = await canvasColours(page)
+      const status = (await page.textContent('[data-status]'))?.trim() ?? ''
+      if (afterWgsl === beforeWgsl) problems.push('typing into the example page\'s editor did not change the emitted WGSL')
+      if (after.colours === before.colours && after.opaque === before.opaque) {
+        problems.push(`typing into the example page's editor did not repaint the canvas: ${before.colours} colours before and after`)
+      }
+      console.log(`  seeded with ${seeded.length} B, ${status}`)
+      console.log(`  an edit reaches the output: WGSL ${beforeWgsl.length} B to ${afterWgsl.length} B, canvas ${before.colours} colours to ${after.colours}`)
+    }
+
+    const realErrors = pageErrors.filter((message) => !/ResizeObserver|Canceled/.test(message))
+    for (const message of realErrors) problems.push(`the page threw: ${message}`)
+    cdnOnly = problems.length > 0 && realErrors.length === 0 && cdnFailures.length > 0 && !mounted
+  } finally {
+    await page.close()
+  }
+  return { route: SEEDED_ROUTE, problems, cdnFailures, cdnOnly }
+}
+
 const server = await serveDist(dist, Number(process.env.PLAYGROUND_PORT ?? 4473))
 const browser = await launchChromium()
 const results = []
@@ -1262,6 +1374,8 @@ try {
     console.log(`[playground] ${route}`)
     results.push(await checkRoute(browser, server.url, route))
   }
+  console.log(`[playground] ${SEEDED_ROUTE}`)
+  results.push(await checkSeeded(browser, server.url))
 } finally {
   await browser.close()
   server.close()

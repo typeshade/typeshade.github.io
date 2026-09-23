@@ -190,7 +190,7 @@ const runtimeCopy = {
       <input type="checkbox" id="playground-obfuscate" data-opt-obfuscate />
       <label for="playground-obfuscate">{t.emit.obfuscate}</label>
     </div>
-    <p data-level-note hidden>{t.emit.levelNote}</p>
+    <p data-level-note hidden><Rich text={t.emit.levelNote} locale={locale} /></p>
     <p data-prelude-note hidden><Rich text={t.preludeNote} locale={locale} /></p>
   </div>
 
