@@ -129,20 +129,20 @@ const kind = x.kinds[rule.verification];
     {e.kindLine(rule.chapter, chapterName)}
     <span class="api-optional ms-2.5" data-pagefind-meta={`${e.kindMeta}:${kind}`}>{kind}</span>
   </p>
-  <div class="rule-text api-summary" lang="en"><Fragment set:html={html.text} /></div>
+  <div class="rule-text rule-md api-summary" lang="en"><Fragment set:html={html.text} /></div>
   <p class="guide-note" lang={locale}><Rich text={x.note} locale={locale} /></p>
 
   {rule.rationale && (
     <section>
       <h2 id="rationale" lang={locale}>{e.rationaleH}</h2>
-      <div lang="en"><Fragment set:html={html.rationale} /></div>
+      <div class="rule-md" lang="en"><Fragment set:html={html.rationale} /></div>
     </section>
   )}
 
   {rule.derives && (
     <section>
       <h2 id="derives-from" lang={locale}>{e.derivesH}</h2>
-      <div lang="en"><Fragment set:html={html.derives} /></div>
+      <div class="rule-md" lang="en"><Fragment set:html={html.derives} /></div>
     </section>
   )}
 
@@ -150,7 +150,7 @@ const kind = x.kinds[rule.verification];
     <h2 id="how-it-is-verified" lang={locale}>{e.verifiedH}</h2>
     <p lang={locale}><Rich text={e.how[rule.verification]} locale={locale} /></p>
     <p lang={locale}>{e.enforcedP}</p>
-    <div class="rule-quote" lang="en"><Fragment set:html={html.enforced} /></div>
+    <div class="rule-quote rule-md" lang="en"><Fragment set:html={html.enforced} /></div>
     {rule.files.length > 0 && (
       <>
         <p lang={locale}>{e.filesP(commit)}</p>
@@ -217,6 +217,10 @@ const kind = x.kinds[rule.verification];
 </Docs>
 
 <style>
+  /* The compiler's Markdown on this page names long paths in code spans
+     (`src/compiler/ts/compile.contract.test.ts`), which would push a phone's page sideways;
+     a span breaks anywhere before it does. */
+  .rule-md :global(code) { overflow-wrap: anywhere }
   /* The rule's text under the heading, in the lead's size. It is Markdown, so a list or a
      table inside it keeps the document's own rules; only the gap after the heading is set. */
   .rule-text { margin-block-start: 12px }
