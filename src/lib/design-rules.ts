@@ -221,11 +221,23 @@ function bodyParts(
 // ── rule mentions ──────────────────────────────────────────────────────────────────────
 
 const NUMBER = String.raw`\d{1,2}\.\d{1,2}(?![\d]|\.\d)`;
-/** "Rule 4.8", "Rules 7.2, 7.5", "Rules 8.9 and 8.13", "Rules 8.11 to 8.14": a mention in prose. */
-const MENTION = new RegExp(
-  String.raw`\bRules? (${NUMBER})((?:(?:,| and| or| to|, and|, or) ${NUMBER})*)`,
-  'g',
-);
+/** "Rule 4.8", "Rules 7.2, 7.5", "Rules 8.9 and 8.13", "Rules 8.11 to 8.14": a mention in prose,
+ *  led by the word each language names a rule with (`docs.rules.entry.heading` in every
+ *  dictionary, "Rule" and its Korean), which the caller hands in. */
+const mentionPatterns = new Map<string, RegExp>();
+function mentionPattern(words: readonly string[]): RegExp {
+  const key = words.join('|');
+  let re = mentionPatterns.get(key);
+  if (!re) {
+    const lead = words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    re = new RegExp(
+      String.raw`(?<![\p{L}\p{N}_])(?:${lead})s? (${NUMBER})((?:(?:,| and| or| to|, and|, or) ${NUMBER})*)`,
+      'gu',
+    );
+    mentionPatterns.set(key, re);
+  }
+  return re;
+}
 
 export type MentionPart =
   | { readonly kind: 'text'; readonly value: string }
@@ -234,7 +246,11 @@ export type MentionPart =
 /** A piece of prose cut at every rule it names: "Rules 7.2, 7.5" is a mention written
  *  "Rules 7.2" for 7.2, the text ", ", and a mention written "7.5" for 7.5. The words stay as
  *  written. A number no rule carries stays text. */
-export function mentionParts(text: string, known: (n: string) => boolean): MentionPart[] {
+export function mentionParts(
+  text: string,
+  known: (n: string) => boolean,
+  words: readonly string[] = ['Rule'],
+): MentionPart[] {
   const out: MentionPart[] = [];
   let last = 0;
   const push = (value: string): void => {
@@ -243,7 +259,7 @@ export function mentionParts(text: string, known: (n: string) => boolean): Menti
     if (prev?.kind === 'text') out[out.length - 1] = { kind: 'text', value: prev.value + value };
     else out.push({ kind: 'text', value });
   };
-  for (const m of text.matchAll(MENTION)) {
+  for (const m of text.matchAll(mentionPattern(words))) {
     push(text.slice(last, m.index));
     const whole = m[0];
     const first = m[1]!;

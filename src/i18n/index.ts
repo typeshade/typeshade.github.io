@@ -38,6 +38,12 @@ export type Copy = typeof en;
 
 export const copies: Record<Locale, Copy> = { en, ko };
 
+/** The word each language names a design rule with ("Rule", and its translations), read off
+ *  the heading of a rule's page, so a mention of a rule in any language links to its page. */
+export const ruleWords = (): string[] => [
+  ...new Set(Object.values(copies).map((c) => c.docs.rules.entry.heading('').trim())),
+];
+
 export const copyFor = (locale: Locale): Copy => copies[locale];
 
 /** The path of a locale-neutral route ('/', '/checks/') in a given locale. */
