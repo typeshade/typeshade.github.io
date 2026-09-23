@@ -340,7 +340,7 @@ export const en = {
         type: {
           name: 'Types',
           summary: 'The scalar, vector, matrix and memory types a declaration names.',
-          description: `The ${facts.languageTypes} types a \`"use typeshade"\` file declares a value with: the scalars, the vectors, the two matrix names, and the memory the GPU holds.`,
+          description: `The ${facts.languageTypes} types a \`"use typeshade"\` file declares a value with: the scalars, the vectors, every matrix shape, and the memory the GPU holds.`,
         },
         attribute: {
           name: 'Attributes',

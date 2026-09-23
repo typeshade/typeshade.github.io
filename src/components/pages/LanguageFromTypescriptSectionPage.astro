@@ -39,7 +39,7 @@ const page = c.pages[section]
 >
   <h1>{words.h}</h1>
   <p><Rich text={words.p} locale={locale} /></p>
-  <ul class="construct-cards">
+  <ul class="construct-cards grid grid-cols-[repeat(auto-fill,minmax(min(100%,620px),1fr))] gap-4">
     {group.rows.map((row) => (
       <ConstructCard
         locale={locale}
@@ -56,3 +56,11 @@ const page = c.pages[section]
     ))}
   </ul>
 </Docs>
+
+<style>
+  /* One card per row until two fit. A card holds two code panes side by side, and 620px is
+     where a pane is still the ~280px the panes are written for, so the column answers the
+     extra width with another card instead of stretching one card's panes across it. The list
+     takes the whole column and outranks `.doc ul` and the column's measure on its blocks. */
+  .construct-cards { max-inline-size: none; margin: 24px 0 0; padding: 0; list-style: none }
+</style>

@@ -1,4 +1,8 @@
-/* typeshade.dev styles. Tokens, fonts, base rules, then one block per component.
+/* typeshade.dev's global styles: the tokens, the fonts, the base rules, dark mode, the chrome
+   every page shares, and the rules for markup the site does not author (Expressive Code,
+   Pagefind, the Markdown under .doc). A page or a component styles itself with Tailwind
+   utilities on these tokens in its own markup, and its scoped <style> for what utilities say
+   badly; `bun run check:style` fails on a page's class here (DESIGN.md, Styling).
    Ant Design v5's design language as plain CSS custom properties: its blue (#1677ff), its
    neutral text and border scale, 6px radii on controls and 8px on cards and code frames, its
    three-layer elevation, 14px interface text with 16px prose, and its button, card, list,
@@ -6,6 +10,11 @@
    system. Light follows the system, or the switch in the header. */
 
 @import 'tailwindcss';
+
+/* A `hover:` utility applies wherever the pointer is, the way every `:hover` rule in this
+   file does. Tailwind's own variant waits for `(hover: hover)`, which would drop a hover
+   state on a pen or a hybrid screen that the site's own rules still draw. */
+@custom-variant hover (&:hover);
 
 @theme {
   --font-sans: 'IBM Plex Sans Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
@@ -29,6 +38,14 @@
   --radius-sm: 4px;
   --radius: 6px;
   --radius-md: 8px;
+
+  /* Ant's one motion, so `transition-[color]` and its kin move the way --motion does. */
+  --default-transition-duration: 0.2s;
+  --default-transition-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+
+  /* The 12px label: a tag, a caption at the foot of a card, a menu group's title. */
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.6667;
 
   --text-code: 0.8125rem;
   --text-code--line-height: 1.6;
@@ -629,32 +646,6 @@ body > main { flex: 1 }
 .alert code { font-family: var(--font-mono); font-size: 0.9em }
 .doc h2 + .alert { margin-block-start: 0 }
 
-/* Front page. A two-column hero in the container: the headline, the sentence and the two
-   actions on the left, the showcase card on the right. Then one section per idea, separated
-   by space. */
-.front-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; padding-block: 48px 0 }
-.front-hero-text { align-self: center }
-.front-title {
-  margin: 0;
-  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); line-height: 1.15; font-weight: 600; letter-spacing: -0.02em;
-  text-wrap: balance;
-}
-:lang(ko) .front-title { letter-spacing: -0.01em; line-height: 1.3 }
-.front-lede { max-inline-size: 52ch; margin: 16px 0 0; font-size: var(--text-prose); line-height: 1.5; color: var(--color-text-2); text-wrap: pretty }
-.front-lede code, .front-section code { font-family: var(--font-mono); font-size: 0.9em }
-.front-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 32px 0 0 }
-.front-stage { min-inline-size: 0 }
-@media (min-width: 40rem) {
-  .front-hero { padding-block-start: 56px }
-}
-@media (min-width: 64rem) {
-  .front-hero { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; padding-block-start: 64px }
-  .front-lede { margin-block-start: 20px }
-}
-@media (min-width: 90rem) {
-  .front-title { font-size: 3.25rem }
-}
-
 /* The showcase card: the file name as an active tab over the panes, the file on the left and
    the picture it draws on the right, then the controls and the caption. .figure is a flex
    column, so the hero's own rules carry the class pair to outrank it. */
@@ -770,103 +761,23 @@ body > main { flex: 1 }
    emitted-output disclosure's own rule and read as two. */
 .figure.live .live-exercises li:last-child { border-block-end: 0 }
 
-/* One section per idea, separated by space. */
-.front-section { margin-block-start: var(--front-gap) }
-.front-section h2 { max-inline-size: 24ch; margin: 0; font-size: var(--text-h2); line-height: var(--text-h2--line-height); font-weight: 600; letter-spacing: -0.01em; text-wrap: balance }
-:lang(ko) .front-section h2 { letter-spacing: 0; line-height: 1.4 }
-.front-section > p, .front-gallery-head > p { max-inline-size: 62ch; margin: 12px 0 0; font-size: var(--text-prose); line-height: 1.5; color: var(--color-text-2); text-wrap: pretty }
-.front-section > p a:not(.button), .front-gallery-head > p a:not(.button), .front-map dd a, .front-gallery-all { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
-.front-section > p a:not(.button):hover, .front-gallery-head > p a:not(.button):hover, .front-map dd a:hover, .front-gallery-all:hover { color: var(--color-primary-text-hover) }
-.front-section .expressive-code { margin: 0 }
-/* The source beside the two frames it emits, which share one tabbed pane. Ant Tabs: a 40px
-   head with a 2px primary underline on the active tab. The head needs the script, so it
-   stays out of the page until the script has run; with no script both panels are in the flow
-   and stack, which is also what the search index reads. */
-/* The source and what it emits are two panes of code, so the pair stops at two of the wide
-   measure side by side. Past that the frames would grow with the viewport and each would
-   hold a 40-character line across 1200px. */
-.front-targets-grid { display: grid; gap: 16px; margin-block-start: 24px; max-inline-size: calc(2 * var(--wide) + 24px) }
-/* The two columns read as one row: each is a 40px head over a code frame, so the first line
-   of code sits at the same height on both sides, and the frames stretch to the taller of the
-   two, which is the source at 21 lines. A pane whose emit is shorter sits against the same
-   box and a longer one scrolls inside it, the way the hero card's code pane does, so the
-   section keeps its height when the tab changes. */
-.front-targets-src, .front-targets-out { display: flex; flex-direction: column; gap: 16px; min-inline-size: 0 }
-.front-targets-src > .expressive-code, .front-tabs-panel { flex: 1 1 auto; min-block-size: 0 }
-.front-tabs-panel > .expressive-code { block-size: 100% }
-/* One selector deeper than Expressive Code's own `.expressive-code .frame`, whose stylesheet
-   is injected after this one and would otherwise keep the frame a block box. */
-.front-targets-grid .expressive-code .frame { display: flex; flex-direction: column; block-size: 100% }
-.front-targets-grid .expressive-code .frame pre { flex: 1 1 auto; min-block-size: 0; overflow: auto }
-.front-tabs-head { display: none; gap: 16px; border-block-end: 1px solid var(--color-line-1) }
-[data-front-tabs][data-ready] .front-tabs-head { display: flex }
-/* The source's head is not a tablist and needs no script, so it is on screen from the start.
-   One selector deeper than the head's own `display: none`, which comes after it here. */
-.front-tabs-head.front-targets-file { display: flex; align-items: center; block-size: 41px; margin: 0 }
-.front-tabs-head button {
+/* Ant Tabs, on the front page and over every example page's code: a 40px head with a 2px
+   primary underline on the active tab. The head needs the script, so it stays out of the page
+   until the script has run; with no script every panel is in the flow and they stack, which
+   is also what the search index reads. */
+.tabs-panel { flex: 1 1 auto; min-block-size: 0 }
+.tabs-panel > .expressive-code { block-size: 100% }
+.tabs-head { display: none; gap: 16px; border-block-end: 1px solid var(--color-line-1) }
+[data-front-tabs][data-ready] .tabs-head { display: flex }
+.tabs-head button {
   block-size: 40px; padding: 0; border: 0; background: none;
   box-shadow: inset 0 -2px 0 transparent;
   color: var(--color-text-2); font-family: inherit; font-size: var(--text-ui); cursor: pointer;
   transition: color var(--motion), box-shadow var(--motion);
 }
-.front-tabs-head button:hover { color: var(--color-primary-hover) }
-.front-tabs-head button[aria-selected='true'] { color: var(--color-accent); box-shadow: inset 0 -2px 0 var(--color-accent); font-weight: 600 }
-.front-tabs-head button:focus-visible { border-radius: var(--radius-sm) }
-@media (min-width: 64rem) {
-  .front-targets-grid { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 24px }
-  .front-targets-src, .front-targets-out { gap: 24px }
-}
-/* The tiles: an Ant Card each, the running example as its cover and the name as its meta. */
-.front-gallery-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 24px }
-.front-gallery-head > p { grid-column: 1 / -1 }
-.front-gallery-all { font-size: var(--text-ui); font-weight: 600; white-space: nowrap }
-.front-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 24px 0 0; padding: 0; list-style: none }
-.front-tiles li {
-  min-inline-size: 0; overflow: hidden;
-  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
-  transition: box-shadow var(--motion), border-color var(--motion);
-}
-.front-tiles li:hover, .front-tiles li:has(.front-tile:focus-visible) { border-color: transparent; box-shadow: var(--shadow-elevated) }
-/* The whole tile is the link to the file the picture was drawn from, the shape a gallery tile
-   on /guide/examples/ already takes: the still as the cover, the example's name under it, the
-   cover scaling 1.03 under a fine pointer. */
-.front-tile { display: block; border-radius: var(--radius-md); color: inherit; text-decoration: none }
-.front-tile:hover .front-tile-name { color: var(--color-accent) }
-@media (hover: hover) and (pointer: fine) { .front-tile:hover .example-tile-frame img { transform: scale(1.03) } }
-.front-tile-name { display: block; padding: 16px; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1); transition: color var(--motion) }
-@media (min-width: 48rem) { .front-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px } }
-/* What carries over: an Ant List, the TypeScript on the left as a highlighted code cell
-   sized to its own line and what it becomes on the right. The cell is an Expressive Code
-   frame with the chrome taken off (no copy button, the chip's own padding) so it reads as a
-   tag, not a file. Its first line sits level with the title beside it. */
-.front-map-list { margin: 24px 0 0 }
-.front-map-row { display: grid; gap: 8px 32px; padding-block: 20px; border-block-end: 1px solid var(--color-line-1) }
-.front-map-row:first-child { border-block-start: 1px solid var(--color-line-1) }
-.front-map-row dt { align-self: start; justify-self: start; max-inline-size: 100%; min-inline-size: 0 }
-.front-map-row dt .expressive-code {
-  margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
-  --ec-codePadBlk: 10px; --ec-codePadInl: 14px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
-}
-.front-map-row dt .expressive-code .copy { display: none }
-/* No copy button, so the first line keeps no room for one at its end. */
-.front-map-row dt .expressive-code :nth-child(1 of .ec-line) .code { padding-inline-end: var(--ec-codePadInl) }
-.front-map-row dd { margin: 0; padding-block-start: 2px }
-.front-map-row dd strong { display: block; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1) }
-.front-map-row dd strong code { font-size: 0.95em }
-.front-map-row dd p { margin: 4px 0 0; color: var(--color-text-2); line-height: 1.5714 }
-@media (min-width: 48rem) { .front-map-row { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); align-items: start } }
-/* The gradient pass drawn by each backend: two cards, the picture as the cover. */
-.front-oracle .figure-pair { margin-block-start: 24px }
-.front-oracle .figure {
-  gap: 0; overflow: hidden;
-  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
-}
-.front-oracle .figure-frame { border: 0; border-radius: 0; border-block-end: 1px solid var(--color-line-1) }
-.front-oracle .figure-caption { padding: 16px; font-size: var(--text-ui); color: var(--color-text-2) }
-/* The close: the one command, and the action again. */
-.front-section > .alert { max-inline-size: 760px; margin-block-start: 12px }
-.front-install .expressive-code { margin-block-start: 24px; max-inline-size: 760px }
-.front-install .front-actions { margin-block-start: 24px }
+.tabs-head button:hover { color: var(--color-primary-hover) }
+.tabs-head button[aria-selected='true'] { color: var(--color-accent); box-shadow: inset 0 -2px 0 var(--color-accent); font-weight: 600 }
+.tabs-head button:focus-visible { border-radius: var(--radius-sm) }
 .wide { inline-size: var(--wide); margin-inline: auto }
 
 /* The document column */
@@ -881,16 +792,15 @@ body > main { flex: 1 }
 .doc > section > :is(p, ul, ol, dl, blockquote, h2, h3, h4, .alert) {
   max-inline-size: var(--content);
 }
-.doc .construct-cards, .doc .example-grid { max-inline-size: none }
 /* A block that shows one thing stops at the wide measure: a figure keeps a 3:1 pass from
    growing into a band as tall as the screen, a table of short code cells keeps columns a row
    can be read across, and a code frame keeps 115 characters of the code font instead of
    holding a 50-character line across 1300px. The cap sits on the document's own blocks, so a
    frame inside a card, a mapping cell or a figure keeps the box it is in. A grid of cards
    takes the whole column, because it answers the extra width with more cards. */
-.doc figure, .doc .figure-pair, .doc table, .doc .mapping-table,
-.doc > :is(.expressive-code, .example-emitted),
-.doc > section > :is(.expressive-code, .example-emitted) { max-inline-size: var(--wide) }
+.doc figure, .doc .figure-pair, .doc table,
+.doc > .expressive-code,
+.doc > section > .expressive-code { max-inline-size: var(--wide) }
 .doc a { color: var(--color-accent); text-decoration: none; transition: color var(--motion) }
 .doc a:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px }
 .doc code { font-family: var(--font-mono); font-size: 0.875em }
@@ -944,71 +854,30 @@ body > main { flex: 1 }
 .doc th, .doc td { padding: 12px 16px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-line-1) }
 .doc th { font-weight: 600; color: var(--color-text-1); background: var(--color-surface-1) }
 .doc thead th { border-block-end: 1px solid var(--color-line-1) }
-/* Below 45rem, a plain Markdown table follows the precedent .example-table sets: a row is
-   unreadable squeezed to the column and worse scrolled, so it stacks into a vertical block
-   instead. A Markdown table carries no row header the way .example-table does, so each cell
-   gets its own column header back as a small label, from the data-label the loader copies onto
-   it (src/lib/remark-doc-tables.mjs); example-table, the layout table and the API reference's
-   own targets table keep their own, purpose-built mobile layout instead. */
+/* Below 45rem a plain Markdown table stacks: a row is unreadable squeezed to the column and
+   worse scrolled, so it becomes a vertical block, and each cell gets its own column header
+   back as a small label, from the data-label the loader copies onto it
+   (src/lib/remark-doc-tables.mjs). A table the site writes with a phone layout of its own
+   (the layout table, the API reference's targets) carries data-own-stack and is left alone.
+   The mark is tested three times to keep the weight the rule had when it named three tables
+   by class: a live example's reflection table, whose own scoped cell rule is one class
+   lighter, stacks with the rest. */
 @media (max-width: 44.999rem) {
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) {
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) {
     display: block; overflow-x: visible;
   }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) tbody { display: block }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) thead { display: none }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) tr {
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) tbody { display: block }
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) thead { display: none }
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) tr {
     display: block; padding-block: 12px; border-block-end: 1px solid var(--color-line-1);
   }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) th,
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) td {
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) th,
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) td {
     display: block; padding: 3px 0; border: 0; white-space: normal; background: none;
   }
-  .doc table:not(.example-table):not(.layout-table):not(.api-targets) td[data-label]::before {
+  .doc table:not([data-own-stack]):not([data-own-stack]):not([data-own-stack]) td[data-label]::before {
     content: attr(data-label); display: block; font-size: var(--text-ui); color: var(--color-text-3);
   }
-}
-/* The mapping table (src/components/MappingTable.astro): a construct table whose cells are
-   code. A row is a grid of the same columns as the head, and a code cell is an Expressive
-   Code frame with the chrome taken off, the way .front-map-list sets one, so the cell reads
-   as a spelling and not as a file. Every column is minmax(0, 1fr), so the grid stays inside
-   the document column (DESIGN.md, the Container Rule) and a line too long for its cell wraps
-   or scrolls inside its own frame. Below 45rem the row stacks and each cell shows its column
-   heading again, which is what .doc table does with data-label. */
-.mapping-table { display: block; overflow-x: auto; max-inline-size: 100%; margin-block-start: 24px; font-size: var(--text-ui); line-height: var(--text-ui--line-height) }
-.mapping-head, .mapping-row { display: grid; grid-template-columns: var(--mapping-tracks, repeat(var(--mapping-columns, 3), minmax(0, 1fr))); gap: 8px 16px; align-items: start }
-.mapping-head { padding: 12px 16px; background: var(--color-surface-1); border-block-end: 1px solid var(--color-line-1) }
-.mapping-heading { font-weight: 600; color: var(--color-text-1) }
-.mapping-row { padding: 10px 16px; border-block-end: 1px solid var(--color-line-1) }
-.mapping-cell { min-inline-size: 0 }
-/* A prose or name cell sits level with the first line inside a code cell beside it: the
-   frame's own border and block padding. One selector deeper than `.doc p`, whose space above
-   would push a note below the frame beside it. */
-.mapping-table .mapping-cell .mapping-note { margin: 0; padding-block-start: 9px; color: var(--color-text-2) }
-.mapping-table .mapping-cell .mapping-name { display: block; padding-block-start: 9px; color: var(--color-text-1); overflow-wrap: anywhere }
-.mapping-table .mapping-cell a.mapping-name { color: var(--color-accent) }
-.mapping-table .mapping-cell a.mapping-name:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px }
-/* One selector deeper than `.doc .expressive-code`, whose 24px of space above would open a
-   gap between a cell and the frame in it. */
-.mapping-table .mapping-cell .expressive-code {
-  margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
-  --ec-codePadBlk: 8px; --ec-codePadInl: 12px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
-}
-.mapping-table .mapping-cell .expressive-code .copy { display: none }
-/* A cell is narrow and a builtin's name can be longer than it: wrapping at spaces alone
-   leaves `textureSampleCompareLevelCubeArray(` hanging past the frame, where the frame clips
-   it, so a line breaks wherever it has to. The width is reset because Expressive Code marks a
-   wrapping block `pre.wrap`, and the site's own layout class of that name would give it the
-   page's measure inside a table cell. */
-.mapping-table .mapping-cell .expressive-code pre.wrap { inline-size: auto; margin-inline: 0 }
-.mapping-table .mapping-cell .expressive-code .ec-line .code { overflow-wrap: anywhere; min-inline-size: 0 }
-/* No copy button, so the first line keeps no room for one at its end. */
-.mapping-table .mapping-cell .expressive-code :nth-child(1 of .ec-line) .code { padding-inline-end: var(--ec-codePadInl) }
-@media (max-width: 44.999rem) {
-  .mapping-head { display: none }
-  .mapping-row { display: block; padding: 12px 0 }
-  .mapping-cell + .mapping-cell { margin-block-start: 8px }
-  .mapping-table .mapping-cell .mapping-note, .mapping-table .mapping-cell .mapping-name { padding-block-start: 0 }
-  .mapping-cell[data-label]::before { content: attr(data-label); display: block; margin-block-end: 4px; font-size: var(--text-ui); color: var(--color-text-3) }
 }
 .doc blockquote { margin-block-start: 16px; padding: 0 16px; border-inline-start: 2px solid var(--color-line-1); color: var(--color-text-2) }
 .doc hr { margin-block: 40px 0; border: 0; border-block-start: 1px solid var(--color-line-1) }
@@ -1037,8 +906,6 @@ body > main { flex: 1 }
   .expressive-code .frame.has-title:not(.is-terminal) pre > code {
     padding-block-start: calc(0.5rem + 2.9rem);
   }
-  /* The mapping cells have no copy button, so nothing to clear. */
-  .front-map-row dt .expressive-code pre > code { padding-block-start: var(--ec-codePadBlk) }
 }
 
 /* Canvas figure: a framed box with a still image underneath the live canvas */
@@ -1071,188 +938,27 @@ body > main { flex: 1 }
   position: absolute; inset-block: 0; inset-inline-start: 50%; inline-size: 2px; translate: -1px 0;
   background: #fff; mix-blend-mode: difference; pointer-events: none;
 }
-.scroll-region { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin }
 
-/* The examples gallery: one row per registry example, grouped by category. Every row but one
-   shares the same targets value, so the caption states it once instead of a column repeating
-   it 35 times; the one exception gets a small note in its own row instead. From 45rem the
-   three columns fit the document column. */
-.example-table-caption { margin-block-start: 12px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
-.example-table th[scope='row'], .example-table td:nth-child(2) { white-space: nowrap }
-.example-table td:last-child { min-inline-size: 11rem }
-.example-table tbody + tbody tr:first-child th, .example-table tbody + tbody tr:first-child td {
-  border-block-start: 1px solid var(--color-line-1);
-}
-.example-table th[scope='row'] { font-weight: 400; background: none }
-/* An Ant tag beside the name of the one example that emits a single target. */
-.example-wgsl-only {
-  display: inline-block; margin-inline-start: 8px; padding: 0 7px; border-radius: var(--radius-sm);
-  border: 1px solid var(--color-line-2); background: var(--color-surface-1);
-  font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2);
-  white-space: nowrap;
-}
-/* Below that a description column would be a few characters wide, and the columns to its
-   left would push it off the screen. A row reads as a block instead: the example, its
-   description, then the category. The roles in the markup keep the table a table for a
-   screen reader. */
-@media (max-width: 44.999rem) {
-  .example-table thead { display: none }
-  .example-table, .example-table tbody { display: block }
-  .example-table tr { display: flex; flex-wrap: wrap; column-gap: 14px; padding-block: 12px; border-block-end: 1px solid var(--color-line-1) }
-  .example-table th, .example-table td { display: block; padding: 0; border: 0; white-space: normal }
-  .example-table th[scope='row'] { flex-basis: 100%; font-size: var(--text-h5); color: var(--color-text-1) }
-  .example-table td:last-child { flex-basis: 100%; min-inline-size: 0; order: 1; margin-block-start: 3px }
-  .example-table td:nth-child(2) { order: 2; margin-block-start: 5px; color: var(--color-text-3) }
-  .example-table tbody + tbody tr:first-child th, .example-table tbody + tbody tr:first-child td { border-block-start: 0 }
-}
-
-/* The examples gallery as tiles: an Ant Card each, a picture where the runtime can draw one
-   as the cover, the name and the sentence in the body, the whole tile one link to the source
-   at the pinned commit. */
-.example-group { margin-block-start: 40px }
-/* A tile is a 3:2 cover with a name and a sentence under it, and 260px is the width the two
-   columns in the old 596px document column gave one, so a wider column carries more tiles
-   instead of taller ones. Under 276px of column the track collapses to one, a phone's. */
-.example-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 24px 16px; margin: 24px 0 0; padding: 0; list-style: none }
-.example-grid li { margin: 0; padding: 0 }
-.example-tile {
-  display: flex; flex-direction: column; overflow: hidden; block-size: 100%;
-  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
-  color: inherit; text-decoration: none;
-  transition: box-shadow var(--motion), border-color var(--motion);
-}
-.example-tile:hover { border-color: transparent; box-shadow: var(--shadow-elevated) }
-.example-tile-frame { display: block; position: relative; aspect-ratio: 3 / 2; overflow: hidden; border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-2) }
-.example-tile-frame img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; transition: transform 400ms var(--ease-out) }
-@media (hover: hover) and (pointer: fine) { .example-tile:hover .example-tile-frame img { transform: scale(1.03) } }
+/* A tile's cover, on the front page and in the gallery: the build-time still at 3:2 over the
+   canvas grey, with a hairline under it. The page scales it on hover. */
+.tile-cover { display: block; position: relative; aspect-ratio: 3 / 2; overflow: hidden; border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-2) }
+.tile-cover img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; transition: transform 400ms var(--ease-out) }
 /* A tile the runtime cannot draw gets Ant's Empty instead of a bare grey box: the outlined
    mark, and one sentence saying why there is no picture. */
-.example-tile-blank {
+.no-still {
   position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 8px; padding: 16px;
   color: var(--color-text-3); text-align: center;
 }
-.example-tile-blank svg {
+.no-still svg {
   inline-size: 40px; block-size: 40px; flex: none;
   fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
 }
-.example-tile-blank-note { max-inline-size: 30ch; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
-.example-tile-title { padding: 16px 16px 0; font-size: var(--text-h5); line-height: 1.5; font-weight: 600; color: var(--color-text-1); transition: color var(--motion) }
-.example-tile:hover .example-tile-title { color: var(--color-accent) }
-.example-tile-blurb { padding: 4px 16px 16px; font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2) }
-.example-tile-blurb code { font-family: var(--font-mono); font-size: 0.9em }
-
-/* One example's page, in the shape ShaderToy gives one: a single card split down the middle,
-   the picture on the left and the code on the right, and nothing else in either pane. The
-   card is the showcase card the front page's hero already is (.live-card above), and the
-   right pane's tab bar is the Ant tab head the "one file, two targets" section uses. What a
-   reader is told about the frame and about where the emitted text comes from is written
-   under the card, because a label inside a pane makes that pane read as a figure.
-
-   The card is its own container, because the width it gets depends on the sidebar and the
-   page's own measure; the split follows the card's width and not the window's. */
-.example-stage { container-type: inline-size; margin-block-start: 24px }
-.example-stage-body { display: grid; grid-template-columns: minmax(0, 1fr) }
-
-/* Left: the picture, edge to edge. ShaderCanvas writes a <figure> around its frame and the
-   page places the caption itself, so the figure carries no box of its own here. */
-.example-stage-view { min-inline-size: 0; min-block-size: 0; background: var(--color-surface-2) }
-.example-stage-view .figure { display: contents }
-.example-stage-view .figure-frame {
-  block-size: clamp(220px, 68cqi, 420px); border: 0; border-radius: 0; background: var(--color-surface-2);
-}
-
-/* Right: one pane showing one of four texts, under a bar of its own. */
-.example-stage-code {
-  display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0;
-  block-size: 360px; background: var(--color-elevated);
-  border-block-start: 1px solid var(--color-line-1);
-}
-.example-stage .front-tabs-head {
-  --tab-gap: 20px;
-  flex: none; align-items: stretch; gap: var(--tab-gap); block-size: 44px; padding-inline: 16px;
-  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
-  border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-1);
-}
-/* At the head's trailing edge is the 32px fade the panels under it carry at their foot, for
-   the widths where the tabs are wider than the pane and the head scrolls. It is a sticky
-   strip of the head's own ground and not a mask, because a mask over the box would take the
-   hairline under the tabs with it for those 32px. Its negative start margin is the strip and
-   the gap in front of it, so the strip costs the head no width of its own. The head carries
-   data-overflow while there is somewhere to scroll to (src/scripts/example-stage.ts): a fade
-   on a head whose tabs fit would sit over the last tab's own letters. */
-.example-stage .front-tabs-head[data-overflow]::after {
-  content: ''; flex: none; position: sticky; inset-inline-end: 0;
-  inline-size: 32px; margin-inline-start: calc(-32px - var(--tab-gap));
-  background: linear-gradient(to right, transparent, var(--color-surface-1));
-}
-.example-stage .front-tabs-head::-webkit-scrollbar { display: none }
-.example-stage .front-tabs-head button { flex: none; block-size: auto; white-space: nowrap }
-/* The file is where the pane rests, so it leads and a rule sets it apart from the three
-   texts the compiler makes out of it. It is also the one tab whose text the site does not
-   choose: the longest file name on a card page is 22 characters, which puts the four tabs
-   at 465px in English and 469px in Korean, inside the head's 470px at a 1280 viewport and
-   its 490px from 1320. A longer file name would put them past it, so the file is the tab
-   that gives way, and the three the compiler emits stay whole, since a tab a reader cannot
-   read is a text they will not know the page holds. Its floor is 16 characters: under about
-   450px of head the four tabs do not fit however far the file gives way, so the head scrolls
-   there whatever the floor is, and 16 characters keep the example's own name in the tab. */
-.example-stage .front-tabs-head button:first-child {
-  padding-inline-end: var(--tab-gap); position: relative;
-  flex: 0 1 auto; min-inline-size: calc(16ch + var(--tab-gap)); overflow: hidden; text-overflow: ellipsis;
-}
-.example-stage .front-tabs-head button:first-child::after {
-  content: ''; position: absolute; inset-block: 13px; inset-inline-end: 0;
-  inline-size: 1px; background: var(--color-line-1);
-}
-/* A 32px fade at the foot hands the cut line to the mask instead of slicing a row of glyphs
-   in half; the head fades the same way once the pane has been scrolled off its first line,
-   which is how a reader is told the banner comment is still up there. With no script the
-   head bar stays hidden and every panel is in this scroller, stacked, which is what the
-   search index reads. */
-.example-stage-panels {
-  flex: 1; min-block-size: 0; overflow-y: auto;
-  scrollbar-width: thin; scrollbar-color: var(--color-line-2) transparent;
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
-}
-.example-stage-panels[data-scrolled] {
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
-}
-.example-stage-code .expressive-code { margin: 0; --ec-brdRad: 0; --ec-brdWd: 0; --ec-frm-shdCol: transparent }
-.example-stage-code pre { border: 0; border-radius: 0; padding-block: 12px }
-.example-stage-code pre > code { font-size: var(--text-code); line-height: 1.6 }
-.example-stage-notes { max-inline-size: var(--content); margin-block-start: 12px; font-size: 0.75rem; line-height: 1.6667; color: var(--color-text-2) }
-.example-stage-notes p { margin: 0 }
-.example-stage-notes p + p { margin-block-start: 4px }
-@container (min-width: 44rem) {
-  /* One height for the row, read off the card's own width, so both panes grow with the page. */
-  .example-stage-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); block-size: clamp(360px, 48cqi, 680px) }
-  .example-stage-view .figure-frame { block-size: 100% }
-  .example-stage-code { block-size: auto; border-block-start: 0; border-inline-start: 1px solid var(--color-line-1) }
-}
-.example-page-links { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-block-start: 32px }
-
-/* The examples page opens with a numbered path through the guide. Each step's own heading
-   carries its number, so the list marker would print it a second time. */
-.learning-path ol { padding-inline-start: 0; list-style: none }
-.learning-path li { margin-block-start: 24px }
-.learning-path li p { margin-block-start: 4px }
-.learning-path li a { display: inline-block; margin-block-start: 4px }
+.no-still-note { max-inline-size: 30ch; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
 
 /* Diagnostic */
 .diagnostic { margin-block-start: 12px; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); color: var(--color-text-2); overflow-wrap: anywhere }
 .diagnostic b { color: var(--color-diag); font-weight: 500 }
-
-/* Layout table: it sits at its natural width, with a visible caption above it */
-.layout-table { margin-block-start: 24px; border-collapse: collapse; inline-size: auto; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); font-variant-numeric: tabular-nums; color: var(--color-text-2) }
-.layout-table th, .layout-table td { padding: 8px 28px 8px 0; text-align: start; border-block-start: 1px solid var(--color-line-1); background: none }
-.layout-table th { font-weight: 500; color: var(--color-text-3); border-block-start: 0 }
-.layout-table [data-align='end'] { text-align: end; white-space: nowrap }
-.layout-table th:last-child, .layout-table td:last-child { padding-inline-end: 0 }
-.layout-table caption { padding-block-end: 10px; text-align: start; font-family: var(--font-sans); font-size: var(--text-ui); color: var(--color-text-2) }
-
 /* Footer: the site map in three groups on the container's white, held off the page field by
    its #f0f0f0 top rule, then the licence, the copyright and the commit. The three groups sit
    at their own widths across the shell, and Documentation's 19 links run down two columns
@@ -1312,23 +1018,8 @@ body > main { flex: 1 }
 .api-type { color: var(--color-text-3) }
 .api-type a { color: inherit; text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
 .api-type a:hover { color: var(--color-accent); text-decoration-color: currentColor }
-/* The import line under the summary, quiet: it is one line of code a reader copies by eye. */
-.api-import { margin-block-start: 10px; font-size: var(--text-ui); color: var(--color-text-2) }
 .api-optional { font-size: 0.75rem; line-height: 1.6667; padding: 0 7px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-2) }
 .doc h1 .api-optional { margin-inline-start: 10px; vertical-align: middle }
-.api-targets th[scope='row'] { font-weight: 600; color: var(--color-text-1); white-space: nowrap; background: none }
-/* On a phone the target name wraps instead of taking half the row: the notes need the width
-   more than "GLSL ES 3.00 (WebGL2)" needs one line. */
-@media (max-width: 30rem) {
-  .api-targets th[scope='row'] { white-space: normal }
-  .api-targets thead th:first-child { width: 30% }
-  .api-targets thead th:nth-child(2) { width: 27% }
-}
-.api-support { display: inline-block; padding: 0 7px; border-radius: var(--radius-sm); font-size: 0.75rem; line-height: 1.6667; border: 1px solid var(--color-line-2); background: var(--color-surface-1); color: var(--color-text-2); white-space: nowrap }
-.api-targets td p { margin-block-start: 0 }
-.api-support-native { color: var(--color-accent); border-color: var(--color-primary-border); background: var(--color-primary-bg) }
-.api-support-emulated, .api-support-stub { color: var(--color-text-2) }
-.api-support-none { color: var(--color-diag); border-color: var(--color-diag); background: none }
 .api-see-also li { break-inside: avoid }
 /* Two columns only where an identifier still fits one: a phone gets one column. */
 @media (min-width: 40rem) { .api-see-also { columns: 2; column-gap: 24px } }
@@ -1338,99 +1029,6 @@ body > main { flex: 1 }
 .api-index dt a { color: var(--color-accent); text-decoration: none; font-weight: 600 }
 .api-index dt a:hover { color: var(--color-primary-text-hover); text-decoration: underline; text-underline-offset: 3px }
 .api-index dd { padding-inline-start: 0 }
-.api-preview { margin-block-start: 12px; padding: 8px 12px; border: 1px solid var(--color-diag); border-radius: var(--radius); font-size: var(--text-ui); color: var(--color-diag) }
-
-/* The construct card (src/components/ConstructCard.astro): one TypeScript construct per card
-   on /guide/language/from-typescript/. An Ant Card, and the card is what separates one
-   construct from the next: the same page as three columns of code put a hairline between
-   rows that ran ten lines tall, and a reader could not see where a construct ended. Two
-   panes instead of three columns also give each one about twice the width a cell had. The
-   head names the construct, the sentence under it runs at the card's full width, and the
-   panes sit side by side from 48rem and stack below it with the TypeScript first. Every
-   measure is relative to the card, so the cards stay inside the document column (DESIGN.md,
-   the Container Rule) at every width. */
-/* One card per row until two fit. A card holds two code panes side by side, and 620px is
-   where a pane is still the ~280px the panes below are written for, so the column answers
-   the extra width with another card instead of stretching one card's panes across it. */
-.doc .construct-cards {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr));
-  gap: 16px; margin: 24px 0 0; padding: 0; list-style: none;
-}
-.doc .construct-card {
-  margin: 0; padding: 16px;
-  border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated);
-}
-.construct-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px }
-.doc .construct-card-name {
-  margin: 0; font-size: var(--text-h5); line-height: var(--text-h5--line-height);
-  font-weight: 600; color: var(--color-text-1); overflow-wrap: anywhere;
-}
-.construct-card-name code, .construct-card-note code { font-family: var(--font-mono); font-size: 0.9em }
-/* An Ant tag in the shape .example-wgsl-only takes, in the diagnostic red the reference's
-   own "not supported" tag carries, so a refused construct reads as one before it is read. */
-.construct-card-badge {
-  display: inline-block; padding: 0 7px; border-radius: var(--radius-sm);
-  border: 1px solid var(--color-diag); background: none;
-  font-size: 0.75rem; line-height: 1.6667; color: var(--color-diag); white-space: nowrap;
-}
-/* The card is as wide as two panes need and a card at the head of a wide column can be the
-   whole column; the sentence under the name keeps the measure a front page paragraph keeps,
-   so it does not run 130 characters across a card nobody meant to be a page. */
-.doc .construct-card-note {
-  margin-block-start: 8px; max-inline-size: 62ch;
-  font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-2);
-}
-.construct-card-panes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-block-start: 12px; align-items: start }
-.construct-card-pane { min-inline-size: 0 }
-/* One selector deeper than `.doc .expressive-code`, whose 24px of space above would open a
-   gap between a pane and the frame in it. */
-.construct-card-pane .expressive-code {
-  margin: 0; --ec-brdRad: var(--radius-md); --ec-brdCol: var(--color-line-1); --ec-frm-shdCol: transparent;
-  --ec-codePadBlk: 10px; --ec-codePadInl: 12px; --ec-codeFontSize: var(--text-code); --ec-codeLineHt: 1.6;
-}
-.construct-card-pane .expressive-code .copy { display: none }
-/* A pane is about 280px wide in the document column, and a line of a real program is longer
-   than that, so a line wraps at a space and reads on under the hanging indent Expressive
-   Code gives it. A name breaks inside itself only where the name alone is wider than the
-   pane, so a line breaks at a space and reads on under the hanging indent Expressive Code
-   gives it. Two rules keep a break off the middle of a name: <CodeFrame holdTokens> holds a
-   token with a hyphen or an angle bracket in it together, and `overflow-wrap: normal`
-   overrides Expressive Code's own emergency break, so the two lines on this page that carry
-   a name longer than the pane scroll inside their frame instead of cutting the name in two.
-   The width is reset because Expressive Code marks a wrapping block `pre.wrap`, and the
-   site's own layout class of that name would give it the page's measure inside a card. */
-.construct-card-pane .expressive-code pre.wrap { inline-size: auto; margin-inline: 0 }
-.construct-card-pane .expressive-code pre.wrap .ec-line .code { overflow-wrap: normal; min-inline-size: 0 }
-/* No copy button, so the first line keeps no room for one at its end. */
-.construct-card-pane .expressive-code :nth-child(1 of .ec-line) .code { padding-inline-end: var(--ec-codePadInl) }
-/* A refused construct: where the emitting card has a second frame, this one has the
-   compiler's own code and message in the diagnostic colour, under the label that says what
-   it is. It is no code frame, because nothing here was emitted. */
-.doc .construct-card-pane-title {
-  display: flex; align-items: center; margin: 0; min-block-size: 34px;
-  font-size: var(--text-ui); line-height: var(--text-ui--line-height); color: var(--color-text-3);
-}
-/* The label stands as tall as a frame's title bar and the message starts where the frame's
-   first line of code starts, so the two panes of a refused construct read as one row. */
-.doc .construct-card-refusal .diagnostic { margin-block-start: 10px }
-@media (min-width: 48rem) {
-  .construct-card-panes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
-}
-
-/* The builtin table (/guide/language/builtins/) stays a table: a row is one call and its
-   one-line spellings, and a card each would turn a list a reader scans into a page to scroll.
-   Its rows do have the same boundary problem the construct table had, in two places. Across
-   four columns at 1440 the eye loses which cell belongs to which call, so a row takes Ant's
-   own table hover. Below 45rem a row stacks into four labelled cells and runs 270px tall,
-   where one hairline between two runs of labels reads as one more label, so the space around
-   the rule grows until it is wider than the space between the cells inside a row and the
-   row reads as one block. Both rules are spacing and a fill the site already has, and a row
-   keeps its hairline. */
-.mapping-row { transition: background-color var(--motion) }
-.mapping-row:hover { background: var(--fill-4) }
-@media (max-width: 44.999rem) {
-  .mapping-row { padding-block: 18px }
-}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important }
@@ -1443,57 +1041,4 @@ body > main { flex: 1 }
   .site-menu-bar { background: CanvasText }
   .docs-group a[aria-current='page'] { color: LinkText }
   .button-primary { border: 1px solid CanvasText }
-}
-
-/* The language reference (src/components/pages/ReferenceEntryPage.astro): one documented
-   name per page, under the sections /api/ already uses. What is left here is the parts that
-   page has and an API page does not: a declaration the highlighter does not set, the lines
-   under the Description heading, the types beside a parameter, the helper declarations and
-   the two target spellings. Every measure is relative to the element, so each stays inside
-   the document column (DESIGN.md, the Container Rule) at every width and a long declaration
-   wraps inside its own frame. */
-.doc .ref-entry-code { margin-block-start: 12px; overflow-wrap: anywhere }
-.doc .ref-entry-code code { font-size: var(--text-code) }
-.doc .ref-entry-meta { margin-block-start: 10px; font-size: var(--text-ui); color: var(--color-text-3) }
-.ref-label { font-weight: 600; color: var(--color-text-2) }
-.doc .ref-entry-meta a { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
-.doc .ref-entry-meta a:hover { color: var(--color-accent); text-decoration-color: currentColor }
-/* One parameter per row: the name, whether a call may leave it out, and every type the
-   overloads write for that slot. A slot the overloads spell several ways carries one type
-   per spelling, and the row wraps inside the column. The return types are the same row
-   without a name. */
-.doc .ref-params { margin-block-start: 16px; padding-inline-start: 0; list-style: none }
-.doc .ref-params li, .doc .ref-types {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
-  min-width: 0; margin-block-start: 10px;
-}
-.doc .ref-param-name { font-weight: 600; color: var(--color-text-1) }
-.doc .ref-params code, .doc .ref-types code { overflow-wrap: anywhere }
-/* How to read a declaration, under the Syntax frame: what a bare `number` stands for and
-   the declaration of each helper type this signature reaches for. The helper list is a label column and a declaration column, and the
-   declaration is one wrapped line, so a sixteen-format union costs a paragraph. */
-.doc .ref-reading { margin-block-start: 20px; font-size: var(--text-ui); color: var(--color-text-2) }
-.doc .ref-reading p { margin-block-start: 10px }
-.doc .ref-helpers { margin-block-start: 10px; display: grid; gap: 4px 16px; grid-template-columns: max-content minmax(0, 1fr) }
-.doc .ref-helpers dt { font-weight: 600; color: var(--color-text-2) }
-.doc .ref-helpers dt code, .doc .ref-helpers dd code { font-size: var(--text-code) }
-.doc .ref-helpers dd { margin: 0; min-width: 0; overflow-wrap: anywhere }
-@media (max-width: 30rem) {
-  .doc .ref-helpers { grid-template-columns: minmax(0, 1fr); gap: 2px }
-  .doc .ref-helpers dt { margin-block-start: 6px }
-}
-
-/* The two target spellings under a builtin function: the target's name in the label column
-   and the text that backend writes beside it. Below 30rem the pair stacks, since a GLSL cell
-   can hold a whole inlined expression and needs the row's width to itself. */
-.doc .ref-emits {
-  margin-block-start: 12px; display: grid; gap: 4px 16px;
-  grid-template-columns: max-content minmax(0, 1fr); font-size: var(--text-ui);
-}
-.doc .ref-emits dt { font-weight: 600; color: var(--color-text-2) }
-.doc .ref-emits dd { margin: 0; min-width: 0; color: var(--color-text-2); overflow-wrap: anywhere }
-.doc .ref-emits dd code { font-size: var(--text-code) }
-@media (max-width: 30rem) {
-  .doc .ref-emits { grid-template-columns: minmax(0, 1fr); gap: 2px }
-  .doc .ref-emits dt { margin-block-start: 6px }
 }

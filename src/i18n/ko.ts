@@ -394,7 +394,7 @@ export const ko: Copy = {
         type: {
           name: '타입',
           summary: '값을 선언할 때 쓰는 스칼라와 벡터, 행렬, 그리고 메모리 타입입니다.',
-          description: `\`"use typeshade"\` 파일에서 값을 선언할 때 쓰는 타입 ${facts.languageTypes}개입니다. 스칼라와 벡터, 행렬 이름 두 개, 그리고 GPU가 들고 있는 메모리가 여기 있습니다.`,
+          description: `\`"use typeshade"\` 파일에서 값을 선언할 때 쓰는 타입 ${facts.languageTypes}개입니다. 스칼라와 벡터, 모든 모양의 행렬, 그리고 GPU가 들고 있는 메모리가 여기 있습니다.`,
         },
         attribute: {
           name: '어트리뷰트',

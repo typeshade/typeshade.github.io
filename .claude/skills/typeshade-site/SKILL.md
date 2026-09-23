@@ -174,22 +174,32 @@ widen the layout.
    Edit `en.ts` first, then `ko.ts`. Add every new key to both; `bun run check:types` fails on a missing one.
    Every locale-dependent URL is built with `localePath(locale, links.<key>.href)`. Route files are one-liners
    that pass locale to a component; a page never imports another page.
-2. `bun run build`. It runs, in order: `check-style` (voice), `check-copy` (numerals, links and
+2. Style new UI with Tailwind utilities on the `@theme` tokens, in the markup of the component
+   that draws it (`bg-surface-1`, `text-text-2`, `border-be border-be-line-1`, `rounded-md`,
+   `text-ui`, `mbs-6`). What utilities say badly (a container query, `:has()`, a mask, a
+   pseudo-element, a hover that crosses elements, a reach into Rich's or Expressive Code's
+   output with `:global()`, a margin that has to beat `.doc p`) goes into that component's
+   scoped `<style>`. `src/styles/global.css` holds only tokens, fonts, base rules, dark mode,
+   the shared chrome and rules for markup the site does not author; `check-style` fails on any
+   other class there (DESIGN.md, Styling). A utility sits in a cascade layer and loses to any
+   unlayered rule on the same element, so read the computed style in the browser, not only
+   the class list.
+3. `bun run build`. It runs, in order: `check-style` (voice, and the classes global.css may name), `check-copy` (numerals, links and
    code spans equal in both languages; label widths; the im-not-ai translation tells),
    `check-i18n` (copy in the dictionaries, URLs through `localePath`, no Hangul or locale literal
    outside `src/i18n/`, route parity, one-line route files), `check-guide`, the artifact hashes,
    the Korean font coverage, then Astro.
-3. `bun run qa:seo`, `bun run qa:links`, `bun run qa:openseo` over `dist/`.
-4. Screenshots at 390 and 1440 of every page you touched, in both languages, light and dark,
+4. `bun run qa:seo`, `bun run qa:links`, `bun run qa:openseo` over `dist/`.
+5. Screenshots at 390 and 1440 of every page you touched, in both languages, light and dark,
    with the menus open. Compare the same element in both languages: a Korean line count or
    width that differs from the English one by more than a line is a translation to shorten,
    never a layout to change.
-5. For a Korean change of more than a few words, run the im-not-ai gates
+6. For a Korean change of more than a few words, run the im-not-ai gates
    (`github.com/epoko77-ai/im-not-ai`, clone it): `scripts/prepare_monolith_input.py` on the
    Korean strings for the route hint, then `scripts/verify_change_rate.py` and
    `scripts/verify_gates.py` before and after. Change rate over 30% is too much for a
    polish pass.
-6. Commit with the reason in the body. The PR body lists what was verified and how.
+7. Commit with the reason in the body. The PR body lists what was verified and how.
 
 ## Files
 
@@ -204,6 +214,9 @@ Layout and page structure:
 - `src/layouts/Base.astro`: head, header, footer, the dark-mode scripts.
 - `src/layouts/Docs.astro`: sidebar, document, outline, pager.
 - `src/components/SiteHeader.astro`, `SiteFooter.astro`.
+- `src/styles/global.css`: the `@theme` tokens, fonts, base rules, dark mode, the shared chrome
+  and the rules for Expressive Code, Pagefind and the rendered Markdown. A page's own styling
+  is utilities in its markup and its scoped `<style>`.
 
 Reference and guide data:
 - `src/lib/api.ts`, `src/lib/api-types.ts`, `src/lib/api-nav.ts`, `src/lib/api-loader.ts`: the

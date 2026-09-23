@@ -162,25 +162,25 @@ const meta = `title:${entry.name} (${kindWord})`
   <section>
     <h2 id="syntax" lang={locale}>{e.syntax}</h2>
     {entry.kind === 'builtin'
-      ? <p class="ref-entry-code"><code>{entry.signature}</code></p>
+      ? <p class="ref-entry-code wrap-anywhere"><code>{entry.signature}</code></p>
       : <Code code={entry.signature} lang="ts" locale={locale} wrap />}
     {(entry.showsNumber || entry.helpers.length > 0) && (
-      <div class="ref-reading" lang={locale}>
+      <div class="ref-reading mbs-5 text-(length:--text-ui) text-text-2" lang={locale}>
         {entry.showsNumber && (
           <>
             <p><Rich text={r.numberP} locale={locale} /></p>
-            {quoteBrand && <p class="ref-entry-code"><code>{scalarBrand()}</code></p>}
+            {quoteBrand && <p class="ref-entry-code wrap-anywhere"><code>{scalarBrand()}</code></p>}
             <p><Rich text={r.widthP} locale={locale} /></p>
           </>
         )}
         {entry.helpers.length > 0 && (
           <>
             <p><Rich text={r.helpersP} locale={locale} /></p>
-            <dl class="ref-helpers">
+            <dl class="ref-helpers mbs-2.5 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
               {entry.helpers.map((h) => (
                 <>
-                  <dt><code>{h.name}</code></dt>
-                  <dd><code>{h.declaration}</code></dd>
+                  <dt class="font-semibold text-text-2"><code>{h.name}</code></dt>
+                  <dd class="min-w-0 wrap-anywhere"><code>{h.declaration}</code></dd>
                 </>
               ))}
             </dl>
@@ -197,8 +197,8 @@ const meta = `title:${entry.name} (${kindWord})`
       {entry.parameters.length > 0 && (
         <ul class="ref-params">
           {entry.parameters.map((p) => (
-            <li>
-              <code class="ref-param-name">{p.rest ? `...${p.name}` : p.name}</code>
+            <li class="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
+              <code class="font-semibold text-text-1">{p.rest ? `...${p.name}` : p.name}</code>
               {p.optional && <span class="api-optional" lang={locale}>{e.optional}</span>}
               {p.types.map((t) => <LanguageType locale={locale} text={t} self={entry.name} />)}
             </li>
@@ -215,7 +215,7 @@ const meta = `title:${entry.name} (${kindWord})`
   {shows('return-value') && (
     <section>
       <h2 id="return-value" lang={locale}>{e.returnValue}</h2>
-      <p class="ref-types">{entry.returns.map((t) => <LanguageType locale={locale} text={t} self={entry.name} />)}</p>
+      <p class="ref-types flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">{entry.returns.map((t) => <LanguageType locale={locale} text={t} self={entry.name} />)}</p>
     </section>
   )}
 
@@ -224,12 +224,12 @@ const meta = `title:${entry.name} (${kindWord})`
     <h2 id="description" lang={locale}>{e.descriptionHeading}</h2>
     {entry.rest.length > 0 && <p lang="en"><Rich text={entry.rest} locale={locale} /></p>}
     {entry.kind === 'builtin' && (
-      <p class="ref-entry-meta" lang={locale}>
-        {stageText.length > 0 ? <><span class="ref-label">{r.validIn}</span> {stageText.join(', ')}</> : r.anyStage}
+      <p class="ref-entry-meta text-(length:--text-ui) text-text-3" lang={locale}>
+        {stageText.length > 0 ? <><span class="font-semibold text-text-2">{r.validIn}</span> {stageText.join(', ')}</> : r.anyStage}
       </p>
     )}
     {entry.oracle && (
-      <p class="ref-entry-meta" lang={locale}>
+      <p class="ref-entry-meta text-(length:--text-ui) text-text-3" lang={locale}>
         <Rich text={entry.oracle === 'evaluates' ? e.oracleEvaluates : e.oracleStub} locale={locale} />
       </p>
     )}
@@ -239,15 +239,15 @@ const meta = `title:${entry.name} (${kindWord})`
   {shows('targets') && wgslCell && glslCell && (
     <section>
       <h2 id="targets" lang={locale}>{e.targets}</h2>
-      <dl class="ref-emits">
-        <dt lang={locale}>{r.wgsl}</dt>
-        <dd>
+      <dl class="ref-emits mbs-3 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 text-(length:--text-ui)">
+        <dt class="font-semibold text-text-2" lang={locale}>{r.wgsl}</dt>
+        <dd class="min-w-0 text-text-2 wrap-anywhere">
           {'code' in wgslCell && <code>{wgslCell.code}</code>}
           {'copy' in wgslCell && <span lang={locale}><Rich text={wgslCell.copy} locale={locale} /></span>}
           {'message' in wgslCell && <span lang="en">{wgslCell.message}</span>}
         </dd>
-        <dt lang={locale}>{r.glsl}</dt>
-        <dd>
+        <dt class="font-semibold text-text-2" lang={locale}>{r.glsl}</dt>
+        <dd class="min-w-0 text-text-2 wrap-anywhere">
           {'code' in glslCell && <code>{glslCell.code}</code>}
           {'copy' in glslCell && <span lang={locale}><Rich text={glslCell.copy} locale={locale} /></span>}
           {'message' in glslCell && <span lang="en">{glslCell.message}</span>}
@@ -272,3 +272,34 @@ const meta = `title:${entry.name} (${kindWord})`
     </ul>
   </section>
 </Docs>
+
+<style>
+  /* The parts a language reference page has and an API page does not: a declaration the
+     highlighter does not set, the lines under the Description heading, the types beside a
+     parameter, the helper declarations and the two target spellings. They sit in the document
+     column, so the margins and code sizes here outrank `.doc p`, `.doc ul` and `.doc code`. */
+  .ref-entry-code { margin-block-start: 12px }
+  .ref-entry-code code { font-size: var(--text-code) }
+  .ref-entry-meta { margin-block-start: 10px }
+  .ref-entry-meta :global(a) { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
+  .ref-entry-meta :global(a:hover) { color: var(--color-accent); text-decoration-color: currentColor }
+  /* One parameter per row: the name, whether a call may leave it out, and every type the
+     overloads write for that slot. A slot the overloads spell several ways carries one type
+     per spelling, and the row wraps inside the column. The return types are the same row
+     without a name. */
+  .ref-params { margin-block-start: 16px; padding-inline-start: 0; list-style: none }
+  .ref-params li, .ref-types { margin-block-start: 10px }
+  .ref-params :global(code), .ref-types :global(code) { overflow-wrap: anywhere }
+  /* How to read a declaration, under the Syntax frame: what a bare `number` stands for and
+     the declaration of each helper type this signature reaches for, as a label column and a
+     declaration column. The declaration is one wrapped line, so a sixteen-format union costs a
+     paragraph. */
+  .ref-reading p { margin-block-start: 10px }
+  .ref-helpers code, .ref-emits dd :global(code) { font-size: var(--text-code) }
+  /* Below 30rem the pairs stack, since a GLSL cell can hold a whole inlined expression and
+     needs the row's width to itself. */
+  @media (max-width: 30rem) {
+    .ref-helpers, .ref-emits { grid-template-columns: minmax(0, 1fr); gap: 2px }
+    .ref-helpers dt, .ref-emits dt { margin-block-start: 6px }
+  }
+</style>
