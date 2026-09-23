@@ -66,6 +66,8 @@
 //  40. an override moved in the panel is pinned in the GLSL and changes the frame
 //  41. a compute entry is dispatched on WebGPU and on the oracle, plotted, and what it wrote
 //      is shown under its buffer; and a value the reader set survives an edit
+//  42. the two engines agree: every example the GPU paints, the CPU backend paints too, and
+//      twelve pixels of one frame held at three seconds match within a few units of 255
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -113,13 +115,14 @@ const RAN_FLOOR = 48
 // same pixels on both engines. The CPU is f64 JavaScript and the GPU f32, and the two
 // backends' own `sin` differ in their last bits, so a pixel agrees when every channel is
 // within AGREE_UNITS of eight-bit value of the GPU's, at the same pixel of the same frame or
-// one beside it. Measured, like the floors above: at the commit that added them, 37 of the 41
-// agreed, and 41 painted on the CPU. The ones that differ are listed by name: a texture the
-// oracle cannot sample, and the three passes whose noise is a hash of `sin`, which no two
-// implementations of `sin` agree on past a few digits.
+// one beside it. Measured twice on 2026-09-23 at the commit that added them, the same both
+// times: of the 41 the GPU paints, 35 paint on the CPU and 34 agree. Under them are the five
+// that sample a texture, which the oracle cannot do; julia-twin, which the CPU draws in one
+// colour at the held clock; and domain-warp-twin and kaleidoscope-twin, whose noise is a hash
+// of `sin` that no two implementations of `sin` agree on past a few digits.
 const AGREE_UNITS = 6
-const CPU_PAINTED_FLOOR = 41
-const AGREE_FLOOR = 37
+const CPU_PAINTED_FLOOR = 35
+const AGREE_FLOOR = 34
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000)
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1'
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
@@ -395,6 +398,7 @@ async function openPage(browser) {
  *  return by the name `_ret` and leaving five canvases transparent. */
 async function checkEnginesAgree(page, problems, ids) {
   const cpuPainted = []
+  const flatAtClock = []
   const agree = []
   const differ = []
   const noCpu = []
@@ -411,6 +415,8 @@ async function checkEnginesAgree(page, problems, ids) {
     })
     const shot = await page.locator('[data-gpu-canvas]').screenshot()
     const { data, info } = await sharp(shot).raw().ensureAlpha().toBuffer({ resolveWithObject: true })
+    const gpuColours = new Set()
+    for (let i = 0; i < data.length; i += 4) gpuColours.add(`${data[i]},${data[i + 1]},${data[i + 2]}`)
     const points = []
     for (const v of [0.25, 0.5, 0.75]) for (const u of [0.2, 0.4, 0.6, 0.8]) points.push([Math.floor(u * state.width), Math.floor(v * state.height)])
     const cpu = await page.evaluate(([p, w, h]) => document.querySelector('[data-playground]').__playground.cpuPixels(p, w, h), [points, state.width, state.height])
@@ -457,16 +463,21 @@ async function checkEnginesAgree(page, problems, ids) {
           return set.size
         })
       : 0
-    if (colours > 1) cpuPainted.push(id)
+    // A pass that is one colour on the GPU at this clock is one colour on the CPU too, and
+    // that is agreement: only a frame the GPU paints is asked of the CPU.
+    if (gpuColours.size <= 1) flatAtClock.push(id)
+    else if (colours > 1) cpuPainted.push(id)
     else noCpu.push(`${id} (${drew ? `${colours} colour(s)` : (await page.textContent('[data-canvas-note]')).trim()})`)
     await page.selectOption('[data-engine]', 'auto')
     await page.evaluate(() => document.querySelector('[data-playground]').__playground.freeze(null))
   }
-  console.log(`  engines: ${cpuPainted.length} of ${ids.length} the GPU paints the CPU paints too, ${agree.length} of ${ids.length} agree within ${AGREE_UNITS} of 255`)
+  const asked = ids.length - flatAtClock.length
+  console.log(`  engines: ${cpuPainted.length} of ${asked} the GPU paints at 3 s the CPU paints too, ${agree.length} of ${ids.length} agree within ${AGREE_UNITS} of 255`)
+  if (flatAtClock.length > 0) console.log(`    one colour on the GPU at 3 s, so not asked of the CPU: ${flatAtClock.join(', ')}`)
   if (noCpu.length > 0) console.log(`    the CPU paints nothing for ${noCpu.join(', ')}`)
   if (differ.length > 0) console.log(`    the engines differ on ${differ.join(', ')}`)
   if (cpuPainted.length < CPU_PAINTED_FLOOR) {
-    problems.push(`${cpuPainted.length} of ${ids.length} examples paint on the CPU, and ${CPU_PAINTED_FLOOR} did when this check was written. Do not lower the floor: ${noCpu.join(', ')}`)
+    problems.push(`${cpuPainted.length} of ${asked} examples paint on the CPU, and ${CPU_PAINTED_FLOOR} did when this check was written. Do not lower the floor: ${noCpu.join(', ')}`)
   }
   if (agree.length < AGREE_FLOOR) {
     problems.push(`${agree.length} of ${ids.length} examples draw the same pixels on both engines, and ${AGREE_FLOOR} did when this check was written. Do not lower the floor: ${differ.join(', ')}`)

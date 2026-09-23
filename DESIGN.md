@@ -801,5 +801,8 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   floor in the file, which is what was measured when it was written. It then types into the
   editor and asserts the emitted WGSL and the canvas both moved, picks each backend by name,
   and moves a control of every kind the bindings panel has and asserts the frame followed.
-  A runner with no route to the Monaco CDN is reported on its own.
+  For every example the GPU paints, the CPU backend has to paint it too, and a dozen pixels
+  of one frame, held at three seconds, have to agree between the two engines; both counts
+  are floors in the file, and the examples under them are listed by name. A runner with no
+  route to the Monaco CDN is reported on its own.
 - `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).
