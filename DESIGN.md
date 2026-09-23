@@ -332,8 +332,13 @@ element is fully round except the two-axis pad's dot.
 - The one thing that should stand out is a rendered shader. Everything else is quiet. The
   front page runs one: the showcase card. Its nine tiles are stills, because a first visit
   pays for every canvas that compiles and animates on it.
-- Every canvas has a still image underneath it, captured at build time
-  (`bun run capture:stills`), so the page never shows an empty frame.
+- Every canvas in a figure has a still image underneath it, captured at build time
+  (`bun run capture:stills`), so the page never shows an empty frame. The still goes the
+  moment a backend takes the canvas, since it is the fallback for a browser with no GPU API,
+  a reader with no script and a social preview, and it comes back on its own where a mount
+  dies, because `degrade()` puts `data-backend` back to `none`. The Playground's canvas has
+  no still: the reader edits the file, so a picture of what it drew at the pin would be a
+  picture of something else.
 - A table sits at the wide measure inside the document column, scrolls inside itself, and
   stacks into labelled rows below 45rem. The layout table keeps its natural width and a
   caption above it.
@@ -404,6 +409,17 @@ cards takes the column. A third measure needs a reason.
   its content is taken out of flow so the picture sets the row's height and keeps its aspect,
   and the pane scrolls inside behind a 32px fade at its foot, since the pane's height rarely
   lands on a whole line and a cut glyph reads as a defect.
+- **The Playground.** `src/components/Playground.astro`: one region on the page field, a
+  toolbar naming the file over the emit options, then two columns from 48rem of the region's
+  own width. The left column is the Monaco editor over its diagnostics. The right one is a
+  single Ant tab strip over a single panel, Result first and then WGSL, GLSL vertex, GLSL
+  fragment and Reflection, with the controls the selected tab owns at the right of that same
+  row. Result holds the canvas, drawn through `src/lib/shader-runtime.ts`, the runtime every
+  figure on the site draws through, with the CPU oracle's rasteriser as the other engine in
+  a picker beside it and one slider per uniform field under it. A tab switch shows a panel
+  and compiles nothing: every panel holds what the last compile put in it. Under 48rem the
+  columns stack with the editor first. A page that names its example passes `seed`, which
+  fills the editor from that file and drops the picker.
 
 ## Structure of the site
 
@@ -438,30 +454,36 @@ why lives on its own page.
   - Concepts: `/guide/typescript-and-webgpu/`, how TypeScript types, functions and modules map
     to GPU values, entry points and shader modules, and where WebGPU begins.
   - Examples: `/guide/examples/`, the gallery of every example in both corpora, grouped by
-    category, each tile linking to that example's own page at `/guide/examples/<id>/`. A page
-    there is laid out the way ShaderToy lays one out: one card split down the middle, the
-    shader running over its build-time still on the left and its text on the right, and
-    nothing else in either pane. The card is the showcase card the front page's hero already
-    is (`.live-card`). The right pane carries its own Ant tab bar over one of four texts, the
-    source file first and then every target the compiler emits, the WGSL and the two GLSL ES
-    3.00 stages it baked into `examples/__emit-goldens__/` at the pinned commit; it opens on
-    the line the shader starts at, since several of those files begin with a banner comment.
-    A GLSL tab reads `GLSL vertex` and `GLSL fragment`: the pane is 490px from a 1320
-    viewport and the full target name puts the four tabs at 539px in English and 543px in
-    Korean, so the last tab was cut off at every desktop width. The full name is in the line
-    under the card and in the pane's own accessible name. The head is a scroller wherever it
-    is under about 420px, which is the phone layout and the widths where the card splits in
-    a narrow column, and it carries there the 32px fade on its trailing edge that the panels
-    carry at their foot. The file is the tab that gives way when the four ask for more than
-    the head has, down to 16 characters, since the file name is the one tab text the site
-    does not choose.
-    Which backend drew the frame, or why nothing did, and where the emitted text comes from
-    are written under the card, because a label inside a pane makes that pane read as a
-    figure. The card is its own container, so the panes go side by side once the card is wide
-    enough and stack with the picture first when it is not. Under it the page closes with the
-    file on GitHub, the Playground for a `"use typeshade"` example, and previous and next
-    inside its own group. An example the page cannot draw says in one sentence why, from the
-    reason `scripts/artifacts.mjs` records for it.
+    category, each tile linking to that example's own page at `/guide/examples/<id>/`. The 51
+    `.shade.ts` examples are `"use typeshade"` files, which is what the Playground's editor
+    compiles, so their page carries the Playground itself, seeded with that file and with the
+    picker gone, since the page already names the example. One line under the tool says the
+    editor holds the example's own file and that an edit recompiles it in the reader's
+    browser. The 37 `fn()` examples are TypeScript against the compiler's builder API, which
+    that editor does not take, so their page keeps the card, laid out the way ShaderToy lays
+    one out: one card split down the middle, the shader running over its build-time still on
+    the left and its text on the right, and nothing else in either pane. The card is the
+    showcase card the front page's hero already is (`.live-card`). Its right pane carries its
+    own Ant tab bar over one of four texts, the source file first and then every target the
+    compiler emits, the WGSL and the two GLSL ES 3.00 stages it baked into
+    `examples/__emit-goldens__/` at the pinned commit; it opens on the line the shader starts
+    at, since several of those files begin with a banner comment. A GLSL tab reads `GLSL
+    vertex` and `GLSL fragment`: the head is 490px from a 1320 viewport and the full target
+    name puts the four tabs at 539px in English and 543px in Korean, so the last tab was cut
+    off at every desktop width. The full name is in the line under the card and in the pane's
+    own accessible name. The head is a scroller wherever it is under about 420px, which is
+    the phone layout and the widths where the card splits inside a narrow column, and it
+    carries there the 32px fade on its trailing edge that the panels carry at their foot. The
+    file is the tab that gives way when the four ask for more than the head has, down to 16
+    characters, since the file name is the one tab text the site does not choose. Which
+    backend drew the
+    frame, or why nothing did, where the emitted text comes from, and that the example is
+    written against `fn()` are written under the card, because a label inside a pane makes
+    that pane read as a figure. The card is its own container, so the panes go side by side
+    once the card is wide enough and stack with the picture first when it is not. Under it
+    the page closes with the file on GitHub and previous and next inside its own group. An
+    example the page cannot draw says in one sentence why, from the reason
+    `scripts/artifacts.mjs` records for it.
   - Reference: the API reference (`/api/…`, below), then Compiler internals, then Language
     service. Compiler internals is the compiler's AUTHORING.md, rendered from the vendored
     checkout at the pinned commit. A custom content loader (`src/content.config.ts`) cuts the
@@ -763,4 +785,10 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   reaches a page. A missing description, a slug two exports share, an export with no category, or a
   text that names a consumer fails; a `{@link}` target the barrel does not export is a warning.
 - `scripts/check-live.mjs` (`bun run check:live`), after the build: a live example in a real browser (Live examples).
+- `scripts/check-playground.mjs` (`bun run check:playground`), after the build: the Playground
+  in a real browser. It selects every example in the picker in turn, photographs the Result
+  tab's canvas and counts the colours in it, and fails where fewer of them paint than the
+  floor in the file, which is what was measured when it was written. It then types into the
+  editor and asserts the emitted WGSL and the canvas both moved. A runner with no route to
+  the Monaco CDN is reported on its own.
 - `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).

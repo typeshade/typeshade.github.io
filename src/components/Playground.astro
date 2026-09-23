@@ -1,9 +1,15 @@
 ---
+import Rich from './Rich.astro';
 import { copyFor, type Locale } from '../i18n/index.ts';
 import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts';
 
-interface Props { locale: Locale; }
-const { locale } = Astro.props;
+interface Props {
+  locale: Locale;
+  /** The example to open, for a page that already names one. The picker goes with it and
+   *  the page carries that example's source alone instead of all of them. */
+  seed?: string;
+}
+const { locale, seed } = Astro.props;
 const t = copyFor(locale).playground;
 
 // The examples arrive from the vendored checkout at build time: the source text from the
@@ -11,12 +17,18 @@ const t = copyFor(locale).playground;
 // filesystem, so the browser half never imports it. The words are the gallery's, under
 // `examples.shade`, so the picker and the tile on /guide/examples/ cannot disagree.
 const shade = copyFor(locale).examples.shade;
-const examples = playgroundExamples().map((example) => ({
+const all = playgroundExamples().map((example) => ({
   id: example.id,
   source: example.source,
   title: shade.titles[example.id]!,
   description: shade.descriptions[example.id]!,
 }));
+if (seed && !all.some((example) => example.id === seed)) {
+  throw new Error(`[playground] no .shade.ts example '${seed}' to seed the editor with`);
+}
+const examples = seed ? all.filter((example) => example.id === seed) : all;
+// The name over the toolbar is the file the editor holds, so a seeded page names its own.
+const fileName = seed ? `${seed}.shade.ts` : t.fileName;
 const sample = `"use typeshade";
 
 class Clip {
@@ -42,7 +54,7 @@ export function fs(): Color {
 // The words the browser half needs once it is running. It reads them off the element, since
 // the script that holds the logic is a bundled module and takes no `define:vars`.
 const runtimeCopy = {
-  fileName: t.fileName,
+  fileName,
   idle: t.idle,
   ready: t.ready,
   errors: t.errors,
@@ -71,7 +83,20 @@ const runtimeCopy = {
   draw: t.draw,
   stop: t.stop,
   canvasIdle: t.canvasIdle,
+  engineGpu: t.engineGpu,
+  engineCpu: t.engineCpu,
+  gpuIdle: t.gpuIdle,
+  gpuWebgpu: t.gpuWebgpu,
+  gpuWebgl2: t.gpuWebgl2,
+  gpuNone: t.gpuNone,
+  gpuNeedsStages: t.gpuNeedsStages,
+  gpuNeedsAttributes: t.gpuNeedsAttributes,
+  gpuNeedsBindings: t.gpuNeedsBindings,
+  gpuZeroed: t.gpuZeroed,
+  uniforms: t.uniforms,
   canvasNeedsVertex: t.canvasNeedsVertex,
+  canvasFlat: t.canvasFlat,
+  canvasFlatInputs: t.canvasFlatInputs,
   canvasTooBig: t.canvasTooBig,
   canvasProgress: t.canvasProgress,
   resolution: t.resolution,
@@ -81,6 +106,7 @@ const runtimeCopy = {
   cpuNoResources: t.cpuNoResources,
   entryCountOne: t.entryCount(1),
   noGlsl: t.noGlsl,
+  resultTab: t.resultTab,
   copy: t.copy,
   copied: t.copied,
   share: t.share,
@@ -94,19 +120,21 @@ const runtimeCopy = {
   data-playground
   data-sample={sample}
   data-examples={JSON.stringify(examples)}
-  data-default-example={defaultPlaygroundExample}
+  data-default-example={seed ?? defaultPlaygroundExample}
   data-copy={JSON.stringify(runtimeCopy)}
 >
   <div class="playground-toolbar">
     <div class="playground-pick">
-      <strong>{t.fileName}</strong>
-      <div class="pick-row">
-        <label for="playground-example">{t.exampleLabel}</label>
-        <select id="playground-example" data-example>
-          {examples.map((example) => <option value={example.id}>{example.title}</option>)}
-        </select>
-      </div>
-      <p data-example-note>{examples[0]?.description}</p>
+      <strong>{fileName}</strong>
+      {!seed && (
+        <div class="pick-row">
+          <label for="playground-example">{t.exampleLabel}</label>
+          <select id="playground-example" data-example>
+            {examples.map((example) => <option value={example.id}>{example.title}</option>)}
+          </select>
+        </div>
+      )}
+      {!seed && <p data-example-note>{examples[0]?.description}</p>}
     </div>
     <div class="playground-actions"><button type="button" data-share>{t.share}</button><button type="button" data-reset>{t.reset}</button><button type="button" class="primary" data-run>{t.run}</button></div>
   </div>
@@ -133,11 +161,37 @@ const runtimeCopy = {
         <option value="mediump">mediump</option>
       </select>
     </div>
+    {/* Which primitives back the emulated-double helpers. It goes to reflect() as well as
+        to the emit: the `float` helpers bind an `_fp64` guard texture and the `integer` ones
+        bind none, so a reflection computed under the other flavour names a binding the
+        emitted module does not have. */}
+    <div>
+      <label for="playground-fp64">{t.emit.fp64}</label>
+      <select id="playground-fp64" data-opt-fp64>
+        <option value="float" selected>float</option>
+        <option value="integer">integer</option>
+      </select>
+    </div>
     <div class="playground-check">
       <input type="checkbox" id="playground-minify" data-opt-minify />
       <label for="playground-minify">{t.emit.minify}</label>
     </div>
-    <p data-level-note hidden>{t.emit.levelNote}</p>
+    {/* How minify re-spells a float literal. It has no effect with minify off, so it is
+        shown with it. */}
+    <div data-numbers-field hidden>
+      <label for="playground-numbers">{t.emit.numbers}</label>
+      <select id="playground-numbers" data-opt-numbers>
+        <option value="true" selected>true</option>
+        <option value="f32">f32</option>
+        <option value="false">false</option>
+      </select>
+    </div>
+    <div class="playground-check">
+      <input type="checkbox" id="playground-obfuscate" data-opt-obfuscate />
+      <label for="playground-obfuscate">{t.emit.obfuscate}</label>
+    </div>
+    <p data-level-note hidden><Rich text={t.emit.levelNote} locale={locale} /></p>
+    <p data-prelude-note hidden><Rich text={t.preludeNote} locale={locale} /></p>
   </div>
 
   <div class="playground-grid">
@@ -149,53 +203,70 @@ const runtimeCopy = {
         <ul data-diagnostics aria-live="polite"></ul>
       </div>
     </section>
+    {/* One tab strip over the whole result column: the canvas the module draws, the three
+        files the compiler emits from it, and what reflect() recovers. One panel is shown at
+        a time; the other panels keep whatever was last painted into them, so a tab switch
+        paints nothing and re-runs nothing. */}
     <div class="result-column">
-      <section class="pane canvas-pane">
-        <div class="pane-title">
-          <span>{t.canvas}</span>
-          <div class="canvas-meta">
-            <label for="playground-resolution">{t.resolution}</label>
-            <select id="playground-resolution" data-resolution>
-              <option value="64">64 × 64</option>
-              <option value="128">128 × 128</option>
-              <option value="192" selected>192 × 192</option>
-              <option value="384">384 × 384</option>
-              <option value="768">768 × 768</option>
-              <option value="1536">1536 × 1536</option>
-              <option value="3840">3840 × 3840 (4K)</option>
-              <option value="7680">7680 × 7680 (8K)</option>
-            </select>
-            <button type="button" data-draw-cpu disabled>{t.draw}</button>
-          </div>
+      <div class="pane-title result-head">
+        <div class="output-tabs" role="tablist" aria-label={t.output}>
+          <button type="button" role="tab" id="pg-tab-result" aria-controls="pg-panel-result" data-target="result" aria-selected="true" tabindex="0">{t.resultTab}</button>
+          <button type="button" role="tab" id="pg-tab-wgsl" aria-controls="pg-output" data-target="wgsl" aria-selected="false" tabindex="-1">{t.wgslTab}</button>
+          <button type="button" role="tab" id="pg-tab-glslVertex" aria-controls="pg-output" data-target="glslVertex" aria-selected="false" tabindex="-1">{t.glslVertexTab}</button>
+          <button type="button" role="tab" id="pg-tab-glslFragment" aria-controls="pg-output" data-target="glslFragment" aria-selected="false" tabindex="-1">{t.glslFragmentTab}</button>
+          <button type="button" role="tab" id="pg-tab-reflection" aria-controls="pg-panel-reflection" data-target="reflection" aria-selected="false" tabindex="-1">{t.reflection}</button>
         </div>
-        <div class="canvas-host">
-          <canvas data-canvas width="192" height="192" aria-label={t.canvas}></canvas>
-          <p data-canvas-note>{t.canvasIdle}</p>
+        {/* The controls the selected tab owns, one group per tab, in the row the tabs are in. */}
+        <div class="canvas-meta" data-meta="result">
+          <label for="playground-engine">{t.engine}</label>
+          <select id="playground-engine" data-engine>
+            <option value="gpu" selected>{t.engineGpu}</option>
+            <option value="cpu">{t.engineCpu}</option>
+          </select>
+          <label for="playground-resolution" data-cpu-only hidden>{t.resolution}</label>
+          <select id="playground-resolution" data-resolution data-cpu-only hidden>
+            <option value="64">64 × 64</option>
+            <option value="128">128 × 128</option>
+            <option value="192" selected>192 × 192</option>
+            <option value="384">384 × 384</option>
+            <option value="768">768 × 768</option>
+            <option value="1536">1536 × 1536</option>
+            <option value="3840">3840 × 3840 (4K)</option>
+            <option value="7680">7680 × 7680 (8K)</option>
+          </select>
+          <button type="button" data-draw-cpu data-cpu-only hidden disabled>{t.draw}</button>
         </div>
-      </section>
-      <section class="pane output-pane">
-        <div class="pane-title">
-          <div class="output-tabs" role="tablist" aria-label={t.output}>
-            <button type="button" role="tab" id="pg-tab-wgsl" aria-controls="pg-output" data-target="wgsl" aria-selected="true" tabindex="0">{t.wgslTab}</button>
-            <button type="button" role="tab" id="pg-tab-glslVertex" aria-controls="pg-output" data-target="glslVertex" aria-selected="false" tabindex="-1">{t.glslVertexTab}</button>
-            <button type="button" role="tab" id="pg-tab-glslFragment" aria-controls="pg-output" data-target="glslFragment" aria-selected="false" tabindex="-1">{t.glslFragmentTab}</button>
-          </div>
-          <div class="output-meta">
-            <span data-size></span>
-            <button type="button" data-copy-output>{t.copy}</button>
-          </div>
+        <div class="output-meta" data-meta="text" hidden>
+          <span data-size></span>
+          <button type="button" data-copy-output>{t.copy}</button>
         </div>
-        <pre id="pg-output" role="tabpanel" aria-labelledby="pg-tab-wgsl" data-output aria-live="polite"></pre>
-      </section>
+        <div class="reflect-meta" data-meta="reflection" hidden>
+          <button type="button" data-run-cpu disabled>{t.runCpu}</button>
+        </div>
+      </div>
+      <div class="result-panels">
+        {/* Two canvases, one shown. The GPU one runs the program the WGSL and GLSL tabs
+            hold, through the same runtime every figure on the site uses; the CPU one runs
+            the fragment entry once per pixel through the oracle, which answers a different
+            question and is the fallback where there is no GPU API at all. A canvas takes one
+            context and these take two, so they are two elements and not one. */}
+        <div class="canvas-host" id="pg-panel-result" role="tabpanel" aria-labelledby="pg-tab-result">
+          <div class="gpu-frame" data-gpu-frame>
+            <canvas data-gpu-canvas data-backend="none" role="img" aria-label={t.canvas}></canvas>
+          </div>
+          <p data-gpu-note>{t.gpuIdle}</p>
+          {/* One handle per uniform field the module declares and the page does not fill
+              itself. Without them a module whose look is steered by a uniform runs at 0 and
+              reads as a flat square, which is what the note under it used to have to say. */}
+          <div class="gpu-controls" data-gpu-controls hidden aria-label={t.uniforms}></div>
+          <canvas data-canvas width="192" height="192" aria-label={t.canvas} data-cpu-only hidden></canvas>
+          <p data-canvas-note data-cpu-only hidden>{t.canvasIdle}</p>
+        </div>
+        <pre id="pg-output" role="tabpanel" aria-labelledby="pg-tab-wgsl" data-output aria-live="polite" hidden></pre>
+        <div class="reflection" id="pg-panel-reflection" role="tabpanel" aria-labelledby="pg-tab-reflection" data-reflection aria-live="polite" hidden></div>
+      </div>
     </div>
   </div>
-  <section class="pane reflect-pane">
-    <div class="pane-title">
-      <span>{t.reflection}</span>
-      <button type="button" data-run-cpu disabled>{t.runCpu}</button>
-    </div>
-    <div class="reflection" data-reflection aria-live="polite"></div>
-  </section>
 </section>
 
 <script>
@@ -206,7 +277,10 @@ const runtimeCopy = {
   /* The page field is Ant's layout ground (src/styles/global.css), so the tool's own region
      is a white container on it, the way the docs column is. */
   :global(.playground-page) { background: var(--color-ground) }
-  .ts-playground { border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
+  /* The tool and its left column are `section` elements, and a documentation page puts a
+     section gap in front of every section it holds, so a page that embeds the tool would get
+     that gap twice over and inside the grid. The component owns its own spacing. */
+  .ts-playground { margin: 0; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
   .playground-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
   .playground-toolbar strong { font: 500 .8125rem/1.4 var(--font-mono); }
   .playground-actions { display: flex; gap: 8px; }
@@ -228,28 +302,43 @@ const runtimeCopy = {
   .playground-check { display: flex; align-items: center; gap: 6px; padding-bottom: 7px; }
   .playground-check label { margin-bottom: 0; }
   .playground-check input { accent-color: var(--color-accent); }
-  .playground-options [data-level-note] { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
+  .playground-options [data-level-note], .playground-options [data-prelude-note] { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
+  .playground-options :global(code) { font: 400 .75rem/1.5 var(--font-mono); }
 
-  .output-meta { display: flex; align-items: center; gap: 10px; }
+  .output-meta { display: flex; flex: none; align-items: center; gap: 10px; }
   .output-meta [data-size] { color: var(--color-text-3); font: 400 .6875rem/1.3 var(--font-mono); }
   .output-meta button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 3px 8px; background: var(--color-ground); color: var(--color-text-2); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
   .output-meta button:hover { color: var(--color-text-1); }
   .output-tabs button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
 
   /* The source and the result are the two things a reader looks between, so they sit side
-     by side and end on the same line. Each column is a flex column, and the pane that can
-     scroll (the editor on the left, the output on the right) grows to take what the canvas
-     and the diagnostics leave, so neither column runs short of the other. */
+     by side and end on the same line. The left column is the editor over its diagnostics;
+     the right one is a single tab strip over a single panel, so the reader trades the
+     canvas for the emitted text in place instead of scrolling between stacked panes. The
+     column widths follow the tool's own box and not the window's, since the Playground is
+     on a page of its own and inside a documentation column on every example page. */
+  .ts-playground { container-type: inline-size; }
   .playground-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
-  .pane { min-width: 0; }
+  .pane { margin: 0; min-width: 0; }
   .source-pane { display: flex; flex-direction: column; border-bottom: 1px solid var(--color-line-1); }
   .result-column { display: flex; flex-direction: column; min-width: 0; }
-  .output-pane { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+  /* One panel is shown and the rest carry `hidden`. The panels are flex and grid boxes, so
+     the attribute is spelled out here; `display` from a class would otherwise win. */
+  .result-panels { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+  .result-panels > [hidden] { display: none; }
+  /* The tabs and the controls the selected tab owns share one row while both fit; where
+     they do not, the controls take a row under the tabs instead of cutting a tab label in
+     half. The tablist's basis is what decides which of the two happens. */
+  .result-head { flex-wrap: wrap; gap: 8px; }
+  .result-head .output-tabs { flex: 1 1 21rem; overflow-x: auto; scrollbar-width: none; }
+  .result-head .output-tabs::-webkit-scrollbar { display: none; }
+  .result-head > [data-meta] { margin-inline-start: auto; }
   .pane-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; color: var(--color-text-2); font-size: .75rem; font-weight: 500; background: var(--color-surface-2); }
   .pane-title kbd { color: var(--color-text-3); font: 500 .6875rem/1.3 var(--font-mono); }
   .editor-host, pre { box-sizing: border-box; width: 100%; margin: 0; border: 0; border-radius: 0; background: var(--color-ground); color: var(--color-text-1); font: 400 .8125rem/1.65 var(--font-mono); }
   /* Flex bases of 0 so neither pane's content sets the row height: the editor and the output
-     take the room the row has and scroll inside it. */
+     take the room the row has and scroll inside it. The editor's floor is what sets the row
+     beside it, since the result column is one panel now and no longer two stacked ones. */
   .editor-host { flex: 1 1 0; min-height: 420px; overflow: hidden; }
   pre { flex: 1 1 0; min-height: 320px; padding: 16px; overflow: auto; white-space: pre; }
   /* Under the editor, since that is where a reader looks when the source is wrong, and with
@@ -271,32 +360,45 @@ const runtimeCopy = {
   .has-errors .diagnostics { border-top-color: var(--color-diag); }
   .has-output [data-status] { color: var(--color-accent); }
   .output-tabs { display: flex; gap: 2px; margin: -3px 0; }
-  .output-tabs button { border: 0; border-radius: var(--radius-sm); padding: 3px 8px; background: transparent; color: var(--color-text-3); font: 500 .75rem/1.4 var(--font-sans); cursor: pointer; }
+  .output-tabs button { flex: none; border: 0; border-radius: var(--radius-sm); padding: 3px 8px; background: transparent; color: var(--color-text-3); font: 500 .75rem/1.4 var(--font-sans); white-space: nowrap; cursor: pointer; }
   .output-tabs button:hover { color: var(--color-text-1); }
   .output-tabs button[aria-selected='true'] { background: var(--color-ground); color: var(--color-text-1); }
-  .reflect-pane { border-top: 1px solid var(--color-line-1); }
-  .reflect-pane .pane-title button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
-  .reflect-pane .pane-title button:hover:not(:disabled) { background: var(--color-surface-1); }
-  .reflect-pane .pane-title button:disabled { opacity: .5; cursor: default; }
+  .reflect-meta { display: flex; flex: none; align-items: center; }
+  .reflect-meta button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
+  .reflect-meta button:hover:not(:disabled) { background: var(--color-surface-1); }
+  .reflect-meta button:disabled { opacity: .5; cursor: default; }
   /* The pane's contents are built by src/scripts/playground.ts after the page loads, so those
      nodes never carry Astro's scoping attribute and a plain descendant selector would miss
      them. The scoped parent is .reflection; everything under it is addressed globally. */
-  .canvas-pane { border-bottom: 1px solid var(--color-line-1); }
-  .canvas-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
-  /* The title keeps its line; on a narrow screen the controls wrap among themselves instead. */
-  .canvas-pane .pane-title > span { flex: none; white-space: nowrap; }
+  .canvas-meta { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
   .canvas-meta label { color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
   .canvas-meta select { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 3px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .6875rem/1.3 var(--font-mono); }
   .canvas-meta button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 4px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .6875rem/1.3 var(--font-sans); cursor: pointer; }
   .canvas-meta button:hover:not(:disabled) { background: var(--color-surface-1); }
   .canvas-meta button:disabled { opacity: .5; cursor: default; }
-  .canvas-host { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px 12px; background: var(--color-ground); }
-  .canvas-host [data-canvas-note] { margin: 0; min-height: 1.3em; color: var(--color-text-3); font: 400 .6875rem/1.3 var(--font-mono); text-align: center; }
+  /* The canvas panel takes the room the row has and holds the canvas at the top of it, so
+     the box the picture is drawn in is the same size behind every tab. */
+  .canvas-host { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px 12px; background: var(--color-ground); }
+  .canvas-host [data-canvas-note], .canvas-host [data-gpu-note] { margin: 0; min-height: 1.3em; max-width: 52ch; color: var(--color-text-3); font: 400 .6875rem/1.45 var(--font-mono); text-align: center; }
+  .canvas-host [hidden] { display: none; }
+  /* The GPU canvas is sized by its box, the way every other canvas on the site is: the
+     runtime matches the drawing buffer to the box and the capped device pixel ratio. */
+  .gpu-frame { position: relative; width: min(320px, 100%); aspect-ratio: 1; overflow: hidden; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); background: var(--color-surface-2); }
+  .gpu-frame > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .gpu-frame > canvas[data-backend='none'] { opacity: 0; }
+  /* The handles are built by src/scripts/playground.ts after the page loads, so they carry
+     no scoping attribute and are addressed globally under the scoped parent. */
+  .gpu-controls { width: 100%; max-width: 420px; }
+  .gpu-controls :global(.uniform-row) { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .gpu-controls :global(.uniform-row + .uniform-row) { margin-top: 2px; }
+  .gpu-controls :global(.uniform-name) { flex: none; min-width: 7rem; color: var(--color-text-2); font: 400 .6875rem/1.4 var(--font-mono); overflow-wrap: anywhere; }
+  .gpu-controls :global(.uniform-axes) { display: flex; flex: 1 1 auto; gap: 6px; min-width: 0; }
+  .gpu-controls :global(input[type='range']) { flex: 1 1 0; min-width: 0; accent-color: var(--color-accent); }
   /* The box stays this size at every resolution, so raising the grid buys detail and does
      not move the layout. `pixelated` is what makes the low end worth offering: at 64 the
      reader sees the fragment entry run once per visible block. */
   .canvas-host canvas { width: min(320px, 100%); height: auto; aspect-ratio: 1; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); image-rendering: pixelated; }
-  .reflection { padding: 14px 16px; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
+  .reflection { flex: 1 1 0; min-height: 320px; padding: 14px 16px; overflow: auto; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
   .reflection :global(.group-title) { margin: 0 0 8px; color: var(--color-text-3); font: 600 .6875rem/1.3 var(--font-sans); letter-spacing: .06em; }
   .reflection :global(.group + .group) { margin-top: 20px; }
   .reflection :global(.entry + .entry) { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--color-line-1); }
@@ -313,7 +415,14 @@ const runtimeCopy = {
   .reflection :global(.arg-name) { align-self: center; color: var(--color-text-3); }
   .reflection :global(.empty) { color: var(--color-text-3); }
   .reflection :global(.failed) { color: var(--color-diag); }
-  @media (min-width: 64rem) { .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; } .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); } }
+  @container (min-width: 48rem) {
+    .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+    .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); }
+    /* Beside the result the editor shows 26 lines of the file at the 21px line height it is
+       created with, so the entry point of an example this long is in view without scrolling
+       and a widget Monaco anchors to a line can be placed. */
+    .editor-host { min-height: 560px; }
+  }
   @media (max-width: 48rem) {
     .playground-toolbar { align-items: stretch; flex-direction: column; }
     .playground-actions { width: 100%; }
