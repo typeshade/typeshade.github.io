@@ -3,22 +3,22 @@
 // with, each with the number of names in it and one line on what it holds. The sections and
 // their counts come from the compiler (src/lib/language-reference.ts); the words come from
 // the dictionary, so a Korean reader gets Korean around English identifiers.
-import Docs from '../../layouts/Docs.astro'
-import Rich from '../Rich.astro'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { facts } from '../../lib/examples.ts'
-import { languageSections } from '../../lib/language-reference.ts'
+import Docs from '../../layouts/Docs.astro';
+import Rich from '../Rich.astro';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { facts } from '../../lib/examples.ts';
+import { languageSections } from '../../lib/language-reference.ts';
 
 interface Props { locale: Locale }
-const { locale } = Astro.props
-const r = copyFor(locale).docs.reference
+const { locale } = Astro.props;
+const r = copyFor(locale).docs.reference;
 const kinds = languageSections().map((section) => ({
   ...r.kinds[section.kind],
   href: localePath(locale, `/reference/${section.slug}/`),
   count: section.entries.length,
-}))
-const headings = [{ depth: 2, slug: 'reading', text: r.readingH }]
+}));
+const headings = [{ depth: 2, slug: 'reading', text: r.readingH }];
 ---
 
 <Docs

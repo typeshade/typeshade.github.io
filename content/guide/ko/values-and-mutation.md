@@ -109,17 +109,17 @@ o.pos.assign(vec4(pos, 0, 1)) // a struct field is a target too
 산술, 비교, 비트 연산, 구성 요소 접근, 인덱스는 모두 노드의 메서드입니다. 변경이 메서드인
 것과 같은 이유입니다.
 
-| 분류       | 메서드                                                                    |
-| ---------- | ------------------------------------------------------------------------ |
-| 산술       | `.add .sub .mul .div .mod .neg`                                          |
-| 복합 대입  | `.addAssign .subAssign .mulAssign .divAssign`                            |
-| 비교       | `.lt .gt .le .ge .eq .ne`                                                |
-| 논리       | `.and .or .not`                                                          |
-| 비트 연산  | `.bitAnd .bitOr .bitXor .shl .shr`                                       |
-| 캐스트     | `.f32() .i32() .u32() .f64()`                                            |
-| 구성 요소  | `.x .y .z .w` · `.r .g .b .a` · `.rgb .xy .xyz …` · `.swizzle<R>('zxy')` |
-| 인덱스     | 배열 노드에는 `.at(i)`, 그 밖에는 `.at(i, elemType)`                     |
-| 삼항       | `cond.select(a, b)`                                                      |
+| 분류      | 메서드                                                                   |
+| --------- | ------------------------------------------------------------------------ |
+| 산술      | `.add .sub .mul .div .mod .neg`                                          |
+| 복합 대입 | `.addAssign .subAssign .mulAssign .divAssign`                            |
+| 비교      | `.lt .gt .le .ge .eq .ne`                                                |
+| 논리      | `.and .or .not`                                                          |
+| 비트 연산 | `.bitAnd .bitOr .bitXor .shl .shr`                                       |
+| 캐스트    | `.f32() .i32() .u32() .f64()`                                            |
+| 구성 요소 | `.x .y .z .w` · `.r .g .b .a` · `.rgb .xy .xyz …` · `.swizzle<R>('zxy')` |
+| 인덱스    | 배열 노드에는 `.at(i)`, 그 밖에는 `.at(i, elemType)`                     |
+| 삼항      | `cond.select(a, b)`                                                      |
 
 메서드는 왼쪽에서 오른쪽으로 읽히므로 기본 형태로 알맞습니다. 메서드로는 적을 수 없는
 식은 왼쪽 피연산자가 리터럴인 식뿐입니다. `add`, `sub`, `mul`, `div`에는 바로 이런

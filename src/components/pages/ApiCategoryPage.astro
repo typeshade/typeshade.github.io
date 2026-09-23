@@ -2,28 +2,28 @@
 // One category of the reference: every export in it, alphabetically, with its kind and the
 // sentence its own JSDoc opens with. MDN's landing page for a group of interfaces has the
 // same shape. The sidebar opens this category, so the members are in reach from here on.
-import Docs from '../../layouts/Docs.astro'
-import Rich from '../Rich.astro'
-import { apiCategories, apiCategory } from '../../lib/api-nav.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { facts } from '../../lib/examples.ts'
+import Docs from '../../layouts/Docs.astro';
+import Rich from '../Rich.astro';
+import { apiCategories, apiCategory } from '../../lib/api-nav.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { facts } from '../../lib/examples.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
   /** The category's slug, for example 'authoring'. */
-  slug: string
+  slug: string;
 }
-const { locale, slug } = Astro.props
-assertApiCategories()
-const t = copyFor(locale)
-const a = t.docs.api
-const named = apiCategoryCopy(locale, slug)
-const { members } = apiCategory(slug)
-const all = apiCategories()
-const at = all.findIndex((c) => c.category.slug === slug)
-const previous = at > 0 ? all[at - 1]!.category.slug : undefined
-const first = members[0]
+const { locale, slug } = Astro.props;
+assertApiCategories();
+const t = copyFor(locale);
+const a = t.docs.api;
+const named = apiCategoryCopy(locale, slug);
+const { members } = apiCategory(slug);
+const all = apiCategories();
+const at = all.findIndex((c) => c.category.slug === slug);
+const previous = at > 0 ? all[at - 1]!.category.slug : undefined;
+const first = members[0];
 ---
 
 <Docs

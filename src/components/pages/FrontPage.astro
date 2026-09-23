@@ -5,26 +5,26 @@
 // compiler's scale: one file and the two targets it emits, the repository's own examples
 // running as tiles, what carries over from TypeScript, the gradient pass drawn by each
 // backend, and the command that installs it.
-import { Code } from 'astro-expressive-code/components'
-import Base from '../../layouts/Base.astro'
-import CodeFrame from '../CodeFrame.astro'
-import InstallCommand from '../InstallCommand.astro'
-import LiveShader from '../LiveShader.astro'
-import Rich from '../Rich.astro'
-import ShaderCanvas from '../ShaderCanvas.astro'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { examplePath } from '../../lib/example-pages.ts'
-import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts'
-import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
-import { links } from '../../lib/links.ts'
-import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
+import { Code } from 'astro-expressive-code/components';
+import Base from '../../layouts/Base.astro';
+import CodeFrame from '../CodeFrame.astro';
+import InstallCommand from '../InstallCommand.astro';
+import LiveShader from '../LiveShader.astro';
+import Rich from '../Rich.astro';
+import ShaderCanvas from '../ShaderCanvas.astro';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { examplePath } from '../../lib/example-pages.ts';
+import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts';
+import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts';
+import { links } from '../../lib/links.ts';
+import { examples } from '../../../vendor/shader-dsl/examples/index.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
 }
-const { locale } = Astro.props
-const t = copyFor(locale)
-const f = t.front
+const { locale } = Astro.props;
+const t = copyFor(locale);
+const f = t.front;
 
 // The front page's own file. Code is not copy, so it lives here, the way every live example
 // keeps its sample beside the page that shows it. `time` and `mouse` are filled by the page;
@@ -50,27 +50,27 @@ export function main(@location(0) uv: vec2): vec4 {
   const s = t * t * (3.0 - 2.0 * t)
   return vec4(mix(u.ink, u.paper, s * s * (3.0 - 2.0 * s)), 1.0)
 }
-`
+`;
 
 /** The tiles, in the order they read. Every id is in the registry; a missing one stops the
  *  build here, before a blank frame could. A tile shows the still captured from the shader at
  *  build time and links to that example's own page, the way a gallery tile does: the front
  *  page is a first visit, and nine shaders compiling and animating on it is GPU work every
  *  visitor pays for. The showcase card above is the one thing on the page that runs. */
-const TILE_IDS = ['metaballs', 'plasma', 'voronoi', 'julia', 'ocean', 'starfield', 'tunnel', 'kaleidoscope', 'mandelbrot'] as const
+const TILE_IDS = ['metaballs', 'plasma', 'voronoi', 'julia', 'ocean', 'starfield', 'tunnel', 'kaleidoscope', 'mandelbrot'] as const;
 const tiles = TILE_IDS.map((id) => {
-  const example = examples.find((e) => e.id === id)
-  if (!example) throw new Error(`[front] tile '${id}' is not in the examples registry`)
-  return { id, title: example.title, href: localePath(locale, examplePath(id)) }
-})
+  const example = examples.find((e) => e.id === id);
+  if (!example) throw new Error(`[front] tile '${id}' is not in the examples registry`);
+  return { id, title: example.title, href: localePath(locale, examplePath(id)) };
+});
 
-const playground = localePath(locale, links.playground.href)
+const playground = localePath(locale, links.playground.href);
 // A section's heading and the sentence under it, the same on every section. The heading stops
 // at 24ch and the sentence at 62ch, so neither runs the width of the shell.
-const heading = 'm-0 max-inline-[24ch] text-h2 font-semibold tracking-[-0.01em] text-balance'
-const lead = 'mbs-3 max-inline-[62ch] text-prose text-text-2 text-pretty'
-const section = 'front-section wide-in mbs-(--front-gap)'
-const quickStart = localePath(locale, links.quickStart.href)
+const heading = 'm-0 max-inline-[24ch] text-h2 font-semibold tracking-[-0.01em] text-balance';
+const lead = 'mbs-3 max-inline-[62ch] text-prose text-text-2 text-pretty';
+const section = 'front-section wide-in mbs-(--front-gap)';
+const quickStart = localePath(locale, links.quickStart.href);
 ---
 
 <Base locale={locale} path="/" searchable searchTitle={f.searchTitle}>
@@ -256,5 +256,5 @@ const quickStart = localePath(locale, links.quickStart.href)
 
 <script>
   // The tabs over the emitted targets, shared with every per-example page.
-  import '../../scripts/target-tabs.ts'
+  import '../../scripts/target-tabs.ts';
 </script>

@@ -14,51 +14,52 @@
 // file name's, and that is different on every example page.
 
 /** Room between the pane's top edge and the line it opens on. */
-const AIR = 12
+const AIR = 12;
 
 for (const head of document.querySelectorAll<HTMLElement>('[data-example-tabs]')) {
   const mark = (): void => {
-    if (head.scrollWidth - head.clientWidth > 1) head.dataset.overflow = ''
-    else delete head.dataset.overflow
-  }
+    if (head.scrollWidth - head.clientWidth > 1) head.dataset.overflow = '';
+    else delete head.dataset.overflow;
+  };
   // The head's own box changes with the window, and a tab's box changes when it is picked,
   // since the selected tab is the one at weight 600.
-  const sizes = new ResizeObserver(mark)
-  sizes.observe(head)
-  for (const tab of head.children) sizes.observe(tab)
-  void document.fonts?.ready.then(mark)
-  mark()
+  const sizes = new ResizeObserver(mark);
+  sizes.observe(head);
+  for (const tab of head.children) sizes.observe(tab);
+  void document.fonts?.ready.then(mark);
+  mark();
 }
 
 for (const panel of document.querySelectorAll<HTMLElement>('[data-entry-line]')) {
-  const scroller = panel.closest<HTMLElement>('[data-example-panels]')
-  if (!scroller) continue
+  const scroller = panel.closest<HTMLElement>('[data-example-panels]');
+  if (!scroller) continue;
 
   const mark = (): void => {
-    if (scroller.scrollTop > 1) scroller.dataset.scrolled = ''
-    else delete scroller.dataset.scrolled
-  }
-  scroller.addEventListener('scroll', mark, { passive: true })
+    if (scroller.scrollTop > 1) scroller.dataset.scrolled = '';
+    else delete scroller.dataset.scrolled;
+  };
+  scroller.addEventListener('scroll', mark, { passive: true });
 
-  const line = Number(panel.dataset.entryLine)
-  const rows = panel.querySelectorAll<HTMLElement>('pre > code > .ec-line')
-  const row = Number.isInteger(line) && line > 0 ? rows[line] : undefined
+  const line = Number(panel.dataset.entryLine);
+  const rows = panel.querySelectorAll<HTMLElement>('pre > code > .ec-line');
+  const row = Number.isInteger(line) && line > 0 ? rows[line] : undefined;
   if (!row) {
-    mark()
-    continue
+    mark();
+    continue;
   }
 
   // The code font arrives after this runs, and it changes how tall a line is, so the pane is
   // placed again once the fonts have settled. A reader who has already scrolled keeps their
   // place: the second placement only happens while the pane is still where it was put.
-  let placed = -1
+  let placed = -1;
   const place = (): void => {
-    if (placed >= 0 && Math.abs(scroller.scrollTop - placed) > 1) return
-    const top = row.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
-    scroller.scrollTop = Math.max(0, top - AIR)
-    placed = scroller.scrollTop
-    mark()
-  }
-  place()
-  void document.fonts?.ready.then(place)
+    if (placed >= 0 && Math.abs(scroller.scrollTop - placed) > 1) return;
+    const top =
+      row.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    scroller.scrollTop = Math.max(0, top - AIR);
+    placed = scroller.scrollTop;
+    mark();
+  };
+  place();
+  void document.fonts?.ready.then(place);
 }

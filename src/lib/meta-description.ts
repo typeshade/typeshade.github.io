@@ -16,34 +16,38 @@
 // fallback for a sentence that genuinely has nowhere shorter to break.
 
 /** The floor scripts/check-seo.mjs holds every page to. */
-export const META_MIN = 70
+export const META_MIN = 70;
 /** The ceiling it holds every page to, which a tight per-locale budget sits under. */
-export const META_HARD_MAX = 160
+export const META_HARD_MAX = 160;
 
 // The last character of the window is also a valid break: a mark one truncated character
 // short of "mark, more words" reads as mid-clause under a strict trailing-space search even
 // though the mark itself is the true end of what fits.
 function markEnd(window: string, marks: readonly string[]): number {
-  let best = -1
+  let best = -1;
   for (const mark of marks) {
-    const withSpace = window.lastIndexOf(`${mark} `)
-    if (withSpace >= 0) best = Math.max(best, withSpace + mark.length)
-    if (window.endsWith(mark)) best = Math.max(best, window.length)
+    const withSpace = window.lastIndexOf(`${mark} `);
+    if (withSpace >= 0) best = Math.max(best, withSpace + mark.length);
+    if (window.endsWith(mark)) best = Math.max(best, window.length);
   }
-  return best
+  return best;
 }
 
 function cutAt(text: string, limit: number): string | null {
-  const window = text.slice(0, limit)
-  const sentenceEnd = markEnd(window, ['.', '!', '?'])
-  if (sentenceEnd >= META_MIN) return window.slice(0, sentenceEnd)
-  const clauseEnd = markEnd(window, [',', ';', ':'])
-  if (clauseEnd >= META_MIN) return `${window.slice(0, clauseEnd - 1)}…`
-  return null
+  const window = text.slice(0, limit);
+  const sentenceEnd = markEnd(window, ['.', '!', '?']);
+  if (sentenceEnd >= META_MIN) return window.slice(0, sentenceEnd);
+  const clauseEnd = markEnd(window, [',', ';', ':']);
+  if (clauseEnd >= META_MIN) return `${window.slice(0, clauseEnd - 1)}…`;
+  return null;
 }
 
 /** The composed text brought inside `max`, at a sentence or a clause where there is one. */
 export function fitDescription(text: string, max: number): string {
-  if (text.length <= max) return text
-  return cutAt(text, max) ?? cutAt(text, META_HARD_MAX) ?? `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`
+  if (text.length <= max) return text;
+  return (
+    cutAt(text, max) ??
+    cutAt(text, META_HARD_MAX) ??
+    `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`
+  );
 }

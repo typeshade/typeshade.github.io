@@ -33,6 +33,9 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      # Prettier over the TypeScript, CSS, JSON and Markdown, then the `;` in each component's
+      # frontmatter and <script>, which Prettier does not format (see .prettierignore).
+      - run: bun run format:check
       # The build runs scripts/check-style.mjs, check-copy.ts and check-api.ts first; see
       # DESIGN.md.
       - run: bun run build

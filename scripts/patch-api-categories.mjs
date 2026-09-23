@@ -2,11 +2,11 @@
 // extractor refuses a file it has no row for. The rows the site writes by hand live in
 // CATEGORY_BY_FILE in src/lib/api.ts; these are the ones the pin brought with it, kept here
 // so a moved pin shows them as one diff instead of scattered through that table.
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs';
 
-const file = 'src/lib/api.ts'
-const source = readFileSync(file, 'utf8')
-const marker = "  'src/core/ir/builder.ts': 'authoring',"
+const file = 'src/lib/api.ts';
+const source = readFileSync(file, 'utf8');
+const marker = "  'src/core/ir/builder.ts': 'authoring',";
 const rows = [
   // The "use typeshade" front end: the compile entry point, the file it reads and the
   // directive that opens one.
@@ -24,14 +24,14 @@ const rows = [
   "  'src/core/console.ts': 'cpu-oracle',",
   // The determinism report is read over a whole module, beside semanticDiff and measure.
   "  'src/core/passes/determinism.ts': 'tooling',",
-]
+];
 
-const missing = rows.filter((row) => !source.includes(row.trim()))
+const missing = rows.filter((row) => !source.includes(row.trim()));
 if (missing.length === 0) {
-  console.log(`API categories already patched: ${file}`)
+  console.log(`API categories already patched: ${file}`);
 } else if (source.includes(marker)) {
-  writeFileSync(file, source.replace(marker, missing.join('\n') + '\n' + marker))
-  console.log(`patched ${file}: ${missing.length} file(s) given a reference category`)
+  writeFileSync(file, source.replace(marker, missing.join('\n') + '\n' + marker));
+  console.log(`patched ${file}: ${missing.length} file(s) given a reference category`);
 } else {
-  throw new Error(`[api] could not find CATEGORY_BY_FILE insertion marker in ${file}`)
+  throw new Error(`[api] could not find CATEGORY_BY_FILE insertion marker in ${file}`);
 }

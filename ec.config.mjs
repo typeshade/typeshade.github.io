@@ -7,16 +7,19 @@
 // locale are set here. Node loads this file and cannot read src/i18n/*.ts, so the strings are
 // repeated below and bun scripts/check-copy.ts fails the build when they drift from the
 // dictionary they belong to (copy.code).
-import { pluginFramesTexts } from 'expressive-code'
-import { gpuTypesSyntax, typeshadeInjection } from './src/lib/typeshade-syntax.mjs'
+import { pluginFramesTexts } from 'expressive-code';
+import { gpuTypesSyntax, typeshadeInjection } from './src/lib/typeshade-syntax.mjs';
 
 /** The copy button's two strings per locale, checked against the dictionary by check-copy. */
 export const codeUiTexts = {
   en: { copy: 'Copy to clipboard', copied: 'Copied' },
   ko: { copy: '클립보드로 복사', copied: '복사됨' },
-}
+};
 for (const [locale, texts] of Object.entries(codeUiTexts)) {
-  pluginFramesTexts.overrideTexts(locale, { copyButtonTooltip: texts.copy, copyButtonCopied: texts.copied })
+  pluginFramesTexts.overrideTexts(locale, {
+    copyButtonTooltip: texts.copy,
+    copyButtonCopied: texts.copied,
+  });
 }
 
 // A code frame in Ant Design's shape: an 8px box with a #f0f0f0 rule, a #fafafa title bar and
@@ -24,10 +27,25 @@ for (const [locale, texts] of Object.entries(codeUiTexts)) {
 // Expressive Code parses some of them (it derives the tab-bar and shadow colours from
 // borderColor) and a var() would leave it nothing to parse.
 const surfaces = {
-  light: { border: '#f0f0f0', bar: '#fafafa', code: '#ffffff', text: 'rgba(0, 0, 0, 0.88)', quiet: 'rgba(0, 0, 0, 0.45)' },
-  dark: { border: '#303030', bar: '#262626', code: '#1f1f1f', text: 'rgba(255, 255, 255, 0.85)', quiet: 'rgba(255, 255, 255, 0.45)' },
-}
-const surface = (key) => ({ theme }) => surfaces[theme.type === 'dark' ? 'dark' : 'light'][key]
+  light: {
+    border: '#f0f0f0',
+    bar: '#fafafa',
+    code: '#ffffff',
+    text: 'rgba(0, 0, 0, 0.88)',
+    quiet: 'rgba(0, 0, 0, 0.45)',
+  },
+  dark: {
+    border: '#303030',
+    bar: '#262626',
+    code: '#1f1f1f',
+    text: 'rgba(255, 255, 255, 0.85)',
+    quiet: 'rgba(255, 255, 255, 0.45)',
+  },
+};
+const surface =
+  (key) =>
+  ({ theme }) =>
+    surfaces[theme.type === 'dark' ? 'dark' : 'light'][key];
 
 export default {
   themes: ['github-light', 'github-dark'],
@@ -66,4 +84,4 @@ export default {
       shadowColor: 'transparent',
     },
   },
-}
+};

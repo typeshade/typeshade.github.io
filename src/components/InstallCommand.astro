@@ -1,16 +1,16 @@
 ---
 // The submodule command, read from .gitmodules so it is the command this repository ran.
 // It wraps, because it is the one line a reader has to copy and a phone cannot scroll it.
-import { Code } from 'astro-expressive-code/components'
-import { facts } from '../lib/examples.ts'
-import CodeFrame from './CodeFrame.astro'
-import { copyFor, type Locale } from '../i18n/index.ts'
+import { Code } from 'astro-expressive-code/components';
+import { facts } from '../lib/examples.ts';
+import CodeFrame from './CodeFrame.astro';
+import { copyFor, type Locale } from '../i18n/index.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
 }
-const { locale } = Astro.props
-const command = `git submodule add ${facts.mirrorUrl} ${facts.mirrorPath}`
+const { locale } = Astro.props;
+const command = `git submodule add ${facts.mirrorUrl} ${facts.mirrorPath}`;
 ---
 
 <CodeFrame label={copyFor(locale).install.label}>

@@ -3,43 +3,43 @@
 // (src/lib/hero-shader.ts) and inlined as JSON; the browser runs src/lib/shader-runtime.ts.
 // A still image captured at build time sits under the canvas, so a browser with no GPU API,
 // a crawler or a social preview still sees the rendered shader.
-import { heroShader, heroPayload } from '../lib/hero-shader.ts'
-import type { StateStrings } from '../lib/shader-runtime.ts'
-import { facts } from '../lib/examples.ts'
-import { copyFor, type Locale } from '../i18n/index.ts'
+import { heroShader, heroPayload } from '../lib/hero-shader.ts';
+import type { StateStrings } from '../lib/shader-runtime.ts';
+import { facts } from '../lib/examples.ts';
+import { copyFor, type Locale } from '../i18n/index.ts';
 
 /** Caption text by what drew the frame. `neutral` is what the server renders. */
 export interface CanvasText {
-  readonly neutral: string
-  readonly webgpu: string
-  readonly webgl2: string
-  readonly none: string
-  readonly reduced?: string
+  readonly neutral: string;
+  readonly webgpu: string;
+  readonly webgl2: string;
+  readonly none: string;
+  readonly reduced?: string;
 }
 
 interface Props {
-  locale: Locale
-  example: string
-  caption: CanvasText
+  locale: Locale;
+  example: string;
+  caption: CanvasText;
   /** The frame's shape. `auto` hands the box to the page, for a mount that fills a cell it
    *  shares with something else (the example pages' two-pane card). */
-  aspect: '3/1' | '2/1' | '16/9' | '3/2' | 'auto'
+  aspect: '3/1' | '2/1' | '16/9' | '3/2' | 'auto';
   /** Draw one frame at a fixed clock, then stop. */
-  still?: boolean
+  still?: boolean;
   /** Skip the WebGPU probe and draw on WebGL2. */
-  forceWebGl2?: boolean
+  forceWebGl2?: boolean;
   /** Divide the frame in two, for an example whose halves are captioned separately. */
-  split?: boolean
+  split?: boolean;
   /** Load this figure's still with the first paint. Set on the figure above the fold. */
-  eager?: boolean
+  eager?: boolean;
   /** Which still sits under the canvas; defaults to the example id. A second mount of the
    *  same example forced onto another backend names its own still. */
-  stillId?: string
+  stillId?: string;
   /** The page places the caption and owns the scope: no `<figcaption>` is written here, and
    *  the mount looks for `[data-shader-caption]` inside the page's own `[data-shader-scope]`.
    *  For a canvas that fills a pane of its own, with nothing written inside the pane. */
-  externalCaption?: boolean
-  class?: string
+  externalCaption?: boolean;
+  class?: string;
 }
 
 const {
@@ -54,8 +54,8 @@ const {
   eager = false,
   externalCaption = false,
   class: className,
-} = Astro.props
-const data = heroShader(example)
+} = Astro.props;
+const data = heroShader(example);
 
 const expand = (t: CanvasText): StateStrings => ({
   webgpu: t.webgpu,
@@ -63,20 +63,20 @@ const expand = (t: CanvasText): StateStrings => ({
   none: t.none,
   'still-webgpu': t.reduced ?? t.webgpu,
   'still-webgl2': t.reduced ?? t.webgl2,
-})
+});
 
-const aria: StateStrings = copyFor(locale).canvas.aria(data.title)
-const labels = { caption: expand(caption), aria }
+const aria: StateStrings = copyFor(locale).canvas.aria(data.title);
+const labels = { caption: expand(caption), aria };
 
 // A split figure's halves are named in its caption, so the example has to declare them.
-if (split && !facts.splitLabels) throw new Error(`[ShaderCanvas] '${example}' declares no splitLabels`)
+if (split && !facts.splitLabels) throw new Error(`[ShaderCanvas] '${example}' declares no splitLabels`);
 
 // One payload per example per page.
-const store = Astro.locals as Record<string, unknown>
-const emitted = (store.__shaderPayloads ??= new Set<string>()) as Set<string>
-const payloadId = `shader-payload-${data.id}`
-const firstOfExample = !emitted.has(data.id)
-emitted.add(data.id)
+const store = Astro.locals as Record<string, unknown>;
+const emitted = (store.__shaderPayloads ??= new Set<string>()) as Set<string>;
+const payloadId = `shader-payload-${data.id}`;
+const firstOfExample = !emitted.has(data.id);
+emitted.add(data.id);
 ---
 
 <figure class:list={['figure', className]} data-shader-scope={externalCaption ? undefined : ''}>

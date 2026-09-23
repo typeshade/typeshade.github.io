@@ -123,7 +123,9 @@ export function playgroundExamples(): readonly PlaygroundExample[] {
       missing.length > 0 ? `named here with no file: ${missing.join(', ')}` : '',
       unlisted.length > 0 ? `in the directory with no id here: ${unlisted.join(', ')}` : '',
     ].filter(Boolean);
-    throw new Error(`[playground] src/lib/playground-examples.ts and ${examplesDir} disagree (${parts.join('; ')})`);
+    throw new Error(
+      `[playground] src/lib/playground-examples.ts and ${examplesDir} disagree (${parts.join('; ')})`,
+    );
   }
 
   return playgroundExampleIds.map((id) => ({ id, source: readFileSync(fileFor(id), 'utf8') }));

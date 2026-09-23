@@ -4,30 +4,30 @@
 // that carry the pattern had their own copy of this markup; they all render through here now.
 // Backticked copy goes through Rich, so an identifier keeps the code font and a link written
 // as [text](key) resolves, and a sample under the rows goes through TypeShadeCode.
-import Rich from './Rich.astro'
-import TypeShadeCode from './TypeShadeCode.astro'
-import type { Locale } from '../i18n/index.ts'
+import Rich from './Rich.astro';
+import TypeShadeCode from './TypeShadeCode.astro';
+import type { Locale } from '../i18n/index.ts';
 
 /** A concept and one or two things said about it, in the order the columns name. */
-export type ConceptRow = readonly string[]
+export type ConceptRow = readonly string[];
 
 interface Props {
-  locale: Locale
-  rows: readonly ConceptRow[]
+  locale: Locale;
+  rows: readonly ConceptRow[];
   /** One heading per cell of a row. A table needs them; cards use the first as the row's own. */
-  columns?: readonly string[]
+  columns?: readonly string[];
   /** Cards read as prose, a table reads as a reference. */
-  layout?: 'table' | 'cards'
+  layout?: 'table' | 'cards';
   /** What a card's last cell is introduced with, for example "TypeShade adds". */
-  addsLabel?: string
+  addsLabel?: string;
   /** The first cell of every table row in bold, where the page already set it that way. */
-  strongTerm?: boolean
+  strongTerm?: boolean;
   /** A sample under the rows. */
-  code?: string
-  codeLang?: 'ts' | 'wgsl' | 'glsl' | 'text'
-  codeTitle?: string
+  code?: string;
+  codeLang?: 'ts' | 'wgsl' | 'glsl' | 'text';
+  codeTitle?: string;
 }
-const { locale, rows, columns = [], layout = 'table', addsLabel, strongTerm = false, code, codeLang = 'ts', codeTitle } = Astro.props
+const { locale, rows, columns = [], layout = 'table', addsLabel, strongTerm = false, code, codeLang = 'ts', codeTitle } = Astro.props;
 ---
 
 {layout === 'cards' ? (

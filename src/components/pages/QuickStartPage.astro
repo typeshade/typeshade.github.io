@@ -1,26 +1,26 @@
 ---
-import { Code } from 'astro-expressive-code/components'
-import Docs from '../../layouts/Docs.astro'
-import CodeFrame from '../CodeFrame.astro'
-import LiveShader from '../LiveShader.astro'
-import InstallCommand from '../InstallCommand.astro'
-import Rich from '../Rich.astro'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { hero, quickStartFile } from '../../lib/examples.ts'
-import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { slugify } from '../../lib/slug.ts'
+import { Code } from 'astro-expressive-code/components';
+import Docs from '../../layouts/Docs.astro';
+import CodeFrame from '../CodeFrame.astro';
+import LiveShader from '../LiveShader.astro';
+import InstallCommand from '../InstallCommand.astro';
+import Rich from '../Rich.astro';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { hero, quickStartFile } from '../../lib/examples.ts';
+import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { slugify } from '../../lib/slug.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
 }
-const { locale } = Astro.props
-const t = copyFor(locale)
-const q = t.quickStart as typeof t.quickStart & { p0?: string }
-const host = t.quickStart.host
-const headings = [q.installH, q.live.h, host.boundaryH, host.hostH, q.status.h, host.nextLearnH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
-const p0 = q.p0 ?? host.p0
-const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts'
+const { locale } = Astro.props;
+const t = copyFor(locale);
+const q = t.quickStart as typeof t.quickStart & { p0?: string };
+const host = t.quickStart.host;
+const headings = [q.installH, q.live.h, host.boundaryH, host.hostH, q.status.h, host.nextLearnH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
+const p0 = q.p0 ?? host.p0;
+const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts';
 
 // The live example's sample: a whole file, the way a Book of Shaders page shows a whole
 // .frag. <LiveShader> supplies the vertex half and nothing else, so every name here is
@@ -44,7 +44,7 @@ export function main(@location(0) uv: vec2): vec4 {
   const wave = sin(phase) * 0.5 + 0.5
   return vec4(mix(u.low, u.high, wave), 1.)
 }
-`
+`;
 ---
 
 <Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description} headings={headings} editHref={editCopy(locale, 'quickStart')}>

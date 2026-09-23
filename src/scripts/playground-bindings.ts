@@ -126,7 +126,10 @@ function layoutOf(
     case 'array': {
       const inner = layoutOf(t.elem, structs, kind);
       const stride = roundUp(inner.size, kind === 'std140' ? 16 : inner.align);
-      return { size: stride * (t.size ?? 1), align: kind === 'std140' ? roundUp(inner.align, 16) : inner.align };
+      return {
+        size: stride * (t.size ?? 1),
+        align: kind === 'std140' ? roundUp(inner.align, 16) : inner.align,
+      };
     }
     default:
       return { size: 0, align: 4 };
@@ -174,7 +177,9 @@ function slotsOf(
 ): Slot[] {
   switch (t.kind) {
     case 'scalar':
-      return [{ offset: base, scalar: t.scalar === 'bool' ? 'u32' : (t.scalar as Slot['scalar']), label }];
+      return [
+        { offset: base, scalar: t.scalar === 'bool' ? 'u32' : (t.scalar as Slot['scalar']), label },
+      ];
     case 'atomic':
       return [{ offset: base, scalar: t.elem, label }];
     case 'f64':
@@ -184,13 +189,22 @@ function slotsOf(
       ];
     case 'vec': {
       const scalar = t.elem === 'bool' ? 'u32' : t.elem;
-      return Array.from({ length: t.n }, (_, i) => ({ offset: base + i * 4, scalar, label: `${label}.${'xyzw'[i]}` }));
+      return Array.from({ length: t.n }, (_, i) => ({
+        offset: base + i * 4,
+        scalar,
+        label: `${label}.${'xyzw'[i]}`,
+      }));
     }
     case 'mat': {
       const column = t.rows === 2 ? 8 : 16;
       const out: Slot[] = [];
       for (let c = 0; c < t.cols; c++)
-        for (let r = 0; r < t.rows; r++) out.push({ offset: base + c * column + r * 4, scalar: 'f32', label: `${label}[${c}][${r}]` });
+        for (let r = 0; r < t.rows; r++)
+          out.push({
+            offset: base + c * column + r * 4,
+            scalar: 'f32',
+            label: `${label}[${c}][${r}]`,
+          });
       return out;
     }
     case 'struct': {
@@ -198,7 +212,13 @@ function slotsOf(
       if (!decl) return [];
       const l = wgslLayout(decl, kind, structs);
       return decl.fields.flatMap((f, i) =>
-        slotsOf(f.type, structs, kind, base + l.fields[i]!.offset, label ? `${label}.${f.name}` : f.name),
+        slotsOf(
+          f.type,
+          structs,
+          kind,
+          base + l.fields[i]!.offset,
+          label ? `${label}.${f.name}` : f.name,
+        ),
       );
     }
     default:
@@ -235,8 +255,15 @@ const START_COLOURS: readonly (readonly number[])[] = [
 ];
 
 const hex = (v: readonly number[]): string =>
-  `#${[0, 1, 2].map((i) => Math.round(Math.min(1, Math.max(0, v[i] ?? 0)) * 255).toString(16).padStart(2, '0')).join('')}`;
-const fromHex = (text: string): number[] => [1, 3, 5].map((i) => parseInt(text.slice(i, i + 2), 16) / 255);
+  `#${[0, 1, 2]
+    .map((i) =>
+      Math.round(Math.min(1, Math.max(0, v[i] ?? 0)) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+const fromHex = (text: string): number[] =>
+  [1, 3, 5].map((i) => parseInt(text.slice(i, i + 2), 16) / 255);
 
 function el(tag: string, className?: string, text?: string): HTMLElement {
   const node = document.createElement(tag);
@@ -245,7 +272,11 @@ function el(tag: string, className?: string, text?: string): HTMLElement {
   return node;
 }
 
-function select(options: readonly (readonly [string, string])[], value: string, label: string): HTMLSelectElement {
+function select(
+  options: readonly (readonly [string, string])[],
+  value: string,
+  label: string,
+): HTMLSelectElement {
   const node = document.createElement('select');
   for (const [v, text] of options) {
     const o = document.createElement('option');
@@ -331,7 +362,8 @@ export class BindingsModel {
     if (!reflection) return;
     const vertex = reflection.entries.find((e) => e.stage === 'vertex');
     for (const field of vertex?.io.inputs ?? []) {
-      if (typeof field.location === 'number') this.vertexInputs.push({ name: field.name, type: field.type, location: field.location });
+      if (typeof field.location === 'number')
+        this.vertexInputs.push({ name: field.name, type: field.type, location: field.location });
     }
     const typeOf = (name: string): ShaderType | undefined =>
       module?.bindings.find((b) => b.name === name)?.type as ShaderType | undefined;
@@ -376,7 +408,8 @@ export class BindingsModel {
     if (seed && first) {
       for (const field of first.fields) {
         const v = seed[first.bare ? first.binding.name : field.name];
-        if (v && v.length === componentCount(field.shape)) this.values.set(this.fieldKey(first, field), [...v]);
+        if (v && v.length === componentCount(field.shape))
+          this.values.set(this.fieldKey(first, field), [...v]);
       }
     }
     // Start every value that is not already set, in the order the fields appear, so the start
@@ -386,12 +419,19 @@ export class BindingsModel {
       for (const field of block.fields) {
         const key = this.fieldKey(block, field);
         if (this.values.has(key) || isReserved(field.name)) continue;
-        this.values.set(key, this.startValue(field, () => START_COLOURS[colour++ % START_COLOURS.length]!));
+        this.values.set(
+          key,
+          this.startValue(field, () => START_COLOURS[colour++ % START_COLOURS.length]!),
+        );
       }
     }
     for (const o of reflection.overrides) {
       const key = `${o.name}|${o.type}`;
-      if (!this.overrideValues.has(key)) this.overrideValues.set(key, typeof o.default === 'boolean' ? Number(o.default) : o.default);
+      if (!this.overrideValues.has(key))
+        this.overrideValues.set(
+          key,
+          typeof o.default === 'boolean' ? Number(o.default) : o.default,
+        );
     }
   }
 
@@ -434,16 +474,26 @@ export class BindingsModel {
   }
 
   private fieldKey(block: UniformBlock, field: PackedField): string {
-    return block.bare ? `${block.binding.name}|${field.type}` : `${block.binding.name}.${field.name}|${field.type}`;
+    return block.bare
+      ? `${block.binding.name}|${field.type}`
+      : `${block.binding.name}.${field.name}|${field.type}`;
   }
 
   private startValue(field: PackedField, nextColour: () => readonly number[]): number[] {
     const { shape } = field;
     if (shape.array) {
       // An array starts every element where a lone field of its type would.
-      const one = controlFor({ name: field.name, type: shape.rows === 1 ? shape.scalar : `vec${shape.rows}<${shape.scalar}>`, offset: 0 });
+      const one = controlFor({
+        name: field.name,
+        type: shape.rows === 1 ? shape.scalar : `vec${shape.rows}<${shape.scalar}>`,
+        offset: 0,
+      });
       return Array.from({ length: shape.columns }, (_, i) =>
-        shape.scalar === 'f32' && shape.rows >= 3 ? [...nextColour()].slice(0, shape.rows) : [...(one?.value ?? [0])].map((v) => v * (shape.rows === 1 ? (i + 1) / shape.columns : 1)),
+        shape.scalar === 'f32' && shape.rows >= 3
+          ? [...nextColour()].slice(0, shape.rows)
+          : [...(one?.value ?? [0])].map(
+              (v) => v * (shape.rows === 1 ? (i + 1) / shape.columns : 1),
+            ),
       ).flat();
     }
     if (shape.columns > 1) return matrixPreset('identity', shape);
@@ -458,7 +508,16 @@ export class BindingsModel {
   /** The one uniform block the render pass packs every frame, as the runtime's layout spells
    *  it, or undefined when the module binds none. The first block the module declares; any
    *  other is handed over as a buffer written once. */
-  renderBlock(): { size: number; block: string; group: number; binding: number; instance: string; fields: UniformField[] } | undefined {
+  renderBlock():
+    | {
+        size: number;
+        block: string;
+        group: number;
+        binding: number;
+        instance: string;
+        fields: UniformField[];
+      }
+    | undefined {
     const block = this.uniforms[0];
     if (!block) return undefined;
     return {
@@ -474,7 +533,13 @@ export class BindingsModel {
   /** The numbers one field of the render block holds this frame, laid out the way the runtime
    *  writes them: a matrix column padded to four floats where std140 pads it, an f64 split
    *  into the two floats the emulation reads. Reserved fields are the page's to fill. */
-  renderValue(name: string, seconds: number, width: number, height: number, pointer: readonly [number, number]): number[] | null {
+  renderValue(
+    name: string,
+    seconds: number,
+    width: number,
+    height: number,
+    pointer: readonly [number, number],
+  ): number[] | null {
     const block = this.uniforms[0];
     const field = block?.fields.find((f) => f.name === name);
     if (!block || !field) return null;
@@ -482,7 +547,10 @@ export class BindingsModel {
       const v = reservedValue(name, seconds, width, height, pointer);
       if (!v) return null;
       // A registry example's `mouse` is a vec4 of [x, y, down, used]; the rest stay 0.
-      return [...v, ...Array.from({ length: Math.max(0, componentCount(field.shape) - v.length) }, () => 0)];
+      return [
+        ...v,
+        ...Array.from({ length: Math.max(0, componentCount(field.shape) - v.length) }, () => 0),
+      ];
     }
     return this.std140Numbers(field, this.values.get(this.fieldKey(block, field)) ?? []);
   }
@@ -503,7 +571,8 @@ export class BindingsModel {
     const stride = shape.array || shape.rows !== 2 ? 4 : 2;
     const out: number[] = [];
     for (let c = 0; c < shape.columns; c++) {
-      for (let r = 0; r < stride; r++) out.push(r < shape.rows ? (raw[c * shape.rows + r] ?? 0) : 0);
+      for (let r = 0; r < stride; r++)
+        out.push(r < shape.rows ? (raw[c * shape.rows + r] ?? 0) : 0);
     }
     return out;
   }
@@ -514,7 +583,13 @@ export class BindingsModel {
     this.uniforms.forEach((block, i) => {
       // The render path packs the first block itself every frame; compute has no frame.
       if (i === 0 && !forCompute) return;
-      out.push({ kind: 'uniform-buffer', name: block.binding.name, group: block.binding.group, binding: block.binding.binding, bytes: this.packUniform(block) });
+      out.push({
+        kind: 'uniform-buffer',
+        name: block.binding.name,
+        group: block.binding.group,
+        binding: block.binding.binding,
+        bytes: this.packUniform(block),
+      });
     });
     for (const t of this.textures) out.push(this.textureSpec(t));
     for (const s of this.samplers) {
@@ -530,7 +605,14 @@ export class BindingsModel {
       });
     }
     for (const b of this.storage) {
-      out.push({ kind: 'storage-buffer', name: b.binding.name, group: b.binding.group, binding: b.binding.binding, readOnly: b.binding.access !== 'read_write', bytes: this.packStorage(b) });
+      out.push({
+        kind: 'storage-buffer',
+        name: b.binding.name,
+        group: b.binding.group,
+        binding: b.binding.binding,
+        readOnly: b.binding.access !== 'read_write',
+        bytes: this.packStorage(b),
+      });
     }
     for (const t of this.storageTextures) {
       const side = this.storageSizes.get(t.name) ?? 128;
@@ -551,13 +633,17 @@ export class BindingsModel {
   /** The value of every override, by name, for the WebGPU pipeline and the GLSL emit. */
   constants(): Record<string, number> {
     const out: Record<string, number> = {};
-    for (const o of this.reflection?.overrides ?? []) out[o.name] = this.overrideValues.get(`${o.name}|${o.type}`) ?? Number(o.default);
+    for (const o of this.reflection?.overrides ?? [])
+      out[o.name] = this.overrideValues.get(`${o.name}|${o.type}`) ?? Number(o.default);
     return out;
   }
 
   /** Whether any override is away from its default, which is when the emit has to carry it. */
   overridesMoved(): boolean {
-    return (this.reflection?.overrides ?? []).some((o) => (this.overrideValues.get(`${o.name}|${o.type}`) ?? Number(o.default)) !== Number(o.default));
+    return (this.reflection?.overrides ?? []).some(
+      (o) =>
+        (this.overrideValues.get(`${o.name}|${o.type}`) ?? Number(o.default)) !== Number(o.default),
+    );
   }
 
   /** The three vertices the vertex entry's inputs read, or null when an input is of a type a
@@ -599,30 +685,42 @@ export class BindingsModel {
   /** The uniform and storage values in the CPU oracle's own shape: a struct as an object, a
    *  vector as an array, a matrix as its columns run together, an array as a list. Keyed by
    *  binding name, for `setBinding`. */
-  cpuBindings(seconds: number, width: number, height: number, pointer: readonly [number, number]): Record<string, unknown> {
+  cpuBindings(
+    seconds: number,
+    width: number,
+    height: number,
+    pointer: readonly [number, number],
+  ): Record<string, unknown> {
     const out: Record<string, unknown> = {};
     for (const block of this.uniforms) {
       const valueOf = (field: PackedField): unknown => {
         let v: number[];
         if (!block.bare && isReserved(field.name)) {
           const r = reservedValue(field.name, seconds, width, height, pointer) ?? [];
-          v = [...r, ...Array.from({ length: Math.max(0, componentCount(field.shape) - r.length) }, () => 0)];
+          v = [
+            ...r,
+            ...Array.from({ length: Math.max(0, componentCount(field.shape) - r.length) }, () => 0),
+          ];
         } else {
           v = this.values.get(this.fieldKey(block, field)) ?? [];
         }
         if (field.shape.array) {
           const { rows, columns } = field.shape;
-          return Array.from({ length: columns }, (_, i) => (rows === 1 ? (v[i] ?? 0) : v.slice(i * rows, i * rows + rows)));
+          return Array.from({ length: columns }, (_, i) =>
+            rows === 1 ? (v[i] ?? 0) : v.slice(i * rows, i * rows + rows),
+          );
         }
         return field.shape.rows === 1 && field.shape.columns === 1 ? (v[0] ?? 0) : v;
       };
       if (block.bare) out[block.binding.name] = valueOf(block.fields[0]!);
-      else out[block.binding.name] = Object.fromEntries(block.fields.map((f) => [f.name, valueOf(f)]));
+      else
+        out[block.binding.name] = Object.fromEntries(block.fields.map((f) => [f.name, valueOf(f)]));
     }
     for (const b of this.storage) out[b.binding.name] = this.cpuStorage(b);
     // The oracle has no texture unit: its texture reads return a placeholder once the names
     // they take resolve to something. Each texture and sampler is bound to a marker so they do.
-    for (const t of [...this.textures, ...this.samplers, ...this.storageTextures]) out[t.name] = { binding: t.name };
+    for (const t of [...this.textures, ...this.samplers, ...this.storageTextures])
+      out[t.name] = { binding: t.name };
     return out;
   }
 
@@ -637,10 +735,14 @@ export class BindingsModel {
           return patternValue(choice.pattern, i, length, integer);
         }
         case 'vec':
-          return Array.from({ length: t.n }, (_, c) => patternValue(choice.pattern, i * t.n + c, length * t.n, t.elem !== 'f32'));
+          return Array.from({ length: t.n }, (_, c) =>
+            patternValue(choice.pattern, i * t.n + c, length * t.n, t.elem !== 'f32'),
+          );
         case 'struct': {
           const decl = this.structs.get(t.name);
-          return Object.fromEntries((decl?.fields ?? []).map((f) => [f.name, one(i, f.type as ShaderType)]));
+          return Object.fromEntries(
+            (decl?.fields ?? []).map((f) => [f.name, one(i, f.type as ShaderType)]),
+          );
         }
         default:
           return 0;
@@ -680,7 +782,13 @@ export class BindingsModel {
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     const slots = slotsOf(b.elem, this.structs, 'std430');
     const read = (at: number, scalar: Slot['scalar']): number =>
-      at + 4 > view.byteLength ? NaN : scalar === 'f32' ? view.getFloat32(at, true) : scalar === 'i32' ? view.getInt32(at, true) : view.getUint32(at, true);
+      at + 4 > view.byteLength
+        ? NaN
+        : scalar === 'f32'
+          ? view.getFloat32(at, true)
+          : scalar === 'i32'
+            ? view.getInt32(at, true)
+            : view.getUint32(at, true);
     const count = b.type.kind === 'array' ? this.lengthOf(b) : 1;
     const rows: string[] = [];
     const series: number[] = [];
@@ -689,7 +797,10 @@ export class BindingsModel {
       const numbers = slots.map((s) => read(base + s.offset, s.scalar));
       series.push(numbers[0] ?? NaN);
       if (rows.length < 12) {
-        const shown = slots.length === 1 ? fmt(numbers[0]!) : slots.map((s, k) => `${s.label.replace(/^\./, '')}=${fmt(numbers[k]!)}`).join(' ');
+        const shown =
+          slots.length === 1
+            ? fmt(numbers[0]!)
+            : slots.map((s, k) => `${s.label.replace(/^\./, '')}=${fmt(numbers[k]!)}`).join(' ');
         rows.push(b.type.kind === 'array' ? `[${i}] ${shown}` : shown);
       }
     }
@@ -702,7 +813,13 @@ export class BindingsModel {
     if (!b) return { rows: [], series: [] };
     const list = Array.isArray(value) && b.type.kind === 'array' ? value : [value];
     const flat = (v: unknown): number[] =>
-      typeof v === 'number' ? [v] : Array.isArray(v) ? v.flatMap(flat) : v && typeof v === 'object' ? Object.values(v).flatMap(flat) : [NaN];
+      typeof v === 'number'
+        ? [v]
+        : Array.isArray(v)
+          ? v.flatMap(flat)
+          : v && typeof v === 'object'
+            ? Object.values(v).flatMap(flat)
+            : [NaN];
     const rows: string[] = [];
     const series: number[] = [];
     list.forEach((v, i) => {
@@ -734,11 +851,15 @@ export class BindingsModel {
     const i32 = new Int32Array(bytes.buffer);
     const u32 = new Uint32Array(bytes.buffer);
     for (const field of block.fields) {
-      const numbers = isReserved(field.name) && !block.bare ? [] : this.std140Numbers(field, this.values.get(this.fieldKey(block, field)) ?? []);
+      const numbers =
+        isReserved(field.name) && !block.bare
+          ? []
+          : this.std140Numbers(field, this.values.get(this.fieldKey(block, field)) ?? []);
       const base = field.offset / 4;
       numbers.forEach((n, k) => {
         if (field.shape.scalar === 'i32') i32[base + k] = Math.round(n);
-        else if (field.shape.scalar === 'u32' || field.shape.scalar === 'bool') u32[base + k] = Math.max(0, Math.round(n));
+        else if (field.shape.scalar === 'u32' || field.shape.scalar === 'bool')
+          u32[base + k] = Math.max(0, Math.round(n));
         else f32[base + k] = n;
       });
     }
@@ -777,7 +898,12 @@ export class BindingsModel {
     let choice = this.textureChoices.get(key);
     if (!choice) {
       const dim = t.textureDim ?? '2d';
-      const source: TextureSource = dim === 'cube' || dim === 'cube-array' ? 'faces' : dim === '3d' || dim === '1d' ? 'gradient' : 'checker';
+      const source: TextureSource =
+        dim === 'cube' || dim === 'cube-array'
+          ? 'faces'
+          : dim === '3d' || dim === '1d'
+            ? 'gradient'
+            : 'checker';
       choice = { source, solid: [0.96, 0.55, 0.2, 1] };
       this.textureChoices.set(key, choice);
     }
@@ -792,7 +918,13 @@ export class BindingsModel {
     const cached = this.texelCache.get(key);
     if (cached) return { ...cached, group: t.group, binding: t.binding };
     const dim = (t.textureDim ?? '2d') as TextureDim;
-    const sample: SampleKind = t.textureDepth ? 'depth' : t.textureElem === 'u32' ? 'uint' : t.textureElem === 'i32' ? 'sint' : 'float';
+    const sample: SampleKind = t.textureDepth
+      ? 'depth'
+      : t.textureElem === 'u32'
+        ? 'uint'
+        : t.textureElem === 'i32'
+          ? 'sint'
+          : 'float';
     const { width, height, layers } = textureSize(dim);
     const choice = this.textureChoice(t);
     const texels: Uint8Array<ArrayBuffer>[] = [];
@@ -843,8 +975,13 @@ export class BindingsModel {
       // A buffer the entry only reads starts as a ramp. One it writes starts at zero where it
       // holds an atomic, since a count has to start from nothing, and random elsewhere, so an
       // entry that updates its elements in place has something to update.
-      const atomic = /atomic/.test(keyOf(b.elem)) || (b.elem.kind === 'struct' && slotsHaveAtomic(b.elem, this.structs));
-      choice = { pattern: b.binding.access !== 'read_write' ? 'ramp' : atomic ? 'zeros' : 'random', length: 256 };
+      const atomic =
+        /atomic/.test(keyOf(b.elem)) ||
+        (b.elem.kind === 'struct' && slotsHaveAtomic(b.elem, this.structs));
+      choice = {
+        pattern: b.binding.access !== 'read_write' ? 'ramp' : atomic ? 'zeros' : 'random',
+        length: 256,
+      };
       this.storageChoices.set(key, choice);
     }
     return choice;
@@ -859,7 +996,15 @@ export class BindingsModel {
     const reflection = this.reflection;
     const rows = el('div', 'binding-rows');
     const overrides = reflection?.overrides ?? [];
-    const any = this.vertexInputs.length + this.uniforms.length + this.textures.length + this.samplers.length + this.storage.length + this.storageTextures.length + overrides.length + this.unfillable.length;
+    const any =
+      this.vertexInputs.length +
+      this.uniforms.length +
+      this.textures.length +
+      this.samplers.length +
+      this.storage.length +
+      this.storageTextures.length +
+      overrides.length +
+      this.unfillable.length;
     host.hidden = !reflection || any === 0;
     if (host.hidden) return;
     host.append(el('p', 'bindings-title', this.copy.title));
@@ -869,7 +1014,9 @@ export class BindingsModel {
       row.dataset.bindingName = binding.name;
       row.tabIndex = -1;
       const name = el('div', 'binding-head');
-      name.append(el('span', 'binding-slot', `@group(${binding.group}) @binding(${binding.binding})`));
+      name.append(
+        el('span', 'binding-slot', `@group(${binding.group}) @binding(${binding.binding})`),
+      );
       name.append(el('code', 'binding-name', binding.name));
       name.append(el('span', 'binding-kind', kind));
       row.append(name);
@@ -890,19 +1037,29 @@ export class BindingsModel {
       rows.append(box);
     }
     for (const block of this.uniforms) {
-      const row = head(block.binding, block.bare ? block.fields[0]!.type : `uniform<${block.struct}>`);
+      const row = head(
+        block.binding,
+        block.bare ? block.fields[0]!.type : `uniform<${block.struct}>`,
+      );
       for (const field of block.fields) row.append(this.fieldControl(block, field));
     }
     for (const t of this.textures) {
       const kind = `texture_${t.textureDepth ? 'depth_' : ''}${(t.textureDim ?? '2d').replace('-', '_')}${t.textureDepth ? '' : `<${t.textureElem ?? 'f32'}>`}`;
       head(t, kind).append(this.textureControl(t));
     }
-    for (const s of this.samplers) head(s, s.samplerComparison ? 'sampler_comparison' : 'sampler').append(this.samplerControl(s));
+    for (const s of this.samplers)
+      head(s, s.samplerComparison ? 'sampler_comparison' : 'sampler').append(
+        this.samplerControl(s),
+      );
     for (const b of this.storage) {
-      head(b.binding, `storage<${keyOf(b.type)}, ${b.binding.access ?? 'read'}>`).append(this.storageControl(b));
+      head(b.binding, `storage<${keyOf(b.type)}, ${b.binding.access ?? 'read'}>`).append(
+        this.storageControl(b),
+      );
     }
     for (const t of this.storageTextures) {
-      head(t, `texture_storage_2d<${t.storageFormat}, ${t.storageAccess}>`).append(this.storageTextureControl(t));
+      head(t, `texture_storage_2d<${t.storageFormat}, ${t.storageAccess}>`).append(
+        this.storageTextureControl(t),
+      );
     }
     if (overrides.length > 0) {
       const box = el('div', 'binding');
@@ -912,7 +1069,8 @@ export class BindingsModel {
       for (const o of overrides) box.append(this.overrideControl(o));
       rows.append(box);
     }
-    if (this.unfillable.length > 0) rows.append(el('p', 'binding-note', `${this.copy.noControl} ${this.unfillable.join(', ')}`));
+    if (this.unfillable.length > 0)
+      rows.append(el('p', 'binding-note', `${this.copy.noControl} ${this.unfillable.join(', ')}`));
     host.append(rows);
   }
 
@@ -948,18 +1106,35 @@ export class BindingsModel {
       for (let e = 0; e < shape.columns; e++) {
         const item = el('span', 'binding-controls');
         item.append(el('code', 'binding-label', `[${e}]`));
-        const one = controlFor({ name: field.name, type: shape.rows === 1 ? shape.scalar : `vec${shape.rows}<${shape.scalar}>`, offset: 0 });
+        const one = controlFor({
+          name: field.name,
+          type: shape.rows === 1 ? shape.scalar : `vec${shape.rows}<${shape.scalar}>`,
+          offset: 0,
+        });
         for (let c = 0; c < shape.rows; c++) {
           const i = e * shape.rows + c;
           if (!one || one.kind === 'stepper') {
-            const box = numberBox(value[i] ?? 0, `${field.name}[${e}] ${c}`, shape.scalar === 'f32' ? 'any' : '1');
+            const box = numberBox(
+              value[i] ?? 0,
+              `${field.name}[${e}] ${c}`,
+              shape.scalar === 'f32' ? 'any' : '1',
+            );
             box.addEventListener('input', () => {
               const n = Number(box.value);
               if (Number.isFinite(n)) set(i, n);
             });
             item.append(box);
           } else {
-            item.append(this.slider(shape.rows > 1 ? `${field.name}[${e}] ${'xyzw'[c]}` : `${field.name}[${e}]`, value[i] ?? 0, one.min[c] ?? 0, one.max[c] ?? 1, one.step[c] ?? 0.002, (n) => set(i, n)));
+            item.append(
+              this.slider(
+                shape.rows > 1 ? `${field.name}[${e}] ${'xyzw'[c]}` : `${field.name}[${e}]`,
+                value[i] ?? 0,
+                one.min[c] ?? 0,
+                one.max[c] ?? 1,
+                one.step[c] ?? 0.002,
+                (n) => set(i, n),
+              ),
+            );
           }
         }
         list.append(item);
@@ -1005,9 +1180,16 @@ export class BindingsModel {
       return row;
     }
 
-    if (shape.scalar === 'f64' || shape.scalar === 'bool' || ((shape.scalar === 'i32' || shape.scalar === 'u32') && shape.rows > 1)) {
+    if (
+      shape.scalar === 'f64' ||
+      shape.scalar === 'bool' ||
+      ((shape.scalar === 'i32' || shape.scalar === 'u32') && shape.rows > 1)
+    ) {
       for (let i = 0; i < componentCount(shape); i++) {
-        const box = shape.scalar === 'bool' ? document.createElement('input') : numberBox(value[i] ?? 0, `${field.name} ${i}`, shape.scalar === 'f64' ? 'any' : '1');
+        const box =
+          shape.scalar === 'bool'
+            ? document.createElement('input')
+            : numberBox(value[i] ?? 0, `${field.name} ${i}`, shape.scalar === 'f64' ? 'any' : '1');
         if (shape.scalar === 'bool') {
           box.type = 'checkbox';
           box.checked = (value[i] ?? 0) !== 0;
@@ -1048,12 +1230,22 @@ export class BindingsModel {
       picker.setAttribute('aria-label', field.name);
       picker.addEventListener('input', () => fromHex(picker.value).forEach((n, i) => set(i, n)));
       controls.append(picker);
-      if (shape.rows === 4) controls.append(this.slider(`${field.name} a`, value[3] ?? 1, 0, 1, 0.002, (n) => set(3, n)));
+      if (shape.rows === 4)
+        controls.append(
+          this.slider(`${field.name} a`, value[3] ?? 1, 0, 1, 0.002, (n) => set(3, n)),
+        );
       return row;
     }
     for (let i = 0; i < control.components; i++) {
       controls.append(
-        this.slider(control.components > 1 ? `${field.name} ${'xyzw'[i]}` : field.name, value[i] ?? 0, control.min[i] ?? 0, control.max[i] ?? 1, control.step[i] ?? 0.002, (n) => set(i, n)),
+        this.slider(
+          control.components > 1 ? `${field.name} ${'xyzw'[i]}` : field.name,
+          value[i] ?? 0,
+          control.min[i] ?? 0,
+          control.max[i] ?? 1,
+          control.step[i] ?? 0.002,
+          (n) => set(i, n),
+        ),
       );
     }
     return row;
@@ -1095,7 +1287,9 @@ export class BindingsModel {
       this.hooks.resources();
     };
     const pick = select(
-      (['checker', 'gradient', 'noise', 'solid', 'faces', 'image'] as const).map((s) => [s, this.copy.sources[s]] as const),
+      (['checker', 'gradient', 'noise', 'solid', 'faces', 'image'] as const).map(
+        (s) => [s, this.copy.sources[s]] as const,
+      ),
       choice.source,
       `${t.name} ${this.copy.source}`,
     );
@@ -1165,13 +1359,24 @@ export class BindingsModel {
     const controls = el('span', 'binding-controls');
     row.append(controls);
     const choice = this.samplerChoice(s);
-    const filter = select([['linear', 'linear'], ['nearest', 'nearest']], choice.filter, `${s.name} ${this.copy.filter}`);
+    const filter = select(
+      [
+        ['linear', 'linear'],
+        ['nearest', 'nearest'],
+      ],
+      choice.filter,
+      `${s.name} ${this.copy.filter}`,
+    );
     filter.addEventListener('change', () => {
       choice.filter = filter.value as FilterMode;
       this.hooks.resources();
     });
     const address = select(
-      [['repeat', 'repeat'], ['clamp-to-edge', 'clamp-to-edge'], ['mirror-repeat', 'mirror-repeat']],
+      [
+        ['repeat', 'repeat'],
+        ['clamp-to-edge', 'clamp-to-edge'],
+        ['mirror-repeat', 'mirror-repeat'],
+      ],
       choice.address,
       `${s.name} ${this.copy.address}`,
     );
@@ -1179,8 +1384,14 @@ export class BindingsModel {
       choice.address = address.value as AddressMode;
       this.hooks.resources();
     });
-    controls.append(el('span', 'binding-label', this.copy.filter), filter, el('span', 'binding-label', this.copy.address), address);
-    if (s.samplerComparison) controls.append(el('span', 'binding-runtime', `${this.copy.compare} less-equal`));
+    controls.append(
+      el('span', 'binding-label', this.copy.filter),
+      filter,
+      el('span', 'binding-label', this.copy.address),
+      address,
+    );
+    if (s.samplerComparison)
+      controls.append(el('span', 'binding-runtime', `${this.copy.compare} less-equal`));
     return row;
   }
 
@@ -1190,7 +1401,11 @@ export class BindingsModel {
     const controls = el('span', 'binding-controls');
     row.append(controls);
     const choice = this.storageChoice(b);
-    const pattern = select(STORAGE_PATTERNS.map((p) => [p, p] as const), choice.pattern, `${b.binding.name} ${this.copy.fill}`);
+    const pattern = select(
+      STORAGE_PATTERNS.map((p) => [p, p] as const),
+      choice.pattern,
+      `${b.binding.name} ${this.copy.fill}`,
+    );
     pattern.addEventListener('change', () => {
       choice.pattern = pattern.value as StoragePattern;
       this.hooks.resources();
@@ -1224,7 +1439,15 @@ export class BindingsModel {
     const controls = el('span', 'binding-controls');
     row.append(controls);
     const side = this.storageSizes.get(t.name) ?? 128;
-    const size = select([['64', '64 × 64'], ['128', '128 × 128'], ['256', '256 × 256']], String(side), `${t.name} ${this.copy.size}`);
+    const size = select(
+      [
+        ['64', '64 × 64'],
+        ['128', '128 × 128'],
+        ['256', '256 × 256'],
+      ],
+      String(side),
+      `${t.name} ${this.copy.size}`,
+    );
     size.addEventListener('change', () => {
       this.storageSizes.set(t.name, Number(size.value));
       this.hooks.resources();
@@ -1232,7 +1455,11 @@ export class BindingsModel {
     controls.append(el('span', 'binding-label', this.copy.size), size);
     box.append(row);
     const result = this.results.get(t.name);
-    if (result !== undefined) box.append(el('span', 'binding-label', this.copy.written), el('pre', 'binding-result', result));
+    if (result !== undefined)
+      box.append(
+        el('span', 'binding-label', this.copy.written),
+        el('pre', 'binding-result', result),
+      );
     return box;
   }
 
@@ -1266,12 +1493,20 @@ export class BindingsModel {
     controls.append(box);
     if (o.type === 'f32') {
       controls.append(
-        this.slider(`${o.name} slider`, value, Math.min(0, value), Math.max(1, value), 0.002, (n) => {
-          box.value = String(Number(n.toFixed(4)));
-          this.overrideValues.set(key, n);
-          this.hooks.overrides();
-          // Each value is a new pipeline, so the slider settles before one is built.
-        }, 'change'),
+        this.slider(
+          `${o.name} slider`,
+          value,
+          Math.min(0, value),
+          Math.max(1, value),
+          0.002,
+          (n) => {
+            box.value = String(Number(n.toFixed(4)));
+            this.overrideValues.set(key, n);
+            this.hooks.overrides();
+            // Each value is a new pipeline, so the slider settles before one is built.
+          },
+          'change',
+        ),
       );
     }
     return row;
@@ -1283,7 +1518,10 @@ function slotsHaveAtomic(t: ShaderType, structs: ReadonlyMap<string, StructDecl>
   if (t.kind === 'atomic') return true;
   if (t.kind === 'array') return slotsHaveAtomic(t.elem, structs);
   if (t.kind !== 'struct') return false;
-  return (structs.get(t.name)?.fields ?? []).some((f) => slotsHaveAtomic(f.type as ShaderType, structs));
+  return (structs.get(t.name)?.fields ?? []).some((f) =>
+    slotsHaveAtomic(f.type as ShaderType, structs),
+  );
 }
 
-const fmt = (n: number): string => (Number.isInteger(n) ? String(n) : Number.isFinite(n) ? n.toPrecision(4) : String(n));
+const fmt = (n: number): string =>
+  Number.isInteger(n) ? String(n) : Number.isFinite(n) ? n.toPrecision(4) : String(n);

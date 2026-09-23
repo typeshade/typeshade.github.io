@@ -1,10 +1,10 @@
 // The measured claims /llms.txt states, each with the file that backs it.
-import { facts } from './examples.ts'
-import { links, type Destination } from './links.ts'
+import { facts } from './examples.ts';
+import { links, type Destination } from './links.ts';
 
 export interface Claim {
-  readonly text: string
-  readonly source: Destination
+  readonly text: string;
+  readonly source: Destination;
 }
 
 export const claims: readonly Claim[] = [
@@ -14,7 +14,10 @@ export const claims: readonly Claim[] = [
   },
   {
     text: `${facts.testFiles} test files.`,
-    source: { label: `every *.test.ts in the tree at ${facts.pinnedCommit}`, href: links.commit.href },
+    source: {
+      label: `every *.test.ts in the tree at ${facts.pinnedCommit}`,
+      href: links.commit.href,
+    },
   },
   {
     text: `${facts.runtimeDeps} runtime dependency, ${facts.runtimeDepNames.join(', ')}, which the main entry's compile() and the language service both need.`,
@@ -25,4 +28,4 @@ export const claims: readonly Claim[] = [
     source: links.compileGate,
   },
   { text: 'A CPU oracle executes the same source in double precision.', source: links.oracle },
-]
+];

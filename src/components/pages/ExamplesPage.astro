@@ -1,44 +1,44 @@
 ---
-import { Code } from 'astro-expressive-code/components'
-import Docs from '../../layouts/Docs.astro'
-import CodeFrame from '../CodeFrame.astro'
-import Rich from '../Rich.astro'
-import ShaderCanvas from '../ShaderCanvas.astro'
-import type { CanvasText } from '../ShaderCanvas.astro'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { checkedBlurbs, facts, hero } from '../../lib/examples.ts'
-import { checkedShade, shadeExampleList, SHADE_GROUPS } from '../../lib/shade-examples.ts'
-import { examplePath } from '../../lib/example-pages.ts'
-import { examples } from '../../../vendor/shader-dsl/examples/index.ts'
-import { SHADE_STILL_EXAMPLES, STILL_EXAMPLES } from '../../../scripts/artifacts.mjs'
-import { slugify } from '../../lib/slug.ts'
+import { Code } from 'astro-expressive-code/components';
+import Docs from '../../layouts/Docs.astro';
+import CodeFrame from '../CodeFrame.astro';
+import Rich from '../Rich.astro';
+import ShaderCanvas from '../ShaderCanvas.astro';
+import type { CanvasText } from '../ShaderCanvas.astro';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { checkedBlurbs, facts, hero } from '../../lib/examples.ts';
+import { checkedShade, shadeExampleList, SHADE_GROUPS } from '../../lib/shade-examples.ts';
+import { examplePath } from '../../lib/example-pages.ts';
+import { examples } from '../../../vendor/shader-dsl/examples/index.ts';
+import { SHADE_STILL_EXAMPLES, STILL_EXAMPLES } from '../../../scripts/artifacts.mjs';
+import { slugify } from '../../lib/slug.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
 }
-const { locale } = Astro.props
-const t = copyFor(locale)
-const e = t.examples
+const { locale } = Astro.props;
+const t = copyFor(locale);
+const e = t.examples;
 
 const deepZoom: CanvasText = {
   neutral: e.f64.caption,
   webgpu: e.f64.caption,
   webgl2: e.f64.caption,
   none: `${e.f64.caption} ${e.f64.captionNone}`,
-}
-const order = ['cartographic', 'generic', 'compute'] as const
+};
+const order = ['cartographic', 'generic', 'compute'] as const;
 const headings = [
   ...order.map((c) => ({ depth: 2, slug: slugify(c), text: e.categories[c] })),
   { depth: 2, slug: slugify(e.shade.h), text: e.shade.h },
   ...SHADE_GROUPS.map((g) => ({ depth: 3, slug: slugify(g.key), text: e.shade.groups[g.key] })),
   ...[e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h })),
-]
+];
 
-const learningPath = e.path.steps.map((step) => ({ ...step, href: localePath(locale, links[step.linkKey].href) }))
+const learningPath = e.path.steps.map((step) => ({ ...step, href: localePath(locale, links[step.linkKey].href) }));
 
-const blurbs = checkedBlurbs(e.blurbs)
-const stills = new Set<string>(STILL_EXAMPLES)
+const blurbs = checkedBlurbs(e.blurbs);
+const stills = new Set<string>(STILL_EXAMPLES);
 const rows = examples.map((x) => ({
   id: x.id,
   still: stills.has(x.id),
@@ -47,21 +47,21 @@ const rows = examples.map((x) => ({
   category: e.categories[x.category],
   wgslOnly: x.id === facts.wgslOnlyExample.id,
   blurb: blurbs[x.id]!,
-}))
-const groups = order.map((c) => rows.filter((r) => r.category === e.categories[c]))
+}));
+const groups = order.map((c) => rows.filter((r) => r.category === e.categories[c]));
 
 // The other corpus. Same tile, same still rule; the picture is there for the ones the page
 // can draw and the plain mark stands in for the rest. Every tile opens the example's own
 // page (src/components/pages/ExamplePage.astro), which runs it and shows what it emits.
-const shadeTitleFor = checkedShade('title', e.shade.titles)
-const shadeTextFor = checkedShade('description', e.shade.descriptions)
-const shadeStills = new Set<string>(SHADE_STILL_EXAMPLES)
-const shadeById = new Map(shadeExampleList.map((x) => [x.id, x]))
+const shadeTitleFor = checkedShade('title', e.shade.titles);
+const shadeTextFor = checkedShade('description', e.shade.descriptions);
+const shadeStills = new Set<string>(SHADE_STILL_EXAMPLES);
+const shadeById = new Map(shadeExampleList.map((x) => [x.id, x]));
 const shadeGroups = SHADE_GROUPS.map((g) => ({
   key: g.key,
   heading: e.shade.groups[g.key],
   rows: g.ids.map((id) => {
-    const x = shadeById.get(id)!
+    const x = shadeById.get(id)!;
     return {
       id,
       still: shadeStills.has(id),
@@ -69,17 +69,17 @@ const shadeGroups = SHADE_GROUPS.map((g) => ({
       href: localePath(locale, examplePath(id)),
       wgslOnly: !x.renderable,
       blurb: shadeTextFor[id]!,
-    }
+    };
   }),
-}))
+}));
 // A gallery tile: an Ant Card, a picture where the runtime can draw one as the cover, the name
 // and the sentence in the body, the whole tile one link to the example's page.
-const tile = 'example-tile group flex block-full flex-col overflow-hidden rounded-md border border-line-1 bg-(--color-elevated)'
-const tileTitle = 'px-4 pbs-4 text-h5 font-semibold text-text-1 transition-[color] group-hover:text-accent'
-const tileBlurb = 'example-tile-blurb px-4 pbs-1 pbe-4 text-ui text-text-2'
+const tile = 'example-tile group flex block-full flex-col overflow-hidden rounded-md border border-line-1 bg-(--color-elevated)';
+const tileTitle = 'px-4 pbs-4 text-h5 font-semibold text-text-1 transition-[color] group-hover:text-accent';
+const tileBlurb = 'example-tile-blurb px-4 pbs-1 pbe-4 text-ui text-text-2';
 // An Ant tag beside the name of the one example that emits a single target.
-const tag = 'ms-2 inline-block rounded-sm border border-line-2 bg-surface-1 px-[7px] text-label whitespace-nowrap text-text-2'
-const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts hillshade'].join('\n')
+const tag = 'ms-2 inline-block rounded-sm border border-line-2 bg-surface-1 px-[7px] text-label whitespace-nowrap text-text-2';
+const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts hillshade'].join('\n');
 ---
 
 <Docs locale={locale} path={links.examples.href} title={e.title} description={e.description} headings={headings} editHref={editCopy(locale, 'examples')}>

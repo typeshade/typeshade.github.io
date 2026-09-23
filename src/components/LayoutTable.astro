@@ -1,20 +1,20 @@
 ---
 // The uniform block of the fixture, every cell from reflect(). The table sits at its natural
 // width, with the caption naming the standard and the block size.
-import { facts } from '../lib/examples.ts'
-import { typedError } from '../lib/typed-error.ts'
-import ScrollRegion from './ScrollRegion.astro'
-import { copyFor, type Locale } from '../i18n/index.ts'
+import { facts } from '../lib/examples.ts';
+import { typedError } from '../lib/typed-error.ts';
+import ScrollRegion from './ScrollRegion.astro';
+import { copyFor, type Locale } from '../i18n/index.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
 }
-const { locale } = Astro.props
-const t = copyFor(locale).layout
+const { locale } = Astro.props;
+const t = copyFor(locale).layout;
 
-const { layout } = typedError()
-if (layout.fields.length < 2) throw new Error('[LayoutTable] the fixture block reflects fewer than two fields')
-const standard = facts.layoutStandards[0]
+const { layout } = typedError();
+if (layout.fields.length < 2) throw new Error('[LayoutTable] the fixture block reflects fewer than two fields');
+const standard = facts.layoutStandards[0];
 ---
 
 <ScrollRegion label={t.region}>
