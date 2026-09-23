@@ -38,7 +38,7 @@ import {
   type TextureSpec,
   type VertexBufferSpec,
 } from '../lib/shader-bindings.ts';
-import type { UniformField } from '../lib/shader-runtime.ts';
+import type { UniformBlockLayout } from '../lib/shader-runtime.ts';
 
 /** The words the panel prints. Read off the Playground's element like the rest of its copy. */
 export interface BindingsCopy {
@@ -404,12 +404,11 @@ export class BindingsModel {
     // whatever the fields held under the example before.
     const seed = this.pendingSeed;
     this.pendingSeed = undefined;
-    const first = this.uniforms[0];
-    if (seed && first) {
-      for (const field of first.fields) {
-        const v = seed[first.bare ? first.binding.name : field.name];
+    for (const block of seed ? this.uniforms : []) {
+      for (const field of block.fields) {
+        const v = seed![block.bare ? block.binding.name : field.name];
         if (v && v.length === componentCount(field.shape))
-          this.values.set(this.fieldKey(first, field), [...v]);
+          this.values.set(this.fieldKey(block, field), [...v]);
       }
     }
     // Start every value that is not already set, in the order the fields appear, so the start
@@ -505,21 +504,19 @@ export class BindingsModel {
 
   // ── what the engines read ──────────────────────────────────────────────────────────────
 
-  /** The one uniform block the render pass packs every frame, as the runtime's layout spells
-   *  it, or undefined when the module binds none. The first block the module declares; any
-   *  other is handed over as a buffer written once. */
-  renderBlock():
-    | {
-        size: number;
-        block: string;
-        group: number;
-        binding: number;
-        instance: string;
-        fields: UniformField[];
-      }
-    | undefined {
+  /** The first uniform block the render pass packs every frame, as the runtime's layout
+   *  spells it, or undefined when the module binds none. */
+  renderBlock(): UniformBlockLayout | undefined {
     const block = this.uniforms[0];
-    if (!block) return undefined;
+    return block ? this.blockLayout(block) : undefined;
+  }
+
+  /** Every uniform block after the first, which the render pass packs every frame too. */
+  moreBlocks(): UniformBlockLayout[] {
+    return this.uniforms.slice(1).map((block) => this.blockLayout(block));
+  }
+
+  private blockLayout(block: UniformBlock): UniformBlockLayout {
     return {
       size: block.size,
       block: block.struct,
@@ -530,17 +527,22 @@ export class BindingsModel {
     };
   }
 
-  /** The numbers one field of the render block holds this frame, laid out the way the runtime
+  /** The numbers one field of a uniform block holds this frame, laid out the way the runtime
    *  writes them: a matrix column padded to four floats where std140 pads it, an f64 split
-   *  into the two floats the emulation reads. Reserved fields are the page's to fill. */
+   *  into the two floats the emulation reads. Reserved fields are the page's to fill. The
+   *  block is the first unless `instance` names another. */
   renderValue(
     name: string,
     seconds: number,
     width: number,
     height: number,
     pointer: readonly [number, number],
+    instance?: string,
   ): number[] | null {
-    const block = this.uniforms[0];
+    const block =
+      instance === undefined
+        ? this.uniforms[0]
+        : this.uniforms.find((b) => b.binding.name === instance);
     const field = block?.fields.find((f) => f.name === name);
     if (!block || !field) return null;
     if (!block.bare && isReserved(name)) {
@@ -577,12 +579,12 @@ export class BindingsModel {
     return out;
   }
 
-  /** Every uniform block after the first as bytes, and every other resource, for a pass. */
+  /** Every resource a pass binds beyond the uniform blocks the render path packs every
+   *  frame. A dispatch has no frame, so for compute each block is handed over as bytes. */
   resources(forCompute: boolean): ResourceSpec[] {
     const out: ResourceSpec[] = [];
-    this.uniforms.forEach((block, i) => {
-      // The render path packs the first block itself every frame; compute has no frame.
-      if (i === 0 && !forCompute) return;
+    this.uniforms.forEach((block) => {
+      if (!forCompute) return;
       out.push({
         kind: 'uniform-buffer',
         name: block.binding.name,
@@ -1093,8 +1095,6 @@ export class BindingsModel {
       if (!slot) return;
       slot[i] = v;
       this.hooks.values();
-      // A block handed over as bytes is built again; the one the frame packs is not.
-      if (block !== this.uniforms[0]) this.hooks.resources();
     };
     const { shape } = field;
     const controls = el('span', 'binding-controls');

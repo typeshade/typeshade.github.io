@@ -88,6 +88,21 @@ export interface ShaderLayout {
   /** The vertex buffer a vertex entry with `@location` inputs reads. Without one the pass
    *  draws three vertices from `vertex_index` alone, as every figure does. */
   readonly vertexBuffer?: VertexBufferSpec;
+  /** Every uniform block after the first, packed every frame like the first one: a module
+   *  the Playground runs can declare several. A figure has one and passes none. */
+  readonly moreBlocks?: readonly UniformBlockLayout[];
+}
+
+/** One more uniform block: where it binds, what GLSL calls it, and its std140 fields. */
+export interface UniformBlockLayout {
+  readonly size: number;
+  /** The struct's name, which GLSL binds the block by. */
+  readonly block: string;
+  readonly group: number;
+  readonly binding: number;
+  /** The name the shader reads it through, which `uniformValues` is asked about it by. */
+  readonly instance: string;
+  readonly fields: readonly UniformField[];
 }
 
 /** The build-time payload for one example: both targets, the layout, the controls. */
@@ -164,7 +179,12 @@ export interface MountOptions {
    *  Read once per field per frame, before the controls. A live example (LiveShader.astro)
    *  drives every field through this, the reserved three included, so its controls can move
    *  while the shader runs; the front page passes nothing and keeps the packer it had. */
-  readonly uniformValues?: (name: string, seconds: number) => readonly number[] | null;
+  readonly uniformValues?: (
+    name: string,
+    seconds: number,
+    /** The block the field is in, given for a block after the first. */
+    instance?: string,
+  ) => readonly number[] | null;
   /** Lower the drawing buffer's resolution while a frame takes longer than a budget to draw,
    *  and raise it back once frames are cheap. A program too heavy for this GPU then draws at
    *  fewer pixels and leaves the page responsive, where it would otherwise hold every frame
@@ -221,6 +241,11 @@ interface FrameState {
   /** Packed std140 bytes for the current frame; null when the module binds no block. */
   readonly data: Float32Array<ArrayBuffer> | null;
   readonly byteLength: number;
+  /** The blocks after the first, each packed every frame with the first. */
+  readonly more: readonly {
+    readonly layout: UniformBlockLayout;
+    readonly data: Float32Array<ArrayBuffer>;
+  }[];
   /** The fraction of the box's device pixels the drawing buffer takes. 1 unless an adaptive
    *  mount has lowered it for a program this GPU draws slowly. */
   scale: number;
@@ -228,6 +253,29 @@ interface FrameState {
   resize(): boolean;
   /** Repack every uniform field at shader time `seconds`. */
   pack(seconds: number): void;
+}
+
+/** Writes one field's numbers at its std140 offset in `buf`, under the field's own type.
+ *  std140 gives an i32, a u32 and a bool four bytes each, and the shader reads those bytes as
+ *  an integer. Writing 3 through the float view would hand it the bit pattern of 3.0, so an
+ *  integer field is written through a view of its own over the same buffer. */
+function writer(
+  buf: Float32Array<ArrayBuffer>,
+): (field: UniformField, v: readonly number[]) => void {
+  const ints = new Int32Array(buf.buffer);
+  const uints = new Uint32Array(buf.buffer);
+  return (field, v) => {
+    const base = field.offset / 4;
+    if (field.type === 'i32' || field.type === 'bool') {
+      for (let k = 0; k < v.length; k++) ints[base + k] = Math.round(v[k] ?? 0);
+      return;
+    }
+    if (field.type === 'u32') {
+      for (let k = 0; k < v.length; k++) uints[base + k] = Math.max(0, Math.round(v[k] ?? 0));
+      return;
+    }
+    buf.set(v, base);
+  };
 }
 
 function createFrameState(
@@ -238,26 +286,13 @@ function createFrameState(
   const { layout, controls } = data;
   const byteLength = layout.size;
   const buf = byteLength > 0 ? new Float32Array(byteLength / 4) : null;
-  // std140 gives an i32, a u32 and a bool four bytes each, and the shader reads those bytes
-  // as an integer. Writing 3 through the float view would hand it the bit pattern of 3.0, so
-  // an integer field is written through a view of its own over the same buffer.
-  const ints = buf ? new Int32Array(buf.buffer) : null;
-  const uints = buf ? new Uint32Array(buf.buffer) : null;
-
-  /** Write one field's numbers at its std140 offset, under the field's own type. */
-  const write = (field: UniformField, v: readonly number[]): void => {
-    const base = field.offset / 4;
-    if (!buf) return;
-    if (field.type === 'i32' || field.type === 'bool') {
-      for (let k = 0; k < v.length; k++) ints![base + k] = Math.round(v[k] ?? 0);
-      return;
-    }
-    if (field.type === 'u32') {
-      for (let k = 0; k < v.length; k++) uints![base + k] = Math.max(0, Math.round(v[k] ?? 0));
-      return;
-    }
-    buf.set(v, base);
-  };
+  const write = buf ? writer(buf) : () => {};
+  const more = (layout.moreBlocks ?? [])
+    .filter((block) => block.size > 0)
+    .map((block) => {
+      const blockData = new Float32Array(block.size / 4);
+      return { layout: block, data: blockData, write: writer(blockData) };
+    });
 
   /** The live value of a `slider`/`toggle` field by name, `logmag1d` reads its `magField`. */
   const sliderValue = (field: string): number => {
@@ -291,6 +326,7 @@ function createFrameState(
   return {
     data: buf,
     byteLength,
+    more,
     scale: 1,
     resize(): boolean {
       const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR) * this.scale;
@@ -302,10 +338,18 @@ function createFrameState(
       return true;
     },
     pack(seconds: number): void {
-      if (!buf) return;
-      for (const f of layout.fields) {
-        const v = override?.(f.name, seconds) ?? valueFor(f.name, seconds);
-        if (v) write(f, v);
+      if (buf) {
+        for (const f of layout.fields) {
+          const v = override?.(f.name, seconds) ?? valueFor(f.name, seconds);
+          if (v) write(f, v);
+        }
+      }
+      // A later block has no controls of its own: only the host's values reach it.
+      for (const block of more) {
+        for (const f of block.layout.fields) {
+          const v = override?.(f.name, seconds, block.layout.instance);
+          if (v) block.write(f, v);
+        }
       }
     },
   };
@@ -590,6 +634,20 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
     gl.uniformBlockBinding(prog, idx, 0);
     gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, ubo);
   }
+  // Every later block on a binding point of its own, after the first block's 0. A block the
+  // linked program does not read has no index and nothing to bind.
+  const moreUbos: { ubo: WebGLBuffer; data: Float32Array<ArrayBuffer> }[] = [];
+  state.more.forEach((block, i) => {
+    const idx = gl.getUniformBlockIndex(prog, block.layout.block);
+    if (idx === gl.INVALID_INDEX) return;
+    const buffer = gl.createBuffer();
+    if (!buffer) return;
+    gl.bindBuffer(gl.UNIFORM_BUFFER, buffer);
+    gl.bufferData(gl.UNIFORM_BUFFER, block.data.byteLength, gl.DYNAMIC_DRAW);
+    gl.uniformBlockBinding(prog, idx, i + 1);
+    gl.bindBufferBase(gl.UNIFORM_BUFFER, i + 1, buffer);
+    moreUbos.push({ ubo: buffer, data: block.data });
+  });
 
   // The compiler's fp64 fast-math guard: a 1×1 white texel the emitted df64 helpers multiply
   // by, so no driver can constant-fold the error terms away.
@@ -616,6 +674,7 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
   } catch (error) {
     for (const t of guards) gl.deleteTexture(t);
     if (ubo) gl.deleteBuffer(ubo);
+    for (const m of moreUbos) gl.deleteBuffer(m.ubo);
     return abandon(error);
   }
   gl.activeTexture(gl.TEXTURE0);
@@ -645,6 +704,10 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
       if (ubo && state.data) {
         gl.bindBuffer(gl.UNIFORM_BUFFER, ubo);
         gl.bufferSubData(gl.UNIFORM_BUFFER, 0, state.data);
+      }
+      for (const m of moreUbos) {
+        gl.bindBuffer(gl.UNIFORM_BUFFER, m.ubo);
+        gl.bufferSubData(gl.UNIFORM_BUFFER, 0, m.data);
       }
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
@@ -676,6 +739,7 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
       bound.dispose();
       if (vbo) gl.deleteBuffer(vbo);
       if (ubo) gl.deleteBuffer(ubo);
+      for (const m of moreUbos) gl.deleteBuffer(m.ubo);
       if (vao) gl.deleteVertexArray(vao);
       gl.deleteProgram(prog);
       gl.deleteShader(vs);
@@ -952,6 +1016,13 @@ async function createWebGpuPass(
       buffer: { type: 'uniform' },
     });
   }
+  for (const block of state.more) {
+    entriesOf(block.layout.group).push({
+      binding: block.layout.binding,
+      visibility,
+      buffer: { type: 'uniform' },
+    });
+  }
   for (const t of data.layout.textures) {
     entriesOf(data.layout.group).push({
       binding: t.binding,
@@ -1041,6 +1112,17 @@ async function createWebGpuPass(
       binding: data.layout.binding,
       resource: { buffer: uniBuf },
     });
+  const moreBufs = state.more.map((block) => {
+    const buffer = device.createBuffer({
+      size: block.data.byteLength,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    entryList(block.layout.group).push({
+      binding: block.layout.binding,
+      resource: { buffer },
+    });
+    return { buffer, data: block.data };
+  });
   const guardTextures: GPUTexture[] = [];
   for (const t of data.layout.textures) {
     const tex = device.createTexture({
@@ -1070,6 +1152,7 @@ async function createWebGpuPass(
   if (resourceFailure || resourceScoped) {
     for (const o of owned) o.destroy();
     uniBuf?.destroy();
+    for (const m of moreBufs) m.buffer.destroy();
     for (const t of guardTextures) t.destroy();
     throw resourceFailure ?? new Error(`WebGPU resources: ${resourceScoped!.message}`);
   }
@@ -1091,6 +1174,7 @@ async function createWebGpuPass(
   if (!ctx) {
     for (const o of owned) o.destroy();
     uniBuf?.destroy();
+    for (const m of moreBufs) m.buffer.destroy();
     for (const t of guardTextures) t.destroy();
     vertexBuffer?.destroy();
     throw new Error('no WebGPU canvas context');
@@ -1109,6 +1193,7 @@ async function createWebGpuPass(
     draw(): void {
       if (disposed) return;
       if (uniBuf && state.data) device.queue.writeBuffer(uniBuf, 0, state.data);
+      for (const m of moreBufs) device.queue.writeBuffer(m.buffer, 0, m.data);
       const encoder = device.createCommandEncoder();
       const pass = encoder.beginRenderPass({
         colorAttachments: [
@@ -1136,6 +1221,7 @@ async function createWebGpuPass(
     dispose(release: boolean): void {
       disposed = true;
       uniBuf?.destroy();
+      for (const m of moreBufs) m.buffer.destroy();
       for (const t of guardTextures) t.destroy();
       for (const o of owned) o.destroy();
       vertexBuffer?.destroy();
