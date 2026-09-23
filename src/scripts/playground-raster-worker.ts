@@ -18,6 +18,11 @@ import {
   type RasterReply,
   type RasterRequest,
 } from './playground-raster.ts';
+import { installOracleTextures } from './playground-oracle-textures.ts';
+
+// The oracle's texture reads answer from the texels the page binds, in this worker as on the
+// page.
+installOracleTextures();
 
 let job = -1;
 let plan: RasterPlan | undefined;

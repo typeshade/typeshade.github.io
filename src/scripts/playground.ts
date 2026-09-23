@@ -44,6 +44,7 @@ import {
 import { codeOnly, FRAGMENT_PRELUDE, sampleShape } from '../lib/live-shader-contract.ts';
 import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
+import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
@@ -62,6 +63,10 @@ import {
   type ReflectedEntry,
   type ReflectedField,
 } from './playground-raster.ts';
+
+// The oracle's texture reads answer from the texels the bindings panel binds, on this thread as
+// in the raster workers, so the return values and a dispatch read the picture the GPU does.
+installOracleTextures();
 
 /** One example as the page carries it: the source from the vendored file, the words from i18n. */
 interface PlaygroundExample {
@@ -151,7 +156,6 @@ interface PlaygroundCopy {
   readonly gpuFailed: string;
   readonly computeNeedsWebgpu: string;
   readonly computeRan: string;
-  readonly cpuTextures: string;
   readonly bindings: BindingsCopy;
   readonly canvasNeedsVertex: string;
   readonly canvasFlat: string;
@@ -1190,12 +1194,9 @@ function mount(root: HTMLElement): void {
       key in values ? String(values[key]) : whole,
     );
 
-  /** What the rasteriser says when it is done, and that a texture read came back as the
-   *  oracle's placeholder when the module samples one. */
-  const drawnNote = (px: number, ms: number, workers: number): string => {
-    const drawn = fillNumbers(copy.canvasDrawn, { px, ms: Math.round(ms), workers });
-    return bindings.hasTextures() ? `${drawn} ${copy.cpuTextures}` : drawn;
-  };
+  /** What the rasteriser says when it is done. */
+  const drawnNote = (px: number, ms: number, workers: number): string =>
+    fillNumbers(copy.canvasDrawn, { px, ms: Math.round(ms), workers });
 
   // ── The Result tab ──────────────────────────────────────────────────────────────────
   // The canvas draws the program the WGSL and GLSL tabs hold, on the backend the reader

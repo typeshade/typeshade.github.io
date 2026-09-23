@@ -242,6 +242,9 @@ const quickStart = localePath(locale, links.quickStart.href);
   .front-map-row dd strong :global(code) { font-size: 0.95em }
   /* No copy button, so the first line keeps no room for one at its end. */
   .front-map-row dt :global(.expressive-code :nth-child(1 of .ec-line) .code) { padding-inline-end: var(--ec-codePadInl) }
+  /* Nor the band a touch screen keeps above the first line for the copy button that stays on
+     screen there (global.css, under hover: none). One selector heavier than that rule. */
+  @media (hover: none) { .front-map-row dt :global(.expressive-code .frame pre > code) { padding-block-start: var(--ec-codePadBlk) } }
   /* The gradient pass drawn by each backend: two cards, the picture as the cover. */
   .front-oracle :global(.figure) {
     gap: 0; overflow: hidden;

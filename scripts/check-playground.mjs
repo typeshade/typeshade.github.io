@@ -118,12 +118,16 @@ const RAN_FLOOR = 69;
 // channel is within AGREE_UNITS of eight-bit value of the GPU's, at the same pixel of the same
 // frame or one beside it. Measured twice on the same tree as the floors above, the same both
 // times: of the 61 the GPU paints at the held clock, 55 paint on the CPU and 49 agree. Under
-// them are the six that sample a texture, which the oracle cannot do; the four passes whose
-// noise is a hash of `sin`, which no two implementations of `sin` agree on past a few digits;
-// and two fp64 fractals that differ by a few units at a pixel on the edge of the set.
+// them were the six that sample a texture, which the oracle could not do; the four passes
+// whose noise is a hash of `sin`, which no two implementations of `sin` agree on past a few
+// digits; and two fp64 fractals that differ by a few units at a pixel on the edge of the set.
+// Once the oracle read the panel's texels through the panel's sampler, all 61 painted on the
+// CPU and 54 agreed, measured twice. Of the six textured ones, `textured-quad` still differs by
+// up to 16: its checker's edges fall on the rows sampled here, and the photograph of a box a
+// quarter pixel off the device grid is resampled across an edge the two engines draw alike.
 const AGREE_UNITS = 6;
-const CPU_PAINTED_FLOOR = 55;
-const AGREE_FLOOR = 49;
+const CPU_PAINTED_FLOOR = 61;
+const AGREE_FLOOR = 54;
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000);
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1';
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
