@@ -767,8 +767,11 @@ export class BindingsModel {
 
   private textureSpec(t: Binding): TextureSpec {
     const key = this.textureKey(t);
+    // The texels are kept by name, dimension and kind, so a reader's picture survives an edit;
+    // where the texture sits is read from this module, since another example can declare a
+    // texture of the same name at another binding.
     const cached = this.texelCache.get(key);
-    if (cached) return cached;
+    if (cached) return { ...cached, group: t.group, binding: t.binding };
     const dim = (t.textureDim ?? '2d') as TextureDim;
     const sample: SampleKind = t.textureDepth ? 'depth' : t.textureElem === 'u32' ? 'uint' : t.textureElem === 'i32' ? 'sint' : 'float';
     const { width, height, layers } = textureSize(dim);

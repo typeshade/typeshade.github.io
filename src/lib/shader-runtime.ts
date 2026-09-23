@@ -181,6 +181,9 @@ export interface MountedShader {
   /** The fraction of the box's pixels the drawing buffer holds: 1, unless an adaptive mount
    *  has lowered it. */
   readonly scale: number
+  /** Hold the drawing buffer at the scale it has, or let an adaptive mount steer it again. A
+   *  check that compares this canvas with another engine pixel for pixel holds it first. */
+  holdScale(hold: boolean): void
   /** Run a newly emitted program on the same canvas and the same backend. The pass that is
    *  drawing stays up until the new one has drawn a frame, so a program that fails to build
    *  leaves the last good frame on screen and resolves false. A live example recompiles this
@@ -858,13 +861,10 @@ async function createWebGpuPass(
 ): Promise<Pass> {
   const device = await sharedDevice(data.features ?? [])
   if (!device) throw new Error('no WebGPU device')
-  const ctx = canvas.getContext('webgpu')
-  if (!ctx) throw new Error('no WebGPU canvas context')
+  // The canvas's context is taken only once the pipeline and its resources are built. A
+  // canvas holds one kind of context for life, so a WebGPU context taken for a program that
+  // then fails to build would leave WebGL2 nothing to draw on.
   const format = navigator.gpu.getPreferredCanvasFormat()
-  // premultiplied + a transparent clear, for the same reason WebGL2 asks for alpha:true.
-  // Configuring a canvas that is already configured for this device is a no-op, so a swap
-  // costs nothing here.
-  ctx.configure({ device, format, alphaMode: 'premultiplied' })
 
   // The bind group layout is written from the module's own reflection instead of asked of
   // the pipeline. `layout: 'auto'` reports only the bindings the shader reads, so an edit
@@ -999,6 +999,18 @@ async function createWebGpuPass(
     const layout = groupLayouts.get(group)
     if (layout && list.length > 0) bindGroups.push([group, device.createBindGroup({ layout, entries: list })])
   }
+  const ctx = canvas.getContext('webgpu')
+  if (!ctx) {
+    for (const o of owned) o.destroy()
+    uniBuf?.destroy()
+    for (const t of guardTextures) t.destroy()
+    vertexBuffer?.destroy()
+    throw new Error('no WebGPU canvas context')
+  }
+  // premultiplied + a transparent clear, for the same reason WebGL2 asks for alpha:true.
+  // Configuring a canvas that is already configured for this device is a no-op, so a swap
+  // costs nothing here.
+  ctx.configure({ device, format, alphaMode: 'premultiplied' })
 
   let disposed = false
   let inFlight = false
@@ -1124,7 +1136,10 @@ export async function mountShader(
     } catch (error) {
       pass = null
       qa.frames = 0
-      qa.failure = error instanceof Error ? error.message : String(error)
+      // Every backend's reason is kept: in the runtime's own order it is WebGPU's that says
+      // what went wrong, and WebGL2's only says it could not stand in.
+      const reason = error instanceof Error ? error.message : String(error)
+      qa.failure = qa.failure ? `${qa.failure}; ${backend}: ${reason}` : `${backend}: ${reason}`
     }
   }
 
@@ -1144,6 +1159,7 @@ export async function mountShader(
   /** The packed bytes, copied, so a reader of the handle cannot write into the frame. */
   const uniformBytes = (): Float32Array => (state.data ? state.data.slice() : new Float32Array(0))
 
+  let scaleHeld = false
   const handle = (stop: () => void, swap: MountedShader['swap'], redraw: () => void): MountedShader => {
     const mounted: MountedShader = {
       get backend() {
@@ -1157,6 +1173,9 @@ export async function mountShader(
       },
       get scale() {
         return state.scale
+      },
+      holdScale(hold: boolean) {
+        scaleHeld = hold
       },
       swap,
       redraw,
@@ -1245,7 +1264,7 @@ export async function mountShader(
       stop()
       return
     }
-    if (opts.adaptive) adapt(live.lastFrameMs())
+    if (opts.adaptive && !scaleHeld) adapt(live.lastFrameMs())
     // A driver that fails mid-flight must not spray the console: stop, go transparent, and
     // relabel, `stop()` does all three.
     try {

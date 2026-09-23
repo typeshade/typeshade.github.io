@@ -1194,7 +1194,7 @@ function mount(root: HTMLElement): void {
     if (backend === 'webgpu') return copy.gpuWebgpu;
     if (backend === 'webgl2') return copy.gpuWebgl2;
     const failure = mounted?.failure ?? '';
-    const feature = /missing WebGPU feature: (.+)/.exec(failure)?.[1];
+    const feature = /missing WebGPU feature: ([^;]+)/.exec(failure)?.[1];
     if (feature) return fillNumbers(copy.gpuNoFeature, { features: feature });
     if (picked === 'auto' && !emitted.glslVertex && /no WebGPU/.test(failure)) return `${copy.gpuNone} ${noGlslNote()}`;
     if (picked === 'webgpu' && /no WebGPU/.test(failure)) return copy.gpuNoWebgpu;
@@ -1451,7 +1451,7 @@ function mount(root: HTMLElement): void {
       const node = freshCanvas();
       if (node) node.dataset.backend = 'none';
       const message = error instanceof Error ? error.message : String(error);
-      const feature = /missing WebGPU feature: (.+)/.exec(message)?.[1];
+      const feature = /missing WebGPU feature: ([^;]+)/.exec(message)?.[1];
       sayGpu(
         feature
           ? fillNumbers(copy.gpuNoFeature, { features: feature })
@@ -1500,6 +1500,9 @@ function mount(root: HTMLElement): void {
   const handle: PlaygroundHandle = {
     freeze: (seconds) => {
       frozen = seconds;
+      // A held frame is held at the size it has, so the pixels a check reads off it and the
+      // grid it asks the rasteriser for are one grid.
+      mounted?.holdScale(seconds !== null);
       mounted?.redraw();
     },
     cpuPixels: (points, width, height) => {

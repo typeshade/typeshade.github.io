@@ -49,6 +49,17 @@ if (!existsSync(dist)) {
 
 const bytesDiffer = (a, b) => a.length !== b.length || !a.equals(b)
 
+/** A photograph of a canvas taken from its box on the page. An element photograph first
+ *  waits for the box to hold still across two animation frames, and a runner under load can
+ *  give it no two frames in time, though the box never moves. */
+async function photograph(locator) {
+  // Scrolled by the page itself: Playwright's own scroll waits for the same stability.
+  await locator.evaluate((node) => node.scrollIntoView({ block: 'center' }))
+  const box = await locator.boundingBox()
+  if (!box) throw new Error('the canvas has no box to photograph')
+  return locator.page().screenshot({ clip: box, timeout: 15_000 })
+}
+
 async function checkRoute(browser, origin, { route, id, backend: expected }) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 1200 } })
   const problems = []
@@ -145,9 +156,9 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
     if (mounted) {
       // Two frames of the same program at a pinned clock, to prove the comparison below
       // reads a control and not the animation.
-      const a = await canvas.screenshot()
+      const a = await photograph(canvas)
       await page.waitForTimeout(250)
-      const b = await canvas.screenshot()
+      const b = await photograph(canvas)
       if (bytesDiffer(a, b)) problems.push('two frames of one program at a pinned clock differ, so a moved control cannot be told from the clock')
       framePixels = a.length
 
@@ -169,7 +180,7 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
         if (JSON.stringify(uniformsBefore) === JSON.stringify(uniformsAfter)) {
           problems.push(`moving a slider from ${moved.from} to ${moved.to} did not change the packed uniform bytes`)
         }
-        const c = await canvas.screenshot()
+        const c = await photograph(canvas)
         if (!bytesDiffer(b, c)) problems.push(`moving a slider from ${moved.from} to ${moved.to} did not change the rendered frame`)
       }
     }
