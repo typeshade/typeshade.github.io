@@ -841,7 +841,7 @@ export const en = {
       invocationRule: 'What follows: a stage decorator says which of the three is calling, and a `@builtin(...)` parameter is how an invocation learns its own place in the work. [Shader stages](languageStages) states the decorators and [Functions](languageFunctions) states the parameters.',
       memoryH: 'Memory',
       memoryP: 'An invocation works in registers and in the buffers and textures the host bound before the draw. There is no heap under it, so a shader has nothing to allocate from, no array that can grow and no string to build. A class in a TypeShade file describes the bytes of a GPU struct, and the host writes those bytes.',
-      memoryRule: 'What follows: `new` builds a value and not an object with identity, a field decorator carries layout, and every resource arrives through `declare`. [Types](languageTypes) states the struct surface and [Resources](languageResources) states the declarations.',
+      memoryRule: 'What follows: `new` builds a value and not an object with identity, the compiler aligns a class\'s fields by WGSL\'s rules and `reflect()` reports each offset, and every resource arrives through `declare`. [Types](languageTypes) states the struct surface and [Resources](languageResources) states the declarations.',
       callsH: 'Calls',
       callsP: 'A shader has no call stack to return through, and the call graph is flattened before a driver sees it. A function that calls itself, directly or through another function, leaves the compiler with nothing to flatten.',
       callsRule: 'What follows: recursion is rejected, and a helper is an ordinary function the compiler can follow to its leaves. [Functions](languageFunctions) states what a call may be.',
