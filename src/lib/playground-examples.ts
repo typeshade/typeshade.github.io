@@ -65,6 +65,8 @@ export const playgroundExampleIds = [
   'generic-helpers',
   'generic-class',
   'tuple-and-brand',
+  'class-syntax',
+  'rng-method',
   'private-state',
   'workgroup-scratch',
   'workgroup-reduce',

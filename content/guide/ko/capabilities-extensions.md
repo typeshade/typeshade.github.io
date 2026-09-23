@@ -1,7 +1,7 @@
 ---
 id: capabilities-extensions
-source: bf0828e97c430083d9752e1c9eba863c07c4718b64945345fd4d82d945b9e47a
-sourceLine: 1857
+source: d357930bfc694c653423bafbf108d8acc35ad25d3bf0d235772e8b1a2b555ee0
+sourceLine: 1861
 ---
 
 이 절을 읽고 나면 모듈에 필요한 GPU 기능을 선언하고, 그 기능이 타깃마다 어떤 비용이
@@ -83,20 +83,20 @@ capabilityMatrix([wgslBackend, glslEs300Backend])
 //      declarable: true }]
 ```
 
-결과는 기능마다 한 행씩 고정된 순서로 나오며, 모듈이 직접 선언할 일이 없는 세 기능도
-`declarable: false`로 함께 들어 있습니다.
+결과는 기능마다 한 행씩 고정된 순서로 나오며, 모듈의 모양에서 파생되어 직접 선언할 일이 없는
+일곱 기능(`storageBuffer`부터 `textureGather`까지)도 `declarable: false`로 함께 들어 있습니다.
 
 표의 행을 그대로 믿기 전에 알아 둘 점이 두 가지 있습니다.
 
 - 지원한다는 것과 실제로 쓸 수 있다는 것은 다릅니다. `f16`과 `multiview`는 표에 적힌
   타깃에서 지원되지만, 지금은 둘 다 셰이더에서 쓸 방법이 없습니다. `f16` 스칼라 타입이
   없고, `layout(num_views = N) in;`을 적거나 `gl_ViewID_OVR`을 읽을 길도 없기 때문입니다.
-  `multiview`를 선언한 모듈은 지시문만 생성하고 여전히 단일 뷰로 렌더링합니다. 나머지는
+  `multiview`를 선언한 모듈은 지시문만 생성하고 여전히 단일 뷰로 렌더링합니다. 나머지 네 기능은
   쓸 수 있습니다. `clipDistances`, `primitiveIndex`, `dualSourceBlending`은 각 속성에
   필요한 기능입니다. `subgroups`는 컴퓨트나 프래그먼트 진입점에
   `@builtin("subgroup_invocation_id")`이나 `@builtin("subgroup_size")`를 적으면 쓰게
   됩니다. 다만 서브그룹 내장 함수(`subgroupAdd` 등)는 아직 없는데, 이는 기능과는 별개인
-  빈자리입니다. 어떤 어댑터가 이 가운데 하나를 실제로 갖추었는지 알려면
+  빈자리입니다. 어떤 어댑터가 이 네 기능 가운데 하나를 실제로 갖추었는지 알려면
   `reflect().requiredFeatures`를 씁니다. 디바이스는 `requestDevice`에서 요청받은 선택
   기능만 갖습니다. 컴파일 게이트가 바로 그렇게 코퍼스에서 목록을 뽑아 요청하며,
   `examples/clip-planes.shade.ts`가 게이트의 Tint에서 컴파일되는 것도 그 덕분입니다. 이
@@ -122,9 +122,11 @@ capabilityMatrix([wgslBackend, glslEs300Backend])
 
 호스트가 확인해야 할 것이 기능만은 아닙니다. WGSL *언어* 기능(language feature)은
 디바이스가 아니라 브라우저의 셰이딩 언어 구현이 갖는 속성입니다. 그래서 `requestDevice`에서
-요청하는 대상이 아니며, 생성된 모듈에 이를 알리는 지시문도 없습니다.
+요청하는 대상이 전혀 아닙니다.
 `reflect().requiredLanguageFeatures`는 모듈 소스가 쓰는 언어 기능을 나열하고, 지원 여부는
-`navigator.gpu.wgslLanguageFeatures`가 답합니다.
+`navigator.gpu.wgslLanguageFeatures`가 답합니다. WGSL 생성기는 `read`나 `read_write`로
+바인딩한 스토리지 텍스처에 `requires readonly_and_readwrite_storage_textures;`를 생성합니다.
+packed 4x8 계열은 지시문 없이도 컴파일되므로 지시문을 생성하지 않습니다.
 
 한 기능이 다른 기능을 암시할 수도 있습니다. `float32Blend`는 `floatRenderTarget`을 함께
 끌어옵니다. float 타깃에 블렌딩하려면 먼저 그 타깃이 색상 어태치먼트로 렌더링 가능한
@@ -163,7 +165,7 @@ for (const ext of hostFeaturesFor(glslEs300Backend, reflect(m).requiredFeatures)
 
 // WebGPU: feed the same lookup into requestDevice, at boot.
 const device = await adapter.requestDevice({
-  requiredFeatures: hostFeaturesFor(wgslBackend, reflect(m).requiredFeatures),
+  requiredFeatures: hostFeaturesFor(wgslBackend, reflect(m).requiredFeatures) as GPUFeatureName[],
 })
 ```
 

@@ -1,7 +1,7 @@
 ---
 id: the-cpu-oracle
-source: a216bab0180bddf118e74cd9cad596284a4143e3f08a09605fc5773f99c62a23
-sourceLine: 1382
+source: acf625c1612c4a6f04ec66b6158e75225523bc3efbd66f8f78bb579a61f674e5
+sourceLine: 1385
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -129,9 +129,9 @@ for (let i = 0; i < gpuOut.length; i++) {
 않는 타깃 언어 텍스트이므로, 어떤 표기가 들어 있든 CPU에서는 계산할 수 없습니다. 어떤
 컴포저도 바꿔 넣지 않은 플레이스홀더는 태그를 담아 오류를 던지므로, 어디에 끼워 넣기가
 빠졌는지 태그로 찾을 수 있습니다. GPU 전용 내장 함수는 계산할 재료 자체가 없습니다.
-텍스처를 읽는 `textureSample`, `textureSampleLevel`, `textureLoad`와 그 배열 텍스처용
-변형, 크기를 묻는 `textureDimensions`와 `textureNumLayers`, 미분을 구하는 `dpdx`,
-`dpdy`, `fwidth`가 여기에 듭니다. 이 목록은 `ORACLE_GPU_STUB_NAMES`라는 이름으로 내보내
+텍스처를 읽는 `textureSample`, `textureSampleLevel`, `textureLoad`와 그 배열·bias·grad·gather·깊이 비교
+변형, `textureStore`, 크기를 묻는 `textureDimensions`와 `textureNumLayers`, 미분을 구하는 `dpdx`,
+`dpdy`, `fwidth`와 그 coarse·fine 변형이 여기에 듭니다. 전체 목록은 `ORACLE_GPU_STUB_NAMES`라는 이름으로 내보내
 둡니다.
 
 `{ gpuStubs: true }`를 주고 컴파일하면 이런 내장 함수는 대신 쓸 값을 돌려줍니다. 텍스처
