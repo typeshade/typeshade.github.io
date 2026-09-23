@@ -193,6 +193,38 @@ the neutral scale, the radii, the elevation, the control heights and the button,
 menu, anchor and table shapes. IBM Plex supplies the letterforms, because it is self-hosted
 and has a matching Korean cut.
 
+## Styling
+
+A page or a component is styled with Tailwind utilities on its own markup, and the utilities
+read the tokens: the `@theme` block at the top of `src/styles/global.css` maps the site's
+colours, radii, type sizes and faces, so `bg-surface-1`, `text-text-2`, `border-line-1`,
+`rounded-md`, `text-ui` and `font-mono` are the site's own values, and a token outside
+`@theme` is read by name, `bg-(--color-elevated)` or `max-inline-(--content)`. The logical
+utilities (`mbs-*`, `pbe-*`, `border-be`, `inline-*`, `ms-*`) keep the logical properties
+the rest of the file uses. A `hover:` utility applies wherever the pointer is, the way a
+`:hover` rule does, and a transition utility runs Ant's 0.2s curve; both are set in `@theme`.
+Dark mode needs nothing of its own: it redefines the token variables and the utilities follow.
+
+What utilities say badly goes into that component's scoped `<style>`: a container query,
+`:has()`, a mask, a pseudo-element with content, a state that crosses elements (a tile's hover
+scaling its cover), a reach into what Rich, Expressive Code or another component renders
+(`:global()`), a `max-width` query whose bound has to include its own width, and a margin or
+size that has to outrank the document column's own `.doc p`, `.doc li` or `.doc h3`. Tailwind
+puts utilities in `@layer utilities`, and unlayered CSS beats every layer, so a utility loses to
+any rule left in `global.css` that matches the same element whatever its specificity; the
+scoped style is unlayered too, and its attribute outranks the global rule. Check the computed
+style, not only that the class is on the element.
+
+`global.css` holds the `@theme` tokens, the fonts, the base element rules, the dark-mode
+redefinitions, the chrome every page shares (the header, the footer, the docs grid, the
+sidebar, the outline, the pager, the buttons, the alert, the figure, the tabs, the tile cover
+and its Empty mark), the reference's shared vocabulary (`api-list`, `api-index` and the other
+classes the /api/ pages and the language reference both draw), and the rules for markup the
+site does not author: Expressive Code's frames, Pagefind's dialog and the Markdown the loaders
+render under `.doc`. `bun run check:style` fails the build on a selector there that names any
+other class, and says where it belongs. LiveShader's rules are still in the file, marked as
+deferred in the check, until they move with the Playground's.
+
 ## Type
 
 - Text: IBM Plex Sans (variable), self-hosted, latin subset. Korean: IBM Plex Sans KR 400 and 600.
@@ -253,8 +285,6 @@ A word that names something the compiler reads is set in the mono face wherever 
   Ant's dark primary does not clear 4.5:1 on the `#141414` ground; the solid fill keeps
   `#1668dc`. The same tokens are written twice, under `[data-theme='dark']` and under the
   media query, since plain CSS cannot share a block between the two selectors.
-- Tailwind is kept only for its `@theme` tokens and preflight. No utility classes appear in
-  the markup.
 
 **The Single Blue Rule.** The page has one blue and one red. A new state finds its colour in
 the primary's own wash (`#e6f4ff`), border (`#91caff`) or text hover (`#69b1ff`) before it
@@ -776,7 +806,8 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 
 ## Things the build checks
 
-- `scripts/check-style.mjs`: the voice rules above, over `src/`, `scripts/` and the two Markdown files.
+- `scripts/check-style.mjs`: the voice rules above, over `src/`, `scripts/` and the two Markdown
+  files, and that a selector in `global.css` names only a shared class (Styling).
 - `src/lib/examples.ts`: every number, and that the pinned compiler still matches the copy.
 - `src/pages/llms.txt.ts`: every numeral in `/llms.txt` exists in `facts`.
 - `scripts/artifacts.mjs`: og.png, the icons and the stills match their committed hashes.
