@@ -110,13 +110,13 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
               <a class={tile} href={row.href}>
                 <span class="tile-cover">
                   {row.still ? <img src={`/stills/${row.id}.webp`} alt="" loading="lazy" decoding="async" /> : (
-                    <span class="empty">
+                    <span class="no-still">
                       <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
                         <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
                         <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
                         <circle cx="14.5" cy="15.5" r="2.25" />
                       </svg>
-                      <span class="empty-note">{e.noStill}</span>
+                      <span class="no-still-note">{e.noStill}</span>
                     </span>
                   )}
                 </span>
@@ -141,13 +141,13 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
                 <a class={tile} href={row.href}>
                   <span class="tile-cover">
                     {row.still ? <img src={`/stills/${row.id}.webp`} alt="" loading="lazy" decoding="async" /> : (
-                      <span class="empty">
+                      <span class="no-still">
                         <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
                           <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
                           <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
                           <circle cx="14.5" cy="15.5" r="2.25" />
                         </svg>
-                        <span class="empty-note">{e.noStill}</span>
+                        <span class="no-still-note">{e.noStill}</span>
                       </span>
                     )}
                   </span>

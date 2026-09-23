@@ -154,7 +154,7 @@ const editable = example.corpus === 'shade'
               <ShaderCanvas locale={locale} example={example.id} aspect="auto" caption={caption} eager externalCaption />
             ) : (
               <div class="figure-frame">
-                <span class="empty">
+                <span class="no-still">
                   <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
                     <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
                     <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
@@ -165,7 +165,7 @@ const editable = example.corpus === 'shade'
             )}
           </div>
 
-          <div class="example-stage-code flex block-[360px] min-inline-0 min-block-0 flex-col border-bs border-line-1 bg-(--color-elevated)">
+          <div class="example-stage-code flex block-[360px] min-inline-0 min-block-0 flex-col border-bs border-bs-line-1 bg-(--color-elevated)">
             <div class="tabs-head" role="tablist" aria-label={p.tabs} data-example-tabs>
               {panes.map((pane, i) => (
                 <button

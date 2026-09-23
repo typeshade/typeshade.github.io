@@ -985,16 +985,16 @@ body > main { flex: 1 }
 .tile-cover img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; transition: transform 400ms var(--ease-out) }
 /* A tile the runtime cannot draw gets Ant's Empty instead of a bare grey box: the outlined
    mark, and one sentence saying why there is no picture. */
-.empty {
+.no-still {
   position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 8px; padding: 16px;
   color: var(--color-text-3); text-align: center;
 }
-.empty svg {
+.no-still svg {
   inline-size: 40px; block-size: 40px; flex: none;
   fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
 }
-.empty-note { max-inline-size: 30ch; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
+.no-still-note { max-inline-size: 30ch; font-size: 0.75rem; line-height: 1.5; color: var(--color-text-2) }
 
 /* Diagnostic */
 .diagnostic { margin-block-start: 12px; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); color: var(--color-text-2); overflow-wrap: anywhere }

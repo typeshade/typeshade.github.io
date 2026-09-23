@@ -114,7 +114,7 @@ const quickStart = localePath(locale, links.quickStart.href)
           and the one the hero card gives the same file. The frame under it carries no title
           bar of its own, so the first line of code sits at the same height in both columns. */}
       <div class="front-targets-src flex min-inline-0 flex-col gap-4 lg:gap-6">
-        <p class="flex block-[41px] items-center gap-4 border-be border-line-1"><span class="live-file">hello.shade.ts</span></p>
+        <p class="flex block-[41px] items-center gap-4 border-be border-be-line-1"><span class="live-file">hello.shade.ts</span></p>
         <CodeFrame label={f.targets.source}>
           <Code code={useTypeshadeSample} lang="ts" locale={locale} wrap />
         </CodeFrame>
@@ -165,7 +165,7 @@ const quickStart = localePath(locale, links.quickStart.href)
     <p class={lead}><Rich text={f.map.p} locale={locale} /></p>
     <dl class="mbs-6">
       {f.map.rows.map(([ts, shade, body]) => (
-        <div class="front-map-row grid gap-x-8 gap-y-2 border-be border-line-1 py-5 first:border-bs md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:items-start">
+        <div class="front-map-row grid gap-x-8 gap-y-2 border-be border-be-line-1 py-5 first:border-bs first:border-bs-line-1 md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:items-start">
           <dt class="self-start justify-self-start max-inline-full min-inline-0"><Code code={ts} lang="ts" locale={locale} wrap /></dt>
           <dd class="pbs-[2px]">
             <strong class="block text-h5 font-semibold text-text-1"><Rich text={shade} locale={locale} /></strong>
@@ -195,7 +195,8 @@ const quickStart = localePath(locale, links.quickStart.href)
       <p><Rich text={f.install.p} locale={locale} /></p>
     </div>
     <InstallCommand locale={locale} />
-    <p class="mbs-6 flex flex-wrap gap-3">
+    {/* A paragraph of the section like the others, so it keeps the lead's measure and type. */}
+    <p class="mbs-6 flex max-inline-[62ch] flex-wrap gap-3 text-prose text-text-2 text-pretty">
       <a class="button button-lg button-primary" href={playground}>{f.playground}</a>
       <a class="button button-lg" href={quickStart}>{f.quickStart}</a>
     </p>
