@@ -77,6 +77,27 @@ export interface StorageTextureSpec {
   readonly height: number;
 }
 
+/** Bytes per texel of the storage formats a module can declare: the stride of a texture's
+ *  readback on the GPU and of the oracle's copy on the CPU. */
+export const TEXEL_BYTES: Readonly<Record<string, number>> = {
+  rgba8unorm: 4,
+  rgba8snorm: 4,
+  rgba8uint: 4,
+  rgba8sint: 4,
+  r32float: 4,
+  r32uint: 4,
+  r32sint: 4,
+  rg32float: 8,
+  rg32uint: 8,
+  rg32sint: 8,
+  rgba16float: 8,
+  rgba16uint: 8,
+  rgba16sint: 8,
+  rgba32float: 16,
+  rgba32uint: 16,
+  rgba32sint: 16,
+};
+
 /** A uniform buffer beyond the one block the render path packs every frame: a compute
  *  entry's parameters, or a bare scalar bound as a uniform. Written once, as given. */
 export interface UniformBufferSpec {

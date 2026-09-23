@@ -80,6 +80,8 @@ The production build verifies generated artifacts, documentation consistency, li
 
 After the build: `bun run qa:seo`, `bun run qa:links` and `bun run qa:openseo` over `dist/`.
 
+On a pull request, CI also checks what a compiler bump owes the site. The check runs `scripts/downstream-impact.ts` from the pinned compiler. It fails while a page, a component or a script still names an export or a file that the new pin removes. It also fails while a compiler `LINT.ThenChange(//typeshade.github.io/…)` target has not changed with its block. The site's own `LINT.IfChange` pairs are checked by the compiler's `scripts/ifchange.ts`. The compiler's `AGENTS.md` describes the convention.
+
 ## Status
 
 TypeShade is pre-release. The public authoring model on `main` is file-level `"use typeshade"`; package and compiler details may change while the language surface matures.

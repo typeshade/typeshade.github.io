@@ -44,6 +44,7 @@ import {
 import { codeOnly, FRAGMENT_PRELUDE, sampleShape } from '../lib/live-shader-contract.ts';
 import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
+import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
@@ -62,6 +63,10 @@ import {
   type ReflectedEntry,
   type ReflectedField,
 } from './playground-raster.ts';
+
+// The oracle's texture reads answer from the texels the bindings panel binds, on this thread as
+// in the raster workers, so the return values and a dispatch read the picture the GPU does.
+installOracleTextures();
 
 /** One example as the page carries it: the source from the vendored file, the words from i18n. */
 interface PlaygroundExample {
@@ -151,7 +156,6 @@ interface PlaygroundCopy {
   readonly gpuFailed: string;
   readonly computeNeedsWebgpu: string;
   readonly computeRan: string;
-  readonly cpuTextures: string;
   readonly bindings: BindingsCopy;
   readonly canvasNeedsVertex: string;
   readonly canvasFlat: string;
@@ -1190,12 +1194,9 @@ function mount(root: HTMLElement): void {
       key in values ? String(values[key]) : whole,
     );
 
-  /** What the rasteriser says when it is done, and that a texture read came back as the
-   *  oracle's placeholder when the module samples one. */
-  const drawnNote = (px: number, ms: number, workers: number): string => {
-    const drawn = fillNumbers(copy.canvasDrawn, { px, ms: Math.round(ms), workers });
-    return bindings.hasTextures() ? `${drawn} ${copy.cpuTextures}` : drawn;
-  };
+  /** What the rasteriser says when it is done. */
+  const drawnNote = (px: number, ms: number, workers: number): string =>
+    fillNumbers(copy.canvasDrawn, { px, ms: Math.round(ms), workers });
 
   // ── The Result tab ──────────────────────────────────────────────────────────────────
   // The canvas draws the program the WGSL and GLSL tabs hold, on the backend the reader
@@ -1390,6 +1391,7 @@ function mount(root: HTMLElement): void {
           fragmentEntry: fragment.name,
           textures: guards,
           resources: bindings.resources(false),
+          moreBlocks: bindings.moreBlocks(),
           ...(vertexBuffer ? { vertexBuffer } : {}),
         },
         controls: {},
@@ -1454,8 +1456,15 @@ function mount(root: HTMLElement): void {
         : emitted.glslVertex
           ? {}
           : { backend: 'webgpu' as const }),
-      uniformValues: (name, seconds) =>
-        bindings.renderValue(name, frozen ?? seconds, target.width, target.height, pointer),
+      uniformValues: (name, seconds, instance) =>
+        bindings.renderValue(
+          name,
+          frozen ?? seconds,
+          target.width,
+          target.height,
+          pointer,
+          instance,
+        ),
     });
     if (mine !== resultRun) {
       next.stop();
@@ -1584,7 +1593,12 @@ function mount(root: HTMLElement): void {
     try {
       if (picked === 'cpu') {
         const started = performance.now();
-        const cpu = compileModule(compiled.module, { precision: RASTER_PRECISION });
+        // With the GPU-only reads allowed: a texture read and a storage texture's load and
+        // store answer from the panel's data (src/scripts/playground-oracle-textures.ts).
+        const cpu = compileModule(compiled.module, {
+          gpuStubs: true,
+          precision: RASTER_PRECISION,
+        });
         const values = bindings.cpuBindings(0, 0, 0, pointer);
         for (const [name, value] of Object.entries(values)) cpu.setBinding(name, value as never);
         cpu.dispatch(entry.name, groups);
@@ -1593,6 +1607,16 @@ function mount(root: HTMLElement): void {
           const read = bindings.readCpu(name, values[name]);
           results.set(name, read.rows.join('\n'));
           series ??= read.series;
+        }
+        // The storage textures, in the same bytes and rows a readback from the GPU gives.
+        for (const spec of bindings.resources(true)) {
+          if (spec.kind !== 'storage-texture') continue;
+          const held = values[spec.name] as { bytes?: Uint8Array } | undefined;
+          if (!held?.bytes) continue;
+          const texture = { width: spec.width, height: spec.height, format: spec.format };
+          if (spec.name === bindings.firstStorageTexture())
+            image = { ...texture, bytes: held.bytes };
+          results.set(spec.name, `${spec.width} × ${spec.height} ${spec.format}`);
         }
         ranOn = 'cpu';
       } else {

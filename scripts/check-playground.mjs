@@ -68,6 +68,12 @@
 //      is shown under its buffer; and a value the reader set survives an edit
 //  42. the two engines agree: every example the GPU paints, the CPU backend paints too, and
 //      twelve pixels of one frame held at three seconds match within a few units of 255
+//  43. a module with two uniform blocks: on WebGL2 and on WebGPU the second block's reserved
+//      `time` and its own slider both reach the frame, with no rebuild of the pass
+//  44. a uniform struct holding a struct and an array of structs gets a control per leaf,
+//      draws on WebGL2, on WebGPU and on the CPU, and a leaf's control reaches the frame
+//  45. storage textures on the CPU oracle: the storage-texture example dispatched on the CPU
+//      plots the image it wrote, and the image is the one WebGPU wrote, texel for texel
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -82,6 +88,7 @@
 //   PLAYGROUND_CDN_OPTIONAL=1     a CDN that neither can reach passes with a warning.
 //
 // Run: bun run check:playground (after a build, which writes dist/)
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -118,12 +125,16 @@ const RAN_FLOOR = 69;
 // channel is within AGREE_UNITS of eight-bit value of the GPU's, at the same pixel of the same
 // frame or one beside it. Measured twice on the same tree as the floors above, the same both
 // times: of the 61 the GPU paints at the held clock, 55 paint on the CPU and 49 agree. Under
-// them are the six that sample a texture, which the oracle cannot do; the four passes whose
-// noise is a hash of `sin`, which no two implementations of `sin` agree on past a few digits;
-// and two fp64 fractals that differ by a few units at a pixel on the edge of the set.
+// them were the six that sample a texture, which the oracle could not do; the four passes
+// whose noise is a hash of `sin`, which no two implementations of `sin` agree on past a few
+// digits; and two fp64 fractals that differ by a few units at a pixel on the edge of the set.
+// Once the oracle read the panel's texels through the panel's sampler, all 61 painted on the
+// CPU and 54 agreed, measured twice. Of the six textured ones, `textured-quad` still differs by
+// up to 16: its checker's edges fall on the rows sampled here, and the photograph of a box a
+// quarter pixel off the device grid is resampled across an edge the two engines draw alike.
 const AGREE_UNITS = 6;
-const CPU_PAINTED_FLOOR = 55;
-const AGREE_FLOOR = 49;
+const CPU_PAINTED_FLOOR = 61;
+const AGREE_FLOOR = 54;
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000);
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1';
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
@@ -667,6 +678,258 @@ const slide = (page, selector, value) =>
     },
     value,
   );
+
+// Two uniform blocks, the second holding the clock and a speed. Before the runtime packed
+// every block each frame, WebGL2 bound only the first and WebGPU wrote the second once, with
+// its `time` left at zero.
+const TWO_BLOCKS = `"use typeshade"
+
+class Look {
+  tint: vec4
+  gain: f32
+}
+
+class Clock {
+  time: f32
+  speed: f32
+}
+
+declare const look: uniform<Look>
+declare const clock: uniform<Clock>
+
+class VsOut {
+  @builtin("position") pos: vec4
+  @location(0) uv: vec2
+}
+
+@vertex
+export function vs(@builtin("vertex_index") idx: u32): VsOut {
+  const x = f32(idx & 1) * 4. - 1.
+  const y = f32(idx >> 1) * 4. - 1.
+  return { pos: vec4(x, y, 0., 1.), uv: vec2(x, y) * 0.5 + vec2(0.5, 0.5) }
+}
+
+@fragment
+export function fs(v: VsOut): vec4 {
+  const wave = 0.5 + 0.5 * sin(clock.time * clock.speed + v.uv.x * 12.)
+  return vec4(look.tint.rgb * wave * look.gain, 1.)
+}
+`;
+
+/** The canvas's pixels as one string, for telling two frames apart. */
+async function frameDigest(page) {
+  const { data } = await sharp(await photographCanvas(page))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return createHash('sha1').update(data).digest('hex');
+}
+
+/** Hold the clock at `seconds` and wait for two frames drawn at it. */
+async function holdAt(page, seconds) {
+  const framesAt = await page.evaluate((t) => {
+    document.querySelector('[data-playground]').__playground.freeze(t);
+    return document.querySelector('[data-gpu-canvas]').__shader?.frames ?? 0;
+  }, seconds);
+  await page
+    .waitForFunction(
+      (n) => (document.querySelector('[data-gpu-canvas]').__shader?.frames ?? 0) >= n + 2,
+      framesAt,
+      { timeout: 20_000 },
+    )
+    .catch(() => {});
+  await page.waitForTimeout(200);
+}
+
+/** Every uniform block reaches the frame on both GPU backends: the second block's reserved
+ *  `time` moves the picture as the clock does, and its slider moves it without a rebuild. */
+async function checkUniformBlocks(page, problems) {
+  await typeSource(page, TWO_BLOCKS);
+  await settleResult(page);
+  const seen = [];
+  for (const engine of ['webgl2', 'webgpu']) {
+    await page.selectOption('[data-engine]', engine);
+    await settleBackend(page);
+    const state = await resultState(page);
+    if (state.backend !== engine) {
+      problems.push(`two uniform blocks did not draw on ${engine}: ${state.note}`);
+      continue;
+    }
+    await slide(page, '[data-bindings] input[aria-label="speed"]', 1);
+    await holdAt(page, 1);
+    const early = await frameDigest(page);
+    await holdAt(page, 2);
+    const later = await frameDigest(page);
+    const mountedBefore = await page.evaluate(() => {
+      const canvas = document.querySelector('[data-gpu-canvas]');
+      canvas.dataset.probe = 'kept';
+      return canvas.__shader?.frames ?? 0;
+    });
+    await slide(page, '[data-bindings] input[aria-label="speed"]', 0.25);
+    await holdAt(page, 2);
+    const slower = await frameDigest(page);
+    const kept = await page.evaluate(() => {
+      const canvas = document.querySelector('[data-gpu-canvas]');
+      return { probe: canvas.dataset.probe ?? '', frames: canvas.__shader?.frames ?? 0 };
+    });
+    if (early === later)
+      problems.push(`on ${engine} the second block's time did not reach the frame`);
+    if (later === slower)
+      problems.push(`on ${engine} the second block's speed slider did not reach the frame`);
+    if (kept.probe !== 'kept' || kept.frames < mountedBefore)
+      problems.push(`on ${engine} a slider in the second block rebuilt the pass`);
+    seen.push(
+      `${engine} ${early === later ? 'still' : 'moves'} with time, ${later === slower ? 'deaf' : 'follows'} speed`,
+    );
+  }
+  await page.evaluate(() => document.querySelector('[data-playground]').__playground.freeze(null));
+  await page.selectOption('[data-engine]', 'auto');
+  await settleBackend(page);
+  console.log(`  two uniform blocks: ${seen.join(', ')}`);
+}
+
+// A uniform struct that nests a struct and an array of them. Before the panel filled each
+// leaf, it had no control for `scene` and the canvas drew nothing.
+const NESTED_UNIFORM = `"use typeshade"
+
+class Light {
+  dir: vec3
+  colour: vec3
+}
+
+class Scene {
+  key: Light
+  fills: array<Light, 2>
+  ambient: f32
+}
+
+declare const scene: uniform<Scene>
+
+@fragment
+export function fs(@location(0) uv: vec2): vec4 {
+  const n = normalize(vec3(uv * 2. - 1., 1.))
+  let c = scene.key.colour * max(dot(n, normalize(scene.key.dir)), 0.)
+  c = c + scene.fills[0].colour * max(dot(n, normalize(scene.fills[0].dir)), 0.)
+  c = c + scene.fills[1].colour * max(dot(n, normalize(scene.fills[1].dir)), 0.)
+  return vec4(c + vec3(scene.ambient, scene.ambient, scene.ambient), 1.)
+}
+`;
+
+/** A uniform struct of structs: a control for every leaf, a frame on every engine, and a
+ *  leaf's control that moves the frame. */
+async function checkNestedUniform(page, problems) {
+  await typeSource(page, NESTED_UNIFORM);
+  await settleResult(page);
+  const panel = await page.evaluate(() => ({
+    text: document.querySelector('[data-bindings]')?.textContent ?? '',
+    leaf: document.querySelector('[data-bindings] input[aria-label="fills[1].colour"]') !== null,
+  }));
+  if (!panel.leaf) problems.push('the nested uniform has no control for fills[1].colour');
+  const note = JSON.parse(
+    await page.evaluate(() => document.querySelector('[data-playground]').dataset.copy),
+  ).bindings.noControl;
+  if (panel.text.includes(note))
+    problems.push(`the nested uniform still reads "${note}" in the panel`);
+  const seen = [];
+  for (const engine of ['webgl2', 'webgpu']) {
+    await page.selectOption('[data-engine]', engine);
+    await settleBackend(page);
+    const state = await resultState(page);
+    const drawn = await canvasColours(page);
+    if (state.backend !== engine || drawn.colours < 2)
+      problems.push(
+        `the nested uniform on ${engine} drew ${drawn.colours} colour(s): ${state.note}`,
+      );
+    seen.push(`${engine} ${drawn.colours} colours`);
+  }
+  await holdAt(page, 1);
+  const before = await frameDigest(page);
+  await slide(page, '[data-bindings] input[aria-label="ambient"]', 0.05);
+  await holdAt(page, 1);
+  if ((await frameDigest(page)) === before)
+    problems.push('the nested uniform: moving ambient did not reach the frame');
+  await page.selectOption('[data-engine]', 'cpu');
+  const cpu = await page
+    .waitForFunction(
+      () => document.querySelector('[data-canvas-note]').dataset.px !== undefined,
+      null,
+      { timeout: 30_000 },
+    )
+    .then(() =>
+      page.evaluate(() => {
+        const node = document.querySelector('[data-canvas]');
+        const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
+        const set = new Set();
+        for (let i = 0; i < data.length; i += 4)
+          if (data[i + 3] > 0) set.add(`${data[i]},${data[i + 1]},${data[i + 2]}`);
+        return set.size;
+      }),
+    )
+    .catch(() => 0);
+  if (cpu < 2) problems.push(`the nested uniform drew ${cpu} colour(s) on the CPU`);
+  seen.push(`CPU ${cpu} colours`);
+  await page.evaluate(() => document.querySelector('[data-playground]').__playground.freeze(null));
+  await page.selectOption('[data-engine]', 'auto');
+  await settleBackend(page);
+  console.log(`  nested uniform: ${seen.join(', ')}, ambient reaches the frame`);
+}
+
+/** The plotted canvas's pixels at a grid of points, once a dispatch on `backend` has plotted. */
+async function plottedPixels(page, backend) {
+  await page.waitForFunction(
+    (b) => {
+      const canvas = document.querySelector('[data-gpu-canvas]');
+      return canvas?.dataset.plotted === '1' && canvas.dataset.backend === b;
+    },
+    backend,
+    { timeout: 60_000 },
+  );
+  return page.evaluate(() => {
+    const node = document.querySelector('[data-gpu-canvas]');
+    const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
+    const out = [];
+    for (let y = 0.05; y < 1; y += 0.1)
+      for (let x = 0.05; x < 1; x += 0.1) {
+        const at = (Math.floor(y * node.height) * node.width + Math.floor(x * node.width)) * 4;
+        out.push([data[at], data[at + 1], data[at + 2]]);
+      }
+    return { width: node.width, height: node.height, points: out };
+  });
+}
+
+/** A compute entry that writes storage textures runs on the CPU oracle: it loads and stores
+ *  texels there, and the image it plots is the one WebGPU wrote. */
+async function checkStorageTextures(page, problems) {
+  await pickExample(page, 'storage-texture');
+  const gpu = await plottedPixels(page, 'webgpu');
+  await page.selectOption('[data-engine]', 'cpu');
+  const cpu = await plottedPixels(page, 'cpu').catch(() => undefined);
+  const note = (await resultState(page)).note;
+  const rows = await page.evaluate(
+    () => document.querySelector('[data-bindings]')?.textContent ?? '',
+  );
+  await page.selectOption('[data-engine]', 'auto');
+  await settleResult(page);
+  if (!cpu) {
+    problems.push(`storage-texture did not plot on the CPU: ${note}`);
+    return;
+  }
+  let worst = 0;
+  const colours = new Set();
+  cpu.points.forEach((c, i) => {
+    colours.add(c.join(','));
+    const g = gpu.points[i];
+    worst = Math.max(worst, ...c.map((v, k) => Math.abs(v - g[k])));
+  });
+  if (colours.size < 2)
+    problems.push(`storage-texture plotted ${colours.size} colour(s) on the CPU: ${note}`);
+  if (worst > 1)
+    problems.push(`storage-texture on the CPU differs from WebGPU by up to ${worst} of 255`);
+  if (!/128 × 128 rgba8unorm/.test(rows))
+    problems.push('storage-texture on the CPU left no row under its storage textures');
+  console.log(
+    `  storage textures on the CPU: storage-texture in ${colours.size} colours at ${cpu.points.length} points, within ${worst} of 255 of WebGPU`,
+  );
+}
 
 /** One previously flat example of each kind the panel supplies now draws, and the panel's
  *  controls reach the frame: a matrix preset, a texture source, an override, a dispatch's
@@ -2179,6 +2442,9 @@ async function checkRoute(browser, origin, route) {
         );
         await checkBackends(page, problems);
         await checkBindings(page, problems);
+        await checkUniformBlocks(page, problems);
+        await checkNestedUniform(page, problems);
+        await checkStorageTextures(page, problems);
         await pickExample(page, 'hello');
       }
     }

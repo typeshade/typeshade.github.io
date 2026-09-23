@@ -701,8 +701,6 @@ export const ko: Copy = {
       '컴퓨트 진입점은 WebGPU나 CPU 오라클에서 실행됩니다. GLSL ES 3.00에는 컴퓨트 단계가 없습니다.',
     computeRan:
       '{entry}을(를) {backend}에서 호출 {invocations}회로 실행했고 {ms} ms 걸렸습니다. 캔버스는 이 진입점이 쓴 값을 그래프로 보여 줍니다.',
-    cpuTextures:
-      'CPU 오라클에는 텍스처 유닛이 없어서, 여기서 텍스처를 읽으면 늘 검은색이 나옵니다.',
     bindings: {
       title: '바인딩',
       empty: '이 모듈은 바인딩하는 것이 없습니다.',
@@ -729,6 +727,8 @@ export const ko: Copy = {
       written: '디스패치 후',
       size: '크기',
       noControl: '컨트롤이 없는 바인딩:',
+      hostOwned:
+        '호스트가 소유한 바인딩입니다. 여기서는 페이지가 대신 값을 넣으며, 이 값은 바꿀 수 있습니다.',
       vertices:
         '버텍스 진입점은 이 입력을 버퍼에서 읽습니다. 페이지는 삼각형의 세 꼭짓점을 넘기고, 입력마다 이름에 맞는 값을 채웁니다.',
     },

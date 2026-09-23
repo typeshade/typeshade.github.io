@@ -98,7 +98,6 @@ const GLOBAL_CLASS_ROOTS = {
     'api-index',
     'api-type',
     'api-optional',
-    'api-see-also',
   ],
   // Expressive Code's output.
   foreign: [
@@ -112,8 +111,6 @@ const GLOBAL_CLASS_ROOTS = {
     'code',
     'copy',
   ],
-  // LiveShader's rules move out with the Playground's, once the Playground's own branch lands.
-  deferred: ['live'],
 };
 const roots = Object.values(GLOBAL_CLASS_ROOTS).flat();
 const globalCss = path.join(root, 'src/styles/global.css');

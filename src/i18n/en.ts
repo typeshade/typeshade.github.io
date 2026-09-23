@@ -665,7 +665,6 @@ export const en = {
       'A compute entry runs on WebGPU or on the CPU oracle. GLSL ES 3.00 has no compute stage.',
     computeRan:
       'Ran {entry} over {invocations} invocations on {backend} in {ms} ms. The canvas plots what it wrote.',
-    cpuTextures: 'The CPU oracle has no texture unit, so every texture read here returns black.',
     // The panel under the canvas: one block per binding the module declares, with what the
     // reader supplies it with. The texture sources and matrix presets are the choices a
     // select offers; the filter and address values are WebGPU's own words and stay in code.
@@ -695,6 +694,8 @@ export const en = {
       written: 'After the dispatch',
       size: 'size',
       noControl: 'No control for',
+      hostOwned:
+        'The host owns this binding. Here the page supplies a stand-in value, which you can change.',
       vertices:
         'The vertex entry reads these from a buffer. The page gives it the three corners of a triangle, each input filled by what it is called.',
     },

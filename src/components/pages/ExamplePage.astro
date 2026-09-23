@@ -6,7 +6,7 @@
 // who clicks an example stays on the site and sees it draw; the file on GitHub is one link in
 // the row at the foot of the page.
 //
-// The card is the front page's own showcase card (.live-card in src/styles/global.css) and
+// The card is the front page's own showcase card (cardClass in src/lib/live-card.ts) and
 // the tab bar is the Ant tab head the "one file, two targets" section uses, down to
 // src/scripts/target-tabs.ts driving it. What a reader is told about the frame, which backend
 // drew it or why nothing did, and where the emitted text comes from, is written under the
@@ -24,6 +24,7 @@ import ShaderCanvas from '../ShaderCanvas.astro';
 import type { CanvasText } from '../ShaderCanvas.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
+import { cardClass } from '../../lib/live-card.ts';
 import { checkedBlurbs } from '../../lib/examples.ts';
 import { checkedShade } from '../../lib/shade-examples.ts';
 import { examplePage, examplePath, exampleSourceHref, noPictureReasons } from '../../lib/example-pages.ts';
@@ -147,7 +148,7 @@ const editable = example.corpus === 'shade';
     </div>
   ) : (
     <div class="example-stage @container mbs-6" data-front-tabs data-shader-scope>
-      <div class="live-card">
+      <div class={cardClass}>
         <div class="example-stage-body grid grid-cols-1">
           <div class="example-stage-view min-inline-0 min-block-0 bg-surface-2">
             {example.drawn ? (

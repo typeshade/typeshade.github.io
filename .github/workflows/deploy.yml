@@ -29,10 +29,31 @@ jobs:
           # vendor/shader-dsl is the compiler; the page is built from it.
           submodules: true
           persist-credentials: false
+          # The compiler-bump step compares the pin with the one on the base branch, so it needs
+          # both commits of the compiler and the base branch of this repository.
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      # What a compiler bump owes the site. A page, component or script that still names an
+      # export or file the new pin removes fails this step, as does a compiler
+      # LINT.ThenChange(//typeshade.github.io/...) target this branch did not change; then the
+      # site's own IfChange pairs are held to the diff (vendor/shader-dsl/scripts/downstream-impact.ts
+      # and ifchange.ts). Both run from the pinned compiler, so a pin from before they existed
+      # skips the step.
+      - name: What the compiler bump owes the site
+        if: github.event_name != 'push'
+        env:
+          BASE: ${{ github.base_ref || 'main' }}
+        run: |
+          if [ ! -f vendor/shader-dsl/scripts/downstream-impact.ts ]; then
+            echo "The pinned compiler predates scripts/downstream-impact.ts; nothing to check."
+            exit 0
+          fi
+          bun vendor/shader-dsl/scripts/downstream-impact.ts --repo typeshade.github.io \
+            --submodule vendor/shader-dsl --base "origin/$BASE" --check
+          TYPESHADE_DOCS_ROOT="$PWD" bun vendor/shader-dsl/scripts/ifchange.ts --base "origin/$BASE"
       # Prettier over the TypeScript, CSS, JSON and Markdown, then the `;` in each component's
       # frontmatter and <script>, which Prettier does not format (see .prettierignore).
       - run: bun run format:check

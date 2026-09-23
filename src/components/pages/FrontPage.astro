@@ -17,6 +17,7 @@ import { examplePath } from '../../lib/example-pages.ts';
 import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts';
 import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts';
 import { links } from '../../lib/links.ts';
+import { fileClass } from '../../lib/live-card.ts';
 import { examples } from '../../../vendor/shader-dsl/examples/index.ts';
 
 interface Props {
@@ -114,7 +115,7 @@ const quickStart = localePath(locale, links.quickStart.href);
           and the one the hero card gives the same file. The frame under it carries no title
           bar of its own, so the first line of code sits at the same height in both columns. */}
       <div class="front-targets-src flex min-inline-0 flex-col gap-4 lg:gap-6">
-        <p class="flex block-[41px] items-center gap-4 border-be border-be-line-1"><span class="live-file">hello.shade.ts</span></p>
+        <p class="flex block-[41px] items-center gap-4 border-be border-be-line-1"><span class={fileClass}>hello.shade.ts</span></p>
         <CodeFrame label={f.targets.source}>
           <Code code={useTypeshadeSample} lang="ts" locale={locale} wrap />
         </CodeFrame>
@@ -241,6 +242,9 @@ const quickStart = localePath(locale, links.quickStart.href);
   .front-map-row dd strong :global(code) { font-size: 0.95em }
   /* No copy button, so the first line keeps no room for one at its end. */
   .front-map-row dt :global(.expressive-code :nth-child(1 of .ec-line) .code) { padding-inline-end: var(--ec-codePadInl) }
+  /* Nor the band a touch screen keeps above the first line for the copy button that stays on
+     screen there (global.css, under hover: none). One selector heavier than that rule. */
+  @media (hover: none) { .front-map-row dt :global(.expressive-code .frame pre > code) { padding-block-start: var(--ec-codePadBlk) } }
   /* The gradient pass drawn by each backend: two cards, the picture as the cover. */
   .front-oracle :global(.figure) {
     gap: 0; overflow: hidden;
