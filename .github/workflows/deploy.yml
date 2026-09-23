@@ -24,7 +24,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # vendor/shader-dsl is the compiler; the page is built from it.
           submodules: true
@@ -57,11 +57,13 @@ jobs:
       # Pages is only configured for deployment runs on main; PRs still execute every build/QA check above.
       # A manual dispatch on another branch (pin-compiler.yml sends one for the pull request it
       # opens, which starts no pull_request run) builds and checks the same way and publishes nothing.
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           enablement: true
-      - uses: actions/upload-pages-artifact@v3
+      # From v4 on this leaves files and folders starting with a dot out of the artifact; dist/
+      # has none (CNAME, robots.txt and the rest are plain names).
+      - uses: actions/upload-pages-artifact@v5
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           path: dist
@@ -75,4 +77,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
