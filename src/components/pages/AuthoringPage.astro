@@ -27,7 +27,7 @@ const source = translated ?? entry;
 const { Content, headings } = await render(source);
 // The cross-links the remark plugins add name the English reference and the English error
 // pages; a Korean page keeps the reader in Korean chrome by prefixing them in the rendered HTML.
-const localized = locale === 'en' ? null : (source.rendered?.html ?? '').replace(/href="\/(api|reference\/errors)\//g, `href="/${locale}/$1/`);
+const localized = locale === 'en' ? null : (source.rendered?.html ?? '').replace(/href="\/(api|reference\/errors|reference\/rules)\//g, `href="/${locale}/$1/`);
 
 // Every section is named and described in every language, and no language names one the
 // guide has dropped. A build stops here with the id that is missing or stale.

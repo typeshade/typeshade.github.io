@@ -31,12 +31,44 @@ if (!mirror || !/^[0-9a-f]{7,40}$/.test(pin))
 let byName = null;
 const slugs = () => (byName ??= apiSlugByName());
 
+// The design rules' traceability items (src/lib/design-rules.ts) are the one text written
+// against the compiler's own tracker, typeshade/typeshade, where every number they name is an
+// issue or a pull request. Their text is normative, so a number stays and links there:
+// dropping it would change what a rule says ("the family #130 to #139").
+const REQS = /[\\/]reqs[\\/](?:rules|surface)[\\/][^\\/]+\.md$/;
+
+/** A text node cut at every issue number, each number a link into the compiler's tracker. */
+function issueLinks(value) {
+  const out = [];
+  let last = 0;
+  for (const m of value.matchAll(/(?<![\w&/])#(\d+)\b/g)) {
+    if (m.index > last) out.push({ type: 'text', value: value.slice(last, m.index) });
+    out.push({
+      type: 'link',
+      url: `${mirror}/issues/${m[1]}`,
+      children: [{ type: 'text', value: m[0] }],
+    });
+    last = m.index + m[0].length;
+  }
+  if (out.length === 0) return null;
+  if (last < value.length) out.push({ type: 'text', value: value.slice(last) });
+  return out;
+}
+
 export default function remarkPackageName() {
-  return (tree) => {
+  return (tree, file) => {
+    const reqs = REQS.test(String(file?.path ?? ''));
     // One link per export name per page, the rule src/lib/remark-api-links.mjs follows: a
     // later link to a page already linked above unwraps to the code it was written as.
     const linked = new Set();
     visit(tree, (node, index, parent) => {
+      if (reqs) {
+        if (node.type !== 'text' || parent?.type === 'link') return;
+        const parts = issueLinks(node.value);
+        if (!parts) return;
+        parent.children.splice(index, 1, ...parts);
+        return index + parts.length;
+      }
       if (node.type === 'text' || node.type === 'inlineCode' || node.type === 'code') {
         node.value = node.value.split(FROM).join(TO).replace(ISSUE, '');
       }

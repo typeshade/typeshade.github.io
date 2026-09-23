@@ -522,6 +522,10 @@ export const en = {
         frontEndH: 'In the front end',
         seeAlsoH: 'See also',
         sourceH: 'Source',
+        // The design rules the code enforces (src/lib/design-rules.ts): a rule whose Enforced by
+        // names the code, or a rule the code's registry text names.
+        ruleH: (n: number): string =>
+          n === 1 ? 'The rule this enforces' : 'The rules this enforces',
         compiled: 'Compiled at build time against the pinned compiler, this program gets:',
         backend:
           'Compiled at build time against the pinned compiler, this program gets a `TS8015` diagnostic, the front end reporting a backend that refused the module. The error the backend threw carries the code:',
@@ -577,6 +581,103 @@ export const en = {
         BACKEND:
           "A backend that refused to emit a module the front end accepted. The message is the backend's own.",
         INDEX_OOB: 'A constant index outside the length of what it indexes.',
+      },
+    },
+    // The design rules at /reference/rules/: one page per rule of the compiler's design
+    // document, read from its traceability tree (src/lib/design-rules.ts). The rule text and
+    // the parts under it stay the compiler's own English in every language; these are the
+    // words around them.
+    rules: {
+      title: "TypeShade design rules: the language's rules, by chapter",
+      description: `The ${facts.rules} rules the TypeShade language is designed by, each with its rationale, what it derives from, how it is verified and the error codes that enforce it.`,
+      summary: 'What the language may contain and how it may change, one rule per page.',
+      h1: 'Design rules',
+      intro: `Every rule of the compiler's design document, \`docs/language-design.md\`, read from its traceability tree at commit ${facts.pinnedCommit}. A rule constrains an author writing a \`"use typeshade"\` file or the compiler itself. Each one states one requirement, why it holds, what it derives from, and where the compiler enforces it.`,
+      verifiedP: 'How each rule is verified, as the traceability tree records it:',
+      note: "The rule text and the parts under it are the compiler's own English, as the design document writes them.",
+      rulesCount: (n: number) => `${n} rules`,
+      // The badge a row and a page carry, one per value of `verification` in the item.
+      kinds: {
+        test: 'Test',
+        code: 'Code only',
+        pending: 'Not enforced',
+        review: 'Review',
+      },
+      // What each value means, the way reqs/README.md in the compiler defines it.
+      kindCounts: {
+        test: `${facts.rulesTest} rules: a test, a gate script or a CI workflow names the rule.`,
+        code: `${facts.rulesCode} rules: only the implementation carries the rule, and no test checks it yet.`,
+        pending: `${facts.rulesPending} rule: listed as not yet enforced, in Appendix B of the design document.`,
+        review: `${facts.rulesReview} rules: held by review, and no file checks them.`,
+      },
+      // The chapters of the design document, as its headings name them. The build holds this
+      // list to the headings at the pin, so a renamed chapter stops it here.
+      chapters: {
+        1: 'Introduction',
+        2: 'Sources of the surface',
+        3: 'Textual structure and names',
+        4: 'Types',
+        5: 'Literals and typing',
+        6: 'Declarations and resources',
+        7: 'Expressions and statements',
+        8: 'Functions and entry points',
+        9: 'Built-in functions and the TypeShade extensions',
+        10: 'Extensions and capabilities',
+        11: 'Targets and the oracle',
+        12: 'Diagnostics',
+        13: 'Change control',
+      } as Record<number, string>,
+      chapterH: (n: number, title: string) => `${n}. ${title}`,
+      // One rule on a page of its own, at /reference/rules/<n-m>/.
+      entry: {
+        // The first candidate that lands inside the 45 to 60 characters check-seo.mjs allows.
+        title: (rule: string, chapter: string) => {
+          const candidates = [
+            `Rule ${rule}: ${chapter}, a TypeShade design rule`,
+            `Rule ${rule}, ${chapter}: a TypeShade language design rule`,
+            `Rule ${rule}: ${chapter} in the TypeShade language`,
+            `Rule ${rule}: ${chapter} in TypeShade`,
+            `Rule ${rule}: ${chapter}`,
+            `Rule ${rule}: a design rule of the TypeShade shader language`,
+          ];
+          return (
+            candidates.find((t) => t.length >= 45 && t.length <= 60) ??
+            candidates[candidates.length - 1]!
+          );
+        },
+        heading: (rule: string) => `Rule ${rule}`,
+        description: (rule: string, chapter: string, line: string) =>
+          `Rule ${rule} of the TypeShade language design, in ${chapter}. ${line}`,
+        fill: 'Its page gives the rationale, the sources, and the files and error codes that hold it.',
+        kindLine: (n: number, title: string) => `Chapter ${n}, ${title}`,
+        kindMeta: 'Verification',
+        rationaleH: 'Rationale',
+        derivesH: 'Derives from',
+        verifiedH: 'How it is verified',
+        explainedH: 'Explained in',
+        codesH: 'Error codes that enforce it',
+        seeAlsoH: 'See also',
+        sourceH: 'Source',
+        // How it is verified, one sentence per value of `verification`.
+        how: {
+          test: 'Checked by a test. A test, a gate script or a CI workflow names this rule, and the traceability check fails when a file listed below stops naming it.',
+          code: 'Only the implementation carries it; no test checks it yet. The file below names the rule in an `Implements:` tag.',
+          pending:
+            'Listed as not yet enforced. Appendix B of the design document records the rule, and no file checks it.',
+          review: 'Held by review. No file checks it, and the rule names review as what holds it.',
+        },
+        enforcedP: 'Where the rule says the compiler enforces it:',
+        filesP: (commit: string) =>
+          `The files that verify it at commit ${commit}, each at the first line that names the rule:`,
+        evidence: "checked by the compiler's own test",
+        explainedP: (commit: string) =>
+          `The sections of the surface document that explain this rule, at commit ${commit}:`,
+        section: (n: number, title: string) => `§${n} ${title}`,
+        codesP:
+          'The diagnostic codes the rule names under Enforced by, or whose registry text names the rule:',
+        sourceP: (commit: string) => `The rule at commit ${commit}:`,
+        designDoc: 'the design document',
+        item: 'its traceability item',
       },
     },
   },

@@ -94,11 +94,13 @@ export const links = {
   api: { label: 'Compiler API reference', href: '/api/' },
   reference: { label: 'Language reference', href: '/reference/' },
   errors: { label: 'Error codes', href: '/reference/errors/' },
+  rules: { label: 'Design rules', href: '/reference/rules/' },
   guideSource: { label: 'Compiler guide source (AUTHORING.md)', href: at('AUTHORING.md') },
   surfaceSource: {
     label: 'TypeShade surface specification',
     href: at('docs/use-typeshade-surface.md'),
   },
+  designSource: { label: 'docs/language-design.md', href: at('docs/language-design.md') },
   mirror: { label: 'GitHub', href: mirror },
   docs: { label: 'README', href: at('README.md') },
   npm: { label: 'typeshade', href: 'https://www.npmjs.com/package/typeshade' },
@@ -448,6 +450,9 @@ export function sidebar(
   // The diagnostic codes sit with the language reference: a code is what a reader of a
   // `"use typeshade"` file meets when the file does not compile.
   reference.push({ label: d.errors.h1, href: localePath(locale, links.errors.href), depth: 1 });
+  // The design rules follow the codes: a code's page names the rule it enforces, and a rule's
+  // page the codes that enforce it.
+  reference.push({ label: d.rules.h1, href: localePath(locale, links.rules.href), depth: 1 });
   reference.push({ label: d.api.h1, href: localePath(locale, links.api.href) });
   for (const { category, members } of apiCategories()) {
     reference.push({

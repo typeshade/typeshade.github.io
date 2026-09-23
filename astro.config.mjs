@@ -10,6 +10,7 @@ import remarkDocTables from './src/lib/remark-doc-tables.mjs';
 import remarkErrorLinks from './src/lib/remark-error-links.mjs';
 import remarkPackageName from './src/lib/remark-package-name.mjs';
 import remarkPromoteBoldLeads from './src/lib/remark-promote-bold-leads.mjs';
+import remarkRuleLinks from './src/lib/remark-rule-links.mjs';
 import { verifyArtifacts } from './scripts/artifacts.mjs';
 import { verifyKoreanFonts } from './scripts/fonts.mjs';
 
@@ -86,7 +87,8 @@ export default defineConfig({
     }),
   ],
   // The package name first, then the guide's first mention of each export as a link to its
-  // reference page.
+  // reference page, and the first mention of each error code and each design rule as a link to
+  // its page.
   markdown: {
     remarkPlugins: [
       remarkPackageName,
@@ -94,6 +96,7 @@ export default defineConfig({
       remarkDocTables,
       remarkApiLinks,
       remarkErrorLinks,
+      remarkRuleLinks,
     ],
   },
   vite: { plugins: [tailwindcss()] },
