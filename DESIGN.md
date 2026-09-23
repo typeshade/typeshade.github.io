@@ -385,7 +385,7 @@ cards takes the column. A third measure needs a reason.
   radius, 12px by 16px of padding, and Ant's 16px info-circle in the primary at the left. It
   carries the pre-release note on the front page and on Quick start. Dark uses the same two
   tokens, `#15325b` and `#111a2c`.
-- **Tabs.** `.front-tabs-head` is an Ant Tabs head: a 40px row of buttons 16px apart over a
+- **Tabs.** `.tabs-head` is an Ant Tabs head: a 40px row of buttons 16px apart over a
   `#f0f0f0` rule, the active one in the primary at weight 600 with a 2px primary underline,
   the rest in secondary text. Every panel stays in the page, so the search index and a reader
   with no script get all of them stacked; the head appears and the inactive panel folds away

@@ -109,24 +109,24 @@ const quickStart = localePath(locale, links.quickStart.href)
           and the one the hero card gives the same file. The frame under it carries no title
           bar of its own, so the first line of code sits at the same height in both columns. */}
       <div class="front-targets-src">
-        <p class="front-tabs-head front-targets-file"><span class="live-file">hello.shade.ts</span></p>
+        <p class="tabs-head front-targets-file"><span class="live-file">hello.shade.ts</span></p>
         <CodeFrame label={f.targets.source}>
           <Code code={useTypeshadeSample} lang="ts" locale={locale} wrap />
         </CodeFrame>
       </div>
       <div class="front-targets-out" data-front-tabs>
-        <div class="front-tabs-head" role="tablist" aria-label={f.targets.h}>
+        <div class="tabs-head" role="tablist" aria-label={f.targets.h}>
           <button type="button" role="tab" id="targets-tab-wgsl" aria-controls="targets-panel-wgsl" aria-selected="true">{f.targets.wgsl}</button>
           <button type="button" role="tab" id="targets-tab-glsl" aria-controls="targets-panel-glsl" aria-selected="false">{f.targets.glsl}</button>
         </div>
         {/* The tab already names the target, so the frame inside the panel carries no title
             bar of its own; the label stays as the code region's accessible name. */}
-        <div class="front-tabs-panel" role="tabpanel" id="targets-panel-wgsl" aria-labelledby="targets-tab-wgsl">
+        <div class="tabs-panel" role="tabpanel" id="targets-panel-wgsl" aria-labelledby="targets-tab-wgsl">
           <CodeFrame label={f.targets.wgsl}>
             <Code code={useTypeshadeHero.wgsl} lang="wgsl" locale={locale} wrap />
           </CodeFrame>
         </div>
-        <div class="front-tabs-panel" role="tabpanel" id="targets-panel-glsl" aria-labelledby="targets-tab-glsl">
+        <div class="tabs-panel" role="tabpanel" id="targets-panel-glsl" aria-labelledby="targets-tab-glsl">
           <CodeFrame label={f.targets.glsl}>
             <Code code={useTypeshadeHero.glsl} lang="glsl" locale={locale} wrap />
           </CodeFrame>
@@ -145,7 +145,7 @@ const quickStart = localePath(locale, links.quickStart.href)
       {tiles.map((tile) => (
         <li>
           <a class="front-tile" href={tile.href}>
-            <span class="example-tile-frame">
+            <span class="tile-cover">
               <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" />
             </span>
             <span class="front-tile-name">{tile.title}</span>
