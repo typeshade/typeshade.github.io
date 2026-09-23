@@ -37,9 +37,9 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       # What a compiler bump owes the site. A page, component or script that still names an
-      # export or file the new pin removes fails this step, as does a compiler
-      # LINT.ThenChange(//typeshade.github.io/...) target this branch did not change; then the
-      # site's own IfChange pairs are held to the diff (vendor/shader-dsl/scripts/downstream-impact.ts
+      # export or file the new pin removes fails this step, as does a compiler block whose
+      # ThenChange target is a file here (//typeshade.github.io/...) that this branch did not
+      # change; then the site's own IfChange pairs are held to the diff (vendor/shader-dsl/scripts/downstream-impact.ts
       # and ifchange.ts). Both run from the pinned compiler, so a pin from before they existed
       # skips the step.
       - name: What the compiler bump owes the site
