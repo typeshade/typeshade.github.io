@@ -459,8 +459,8 @@ function buildWgsl(): WgslMapping {
   }
   const absent = [...denylist].map(([name, remedy]) => [name, remedy.split(' (see ')[0]!] as const)
 
-  // `f16` has no name in this surface: a file may write `"enable f16"`, and there is still no
-  // type to declare with it, so its row is written here. The profile is checked against the words the copy uses for it, and a change
+  // `f16` has no type name in this surface (`"enable f16"` turns the extension on and declares
+  // nothing), so its row is written here. The profile is checked against the words the copy uses for it, and a change
   // upstream stops the build instead of leaving a stale sentence on the page.
   const f16 = wgslBackend.capProfile.f16
   if (f16?.directive !== 'f16' || f16.hostFeature !== 'shader-f16') {
