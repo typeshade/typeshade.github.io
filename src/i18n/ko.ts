@@ -630,7 +630,8 @@ export const ko: Copy = {
       },
     },
     rules: {
-      title: 'TypeShade 설계 규칙: 셰이더 언어가 따르는 규칙을 장별로 모은 목록',
+      title:
+        'TypeShade 설계 규칙: 셰이더 언어가 따르는 규칙과 그 근거, 검증 방식을 장별로 모은 목록',
       description: `TypeShade 언어를 설계한 규칙 ${facts.rules}개입니다. 규칙마다 근거와 출처, 검증 방식, 그 규칙을 적용하는 오류 코드를 함께 싣습니다.`,
       summary:
         '언어가 담을 수 있는 것과 언어가 바뀌는 방식을 정한 규칙을 한 페이지에 하나씩 싣습니다.',
@@ -669,10 +670,6 @@ export const ko: Copy = {
       chapterH: (n: number, title: string) => `${n}. ${title}`,
       guaranteesP:
         '[보장하는 것](rulesGuarantees) 페이지는 검증 방식마다 규칙을 모으고, 규칙마다 그 규칙을 확인하는 파일을 함께 싣습니다.',
-      mention: () => ({
-        leads: ['규칙'],
-        joins: [',', '와', '과', ' 및', ' 또는', '~'],
-      }),
       flags: {
         pending: '컴파일러가 아직 적용하지 않음',
         code: '아직 확인하는 테스트 없음',

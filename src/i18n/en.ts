@@ -631,14 +631,6 @@ export const en = {
       chapterH: (n: number, title: string) => `${n}. ${title}`,
       guaranteesP:
         '[What is guaranteed](rulesGuarantees) lists the rules of each kind, with the files that verify each one.',
-      // How this language names a rule in prose, so "Rule 7.6" in the copy links to the rule's
-      // page (src/components/Rich.astro): the words that lead a mention and the words that join
-      // a further number to it.
-      // A function, since the word lists of two languages need not be the same length.
-      mention: () => ({
-        leads: ['Rules', 'Rule'],
-        joins: [', and', ', or', ',', ' and', ' or', ' to'],
-      }),
       // The note a guide page shows beside a rule it names that nothing checks yet, by the
       // rule's `verification` at the pin. A rule a test or review holds gets none.
       flags: {

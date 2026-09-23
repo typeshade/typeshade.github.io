@@ -6,16 +6,14 @@
 // stopped exporting. Inline code that is exactly a diagnostic code the compiler's registries
 // carry, `TS8010` or `SD0030`, links to that code's page. A design rule named in the prose,
 // "Rule 4.8" or "Rules 7.2, 7.5", links to that rule's page, the first mention of each rule
-// on a page only and never on the rule's own page, with the words as written; each language
-// names a rule in its own words (docs.rules.mention), and English is read on every page, since
-// the compiler's text is English everywhere. On a guide page, a rule that nothing in the
-// compiler checks yet (`pending` or `code` in its traceability item at the pin) carries a
+// on a page only and never on the rule's own page, with the words as written; the Korean for
+// it links too. On a guide page, a rule that nothing in the compiler checks yet (`pending` or `code` in its traceability item at the pin) carries a
 // short note beside its name, docs.rules.flags: the reference's small outlined label, which
 // never breaks inside, so a phone wraps it whole to the next line.
 import { errorCodePath } from '../lib/error-codes.ts';
-import { ENGLISH_MENTION, OPEN_VERIFICATIONS, mentionParts, ruleByNumber, rulePath } from '../lib/design-rules.ts';
+import { OPEN_VERIFICATIONS, mentionParts, ruleByNumber, rulePath } from '../lib/design-rules.ts';
 import { apiPage, links } from '../lib/links.ts';
-import { copyFor, defaultLocale, localePath, type Locale } from '../i18n/index.ts';
+import { copyFor, defaultLocale, localePath, ruleWords, type Locale } from '../i18n/index.ts';
 
 interface Props {
   text: string;
@@ -78,13 +76,12 @@ const locals = Astro.locals as { linkedRules?: Set<string> };
 const linkedRules = (locals.linkedRules ??= new Set<string>());
 const here = Astro.url.pathname;
 const rules = copyFor(locale).docs.rules;
-const words = locale === defaultLocale ? [ENGLISH_MENTION] : [ENGLISH_MENTION, rules.mention()];
 // The page's route without its locale, and whether it is a page of the guide.
 const route = locale === defaultLocale ? here : here.replace(new RegExp(`^/${locale}(?=/)`), '');
 const onGuide = route.startsWith('/guide/');
 const withRules: Part[] = parts.flatMap((p): Part[] => {
   if (p.kind !== 'text') return [p];
-  return mentionParts(p.value, (n) => rulePath(n) !== undefined, words).flatMap((m): Part[] => {
+  return mentionParts(p.value, (n) => rulePath(n) !== undefined, ruleWords()).flatMap((m): Part[] => {
     if (m.kind === 'text' || linkedRules.has(m.number)) return [{ kind: 'text', value: m.value }];
     const href = localePath(locale, rulePath(m.number)!);
     if (href === here) return [{ kind: 'text', value: m.value }];

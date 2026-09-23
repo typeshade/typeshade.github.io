@@ -221,34 +221,22 @@ function bodyParts(
 // ── rule mentions ──────────────────────────────────────────────────────────────────────
 
 const NUMBER = String.raw`\d{1,2}\.\d{1,2}(?![\d]|\.\d)`;
-
-/** How one language names a rule in prose: the words that lead a mention ("Rule", "Rules")
- *  and the words that join a further number to it (", ", " and ", " to "). A language's words
- *  live in its dictionary (docs.rules.mention); English is the default, and the only words
- *  the compiler's own text uses. */
-export interface MentionWords {
-  readonly leads: readonly string[];
-  readonly joins: readonly string[];
-}
-export const ENGLISH_MENTION: MentionWords = {
-  leads: ['Rules', 'Rule'],
-  joins: [', and', ', or', ',', ' and', ' or', ' to'],
-};
-
-const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const longestFirst = (xs: readonly string[]): string[] =>
-  [...new Set(xs)].sort((a, b) => b.length - a.length).map(escape);
-
-/** "Rule 4.8", "Rules 7.2, 7.5", "Rules 8.9 and 8.13", "Rules 8.11 to 8.14": a mention in
- *  prose, in any of the languages given. A lead is a whole word: nothing that is a letter or a
- *  digit comes before it. */
-function mentionPattern(words: readonly MentionWords[]): RegExp {
-  const leads = longestFirst(words.flatMap((w) => w.leads)).join('|');
-  const joins = longestFirst(words.flatMap((w) => w.joins)).join('|');
-  return new RegExp(
-    String.raw`(?<![\p{L}\p{N}_])(?:${leads}) (${NUMBER})((?:(?:${joins}) ?${NUMBER})*)`,
-    'gu',
-  );
+/** "Rule 4.8", "Rules 7.2, 7.5", "Rules 8.9 and 8.13", "Rules 8.11 to 8.14": a mention in prose,
+ *  led by the word each language names a rule with (`docs.rules.entry.heading` in every
+ *  dictionary, "Rule" and its Korean), which the caller hands in. */
+const mentionPatterns = new Map<string, RegExp>();
+function mentionPattern(words: readonly string[]): RegExp {
+  const key = words.join('|');
+  let re = mentionPatterns.get(key);
+  if (!re) {
+    const lead = words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    re = new RegExp(
+      String.raw`(?<![\p{L}\p{N}_])(?:${lead})s? (${NUMBER})((?:(?:,| and| or| to|, and|, or) ${NUMBER})*)`,
+      'gu',
+    );
+    mentionPatterns.set(key, re);
+  }
+  return re;
 }
 
 export type MentionPart =
@@ -257,12 +245,11 @@ export type MentionPart =
 
 /** A piece of prose cut at every rule it names: "Rules 7.2, 7.5" is a mention written
  *  "Rules 7.2" for 7.2, the text ", ", and a mention written "7.5" for 7.5. The words stay as
- *  written. A number no rule carries stays text. `words` are the languages whose words for a
- *  rule the text may use; English by default. */
+ *  written. A number no rule carries stays text. */
 export function mentionParts(
   text: string,
   known: (n: string) => boolean,
-  words: readonly MentionWords[] = [ENGLISH_MENTION],
+  words: readonly string[] = ['Rule'],
 ): MentionPart[] {
   const out: MentionPart[] = [];
   let last = 0;
@@ -664,13 +651,13 @@ const EXPLAINERS: readonly {
   {
     page: '/guide/language/from-typescript/functions/',
     source:
-      'the localFunction, noCapture and recursion rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
+      'the localFunction, closure and recursion rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
     rules: ['8.4', '8.17'],
   },
   {
     page: '/guide/language/from-typescript/control-flow/',
     source:
-      'the forRow, forRefused, whileRow and switchRow rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
+      'the forRow, forRuntime, whileRow and switchRow rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
     rules: ['7.2', '7.3', '7.5'],
   },
   {
