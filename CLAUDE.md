@@ -27,3 +27,16 @@ pin is a step with checks, not a memory:
 
 The compiler's `AGENTS.md` (section "Docs follow the code") describes the conventions these
 checks come from.
+
+## Merging
+
+`main` is protected by a GitHub ruleset: a pull request, a Code Owner review (`.github/CODEOWNERS`)
+and the required checks (`build`). The repository admin can bypass it, and an agent acting
+through the owner's account can too, so the rule is written here:
+
+- Merge only when every required check is green on the pull request's current head. A red
+  check is fixed, never bypassed.
+- Bypass only the review requirement, and only when the owner has said in the conversation to
+  merge that pull request. The owner cannot approve their own pull request, so their go-ahead
+  is the review.
+- Never push to `main` directly, and never force-push it.
