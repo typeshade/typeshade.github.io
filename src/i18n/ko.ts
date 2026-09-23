@@ -674,6 +674,24 @@ export const ko: Copy = {
         pending: '컴파일러가 아직 적용하지 않음',
         code: '아직 확인하는 테스트 없음',
       },
+      changes: {
+        h: '이전 고정 커밋 이후 바뀐 규칙',
+        first: (current: string) =>
+          `이 사이트에는 ${current} 앞에 고정한 커밋의 기록이 없어서 규칙을 비교할 대상이 없습니다.`,
+        predates: (previous: string, date: string, current: string) =>
+          `이전 고정 커밋 ${previous}(${date})에는 컴파일러의 추적 트리가 없습니다. 추적 트리는 이번 고정 커밋 ${current}에 처음 들어왔습니다. 그래서 아직은 규칙을 비교할 대상이 없고, 다음 고정 커밋부터 이 절에 그사이 추가되거나 없어지거나 바뀐 규칙이 올라옵니다.`,
+        none: (previous: string, current: string) =>
+          `이전 고정 커밋 ${previous}와 이번 고정 커밋 ${current} 사이에 추가되거나 없어지거나 바뀐 규칙은 없습니다.`,
+        lead: (previous: string, date: string, current: string) =>
+          `컴파일러의 추적 트리가 기록한 이전 고정 커밋 ${previous}(${date})와 이번 고정 커밋 ${current} 사이의 변화입니다. 규칙의 지문(fingerprint)이 달라지면 바뀐 규칙으로 봅니다. 규칙 본문이나 규칙을 확인하는 파일이 바뀌면 지문이 달라집니다.`,
+        counts: `추가 ${facts.rulesAdded}개, 삭제 ${facts.rulesRemoved}개, 변경 ${facts.rulesChanged}개입니다.`,
+        addedH: '추가',
+        removedH: '삭제',
+        changedH: '변경',
+        was: (kind: string) => `이전 검증 방식은 ${kind}`,
+        commits: '컴파일러 커밋',
+        removedItem: '이전 고정 커밋의 항목',
+      },
       guarantees: {
         title: 'TypeShade가 보장하는 것: 설계 규칙을 검증 방식과 확인 파일별로 모은 목록',
         description: `TypeShade 설계 규칙 ${facts.rules}개를 무엇이 지키는지 모았습니다. 테스트로 확인하는 규칙 ${facts.rulesTest}개, 구현만 따르는 규칙 ${facts.rulesCode}개, 아직 적용하지 않은 규칙 ${facts.rulesPending}개, 리뷰로 지키는 규칙 ${facts.rulesReview}개와 그 확인 파일입니다.`,

@@ -9,6 +9,7 @@ import { builtinCounts } from './builtin-table.ts';
 import { languageCounts } from './language-reference.ts';
 import { errorCodeCounts } from './error-codes.ts';
 import { ruleCounts } from './design-rules.ts';
+import { ruleHistory } from './rule-history.ts';
 import { loweringRowCount } from './typescript-lowering.ts';
 import { glslCapabilityCount } from './glsl-mapping.ts';
 import { wgslBuiltinIdCount } from './target-mapping.ts';
@@ -306,6 +307,7 @@ const builtins = builtinCounts();
 const languageSurface = languageCounts();
 const errorCounts = errorCodeCounts();
 const rules = ruleCounts();
+const ruleMoves = ruleHistory();
 
 export const facts = {
   examples: examples.length,
@@ -401,6 +403,12 @@ export const facts = {
   rulesPending: rules.pending,
   rulesReview: rules.review,
   rulesSurfaceSections: rules.surfaceSections,
+  /** The rules added, removed and changed (Doorstop's fingerprint moved) since the pin before
+   *  this one, from this repository's history of the pin and the compiler's reqs/rules at each
+   *  (src/lib/rule-history.ts). All three are 0 when the previous pin has no reqs/. */
+  rulesAdded: ruleMoves.added.length,
+  rulesRemoved: ruleMoves.removed.length,
+  rulesChanged: ruleMoves.changed.length,
 };
 
 // The copy was written against these values, at the commit this names. Every count is
@@ -437,6 +445,9 @@ const pinned = {
   rulesPending: 1,
   rulesReview: 4,
   rulesSurfaceSections: 29,
+  rulesAdded: 0,
+  rulesRemoved: 0,
+  rulesChanged: 0,
 };
 const drift: string[] = [];
 if (facts.examples !== pinned.examples)
@@ -492,6 +503,9 @@ for (const key of [
   'rulesPending',
   'rulesReview',
   'rulesSurfaceSections',
+  'rulesAdded',
+  'rulesRemoved',
+  'rulesChanged',
 ] as const) {
   if (facts[key] !== pinned[key]) drift.push(`${key} ${facts[key]} != ${pinned[key]}`);
 }
