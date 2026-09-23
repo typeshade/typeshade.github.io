@@ -1,7 +1,8 @@
 ---
 id: capabilities-extensions
-source: d0c6cbafea8b4c8a26a8466285035f7030948beb35d82790200cfcace24afe01
-sourceLine: 1861
+source: ba14bcf854244061af71291f9f9d45ecb90872abbaa35245e3c8a79c746a7541
+sourceLine: 1891
+rules: 8.7 FYpP5pg4_Ct5BfBIVI4VaTEc8VskMuT5JgT4arrvVCg=
 ---
 
 이 절을 읽고 나면 모듈에 필요한 GPU 기능을 선언하고, 그 기능이 타깃마다 어떤 비용이
@@ -61,8 +62,8 @@ WGSL에서는 선언부 앞에 들어갑니다.
 `"use typeshade"` 옆에 문자열 지시문으로 적습니다.
 
 ```ts
-'use typeshade'
-'enable subgroups'
+'use typeshade';
+'enable subgroups';
 ```
 
 호스트 기능만 있고 소스 지시문이 없는 기능은 선언해도 생성되는 셰이더가 한 바이트도

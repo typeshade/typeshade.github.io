@@ -1,6 +1,6 @@
 ---
 id: the-cpu-oracle
-source: acf625c1612c4a6f04ec66b6158e75225523bc3efbd66f8f78bb579a61f674e5
+source: 4169032959e1ed2a3f0bed9a4b40558b2b0c2abdd5210771b0343fcfac7029bd
 sourceLine: 1385
 ---
 
@@ -167,3 +167,33 @@ cpu.setBinding('tex', 0) // the value is never read under a stub
 cpu.setBinding('smp', 0)
 cpu.fns.shade([0.5, 0.5]) // → [0, 0, 0, 1]
 ```
+
+### grad로 구하는 미분
+
+`grad(m, fn, param)`은 모듈의 함수 하나를 매개변수 하나에 대해 미분하고 `{ module, name }`을
+돌려줍니다. `module`은 새 함수가 하나 더해진 모듈입니다. 이 함수는 `fn`과 같은 인수를 받아
+그 지점의 `d fn / d param`을 돌려주며, 결과 타입은 `fn`의 결과 타입과 같습니다. 새 함수도
+평범한 IR이므로 오라클이 그대로 실행하고, 엔트리가 이 함수를 호출하면 WGSL과 GLSL 코드
+생성기가 함께 출력합니다.
+
+```ts
+import { module, fn, f32T, sin, compileModule, grad } from 'typeshade'
+
+const wave = fn('wave', { x: f32T, k: f32T }, ({ x, k }) => sin(k.mul(x)).mul(k))
+const d = grad(module({ funcs: [wave] }), 'wave', 'k')
+
+compileModule(d.module).fns[d.name](0.5, 2) // → cos(1) * 0.5 * 2 + sin(1) = 1.3817…
+```
+
+미분은 순방향 모드로 계산합니다. 모든 `f32`와 부동소수점 벡터, 부동소수점 행렬은 값 옆에
+미분값을 함께 들고 다니며, `if`, `switch`, `for`는 본문을 지나는 동안 둘 다 전달합니다.
+모듈의 다른 함수를 호출하면 호출되는 함수마다 한 번 생성되는 헬퍼 `g_jvp`를 거칩니다.
+성분별 내장 함수에는 교과서에 나오는 미분 규칙이 있습니다. `floor`, `ceil`, `round`,
+`trunc`, `sign`, `step`의 미분은 영입니다. 불연속 지점을 빼면 어디서나 맞는 값입니다. 벡터
+매개변수라면 `{ direction: [...] }`을 넘기고, 결과는 그 방향을 따라 구한 방향 미분이 됩니다.
+
+미분 규칙이 없는 구성 요소는 `SD0118`로 거부되며, 진단에 그 구성 요소의 이름이 적힙니다.
+텍스처 샘플, 미분 내장 함수, 매개변수가 흘러 들어갈 구조체가 그런 예입니다. 거부는
+매개변수가 그 구성 요소에 닿을 때만 일어납니다. 이 패스는 유도하지 않은 미분을 영으로
+채워 돌려주는 일이 없습니다. 생성된 함수는 오라클 위에서 중앙 유한 차분과 비교해 검사하며,
+직접 만든 함수도 같은 방법으로 검사하면 됩니다.
