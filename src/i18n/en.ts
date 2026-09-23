@@ -1142,6 +1142,12 @@ export const en = {
       }),
       emittedNote: `The WGSL and GLSL tabs are the compiler's own output at commit ${facts.pinnedCommit}, read from the goldens its emit suite bakes ([emit-goldens.test.ts](goldens)).`,
       wgsl: 'WGSL',
+      /** The tab over a pane. Four tabs share the card's right half, so a tab carries the
+       *  language and the stage; the full target name is in the line under the card and on
+       *  the pane itself. */
+      glslVertexTab: 'GLSL vertex',
+      glslFragmentTab: 'GLSL fragment',
+      /** The pane's own accessible name, where the target is named in full. */
       glslVertex: `${glsl} vertex`,
       glslFragment: `${glsl} fragment`,
       github: 'File on GitHub',

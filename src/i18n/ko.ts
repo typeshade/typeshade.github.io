@@ -1279,6 +1279,8 @@ export const ko: Copy = {
       }),
       emittedNote: `WGSL과 GLSL 탭은 커밋 ${facts.pinnedCommit}의 컴파일러가 직접 낸 출력입니다. 컴파일러의 출력 검사가 구워 둔 골든 파일에서 그대로 읽어 왔습니다([emit-goldens.test.ts](goldens)).`,
       wgsl: 'WGSL',
+      glslVertexTab: 'GLSL 버텍스',
+      glslFragmentTab: 'GLSL 프래그먼트',
       glslVertex: `${glsl} 버텍스`,
       glslFragment: `${glsl} 프래그먼트`,
       github: 'GitHub의 파일',

@@ -1169,15 +1169,38 @@ body > main { flex: 1 }
   border-block-start: 1px solid var(--color-line-1);
 }
 .example-stage .front-tabs-head {
-  flex: none; align-items: stretch; gap: 20px; block-size: 44px; padding-inline: 16px;
+  --tab-gap: 20px;
+  flex: none; align-items: stretch; gap: var(--tab-gap); block-size: 44px; padding-inline: 16px;
   overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
   border-block-end: 1px solid var(--color-line-1); background: var(--color-surface-1);
+}
+/* At the head's trailing edge is the 32px fade the panels under it carry at their foot, for
+   the widths where the tabs are wider than the pane and the head scrolls. It is a sticky
+   strip of the head's own ground and not a mask, because a mask over the box would take the
+   hairline under the tabs with it for those 32px. Its negative start margin is the strip and
+   the gap in front of it, so the strip costs the head no width of its own. The head carries
+   data-overflow while there is somewhere to scroll to (src/scripts/example-stage.ts): a fade
+   on a head whose tabs fit would sit over the last tab's own letters. */
+.example-stage .front-tabs-head[data-overflow]::after {
+  content: ''; flex: none; position: sticky; inset-inline-end: 0;
+  inline-size: 32px; margin-inline-start: calc(-32px - var(--tab-gap));
+  background: linear-gradient(to right, transparent, var(--color-surface-1));
 }
 .example-stage .front-tabs-head::-webkit-scrollbar { display: none }
 .example-stage .front-tabs-head button { flex: none; block-size: auto; white-space: nowrap }
 /* The file is where the pane rests, so it leads and a rule sets it apart from the three
-   texts the compiler makes out of it. */
-.example-stage .front-tabs-head button:first-child { padding-inline-end: 20px; position: relative }
+   texts the compiler makes out of it. It is also the one tab whose text the site does not
+   choose: the longest file name on a card page is 22 characters, which puts the four tabs
+   at 465px in English and 469px in Korean, inside the head's 470px at a 1280 viewport and
+   its 490px from 1320. A longer file name would put them past it, so the file is the tab
+   that gives way, and the three the compiler emits stay whole, since a tab a reader cannot
+   read is a text they will not know the page holds. Its floor is 16 characters: under about
+   450px of head the four tabs do not fit however far the file gives way, so the head scrolls
+   there whatever the floor is, and 16 characters keep the example's own name in the tab. */
+.example-stage .front-tabs-head button:first-child {
+  padding-inline-end: var(--tab-gap); position: relative;
+  flex: 0 1 auto; min-inline-size: calc(16ch + var(--tab-gap)); overflow: hidden; text-overflow: ellipsis;
+}
 .example-stage .front-tabs-head button:first-child::after {
   content: ''; position: absolute; inset-block: 13px; inset-inline-end: 0;
   inline-size: 1px; background: var(--color-line-1);
@@ -1232,13 +1255,12 @@ body > main { flex: 1 }
 
 /* Footer: the site map in three groups on the container's white, held off the page field by
    its #f0f0f0 top rule, then the licence, the copyright and the commit. The three groups sit
-   at their own widths beside each other at the left of the shell, and Documentation's 19
-   links run down two columns 32px apart. The band is 607px wide in English and 552px in
-   Korean at every width from 48rem, so the three headings stay in one glance and a reader
-   sees which links each one covers.
-   Tracks of one width across the shell spread the groups instead: Documentation flowed into
-   five columns 1328px wide at 1920 with Project and Languages at the far edge, and the four
-   columns with no heading over them read as four more groups. */
+   at their own widths across the shell, and Documentation's 19 links run down two columns
+   32px apart. What spreads is the space between one group and the next; a group stays as
+   narrow as its own longest link, so the heading nearest a link is the one it belongs to.
+   Tracks of one width spread the links instead: Documentation flowed into five columns
+   1328px wide at 1920, and the four columns with no heading over them read as four more
+   groups. */
 .site-footer { margin-block-start: 96px; border-block-start: 1px solid var(--color-line-1); background: var(--color-ground) }
 .site-map { padding: 32px var(--gutter-x) 24px; max-inline-size: var(--container); margin-inline: auto; display: grid; gap: 24px 32px }
 .site-map h2 { font-size: var(--text-ui); font-weight: 600; line-height: 1.5; color: var(--color-text-1) }
@@ -1261,10 +1283,16 @@ body > main { flex: 1 }
 .site-legal a:hover { color: var(--color-accent) }
 /* One group per row on a phone, where 19 links down one column is what a phone footer does.
    From 40rem Documentation splits into two columns, and from 48rem the three groups go side
-   by side, each as wide as its own longest link. The 64px between groups is twice the 32px
-   between Documentation's two columns, which is what tells the eye where a group ends. */
+   by side, each as wide as its own longest link, spread across the shell so the last one
+   ends on its right edge. The space goes between the groups and never inside one:
+   Documentation's two columns stay 32px apart at every width, while the groups stand 120px
+   apart at a 768 viewport and 396px from 1440 up in English, 148px and 424px in Korean, so
+   the heading a link sits under is the near one. The 64px column gap is the floor under that
+   spread, for a width where the groups' own widths leave little to give away. */
 @media (min-width: 40rem) { .site-map-docs ul { columns: 2; column-gap: 32px } }
-@media (min-width: 48rem) { .site-map { grid-template-columns: repeat(3, minmax(0, max-content)); column-gap: 64px } }
+@media (min-width: 48rem) {
+  .site-map { grid-template-columns: repeat(3, minmax(0, max-content)); column-gap: 64px; justify-content: space-between }
+}
 
 /* API reference page: the crumbs, the kind line, definition lists for parameters and members,
    the targets table, the see-also list */
