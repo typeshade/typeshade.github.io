@@ -8,34 +8,38 @@
 // translations under content/guide/<locale>/, which the loaders name through the fileURL
 // option (src/content.config.ts). The reference's own markdown comes through the same
 // pipeline with no file and is left as it is.
-import { SKIP, visit } from 'unist-util-visit'
-import { apiSlugByName } from './api-nav.ts'
+import { SKIP, visit } from 'unist-util-visit';
+import { apiSlugByName } from './api-nav.ts';
 
-const GUIDE = 'AUTHORING.md'
-const TRANSLATION = /[\\/]content[\\/]guide[\\/][^\\/]+[\\/][^\\/]+\.md$/
+const GUIDE = 'AUTHORING.md';
+const TRANSLATION = /[\\/]content[\\/]guide[\\/][^\\/]+[\\/][^\\/]+\.md$/;
 
 export default function remarkApiLinks() {
   return (tree, file) => {
-    const filePath = String(file?.path ?? '')
-    if (!filePath.endsWith(GUIDE) && !TRANSLATION.test(filePath)) return
-    const slugs = apiSlugByName()
-    const linked = new Set()
+    const filePath = String(file?.path ?? '');
+    if (!filePath.endsWith(GUIDE) && !TRANSLATION.test(filePath)) return;
+    const slugs = apiSlugByName();
+    const linked = new Set();
     // A link into the reference the page already carries counts as the name's one mention:
     // src/lib/remark-package-name.mjs turns a link whose text is an export's name into one,
     // and it runs first. Without this the same name would be linked twice on the page.
     visit(tree, 'link', (node) => {
-      if (!/^\/api\//.test(node.url ?? '')) return
-      const only = node.children.length === 1 && node.children[0].type === 'inlineCode' ? node.children[0].value : ''
-      if (only) linked.add(only.replace(/\(\)$/, ''))
-    })
+      if (!/^\/api\//.test(node.url ?? '')) return;
+      const only =
+        node.children.length === 1 && node.children[0].type === 'inlineCode'
+          ? node.children[0].value
+          : '';
+      if (only) linked.add(only.replace(/\(\)$/, ''));
+    });
     visit(tree, (node, index, parent) => {
-      if (node.type === 'heading' || node.type === 'link' || node.type === 'linkReference') return SKIP
-      if (node.type !== 'inlineCode' || !parent || index === null || index === undefined) return
-      const name = node.value.replace(/\(\)$/, '')
-      const slug = slugs.get(name)
-      if (!slug || linked.has(name)) return
-      linked.add(name)
-      parent.children[index] = { type: 'link', url: `/api/${slug}/`, children: [node] }
-    })
-  }
+      if (node.type === 'heading' || node.type === 'link' || node.type === 'linkReference')
+        return SKIP;
+      if (node.type !== 'inlineCode' || !parent || index === null || index === undefined) return;
+      const name = node.value.replace(/\(\)$/, '');
+      const slug = slugs.get(name);
+      if (!slug || linked.has(name)) return;
+      linked.add(name);
+      parent.children[index] = { type: 'link', url: `/api/${slug}/`, children: [node] };
+    });
+  };
 }

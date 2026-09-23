@@ -2,18 +2,18 @@
 // The bridge page at /guide/typescript-and-webgpu/, on the documentation layout like every
 // other guide page. Copy lives in `concepts` (src/i18n/en.ts, src/i18n/ko.ts); the shader
 // sample is not copy, so it stays here.
-import Docs from '../../layouts/Docs.astro'
-import ConceptDoc from '../ConceptDoc.astro'
-import Rich from '../Rich.astro'
-import TypeShadeCode from '../TypeShadeCode.astro'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { slugify } from '../../lib/slug.ts'
+import Docs from '../../layouts/Docs.astro';
+import ConceptDoc from '../ConceptDoc.astro';
+import Rich from '../Rich.astro';
+import TypeShadeCode from '../TypeShadeCode.astro';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { slugify } from '../../lib/slug.ts';
 
 interface Props { locale: Locale }
-const { locale } = Astro.props
-const content = copyFor(locale).concepts
-const headings = [content.startH, content.modelH, content.fitH, content.orderH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))
+const { locale } = Astro.props;
+const content = copyFor(locale).concepts;
+const headings = [content.startH, content.modelH, content.fitH, content.orderH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 
 <Docs locale={locale} path={links.concepts.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'concepts')}>

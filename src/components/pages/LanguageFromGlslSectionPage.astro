@@ -5,50 +5,50 @@
 // compiler a `"use typeshade"` file and reads back the GLSL it writes, or the message it
 // throws where that target has no form, so no spelling on this page is typed by hand. The
 // tables render through MappingTable.astro, whose header comment documents its props.
-import Docs from '../../layouts/Docs.astro'
-import MappingTable from '../MappingTable.astro'
-import Rich from '../Rich.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import { glslMapping, type GlslTableId } from '../../lib/glsl-mapping.ts'
-import { editCopy, links, mappingSet } from '../../lib/links.ts'
-import type { MappingRowData } from '../../lib/target-mapping.ts'
+import Docs from '../../layouts/Docs.astro';
+import MappingTable from '../MappingTable.astro';
+import Rich from '../Rich.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import { glslMapping, type GlslTableId } from '../../lib/glsl-mapping.ts';
+import { editCopy, links, mappingSet } from '../../lib/links.ts';
+import type { MappingRowData } from '../../lib/target-mapping.ts';
 
-type SectionKey = 'types' | 'uniforms' | 'variables' | 'functions'
+type SectionKey = 'types' | 'uniforms' | 'variables' | 'functions';
 interface Props {
-  locale: Locale
-  section: SectionKey
+  locale: Locale;
+  section: SectionKey;
 }
-const { locale, section } = Astro.props
-const c = copyFor(locale).language.mapping.fromGlsl
-const mapping = glslMapping()
-const entry = mappingSet('languageFromGlsl').sections.find((s) => s.key === section)
-if (!entry) throw new Error(`[from-glsl] there is no section page for '${section}'`)
+const { locale, section } = Astro.props;
+const c = copyFor(locale).language.mapping.fromGlsl;
+const mapping = glslMapping();
+const entry = mappingSet('languageFromGlsl').sections.find((s) => s.key === section);
+if (!entry) throw new Error(`[from-glsl] there is no section page for '${section}'`);
 
 // A cell the compiler left empty carries a sentence from the copy instead, and a row whose
 // sentence nobody wrote stops the build here: an empty cell in a mapping table reads as a
 // blank the reader has to fill.
 const refusal = (table: GlslTableId, row: MappingRowData): string => {
-  const key = `${table}.${row.id}`
-  const written = c.refusals[key]
-  if (!written) throw new Error(`[from-glsl] the row '${key}' has an empty cell and no sentence for it`)
-  return written
-}
+  const key = `${table}.${row.id}`;
+  const written = c.refusals[key];
+  if (!written) throw new Error(`[from-glsl] the row '${key}' has an empty cell and no sentence for it`);
+  return written;
+};
 
 const fill = (table: GlslTableId, row: MappingRowData) =>
-  ({ note: row.message.length > 0 ? row.message : refusal(table, row) })
+  ({ note: row.message.length > 0 ? row.message : refusal(table, row) });
 
 // [GLSL ES 3.00, TypeShade], the two columns every construct table has.
 const pair = (table: GlslTableId) =>
-  mapping.tables[table].map((row) => [row.target ?? fill(table, row), row.source ?? fill(table, row)])
+  mapping.tables[table].map((row) => [row.target ?? fill(table, row), row.source ?? fill(table, row)]);
 
 // The same, with the note the copy carries for that row as a third column.
 const noted = (table: GlslTableId) => {
-  const cells = pair(table)
-  return mapping.tables[table].map((row, i) => [...cells[i]!, { note: c.notes[`${table}.${row.id}`] ?? '' }])
-}
+  const cells = pair(table);
+  return mapping.tables[table].map((row, i) => [...cells[i]!, { note: c.notes[`${table}.${row.id}`] ?? '' }]);
+};
 
-const glslFirst = ['glsl', 'ts'] as const
-const twoColumns = [c.colGlsl, c.colSource]
+const glslFirst = ['glsl', 'ts'] as const;
+const twoColumns = [c.colGlsl, c.colSource];
 
 // The capability rows read the other way: the id a module declares, the directive the shader
 // carries for it, and the WebGL2 extension the host turns on.
@@ -56,10 +56,10 @@ const capabilityRows = mapping.tables.capabilities.map((row) => [
   { name: row.source ?? '' },
   row.target ?? { note: c.noDirective },
   { name: row.message },
-])
+]);
 
-const page = c.pages[section]
-const h1 = { types: c.typesH, uniforms: c.uniformsH, variables: c.variablesH, functions: c.functionsH }[section]
+const page = c.pages[section];
+const h1 = { types: c.typesH, uniforms: c.uniformsH, variables: c.variablesH, functions: c.functionsH }[section];
 const headings = {
   types: [
     { depth: 2, slug: 'scalars', text: c.scalarsH },
@@ -74,7 +74,7 @@ const headings = {
   ],
   variables: [],
   functions: [],
-}[section]
+}[section];
 ---
 
 <Docs

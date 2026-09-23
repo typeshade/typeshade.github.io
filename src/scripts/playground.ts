@@ -8,9 +8,16 @@
 // do: the page's own chunk is Monaco's glue, the emitters, reflection and the CPU oracle, and
 // the compiler lives in the language worker alone. The raster worker imports `core/oracle.ts`
 // this way for the same reason.
-import { emitModule, emitModuleAt, wgslBackend } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import {
+  emitModule,
+  emitModuleAt,
+  wgslBackend,
+} from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
 import { hostFeaturesFor } from '../../vendor/shader-dsl/src/core/backend.ts';
-import { emitGlslStages, type GlslEmitOptions } from '../../vendor/shader-dsl/src/core/backends/glsl.ts';
+import {
+  emitGlslStages,
+  type GlslEmitOptions,
+} from '../../vendor/shader-dsl/src/core/backends/glsl.ts';
 import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
 import type { Fp64Flavor } from '../../vendor/shader-dsl/src/core/passes/fp64-lower.ts';
@@ -178,7 +185,11 @@ interface PlaygroundHandle {
   freeze(seconds: number | null): void;
   /** The rasteriser's RGBA at each pixel of a `width` by `height` grid, one 1-pixel tile each,
    *  or null where the triangle does not cover it; a sentence when it cannot run at all. */
-  cpuPixels(points: readonly (readonly [number, number])[], width: number, height: number): (number[] | null)[] | string;
+  cpuPixels(
+    points: readonly (readonly [number, number])[],
+    width: number,
+    height: number,
+  ): (number[] | null)[] | string;
 }
 
 declare global {
@@ -188,11 +199,16 @@ declare global {
 }
 
 /** Whether a view is one of the three the text panel holds. */
-const isTarget = (view: View): view is Target => view === 'wgsl' || view === 'glslVertex' || view === 'glslFragment';
+const isTarget = (view: View): view is Target =>
+  view === 'wgsl' || view === 'glslVertex' || view === 'glslFragment';
 
 // Monaco ships a WGSL grammar. It ships none for GLSL, and GLSL ES 3.00 is close enough to C
 // for Monaco's C++ tokenizer to colour its keywords, types, numbers and `#version` line.
-const TARGET_LANGUAGE: Readonly<Record<Target, string>> = { wgsl: 'wgsl', glslVertex: 'cpp', glslFragment: 'cpp' };
+const TARGET_LANGUAGE: Readonly<Record<Target, string>> = {
+  wgsl: 'wgsl',
+  glslVertex: 'cpp',
+  glslFragment: 'cpp',
+};
 
 // ── Reflection ─────────────────────────────────────────────────────────────────────────────
 // What reflect() recovers from the compiled module, shaped for the pane. Names and types in
@@ -201,7 +217,8 @@ const TARGET_LANGUAGE: Readonly<Record<Target, string>> = { wgsl: 'wgsl', glslVe
 
 /** How the zero of a type reads in an argument field, and how what is typed back reads as a
  *  value. A vector is a comma-separated list, which is how the source spells one too. */
-const argText = (value: unknown): string => (Array.isArray(value) ? value.join(', ') : String(value));
+const argText = (value: unknown): string =>
+  Array.isArray(value) ? value.join(', ') : String(value);
 
 function parseArg(text: string, zero: unknown): unknown {
   const trimmed = text.trim();
@@ -211,7 +228,8 @@ function parseArg(text: string, zero: unknown): unknown {
     throw new Error('not a boolean');
   }
   const parts = trimmed.split(',').map((part) => Number(part.trim()));
-  if (parts.length === 0 || parts.some((part) => !Number.isFinite(part))) throw new Error('not a number');
+  if (parts.length === 0 || parts.some((part) => !Number.isFinite(part)))
+    throw new Error('not a number');
   if (Array.isArray(zero)) {
     if (parts.length !== zero.length) throw new Error('wrong length');
     return parts;
@@ -221,8 +239,9 @@ function parseArg(text: string, zero: unknown): unknown {
 }
 
 /** How a field reads on one line: `name: type` and the attribute that placed it, when it has one. */
-function fieldLabel(field: ReflectedField): { text: string; attr: string; } {
-  const text = field.name && field.type ? `${field.name}: ${field.type}` : (field.type ?? field.name ?? '');
+function fieldLabel(field: ReflectedField): { text: string; attr: string } {
+  const text =
+    field.name && field.type ? `${field.name}: ${field.type}` : (field.type ?? field.name ?? '');
   if (field.builtin) return { text, attr: `@builtin(${field.builtin})` };
   if (typeof field.location === 'number') return { text, attr: `@location(${field.location})` };
   return { text, attr: '' };
@@ -232,9 +251,13 @@ function fieldLabel(field: ReflectedField): { text: string; attr: string; } {
 function formatValue(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map((v) => formatValue(v)).join(', ')}]`;
   if (value && typeof value === 'object') {
-    return `{ ${Object.entries(value).map(([k, v]) => `${k}: ${formatValue(v)}`).join(', ')} }`;
+    return `{ ${Object.entries(value)
+      .map(([k, v]) => `${k}: ${formatValue(v)}`)
+      .join(', ')} }`;
   }
-  return typeof value === 'number' ? String(Number(value.toFixed(6))) : JSON.stringify(value) ?? String(value);
+  return typeof value === 'number'
+    ? String(Number(value.toFixed(6)))
+    : (JSON.stringify(value) ?? String(value));
 }
 
 function el(tag: string, className?: string, text?: string): HTMLElement {
@@ -290,17 +313,27 @@ const DIRECTIVE_LINE = /^[\s\uFEFF]*(['"])use typeshade\1[ \t]*;?[ \t]*\r?\n/;
 /** The two top-level names the prelude brings. A file that declares one of its own would get
  *  a duplicate and stop compiling, so that file keeps what it wrote and the prelude stays
  *  out. A file that only names one of them gets the prelude and the declaration with it. */
-const PRELUDE_DECLARES = /^[\t ]*(?:export[\t ]+)?(?:class|function|const|let|var|type|interface)[\t ]+(?:VsOut|fullscreen)\b/m;
+const PRELUDE_DECLARES =
+  /^[\t ]*(?:export[\t ]+)?(?:class|function|const|let|var|type|interface)[\t ]+(?:VsOut|fullscreen)\b/m;
 
 /** The reader's text as the compiler sees it, and where the prelude went in. A file with no
  *  directive is left alone: the page's own message about the directive is what that reader
  *  needs, and it would never appear if a directive were supplied for them. */
-function compose(source: string): { readonly text: string; readonly at: number; readonly lines: number } {
+function compose(source: string): {
+  readonly text: string;
+  readonly at: number;
+  readonly lines: number;
+} {
   const directive = DIRECTIVE_LINE.exec(source);
   const code = codeOnly(source);
   // A file with no fragment entry has nothing for the triangle to hand a `uv` to: a compute
   // kernel gets no vertex half it would never run.
-  if (!directive || sampleShape(source) === 'module' || !/@fragment\b/.test(code) || PRELUDE_DECLARES.test(code)) {
+  if (
+    !directive ||
+    sampleShape(source) === 'module' ||
+    !/@fragment\b/.test(code) ||
+    PRELUDE_DECLARES.test(code)
+  ) {
     return { text: source, at: 0, lines: 0 };
   }
   const head = source.slice(0, directive[0].length);
@@ -323,7 +356,8 @@ const inPrelude = (line: number): boolean =>
   preludeLines > 0 && line >= preludeAt && line < preludeAt + preludeLines;
 
 /** A line of the editor's text, as the compiled text numbers it. */
-const intoDocument = (line: number): number => (preludeLines > 0 && line >= preludeAt ? line + preludeLines : line);
+const intoDocument = (line: number): number =>
+  preludeLines > 0 && line >= preludeAt ? line + preludeLines : line;
 
 /** A line of the compiled text, back in the editor's. One of the prelude's own lands on the
  *  directive line, which is the nearest line the reader can see. */
@@ -354,11 +388,17 @@ const toMonacoRange = (range: TypeshadeRange): MonacoRange => {
   const endColumn = range.end.character + 1;
   // A zero-width range draws no squiggle, so an empty one is widened by a column.
   const empty = endLineNumber === startLineNumber && endColumn <= startColumn;
-  return { startLineNumber, startColumn, endLineNumber, endColumn: empty ? startColumn + 1 : endColumn };
+  return {
+    startLineNumber,
+    startColumn,
+    endLineNumber,
+    endColumn: empty ? startColumn + 1 : endColumn,
+  };
 };
 
 /** How a diagnostic's position reads in the diagnostics pane: the line and column an editor shows. */
-const toDisplayPosition = (position: TypeshadePosition): string => `${outOfDocument(position.line) + 1}:${position.character + 1}`;
+const toDisplayPosition = (position: TypeshadePosition): string =>
+  `${outOfDocument(position.line) + 1}:${position.character + 1}`;
 
 // ── Monaco, from the CDN ───────────────────────────────────────────────────────────────────
 // The editor is loaded the way its own samples load it, through its AMD loader. `MONACO_VS`
@@ -398,7 +438,9 @@ function loadMonaco(): Promise<any> {
         return;
       }
       amdRequire.config({ paths: { vs: MONACO_VS } });
-      w.MonacoEnvironment = { getWorkerUrl: (_moduleId: string, label: string) => monacoWorkerUrl(label) };
+      w.MonacoEnvironment = {
+        getWorkerUrl: (_moduleId: string, label: string) => monacoWorkerUrl(label),
+      };
       amdRequire(['vs/editor/editor.main'], () => resolve(w.monaco), reject);
     };
     const existing = document.querySelector('script[data-monaco-loader]');
@@ -412,7 +454,11 @@ function loadMonaco(): Promise<any> {
     script.async = true;
     script.dataset.monacoLoader = 'true';
     script.addEventListener('load', start, { once: true });
-    script.addEventListener('error', () => reject(new Error(`The Monaco loader did not load from ${MONACO_VS}/loader.js`)), { once: true });
+    script.addEventListener(
+      'error',
+      () => reject(new Error(`The Monaco loader did not load from ${MONACO_VS}/loader.js`)),
+      { once: true },
+    );
     document.head.appendChild(script);
   });
 }
@@ -434,7 +480,9 @@ function followSiteTheme(monaco: any, repaint: () => void): void {
     repaint();
   };
   apply();
-  new MutationObserver(apply).observe(document.documentElement, { attributeFilter: ['data-theme'] });
+  new MutationObserver(apply).observe(document.documentElement, {
+    attributeFilter: ['data-theme'],
+  });
   darkQuery.addEventListener('change', apply);
 }
 
@@ -472,7 +520,13 @@ function symbolKind(monaco: any, kind: TypeshadeDocumentSymbol['kind']): number 
 
 function markerSeverity(monaco: any, severity: TypeshadeDiagnostic['severity']): number {
   const levels = monaco.MarkerSeverity;
-  return severity === 'error' ? levels.Error : severity === 'warning' ? levels.Warning : severity === 'information' ? levels.Info : levels.Hint;
+  return severity === 'error'
+    ? levels.Error
+    : severity === 'warning'
+      ? levels.Warning
+      : severity === 'information'
+        ? levels.Info
+        : levels.Hint;
 }
 
 /** The service's semantic tokens, coloured. Monaco matches a semantic token against a theme
@@ -494,8 +548,18 @@ function defineTypeshadeThemes(monaco: any): void {
     { token: 'variable', foreground: dark ? '9cdcfe' : '001080' },
     { token: 'property', foreground: dark ? '9cdcfe' : '001080' },
   ];
-  monaco.editor.defineTheme('typeshade-light', { base: 'vs', inherit: true, rules: rules(false), colors: {} });
-  monaco.editor.defineTheme('typeshade-dark', { base: 'vs-dark', inherit: true, rules: rules(true), colors: {} });
+  monaco.editor.defineTheme('typeshade-light', {
+    base: 'vs',
+    inherit: true,
+    rules: rules(false),
+    colors: {},
+  });
+  monaco.editor.defineTheme('typeshade-dark', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: rules(true),
+    colors: {},
+  });
 }
 
 // ── The source in the URL ──────────────────────────────────────────────────────────────────
@@ -547,7 +611,8 @@ async function decodeSource(text: string): Promise<string | undefined> {
   }
 }
 
-const hashParams = (): URLSearchParams => new URLSearchParams(window.location.hash.replace(/^#/, ''));
+const hashParams = (): URLSearchParams =>
+  new URLSearchParams(window.location.hash.replace(/^#/, ''));
 
 /** The fragment: what to open, and the options to open it under. Only a setting that differs
  *  from the default is written, so a link to an untouched Playground stays short. */
@@ -557,7 +622,8 @@ function writeHash(key: string, value: string, choice?: EmitChoice): void {
     if (choice.level !== 'O2') parts.push(`opt=${choice.level}`);
     if (choice.parens !== 'full') parts.push(`parens=${choice.parens}`);
     if (choice.minify) parts.push('minify=1');
-    if (choice.numbers !== true) parts.push(`numbers=${choice.numbers === 'f32' ? 'f32' : 'false'}`);
+    if (choice.numbers !== true)
+      parts.push(`numbers=${choice.numbers === 'f32' ? 'f32' : 'false'}`);
     if (choice.obfuscate) parts.push('obfuscate=1');
     if (choice.fp64Flavor !== 'float') parts.push(`fp64=${choice.fp64Flavor}`);
     if (choice.floatPrecision !== 'highp') parts.push(`precision=${choice.floatPrecision}`);
@@ -591,7 +657,9 @@ const sharedEmitOptions = (choice: EmitChoice): EmitOptions => {
  *  `emitModule` takes the options at O2, so O0 and O1 reach the compiler with the level
  *  alone. The note under the options bar says so where a reader can see it. */
 const emitWgsl = (module: Parameters<typeof emitModule>[0], choice: EmitChoice): string =>
-  choice.level === 'O2' ? emitModule(module, sharedEmitOptions(choice)) : emitModuleAt(module, choice.level);
+  choice.level === 'O2'
+    ? emitModule(module, sharedEmitOptions(choice))
+    : emitModuleAt(module, choice.level);
 
 /** Both GLSL stages. The GLSL backend fixes its own optimizer at a fixpoint, so it takes the
  *  options and no level. */
@@ -599,7 +667,7 @@ const emitGlsl = (
   module: Parameters<typeof emitGlslStages>[0],
   choice: EmitChoice,
   overrideValues?: Readonly<Record<string, number>>,
-): { vertex: string; fragment: string; } | { failed: string } => {
+): { vertex: string; fragment: string } | { failed: string } => {
   // An override the reader moved is pinned as a hard `#define`; one left at its default keeps
   // the `#ifndef` guard the emit writes, so an untouched module emits the bytes it always did.
   const options: GlslEmitOptions = {
@@ -671,9 +739,15 @@ function mount(root: HTMLElement): void {
   const openLanguageWorker = (): LanguageClient | undefined => {
     if (typeof Worker !== 'function') return undefined;
     try {
-      const worker = new Worker(new URL('./playground-language-worker.ts', import.meta.url), { type: 'module' });
+      const worker = new Worker(new URL('./playground-language-worker.ts', import.meta.url), {
+        type: 'module',
+      });
       worker.addEventListener('error', () => serviceFailed());
-      return createLanguageClient(worker, (asked) => asked === version, () => serviceFailed());
+      return createLanguageClient(
+        worker,
+        (asked) => asked === version,
+        () => serviceFailed(),
+      );
     } catch {
       return undefined;
     }
@@ -701,7 +775,9 @@ function mount(root: HTMLElement): void {
   const canvasNote = root.querySelector('[data-canvas-note]');
   const gpuNote = root.querySelector('[data-gpu-note]');
   const enginePicker = root.querySelector('[data-engine]');
-  const cpuOnly = [...root.querySelectorAll('[data-cpu-only]')].filter((node): node is HTMLElement => node instanceof HTMLElement);
+  const cpuOnly = [...root.querySelectorAll('[data-cpu-only]')].filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
   const drawCpu = root.querySelector('[data-draw-cpu]');
   const resolutionPicker = root.querySelector('[data-resolution]');
 
@@ -716,7 +792,10 @@ function mount(root: HTMLElement): void {
    *  proves nothing. This writes one pixel into the far corner and reads it back, which is the
    *  only answer the browser cannot be wrong about. It runs on the canvas the page already
    *  has, and never on a second one, since a spare 8K canvas is another 236 MB. */
-  const holdsItsPixels = (node: HTMLCanvasElement, surface: CanvasRenderingContext2D | null): boolean => {
+  const holdsItsPixels = (
+    node: HTMLCanvasElement,
+    surface: CanvasRenderingContext2D | null,
+  ): boolean => {
     if (!surface) return false;
     const x = node.width - 1;
     const y = node.height - 1;
@@ -759,7 +838,9 @@ function mount(root: HTMLElement): void {
     floatPrecision: precisionPicker.value === 'mediump' ? 'mediump' : 'highp',
     backend:
       enginePicker instanceof HTMLSelectElement &&
-      (enginePicker.value === 'webgpu' || enginePicker.value === 'webgl2' || enginePicker.value === 'cpu')
+      (enginePicker.value === 'webgpu' ||
+        enginePicker.value === 'webgl2' ||
+        enginePicker.value === 'cpu')
         ? enginePicker.value
         : 'auto',
   });
@@ -776,7 +857,7 @@ function mount(root: HTMLElement): void {
   let view: View = 'result';
   let target: Target = 'wgsl';
   // The last good compile, kept so the CPU button can call into it without compiling again.
-  let compiled: { readonly module: ModuleDecl; } | undefined;
+  let compiled: { readonly module: ModuleDecl } | undefined;
   let reflection: ReturnType<typeof reflect> | undefined;
   /** Why the GLSL backend emitted nothing for the last module, or ''. */
   let glslFailure = '';
@@ -795,14 +876,21 @@ function mount(root: HTMLElement): void {
         entries.some(
           (entry) =>
             entry.stage === 'vertex' &&
-            (entry.io?.inputs ?? []).some((f) => f.builtin === 'vertex_index' || typeof f.location === 'number'),
+            (entry.io?.inputs ?? []).some(
+              (f) => f.builtin === 'vertex_index' || typeof f.location === 'number',
+            ),
         ) && entries.some((entry) => entry.stage === 'fragment');
       moduleDrawable = drawable;
       syncDrawButton();
       if (canvasNote instanceof HTMLElement) {
-        canvasNote.textContent = !drawable ? copy.canvasNeedsVertex : canvasFits ? copy.canvasIdle : copy.canvasTooBig;
+        canvasNote.textContent = !drawable
+          ? copy.canvasNeedsVertex
+          : canvasFits
+            ? copy.canvasIdle
+            : copy.canvasTooBig;
       }
-      if (canvas instanceof HTMLCanvasElement) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+      if (canvas instanceof HTMLCanvasElement)
+        canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
       // The pool is opened ahead of the press only where the reader can press: four workers
       // for a canvas the GPU is drawing would be four workers doing nothing.
       if (drawable && engineIsCpu()) window.setTimeout(openPool, 0);
@@ -867,7 +955,10 @@ function mount(root: HTMLElement): void {
     const resources = reflection
       ? [
           ...reflection.bindGroups.flatMap((group) =>
-            (group.entries ?? []).map((entry) => ({ label: `@group(${group.group ?? 0})`, text: `${entry.name}: ${entry.resourceKind}` })),
+            (group.entries ?? []).map((entry) => ({
+              label: `@group(${group.group ?? 0})`,
+              text: `${entry.name}: ${entry.resourceKind}`,
+            })),
           ),
           ...reflection.overrides.map((o) => ({ label: 'override', text: String(o.name ?? o) })),
         ]
@@ -887,7 +978,9 @@ function mount(root: HTMLElement): void {
           go.textContent = copy.bindings.title;
           go.addEventListener('click', () => {
             selectView('result');
-            const target = root.querySelector(`[data-bindings] [data-binding-name="${CSS.escape(name)}"]`);
+            const target = root.querySelector(
+              `[data-bindings] [data-binding-name="${CSS.escape(name)}"]`,
+            );
             if (target instanceof HTMLElement) {
               target.scrollIntoView({ block: 'nearest' });
               target.focus({ preventScroll: true });
@@ -913,15 +1006,23 @@ function mount(root: HTMLElement): void {
   const evaluateOnCpu = (): void => {
     if (!compiled || !(reflectionPane instanceof HTMLElement)) return;
     for (const entry of entries) {
-      const slot = reflectionPane.querySelector(`[data-returns="${CSS.escape(entry.name)}"] .io-value`);
-      const target = slot instanceof HTMLElement ? slot : reflectionPane.querySelector(`[data-returns="${CSS.escape(entry.name)}"]`)?.lastElementChild;
+      const slot = reflectionPane.querySelector(
+        `[data-returns="${CSS.escape(entry.name)}"] .io-value`,
+      );
+      const target =
+        slot instanceof HTMLElement
+          ? slot
+          : reflectionPane.querySelector(`[data-returns="${CSS.escape(entry.name)}"]`)
+              ?.lastElementChild;
       if (!(target instanceof HTMLElement)) continue;
       const inputs = entry.io?.inputs ?? [];
       const args: unknown[] = [];
       let invalid = false;
       for (const [index, field] of inputs.entries()) {
         const name = field.name ?? `arg${index}`;
-        const typed = reflectionPane.querySelector(`[data-arg="${CSS.escape(`${entry.name}/${name}`)}"]`);
+        const typed = reflectionPane.querySelector(
+          `[data-arg="${CSS.escape(`${entry.name}/${name}`)}"]`,
+        );
         const zero = zeroFor(field.type);
         const text = typed instanceof HTMLInputElement ? typed.value : '';
         try {
@@ -940,22 +1041,34 @@ function mount(root: HTMLElement): void {
         // The IR is compiled to the oracle here the way the raster worker compiles it, and the
         // entry is called directly; the old `compiled.eval` did the same work per call.
         const oracle = compileModule(compiled.module, { gpuStubs: true });
-        for (const [name, value] of Object.entries(bindings.cpuBindings(frozen ?? 0, 1, 1, pointer))) oracle.setBinding(name, value as never);
+        for (const [name, value] of Object.entries(
+          bindings.cpuBindings(frozen ?? 0, 1, 1, pointer),
+        ))
+          oracle.setBinding(name, value as never);
         const run = (oracle.fns as CpuFunctions)[entry.name];
         if (!run) throw new Error(entry.name);
-        const value = run(...(entryArguments(entry, compiled.module.structs, (i) => args[i]) as never[]));
-        const shownArgs = inputs.map((f, i) => `${f.name ?? `arg${i}`} = ${formatValue(args[i])}`).join(', ');
-        target.textContent = shownArgs ? `${formatValue(value)}   (${shownArgs})` : formatValue(value);
+        const value = run(
+          ...(entryArguments(entry, compiled.module.structs, (i) => args[i]) as never[]),
+        );
+        const shownArgs = inputs
+          .map((f, i) => `${f.name ?? `arg${i}`} = ${formatValue(args[i])}`)
+          .join(', ');
+        target.textContent = shownArgs
+          ? `${formatValue(value)}   (${shownArgs})`
+          : formatValue(value);
         target.className = 'io-value';
       } catch (error) {
         // `compileModule` takes `gpuStubs` and `precision` and no resource values, so an entry
         // reading a uniform or a storage binding has nothing to read and the oracle stops at
         // the name. The reader gets that sentence instead of the compiler's.
         const message = error instanceof Error ? error.message : '';
-        const binds = (reflection?.bindGroups ?? []).some((group) => (group.entries ?? []).length > 0);
-        target.textContent = binds && /unknown (?:const|var|binding)/.test(message)
-          ? copy.cpuNoResources
-          : message || copy.cpuFailed;
+        const binds = (reflection?.bindGroups ?? []).some(
+          (group) => (group.entries ?? []).length > 0,
+        );
+        target.textContent =
+          binds && /unknown (?:const|var|binding)/.test(message)
+            ? copy.cpuNoResources
+            : message || copy.cpuFailed;
         target.className = 'io-value failed';
       }
     }
@@ -988,7 +1101,8 @@ function mount(root: HTMLElement): void {
   // Holding tiles at 256 turns 8K into 900 of them, which balances to the end and costs about
   // 54 ms of messaging across a draw that takes tens of seconds. Below 1536 the ceiling never
   // binds, so every size measured above keeps the tile it was measured with.
-  const tileSize = (side: number): number => Math.min(256, Math.max(64, Math.round(side / 6 / 16) * 16));
+  const tileSize = (side: number): number =>
+    Math.min(256, Math.max(64, Math.round(side / 6 / 16) * 16));
   /** How many tiles the single-threaded fallback draws between handing the page back. */
   const YIELD_EVERY = 8;
   /** How many tiles each worker is kept holding. With one, a worker draws its tile and then
@@ -1014,7 +1128,9 @@ function mount(root: HTMLElement): void {
     if (typeof Worker !== 'function') return false;
     try {
       while (pool.length < poolSize()) {
-        pool.push(new Worker(new URL('./playground-raster-worker.ts', import.meta.url), { type: 'module' }));
+        pool.push(
+          new Worker(new URL('./playground-raster-worker.ts', import.meta.url), { type: 'module' }),
+        );
       }
       return true;
     } catch {
@@ -1063,12 +1179,16 @@ function mount(root: HTMLElement): void {
   const yieldToPage = (): Promise<void> =>
     new Promise((resume) => {
       const channel = new MessageChannel();
-      channel.port1.onmessage = () => { resume(); };
+      channel.port1.onmessage = () => {
+        resume();
+      };
       channel.port2.postMessage(undefined);
     });
 
   const fillNumbers = (text: string, values: Record<string, string | number>): string =>
-    text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole));
+    text.replace(/\{(\w+)\}/g, (whole, key: string) =>
+      key in values ? String(values[key]) : whole,
+    );
 
   /** What the rasteriser says when it is done, and that a texture read came back as the
    *  oracle's placeholder when the module samples one. */
@@ -1102,7 +1222,9 @@ function mount(root: HTMLElement): void {
    *  live example holds it at, or wherever a check pins it to compare two engines on one
    *  frame. Null lets it run. The rasteriser draws at this time, or at 0 when it runs. */
   let frozen: number | null =
-    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 3 : null;
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 3
+      : null;
   let mounted: MountedShader | undefined;
   /** The engine and the program the mount is running, so a compile that changes neither does
    *  not rebuild the pipeline. */
@@ -1141,7 +1263,8 @@ function mount(root: HTMLElement): void {
   /** Whether the module has a compute entry and nothing to draw, which is when the tab
    *  dispatches it instead. */
   const isComputeModule = (): boolean =>
-    entries.some((entry) => entry.stage === 'compute') && !entries.some((entry) => entry.stage === 'fragment');
+    entries.some((entry) => entry.stage === 'compute') &&
+    !entries.some((entry) => entry.stage === 'fragment');
 
   const frame = root.querySelector('[data-gpu-frame]');
 
@@ -1153,7 +1276,8 @@ function mount(root: HTMLElement): void {
     // Every attribute the page gave it, the stylesheet's scoping one among them: without that
     // the new element misses the rules that size it to the frame and draws at 300 by 150.
     for (const { name, value } of [...old.attributes]) {
-      if (name === 'width' || name === 'height' || name === 'data-plotted' || name === 'hidden') continue;
+      if (name === 'width' || name === 'height' || name === 'data-plotted' || name === 'hidden')
+        continue;
       next.setAttribute(name, value);
     }
     next.dataset.backend = 'none';
@@ -1192,7 +1316,13 @@ function mount(root: HTMLElement): void {
   };
 
   const backendName = (which: Engine | 'none'): string =>
-    which === 'webgpu' ? 'WebGPU' : which === 'webgl2' ? 'WebGL2' : which === 'cpu' ? copy.engineCpu : 'GPU';
+    which === 'webgpu'
+      ? 'WebGPU'
+      : which === 'webgl2'
+        ? 'WebGL2'
+        : which === 'cpu'
+          ? copy.engineCpu
+          : 'GPU';
 
   /** What the canvas says after a mount: which backend drew, or why none did, in the terms of
    *  what the reader picked. A WebGPU pick on a browser with none is said as that, and not as
@@ -1204,18 +1334,23 @@ function mount(root: HTMLElement): void {
     const failure = mounted?.failure ?? '';
     const feature = /missing WebGPU feature: ([^;]+)/.exec(failure)?.[1];
     if (feature) return fillNumbers(copy.gpuNoFeature, { features: feature });
-    if (picked === 'auto' && !emitted.glslVertex && /no WebGPU/.test(failure)) return `${copy.gpuNone} ${noGlslNote()}`;
+    if (picked === 'auto' && !emitted.glslVertex && /no WebGPU/.test(failure))
+      return `${copy.gpuNone} ${noGlslNote()}`;
     if (picked === 'webgpu' && /no WebGPU/.test(failure)) return copy.gpuNoWebgpu;
     if (picked === 'webgl2' && /no WebGL2/.test(failure)) return copy.gpuNoWebgl2;
     if (picked === 'auto' && (/no WebGL2/.test(failure) || failure === '')) return copy.gpuNone;
-    return fillNumbers(copy.gpuFailed, { backend: backendName(picked === 'auto' ? 'none' : picked), reason: failure });
+    return fillNumbers(copy.gpuFailed, {
+      backend: backendName(picked === 'auto' ? 'none' : picked),
+      reason: failure,
+    });
   };
 
   /** What the GPU canvas should run, or why it cannot run this module. */
   const gpuPayload = (picked: Engine): { readonly data: ShaderData } | { readonly why: string } => {
     if (!compiled || !reflection || !emitted.wgsl) return { why: copy.gpuIdle };
     const missing = bindings.missing();
-    if (missing.length > 0) return { why: fillNumbers(copy.gpuNeedsBindings, { names: missing.join(', ') }) };
+    if (missing.length > 0)
+      return { why: fillNumbers(copy.gpuNeedsBindings, { names: missing.join(', ') }) };
     // The runtime draws three vertices and binds no vertex buffer, so a vertex entry that
     // reads an attribute from one has nothing to read. Saying which attribute beats letting
     // the pipeline fail and reporting that the browser has no GPU API.
@@ -1265,7 +1400,9 @@ function mount(root: HTMLElement): void {
   };
 
   /** The optional WebGPU features the module asks for, as WebGPU names them. */
-  const gpuFeatures = (): string[] => [...hostFeaturesFor(wgslBackend, reflection?.requiredFeatures ?? [])];
+  const gpuFeatures = (): string[] => [
+    ...hostFeaturesFor(wgslBackend, reflection?.requiredFeatures ?? []),
+  ];
 
   /** Why WebGL2 has nothing to run: the capabilities GLSL ES 3.00 lacks when the emit names
    *  them, and the plain sentence otherwise. */
@@ -1312,8 +1449,13 @@ function mount(root: HTMLElement): void {
       adaptive: true,
       // With no GLSL there is nothing for WebGL2 to try, so the order is WebGPU alone and the
       // reason printed is WebGPU's own.
-      ...(picked === 'webgpu' || picked === 'webgl2' ? { backend: picked } : emitted.glslVertex ? {} : { backend: 'webgpu' as const }),
-      uniformValues: (name, seconds) => bindings.renderValue(name, frozen ?? seconds, target.width, target.height, pointer),
+      ...(picked === 'webgpu' || picked === 'webgl2'
+        ? { backend: picked }
+        : emitted.glslVertex
+          ? {}
+          : { backend: 'webgpu' as const }),
+      uniformValues: (name, seconds) =>
+        bindings.renderValue(name, frozen ?? seconds, target.width, target.height, pointer),
     });
     if (mine !== resultRun) {
       next.stop();
@@ -1328,11 +1470,16 @@ function mount(root: HTMLElement): void {
 
   // ── A compute entry, dispatched ───────────────────────────────────────────────────────
 
-  const accent = (): string => getComputedStyle(root).getPropertyValue('--color-accent').trim() || '#1677ff';
+  const accent = (): string =>
+    getComputedStyle(root).getPropertyValue('--color-accent').trim() || '#1677ff';
 
   /** Draw a buffer's first number per element as bars, or a storage texture as the image it
    *  is, onto a new 2D canvas in the frame. */
-  const plot = (values: readonly number[] | undefined, image: { width: number; height: number; format: string; bytes: Uint8Array } | undefined, backend: string): void => {
+  const plot = (
+    values: readonly number[] | undefined,
+    image: { width: number; height: number; format: string; bytes: Uint8Array } | undefined,
+    backend: string,
+  ): void => {
     const node = freshCanvas();
     if (!node) return;
     const box = node.getBoundingClientRect();
@@ -1341,12 +1488,16 @@ function mount(root: HTMLElement): void {
     node.height = Math.max(1, Math.round((box.height || 240) * dpr));
     const context = node.getContext('2d');
     if (!context) return;
-    context.fillStyle = getComputedStyle(root).getPropertyValue('--color-ground').trim() || '#ffffff';
+    context.fillStyle =
+      getComputedStyle(root).getPropertyValue('--color-ground').trim() || '#ffffff';
     context.fillRect(0, 0, node.width, node.height);
     if (image) {
       const { width, height, format, bytes } = image;
       const rgba = new Uint8ClampedArray(width * height * 4);
-      const floats = format === 'r32float' ? new Float32Array(bytes.buffer, bytes.byteOffset, width * height) : undefined;
+      const floats =
+        format === 'r32float'
+          ? new Float32Array(bytes.buffer, bytes.byteOffset, width * height)
+          : undefined;
       let top = 0;
       if (floats) for (const v of floats) if (Number.isFinite(v)) top = Math.max(top, Math.abs(v));
       for (let i = 0; i < width * height; i++) {
@@ -1369,8 +1520,14 @@ function mount(root: HTMLElement): void {
       // plot stops a little past the last element that is not zero.
       let last = values.length - 1;
       while (last > 0 && values[last] === 0) last -= 1;
-      const series = values.slice(0, Math.min(values.length, Math.max(8, last + 1 + Math.ceil((last + 1) / 8))));
-      const shown = series.length > 256 ? Array.from({ length: 256 }, (_, i) => series[Math.floor((i * series.length) / 256)]!) : [...series];
+      const series = values.slice(
+        0,
+        Math.min(values.length, Math.max(8, last + 1 + Math.ceil((last + 1) / 8))),
+      );
+      const shown =
+        series.length > 256
+          ? Array.from({ length: 256 }, (_, i) => series[Math.floor((i * series.length) / 256)]!)
+          : [...series];
       const finite = shown.filter(Number.isFinite);
       const low = Math.min(0, ...finite);
       const high = Math.max(0, ...finite);
@@ -1383,9 +1540,15 @@ function mount(root: HTMLElement): void {
       shown.forEach((v, i) => {
         if (!Number.isFinite(v)) return;
         const y = pad + h * ((high - v) / span);
-        context.fillRect(pad + i * w, Math.min(y, zero), Math.max(1, w - (w > 3 ? 1 : 0)), Math.max(1, Math.abs(zero - y)));
+        context.fillRect(
+          pad + i * w,
+          Math.min(y, zero),
+          Math.max(1, w - (w > 3 ? 1 : 0)),
+          Math.max(1, Math.abs(zero - y)),
+        );
       });
-      context.fillStyle = getComputedStyle(root).getPropertyValue('--color-text-3').trim() || '#999';
+      context.fillStyle =
+        getComputedStyle(root).getPropertyValue('--color-text-3').trim() || '#999';
       context.fillRect(pad, zero, node.width - pad * 2, Math.max(1, dpr));
     }
     node.dataset.backend = backend;
@@ -1451,7 +1614,8 @@ function mount(root: HTMLElement): void {
         }
         const shown = bindings.firstStorageTexture();
         if (shown) image = result.textures.get(shown);
-        for (const [name, t] of result.textures) results.set(name, `${t.width} × ${t.height} ${t.format}`);
+        for (const [name, t] of result.textures)
+          results.set(name, `${t.width} × ${t.height} ${t.format}`);
         ranOn = 'webgpu';
       }
     } catch (error) {
@@ -1464,8 +1628,11 @@ function mount(root: HTMLElement): void {
         feature
           ? fillNumbers(copy.gpuNoFeature, { features: feature })
           : picked !== 'cpu' && /no WebGPU/.test(message)
-          ? copy.gpuNoWebgpu
-          : fillNumbers(copy.gpuFailed, { backend: backendName(picked === 'auto' ? 'webgpu' : picked), reason: message }),
+            ? copy.gpuNoWebgpu
+            : fillNumbers(copy.gpuFailed, {
+                backend: backendName(picked === 'auto' ? 'webgpu' : picked),
+                reason: message,
+              }),
       );
       return;
     }
@@ -1499,7 +1666,8 @@ function mount(root: HTMLElement): void {
       stopMount();
       if (moduleDrawable && canvasFits) drawOnCpu();
     } else await runOnGpu();
-    if (frame instanceof HTMLElement && at === analysedVersion && mine === lastResult) frame.dataset.settled = String(at);
+    if (frame instanceof HTMLElement && at === analysedVersion && mine === lastResult)
+      frame.dataset.settled = String(at);
   };
 
   // The handle scripts/check-playground.mjs reads. It pins the clock, and asks the rasteriser
@@ -1524,13 +1692,20 @@ function mount(root: HTMLElement): void {
         height,
         vertex,
         fragment,
-        structs: compiled.module.structs.map((struct) => ({ name: struct.name, fields: struct.fields.map((f) => ({ name: f.name })) })),
+        structs: compiled.module.structs.map((struct) => ({
+          name: struct.name,
+          fields: struct.fields.map((f) => ({ name: f.name })),
+        })),
         bindings: bindings.cpuBindings(frozen ?? 0, width, height, pointer),
         ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
       };
       try {
-        const oracle = compileModule(compiled.module, { gpuStubs: true, precision: RASTER_PRECISION });
-        for (const [name, value] of Object.entries(plan.bindings ?? {})) oracle.setBinding(name, value as never);
+        const oracle = compileModule(compiled.module, {
+          gpuStubs: true,
+          precision: RASTER_PRECISION,
+        });
+        for (const [name, value] of Object.entries(plan.bindings ?? {}))
+          oracle.setBinding(name, value as never);
         const cpu = oracle.fns as CpuFunctions;
         const corners = cornersOf(cpu, plan);
         if (!corners) return 'no triangle';
@@ -1574,7 +1749,9 @@ function mount(root: HTMLElement): void {
   const rasterFailure = (message: string): string => {
     if (message === 'no triangle') {
       const zeroed = zeroedVertexInputs();
-      return zeroed.length > 0 ? fillNumbers(copy.canvasFlatInputs, { fields: zeroed.join(', ') }) : copy.canvasFlat;
+      return zeroed.length > 0
+        ? fillNumbers(copy.canvasFlatInputs, { fields: zeroed.join(', ') })
+        : copy.canvasFlat;
     }
     if (/unknown (?:const|var|binding)|unbound/.test(message)) return copy.cpuNoResources;
     return message || copy.cpuFailed;
@@ -1586,14 +1763,21 @@ function mount(root: HTMLElement): void {
     const fragment = entries.find((entry) => entry.stage === 'fragment');
     if (!vertex || !fragment) return undefined;
     const attributes = bindings.cpuAttributes();
-    if (!(vertex.io?.inputs ?? []).some((field) => field.builtin === 'vertex_index') && Object.keys(attributes).length === 0) return undefined;
+    if (
+      !(vertex.io?.inputs ?? []).some((field) => field.builtin === 'vertex_index') &&
+      Object.keys(attributes).length === 0
+    )
+      return undefined;
     if (!vertex.io?.outputs?.some((field) => field.builtin === 'position')) return undefined;
     return {
       width: canvas.width,
       height: canvas.height,
       vertex,
       fragment,
-      structs: compiled.module.structs.map((struct) => ({ name: struct.name, fields: struct.fields.map((f) => ({ name: f.name })) })),
+      structs: compiled.module.structs.map((struct) => ({
+        name: struct.name,
+        fields: struct.fields.map((f) => ({ name: f.name })),
+      })),
       bindings: bindings.cpuBindings(frozen ?? 0, canvas.width, canvas.height, pointer),
       ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
     };
@@ -1611,9 +1795,14 @@ function mount(root: HTMLElement): void {
     return out;
   };
 
-  const drawHere = async (plan: RasterPlan, context: CanvasRenderingContext2D, mine: number): Promise<void> => {
+  const drawHere = async (
+    plan: RasterPlan,
+    context: CanvasRenderingContext2D,
+    mine: number,
+  ): Promise<void> => {
     const oracle = compileModule(compiled!.module, { gpuStubs: true, precision: RASTER_PRECISION });
-    for (const [name, value] of Object.entries(plan.bindings ?? {})) oracle.setBinding(name, value as never);
+    for (const [name, value] of Object.entries(plan.bindings ?? {}))
+      oracle.setBinding(name, value as never);
     const cpu = oracle.fns as CpuFunctions;
     const corners = cornersOf(cpu, plan);
     if (!corners) throw new Error('no triangle');
@@ -1632,7 +1821,12 @@ function mount(root: HTMLElement): void {
       // one: at one a tile the yielding cost more than the drawing between two of them.
       if (index % YIELD_EVERY === YIELD_EVERY - 1 || index === tiles.length - 1) {
         if (canvasNote instanceof HTMLElement) {
-          canvasNote.textContent = fillNumbers(copy.canvasProgress, { done: index + 1, total: tiles.length, running: 1, waiting: tiles.length - index - 1 });
+          canvasNote.textContent = fillNumbers(copy.canvasProgress, {
+            done: index + 1,
+            total: tiles.length,
+            running: 1,
+            waiting: tiles.length - index - 1,
+          });
         }
         await yieldToPage();
       }
@@ -1672,14 +1866,20 @@ function mount(root: HTMLElement): void {
     };
 
     if (typeof Worker !== 'function') {
-      void drawHere(plan, context, mine).catch((error) => {
-        canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
-      }).finally(finish);
+      void drawHere(plan, context, mine)
+        .catch((error) => {
+          canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
+        })
+        .finally(finish);
       return;
     }
 
     if (!openPool()) {
-      void drawHere(plan, context, mine).catch((error) => { canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : ''); }).finally(finish);
+      void drawHere(plan, context, mine)
+        .catch((error) => {
+          canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
+        })
+        .finally(finish);
       return;
     }
 
@@ -1736,7 +1936,10 @@ function mount(root: HTMLElement): void {
     const scheduleFlush = (): void => {
       if (flushQueued) return;
       flushQueued = true;
-      window.requestAnimationFrame(() => { flushQueued = false; flush(); });
+      window.requestAnimationFrame(() => {
+        flushQueued = false;
+        flush();
+      });
     };
 
     let noteQueued = false;
@@ -1749,7 +1952,12 @@ function mount(root: HTMLElement): void {
       window.requestAnimationFrame(() => {
         noteQueued = false;
         if (complete || retired) return;
-        canvasNote.textContent = fillNumbers(copy.canvasProgress, { done, total, running, waiting: queue.length });
+        canvasNote.textContent = fillNumbers(copy.canvasProgress, {
+          done,
+          total,
+          running,
+          waiting: queue.length,
+        });
       });
     };
 
@@ -1816,7 +2024,11 @@ function mount(root: HTMLElement): void {
         // A worker that cannot start at all leaves the drawing to this thread.
         for (const other of pool) other.terminate();
         pool = [];
-        void drawHere(plan, context, mine).catch((error) => { canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : ''); }).finally(finish);
+        void drawHere(plan, context, mine)
+          .catch((error) => {
+            canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
+          })
+          .finally(finish);
       };
       worker.postMessage({ kind: 'prepare', job: mine, module, plan } satisfies RasterRequest);
     }
@@ -1858,7 +2070,8 @@ function mount(root: HTMLElement): void {
     (node): node is HTMLElement => node instanceof HTMLElement,
   );
   /** Which of the three control groups in the tab row belongs to a view. */
-  const metaFor = (next: View): string => (next === 'result' || next === 'reflection' ? next : 'text');
+  const metaFor = (next: View): string =>
+    next === 'result' || next === 'reflection' ? next : 'text';
 
   /** Shows one tab's panel and moves the selected state onto its tab. Nothing here compiles,
    *  emits or draws: every panel already holds what the last compile put in it, and the
@@ -1913,7 +2126,13 @@ function mount(root: HTMLElement): void {
       const button = el('button') as HTMLButtonElement;
       button.type = 'button';
       if (row.located) button.append(el('span', 'at', toDisplayPosition(row.start)));
-      button.append(el('span', 'source', ` ${row.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade}`));
+      button.append(
+        el(
+          'span',
+          'source',
+          ` ${row.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade}`,
+        ),
+      );
       button.append(el('span', row.severity === 'error' ? 'error' : undefined, ` ${row.message}`));
       if (row.located) button.addEventListener('click', () => goTo(row.start));
       else button.disabled = true;
@@ -1939,7 +2158,14 @@ function mount(root: HTMLElement): void {
     const rows = found.map(toRow);
     // The compiler stays quiet about a file with no directive, so the Playground says it.
     if (!analysis.hasDirective && rows.length === 0) {
-      rows.push({ message: copy.directive, code: 'TS8001', severity: 'error', source: 'typeshade', start: { line: 0, character: 0 }, located: true });
+      rows.push({
+        message: copy.directive,
+        code: 'TS8001',
+        severity: 'error',
+        source: 'typeshade',
+        start: { line: 0, character: 0 },
+        located: true,
+      });
     }
 
     // One marker owner, fed from the service alone. Monaco's own TypeScript checking is off,
@@ -1949,13 +2175,15 @@ function mount(root: HTMLElement): void {
     monacoApi.editor.setModelMarkers(
       model,
       'typeshade',
-      found.filter((diagnostic) => !inPrelude(diagnostic.range.start.line)).map((diagnostic) => ({
-        ...toMonacoRange(diagnostic.range),
-        message: diagnostic.message,
-        source: diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
-        code: String(diagnostic.code),
-        severity: markerSeverity(monacoApi, diagnostic.severity),
-      })),
+      found
+        .filter((diagnostic) => !inPrelude(diagnostic.range.start.line))
+        .map((diagnostic) => ({
+          ...toMonacoRange(diagnostic.range),
+          message: diagnostic.message,
+          source: diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
+          code: String(diagnostic.code),
+          severity: markerSeverity(monacoApi, diagnostic.severity),
+        })),
     );
 
     paintDiagnostics(rows);
@@ -1997,7 +2225,11 @@ function mount(root: HTMLElement): void {
     // reader moved as a `#define` of that value.
     bindings.update(reflection, compiled?.module);
     const glslOrWhy = compiled
-      ? emitGlsl(compiled.module, choice, bindings.overridesMoved() ? bindings.constants() : undefined)
+      ? emitGlsl(
+          compiled.module,
+          choice,
+          bindings.overridesMoved() ? bindings.constants() : undefined,
+        )
       : undefined;
     const glsl = glslOrWhy && 'vertex' in glslOrWhy ? glslOrWhy : undefined;
     glslFailure = glslOrWhy && 'failed' in glslOrWhy ? glslOrWhy.failed : '';
@@ -2067,7 +2299,9 @@ function mount(root: HTMLElement): void {
 
   const flash = (button: HTMLButtonElement, word: string, back: string): void => {
     button.textContent = word;
-    window.setTimeout(() => { button.textContent = back; }, 1400);
+    window.setTimeout(() => {
+      button.textContent = back;
+    }, 1400);
   };
 
   share.addEventListener('click', () => {
@@ -2117,7 +2351,15 @@ function mount(root: HTMLElement): void {
     if (named && !hashParams().get('code')) writeHash('example', named, currentChoice());
     else void publishSource();
   };
-  for (const control of [levelPicker, parensPicker, precisionPicker, minifyToggle, numbersPicker, obfuscateToggle, fp64Picker]) {
+  for (const control of [
+    levelPicker,
+    parensPicker,
+    precisionPicker,
+    minifyToggle,
+    numbersPicker,
+    obfuscateToggle,
+    fp64Picker,
+  ]) {
     control.addEventListener('change', applyOptions);
   }
 
@@ -2145,7 +2387,11 @@ function mount(root: HTMLElement): void {
       drawing = 0;
       syncDrawButton();
       if (canvasNote instanceof HTMLElement) {
-        canvasNote.textContent = !moduleDrawable ? copy.canvasNeedsVertex : canvasFits ? copy.canvasIdle : copy.canvasTooBig;
+        canvasNote.textContent = !moduleDrawable
+          ? copy.canvasNeedsVertex
+          : canvasFits
+            ? copy.canvasIdle
+            : copy.canvasTooBig;
       }
       if (moduleDrawable && canvasFits) drawOnCpu();
     });
@@ -2163,7 +2409,7 @@ function mount(root: HTMLElement): void {
 
   /** What the page opens with: the source in the link, else the example the link names, else
    *  the first example. */
-  const openingSource = async (): Promise<{ source: string; example?: PlaygroundExample; }> => {
+  const openingSource = async (): Promise<{ source: string; example?: PlaygroundExample }> => {
     const params = hashParams();
     // The options come off the fragment before the first render, so the panes are painted
     // once, under the settings the link carried.
@@ -2177,13 +2423,17 @@ function mount(root: HTMLElement): void {
     if (params.get('fp64') === 'integer') fp64Picker.value = 'integer';
     if (params.get('precision') === 'mediump') precisionPicker.value = 'mediump';
     const backend = params.get('backend');
-    if (enginePicker instanceof HTMLSelectElement && (backend === 'webgpu' || backend === 'webgl2' || backend === 'cpu')) {
+    if (
+      enginePicker instanceof HTMLSelectElement &&
+      (backend === 'webgpu' || backend === 'webgl2' || backend === 'cpu')
+    ) {
       enginePicker.value = backend;
     }
     const code = params.get('code');
     if (code) {
       const source = await decodeSource(code);
-      if (source !== undefined) return { source, example: examples.find((candidate) => candidate.source === source) };
+      if (source !== undefined)
+        return { source, example: examples.find((candidate) => candidate.source === source) };
     }
     const named = params.get('example');
     const chosen =
@@ -2245,11 +2495,16 @@ function mount(root: HTMLElement): void {
         openedExample = opening.example.id;
         bindings.seed(opening.example.defaults ?? {});
         if (examplePicker instanceof HTMLSelectElement) examplePicker.value = opening.example.id;
-        if (exampleNote instanceof HTMLElement) exampleNote.textContent = opening.example.description;
+        if (exampleNote instanceof HTMLElement)
+          exampleNote.textContent = opening.example.description;
       } else if (exampleNote instanceof HTMLElement) {
         exampleNote.textContent = '';
       }
-      model = monaco.editor.createModel(opening.source, 'typescript', monaco.Uri.parse(documentUri));
+      model = monaco.editor.createModel(
+        opening.source,
+        'typescript',
+        monaco.Uri.parse(documentUri),
+      );
       editor = monaco.editor.create(editorHost, {
         model,
         automaticLayout: true,
@@ -2271,7 +2526,8 @@ function mount(root: HTMLElement): void {
       // back what it answers; the client resolves `undefined` for an answer about a version
       // the editor has left, and each provider turns that into nothing. Positions cross in
       // the four helpers at the top of this file and nowhere else.
-      const isOurs = (currentModel: any): boolean => currentModel.uri.toString() === model.uri.toString();
+      const isOurs = (currentModel: any): boolean =>
+        currentModel.uri.toString() === model.uri.toString();
       const monacoRange = (range: TypeshadeRange) => {
         const r = toMonacoRange(range);
         return new monaco.Range(r.startLineNumber, r.startColumn, r.endLineNumber, r.endColumn);
@@ -2285,16 +2541,33 @@ function mount(root: HTMLElement): void {
           const items = await client.request('completions', documentUri, version, here(position));
           if (!items) return { suggestions: [] };
           const word = currentModel.getWordUntilPosition(position);
-          const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn);
+          const range = new monaco.Range(
+            position.lineNumber,
+            word.startColumn,
+            position.lineNumber,
+            word.endColumn,
+          );
           // Monaco's word does not include a leading `@`, so an attribute offered after one
           // has already been typed would insert it twice unless the item says otherwise.
-          const before = currentModel.getValueInRange({ startLineNumber: position.lineNumber, startColumn: 1, endLineNumber: position.lineNumber, endColumn: word.startColumn });
+          const before = currentModel.getValueInRange({
+            startLineNumber: position.lineNumber,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: word.startColumn,
+          });
           return {
             suggestions: items.map((item) => ({
               label: item.label,
               kind: completionKind(monaco, item.kind),
-              insertText: item.insertText ?? (item.label.startsWith('@') && before.endsWith('@') ? item.label.slice(1) : item.label),
-              insertTextRules: item.insertTextFormat === 'snippet' ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,
+              insertText:
+                item.insertText ??
+                (item.label.startsWith('@') && before.endsWith('@')
+                  ? item.label.slice(1)
+                  : item.label),
+              insertTextRules:
+                item.insertTextFormat === 'snippet'
+                  ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+                  : undefined,
               detail: item.detail,
               documentation: item.documentation ? { value: item.documentation } : undefined,
               sortText: item.sortText,
@@ -2316,23 +2589,36 @@ function mount(root: HTMLElement): void {
 
       // A location in another document is dropped: the Playground holds one file. So is one
       // inside the prelude, which the editor does not hold either.
-      const ownLocations = (locations: readonly { uri: string; range: TypeshadeRange }[] | undefined) =>
+      const ownLocations = (
+        locations: readonly { uri: string; range: TypeshadeRange }[] | undefined,
+      ) =>
         (locations ?? [])
-          .filter((location) => location.uri === documentUri && !inPrelude(location.range.start.line))
+          .filter(
+            (location) => location.uri === documentUri && !inPrelude(location.range.start.line),
+          )
           .map((location) => ({ uri: model.uri, range: monacoRange(location.range) }));
 
       monaco.languages.registerDefinitionProvider('typescript', {
         provideDefinition: async (currentModel: any, position: MonacoPosition) => {
           if (!isOurs(currentModel) || !client) return null;
-          return ownLocations(await client.request('definition', documentUri, version, here(position)));
+          return ownLocations(
+            await client.request('definition', documentUri, version, here(position)),
+          );
         },
       });
 
       monaco.languages.registerReferenceProvider('typescript', {
-        provideReferences: async (currentModel: any, position: MonacoPosition, context: { includeDeclaration: boolean }) => {
+        provideReferences: async (
+          currentModel: any,
+          position: MonacoPosition,
+          context: { includeDeclaration: boolean },
+        ) => {
           if (!isOurs(currentModel) || !client) return null;
           return ownLocations(
-            await client.request('references', documentUri, version, { ...here(position), includeDeclaration: context.includeDeclaration }),
+            await client.request('references', documentUri, version, {
+              ...here(position),
+              includeDeclaration: context.includeDeclaration,
+            }),
           );
         },
       });
@@ -2365,10 +2651,14 @@ function mount(root: HTMLElement): void {
             value: {
               signatures: help.signatures.map((signature) => ({
                 label: signature.label,
-                documentation: signature.documentation ? { value: signature.documentation } : undefined,
+                documentation: signature.documentation
+                  ? { value: signature.documentation }
+                  : undefined,
                 parameters: signature.parameters.map((parameter) => ({
                   label: parameter.label,
-                  documentation: parameter.documentation ? { value: parameter.documentation } : undefined,
+                  documentation: parameter.documentation
+                    ? { value: parameter.documentation }
+                    : undefined,
                 })),
               })),
               activeSignature: help.activeSignature,
@@ -2382,17 +2672,32 @@ function mount(root: HTMLElement): void {
       monaco.languages.registerRenameProvider('typescript', {
         resolveRenameLocation: async (currentModel: any, position: MonacoPosition) => {
           if (!isOurs(currentModel) || !client) return null;
-          const prepared = await client.request('prepareRename', documentUri, version, here(position));
-          return prepared ? { range: monacoRange(prepared.range), text: prepared.placeholder } : null;
+          const prepared = await client.request(
+            'prepareRename',
+            documentUri,
+            version,
+            here(position),
+          );
+          return prepared
+            ? { range: monacoRange(prepared.range), text: prepared.placeholder }
+            : null;
         },
-        provideRenameEdits: async (currentModel: any, position: MonacoPosition, newName: string) => {
+        provideRenameEdits: async (
+          currentModel: any,
+          position: MonacoPosition,
+          newName: string,
+        ) => {
           if (!isOurs(currentModel) || !client) return null;
-          const edits = await client.request('rename', documentUri, version, { ...here(position), newName });
+          const edits = await client.request('rename', documentUri, version, {
+            ...here(position),
+            newName,
+          });
           if (!edits) return null;
           // A name the prelude also declares would be renamed in there too, and the editor
           // holds none of those lines, so the edit has nowhere to land. The rename is
           // refused whole instead of applied to half the occurrences.
-          if ((edits[documentUri] ?? []).some((edit) => inPrelude(edit.range.start.line))) return null;
+          if ((edits[documentUri] ?? []).some((edit) => inPrelude(edit.range.start.line)))
+            return null;
           return {
             edits: (edits[documentUri] ?? []).map((edit) => ({
               resource: model.uri,
@@ -2407,7 +2712,10 @@ function mount(root: HTMLElement): void {
       // Monaco takes it. Monaco asks again after each edit and keeps the last tokens it was
       // given until then, so an answer dropped for being stale costs nothing but a moment.
       monaco.languages.registerDocumentSemanticTokensProvider('typescript', {
-        getLegend: () => ({ tokenTypes: [...SEMANTIC_TOKEN_TYPES], tokenModifiers: [...SEMANTIC_TOKEN_MODIFIERS] }),
+        getLegend: () => ({
+          tokenTypes: [...SEMANTIC_TOKEN_TYPES],
+          tokenModifiers: [...SEMANTIC_TOKEN_MODIFIERS],
+        }),
         provideDocumentSemanticTokens: async (currentModel: any) => {
           if (!isOurs(currentModel) || !client) return null;
           const tokens = await client.request('semanticTokens', documentUri, version, {});
@@ -2434,7 +2742,9 @@ function mount(root: HTMLElement): void {
         window.clearTimeout(timer);
         timer = window.setTimeout(render, 350);
         window.clearTimeout(urlTimer);
-        urlTimer = window.setTimeout(() => { void publishSource(); }, 600);
+        urlTimer = window.setTimeout(() => {
+          void publishSource();
+        }, 600);
       });
       run.addEventListener('click', render);
       if (runCpu instanceof HTMLButtonElement) runCpu.addEventListener('click', evaluateOnCpu);
@@ -2447,7 +2757,12 @@ function mount(root: HTMLElement): void {
       tabs.forEach((tab, index) => {
         tab.addEventListener('click', () => selectView((tab.dataset.target ?? 'result') as View));
         tab.addEventListener('keydown', (event) => {
-          const steps: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 };
+          const steps: Record<string, number> = {
+            ArrowRight: index + 1,
+            ArrowLeft: index - 1,
+            Home: 0,
+            End: tabs.length - 1,
+          };
           const next = steps[event.key];
           if (next === undefined) return;
           event.preventDefault();

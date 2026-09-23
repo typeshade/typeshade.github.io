@@ -3,25 +3,25 @@
 // number of exports in it and one line on what it holds. The categories and their members
 // come from the compiler (src/lib/api-nav.ts); their names and sentences come from the
 // dictionary, so a Korean reader gets Korean around English identifiers.
-import Docs from '../../layouts/Docs.astro'
-import Rich from '../Rich.astro'
-import { apiCategories } from '../../lib/api-nav.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { facts } from '../../lib/examples.ts'
+import Docs from '../../layouts/Docs.astro';
+import Rich from '../Rich.astro';
+import { apiCategories } from '../../lib/api-nav.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { facts } from '../../lib/examples.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
 }
-const { locale } = Astro.props
-assertApiCategories()
-const t = copyFor(locale)
-const a = t.docs.api
+const { locale } = Astro.props;
+assertApiCategories();
+const t = copyFor(locale);
+const a = t.docs.api;
 const categories = apiCategories().map(({ category, members }) => ({
   ...apiCategoryCopy(locale, category.slug),
   href: localePath(locale, `/api/${category.slug}/`),
   count: members.length,
-}))
+}));
 // The page is the first item of the sidebar's Reference group, so previous and next come from
 // that list: the guide's last page, then the first category.
 ---

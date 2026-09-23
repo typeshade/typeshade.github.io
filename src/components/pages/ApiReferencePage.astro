@@ -5,32 +5,32 @@
 // Source. A section with nothing to show is left out, and the outline lists the sections that
 // remain. The data is an ApiEntry (src/lib/api-types.ts), generated from the compiler at the
 // pinned commit; the words around it come from the dictionary (docs.api).
-import { Code } from 'astro-expressive-code/components'
-import Docs, { type Heading } from '../../layouts/Docs.astro'
-import ApiType from '../ApiType.astro'
-import Rich from '../Rich.astro'
-import { PACKAGE_NAME } from '../../lib/api.ts'
-import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts'
-import { apiCategoryCopy, assertApiCategories, copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts'
-import { apiSiblings } from '../../lib/api-nav.ts'
-import { errorCodePath } from '../../lib/error-codes.ts'
-import { facts } from '../../lib/examples.ts'
-import { links } from '../../lib/links.ts'
-import { META_MIN, fitDescription } from '../../lib/meta-description.ts'
-import { slugify } from '../../lib/slug.ts'
+import { Code } from 'astro-expressive-code/components';
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import ApiType from '../ApiType.astro';
+import Rich from '../Rich.astro';
+import { PACKAGE_NAME } from '../../lib/api.ts';
+import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts';
+import { apiCategoryCopy, assertApiCategories, copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
+import { apiSiblings } from '../../lib/api-nav.ts';
+import { errorCodePath } from '../../lib/error-codes.ts';
+import { facts } from '../../lib/examples.ts';
+import { links } from '../../lib/links.ts';
+import { META_MIN, fitDescription } from '../../lib/meta-description.ts';
+import { slugify } from '../../lib/slug.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
   /** The entry with its markdown fields rendered by the content loader (src/lib/api-loader.ts). */
-  entry: ApiEntry & { html: ApiEntryHtml }
+  entry: ApiEntry & { html: ApiEntryHtml };
   /** The locale-neutral route of this page, for example '/api/clamp/'. */
-  path: string
+  path: string;
 }
-const { locale, entry, path } = Astro.props
+const { locale, entry, path } = Astro.props;
 // Markdown is rendered once, so its links name the English reference and error pages; a
 // Korean page keeps the reader in Korean chrome by prefixing them.
-const localize = (s: string | undefined): string => (!s ? '' : locale === 'en' ? s : s.replace(/href="\/(api|reference\/errors)\//g, `href="/${locale}/$1/`))
-const raw = entry.html
+const localize = (s: string | undefined): string => (!s ? '' : locale === 'en' ? s : s.replace(/href="\/(api|reference\/errors)\//g, `href="/${locale}/$1/`));
+const raw = entry.html;
 const html = {
   summary: localize(raw.summary),
   description: localize(raw.description),
@@ -40,14 +40,14 @@ const html = {
   examples: raw.examples.map(localize),
   targets: raw.targets.map(localize),
   members: raw.members.map(localize),
-}
-assertApiCategories()
-const t = copyFor(locale)
-const a = t.docs.api
-const category = apiCategoryCopy(locale, entry.category.slug)
-const callable = entry.kind === 'function' || entry.kind === 'constant'
-const heading = callable && entry.signatures.length > 0 ? `${entry.name}()` : entry.name
-const title = a.pageTitle(heading, a.kinds[entry.kind], category.name)
+};
+assertApiCategories();
+const t = copyFor(locale);
+const a = t.docs.api;
+const category = apiCategoryCopy(locale, entry.category.slug);
+const callable = entry.kind === 'function' || entry.kind === 'constant';
+const heading = callable && entry.signatures.length > 0 ? `${entry.name}()` : entry.name;
+const title = a.pageTitle(heading, a.kinds[entry.kind], category.name);
 // The meta description. A JSDoc summary of one short sentence is under the 70 characters the
 // SEO checks want, so the category's own sentence fills it out. A long one is cut at 160 on
 // an English page. A Korean page's description is a short Korean lead-in (docs.api.pageDescription)
@@ -56,35 +56,35 @@ const title = a.pageTitle(heading, a.kinds[entry.kind], category.name)
 // falling to the word-boundary cut on almost every page, which a flat 100 did (the SEO review,
 // onpage, Korean description cutoff and mid-sentence cuts). The cut itself is in
 // src/lib/meta-description.ts, which the language reference's entry pages use too.
-const composed = a.pageDescription(entry.name, a.kinds[entry.kind], category.name, entry.summary)
-const filled = composed.length < META_MIN ? `${composed} ${category.summary}` : composed
-const description = fitDescription(filled, localeSettings[locale].metaDescriptionMax)
+const composed = a.pageDescription(entry.name, a.kinds[entry.kind], category.name, entry.summary);
+const filled = composed.length < META_MIN ? `${composed} ${category.summary}` : composed;
+const description = fitDescription(filled, localeSettings[locale].metaDescriptionMax);
 // The line a reader types before using any of this. Every entry is a named export of the
 // package's barrel, and a type is imported as one.
-const typeOnly = entry.kind === 'interface' || entry.kind === 'type'
-const importLine = `import ${typeOnly ? 'type ' : ''}{ ${entry.name} } from '${PACKAGE_NAME}'`
-const sourceHref = `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/${entry.source.file}#L${entry.source.line}`
+const typeOnly = entry.kind === 'interface' || entry.kind === 'type';
+const importLine = `import ${typeOnly ? 'type ' : ''}{ ${entry.name} } from '${PACKAGE_NAME}'`;
+const sourceHref = `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/${entry.source.file}#L${entry.source.line}`;
 // Previous and next walk this category alphabetically, then carry on into the next category,
 // the way the sidebar lists them. The pages of the reference are not in the sidebar's flat
 // list until their category is open, so the page hands the pager both ends itself.
-const siblings = apiSiblings(entry.slug)
-const page = (slug: string): string => localePath(locale, `/api/${slug}/`)
+const siblings = apiSiblings(entry.slug);
+const page = (slug: string): string => localePath(locale, `/api/${slug}/`);
 const previous = siblings.previous
   ? { label: siblings.previous.name, href: page(siblings.previous.slug) }
-  : { label: category.name, href: page(entry.category.slug) }
+  : { label: category.name, href: page(entry.category.slug) };
 const next = siblings.next
   ? { label: siblings.next.name, href: page(siblings.next.slug) }
   : siblings.nextCategory
     ? { label: apiCategoryCopy(locale, siblings.nextCategory.category.slug).name, href: page(siblings.nextCategory.category.slug) }
-    : undefined
+    : undefined;
 // What a search result calls the page: the name with its kind, so a hit reads abs (function).
 // Pagefind reads one key from one attribute, so the kind itself is recorded on the kind line.
-const meta = `title:${entry.name} (${a.kinds[entry.kind].toLowerCase()})`
+const meta = `title:${entry.name} (${a.kinds[entry.kind].toLowerCase()})`;
 
-const withHtml = entry.members.map((m, i) => ({ ...m, html: html.members[i] ?? '' }))
-const properties = withHtml.filter((m) => m.kind === 'property')
-const methods = withHtml.filter((m) => m.kind === 'method')
-const constructors = withHtml.filter((m) => m.kind === 'constructor')
+const withHtml = entry.members.map((m, i) => ({ ...m, html: html.members[i] ?? '' }));
+const properties = withHtml.filter((m) => m.kind === 'property');
+const methods = withHtml.filter((m) => m.kind === 'method');
+const constructors = withHtml.filter((m) => m.kind === 'constructor');
 
 // The sections this page shows, in MDN's order; the outline follows the same list.
 const sections = [
@@ -101,31 +101,31 @@ const sections = [
   { id: 'in-the-guide', label: a.inGuide, show: entry.guideSections.length > 0 },
   { id: 'see-also', label: a.seeAlso, show: entry.seeAlso.length > 0 },
   { id: 'source', label: a.source, show: true },
-].filter((s) => s.show)
+].filter((s) => s.show);
 // The first example is titled 'Example', later ones 'Example 2', 'Example 3'. The title is
 // built here from docs.api.example, since the ApiEntry data itself carries no locale.
-const exampleTitle = (i: number): string => (i === 0 ? a.example : `${a.example} ${i + 1}`)
+const exampleTitle = (i: number): string => (i === 0 ? a.example : `${a.example} ${i + 1}`);
 // The outline follows the page: each example sits under the Examples heading it belongs to.
 const headings: Heading[] = sections.flatMap((s) => [
   { depth: 2, slug: s.id, text: s.label },
   ...(s.id === 'examples' ? entry.examples.map((_, i) => ({ depth: 3, slug: `example-${slugify(exampleTitle(i))}`, text: exampleTitle(i) })) : []),
-])
+]);
 // A guide section is named the way the sidebar names it, so a Korean page reads Korean here.
 const guideLabel = (link: { label: string; href: string }): string => {
-  const id = /\/guide\/internals\/([^/]+)\//.exec(link.href)?.[1]
-  if (!id) return t.docs.authoringGuide
-  return t.guide.sections[id]?.title ?? link.label
-}
-const supportLabel = (s: string) => a.support[s as keyof typeof a.support] ?? s
-const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames] ?? s
+  const id = /\/guide\/internals\/([^/]+)\//.exec(link.href)?.[1];
+  if (!id) return t.docs.authoringGuide;
+  return t.guide.sections[id]?.title ?? link.label;
+};
+const supportLabel = (s: string) => a.support[s as keyof typeof a.support] ?? s;
+const targetLabel = (s: string) => a.targetNames[s as keyof typeof a.targetNames] ?? s;
 // A target's support state as an Ant tag: the primary's wash where the target has the name,
 // the red border where it does not, and the neutral tag for the rest.
-const tag = 'inline-block rounded-sm border px-[7px] text-label whitespace-nowrap'
+const tag = 'inline-block rounded-sm border px-[7px] text-label whitespace-nowrap';
 const supportTag: Record<string, string> = {
   native: `${tag} border-(--color-primary-border) bg-(--color-primary-bg) text-accent`,
   none: `${tag} border-diag bg-transparent text-diag`,
-}
-const supportClass = (s: string) => supportTag[s] ?? `${tag} border-line-2 bg-surface-1 text-text-2`
+};
+const supportClass = (s: string) => supportTag[s] ?? `${tag} border-line-2 bg-surface-1 text-text-2`;
 ---
 
 <Docs

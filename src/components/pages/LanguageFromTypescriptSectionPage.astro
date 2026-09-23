@@ -5,29 +5,29 @@
 // compiles one `"use typeshade"` program per row at the pinned commit, and the words come
 // from language.mapping.fromTypescript. A row the dictionary has no line for stops the build
 // here, and a program the pinned compiler no longer agrees with stops it in the generator.
-import Docs from '../../layouts/Docs.astro'
-import ConstructCard from '../ConstructCard.astro'
-import Rich from '../Rich.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import { editCopy, links, mappingSet } from '../../lib/links.ts'
-import { loweringSections, type LoweringSectionKey } from '../../lib/typescript-lowering.ts'
+import Docs from '../../layouts/Docs.astro';
+import ConstructCard from '../ConstructCard.astro';
+import Rich from '../Rich.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import { editCopy, links, mappingSet } from '../../lib/links.ts';
+import { loweringSections, type LoweringSectionKey } from '../../lib/typescript-lowering.ts';
 
 interface Props {
-  locale: Locale
+  locale: Locale;
   /** The generator's key for this section, which is also the key its words are under. */
-  section: LoweringSectionKey
+  section: LoweringSectionKey;
 }
-const { locale, section } = Astro.props
-const c = copyFor(locale).language.mapping.fromTypescript
-const entry = mappingSet('languageFromTypescript').sections.find((s) => s.key === section)
-if (!entry) throw new Error(`[from-typescript] there is no section page for '${section}'`)
-const group = loweringSections().find((s) => s.key === section)
-if (!group) throw new Error(`[from-typescript] src/lib/typescript-lowering.ts has no '${section}' section`)
+const { locale, section } = Astro.props;
+const c = copyFor(locale).language.mapping.fromTypescript;
+const entry = mappingSet('languageFromTypescript').sections.find((s) => s.key === section);
+if (!entry) throw new Error(`[from-typescript] there is no section page for '${section}'`);
+const group = loweringSections().find((s) => s.key === section);
+if (!group) throw new Error(`[from-typescript] src/lib/typescript-lowering.ts has no '${section}' section`);
 for (const row of group.rows) {
-  if (!c.rows[row.id]) throw new Error(`[from-typescript] the row '${row.id}' has no line in the dictionary`)
+  if (!c.rows[row.id]) throw new Error(`[from-typescript] the row '${row.id}' has no line in the dictionary`);
 }
-const words = c.sections[section]
-const page = c.pages[section]
+const words = c.sections[section];
+const page = c.pages[section];
 ---
 
 <Docs

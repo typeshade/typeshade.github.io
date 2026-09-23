@@ -2,4 +2,4 @@
 export const MARK = {
   src: '/favicon.svg',
   viewBox: '0 0 1024 1024',
-} as const
+} as const;

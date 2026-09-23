@@ -6,24 +6,24 @@
 // the phone panel) is a details element; the script in Base.astro keeps only one open at a
 // time and closes them on Escape and an outside click. The bar is out of the search index, so
 // a hit is a hit in the page's own text.
-import { MARK } from '../lib/mark.ts'
-import { links, navLinks } from '../lib/links.ts'
-import { facts } from '../lib/examples.ts'
-import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts'
+import { MARK } from '../lib/mark.ts';
+import { links, navLinks } from '../lib/links.ts';
+import { facts } from '../lib/examples.ts';
+import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts';
 
 interface Props {
-  locale: Locale
-  path: string
+  locale: Locale;
+  path: string;
   /** Per-locale override for the language switcher, already a real href (the 404 page). */
-  switchTarget?: Partial<Record<Locale, string>>
+  switchTarget?: Partial<Record<Locale, string>>;
 }
-const { locale, path, switchTarget } = Astro.props
-const t = copyFor(locale)
+const { locale, path, switchTarget } = Astro.props;
+const t = copyFor(locale);
 // The menu lists every language, the current one first and not as a link, the way VitePress
 // and the MDN language menu mark the page you are on.
-const languages = locales.map((l) => ({ locale: l, href: switchTarget?.[l] ?? localePath(l, path), label: copyFor(l).name, current: l === locale }))
-const others = languages.filter((l) => !l.current)
-const ordered = [...languages.filter((l) => l.current), ...others]
+const languages = locales.map((l) => ({ locale: l, href: switchTarget?.[l] ?? localePath(l, path), label: copyFor(l).name, current: l === locale }));
+const others = languages.filter((l) => !l.current);
+const ordered = [...languages.filter((l) => l.current), ...others];
 ---
 
 <header class="site-header" data-pagefind-ignore>

@@ -1,21 +1,21 @@
-import { execSync } from 'node:child_process'
-import { rmSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'astro/config'
-import sitemap from '@astrojs/sitemap'
-import tailwindcss from '@tailwindcss/vite'
-import expressiveCode from 'astro-expressive-code'
-import remarkApiLinks from './src/lib/remark-api-links.mjs'
-import remarkDocTables from './src/lib/remark-doc-tables.mjs'
-import remarkErrorLinks from './src/lib/remark-error-links.mjs'
-import remarkPackageName from './src/lib/remark-package-name.mjs'
-import remarkPromoteBoldLeads from './src/lib/remark-promote-bold-leads.mjs'
-import { verifyArtifacts } from './scripts/artifacts.mjs'
-import { verifyKoreanFonts } from './scripts/fonts.mjs'
+import { execSync } from 'node:child_process';
+import { rmSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
+import tailwindcss from '@tailwindcss/vite';
+import expressiveCode from 'astro-expressive-code';
+import remarkApiLinks from './src/lib/remark-api-links.mjs';
+import remarkDocTables from './src/lib/remark-doc-tables.mjs';
+import remarkErrorLinks from './src/lib/remark-error-links.mjs';
+import remarkPackageName from './src/lib/remark-package-name.mjs';
+import remarkPromoteBoldLeads from './src/lib/remark-promote-bold-leads.mjs';
+import { verifyArtifacts } from './scripts/artifacts.mjs';
+import { verifyKoreanFonts } from './scripts/fonts.mjs';
 
-const root = fileURLToPath(new URL('.', import.meta.url))
+const root = fileURLToPath(new URL('.', import.meta.url));
 // The sitemap's lastmod is the last commit's date, so it moves when the site does.
-const lastmod = execSync('git log -1 --format=%cI', { cwd: root, encoding: 'utf8' }).trim()
+const lastmod = execSync('git log -1 --format=%cI', { cwd: root, encoding: 'utf8' }).trim();
 
 // typeshade.dev: a static site built from the compiler vendored at vendor/shader-dsl. Every
 // code sample and number on the page is computed from that checkout at build time.
@@ -25,8 +25,15 @@ export default defineConfig({
   trailingSlash: 'always',
   // The docs moved under /guide/ on the day the site launched; the first routes redirect.
   redirects: Object.fromEntries(
-    Object.entries({ '/motivation/': '/guide/introduction/', '/checks/': '/guide/checks/', '/examples/': '/guide/examples/', '/guide/': '/guide/introduction/' })
-      .flatMap(([from, to]) => [[from, to], [`/ko${from}`, `/ko${to}`]]),
+    Object.entries({
+      '/motivation/': '/guide/introduction/',
+      '/checks/': '/guide/checks/',
+      '/examples/': '/guide/examples/',
+      '/guide/': '/guide/introduction/',
+    }).flatMap(([from, to]) => [
+      [from, to],
+      [`/ko${from}`, `/ko${to}`],
+    ]),
   ),
   // English at /, every other locale under its own prefix. The copy lives in src/i18n.
   i18n: { defaultLocale: 'en', locales: ['en', 'ko'], routing: { prefixDefaultLocale: false } },
@@ -37,8 +44,8 @@ export default defineConfig({
       name: 'typeshade:artifact-hashes',
       hooks: {
         'astro:build:start': () => {
-          verifyArtifacts(root)
-          verifyKoreanFonts(root)
+          verifyArtifacts(root);
+          verifyKoreanFonts(root);
         },
       },
     },
@@ -48,20 +55,46 @@ export default defineConfig({
       name: 'typeshade:capture-routes',
       hooks: {
         'astro:build:done': ({ dir }) => {
-          if (process.env.OG_REBASELINE !== '1') rmSync(fileURLToPath(new URL('og/', dir)), { recursive: true, force: true })
-          if (process.env.STILLS_REBASELINE !== '1') rmSync(fileURLToPath(new URL('capture-stills/', dir)), { recursive: true, force: true })
+          if (process.env.OG_REBASELINE !== '1')
+            rmSync(fileURLToPath(new URL('og/', dir)), { recursive: true, force: true });
+          if (process.env.STILLS_REBASELINE !== '1')
+            rmSync(fileURLToPath(new URL('capture-stills/', dir)), {
+              recursive: true,
+              force: true,
+            });
         },
       },
     },
     expressiveCode(), // options in ec.config.mjs
     sitemap({
-      filter: (page) => !['/og', '/capture-stills', '/motivation', '/checks', '/examples', '/guide', '/ko/motivation', '/ko/checks', '/ko/examples', '/ko/guide', '/ko/404'].includes(new URL(page).pathname.replace(/\/$/, '')),
+      filter: (page) =>
+        ![
+          '/og',
+          '/capture-stills',
+          '/motivation',
+          '/checks',
+          '/examples',
+          '/guide',
+          '/ko/motivation',
+          '/ko/checks',
+          '/ko/examples',
+          '/ko/guide',
+          '/ko/404',
+        ].includes(new URL(page).pathname.replace(/\/$/, '')),
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
       serialize: (item) => ({ ...item, lastmod }),
     }),
   ],
   // The package name first, then the guide's first mention of each export as a link to its
   // reference page.
-  markdown: { remarkPlugins: [remarkPackageName, remarkPromoteBoldLeads, remarkDocTables, remarkApiLinks, remarkErrorLinks] },
+  markdown: {
+    remarkPlugins: [
+      remarkPackageName,
+      remarkPromoteBoldLeads,
+      remarkDocTables,
+      remarkApiLinks,
+      remarkErrorLinks,
+    ],
+  },
   vite: { plugins: [tailwindcss()] },
-})
+});

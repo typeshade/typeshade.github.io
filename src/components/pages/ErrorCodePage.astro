@@ -6,12 +6,12 @@
 // See also; and the Source lines that raise it. A section with nothing true in it is left
 // out, and a code with no example says why under its summary. Everything about the code is
 // src/lib/error-codes.ts; the words around it are docs.errors in every dictionary.
-import { Code } from 'astro-expressive-code/components'
-import Docs, { type Heading } from '../../layouts/Docs.astro'
-import CodeFrame from '../CodeFrame.astro'
-import Rich from '../Rich.astro'
-import { copyFor, guideSection, localePath, localeSettings, type Locale } from '../../i18n/index.ts'
-import { facts } from '../../lib/examples.ts'
+import { Code } from 'astro-expressive-code/components';
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import CodeFrame from '../CodeFrame.astro';
+import Rich from '../Rich.astro';
+import { copyFor, guideSection, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
+import { facts } from '../../lib/examples.ts';
 import {
   assertErrorLines,
   errorCode,
@@ -21,54 +21,54 @@ import {
   type ErrorCodeEntry,
   type ErrorGroup,
   type ReportedDiagnostic,
-} from '../../lib/error-codes.ts'
-import { languageEntries, languageEntryPath } from '../../lib/language-reference.ts'
-import { apiPage, editCopy, links } from '../../lib/links.ts'
-import { META_MIN, fitDescription } from '../../lib/meta-description.ts'
+} from '../../lib/error-codes.ts';
+import { languageEntries, languageEntryPath } from '../../lib/language-reference.ts';
+import { apiPage, editCopy, links } from '../../lib/links.ts';
+import { META_MIN, fitDescription } from '../../lib/meta-description.ts';
 
 interface Props {
-  locale: Locale
-  slug: string
+  locale: Locale;
+  slug: string;
 }
-const { locale, slug } = Astro.props
-const d = copyFor(locale).docs
-const r = d.reference
-const x = d.errors
-const e = x.entry
-const entry = errorCode(slug)
-assertErrorLines(x.lines)
+const { locale, slug } = Astro.props;
+const d = copyFor(locale).docs;
+const r = d.reference;
+const x = d.errors;
+const e = x.entry;
+const entry = errorCode(slug);
+assertErrorLines(x.lines);
 
-const siteLine = entry.name ? (x.lines as Record<string, string>)[entry.name] ?? '' : ''
+const siteLine = entry.name ? (x.lines as Record<string, string>)[entry.name] ?? '' : '';
 // The lead: the registry's first sentence, or where the registry documents nothing, the
 // dictionary's line in the page's language.
-const lead = entry.line ? { text: entry.line, lang: 'en' } : { text: siteLine, lang: locale }
-const head = entry.name ? `${entry.code} ${entry.name}` : entry.code
+const lead = entry.line ? { text: entry.line, lang: 'en' } : { text: siteLine, lang: locale };
+const head = entry.name ? `${entry.code} ${entry.name}` : entry.code;
 
-const title = e.title(head, entry.family === 'sd' ? entry.line : '')
+const title = e.title(head, entry.family === 'sd' ? entry.line : '');
 if (title.length < 45 || title.length > 60) {
-  throw new Error(`[error-code] ${entry.code} has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`)
+  throw new Error(`[error-code] ${entry.code} has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`);
 }
-const plain = (text: string): string => text.replace(/`/g, '')
-const composed = e.description(head, plain(lead.text))
-const description = fitDescription(composed.length < META_MIN ? `${composed} ${e.fill}` : composed, localeSettings[locale].metaDescriptionMax)
+const plain = (text: string): string => text.replace(/`/g, '');
+const composed = e.description(head, plain(lead.text));
+const description = fitDescription(composed.length < META_MIN ? `${composed} ${e.fill}` : composed, localeSettings[locale].metaDescriptionMax);
 
-const kind = entry.family === 'sd' ? e.kindSd : entry.name ? e.kindTs : e.kindRetired
+const kind = entry.family === 'sd' ? e.kindSd : entry.name ? e.kindTs : e.kindRetired;
 // When it fires: the registry's documentation, where it says more than the lead above it.
-const when = entry.docs.join(' ') !== entry.line ? entry.docs : []
+const when = entry.docs.join(' ') !== entry.line ? entry.docs : [];
 // An SD code's registry text is its summary first, which is the lead; what follows it is the
 // file's own comments on the entry.
-const whenParagraphs = entry.family === 'sd' ? when.slice(1) : when
-const example = entry.example
-const counterpart = entry.counterpart
-const showFix = entry.hint.length > 0 || example !== null
-const FILE = 'example.shade.ts'
+const whenParagraphs = entry.family === 'sd' ? when.slice(1) : when;
+const example = entry.example;
+const counterpart = entry.counterpart;
+const showFix = entry.hint.length > 0 || example !== null;
+const FILE = 'example.shade.ts';
 
 // A line the code's own diagnostic points at is marked in the frame. A BACKEND diagnostic
 // sits on the file's first line because it is about the whole module, so it marks nothing.
 const marks = (diagnostics: readonly ReportedDiagnostic[], code: string): string => {
-  const lines = [...new Set(diagnostics.filter((d) => d.code === code && d.code !== 'TS8015' && d.line > 0).map((d) => d.line))]
-  return lines.length > 0 ? `{${lines.join(',')}}` : ''
-}
+  const lines = [...new Set(diagnostics.filter((d) => d.code === code && d.code !== 'TS8015' && d.line > 0).map((d) => d.line))];
+  return lines.length > 0 ? `{${lines.join(',')}}` : '';
+};
 
 // See also: the codes this one names or is named by, the guide page its group is about, the
 // names of the language reference its registry text writes in code, and the index.
@@ -83,27 +83,27 @@ const GUIDE: Partial<Record<ErrorGroup, { href: string; label: string; code?: bo
   targets: { href: links.conceptsWgsl.href, label: d.labels.conceptPages.wgslAndGlsl },
   builder: { href: apiPage('fn'), label: e.builderPage },
   lint: { href: `${links.internals.href}diagnostics/`, label: guideSection(locale, 'diagnostics').title },
-}
-const byTitle = new Map<string, string>()
+};
+const byTitle = new Map<string, string>();
 for (const le of languageEntries()) {
-  const path = languageEntryPath(le.kind, le.name)
+  const path = languageEntryPath(le.kind, le.name);
   // A name two tables carry (`f32` the type and `f32()` the cast) goes to the first one listed.
-  if (!byTitle.has(le.title)) byTitle.set(le.title, path)
+  if (!byTitle.has(le.title)) byTitle.set(le.title, path);
 }
-const referenceLinks: { href: string; label: string }[] = []
+const referenceLinks: { href: string; label: string }[] = [];
 for (const span of entry.spans) {
-  const m = /^(@?[A-Za-z_][A-Za-z0-9_]*)(\(.*\))?$/.exec(span)
-  if (!m) continue
-  const path = byTitle.get(m[1]!)
-  if (!path || referenceLinks.some((l) => l.label === m[1])) continue
-  referenceLinks.push({ href: localePath(locale, path), label: m[1]! })
-  if (referenceLinks.length === 6) break
+  const m = /^(@?[A-Za-z_][A-Za-z0-9_]*)(\(.*\))?$/.exec(span);
+  if (!m) continue;
+  const path = byTitle.get(m[1]!);
+  if (!path || referenceLinks.some((l) => l.label === m[1])) continue;
+  referenceLinks.push({ href: localePath(locale, path), label: m[1]! });
+  if (referenceLinks.length === 6) break;
 }
-const related = entry.related.map((code) => ({ code, href: localePath(locale, errorCodePath(code)!), entry: errorCode(code.toLowerCase()) }))
-const guide = GUIDE[entry.group]
+const related = entry.related.map((code) => ({ code, href: localePath(locale, errorCodePath(code)!), entry: errorCode(code.toLowerCase()) }));
+const guide = GUIDE[entry.group];
 
 const lineFor = (other: ErrorCodeEntry): { text: string; lang: string } =>
-  other.line ? { text: other.line, lang: 'en' } : { text: (other.name && (x.lines as Record<string, string>)[other.name]) || '', lang: locale }
+  other.line ? { text: other.line, lang: 'en' } : { text: (other.name && (x.lines as Record<string, string>)[other.name]) || '', lang: locale };
 
 const sections = [
   { id: 'when-it-fires', label: e.whenH, show: whenParagraphs.length > 0 },
@@ -112,20 +112,20 @@ const sections = [
   { id: 'how-to-fix-it', label: e.fixH, show: showFix },
   { id: 'see-also', label: e.seeAlsoH, show: true },
   { id: 'source', label: e.sourceH, show: true },
-].filter((s) => s.show)
-const headings: Heading[] = sections.map((s) => ({ depth: 2, slug: s.id, text: s.label }))
+].filter((s) => s.show);
+const headings: Heading[] = sections.map((s) => ({ depth: 2, slug: s.id, text: s.label }));
 
 // Previous and next walk the codes in the index's order, and step out to the index at the
 // front and to the API reference at the end, which is what the sidebar lists next.
-const order = errorPageOrder()
-const at = order.findIndex((o) => o.code === entry.code)
-const index = { label: x.h1, href: localePath(locale, links.errors.href) }
-const before = order[at - 1]
-const after = order[at + 1]
-const previous = before ? { label: before.code, href: localePath(locale, `/reference/errors/${before.slug}/`) } : index
-const next = after ? { label: after.code, href: localePath(locale, `/reference/errors/${after.slug}/`) } : { label: d.api.h1, href: localePath(locale, links.api.href) }
-const meta = `title:${head}`
-const gapText = entry.gap === 'retired' ? e.retired : entry.gap === 'builder' ? e.builder : entry.gap === 'internal' ? e.internal : entry.gap === 'unwritten' ? e.unwritten : ''
+const order = errorPageOrder();
+const at = order.findIndex((o) => o.code === entry.code);
+const index = { label: x.h1, href: localePath(locale, links.errors.href) };
+const before = order[at - 1];
+const after = order[at + 1];
+const previous = before ? { label: before.code, href: localePath(locale, `/reference/errors/${before.slug}/`) } : index;
+const next = after ? { label: after.code, href: localePath(locale, `/reference/errors/${after.slug}/`) } : { label: d.api.h1, href: localePath(locale, links.api.href) };
+const meta = `title:${head}`;
+const gapText = entry.gap === 'retired' ? e.retired : entry.gap === 'builder' ? e.builder : entry.gap === 'internal' ? e.internal : entry.gap === 'unwritten' ? e.unwritten : '';
 ---
 
 <Docs

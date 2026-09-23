@@ -39,7 +39,8 @@ function analyse(languageService: TypeshadeLanguageService, uri: string): Analys
   const text = texts.get(uri);
   if (text === undefined) return { diagnostics, hasDirective };
   const result = compile(text);
-  if (result.diagnostics.some((diagnostic) => diagnostic.category === 'error')) return { diagnostics, hasDirective };
+  if (result.diagnostics.some((diagnostic) => diagnostic.category === 'error'))
+    return { diagnostics, hasDirective };
   return { diagnostics, hasDirective, module: result.module };
 }
 
@@ -49,7 +50,8 @@ self.addEventListener('message', (event: MessageEvent<LanguageRequest>) => {
     service ??= createTypeshadeLanguageService();
 
     if (request.kind === 'update') {
-      if (texts.has(request.uri)) service.updateDocument(request.uri, request.text, request.version);
+      if (texts.has(request.uri))
+        service.updateDocument(request.uri, request.text, request.version);
       else service.openDocument(request.uri, request.text, request.version);
       texts.set(request.uri, request.text);
       return;
@@ -74,7 +76,9 @@ self.addEventListener('message', (event: MessageEvent<LanguageRequest>) => {
           id,
           version,
           ok: true,
-          result: service.getReferences(uri, request.position, { includeDeclaration: request.includeDeclaration }),
+          result: service.getReferences(uri, request.position, {
+            includeDeclaration: request.includeDeclaration,
+          }),
         });
         return;
       case 'symbols':
@@ -87,7 +91,12 @@ self.addEventListener('message', (event: MessageEvent<LanguageRequest>) => {
         reply({ id, version, ok: true, result: service.prepareRename(uri, request.position) });
         return;
       case 'rename':
-        reply({ id, version, ok: true, result: service.rename(uri, request.position, request.newName) });
+        reply({
+          id,
+          version,
+          ok: true,
+          result: service.rename(uri, request.position, request.newName),
+        });
         return;
       case 'semanticTokens':
         reply({ id, version, ok: true, result: service.getSemanticTokens(uri) });

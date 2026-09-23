@@ -28,20 +28,20 @@
 // A code no program here raises says why on its page: the front end catches the mistake
 // first under its own code (shown with a program that proves it), the core layer only the
 // fn() builder calls raises it, or the registry marks it an internal invariant.
-import ts from 'typescript'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import path from 'node:path'
-import { compile } from '../../vendor/shader-dsl/src/index.ts'
-import { CODES, diagnose } from '../../vendor/shader-dsl/src/dev.ts'
-import { emitModule } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts'
-import { emitGlslStages } from '../../vendor/shader-dsl/src/core/backends/glsl.ts'
-import { referenceProse } from './api.ts'
+import ts from 'typescript';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import path from 'node:path';
+import { compile } from '../../vendor/shader-dsl/src/index.ts';
+import { CODES, diagnose } from '../../vendor/shader-dsl/src/dev.ts';
+import { emitModule } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import { emitGlslStages } from '../../vendor/shader-dsl/src/core/backends/glsl.ts';
+import { referenceProse } from './api.ts';
 
-const ROOT = 'vendor/shader-dsl'
-const TS_FILE = 'src/compiler/ts/codes.ts'
-const SD_FILE = 'src/core/diagnostics/codes.ts'
+const ROOT = 'vendor/shader-dsl';
+const TS_FILE = 'src/compiler/ts/codes.ts';
+const SD_FILE = 'src/core/diagnostics/codes.ts';
 
-export type ErrorFamily = 'ts' | 'sd'
+export type ErrorFamily = 'ts' | 'sd';
 
 /** What a code is about. The index groups the codes of each family under these, in order. */
 export type ErrorGroup =
@@ -57,120 +57,196 @@ export type ErrorGroup =
   | 'lint'
   | 'portable'
   | 'retired'
-  | 'other'
+  | 'other';
 
-export const TS_GROUPS: readonly ErrorGroup[] = ['file', 'types', 'functions', 'controlFlow', 'entries', 'resources', 'f64', 'targets', 'retired', 'other']
-export const SD_GROUPS: readonly ErrorGroup[] = ['types', 'builder', 'resources', 'targets', 'f64', 'lint', 'portable', 'other']
+export const TS_GROUPS: readonly ErrorGroup[] = [
+  'file',
+  'types',
+  'functions',
+  'controlFlow',
+  'entries',
+  'resources',
+  'f64',
+  'targets',
+  'retired',
+  'other',
+];
+export const SD_GROUPS: readonly ErrorGroup[] = [
+  'types',
+  'builder',
+  'resources',
+  'targets',
+  'f64',
+  'lint',
+  'portable',
+  'other',
+];
 
 // Which group a code sits in. A code the pin adds and this table does not name lands in
 // 'other' and its page still builds; the counts in src/lib/examples.ts stop the build for it.
 const GROUP_OF: Readonly<Record<string, ErrorGroup>> = {
-  MISSING_DIRECTIVE: 'file', SYNTAX: 'file', TOP_LEVEL: 'file', HOST_API: 'file', HOST_STMT: 'file',
-  ENABLE_NAME: 'file', UNSUPPORTED: 'file',
-  UNKNOWN_TYPE: 'types', TYPE_MISMATCH: 'types', UNKNOWN_NAME: 'types', DUPLICATE_SYMBOL: 'types',
-  CONST_ASSIGN: 'types', ASSIGN_TARGET: 'types', INDEX_OOB: 'types', STRUCT_FIELD: 'types',
+  MISSING_DIRECTIVE: 'file',
+  SYNTAX: 'file',
+  TOP_LEVEL: 'file',
+  HOST_API: 'file',
+  HOST_STMT: 'file',
+  ENABLE_NAME: 'file',
+  UNSUPPORTED: 'file',
+  UNKNOWN_TYPE: 'types',
+  TYPE_MISMATCH: 'types',
+  UNKNOWN_NAME: 'types',
+  DUPLICATE_SYMBOL: 'types',
+  CONST_ASSIGN: 'types',
+  ASSIGN_TARGET: 'types',
+  INDEX_OOB: 'types',
+  STRUCT_FIELD: 'types',
   INT_LITERAL_DEPRECATION: 'types',
-  UNKNOWN_FN: 'functions', ARITY_MISMATCH: 'functions', FUNCTION_SHAPE: 'functions', RETURN_SHAPE: 'functions',
-  RECURSION: 'functions', CLASS_MEMBER: 'functions', MATH_ARGUMENT: 'functions',
-  LOOP_BOUND: 'controlFlow', LOOP_INFINITE: 'controlFlow', LOOP_INDUCTION: 'controlFlow', BREAK_OUTSIDE: 'controlFlow',
-  SWITCH_CASE: 'controlFlow', UNIFORMITY: 'controlFlow', BARRIER_PLACEMENT: 'controlFlow',
-  BUILTIN_NAME: 'entries', BUILTIN_STAGE: 'entries', WORKGROUP_SHAPE: 'entries', ATTRIBUTE_NAME: 'entries',
-  STRUCT_FIELD_MISSING_ATTR: 'entries', WORKGROUP_ARG: 'entries',
-  UNSIZED_ARRAY_LENGTH: 'resources', MODULE_VAR: 'resources', TEXTURE_ARGUMENT: 'resources', LAYOUT: 'resources',
-  MAT_UNSUPPORTED: 'f64', F64_ENTRY_IO: 'f64',
-  BACKEND: 'targets', RESERVED_NAME: 'targets',
-  SD0001: 'types', SD0002: 'types', SD0003: 'types', SD0004: 'types', SD0005: 'types', SD0006: 'types',
-  SD0007: 'types', SD0008: 'types', SD0009: 'types', SD0010: 'types', SD0011: 'types', SD0015: 'types',
-  SD0116: 'types', SD0117: 'types',
-  SD0012: 'builder', SD0013: 'builder', SD0113: 'builder', SD0115: 'builder',
-  SD0014: 'resources', SD0016: 'resources', SD0114: 'resources',
-  SD0017: 'targets', SD0020: 'targets', SD0030: 'targets',
-  SD0040: 'f64', SD0041: 'f64', SD0042: 'f64', SD0043: 'f64', SD0044: 'f64',
-  SD0107: 'lint', SD0108: 'lint', SD0109: 'lint', SD0112: 'lint',
-  SD0110: 'portable', SD0111: 'portable',
-}
+  UNKNOWN_FN: 'functions',
+  ARITY_MISMATCH: 'functions',
+  FUNCTION_SHAPE: 'functions',
+  RETURN_SHAPE: 'functions',
+  RECURSION: 'functions',
+  CLASS_MEMBER: 'functions',
+  MATH_ARGUMENT: 'functions',
+  LOOP_BOUND: 'controlFlow',
+  LOOP_INFINITE: 'controlFlow',
+  LOOP_INDUCTION: 'controlFlow',
+  BREAK_OUTSIDE: 'controlFlow',
+  SWITCH_CASE: 'controlFlow',
+  UNIFORMITY: 'controlFlow',
+  BARRIER_PLACEMENT: 'controlFlow',
+  BUILTIN_NAME: 'entries',
+  BUILTIN_STAGE: 'entries',
+  WORKGROUP_SHAPE: 'entries',
+  ATTRIBUTE_NAME: 'entries',
+  STRUCT_FIELD_MISSING_ATTR: 'entries',
+  WORKGROUP_ARG: 'entries',
+  UNSIZED_ARRAY_LENGTH: 'resources',
+  MODULE_VAR: 'resources',
+  TEXTURE_ARGUMENT: 'resources',
+  LAYOUT: 'resources',
+  MAT_UNSUPPORTED: 'f64',
+  F64_ENTRY_IO: 'f64',
+  BACKEND: 'targets',
+  RESERVED_NAME: 'targets',
+  SD0001: 'types',
+  SD0002: 'types',
+  SD0003: 'types',
+  SD0004: 'types',
+  SD0005: 'types',
+  SD0006: 'types',
+  SD0007: 'types',
+  SD0008: 'types',
+  SD0009: 'types',
+  SD0010: 'types',
+  SD0011: 'types',
+  SD0015: 'types',
+  SD0116: 'types',
+  SD0117: 'types',
+  SD0012: 'builder',
+  SD0013: 'builder',
+  SD0113: 'builder',
+  SD0115: 'builder',
+  SD0014: 'resources',
+  SD0016: 'resources',
+  SD0114: 'resources',
+  SD0017: 'targets',
+  SD0020: 'targets',
+  SD0030: 'targets',
+  SD0040: 'f64',
+  SD0041: 'f64',
+  SD0042: 'f64',
+  SD0043: 'f64',
+  SD0044: 'f64',
+  SD0107: 'lint',
+  SD0108: 'lint',
+  SD0109: 'lint',
+  SD0112: 'lint',
+  SD0110: 'portable',
+  SD0111: 'portable',
+};
 
 /** One place in the compiler's source that raises a code. */
 export interface ErrorSite {
   /** The file, relative to the compiler's root. */
-  readonly file: string
+  readonly file: string;
   /** The one-based line of the first site in that file. */
-  readonly line: number
+  readonly line: number;
   /** How many sites that file has. */
-  readonly count: number
+  readonly count: number;
 }
 
 /** One diagnostic as the compiler reported it. */
 export interface ReportedDiagnostic {
-  readonly code: string
-  readonly severity: string
+  readonly code: string;
+  readonly severity: string;
   /** One-based, in the program shown. Zero where the report has no line. */
-  readonly line: number
-  readonly message: string
+  readonly line: number;
+  readonly message: string;
 }
 
 /** How an example's code reached the page; see the head of this file. */
-export type ErrorChannel = 'compile' | 'backend' | 'diagnose'
+export type ErrorChannel = 'compile' | 'backend' | 'diagnose';
 
 export interface ErrorExample {
-  readonly trigger: string
-  readonly fix: string
-  readonly channel: ErrorChannel
+  readonly trigger: string;
+  readonly fix: string;
+  readonly channel: ErrorChannel;
   /** What compile() reported for the trigger. For the diagnose channel, what diagnose() did. */
-  readonly diagnostics: readonly ReportedDiagnostic[]
+  readonly diagnostics: readonly ReportedDiagnostic[];
   /** For the backend channel: the error the emitter threw, code and message. */
-  readonly thrown: ReportedDiagnostic | null
+  readonly thrown: ReportedDiagnostic | null;
   /** The compile() option the example needs, where it needs one. */
-  readonly deprecations: boolean
+  readonly deprecations: boolean;
 }
 
 /** A front-end code that stops the same mistake before the core check can see it. */
 export interface ErrorCounterpart {
-  readonly code: string
-  readonly program: string
-  readonly diagnostics: readonly ReportedDiagnostic[]
+  readonly code: string;
+  readonly program: string;
+  readonly diagnostics: readonly ReportedDiagnostic[];
 }
 
 /** Why a code has no example. */
-export type ErrorGap = 'retired' | 'frontEnd' | 'builder' | 'internal' | 'unwritten'
+export type ErrorGap = 'retired' | 'frontEnd' | 'builder' | 'internal' | 'unwritten';
 
 export interface ErrorCodeEntry {
-  readonly code: string
+  readonly code: string;
   /** The last path segment of its page. */
-  readonly slug: string
-  readonly family: ErrorFamily
+  readonly slug: string;
+  readonly family: ErrorFamily;
   /** The TS_CODES constant, `STRUCT_FIELD`. Null for an SD code and for a retired number. */
-  readonly name: string | null
-  readonly group: ErrorGroup
+  readonly name: string | null;
+  readonly group: ErrorGroup;
   /** The registry's own documentation, one Markdown paragraph per item. For a TS code it is
    *  the JSDoc above the constant, or the header's sentences about it where the constant has
    *  none; for an SD code the summary. Empty where the registry says nothing. */
-  readonly docs: readonly string[]
+  readonly docs: readonly string[];
   /** The first sentence of the docs, the line the index and the page lead with. Empty where
    *  the registry documents nothing, and the page takes the dictionary's line instead. */
-  readonly line: string
+  readonly line: string;
   /** The SD registry's one-line fix. */
-  readonly hint: string
-  readonly sites: readonly ErrorSite[]
-  readonly example: ErrorExample | null
-  readonly counterpart: ErrorCounterpart | null
-  readonly gap: ErrorGap | null
+  readonly hint: string;
+  readonly sites: readonly ErrorSite[];
+  readonly example: ErrorExample | null;
+  readonly counterpart: ErrorCounterpart | null;
+  readonly gap: ErrorGap | null;
   /** Other codes the page points to: the ones its docs name, its counterpart, the codes its
    *  example's report carries, and the ones that name it as their counterpart. */
-  readonly related: readonly string[]
+  readonly related: readonly string[];
   /** Inline code spans in the docs and hint, for the page to match against the language
    *  reference. */
-  readonly spans: readonly string[]
+  readonly spans: readonly string[];
 }
 
 // ── the registries ─────────────────────────────────────────────────────────────────────
 
 interface RawCode {
-  readonly code: string
-  readonly name: string | null
-  readonly docs: readonly string[]
-  readonly hint: string
-  readonly family: ErrorFamily
+  readonly code: string;
+  readonly name: string | null;
+  readonly docs: readonly string[];
+  readonly hint: string;
+  readonly family: ErrorFamily;
 }
 
 /** A `/** … *\/` comment as paragraphs of Markdown: the stars off, the lines of one paragraph
@@ -180,112 +256,140 @@ function jsdocParagraphs(comment: string): string[] {
     .replace(/^\/\*\*/, '')
     .replace(/\*\/$/, '')
     .split('\n')
-    .map((l) => l.replace(/^\s*\*? ?/, '').trimEnd())
-  const out: string[] = []
-  let current: string[] = []
+    .map((l) => l.replace(/^\s*\*? ?/, '').trimEnd());
+  const out: string[] = [];
+  let current: string[] = [];
   for (const l of lines) {
     if (l.trim() === '') {
-      if (current.length > 0) out.push(current.join(' ').replace(/\s+/g, ' ').trim())
-      current = []
-    } else current.push(l.trim())
+      if (current.length > 0) out.push(current.join(' ').replace(/\s+/g, ' ').trim());
+      current = [];
+    } else current.push(l.trim());
   }
-  if (current.length > 0) out.push(current.join(' ').replace(/\s+/g, ' ').trim())
-  return out.filter((p) => p.length > 0)
+  if (current.length > 0) out.push(current.join(' ').replace(/\s+/g, ' ').trim());
+  return out.filter((p) => p.length > 0);
 }
 
 /** The file's leading `//` comment, as paragraphs. */
 function headerParagraphs(text: string): string[] {
-  const out: string[] = []
-  let current: string[] = []
+  const out: string[] = [];
+  let current: string[] = [];
   for (const raw of text.split('\n')) {
-    if (!raw.startsWith('//')) break
-    const l = raw.replace(/^\/\/ ?/, '').trimEnd()
+    if (!raw.startsWith('//')) break;
+    const l = raw.replace(/^\/\/ ?/, '').trimEnd();
     if (l.trim() === '') {
-      if (current.length > 0) out.push(current.join(' '))
-      current = []
-    } else current.push(l.trim())
+      if (current.length > 0) out.push(current.join(' '));
+      current = [];
+    } else current.push(l.trim());
   }
-  if (current.length > 0) out.push(current.join(' '))
-  return out
+  if (current.length > 0) out.push(current.join(' '));
+  return out;
 }
 
 /** Sentences, split at a stop followed by a capital or a code span. */
 const sentences = (paragraph: string): string[] =>
-  paragraph.split(/(?<=[.!?])\s+(?=[A-Z`"])/).map((s) => s.trim()).filter((s) => s.length > 0)
+  paragraph
+    .split(/(?<=[.!?])\s+(?=[A-Z`"])/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 
 /** The first sentence of a paragraph, the lead a row and a page carry. A stop inside a code
  *  span or an `e.g.` is not the end of it. */
 export function firstSentence(text: string): string {
-  let inCode = false
+  let inCode = false;
   for (let i = 0; i < text.length; i++) {
-    const c = text[i]!
-    if (c === '`') inCode = !inCode
-    if (inCode || c !== '.') continue
-    const next = text[i + 1]
-    if (next !== undefined && next !== ' ') continue
-    if (/\b(?:e\.g|i\.e|vs)$/.test(text.slice(0, i))) continue
-    return text.slice(0, i + 1)
+    const c = text[i]!;
+    if (c === '`') inCode = !inCode;
+    if (inCode || c !== '.') continue;
+    const next = text[i + 1];
+    if (next !== undefined && next !== ' ') continue;
+    if (/\b(?:e\.g|i\.e|vs)$/.test(text.slice(0, i))) continue;
+    return text.slice(0, i + 1);
   }
-  return text
+  return text;
 }
 
 interface TsRegistry {
-  readonly codes: readonly RawCode[]
-  readonly header: readonly string[]
-  readonly retired: readonly string[]
+  readonly codes: readonly RawCode[];
+  readonly header: readonly string[];
+  readonly retired: readonly string[];
 }
 
-let tsCache: TsRegistry | null = null
+let tsCache: TsRegistry | null = null;
 
 function readTsRegistry(): TsRegistry {
-  if (tsCache) return tsCache
-  const file = path.resolve(ROOT, TS_FILE)
-  const text = readFileSync(file, 'utf8')
-  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2022, true)
-  let literal: ts.ObjectLiteralExpression | undefined
+  if (tsCache) return tsCache;
+  const file = path.resolve(ROOT, TS_FILE);
+  const text = readFileSync(file, 'utf8');
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2022, true);
+  let literal: ts.ObjectLiteralExpression | undefined;
   sf.forEachChild((node) => {
-    if (!ts.isVariableStatement(node)) return
+    if (!ts.isVariableStatement(node)) return;
     for (const d of node.declarationList.declarations) {
-      if (!ts.isIdentifier(d.name) || d.name.text !== 'TS_CODES' || !d.initializer) continue
-      let init: ts.Expression = d.initializer
-      while (ts.isAsExpression(init) || ts.isSatisfiesExpression(init) || ts.isParenthesizedExpression(init)) init = init.expression
-      if (ts.isObjectLiteralExpression(init)) literal = init
+      if (!ts.isIdentifier(d.name) || d.name.text !== 'TS_CODES' || !d.initializer) continue;
+      let init: ts.Expression = d.initializer;
+      while (
+        ts.isAsExpression(init) ||
+        ts.isSatisfiesExpression(init) ||
+        ts.isParenthesizedExpression(init)
+      )
+        init = init.expression;
+      if (ts.isObjectLiteralExpression(init)) literal = init;
     }
-  })
-  if (!literal) throw new Error(`[error-codes] ${TS_FILE} no longer declares TS_CODES as an object literal`)
+  });
+  if (!literal)
+    throw new Error(`[error-codes] ${TS_FILE} no longer declares TS_CODES as an object literal`);
 
-  const header = headerParagraphs(text)
-  const codes: RawCode[] = []
+  const header = headerParagraphs(text);
+  const codes: RawCode[] = [];
   for (const prop of literal.properties) {
-    if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name) || !ts.isStringLiteral(prop.initializer)) {
-      throw new Error(`[error-codes] TS_CODES has a member this reader does not know how to read: ${prop.getText(sf).slice(0, 60)}`)
+    if (
+      !ts.isPropertyAssignment(prop) ||
+      !ts.isIdentifier(prop.name) ||
+      !ts.isStringLiteral(prop.initializer)
+    ) {
+      throw new Error(
+        `[error-codes] TS_CODES has a member this reader does not know how to read: ${prop.getText(sf).slice(0, 60)}`,
+      );
     }
-    const name = prop.name.text
-    const code = prop.initializer.text
-    const ranges = ts.getLeadingCommentRanges(text, prop.pos) ?? []
-    const doc = [...ranges].reverse().find((r) => text.slice(r.pos, r.pos + 3) === '/**')
-    let docs = doc ? jsdocParagraphs(text.slice(doc.pos, doc.end)) : []
+    const name = prop.name.text;
+    const code = prop.initializer.text;
+    const ranges = ts.getLeadingCommentRanges(text, prop.pos) ?? [];
+    const doc = [...ranges].reverse().find((r) => text.slice(r.pos, r.pos + 3) === '/**');
+    let docs = doc ? jsdocParagraphs(text.slice(doc.pos, doc.end)) : [];
     // A constant with no JSDoc may still be what the header explains: TS8099 is.
     if (docs.length === 0) {
-      const about = header.flatMap(sentences).filter((s) => s.includes(`\`${name}\``) || s.includes(code))
-      docs = about.length > 0 ? [about.join(' ')] : []
+      const about = header
+        .flatMap(sentences)
+        .filter((s) => s.includes(`\`${name}\``) || s.includes(code));
+      docs = about.length > 0 ? [about.join(' ')] : [];
     }
-    codes.push({ code, name, docs, hint: '', family: 'ts' })
+    codes.push({ code, name, docs, hint: '', family: 'ts' });
   }
 
   // A retired number is one the header says is retired. It is never reused, and it has a page
   // that says so, since a reader who meets it in an old log has nowhere else to look.
-  const numbers = new Set(codes.map((c) => c.code))
-  const retired = [...new Set([...header.join(' ').matchAll(/\b(\d{4}) is retired\b/g)].map((m) => `TS${m[1]}`))]
+  const numbers = new Set(codes.map((c) => c.code));
+  const retired = [
+    ...new Set([...header.join(' ').matchAll(/\b(\d{4}) is retired\b/g)].map((m) => `TS${m[1]}`)),
+  ];
   for (const code of retired) {
-    if (numbers.has(code)) throw new Error(`[error-codes] the header of ${TS_FILE} calls ${code} retired, and TS_CODES still carries it`)
-    const digits = code.slice(2)
-    const about = header.flatMap(sentences).filter((s) => s.includes(digits))
-    codes.push({ code, name: null, docs: about.length > 0 ? [about.join(' ')] : [], hint: '', family: 'ts' })
+    if (numbers.has(code))
+      throw new Error(
+        `[error-codes] the header of ${TS_FILE} calls ${code} retired, and TS_CODES still carries it`,
+      );
+    const digits = code.slice(2);
+    const about = header.flatMap(sentences).filter((s) => s.includes(digits));
+    codes.push({
+      code,
+      name: null,
+      docs: about.length > 0 ? [about.join(' ')] : [],
+      hint: '',
+      family: 'ts',
+    });
   }
-  codes.sort((a, b) => a.code.localeCompare(b.code))
-  tsCache = { codes, header, retired }
-  return tsCache
+  codes.sort((a, b) => a.code.localeCompare(b.code));
+  tsCache = { codes, header, retired };
+  return tsCache;
 }
 
 /** The `//` comments the SD registry writes about each entry: above it, and inside its object
@@ -294,71 +398,86 @@ function readTsRegistry(): TsRegistry {
  *  says nothing about the one entry it happens to sit above. A comment that says what another
  *  entry is (`SD0111 is the SHAPE gate`) is that entry's documentation too. */
 function sdComments(): ReadonlyMap<string, string[]> {
-  const file = path.resolve(ROOT, SD_FILE)
-  const text = readFileSync(file, 'utf8')
-  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2022, true)
-  let literal: ts.ObjectLiteralExpression | undefined
+  const file = path.resolve(ROOT, SD_FILE);
+  const text = readFileSync(file, 'utf8');
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2022, true);
+  let literal: ts.ObjectLiteralExpression | undefined;
   sf.forEachChild((node) => {
-    if (!ts.isVariableStatement(node)) return
+    if (!ts.isVariableStatement(node)) return;
     for (const d of node.declarationList.declarations) {
-      if (!ts.isIdentifier(d.name) || d.name.text !== 'CODES' || !d.initializer) continue
-      let init: ts.Expression = d.initializer
-      while (ts.isAsExpression(init) || ts.isSatisfiesExpression(init) || ts.isParenthesizedExpression(init)) init = init.expression
-      if (ts.isObjectLiteralExpression(init)) literal = init
+      if (!ts.isIdentifier(d.name) || d.name.text !== 'CODES' || !d.initializer) continue;
+      let init: ts.Expression = d.initializer;
+      while (
+        ts.isAsExpression(init) ||
+        ts.isSatisfiesExpression(init) ||
+        ts.isParenthesizedExpression(init)
+      )
+        init = init.expression;
+      if (ts.isObjectLiteralExpression(init)) literal = init;
     }
-  })
-  if (!literal) throw new Error(`[error-codes] ${SD_FILE} no longer declares CODES as an object literal`)
+  });
+  if (!literal)
+    throw new Error(`[error-codes] ${SD_FILE} no longer declares CODES as an object literal`);
   const lineComments = (pos: number): string[] => {
-    const paragraphs: string[] = []
-    let heading = ''
-    let current: string[] = []
+    const paragraphs: string[] = [];
+    let heading = '';
+    let current: string[] = [];
     const close = (): void => {
-      if (current.length > 0) paragraphs.push(...(heading ? [`${heading}.`] : []), current.join(' '))
-      current = []
-    }
+      if (current.length > 0)
+        paragraphs.push(...(heading ? [`${heading}.`] : []), current.join(' '));
+      current = [];
+    };
     for (const r of ts.getLeadingCommentRanges(text, pos) ?? []) {
-      const raw = text.slice(r.pos, r.end)
-      if (!raw.startsWith('//')) continue
-      const l = raw.replace(/^\/\/ ?/, '').trim()
+      const raw = text.slice(r.pos, r.end);
+      if (!raw.startsWith('//')) continue;
+      const l = raw.replace(/^\/\/ ?/, '').trim();
       if (/^──/.test(l)) {
-        close()
-        heading = l.replace(/^─+\s*|\s*─+$/g, '')
-        continue
+        close();
+        heading = l.replace(/^─+\s*|\s*─+$/g, '');
+        continue;
       }
-      current.push(l)
+      current.push(l);
     }
-    close()
-    return paragraphs.filter((p) => p.length > 0)
-  }
-  const out = new Map<string, string[]>()
+    close();
+    return paragraphs.filter((p) => p.length > 0);
+  };
+  const out = new Map<string, string[]>();
   for (const prop of literal.properties) {
-    if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue
-    const own = lineComments(prop.pos)
-    const inner = ts.isObjectLiteralExpression(prop.initializer) ? prop.initializer.properties.flatMap((p) => lineComments(p.pos)) : []
-    out.set(prop.name.text, [...own, ...inner])
+    if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue;
+    const own = lineComments(prop.pos);
+    const inner = ts.isObjectLiteralExpression(prop.initializer)
+      ? prop.initializer.properties.flatMap((p) => lineComments(p.pos))
+      : [];
+    out.set(prop.name.text, [...own, ...inner]);
   }
   for (const [code, paragraphs] of [...out]) {
     for (const p of paragraphs) {
       for (const m of p.matchAll(/\b(SD\d{4}) is\b/g)) {
-        const other = out.get(m[1]!)
-        if (other && m[1] !== code && !other.includes(p)) other.push(p)
+        const other = out.get(m[1]!);
+        if (other && m[1] !== code && !other.includes(p)) other.push(p);
       }
     }
   }
-  return out
+  return out;
 }
 
 function readSdRegistry(): RawCode[] {
-  const comments = sdComments()
+  const comments = sdComments();
   return Object.values(CODES).map((def) => {
-    const d = def as { code: string; summary: string; hint?: string }
-    return { code: d.code, name: null, docs: [d.summary, ...(comments.get(d.code) ?? [])], hint: d.hint ?? '', family: 'sd' as const }
-  })
+    const d = def as { code: string; summary: string; hint?: string };
+    return {
+      code: d.code,
+      name: null,
+      docs: [d.summary, ...(comments.get(d.code) ?? [])],
+      hint: d.hint ?? '',
+      family: 'sd' as const,
+    };
+  });
 }
 
 // Capitalised words the registries write as names, which the emphasis rule would lower: the
 // ANGLE translator, the fn() EDSL, and the AUTHORING.md the compiler's guide is rendered from.
-const KEEP_CAPITALS = ['ANGLE', 'EDSL', 'AUTHORING']
+const KEEP_CAPITALS = ['ANGLE', 'EDSL', 'AUTHORING'];
 
 /** A registry's text as the pages print it, through the prose rules the API reference already
  *  applies to the same compiler's JSDoc (src/lib/api.ts referenceProse). A paragraph with
@@ -366,101 +485,117 @@ const KEEP_CAPITALS = ['ANGLE', 'EDSL', 'AUTHORING']
 function printable(code: RawCode): RawCode {
   // The package's pre-release name, written bare, reads as the release name the way the live
   // examples already print it (src/scripts/live-shader-compile.ts).
-  const prose = (text: string): string => referenceProse(text, KEEP_CAPITALS).replace(/\bshader-dsl\b/g, 'typeshade')
+  const prose = (text: string): string =>
+    referenceProse(text, KEEP_CAPITALS).replace(/\bshader-dsl\b/g, 'typeshade');
   return {
     ...code,
     docs: code.docs.map(prose).filter((p) => p.length > 0),
     hint: code.hint ? prose(code.hint) : '',
-  }
+  };
 }
 
 /** The TS_CODES header, paragraph by paragraph, for the index's note on numbering. */
 export function tsRegistryHeader(): readonly string[] {
-  return readTsRegistry().header
+  return readTsRegistry().header;
 }
 
 /** How many codes of each kind the pin carries, for `facts`. Cheap: nothing is compiled. */
-export function errorCodeCounts(): { readonly ts: number; readonly sd: number; readonly retired: number } {
-  const reg = readTsRegistry()
-  return { ts: reg.codes.length - reg.retired.length, sd: readSdRegistry().length, retired: reg.retired.length }
+export function errorCodeCounts(): {
+  readonly ts: number;
+  readonly sd: number;
+  readonly retired: number;
+} {
+  const reg = readTsRegistry();
+  return {
+    ts: reg.codes.length - reg.retired.length,
+    sd: readSdRegistry().length,
+    retired: reg.retired.length,
+  };
 }
 
-const slugOf = (code: string): string => code.toLowerCase()
+const slugOf = (code: string): string => code.toLowerCase();
 
-let pathCache: ReadonlyMap<string, string> | null = null
+let pathCache: ReadonlyMap<string, string> | null = null;
 
 /** The page of a code, `/reference/errors/ts8022/`, or undefined for a code neither registry
  *  holds. The site links a code wherever it prints one through this. */
 export function errorCodePath(code: string): string | undefined {
   if (!pathCache) {
-    const all = [...readTsRegistry().codes, ...readSdRegistry()]
-    pathCache = new Map(all.map((c) => [c.code, `/reference/errors/${slugOf(c.code)}/`]))
+    const all = [...readTsRegistry().codes, ...readSdRegistry()];
+    pathCache = new Map(all.map((c) => [c.code, `/reference/errors/${slugOf(c.code)}/`]));
   }
-  return pathCache.get(code)
+  return pathCache.get(code);
 }
 
 // ── where the compiler raises each code ────────────────────────────────────────────────
 
 function sourceFiles(dir: string): string[] {
-  const out: string[] = []
+  const out: string[] = [];
   for (const name of readdirSync(dir)) {
-    const full = path.join(dir, name)
-    if (statSync(full).isDirectory()) out.push(...sourceFiles(full))
-    else if (name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.d.ts')) out.push(full)
+    const full = path.join(dir, name);
+    if (statSync(full).isDirectory()) out.push(...sourceFiles(full));
+    else if (name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.d.ts'))
+      out.push(full);
   }
-  return out
+  return out;
 }
 
-let sitesCache: ReadonlyMap<string, ErrorSite[]> | null = null
+let sitesCache: ReadonlyMap<string, ErrorSite[]> | null = null;
 
 /** Every non-comment line of the compiler's source that names a code: `TS_CODES.NAME` for the
  *  front end, a quoted `'SD0000'` for the core. The two registries themselves are left out. */
 function raiseSites(): ReadonlyMap<string, ErrorSite[]> {
-  if (sitesCache) return sitesCache
-  const byName = new Map(readTsRegistry().codes.filter((c) => c.name).map((c) => [c.name!, c.code]))
-  const root = path.resolve(ROOT)
-  const hits = new Map<string, Map<string, { line: number; count: number }>>()
+  if (sitesCache) return sitesCache;
+  const byName = new Map(
+    readTsRegistry()
+      .codes.filter((c) => c.name)
+      .map((c) => [c.name!, c.code]),
+  );
+  const root = path.resolve(ROOT);
+  const hits = new Map<string, Map<string, { line: number; count: number }>>();
   const add = (code: string, file: string, line: number): void => {
-    const files = hits.get(code) ?? new Map<string, { line: number; count: number }>()
-    const at = files.get(file)
-    if (at) at.count++
-    else files.set(file, { line, count: 1 })
-    hits.set(code, files)
-  }
+    const files = hits.get(code) ?? new Map<string, { line: number; count: number }>();
+    const at = files.get(file);
+    if (at) at.count++;
+    else files.set(file, { line, count: 1 });
+    hits.set(code, files);
+  };
   for (const full of sourceFiles(path.join(root, 'src'))) {
-    const rel = path.relative(root, full).split(path.sep).join('/')
-    if (rel === TS_FILE || rel === SD_FILE) continue
-    const lines = readFileSync(full, 'utf8').split('\n')
+    const rel = path.relative(root, full).split(path.sep).join('/');
+    if (rel === TS_FILE || rel === SD_FILE) continue;
+    const lines = readFileSync(full, 'utf8').split('\n');
     lines.forEach((text, i) => {
-      const t = text.trim()
-      if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return
+      const t = text.trim();
+      if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
       for (const m of text.matchAll(/\bTS_CODES\.([A-Z0-9_]+)\b/g)) {
-        const code = byName.get(m[1]!)
-        if (code) add(code, rel, i + 1)
+        const code = byName.get(m[1]!);
+        if (code) add(code, rel, i + 1);
       }
-      for (const m of text.matchAll(/'(SD\d{4})'/g)) add(m[1]!, rel, i + 1)
-    })
+      for (const m of text.matchAll(/'(SD\d{4})'/g)) add(m[1]!, rel, i + 1);
+    });
   }
   sitesCache = new Map(
     [...hits].map(([code, files]) => [
       code,
-      [...files].map(([file, at]) => ({ file, line: at.line, count: at.count })).sort((a, b) => a.file.localeCompare(b.file)),
+      [...files]
+        .map(([file, at]) => ({ file, line: at.line, count: at.count }))
+        .sort((a, b) => a.file.localeCompare(b.file)),
     ]),
-  )
-  return sitesCache
+  );
+  return sitesCache;
 }
 
 // ── the examples ───────────────────────────────────────────────────────────────────────
 
 interface ExampleSpec {
-  readonly trigger: string
-  readonly fix: string
-  readonly deprecations?: true
+  readonly trigger: string;
+  readonly fix: string;
+  readonly deprecations?: true;
 }
 
 interface CounterpartSpec {
-  readonly code: string
-  readonly program: string
+  readonly code: string;
+  readonly program: string;
 }
 
 // Every program is a whole "use typeshade" file, the shape a reader pastes into the
@@ -1580,7 +1715,7 @@ export function main(@location(0) uv: vec2): vec4 {
 }
 `,
   },
-}
+};
 
 // The SD codes a "use typeshade" file cannot reach because the front end refuses the same
 // mistake first, under its own code. The program is held to producing that code and to not
@@ -1781,131 +1916,174 @@ export function fs(v: VsOut): vec4 {
 }
 `,
   },
-}
+};
 
 // The SD codes the registry itself calls an internal invariant: a program is not meant to
 // raise one. The hint says so in the registry's own words, which the page quotes.
-const INTERNAL: ReadonlySet<string> = new Set(['SD0040'])
+const INTERNAL: ReadonlySet<string> = new Set(['SD0040']);
 
 // ── compiling them ─────────────────────────────────────────────────────────────────────
 
-const flat = (message: string): string => message.replace(/\s*\n\s*/g, ' ').trim()
+const flat = (message: string): string => message.replace(/\s*\n\s*/g, ' ').trim();
 
 function compiled(source: string, deprecations: boolean): ReturnType<typeof compile> {
-  return compile(source, { fileName: 'example.shade.ts', ...(deprecations ? { deprecations: true } : {}) })
+  return compile(source, {
+    fileName: 'example.shade.ts',
+    ...(deprecations ? { deprecations: true } : {}),
+  });
 }
 
 function reportOf(result: ReturnType<typeof compile>): ReportedDiagnostic[] {
-  return result.diagnostics.map((d) => ({ code: d.code ?? '', severity: d.category, line: d.line, message: flat(d.message) }))
+  return result.diagnostics.map((d) => ({
+    code: d.code ?? '',
+    severity: d.category,
+    line: d.line,
+    message: flat(d.message),
+  }));
 }
 
 /** The emitters compile() runs, run again on the module it returned, for the error one of
  *  them threw. compile() keeps only the error's message. */
 function thrownBy(result: ReturnType<typeof compile>): { code: string; message: string }[] {
-  const out: { code: string; message: string }[] = []
+  const out: { code: string; message: string }[] = [];
   // compile() asks GLSL ES 3.00 only for a module with a render entry, since a compute-only
   // module has nothing that target could serve; the same rule holds here.
-  const render = result.module.funcs.some((f) => f.stage === 'vertex' || f.stage === 'fragment')
+  const render = result.module.funcs.some((f) => f.stage === 'vertex' || f.stage === 'fragment');
   for (const emit of render ? [emitModule, emitGlslStages] : [emitModule]) {
     try {
-      emit(result.module)
+      emit(result.module);
     } catch (error) {
-      const code = (error as { code?: unknown }).code
-      out.push({ code: typeof code === 'string' ? code : '', message: flat(error instanceof Error ? error.message : String(error)) })
+      const code = (error as { code?: unknown }).code;
+      out.push({
+        code: typeof code === 'string' ? code : '',
+        message: flat(error instanceof Error ? error.message : String(error)),
+      });
     }
   }
-  return out
+  return out;
 }
 
-const names = (text: string, code: string): boolean => new RegExp(`\\[${code}\\]`).test(text)
+const names = (text: string, code: string): boolean => new RegExp(`\\[${code}\\]`).test(text);
 
-function exampleFor(code: string, family: ErrorFamily, spec: ExampleSpec): { example: ErrorExample | null; problem: string | null } {
-  const deprecations = spec.deprecations === true
-  const result = compiled(spec.trigger, deprecations)
-  const report = reportOf(result)
-  const errors = result.diagnostics.filter((d) => d.category === 'error')
-  let channel: ErrorChannel | null = null
-  let diagnostics = report
-  let thrown: ReportedDiagnostic | null = null
+function exampleFor(
+  code: string,
+  family: ErrorFamily,
+  spec: ExampleSpec,
+): { example: ErrorExample | null; problem: string | null } {
+  const deprecations = spec.deprecations === true;
+  const result = compiled(spec.trigger, deprecations);
+  const report = reportOf(result);
+  const errors = result.diagnostics.filter((d) => d.category === 'error');
+  let channel: ErrorChannel | null = null;
+  let diagnostics = report;
+  let thrown: ReportedDiagnostic | null = null;
   if (report.some((d) => d.code === code || (family === 'sd' && names(d.message, code)))) {
-    channel = 'compile'
+    channel = 'compile';
   } else if (family === 'sd' && errors.length === 0) {
-    const hit = thrownBy(result).find((t) => t.code === code)
+    const hit = thrownBy(result).find((t) => t.code === code);
     if (hit) {
-      channel = 'backend'
-      thrown = { code: hit.code, severity: 'error', line: 0, message: hit.message }
+      channel = 'backend';
+      thrown = { code: hit.code, severity: 'error', line: 0, message: hit.message };
     } else {
-      const found = diagnose(result.module).diagnostics.filter((d) => d.code === code)
+      const found = diagnose(result.module).diagnostics.filter((d) => d.code === code);
       if (found.length > 0) {
-        channel = 'diagnose'
-        diagnostics = found.map((d) => ({ code: d.code ?? '', severity: d.severity, line: 0, message: flat(d.message) }))
+        channel = 'diagnose';
+        diagnostics = found.map((d) => ({
+          code: d.code ?? '',
+          severity: d.severity,
+          line: 0,
+          message: flat(d.message),
+        }));
       }
     }
   }
   if (!channel) {
-    const shown = report.map((d) => `${d.code || '-'} ${d.message}`).join('; ') || 'nothing'
-    return { example: null, problem: `${code}: the example no longer produces ${code}; the compiler reported ${shown}` }
+    const shown = report.map((d) => `${d.code || '-'} ${d.message}`).join('; ') || 'nothing';
+    return {
+      example: null,
+      problem: `${code}: the example no longer produces ${code}; the compiler reported ${shown}`,
+    };
   }
 
-  const fixed = compiled(spec.fix, deprecations)
-  const left = fixed.diagnostics.filter((d) => d.category === 'error' || d.category === 'warning')
+  const fixed = compiled(spec.fix, deprecations);
+  const left = fixed.diagnostics.filter((d) => d.category === 'error' || d.category === 'warning');
   if (left.length > 0) {
-    return { example: null, problem: `${code}: the fix does not compile clean: ${left.map((d) => `${d.code ?? '-'} ${flat(d.message)}`).join('; ')}` }
+    return {
+      example: null,
+      problem: `${code}: the fix does not compile clean: ${left.map((d) => `${d.code ?? '-'} ${flat(d.message)}`).join('; ')}`,
+    };
   }
   if (family === 'sd') {
-    const still = thrownBy(fixed).find((t) => t.code === code)
-    if (still) return { example: null, problem: `${code}: the fix still makes the emitter throw ${code}` }
+    const still = thrownBy(fixed).find((t) => t.code === code);
+    if (still)
+      return { example: null, problem: `${code}: the fix still makes the emitter throw ${code}` };
     if (diagnose(fixed.module).diagnostics.some((d) => d.code === code)) {
-      return { example: null, problem: `${code}: diagnose() still reports ${code} on the fix` }
+      return { example: null, problem: `${code}: diagnose() still reports ${code} on the fix` };
     }
   }
-  return { example: { trigger: spec.trigger, fix: spec.fix, channel, diagnostics, thrown, deprecations }, problem: null }
+  return {
+    example: { trigger: spec.trigger, fix: spec.fix, channel, diagnostics, thrown, deprecations },
+    problem: null,
+  };
 }
 
-function counterpartFor(code: string, spec: CounterpartSpec): { counterpart: ErrorCounterpart | null; problem: string | null } {
-  const result = compiled(spec.program, false)
-  const report = reportOf(result)
+function counterpartFor(
+  code: string,
+  spec: CounterpartSpec,
+): { counterpart: ErrorCounterpart | null; problem: string | null } {
+  const result = compiled(spec.program, false);
+  const report = reportOf(result);
   if (!report.some((d) => d.code === spec.code)) {
-    return { counterpart: null, problem: `${code}: the front-end program no longer produces ${spec.code}; the compiler reported ${report.map((d) => `${d.code} ${d.message}`).join('; ') || 'nothing'}` }
+    return {
+      counterpart: null,
+      problem: `${code}: the front-end program no longer produces ${spec.code}; the compiler reported ${report.map((d) => `${d.code} ${d.message}`).join('; ') || 'nothing'}`,
+    };
   }
   if (report.some((d) => names(d.message, code))) {
-    return { counterpart: null, problem: `${code}: the front-end program now reaches ${code} itself, so it has an example to write` }
+    return {
+      counterpart: null,
+      problem: `${code}: the front-end program now reaches ${code} itself, so it has an example to write`,
+    };
   }
-  return { counterpart: { code: spec.code, program: spec.program, diagnostics: report }, problem: null }
+  return {
+    counterpart: { code: spec.code, program: spec.program, diagnostics: report },
+    problem: null,
+  };
 }
 
 /** Inline code spans in a piece of registry text. */
-const spansOf = (text: string): string[] => [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1]!)
+const spansOf = (text: string): string[] => [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1]!);
 
-let cache: readonly ErrorCodeEntry[] | null = null
+let cache: readonly ErrorCodeEntry[] | null = null;
 
 function build(): readonly ErrorCodeEntry[] {
-  const reg = readTsRegistry()
-  const raw = [...reg.codes, ...readSdRegistry()].map(printable)
-  const known = new Set(raw.map((c) => c.code))
-  const byName = new Map(reg.codes.filter((c) => c.name).map((c) => [c.name!, c.code]))
-  const sites = raiseSites()
-  const problems: string[] = []
+  const reg = readTsRegistry();
+  const raw = [...reg.codes, ...readSdRegistry()].map(printable);
+  const known = new Set(raw.map((c) => c.code));
+  const byName = new Map(reg.codes.filter((c) => c.name).map((c) => [c.name!, c.code]));
+  const sites = raiseSites();
+  const problems: string[] = [];
 
   for (const key of [...Object.keys(EXAMPLES), ...Object.keys(COUNTERPARTS), ...INTERNAL]) {
-    if (!known.has(key)) problems.push(`${key}: an example is written for a code neither registry carries at the pin`)
+    if (!known.has(key))
+      problems.push(`${key}: an example is written for a code neither registry carries at the pin`);
   }
 
   const entries = raw.map((c) => {
-    const retired = c.family === 'ts' && c.name === null
-    const spec = EXAMPLES[c.code]
-    let example: ErrorExample | null = null
+    const retired = c.family === 'ts' && c.name === null;
+    const spec = EXAMPLES[c.code];
+    let example: ErrorExample | null = null;
     if (spec) {
-      const got = exampleFor(c.code, c.family, spec)
-      if (got.problem) problems.push(got.problem)
-      example = got.example
+      const got = exampleFor(c.code, c.family, spec);
+      if (got.problem) problems.push(got.problem);
+      example = got.example;
     }
-    let counterpart: ErrorCounterpart | null = null
-    const cp = COUNTERPARTS[c.code]
+    let counterpart: ErrorCounterpart | null = null;
+    const cp = COUNTERPARTS[c.code];
     if (cp) {
-      const got = counterpartFor(c.code, cp)
-      if (got.problem) problems.push(got.problem)
-      counterpart = got.counterpart
+      const got = counterpartFor(c.code, cp);
+      if (got.problem) problems.push(got.problem);
+      counterpart = got.counterpart;
     }
     const gap: ErrorGap | null = example
       ? null
@@ -1917,23 +2095,26 @@ function build(): readonly ErrorCodeEntry[] {
             ? 'internal'
             : c.family === 'sd'
               ? 'builder'
-              : 'unwritten'
-    const text = [...c.docs, c.hint].join(' ')
-    const related = new Set<string>()
-    for (const m of text.matchAll(/\b(TS8\d{3}|SD\d{4})\b/g)) related.add(m[1]!)
+              : 'unwritten';
+    const text = [...c.docs, c.hint].join(' ');
+    const related = new Set<string>();
+    for (const m of text.matchAll(/\b(TS8\d{3}|SD\d{4})\b/g)) related.add(m[1]!);
     for (const span of spansOf(text)) {
-      const named = byName.get(span)
-      if (named) related.add(named)
+      const named = byName.get(span);
+      if (named) related.add(named);
     }
-    if (counterpart) related.add(counterpart.code)
-    for (const d of [...(example?.diagnostics ?? []), ...(example?.thrown ? [example.thrown] : [])]) {
-      if (d.code) related.add(d.code)
-      for (const m of d.message.matchAll(/\[(SD\d{4})\]/g)) related.add(m[1]!)
+    if (counterpart) related.add(counterpart.code);
+    for (const d of [
+      ...(example?.diagnostics ?? []),
+      ...(example?.thrown ? [example.thrown] : []),
+    ]) {
+      if (d.code) related.add(d.code);
+      for (const m of d.message.matchAll(/\[(SD\d{4})\]/g)) related.add(m[1]!);
     }
     if (c.family === 'ts') {
-      for (const [sd, p] of Object.entries(COUNTERPARTS)) if (p.code === c.code) related.add(sd)
+      for (const [sd, p] of Object.entries(COUNTERPARTS)) if (p.code === c.code) related.add(sd);
     }
-    related.delete(c.code)
+    related.delete(c.code);
     return {
       code: c.code,
       slug: slugOf(c.code),
@@ -1949,56 +2130,67 @@ function build(): readonly ErrorCodeEntry[] {
       gap,
       related: [...related].filter((r) => known.has(r)).sort(),
       spans: [...new Set(spansOf(text))],
-    } satisfies ErrorCodeEntry
-  })
+    } satisfies ErrorCodeEntry;
+  });
 
-  if (problems.length > 0) throw new Error(`[error-codes] ${problems.join('\n')}`)
-  return entries
+  if (problems.length > 0) throw new Error(`[error-codes] ${problems.join('\n')}`);
+  return entries;
 }
 
 /** Every code, front end first, each family in the registry's own numeric order. */
 export function errorCodes(): readonly ErrorCodeEntry[] {
-  if (!cache) cache = build()
-  return cache
+  if (!cache) cache = build();
+  return cache;
 }
 
 export function errorCode(slug: string): ErrorCodeEntry {
-  const found = errorCodes().find((e) => e.slug === slug)
-  if (!found) throw new Error(`[error-codes] no code with the page '${slug}'`)
-  return found
+  const found = errorCodes().find((e) => e.slug === slug);
+  if (!found) throw new Error(`[error-codes] no code with the page '${slug}'`);
+  return found;
 }
 
 /** The codes of one family under the groups the index lists them in, empty groups left out. */
-export function errorGroups(family: ErrorFamily): { group: ErrorGroup; entries: ErrorCodeEntry[] }[] {
-  const order = family === 'ts' ? TS_GROUPS : SD_GROUPS
-  const all = errorCodes().filter((e) => e.family === family)
-  return order.map((group) => ({ group, entries: all.filter((e) => e.group === group) })).filter((g) => g.entries.length > 0)
+export function errorGroups(
+  family: ErrorFamily,
+): { group: ErrorGroup; entries: ErrorCodeEntry[] }[] {
+  const order = family === 'ts' ? TS_GROUPS : SD_GROUPS;
+  const all = errorCodes().filter((e) => e.family === family);
+  return order
+    .map((group) => ({ group, entries: all.filter((e) => e.group === group) }))
+    .filter((g) => g.entries.length > 0);
 }
 
 /** The order previous and next walk the pages in: the index's own order. */
 export function errorPageOrder(): readonly ErrorCodeEntry[] {
-  return [...errorGroups('ts'), ...errorGroups('sd')].flatMap((g) => g.entries)
+  return [...errorGroups('ts'), ...errorGroups('sd')].flatMap((g) => g.entries);
 }
 
 export function errorCodePaths(): { params: { code: string }; props: { slug: string } }[] {
-  return errorCodes().map((e) => ({ params: { code: e.slug }, props: { slug: e.slug } }))
+  return errorCodes().map((e) => ({ params: { code: e.slug }, props: { slug: e.slug } }));
 }
 
 /** A source site as a link at the pinned commit, built by the page from the mirror's URL. */
-export const siteHref = (mirror: string, commit: string, site: ErrorSite): string => `${mirror}/blob/${commit}/${site.file}#L${site.line}`
+export const siteHref = (mirror: string, commit: string, site: ErrorSite): string =>
+  `${mirror}/blob/${commit}/${site.file}#L${site.line}`;
 
 /** Holds the dictionary's lines for undocumented front-end codes to the registry: every TS
  *  code the registry leaves undocumented needs one, and a code the registry documents now
  *  has its own line, so the dictionary's goes. */
 export function assertErrorLines(lines: Readonly<Record<string, string>>): void {
-  const problems: string[] = []
+  const problems: string[] = [];
   for (const e of errorCodes()) {
-    if (e.family !== 'ts' || !e.name) continue
-    const has = Object.hasOwn(lines, e.name)
-    if (e.line === '' && !has) problems.push(`${e.code} ${e.name} has no JSDoc and no line in docs.errors.lines`)
-    if (e.line !== '' && has) problems.push(`${e.code} ${e.name} is documented by the registry now; drop its line from docs.errors.lines`)
+    if (e.family !== 'ts' || !e.name) continue;
+    const has = Object.hasOwn(lines, e.name);
+    if (e.line === '' && !has)
+      problems.push(`${e.code} ${e.name} has no JSDoc and no line in docs.errors.lines`);
+    if (e.line !== '' && has)
+      problems.push(
+        `${e.code} ${e.name} is documented by the registry now; drop its line from docs.errors.lines`,
+      );
   }
-  const names = new Set(errorCodes().map((e) => e.name))
-  for (const key of Object.keys(lines)) if (!names.has(key)) problems.push(`docs.errors.lines names ${key}, which TS_CODES no longer carries`)
-  if (problems.length > 0) throw new Error(`[error-codes] ${problems.join('\n')}`)
+  const names = new Set(errorCodes().map((e) => e.name));
+  for (const key of Object.keys(lines))
+    if (!names.has(key))
+      problems.push(`docs.errors.lines names ${key}, which TS_CODES no longer carries`);
+  if (problems.length > 0) throw new Error(`[error-codes] ${problems.join('\n')}`);
 }

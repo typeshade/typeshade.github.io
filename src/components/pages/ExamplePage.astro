@@ -15,90 +15,90 @@
 // Everything on it is read at build time by src/lib/example-pages.ts. The emitted text comes
 // from examples/__emit-goldens__/ at the pinned commit, which is the compiler's own output,
 // so a page costs nothing to show and cannot disagree with the compiler.
-import { Code } from 'astro-expressive-code/components'
-import Docs from '../../layouts/Docs.astro'
-import CodeFrame from '../CodeFrame.astro'
-import Rich from '../Rich.astro'
-import Playground from '../Playground.astro'
-import ShaderCanvas from '../ShaderCanvas.astro'
-import type { CanvasText } from '../ShaderCanvas.astro'
-import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { checkedBlurbs } from '../../lib/examples.ts'
-import { checkedShade } from '../../lib/shade-examples.ts'
-import { examplePage, examplePath, exampleSourceHref, noPictureReasons } from '../../lib/example-pages.ts'
+import { Code } from 'astro-expressive-code/components';
+import Docs from '../../layouts/Docs.astro';
+import CodeFrame from '../CodeFrame.astro';
+import Rich from '../Rich.astro';
+import Playground from '../Playground.astro';
+import ShaderCanvas from '../ShaderCanvas.astro';
+import type { CanvasText } from '../ShaderCanvas.astro';
+import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { checkedBlurbs } from '../../lib/examples.ts';
+import { checkedShade } from '../../lib/shade-examples.ts';
+import { examplePage, examplePath, exampleSourceHref, noPictureReasons } from '../../lib/example-pages.ts';
 
 interface Props {
-  locale: Locale
-  id: string
+  locale: Locale;
+  id: string;
 }
-const { locale, id } = Astro.props
-const t = copyFor(locale)
-const e = t.examples
-const p = e.page
-const example = examplePage(id)
+const { locale, id } = Astro.props;
+const t = copyFor(locale);
+const e = t.examples;
+const p = e.page;
+const example = examplePage(id);
 
 // Every reason NO_STILL_REASONS can hand a page has a sentence in this language. A reason
 // added upstream without one would print nothing under an empty frame.
 for (const reason of noPictureReasons) {
-  if (!p.noPicture[reason]) throw new Error(`[example-page] src/i18n has no sentence for the reason '${reason}'`)
+  if (!p.noPicture[reason]) throw new Error(`[example-page] src/i18n has no sentence for the reason '${reason}'`);
 }
 
 // The registry's own English titles are what the gallery shows in every language; the
 // `.shade.ts` corpus writes its titles and its lines in each dictionary.
-const shadeTitles = checkedShade('title', e.shade.titles)
-const shadeBlurbs = checkedShade('description', e.shade.descriptions)
-const blurbs = checkedBlurbs(e.blurbs)
-const nameOf = (which: string): string => (examplePage(which).corpus === 'shade' ? shadeTitles[which]! : examplePage(which).title)
-const blurbOf = (which: string): string => (examplePage(which).corpus === 'shade' ? shadeBlurbs[which]! : blurbs[which]!)
+const shadeTitles = checkedShade('title', e.shade.titles);
+const shadeBlurbs = checkedShade('description', e.shade.descriptions);
+const blurbs = checkedBlurbs(e.blurbs);
+const nameOf = (which: string): string => (examplePage(which).corpus === 'shade' ? shadeTitles[which]! : examplePage(which).title);
+const blurbOf = (which: string): string => (examplePage(which).corpus === 'shade' ? shadeBlurbs[which]! : blurbs[which]!);
 
-const name = nameOf(id)
-const blurb = blurbOf(id)
+const name = nameOf(id);
+const blurb = blurbOf(id);
 
 // A meta description is plain text, so the code marks and links the gallery's own line
 // carries come off it first.
-const plain = (text: string): string => text.replace(/`([^`]*)`/g, '$1').replace(/\[([^\]]*)\]\(([^)]+)\)/g, '$1')
-const META_MIN = 70
-const META_MAX = localeSettings[locale].metaDescriptionMax
-const HARD_MAX = 160
+const plain = (text: string): string => text.replace(/`([^`]*)`/g, '$1').replace(/\[([^\]]*)\]\(([^)]+)\)/g, '$1');
+const META_MIN = 70;
+const META_MAX = localeSettings[locale].metaDescriptionMax;
+const HARD_MAX = 160;
 // The same cut the reference makes: at the end of a sentence, else at a clause, else at a
 // word. A short registry line leaves the description under the floor the SEO checks want, so
 // the dictionary's own sentence about the page fills it out.
 const markEnd = (window: string, marks: readonly string[]): number => {
-  let best = -1
+  let best = -1;
   for (const mark of marks) {
-    const withSpace = window.lastIndexOf(`${mark} `)
-    if (withSpace >= 0) best = Math.max(best, withSpace + mark.length)
-    if (window.endsWith(mark)) best = Math.max(best, window.length)
+    const withSpace = window.lastIndexOf(`${mark} `);
+    if (withSpace >= 0) best = Math.max(best, withSpace + mark.length);
+    if (window.endsWith(mark)) best = Math.max(best, window.length);
   }
-  return best
-}
+  return best;
+};
 const cutAt = (text: string, limit: number): string | null => {
-  const window = text.slice(0, limit)
-  const sentenceEnd = markEnd(window, ['.', '!', '?'])
-  if (sentenceEnd >= META_MIN) return window.slice(0, sentenceEnd)
-  const clauseEnd = markEnd(window, [',', ';', ':'])
-  if (clauseEnd >= META_MIN) return `${window.slice(0, clauseEnd - 1)}…`
-  return null
-}
+  const window = text.slice(0, limit);
+  const sentenceEnd = markEnd(window, ['.', '!', '?']);
+  if (sentenceEnd >= META_MIN) return window.slice(0, sentenceEnd);
+  const clauseEnd = markEnd(window, [',', ';', ':']);
+  if (clauseEnd >= META_MIN) return `${window.slice(0, clauseEnd - 1)}…`;
+  return null;
+};
 const truncate = (text: string, max: number): string =>
-  text.length <= max ? text : cutAt(text, max) ?? cutAt(text, HARD_MAX) ?? `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`
+  text.length <= max ? text : cutAt(text, max) ?? cutAt(text, HARD_MAX) ?? `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`;
 
-const title = p.title(name)
+const title = p.title(name);
 if (title.length < 45 || title.length > 60) {
-  throw new Error(`[example-page] '${id}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`)
+  throw new Error(`[example-page] '${id}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`);
 }
-const composed = plain(p.description(name, blurb))
-const description = truncate(composed.length < META_MIN ? `${composed} ${plain(p.descriptionPad)}` : composed, META_MAX)
+const composed = plain(p.description(name, blurb));
+const description = truncate(composed.length < META_MIN ? `${composed} ${plain(p.descriptionPad)}` : composed, META_MAX);
 if (description.length < META_MIN || description.length > META_MAX) {
-  throw new Error(`[example-page] '${id}' has a ${description.length}-character description, outside ${META_MIN} to ${META_MAX}`)
+  throw new Error(`[example-page] '${id}' has a ${description.length}-character description, outside ${META_MIN} to ${META_MAX}`);
 }
 
-const caption: CanvasText = p.canvas(name)
-const sourceHref = exampleSourceHref(example.file)
-const playgroundHref = `${localePath(locale, links.playground.href)}#example=${example.id}`
-const pager = (which: string | undefined) => (which ? { label: nameOf(which), href: localePath(locale, examplePath(which)) } : undefined)
-const glsl = example.emitted.glsl
+const caption: CanvasText = p.canvas(name);
+const sourceHref = exampleSourceHref(example.file);
+const playgroundHref = `${localePath(locale, links.playground.href)}#example=${example.id}`;
+const pager = (which: string | undefined) => (which ? { label: nameOf(which), href: localePath(locale, examplePath(which)) } : undefined);
+const glsl = example.emitted.glsl;
 
 // The tabs, in the order a reader meets them: the file first, then what it becomes. A
 // WGSL-only example has the two it has. The source tab is named by its file, which is not
@@ -117,14 +117,14 @@ const panes = [
         { key: 'fragment', label: p.glslFragmentTab, region: p.glslFragment, code: glsl.fragment, lang: 'glsl' },
       ]
     : []),
-]
-const paneId = (key: string): string => `example-pane-${key}`
+];
+const paneId = (key: string): string => `example-pane-${key}`;
 
 // A `.shade.ts` example is a `"use typeshade"` file, which is what the Playground's editor
 // compiles, so its page carries the Playground itself, seeded with that file and editable.
 // An `fn()` example is TypeScript calling the compiler's builder API, which that editor does
 // not take, so it keeps the card of stills and baked goldens and says so in one line.
-const editable = example.corpus === 'shade'
+const editable = example.corpus === 'shade';
 ---
 
 <Docs
@@ -303,6 +303,6 @@ const editable = example.corpus === 'shade'
   // The tabs over the source and the emitted targets, shared with the front page's own
   // section, and then the code pane opened on the line the shader starts at. The order
   // matters: the pane has to be the selected one before it can be measured.
-  import '../../scripts/target-tabs.ts'
-  import '../../scripts/example-stage.ts'
+  import '../../scripts/target-tabs.ts';
+  import '../../scripts/example-stage.ts';
 </script>

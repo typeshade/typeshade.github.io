@@ -4,44 +4,44 @@
 // in, with the line each code leads its own page with. A row whose page carries a program
 // compiled at build time is tagged. The codes and their lines are the compiler's; the
 // headings and the sentences around them are docs.errors in every dictionary.
-import Docs, { type Heading } from '../../layouts/Docs.astro'
-import Rich from '../Rich.astro'
-import { copyFor, localePath, type Locale } from '../../i18n/index.ts'
-import { editCopy, links } from '../../lib/links.ts'
-import { facts } from '../../lib/examples.ts'
-import { assertErrorLines, errorCodes, errorGroups, errorPageOrder, tsRegistryHeader, type ErrorCodeEntry, type ErrorFamily } from '../../lib/error-codes.ts'
+import Docs, { type Heading } from '../../layouts/Docs.astro';
+import Rich from '../Rich.astro';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { editCopy, links } from '../../lib/links.ts';
+import { facts } from '../../lib/examples.ts';
+import { assertErrorLines, errorCodes, errorGroups, errorPageOrder, tsRegistryHeader, type ErrorCodeEntry, type ErrorFamily } from '../../lib/error-codes.ts';
 
 interface Props { locale: Locale }
-const { locale } = Astro.props
-const d = copyFor(locale).docs
-const r = d.reference
-const x = d.errors
-assertErrorLines(x.lines)
+const { locale } = Astro.props;
+const d = copyFor(locale).docs;
+const r = d.reference;
+const x = d.errors;
+assertErrorLines(x.lines);
 
-const all = errorCodes()
-const verified = all.filter((e) => e.example !== null).length
-const page = (e: ErrorCodeEntry): string => localePath(locale, `/reference/errors/${e.slug}/`)
+const all = errorCodes();
+const verified = all.filter((e) => e.example !== null).length;
+const page = (e: ErrorCodeEntry): string => localePath(locale, `/reference/errors/${e.slug}/`);
 // A code the registry documents leads with the registry's sentence, in English; one it does
 // not leads with the dictionary's line, in the page's language.
 const lead = (e: ErrorCodeEntry): { text: string; lang: string } =>
-  e.line ? { text: e.line, lang: 'en' } : { text: (e.name && (x.lines as Record<string, string>)[e.name]) || '', lang: locale }
+  e.line ? { text: e.line, lang: 'en' } : { text: (e.name && (x.lines as Record<string, string>)[e.name]) || '', lang: locale };
 
 const families: { family: ErrorFamily; id: string; heading: string; intro: string }[] = [
   { family: 'ts', id: 'front-end', heading: x.frontEndH, intro: x.frontEndP },
   { family: 'sd', id: 'core', heading: x.coreH, intro: x.coreP },
-]
-const sections = families.map((f) => ({ ...f, groups: errorGroups(f.family) }))
+];
+const sections = families.map((f) => ({ ...f, groups: errorGroups(f.family) }));
 const headings: Heading[] = [
   ...sections.flatMap((s) => [
     { depth: 2, slug: s.id, text: s.heading },
     ...s.groups.map((g) => ({ depth: 3, slug: `${s.family}-${g.group}`, text: x.groups[g.group] })),
   ]),
   { depth: 2, slug: 'numbering', text: x.numberingH },
-]
+];
 // The header's first paragraph names the file's phase and nothing about the numbers.
-const numbering = tsRegistryHeader().slice(1)
-const first = errorPageOrder()[0]
-const next = first ? { label: first.code, href: page(first) } : undefined
+const numbering = tsRegistryHeader().slice(1);
+const first = errorPageOrder()[0];
+const next = first ? { label: first.code, href: page(first) } : undefined;
 ---
 
 <Docs

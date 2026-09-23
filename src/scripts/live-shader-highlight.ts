@@ -17,58 +17,87 @@ const TOKENS = {
   string: '--0:#032F62;--1:#9ECBFF',
   comment: '--0:#616972;--1:#99A0A6',
   binding: '--0:#AE4B07;--1:#FFAB70',
-} as const
+} as const;
 
-type Token = keyof typeof TOKENS
+type Token = keyof typeof TOKENS;
 
 const KEYWORDS = new Set([
-  'class', 'const', 'let', 'var', 'function', 'export', 'import', 'from', 'declare', 'return',
-  'if', 'else', 'for', 'while', 'do', 'break', 'continue', 'switch', 'case', 'default', 'type',
-  'interface', 'new', 'true', 'false', 'in', 'of', 'as', 'void',
+  'class',
+  'const',
+  'let',
+  'var',
+  'function',
+  'export',
+  'import',
+  'from',
+  'declare',
+  'return',
+  'if',
+  'else',
+  'for',
+  'while',
+  'do',
+  'break',
+  'continue',
+  'switch',
+  'case',
+  'default',
+  'type',
+  'interface',
+  'new',
+  'true',
+  'false',
+  'in',
+  'of',
+  'as',
+  'void',
   // The emitted panes under the canvas are coloured by the same function, so the two words
   // WGSL and GLSL spell a declaration with are here beside the TypeScript ones.
-  'fn', 'struct',
-])
+  'fn',
+  'struct',
+]);
 
 /** The GPU types and the resource spellings, which Expressive Code's own TypeShade grammar
  *  colours as names (src/lib/typeshade-syntax.mjs). */
-const GPU = /^(?:f(?:16|32|64)|i(?:8|16|32|64)|u(?:8|16|32|64)|vec[234](?:[fiu]|f16|f32|f64|i8|i16|i32|i64|u8|u16|u32|u64)?|mat[234](?:x[234])?|bool|uniform|storage|array)$/
+const GPU =
+  /^(?:f(?:16|32|64)|i(?:8|16|32|64)|u(?:8|16|32|64)|vec[234](?:[fiu]|f16|f32|f64|i8|i16|i32|i64|u8|u16|u32|u64)?|mat[234](?:x[234])?|bool|uniform|storage|array)$/;
 
 const escape = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const span = (token: Token, text: string): string =>
-  `<span style="${TOKENS[token]}">${escape(text)}</span>`
+  `<span style="${TOKENS[token]}">${escape(text)}</span>`;
 
 /** One line split into coloured runs. The grammar is small on purpose: comments, strings,
  *  numbers, decorators, the keywords above and the GPU types. Everything else is body text,
  *  which is what the theme's plain colour is. */
 function line(text: string): string {
-  if (text.length === 0) return '\n'
-  const indent = /^[ \t]+/.exec(text)?.[0] ?? ''
-  const rest = text.slice(indent.length)
-  let out = indent ? `<span class="indent">${span('plain', indent)}</span>` : ''
-  const re = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\d[\d._eE+-]*)|(@[A-Za-z_$][\w$]*)|([A-Za-z_$][\w$]*)|(\s+)|([^\s\w$])/g
+  if (text.length === 0) return '\n';
+  const indent = /^[ \t]+/.exec(text)?.[0] ?? '';
+  const rest = text.slice(indent.length);
+  let out = indent ? `<span class="indent">${span('plain', indent)}</span>` : '';
+  const re =
+    /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\d[\d._eE+-]*)|(@[A-Za-z_$][\w$]*)|([A-Za-z_$][\w$]*)|(\s+)|([^\s\w$])/g;
   for (const m of rest.matchAll(re)) {
-    const [all, comment, str, num, decorator, word, space, punct] = m
-    if (comment !== undefined) out += span('comment', comment)
-    else if (str !== undefined) out += span('string', str)
-    else if (num !== undefined) out += span('number', num)
-    else if (decorator !== undefined) out += span('plain', '@') + span('name', decorator.slice(1))
+    const [all, comment, str, num, decorator, word, space, punct] = m;
+    if (comment !== undefined) out += span('comment', comment);
+    else if (str !== undefined) out += span('string', str);
+    else if (num !== undefined) out += span('number', num);
+    else if (decorator !== undefined) out += span('plain', '@') + span('name', decorator.slice(1));
     else if (word !== undefined) {
-      const after = rest.slice(m.index + all.length)
+      const after = rest.slice(m.index + all.length);
       const token: Token = KEYWORDS.has(word)
         ? 'keyword'
         : GPU.test(word) || /^\s*\(/.test(after)
           ? 'name'
           : /^\s*:/.test(after)
             ? 'binding'
-            : 'plain'
-      out += span(token, word)
-    } else if (space !== undefined) out += span('plain', space)
-    else out += span('plain', punct ?? all)
+            : 'plain';
+      out += span(token, word);
+    } else if (space !== undefined) out += span('plain', space);
+    else out += span('plain', punct ?? all);
   }
-  return out
+  return out;
 }
 
 /** The lines of `source` as the markup Expressive Code renders: one row per line, each row a
@@ -78,5 +107,5 @@ export function highlight(source: string): string {
   return source
     .split('\n')
     .map((text) => `<div class="ec-line"><div class="code">${line(text)}</div></div>`)
-    .join('')
+    .join('');
 }

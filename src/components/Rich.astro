@@ -5,15 +5,15 @@
 // An unknown key fails the build, and so does a reference page for a name the compiler has
 // stopped exporting. Inline code that is exactly a diagnostic code the compiler's registries
 // carry, `TS8010` or `SD0030`, links to that code's page.
-import { errorCodePath } from '../lib/error-codes.ts'
-import { apiPage, links } from '../lib/links.ts'
-import { localePath, type Locale } from '../i18n/index.ts'
+import { errorCodePath } from '../lib/error-codes.ts';
+import { apiPage, links } from '../lib/links.ts';
+import { localePath, type Locale } from '../i18n/index.ts';
 
 interface Props {
-  text: string
-  locale: Locale
+  text: string;
+  locale: Locale;
 }
-const { text, locale } = Astro.props
+const { text, locale } = Astro.props;
 
 const PAGES: Record<string, string> = {
   home: '/',
@@ -34,41 +34,41 @@ const PAGES: Record<string, string> = {
   apiReflect: apiPage('reflect'),
   apiEmitModule: apiPage('emitModule'),
   apiEmitGlsl: apiPage('emitGlslModule'),
-}
+};
 
 type Part =
   | { kind: 'text'; value: string }
   | { kind: 'code'; value: string }
-  | { kind: 'link'; value: string; href: string; code: boolean; auto?: true }
+  | { kind: 'link'; value: string; href: string; code: boolean; auto?: true };
 
-const parts: Part[] = []
-const re = /\[([^\]]+)\]\(([A-Za-z][A-Za-z0-9]*)\)|`([^`]+)`/g
-let last = 0
+const parts: Part[] = [];
+const re = /\[([^\]]+)\]\(([A-Za-z][A-Za-z0-9]*)\)|`([^`]+)`/g;
+let last = 0;
 for (const m of text.matchAll(re)) {
-  if (m.index! > last) parts.push({ kind: 'text', value: text.slice(last, m.index) })
+  if (m.index! > last) parts.push({ kind: 'text', value: text.slice(last, m.index) });
   if (m[3] !== undefined) {
-    const errorPage = /^(?:TS8\d{3}|SD\d{4})$/.test(m[3]) ? errorCodePath(m[3]) : undefined
-    parts.push(errorPage ? { kind: 'link', value: m[3], href: localePath(locale, errorPage), code: true, auto: true } : { kind: 'code', value: m[3] })
+    const errorPage = /^(?:TS8\d{3}|SD\d{4})$/.test(m[3]) ? errorCodePath(m[3]) : undefined;
+    parts.push(errorPage ? { kind: 'link', value: m[3], href: localePath(locale, errorPage), code: true, auto: true } : { kind: 'code', value: m[3] });
   } else {
-    const key = m[2]!
-    const href = key in PAGES ? localePath(locale, PAGES[key]!) : (links as Record<string, { href: string }>)[key]?.href
-    if (!href) throw new Error(`[Rich] unknown link key '${key}' in: ${text.slice(0, 60)}`)
+    const key = m[2]!;
+    const href = key in PAGES ? localePath(locale, PAGES[key]!) : (links as Record<string, { href: string }>)[key]?.href;
+    if (!href) throw new Error(`[Rich] unknown link key '${key}' in: ${text.slice(0, 60)}`);
     // A link whose text is an identifier is written [`name()`](key) and keeps the code font.
-    const label = m[1]!
-    const code = /^`.+`$/.test(label)
-    parts.push({ kind: 'link', value: code ? label.slice(1, -1) : label, href, code })
+    const label = m[1]!;
+    const code = /^`.+`$/.test(label);
+    parts.push({ kind: 'link', value: code ? label.slice(1, -1) : label, href, code });
   }
-  last = m.index! + m[0].length
+  last = m.index! + m[0].length;
 }
-if (last < text.length) parts.push({ kind: 'text', value: text.slice(last) })
+if (last < text.length) parts.push({ kind: 'text', value: text.slice(last) });
 
 // A link whose key the pattern above does not accept would reach the page as its own
 // square brackets, and nothing else would notice. Count what the copy wrote against what
 // this file turned into a link, and stop the build when they disagree.
-const written = (text.match(/\[[^\]]+\]\([^)]+\)/g) ?? []).length
-const rendered = parts.filter((p) => p.kind === 'link' && !p.auto).length
+const written = (text.match(/\[[^\]]+\]\([^)]+\)/g) ?? []).length;
+const rendered = parts.filter((p) => p.kind === 'link' && !p.auto).length;
 if (written !== rendered) {
-  throw new Error(`[Rich] ${written} link(s) written, ${rendered} rendered; a key may hold a character the pattern refuses: ${text.slice(0, 80)}`)
+  throw new Error(`[Rich] ${written} link(s) written, ${rendered} rendered; a key may hold a character the pattern refuses: ${text.slice(0, 80)}`);
 }
 ---
 

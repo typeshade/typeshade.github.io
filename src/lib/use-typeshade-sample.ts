@@ -19,4 +19,4 @@ export function vs(@builtin("vertex_index") i: u32): Clip {
 export function fs(): Color {
   return { color: vec4(1., 0., 0., 1.) };
 }
-`
+`;

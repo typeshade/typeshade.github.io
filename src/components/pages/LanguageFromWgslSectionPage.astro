@@ -5,51 +5,51 @@
 // compiler a `"use typeshade"` file and reads back the WGSL it writes, so no spelling on
 // this page is typed by hand. The tables render through MappingTable.astro, whose header
 // comment documents its props and the CSS classes it uses.
-import { Code } from 'astro-expressive-code/components'
-import Docs from '../../layouts/Docs.astro'
-import MappingTable from '../MappingTable.astro'
-import Rich from '../Rich.astro'
-import { copyFor, type Locale } from '../../i18n/index.ts'
-import { editCopy, links, mappingSet } from '../../lib/links.ts'
-import { wgslMapping, type MappingRowData, type WgslTableId } from '../../lib/target-mapping.ts'
+import { Code } from 'astro-expressive-code/components';
+import Docs from '../../layouts/Docs.astro';
+import MappingTable from '../MappingTable.astro';
+import Rich from '../Rich.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import { editCopy, links, mappingSet } from '../../lib/links.ts';
+import { wgslMapping, type MappingRowData, type WgslTableId } from '../../lib/target-mapping.ts';
 
-type SectionKey = 'types' | 'resources' | 'entries' | 'statements'
+type SectionKey = 'types' | 'resources' | 'entries' | 'statements';
 interface Props {
-  locale: Locale
-  section: SectionKey
+  locale: Locale;
+  section: SectionKey;
 }
-const { locale, section } = Astro.props
-const c = copyFor(locale).language.mapping.fromWgsl
-const mapping = wgslMapping()
-const entry = mappingSet('languageFromWgsl').sections.find((s) => s.key === section)
-if (!entry) throw new Error(`[from-wgsl] there is no section page for '${section}'`)
+const { locale, section } = Astro.props;
+const c = copyFor(locale).language.mapping.fromWgsl;
+const mapping = wgslMapping();
+const entry = mappingSet('languageFromWgsl').sections.find((s) => s.key === section);
+if (!entry) throw new Error(`[from-wgsl] there is no section page for '${section}'`);
 
 // A cell the compiler left empty carries a sentence from the copy instead, and a row whose
 // sentence nobody wrote stops the build here: an empty cell in a mapping table reads as a
 // blank the reader has to fill.
 const refusal = (table: WgslTableId, row: MappingRowData): string => {
-  const key = `${table}.${row.id}`
-  const written = c.refusals[key]
-  if (!written) throw new Error(`[from-wgsl] the row '${key}' has an empty cell and no sentence for it`)
-  return written
-}
+  const key = `${table}.${row.id}`;
+  const written = c.refusals[key];
+  if (!written) throw new Error(`[from-wgsl] the row '${key}' has an empty cell and no sentence for it`);
+  return written;
+};
 
 // [WGSL, TypeShade], the two columns every construct table has. An empty cell means the one
 // language has no form for the row, and the compiler's own message fills it where it has one.
 const fill = (table: WgslTableId, row: MappingRowData) =>
-  ({ note: row.message.length > 0 ? row.message : refusal(table, row) })
+  ({ note: row.message.length > 0 ? row.message : refusal(table, row) });
 const pair = (table: WgslTableId) =>
-  mapping.tables[table].map((row) => [row.target ?? fill(table, row), row.source ?? fill(table, row)])
+  mapping.tables[table].map((row) => [row.target ?? fill(table, row), row.source ?? fill(table, row)]);
 
 // The same, with the note the copy carries for that row as a third column.
 const noted = (table: WgslTableId) => {
-  const cells = pair(table)
-  return mapping.tables[table].map((row, i) => [...cells[i]!, { note: c.notes[`${table}.${row.id}`] ?? '' }])
-}
+  const cells = pair(table);
+  return mapping.tables[table].map((row, i) => [...cells[i]!, { note: c.notes[`${table}.${row.id}`] ?? '' }]);
+};
 
-const wgslFirst = ['wgsl', 'ts'] as const
-const page = c.pages[section]
-const h1 = { types: c.typesH, resources: c.resourcesH, entries: c.stagesH, statements: c.statementsH }[section]
+const wgslFirst = ['wgsl', 'ts'] as const;
+const page = c.pages[section];
+const h1 = { types: c.typesH, resources: c.resourcesH, entries: c.stagesH, statements: c.statementsH }[section];
 // Only the type section runs subheadings; the other three are one subject each.
 const headings = section === 'types'
   ? [
@@ -59,7 +59,7 @@ const headings = section === 'types'
       { depth: 2, slug: 'arrays', text: c.arraysH },
       { depth: 2, slug: 'textures', text: c.texturesH },
     ]
-  : []
+  : [];
 ---
 
 <Docs

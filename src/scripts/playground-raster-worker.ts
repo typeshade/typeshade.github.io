@@ -37,8 +37,12 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
     try {
       // Compiled once per module, never per band and never per pixel. `evalEntry` in the
       // compiler compiles on every call, which at one call per pixel is a compile per pixel.
-      const compiledModule = compileModule(request.module as never, { gpuStubs: true, precision: RASTER_PRECISION });
-      for (const [name, value] of Object.entries(plan.bindings ?? {})) compiledModule.setBinding(name, value as never);
+      const compiledModule = compileModule(request.module as never, {
+        gpuStubs: true,
+        precision: RASTER_PRECISION,
+      });
+      for (const [name, value] of Object.entries(plan.bindings ?? {}))
+        compiledModule.setBinding(name, value as never);
       cpu = compiledModule.fns as CpuFunctions;
       corners = cornersOf(cpu, plan);
       if (!corners) {
@@ -47,7 +51,11 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
       }
       reply({ kind: 'ready', job });
     } catch (error) {
-      reply({ kind: 'failed', job, message: error instanceof Error ? error.message : String(error) });
+      reply({
+        kind: 'failed',
+        job,
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
     return;
   }
@@ -55,9 +63,26 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
   // A tile for a job this worker has moved past, or was never prepared for, is dropped.
   if (request.job !== job || !plan || !corners || !cpu) return;
   try {
-    const { pixels, covered } = drawTile(cpu, plan, corners, request.x0, request.y0, request.x1, request.y1);
+    const { pixels, covered } = drawTile(
+      cpu,
+      plan,
+      corners,
+      request.x0,
+      request.y0,
+      request.x1,
+      request.y1,
+    );
     reply(
-      { kind: 'tile', job, x0: request.x0, y0: request.y0, x1: request.x1, y1: request.y1, covered, pixels },
+      {
+        kind: 'tile',
+        job,
+        x0: request.x0,
+        y0: request.y0,
+        x1: request.x1,
+        y1: request.y1,
+        covered,
+        pixels,
+      },
       [pixels.buffer],
     );
   } catch (error) {
