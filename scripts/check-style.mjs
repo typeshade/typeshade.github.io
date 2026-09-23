@@ -98,7 +98,6 @@ const GLOBAL_CLASS_ROOTS = {
     'api-index',
     'api-type',
     'api-optional',
-    'api-see-also',
   ],
   // Expressive Code's output.
   foreign: [

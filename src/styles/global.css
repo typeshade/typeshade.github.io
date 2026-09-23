@@ -2105,7 +2105,7 @@ body > main {
 }
 
 /* API reference page: the crumbs, the kind line, definition lists for parameters and members,
-   the targets table, the see-also list */
+   the targets table */
 .api-crumbs {
   display: flex;
   flex-wrap: wrap;
@@ -2187,16 +2187,6 @@ body > main {
 .doc h1 .api-optional {
   margin-inline-start: 10px;
   vertical-align: middle;
-}
-.api-see-also li {
-  break-inside: avoid;
-}
-/* Two columns only where an identifier still fits one: a phone gets one column. */
-@media (min-width: 40rem) {
-  .api-see-also {
-    columns: 2;
-    column-gap: 24px;
-  }
 }
 /* The reference's index pages: a category or an export per row, its name a link in the
    site's primary, its sentence under it. The same definition list the parameters use. */

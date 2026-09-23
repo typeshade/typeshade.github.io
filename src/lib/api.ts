@@ -1139,7 +1139,7 @@ function extract(input: ExtractInput): Extracted {
     targets: targetsOf({ name, file, decls, kind, parameters, tables }),
     members: membersOf(decl, name, md),
     guideSections: guideLinksFor(name),
-    seeAlso: [...links, ...seeTagLinks],
+    seeAlso: uniqueByHref([...links, ...seeTagLinks]),
     source: { file, line: lineOf(decl) },
   };
   return { entry, unresolved, seeTagLinks };
@@ -1263,6 +1263,17 @@ function withoutConsumerComments(code: string): string {
     .filter((line): line is string => line !== null)
     .join('\n')
     .trim();
+}
+
+/** A name the description links with `{@link}` and also names in `@see` is one See also
+ *  entry, at the place it first appears. */
+function uniqueByHref(links: readonly ApiLink[]): ApiLink[] {
+  const seen = new Set<string>();
+  return links.filter((l) => {
+    if (seen.has(l.href)) return false;
+    seen.add(l.href);
+    return true;
+  });
 }
 
 /** `@see` targets that are reference pages of their own. */
