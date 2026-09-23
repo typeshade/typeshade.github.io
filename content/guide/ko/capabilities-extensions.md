@@ -1,6 +1,6 @@
 ---
 id: capabilities-extensions
-source: 015958b71ab83b0f1bec4f7ac7f0d80be8152786f254dab0749e1d8e90355de1
+source: d0c6cbafea8b4c8a26a8466285035f7030948beb35d82790200cfcace24afe01
 sourceLine: 1861
 ---
 
@@ -57,8 +57,8 @@ WGSL에서는 선언부 앞에 들어갑니다.
 `@builtin("primitive_index")`, `@blend_src(n)`을 적으면 해당 기능이 파생됩니다. WGSL은
 이 셋을 저마다 짝이 맞는 `enable` 없이는 거부하기 때문입니다. `"bgra8unorm"` 스토리지
 텍스처와 packed 4x8 계열 함수 호출도 각각 바인딩과 호출에서 기능을 끌어냅니다. 어떤
-사용으로도 파생되지 않는 두 기능은 `"use typeshade"` 파일에서 `"use typeshade"` 옆에
-문자열 지시문으로 적습니다.
+사용으로도 파생되지 않는 `f16`과, 서브그룹 내장 값을 하나도 읽지 않는 파일의 `subgroups`는
+`"use typeshade"` 옆에 문자열 지시문으로 적습니다.
 
 ```ts
 'use typeshade'

@@ -135,8 +135,9 @@ export function pickBlock(text: string, marker: string, end: string, where: stri
 
 /** A type probe: the TypeShade annotation, and the declaration that gives it a name to hang
  *  on. A value type needs a `uniform<T>` wrapper, a handle stands bare, and an atomic or a
- *  runtime-sized array lives in storage. A `bool` is no host-shareable type, so WGSL refuses
- *  it in a uniform; it is declared as a top-level `let`, a per-invocation variable, instead. */
+ *  runtime-sized array lives in storage. A `bool` is no host-shareable type and a two-row
+ *  matrix has no std140 layout both targets agree on, so WGSL or the compiler refuses each in a
+ *  uniform; those are declared as a top-level `let`, a per-invocation variable, instead. */
 export type Space = 'value' | 'handle' | 'storage' | 'private'
 
 export interface TypeProbe {
@@ -189,8 +190,11 @@ const MATRIX_SHAPES: readonly (readonly [2 | 3 | 4, 2 | 3 | 4])[] = [
   [4, 2], [4, 3], [4, 4],
 ]
 
+// A two-row matrix is refused in a uniform (std140 rounds each column to 16 bytes where WGSL
+// packs it to 8, Rule 4.8), so the shapes are declared as top-level `let`s: the probe only
+// wants the type the compiler spells.
 export const MATRICES: readonly TypeProbe[] = MATRIX_SHAPES.map(([cols, rows]) =>
-  probe(`mat${cols}x${rows}`, `mat${cols}x${rows}`),
+  probe(`mat${cols}x${rows}`, `mat${cols}x${rows}`, 'private'),
 )
 
 export const ARRAYS: readonly TypeProbe[] = [
