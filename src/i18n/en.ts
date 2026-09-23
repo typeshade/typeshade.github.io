@@ -637,6 +637,27 @@ export const en = {
         pending: 'not yet enforced by the compiler',
         code: 'no test checks this yet',
       },
+      // What moved in the rules since the pin before this one, on the index
+      // (src/lib/rule-history.ts). The compiler has no release yet, so a version of the language
+      // here is a commit the site pinned.
+      changes: {
+        h: 'Changes since the previous pin',
+        first: (current: string) =>
+          `The site records no pin before ${current}, so there is nothing to compare its rules with.`,
+        predates: (previous: string, date: string, current: string) =>
+          `The previous pin, ${previous} (${date}), predates the compiler's traceability tree, which this pin, ${current}, is the first to carry. There is nothing to compare the rules with yet. From the next pin on, this section lists the rules added, removed or changed since the one before.`,
+        none: (previous: string, current: string) =>
+          `No rule was added, removed or changed between the previous pin, ${previous}, and this one, ${current}.`,
+        lead: (previous: string, date: string, current: string) =>
+          `Between the previous pin, ${previous} (${date}), and this one, ${current}, as the compiler's traceability tree records them. A rule changed when its fingerprint moved, which happens when its text or the files that verify it change.`,
+        counts: `${facts.rulesAdded} added, ${facts.rulesRemoved} removed, ${facts.rulesChanged} changed.`,
+        addedH: 'Added',
+        removedH: 'Removed',
+        changedH: 'Changed',
+        was: (kind: string) => `verified as ${kind} before`,
+        commits: 'compiler commits',
+        removedItem: 'its item at the previous pin',
+      },
       // The rules grouped by how each is verified, at /reference/rules/guarantees/.
       guarantees: {
         title: 'What TypeShade guarantees: its design rules, by verification',

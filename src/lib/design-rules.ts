@@ -121,7 +121,10 @@ type Field = Scalar | readonly string[] | readonly Record<string, string>[];
  *  of scalars, a list of one-key maps (`links`) or a list of maps (`references`). Anything
  *  else stops the build, naming the file, since a shape this reader does not know is a
  *  shape it would read wrong. */
-function frontMatter(file: string, text: string): { data: Map<string, Field>; body: string } {
+export function frontMatter(
+  file: string,
+  text: string,
+): { data: Map<string, Field>; body: string } {
   const m = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text);
   if (!m) throw new Error(`[design-rules] ${file} has no front matter`);
   const lines = m[1]!.split('\n');
@@ -342,7 +345,8 @@ const uidOf = (number: string): string => {
   const [a, b] = number.split('.');
   return `RULE-${a!.padStart(2, '0')}${b!.padStart(2, '0')}`;
 };
-const byNumber = (a: string, b: string): number => {
+/** Two rule numbers in the design document's order. */
+export const byNumber = (a: string, b: string): number => {
   const [a1, a2] = a.split('.').map(Number) as [number, number];
   const [b1, b2] = b.split('.').map(Number) as [number, number];
   return a1 - b1 || a2 - b2;
