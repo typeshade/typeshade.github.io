@@ -4,6 +4,14 @@ Read `DESIGN.md` for the writing and design rules and `.claude/skills/typeshade-
 for the maintenance workflow. This file adds what keeps the copy true to the compiler it
 documents.
 
+## The language of the conversation
+
+Answer the owner in Korean, every reply, from the first to the last of a session: a status
+report, a question, a summary after a merge. What goes into the repository keeps the language
+it has: code, comments, commit messages and pull request titles and bodies in English, and the
+Korean pages and the Korean dictionary in Korean as `.claude/skills/typeshade-site/SKILL.md`
+writes them.
+
 ## The copy follows the pinned compiler
 
 `vendor/shader-dsl` is the compiler, pinned as a git submodule. A page, a component or a script
