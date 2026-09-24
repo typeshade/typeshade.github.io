@@ -697,11 +697,11 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '6.10': 'OLairZeuEbOS4mRu6Mk4jEY7nzisA7VAnKXhkjTxYs4=',
   '7.1': 'UgCtGBdMYiCPIKV221OhmJJILykrOLLnON6qkbpb4JU=',
   '7.2': 'hX6m8MSc7QxtNJJyASYQ47rLSNBDPU01I8n0b2zIPm0=',
-  '7.3': 'pH-_jeLIvcUhp6gjCddmM-5iY5thzCos9ghwnhEPTn4=',
+  '7.3': 'dg4uzav_rg6XoVu7GPWJl1-ldfIExMJUCzfIWZ_t6i0=',
   '7.4': 'Uv0vLGCbLp5zz7Re_EgMql76iLGf_NAzyMWkXNxIdZA=',
   '7.5': 'nqBwI0SYq4CP-U2QthdxHSUD-wRJ6XOJkdVx1YoTOzQ=',
   '7.6': 'm4mWGf9QgS6Ru5ZCXxLWnPz_fSECO5xWs7hGS_XZAVI=',
-  '7.7': 'kON3mL43W1KVB2ZQljAWM1zYeptophGfCHpHRmE6Big=',
+  '7.7': 'rVsyjMQJvLpuTdW-wJpX7HLIu1Xi8dgLyl4zp6KiDoE=',
   '7.9': 'UpGm8F5JgS5WQlBC5kAnWimxBVHC7js1iLkcnKDlIMk=',
   '8.1': 'H1wCXs_NQPF7wMxgl8OGv3K-wybB6bXXiXjf4QV5xhs=',
   '8.3': '8-VNyGyWMJ4PWRrTYIljKv0l0ZT1SwzPno1x1EM6jvY=',
@@ -725,8 +725,8 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '10.1': 'd8TWuezE06vSk0zrFfeQ9pKxFXYk_P4q_IC94Ny_CF8=',
   '11.5': 'K5GJo9hNFgdx3uz9sYCSGUVhUfFmjaxdcr223qtGFgE=',
   '12.3': '8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=',
-  '12.4': 'M67urBX-KXu5b1DvQCHnPyAhfBmIOUazJl9YuDlXUSw=',
-  '12.6': '5AqWk_RZn5D9KSAm4587ArG3n4vla3VsBvzc7K2GHcM=',
+  '12.4': 'njoVhmGg3bSqx_Xo50inBkEr-fC0QNdeavzVPO6GWgo=',
+  '12.6': 'Du7IBco6whvcRZuyYDXfL1Fch_bI6oTz_8Z89G3OSoI=',
 };
 
 /** The fingerprint the English pages that explain a rule were last read against, if any. */

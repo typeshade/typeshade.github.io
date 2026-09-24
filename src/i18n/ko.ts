@@ -386,6 +386,8 @@ export const ko: Copy = {
         '`a0`, `a1`처럼 자리로만 붙은 매개변수 이름은 앰비언트 파일이 만들어 낸 것입니다. 호출은 인자를 순서대로 넘기고 이름은 쓰지 않습니다.',
       helpersP:
         '시그니처에는 앰비언트 파일이 스스로 쓰려고 선언한 타입이 나올 수 있습니다. 아래가 그 선언입니다.',
+      swizzlesP: (n: number) =>
+        `\`…\` 줄은 나머지 멤버 ${n}개를 줄인 자리이며, 이 멤버는 모두 스위즐입니다. 스위즐은 성분을 두 개에서 네 개까지 골라 새 벡터로 읽고, 원소 타입은 원래 벡터와 같습니다. 순서는 자유롭고 같은 성분을 거듭 골라도 되지만, 글자는 \`xyzw\`와 \`rgba\` 가운데 한쪽에서만 가져옵니다.`,
       readingP: `항목 하나에는 편집기가 그 이름으로 읽어 들이는 선언과, 컴파일러가 쓴 설명 한 문장이 들어갑니다. 내장 함수라면 두 백엔드가 각각 내보내는 WGSL과 ${glsl} 코드도 함께 보여 줍니다. 같은 호출을 네 칸짜리 표로 훑어보려면 [내장 함수 표](languageBuiltins)로 가십시오.`,
       sourceP:
         '이 페이지의 항목은 모두 고정된 커밋의 컴파일러에서 읽어 왔고, 여기서 직접 입력한 것은 없습니다.',
@@ -2520,7 +2522,7 @@ export const ko: Copy = {
           },
           switchRow: {
             name: '`switch`',
-            p: '`switch`가 됩니다. TypeScript가 요구하는 `break`는 사라지고, 본문은 다음 case로 흘러가지 않습니다. [bitfield-bands](shadeBitfieldBands)',
+            p: '`switch`가 됩니다. case는 저마다 `break`로 끝나고, 하향 변환이 그것을 떼어 냅니다. 본문 끝까지 실행이 이어질 수 있는 case는 거절합니다(`TS8017`). TypeScript에서는 그런 case가 다음 case까지 이어서 실행되지만, WGSL은 case 하나만 실행합니다. [bitfield-bands](shadeBitfieldBands)',
           },
           ternaryScalar: {
             name: '스칼라 삼항 연산',
@@ -2731,7 +2733,7 @@ export const ko: Copy = {
           'statements.while':
             '`while`이 `loop` 자리를 대신합니다. 열린 루프라서 조건이 거짓이 되거나 `break`나 `return`을 만나면 끝나고, `while (true)`는 본문에 둘 중 하나가 있어야 합니다.',
           'statements.switch':
-            'case는 TypeScript가 요구하는 `break`로 끝내고, 하향 변환이 그것을 떼어 냅니다. 어느 case도 다음으로 흘러가지 않으며, 레이블은 한 번만 쓸 수 있는 정수 상수입니다. 본문 하나 위에 레이블 두 개를 겹쳐 쓰면 선택자가 둘인 case 하나가 되며, WGSL에서는 `case 0, 1:`로 나옵니다.',
+            'case는 저마다 `break`로 끝냅니다. WGSL의 case에는 없는 문이며, 하향 변환이 떼어 냅니다. 본문 끝까지 실행이 이어질 수 있는 case는 TypeScript에서 다음 case로 넘어가 실행되므로 거절합니다(`TS8017`). 마지막 case에는 `break`가 필요 없습니다. 레이블은 한 번만 쓸 수 있는 정수 상수입니다. 본문 하나 위에 레이블 두 개를 겹쳐 쓰면 선택자가 둘인 case 하나가 되며, WGSL에서는 `case 0, 1:`로 나옵니다.',
           'statements.select':
             'WGSL에는 삼항 연산자가 없어서 스칼라와 벡터 조건식은 `select`가 됩니다. 첫 인자가 조건이 고르지 않은 쪽입니다. 구조체나 배열을 고르는 조건식은 슬롯과 `if`로 풀립니다. 그 경우에는 어느 타깃에도 연산자가 없기 때문입니다.',
           'statements.call': '결과를 버리고 동작만 보고 부르는 함수입니다.',
