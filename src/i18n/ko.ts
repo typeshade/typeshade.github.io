@@ -855,6 +855,8 @@ export const ko: Copy = {
     consoleNone: '{backend}에서 실행한 결과 기록된 줄이 없습니다.',
     consoleDropped: '버퍼에 들어가지 못한 줄이 {dropped}개 더 있습니다.',
     consoleMore: '보여 주지 않은 줄이 {more}개 더 있습니다.',
+    consoleIndex: '(인덱스)',
+    consoleValue: '값',
     bindings: {
       title: '바인딩',
       empty: '이 모듈은 바인딩하는 것이 없습니다.',

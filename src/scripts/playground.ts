@@ -166,6 +166,8 @@ interface PlaygroundCopy {
   readonly consoleNone: string;
   readonly consoleDropped: string;
   readonly consoleMore: string;
+  readonly consoleIndex: string;
+  readonly consoleValue: string;
   readonly bindings: BindingsCopy;
   readonly canvasNeedsVertex: string;
   readonly canvasFlat: string;
@@ -1606,15 +1608,55 @@ function mount(root: HTMLElement): void {
       const at = document.createElement('span');
       at.className = 'at';
       at.textContent = e.invocation ? `[${e.invocation.join(', ')}]` : '';
-      const text = document.createElement('span');
-      text.textContent = e.args.map(shown).join(' ');
-      li.append(at, text);
+      // `table` joins ConsoleMethod with compiler proposal 0019; the pin that carries it drops
+      // this widening.
+      const body =
+        (e.method as string) === 'table' && e.args.length === 1 && typeof e.args[0] === 'object'
+          ? consoleTable(e.args[0], shown)
+          : document.createElement('span');
+      if (!(body instanceof HTMLTableElement)) body.textContent = e.args.map(shown).join(' ');
+      li.append(at, body);
       list.append(li);
     }
     consolePane.append(list);
     if (events.length > CONSOLE_SHOWN)
       say(fillNumbers(copy.consoleMore, { more: events.length - CONSOLE_SHOWN }));
     if (dropped > 0) say(fillNumbers(copy.consoleDropped, { dropped }));
+  };
+
+  /** A `console.table` value as the browser's own console lays one out (changes/0019): a row per
+   *  array element or struct field, and a column per field or component when the rows are
+   *  structs or vectors, else one value column. A matrix arrives as its columns already. */
+  const consoleTable = (value: unknown, shown: (v: unknown) => string): HTMLTableElement => {
+    const rows: [string, unknown][] = Array.isArray(value)
+      ? value.map((v, i) => [String(i), v])
+      : Object.entries(value as Record<string, unknown>);
+    const columns: string[] = [];
+    for (const [, v] of rows) {
+      if (v === null || typeof v !== 'object') continue;
+      for (const k of Object.keys(v)) if (!columns.includes(k)) columns.push(k);
+    }
+    const table = document.createElement('table');
+    const cell = (tag: 'th' | 'td', text: string): HTMLTableCellElement => {
+      const c = document.createElement(tag);
+      c.textContent = text;
+      return c;
+    };
+    const head = document.createElement('tr');
+    head.append(cell('th', copy.consoleIndex));
+    for (const k of columns.length > 0 ? columns : [copy.consoleValue]) head.append(cell('th', k));
+    table.append(head);
+    for (const [key, v] of rows) {
+      const tr = document.createElement('tr');
+      tr.append(cell('th', key));
+      if (columns.length === 0) tr.append(cell('td', shown(v)));
+      else {
+        const o = (v !== null && typeof v === 'object' ? v : {}) as Record<string, unknown>;
+        for (const k of columns) tr.append(cell('td', k in o ? shown(o[k]) : ''));
+      }
+      table.append(tr);
+    }
+    return table;
   };
 
   /** Room for this many words of console entries in the WebGPU run's buffer. */

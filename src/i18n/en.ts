@@ -833,6 +833,8 @@ export const en = {
     consoleNone: 'The run on {backend} logged nothing.',
     consoleDropped: '{dropped} more lines did not fit the buffer.',
     consoleMore: '{more} more lines are not shown.',
+    consoleIndex: '(index)',
+    consoleValue: 'Value',
     // The panel under the canvas: one block per binding the module declares, with what the
     // reader supplies it with. The texture sources and matrix presets are the choices a
     // select offers; the filter and address values are WebGPU's own words and stay in code.
