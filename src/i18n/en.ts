@@ -535,6 +535,8 @@ export const en = {
           '`compile()` does not run the lint rules. `diagnose()` from `typeshade/dev` does, on the module `compile()` returns, and reports:',
         deprecations:
           'Compiled with `{ deprecations: true }`, the option that turns this warning on.',
+        consoleGpu:
+          "Compiled with `{ console: 'gpu' }`, the option under which the WGSL records console calls.",
         hint: "The registry's hint:",
         fixed: 'The same program, corrected. It compiles with no diagnostic.',
         fixedDiagnose:
@@ -560,7 +562,7 @@ export const en = {
       // registry documents one of these, the build stops and asks for its line to go.
       lines: {
         MISSING_DIRECTIVE:
-          'A file compiled as TypeShade that does not start with the `"use typeshade"` directive.',
+          'A file compiled as TypeShade that has no `"use typeshade"` directive at all.',
         UNKNOWN_TYPE: 'A type name the compiler does not know.',
         TYPE_MISMATCH:
           'Two types that do not fit where they meet: an operator, a declaration, a return or an argument.',
@@ -823,6 +825,14 @@ export const en = {
       'A compute entry runs on WebGPU or on the CPU oracle. GLSL ES 3.00 has no compute stage.',
     computeRan:
       'Ran {entry} over {invocations} invocations on {backend} in {ms} ms. The canvas plots what it wrote.',
+    // The Console tab: the lines a compute run's console calls delivered, from the CPU oracle's
+    // sink or, on WebGPU, from the console buffer the compiler adds (surface §66).
+    consoleTab: 'Console',
+    consoleIdle: 'Run a compute module that calls `console.log` to see its lines here.',
+    consoleLines: '{lines} lines from {backend}, in the order the CPU runs the invocations.',
+    consoleNone: 'The run on {backend} logged nothing.',
+    consoleDropped: '{dropped} more lines did not fit the buffer.',
+    consoleMore: '{more} more lines are not shown.',
     // The panel under the canvas: one block per binding the module declares, with what the
     // reader supplies it with. The texture sources and matrix presets are the choices a
     // select offers; the filter and address values are WebGPU's own words and stay in code.

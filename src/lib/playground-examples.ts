@@ -79,6 +79,7 @@ export const playgroundExampleIds = [
   'workgroup-scratch',
   'workgroup-reduce',
   'atomic-histogram',
+  'gpu-console',
   'compute-sync',
   'compute-reduction-twin',
   'workgroup-tile-2d',

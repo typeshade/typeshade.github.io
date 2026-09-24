@@ -198,6 +198,8 @@ export interface ErrorExample {
   readonly thrown: ReportedDiagnostic | null;
   /** The compile() option the example needs, where it needs one. */
   readonly deprecations: boolean;
+  /** Compiled with `{ console: 'gpu' }`, the option under which the WGSL records console calls. */
+  readonly consoleGpu: boolean;
 }
 
 /** A front-end code that stops the same mistake before the core check can see it. */
@@ -607,6 +609,7 @@ interface ExampleSpec {
   readonly trigger: string;
   readonly fix: string;
   readonly deprecations?: true;
+  readonly consoleGpu?: true;
 }
 
 interface CounterpartSpec {
@@ -1586,6 +1589,63 @@ export function main(@location(0) uv: vec2): vec4 {
 }
 `,
   },
+  TS8069: {
+    trigger: `const width = 640
+
+"use typeshade"
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  return vec4(uv, 0., 1.)
+}
+`,
+    fix: `"use typeshade"
+
+const width = 640
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  return vec4(uv, 0., 1.)
+}
+`,
+  },
+  TS8071: {
+    consoleGpu: true,
+    trigger: `"use typeshade"
+
+function lift(x: f32): f32 {
+  console.log("x =", x)
+  return x
+}
+
+@vertex
+export function vs(@builtin("vertex_index") vi: u32): vec4 {
+  return vec4(lift(f32(vi)), 0., 0., 1.)
+}
+
+@fragment
+export function fs(@builtin("position") p: vec4): vec4 {
+  return vec4(p.x, 0., 0., 1.)
+}
+`,
+    fix: `"use typeshade"
+
+function lift(x: f32): f32 {
+  return x
+}
+
+@vertex
+export function vs(@builtin("vertex_index") vi: u32): vec4 {
+  return vec4(lift(f32(vi)), 0., 0., 1.)
+}
+
+@fragment
+export function fs(@builtin("position") p: vec4): vec4 {
+  console.log("x =", p.x)
+  return vec4(p.x, 0., 0., 1.)
+}
+`,
+  },
   TS8099: {
     trigger: `"use typeshade"
 
@@ -1939,10 +1999,15 @@ const INTERNAL: ReadonlySet<string> = new Set(['SD0040']);
 
 const flat = (message: string): string => message.replace(/\s*\n\s*/g, ' ').trim();
 
-function compiled(source: string, deprecations: boolean): ReturnType<typeof compile> {
+function compiled(
+  source: string,
+  deprecations: boolean,
+  consoleGpu = false,
+): ReturnType<typeof compile> {
   return compile(source, {
     fileName: 'example.shade.ts',
     ...(deprecations ? { deprecations: true } : {}),
+    ...(consoleGpu ? { console: 'gpu' as const } : {}),
   });
 }
 
@@ -1984,7 +2049,8 @@ function exampleFor(
   spec: ExampleSpec,
 ): { example: ErrorExample | null; problem: string | null } {
   const deprecations = spec.deprecations === true;
-  const result = compiled(spec.trigger, deprecations);
+  const consoleGpu = spec.consoleGpu === true;
+  const result = compiled(spec.trigger, deprecations, consoleGpu);
   const report = reportOf(result);
   const errors = result.diagnostics.filter((d) => d.category === 'error');
   let channel: ErrorChannel | null = null;
@@ -2018,7 +2084,7 @@ function exampleFor(
     };
   }
 
-  const fixed = compiled(spec.fix, deprecations);
+  const fixed = compiled(spec.fix, deprecations, consoleGpu);
   const left = fixed.diagnostics.filter((d) => d.category === 'error' || d.category === 'warning');
   if (left.length > 0) {
     return {
@@ -2035,7 +2101,15 @@ function exampleFor(
     }
   }
   return {
-    example: { trigger: spec.trigger, fix: spec.fix, channel, diagnostics, thrown, deprecations },
+    example: {
+      trigger: spec.trigger,
+      fix: spec.fix,
+      channel,
+      diagnostics,
+      thrown,
+      deprecations,
+      consoleGpu,
+    },
     problem: null,
   };
 }

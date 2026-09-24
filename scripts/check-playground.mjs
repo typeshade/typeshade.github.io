@@ -76,6 +76,8 @@
 //      plots the image it wrote, and the image is the one WebGPU wrote, texel for texel
 //  46. every example in the picker opens with no error, the compute kernels that paint
 //      nothing included
+//  47. the Console tab: the gpu-console example's console calls come back from WebGPU and
+//      from the CPU oracle as the same lines, in the same order (surface §66)
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -933,6 +935,40 @@ async function checkStorageTextures(page, problems) {
   );
 }
 
+/** The Console tab shows the lines a compute run's console calls delivered: from WebGPU, where
+ *  the module is emitted with the console buffer and the page decodes it, and from the CPU
+ *  oracle's sink. The two runs give the same lines (surface §66). */
+const firstDiff = (a, b) => a.findIndex((x, i) => x !== b[i]);
+
+async function checkConsole(page, problems) {
+  await pickExample(page, 'gpu-console');
+  const linesOn = async (backend) => {
+    await plottedPixels(page, backend).catch(() => undefined);
+    await page
+      .waitForFunction(
+        () => (document.querySelector('[data-console] ol')?.children.length ?? 0) > 0,
+        undefined,
+        { timeout: 60_000 },
+      )
+      .catch(() => undefined);
+    return page.evaluate(() =>
+      [...document.querySelectorAll('[data-console] li')].map((li) => li.textContent),
+    );
+  };
+  const gpu = await linesOn('webgpu');
+  await page.selectOption('[data-engine]', 'cpu');
+  const cpu = await linesOn('cpu');
+  await page.selectOption('[data-engine]', 'auto');
+  await settleResult(page);
+  if (gpu.length === 0) problems.push('gpu-console showed no console line from WebGPU');
+  if (cpu.length === 0) problems.push('gpu-console showed no console line from the CPU');
+  if (gpu.length > 0 && JSON.stringify(gpu) !== JSON.stringify(cpu))
+    problems.push(
+      `gpu-console's console lines differ between WebGPU and the CPU (${gpu.length} and ${cpu.length}; at line ${firstDiff(gpu, cpu)}: ${gpu[firstDiff(gpu, cpu)]} / ${cpu[firstDiff(gpu, cpu)]})`,
+    );
+  console.log(`  console: gpu-console logged ${gpu.length} lines on WebGPU, the same on the CPU`);
+}
+
 /** One previously flat example of each kind the panel supplies now draws, and the panel's
  *  controls reach the frame: a matrix preset, a texture source, an override, a dispatch's
  *  buffers on both engines, and a value that survives a recompile. */
@@ -1419,7 +1455,7 @@ async function checkRoute(browser, origin, route) {
             .length,
         };
       });
-      const wantedTabs = ['result', 'wgsl', 'glslVertex', 'glslFragment', 'reflection'];
+      const wantedTabs = ['result', 'wgsl', 'glslVertex', 'glslFragment', 'reflection', 'console'];
       if (strip.names.join(',') !== wantedTabs.join(','))
         problems.push(
           `the result column's tabs are ${strip.names.join(', ')}, not ${wantedTabs.join(', ')}`,
@@ -2465,6 +2501,7 @@ async function checkRoute(browser, origin, route) {
         await checkUniformBlocks(page, problems);
         await checkNestedUniform(page, problems);
         await checkStorageTextures(page, problems);
+        await checkConsole(page, problems);
         await pickExample(page, 'hello');
       }
     }

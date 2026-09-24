@@ -824,12 +824,17 @@ export class BindingsModel {
         case 'scalar':
         case 'atomic': {
           const integer = t.kind === 'atomic' || t.scalar !== 'f32';
-          return patternValue(choice.pattern, i, length, integer);
+          // An f32 element is the value the GPU's buffer holds, rounded to 32 bits, so the
+          // oracle reads what the GPU reads; a double here made a CPU run log and compute
+          // with inputs WebGPU never saw.
+          const v = patternValue(choice.pattern, i, length, integer);
+          return integer ? v : Math.fround(v);
         }
         case 'vec':
-          return Array.from({ length: t.n }, (_, c) =>
-            patternValue(choice.pattern, i * t.n + c, length * t.n, t.elem !== 'f32'),
-          );
+          return Array.from({ length: t.n }, (_, c) => {
+            const v = patternValue(choice.pattern, i * t.n + c, length * t.n, t.elem !== 'f32');
+            return t.elem === 'f32' ? Math.fround(v) : v;
+          });
         case 'struct': {
           const decl = this.structs.get(t.name);
           return Object.fromEntries(

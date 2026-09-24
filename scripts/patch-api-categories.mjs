@@ -18,10 +18,11 @@ const rows = [
   "  'src/compiler/ts/pack.ts': 'reflection-api',",
   // A span is a field on an IR node, carried by every pass that rebuilds one.
   "  'src/core/ir/span.ts': 'ir',",
-  // Lockstep dispatch runs a workgroup's invocations on the CPU, and the console bridge is
-  // what that run reports through.
+  // Lockstep dispatch runs a workgroup's invocations on the CPU.
   "  'src/core/debug/dispatch.ts': 'cpu-oracle',",
-  "  'src/core/console.ts': 'cpu-oracle',",
+  // The console: the events a shader's console calls deliver on the CPU, and the decoder for
+  // the ones the GPU records in the console buffer (compiler proposal 0014).
+  "  'src/core/console.ts': 'console',",
   // The determinism report is read over a whole module, beside semanticDiff and measure.
   "  'src/core/passes/determinism.ts': 'tooling',",
 ];

@@ -136,6 +136,11 @@ const apiCategories: Record<string, { name: string; summary: string }> = {
     summary:
       '모듈을 f64로 실행하는 CPU 백엔드입니다. 여기서 나온 값이 GPU 출력을 맞춰 보는 기준이 됩니다.',
   },
+  console: {
+    name: '콘솔',
+    summary:
+      '셰이더가 console.log로 남기는 내용입니다. CPU가 전달하는 이벤트와, GPU가 기록한 이벤트를 읽는 디코더가 여기 있습니다.',
+  },
   diagnostics: {
     name: '진단',
     summary:
@@ -584,6 +589,8 @@ export const ko: Copy = {
         diagnose:
           '`compile()`은 린트 규칙을 돌리지 않습니다. `typeshade/dev`의 `diagnose()`가 `compile()`이 돌려준 모듈에 린트 규칙을 돌려 다음을 알립니다.',
         deprecations: '이 경고를 켜는 옵션인 `{ deprecations: true }`를 주고 컴파일했습니다.',
+        consoleGpu:
+          "WGSL이 console 호출을 기록하게 하는 옵션인 `{ console: 'gpu' }`를 주고 컴파일했습니다.",
         hint: '레지스트리의 힌트:',
         fixed: '같은 프로그램을 고친 모습입니다. 진단 없이 컴파일됩니다.',
         fixedDiagnose:
@@ -607,7 +614,7 @@ export const ko: Copy = {
       },
       lines: {
         MISSING_DIRECTIVE:
-          'TypeShade로 컴파일하는 파일이 `"use typeshade"` 지시문으로 시작하지 않습니다.',
+          'TypeShade로 컴파일하는 파일에 `"use typeshade"` 지시문이 아예 없습니다.',
         UNKNOWN_TYPE: '컴파일러가 모르는 타입 이름입니다.',
         TYPE_MISMATCH:
           '연산자나 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않습니다.',
@@ -841,6 +848,13 @@ export const ko: Copy = {
       '컴퓨트 진입점은 WebGPU나 CPU 오라클에서 실행됩니다. GLSL ES 3.00에는 컴퓨트 단계가 없습니다.',
     computeRan:
       '{entry}을(를) {backend}에서 호출 {invocations}회로 실행했고 {ms} ms 걸렸습니다. 캔버스는 이 진입점이 쓴 값을 그래프로 보여 줍니다.',
+    consoleTab: '콘솔',
+    consoleIdle: '`console.log`를 부르는 컴퓨트 모듈을 실행하면 그 줄이 여기에 나옵니다.',
+    consoleLines:
+      '{backend}에서 받은 줄 {lines}개입니다. CPU가 인보케이션을 실행하는 순서로 보여 줍니다.',
+    consoleNone: '{backend}에서 실행한 결과 기록된 줄이 없습니다.',
+    consoleDropped: '버퍼에 들어가지 못한 줄이 {dropped}개 더 있습니다.',
+    consoleMore: '보여 주지 않은 줄이 {more}개 더 있습니다.',
     bindings: {
       title: '바인딩',
       empty: '이 모듈은 바인딩하는 것이 없습니다.',
@@ -1770,6 +1784,7 @@ export const ko: Copy = {
         'workgroup-scratch': '워크그룹 스크래치 메모리',
         'workgroup-reduce': '워크그룹 리덕션',
         'atomic-histogram': '원자적 히스토그램',
+        'gpu-console': 'GPU에서 온 콘솔 출력',
         'compute-reduction-twin': '컴퓨트 리덕션 (소스 트윈)',
         'hillshade-twin': 'hillshade (소스 트윈)',
         'plasma-twin': '플라스마 (소스 트윈)',
@@ -1892,6 +1907,8 @@ export const ko: Copy = {
           '인보케이션 64개가 값 64개를 워크그룹 메모리로 하나에 모읍니다. `workgroupBarrier()`가 라운드 순서를 잡습니다.',
         'atomic-histogram':
           '여러 인보케이션이 `atomicAdd(bins[bin], 1)`로 같은 칸에 동시에 값을 더합니다. 한 번의 호출은 쪼갤 수 없는 한 걸음이고, 스토리지 구조체의 필드와 `storage<atomic<u32>>` 선언이 위치를 적는 나머지 두 가지 모양을 보여 주며, 원자 연산이 돌려주는 값은 더하기 전에 들어 있던 값입니다.',
+        'gpu-console':
+          '컴퓨트 커널 안에서 `console.log("i =", gid.x, p)`를 부릅니다. 문자열 리터럴은 라벨이 되고, 크기가 정해진 값은 무엇이든 인자로 넘길 수 있습니다.',
         'compute-reduction-twin': '`compute-reduction.ts`를 소스 언어로 다시 쓴 예제입니다.',
         'hillshade-twin': '`hillshade.ts`를 소스 언어로 다시 쓴 예제입니다.',
         'plasma-twin': '`shadertoy-plasma.ts`를 소스 언어로 다시 쓴 예제입니다.',

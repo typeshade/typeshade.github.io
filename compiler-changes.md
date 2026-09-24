@@ -22,3 +22,14 @@ id first, then the pull request that did the work.
   are interfaces whose members include the swizzles: the control-flow page's switch row and the
   from-WGSL statements note in both locales, and the language reference, which reads an
   interface and folds its swizzles into one line, handled in #82.
+- 0011: WGSL's `matCxRf` aliases are types and constructors: the nine names join the language
+  reference's constructors family, handled in #83.
+- 0012: a `"use typeshade"` directive after another statement is `TS8069`: its error-code page
+  with a trigger and a fix, and the `TS8001` line, which now means no directive at all, in both
+  locales, handled in #83.
+- 0014: `console` calls reach the host from WebGPU under `console: 'gpu'`: the Playground's
+  Console tab fed by the CPU run's sink and by the WebGPU run's decoded console buffer (and the
+  f32 rounding the CPU run's storage inputs were missing), the `gpu-console` example in the
+  gallery, the picker and the Korean blurbs, a `TS8071` page compiled with the option, a Console
+  category in the API reference, and glossary terms kept apart from the driver log, handled in
+  #83.
