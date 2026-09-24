@@ -165,8 +165,9 @@ const meta = `title:${entry.name} (${kindWord})`;
     {entry.kind === 'builtin'
       ? <p class="ref-entry-code wrap-anywhere"><code>{entry.signature}</code></p>
       : <Code code={entry.signature} lang="ts" locale={locale} wrap />}
-    {(entry.showsNumber || entry.helpers.length > 0) && (
+    {(entry.elided > 0 || entry.showsNumber || entry.helpers.length > 0) && (
       <div class="ref-reading mbs-5 text-(length:--text-ui) text-text-2" lang={locale}>
+        {entry.elided > 0 && <p><Rich text={r.swizzlesP(entry.elided)} locale={locale} /></p>}
         {entry.showsNumber && (
           <>
             <p><Rich text={r.numberP} locale={locale} /></p>

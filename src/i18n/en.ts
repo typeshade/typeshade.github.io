@@ -305,6 +305,8 @@ export const en = {
         'A parameter named by position (`a0`, `a1`) carries a name the ambient file generates. A call passes its arguments in order and names none of them.',
       helpersP:
         'A signature may name a type the ambient file declares for its own use. These are those declarations.',
+      swizzlesP: (n: number) =>
+        `The \`…\` line stands for ${n} more members, the swizzles. A swizzle reads two to four components as a new vector of the same element type. The components come in any order and may repeat, and their letters come from one set, \`xyzw\` or \`rgba\`.`,
       readingP: `An entry holds the declaration the editor loads for that name, the compiler's sentence about it, and for a builtin function the WGSL and the ${glsl} text each backend writes. The [builtin table](languageBuiltins) is the scanning view over the same calls, four columns wide.`,
       sourceP:
         'Every entry on these pages is read from the compiler at the pinned commit, and none of it is typed here.',
@@ -2353,7 +2355,7 @@ export const en = {
           },
           switchRow: {
             name: '`switch`',
-            p: 'A `switch`. The `break` TypeScript asks for is dropped, and a body does not fall through. [bitfield-bands](shadeBitfieldBands)',
+            p: 'A `switch`. Each case ends with a `break`, which the lowering drops. A case whose end is reachable is refused (`TS8017`), because TypeScript would run on into the next case and WGSL runs only the one. [bitfield-bands](shadeBitfieldBands)',
           },
           ternaryScalar: {
             name: 'Ternary on a scalar',
@@ -2570,7 +2572,7 @@ export const en = {
           'statements.while':
             'A `while` takes the place of `loop`. It is an open loop: it ends when its condition fails, or at a `break` or a `return`, and `while (true)` needs one of the two in its body.',
           'statements.switch':
-            'A case ends with the `break` TypeScript requires, and the lowering drops it. No case falls through, and a label is an integer constant that may appear once. Two labels stacked over one body are one case with two selectors, `case 0, 1:` on WGSL.',
+            'Each case ends with `break`, which a WGSL case does without and the lowering drops. A case whose end is reachable would run on into the next case in TypeScript, so it is refused (`TS8017`). The last case needs no `break`. A label is an integer constant that may appear once. Two labels stacked over one body are one case with two selectors, `case 0, 1:` on WGSL.',
           'statements.select':
             'WGSL has no ternary, so a scalar or vector conditional becomes `select`, whose first argument is the arm the condition does not choose. A conditional on a struct or an array is hoisted into a slot and an `if`, since neither target has an operator for that.',
           'statements.call': 'A function called for what it does, with its result dropped.',

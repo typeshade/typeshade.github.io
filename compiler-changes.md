@@ -18,3 +18,7 @@ id first, then the pull request that did the work.
   `declare let x: storage<T>` the site shows, the resources page's access table and its copy,
   the uniform refusal line in both locales, the other copy that tied `let` to a writable binding, and the
   target-mapping type probes, handled in #77.
+- 0007: a `switch` case body that would fall through is refused (`TS8017`), and the vector types
+  are interfaces whose members include the swizzles: the control-flow page's switch row and the
+  from-WGSL statements note in both locales, and the language reference, which reads an
+  interface and folds its swizzles into one line, handled in #82.

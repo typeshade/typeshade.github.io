@@ -244,6 +244,11 @@ export interface LanguageEntry {
   readonly showsNumber: boolean;
   /** The undocumented helper types this signature names, in the order they are declared. */
   readonly helpers: readonly LanguageHelper[];
+  /** How many swizzle members the signature folds into its `…` line. A vector type declares
+   *  every one of them (`xy`, `zyx`, `rgba`), hundreds on a four-component vector, and the
+   *  page prints the rest of the interface and says what the line stands for. Zero on every
+   *  other entry. */
+  readonly elided: number;
   /** The two target spellings, for a function the spelling registry has an id for. */
   readonly spelling: LanguageSpelling | null;
   /** Where a `@builtin(...)` id may be used. Empty means the compiler constrains it nowhere. */
@@ -283,6 +288,10 @@ interface Declarations {
    *  below it come off the same parse. */
   readonly functions: ReadonlyMap<string, readonly ts.FunctionDeclaration[]>;
   readonly types: ReadonlyMap<string, ts.TypeAliasDeclaration>;
+  /** The types the ambient file declares as interfaces, every declaration of each. The vector
+   *  types are among them: a component and a swizzle are members there, so the editor
+   *  completes `v.xy` and types it. */
+  readonly interfaces: ReadonlyMap<string, readonly ts.InterfaceDeclaration[]>;
   readonly values: ReadonlyMap<string, string>;
   readonly mathMembers: ReadonlyMap<string, ts.TypeElement>;
   /** Every type alias again, each one collapsed to a single line. */
@@ -304,6 +313,7 @@ function declarations(): Declarations {
       .trim();
   const functions = new Map<string, ts.FunctionDeclaration[]>();
   const types = new Map<string, ts.TypeAliasDeclaration>();
+  const interfaces = new Map<string, ts.InterfaceDeclaration[]>();
   const values = new Map<string, string>();
   const oneLiners = new Map<string, string>();
   const brandTags = new Set<string>();
@@ -329,7 +339,12 @@ function declarations(): Declarations {
           brandTags.add(d.name.text);
         }
       }
-    } else if (ts.isInterfaceDeclaration(statement) && statement.name.text === 'MathObject') {
+    } else if (ts.isInterfaceDeclaration(statement)) {
+      interfaces.set(statement.name.text, [
+        ...(interfaces.get(statement.name.text) ?? []),
+        statement,
+      ]);
+      if (statement.name.text !== 'MathObject') continue;
       for (const member of statement.members) {
         const name = member.name;
         if (!name || !(ts.isIdentifier(name) || ts.isStringLiteral(name))) continue;
@@ -341,7 +356,7 @@ function declarations(): Declarations {
     throw new Error('[language-reference] SHADE_DTS no longer declares a MathObject interface');
   if (brandTags.size === 0)
     throw new Error('[language-reference] SHADE_DTS declares no unique symbol brands any more');
-  return { functions, types, values, mathMembers, oneLiners, brandTags, source };
+  return { functions, types, interfaces, values, mathMembers, oneLiners, brandTags, source };
 }
 
 // ── the parameters and the return type, off the same parse ────────────────────────────────
@@ -353,13 +368,13 @@ const GENERATED = /^a\d+$/;
 /** A type as a row shows it: one line, whatever the ambient file's own line breaks were. */
 const flat = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
-/** One overload's parameters and return type. A type alias goes through the same function:
- *  its parameters are its type parameters, and it returns nothing. */
+/** One overload's parameters and return type. A type alias and an interface go through the
+ *  same function: their parameters are their type parameters, and they return nothing. */
 function overloadOf(
-  node: ts.SignatureDeclarationBase | ts.TypeAliasDeclaration,
+  node: ts.SignatureDeclarationBase | ts.TypeAliasDeclaration | ts.InterfaceDeclaration,
   source: ts.SourceFile,
 ): LanguageOverload {
-  if (ts.isTypeAliasDeclaration(node)) {
+  if (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) {
     return {
       parameters: (node.typeParameters ?? []).map((p) => ({
         name: p.name.text,
@@ -648,14 +663,67 @@ function build(): readonly LanguageSection[] {
       let stages: readonly BuiltinStageRule[] = [];
       let bareForm = false;
       let protocol = false;
+      let elided = 0;
+      // The text a bare `number` is looked for in: the signature, except on an interface,
+      // where an index signature's key is `number` and is no scalar slot.
+      let slots: string | undefined;
       // The overloads the Syntax frame prints, parsed as they are lifted, so the Parameters
       // and Return value sections below read off the same nodes and cannot drift from it.
       let overloads: LanguageOverload[] = [];
       switch (kind) {
         case 'type': {
-          const alias = decl.types.get(name) ?? missing(kind, name, 'type alias in SHADE_DTS');
-          signature = alias.getText(source);
-          overloads = [overloadOf(alias, source)];
+          const alias = decl.types.get(name);
+          if (alias) {
+            signature = alias.getText(source);
+            overloads = [overloadOf(alias, source)];
+            break;
+          }
+          // An interface: the vector types, whose members are the components and the
+          // swizzles. The swizzles are read off the interface itself. Its one-letter members
+          // are the components, and a longer member spelled only in those letters is a
+          // swizzle, so the page keeps whatever else a pin adds to the interface.
+          const declared =
+            decl.interfaces.get(name) ??
+            missing(kind, name, 'type alias or interface in SHADE_DTS');
+          // Two declarations of one interface merge in TypeScript, and a page that printed one
+          // of them would leave the other's members out.
+          if (declared.length !== 1)
+            throw new Error(
+              `[language-reference] SHADE_DTS declares the interface ${name} ${declared.length} times; the page prints one declaration`,
+            );
+          const iface = declared[0]!;
+          const letterOf = (member: ts.TypeElement): string | null =>
+            ts.isPropertySignature(member) && ts.isIdentifier(member.name)
+              ? member.name.text
+              : null;
+          const components = new Set(
+            iface.members.map(letterOf).filter((n): n is string => n?.length === 1),
+          );
+          const isSwizzle = (member: ts.TypeElement): boolean => {
+            const letters = letterOf(member);
+            return (
+              letters !== null &&
+              letters.length > 1 &&
+              [...letters].every((letter) => components.has(letter))
+            );
+          };
+          const shown = iface.members.filter((member) => !isSwizzle(member));
+          elided = iface.members.length - shown.length;
+          const head = iface.getText(source).slice(0, iface.members.pos - iface.getStart(source));
+          signature = [
+            head.trimEnd(),
+            ...shown.map((member) => `  ${member.getText(source)}`),
+            ...(elided > 0 ? ['  …'] : []),
+            '}',
+          ].join('\n');
+          slots = shown
+            .map((member) =>
+              ts.isIndexSignatureDeclaration(member)
+                ? member.type.getText(source)
+                : member.getText(source),
+            )
+            .join('\n');
+          overloads = [overloadOf(iface, source)];
           break;
         }
         case 'attribute': {
@@ -777,8 +845,9 @@ function build(): readonly LanguageSection[] {
         positional: parameters.some((p) => GENERATED.test(p.name)),
         bareForm,
         protocol,
-        showsNumber: SCALAR_SLOT_KINDS.has(kind) && /\bnumber\b/.test(signature),
+        showsNumber: SCALAR_SLOT_KINDS.has(kind) && /\bnumber\b/.test(slots ?? signature),
         helpers: helpersIn(signature),
+        elided,
         spelling,
         stages,
         alias,
