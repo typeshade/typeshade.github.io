@@ -969,6 +969,55 @@ async function checkConsole(page, problems) {
   console.log(`  console: gpu-console logged ${gpu.length} lines on WebGPU, the same on the CPU`);
 }
 
+/** A module that draws logs one clicked pixel at a time: the Console tab says so before a
+ *  click, a click inside the triangle runs the fragment entry for that pixel on the CPU oracle
+ *  and lists what it logged (and not the vertex entry's call), and a click outside says no
+ *  fragment runs there. It used to show the compute-only idle line whatever the reader wrote. */
+async function checkPixelConsole(page, problems) {
+  await pickExample(page, 'hello');
+  const source = await sourceOf(page);
+  await typeSource(
+    page,
+    source
+      .replace(
+        'export function fs(): Color {',
+        'export function fs(@builtin("position") p: vec4): Color {\n  console.log("at", p.x, p.y);',
+      )
+      .replace('let x = -0.8;', 'console.log("vertex", i);\n  let x = -0.8;'),
+  );
+  await settleResult(page);
+  await openTab(page, 'console');
+  const hint = (await page.textContent('[data-console]')).trim();
+  await openTab(page, 'result');
+  const lines = async () => {
+    await openTab(page, 'console');
+    const read = await page.evaluate(() => ({
+      heading: document.querySelector('[data-console] p')?.textContent ?? '',
+      lines: [...document.querySelectorAll('[data-console] li')].map((li) => li.textContent),
+    }));
+    await openTab(page, 'result');
+    return read;
+  };
+  const frame = await page.$('[data-gpu-frame]');
+  const box = await frame.boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.6);
+  const inside = await lines();
+  const note = (await page.textContent('[data-pixel-note]')).trim();
+  await page.mouse.click(box.x + 3, box.y + 3);
+  const outside = await lines();
+  if (!/Click a pixel|픽셀을 클릭/.test(hint))
+    problems.push(`a module that draws and logs shows no pixel hint in the Console tab: "${hint}"`);
+  if (inside.lines.length !== 1 || !/^\[\d+, \d+, 0\]at \d+\.5 \d+\.5$/.test(inside.lines[0] ?? ''))
+    problems.push(
+      `a click inside the triangle should list the fragment's one line: ${JSON.stringify(inside)}`,
+    );
+  if (!/\(\d+, \d+\)/.test(note)) problems.push(`the pixel note names no pixel: "${note}"`);
+  if (outside.lines.length !== 0 || !/triangle|삼각형/.test(outside.heading))
+    problems.push(`a click outside the triangle should say so: ${JSON.stringify(outside)}`);
+  console.log(`  pixel console: ${inside.lines[0] ?? 'nothing'}; outside: ${outside.heading}`);
+  await pickExample(page, 'hello');
+}
+
 /** One previously flat example of each kind the panel supplies now draws, and the panel's
  *  controls reach the frame: a matrix preset, a texture source, an override, a dispatch's
  *  buffers on both engines, and a value that survives a recompile. */
@@ -2502,6 +2551,7 @@ async function checkRoute(browser, origin, route) {
         await checkNestedUniform(page, problems);
         await checkStorageTextures(page, problems);
         await checkConsole(page, problems);
+        await checkPixelConsole(page, problems);
         await pickExample(page, 'hello');
       }
     }
