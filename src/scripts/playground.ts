@@ -22,6 +22,11 @@ import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
 import type { Fp64Flavor } from '../../vendor/shader-dsl/src/core/passes/fp64-lower.ts';
 import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
+import { decodeConsole, type ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
+import {
+  consoleBuffer,
+  hasConsoleCall,
+} from '../../vendor/shader-dsl/src/core/passes/console-buffer.ts';
 import type { OptLevel } from '../../vendor/shader-dsl/src/core/passes/opt/optimize.ts';
 import { reflect } from '../../vendor/shader-dsl/src/core/reflect.ts';
 // The ship-time plugins live on their own subpath, the one a host imports for a release build.
@@ -156,6 +161,11 @@ interface PlaygroundCopy {
   readonly gpuFailed: string;
   readonly computeNeedsWebgpu: string;
   readonly computeRan: string;
+  readonly consoleIdle: string;
+  readonly consoleLines: string;
+  readonly consoleNone: string;
+  readonly consoleDropped: string;
+  readonly consoleMore: string;
   readonly bindings: BindingsCopy;
   readonly canvasNeedsVertex: string;
   readonly canvasFlat: string;
@@ -181,7 +191,7 @@ type Target = 'wgsl' | 'glslVertex' | 'glslFragment';
 
 /** What the one tab strip over the result column selects: the canvas, one of the three
  *  emitted files, or the reflection. */
-type View = 'result' | Target | 'reflection';
+type View = 'result' | Target | 'reflection' | 'console';
 
 /** What scripts/check-playground.mjs reads off the tool's element. */
 interface PlaygroundHandle {
@@ -758,6 +768,7 @@ function mount(root: HTMLElement): void {
   };
   const client = openLanguageWorker();
   const reflectionPane = root.querySelector('[data-reflection]');
+  const consolePane = root.querySelector('[data-console]');
   const runCpu = root.querySelector('[data-run-cpu]');
   const examples = JSON.parse(root.dataset.examples ?? '[]') as PlaygroundExample[];
   const examplePicker = root.querySelector('[data-example]');
@@ -1565,6 +1576,50 @@ function mount(root: HTMLElement): void {
     retireStill();
   };
 
+  /** The Console tab: the lines the last compute run delivered, in the order the CPU runs the
+   *  invocations (surface §66). Only the first CONSOLE_SHOWN are drawn; the count says the rest. */
+  const CONSOLE_SHOWN = 500;
+  const showConsole = (
+    events: readonly ConsoleEvent[],
+    dropped: number,
+    backend: 'webgpu' | 'cpu',
+  ): void => {
+    if (!(consolePane instanceof HTMLElement)) return;
+    consolePane.replaceChildren();
+    const say = (text: string): void => {
+      const p = document.createElement('p');
+      p.textContent = text;
+      consolePane.append(p);
+    };
+    const name = backendName(backend);
+    if (events.length === 0 && dropped === 0) {
+      say(fillNumbers(copy.consoleNone, { backend: name }));
+      return;
+    }
+    say(fillNumbers(copy.consoleLines, { lines: events.length, backend: name }));
+    const list = document.createElement('ol');
+    const shown = (v: unknown): string =>
+      typeof v === 'string' ? v : typeof v === 'number' ? String(v) : JSON.stringify(v);
+    for (const e of events.slice(0, CONSOLE_SHOWN)) {
+      const li = document.createElement('li');
+      if (e.method === 'warn' || e.method === 'error') li.className = e.method;
+      const at = document.createElement('span');
+      at.className = 'at';
+      at.textContent = e.invocation ? `[${e.invocation.join(', ')}]` : '';
+      const text = document.createElement('span');
+      text.textContent = e.args.map(shown).join(' ');
+      li.append(at, text);
+      list.append(li);
+    }
+    consolePane.append(list);
+    if (events.length > CONSOLE_SHOWN)
+      say(fillNumbers(copy.consoleMore, { more: events.length - CONSOLE_SHOWN }));
+    if (dropped > 0) say(fillNumbers(copy.consoleDropped, { dropped }));
+  };
+
+  /** Room for this many words of console entries in the WebGPU run's buffer. */
+  const CONSOLE_WORDS = 1 << 16;
+
   const runCompute = async (): Promise<void> => {
     const mine = ++resultRun;
     stopMount();
@@ -1590,6 +1645,11 @@ function mount(root: HTMLElement): void {
     let image: { width: number; height: number; format: string; bytes: Uint8Array } | undefined;
     let ranOn: 'webgpu' | 'cpu';
     let ms = 0;
+    // The console lines the run delivers: the oracle's sink on the CPU, the decoded buffer on
+    // WebGPU, where a module that logs is emitted with the console buffer (surface §66).
+    const lines: ConsoleEvent[] = [];
+    let dropped = 0;
+    const logs = hasConsoleCall(compiled.module);
     try {
       if (picked === 'cpu') {
         const started = performance.now();
@@ -1598,6 +1658,7 @@ function mount(root: HTMLElement): void {
         const cpu = compileModule(compiled.module, {
           gpuStubs: true,
           precision: RASTER_PRECISION,
+          consoleSink: (e) => lines.push(e),
         });
         const values = bindings.cpuBindings(0, 0, 0, pointer);
         for (const [name, value] of Object.entries(values)) cpu.setBinding(name, value as never);
@@ -1620,15 +1681,38 @@ function mount(root: HTMLElement): void {
         }
         ranOn = 'cpu';
       } else {
+        const recorded = logs ? consoleBuffer(compiled.module) : undefined;
+        const log = recorded?.log;
         const result = await runComputeOnGpu({
-          wgsl: emitted.wgsl,
+          wgsl: log && recorded ? emitWgsl(recorded.module, currentChoice()) : emitted.wgsl,
           entry: entry.name,
           workgroups: [groups, 1, 1],
-          resources: bindings.resources(true),
+          resources: log
+            ? [
+                ...bindings.resources(true),
+                {
+                  kind: 'storage-buffer',
+                  name: '_console',
+                  group: log.group,
+                  binding: log.binding,
+                  readOnly: false,
+                  bytes: new Uint8Array(8 + 4 * CONSOLE_WORDS),
+                },
+              ]
+            : bindings.resources(true),
           constants: bindings.constants(),
           features: gpuFeatures(),
         });
         ms = result.ms;
+        const words = result.buffers.get('_console');
+        if (log && words) {
+          const decoded = decodeConsole(
+            new Uint32Array(words.buffer, words.byteOffset, words.byteLength / 4),
+            log,
+          );
+          lines.push(...decoded.events);
+          dropped = decoded.dropped;
+        }
         for (const name of bindings.writableStorage()) {
           const bytes = result.buffers.get(name);
           if (!bytes) continue;
@@ -1662,6 +1746,7 @@ function mount(root: HTMLElement): void {
     }
     if (mine !== resultRun) return;
     bindings.showResults(results);
+    if (logs) showConsole(lines, dropped, ranOn);
     if (bindingsHost instanceof HTMLElement) bindings.render(bindingsHost);
     plot(series, image, ranOn);
     sayGpu(
@@ -2095,7 +2180,7 @@ function mount(root: HTMLElement): void {
   );
   /** Which of the three control groups in the tab row belongs to a view. */
   const metaFor = (next: View): string =>
-    next === 'result' || next === 'reflection' ? next : 'text';
+    next === 'result' || next === 'reflection' || next === 'console' ? next : 'text';
 
   /** Shows one tab's panel and moves the selected state onto its tab. Nothing here compiles,
    *  emits or draws: every panel already holds what the last compile put in it, and the
@@ -2116,6 +2201,7 @@ function mount(root: HTMLElement): void {
     if (resultPanel instanceof HTMLElement) resultPanel.hidden = next !== 'result';
     output.hidden = !isTarget(next);
     if (reflectionPane instanceof HTMLElement) reflectionPane.hidden = next !== 'reflection';
+    if (consolePane instanceof HTMLElement) consolePane.hidden = next !== 'console';
     const wanted = metaFor(next);
     for (const meta of metas) meta.hidden = meta.dataset.meta !== wanted;
     if (isTarget(next)) paintOutput();

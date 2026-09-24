@@ -103,6 +103,12 @@ export const API_CATEGORIES: readonly ApiCategory[] = [
       'The CPU backend that runs a module in f64 and gives the reference values to compare against.',
   },
   {
+    slug: 'console',
+    name: 'Console',
+    summary:
+      'What a shader says through console.log: the events the CPU delivers, and the decoder for the ones the GPU records.',
+  },
+  {
     slug: 'diagnostics',
     name: 'Diagnostics',
     summary: 'The coded error class and the validation gate every emit goes through.',
@@ -146,7 +152,7 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/compiler/ts/pack.ts': 'reflection-api',
   'src/core/ir/span.ts': 'ir',
   'src/core/debug/dispatch.ts': 'cpu-oracle',
-  'src/core/console.ts': 'cpu-oracle',
+  'src/core/console.ts': 'console',
   'src/core/passes/determinism.ts': 'tooling',
   'src/core/ir/builder.ts': 'authoring',
   'src/core/ir/types.ts': 'types',

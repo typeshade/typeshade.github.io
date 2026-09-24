@@ -676,12 +676,12 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '1.2': 't6OvP1FlcnvK4mIZKbcPULikBSKQ5LJ59oSe_GWWSio=',
   '2.2': 'ft22a-MSTFWryqEI0XdmYtccGGb1bj7gOvH0dGZq4P4=',
   '2.3': 'r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=',
-  '3.1': 'GwRVg6t7KmJpp0wZ6aUBEEzhkylEXMXi7S6JNbboZ2M=',
+  '3.1': '2L-mmTiMwo8JNO-2CnyBaaU7tZX2tqSgTNWMQCrEIro=',
   '3.2': 'bALFebpFLw_0SX9mXGvXXr8baiuVBpMu9q8lULgTimw=',
   '3.3': 'km920wkBuPaz0OXge_Xv96_s_n_Tgb6knaVrEvkmyWs=',
   '3.4': 'cBJ4sIX0HcejBNG6fEyGL7SGg-P7dy-fGrNcKHqGCKo=',
   '4.1': 'LP3By33VWErDu7PrWT7ra-cVYi9Bt0Ct4IekEwkzgq0=',
-  '4.2': 'ogUNJDfxVSBKKbqFOjyOrEetUyA8qSzQwMLMm8kSk3c=',
+  '4.2': 'MpVj8dEE3vyccKw-6hZlbejYh8Eot8TKjXivzSjJ4KI=',
   '4.6': 'RwdafG75jJiCMgm6Du1X3zVcPigfJdPEwfy6iWlDksU=',
   '4.8': 'DULrC5eZoKyHbQJ9KRCSBRmi7kBkTjLDKr2YsGL5q9U=',
   '5.3': 'hFwCFgSFl0kVWlfIaGi0HmVC5sDvhYDjrRIwV6MTN8s=',
@@ -727,6 +727,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '12.3': '8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=',
   '12.4': 'njoVhmGg3bSqx_Xo50inBkEr-fC0QNdeavzVPO6GWgo=',
   '12.6': 'Du7IBco6whvcRZuyYDXfL1Fch_bI6oTz_8Z89G3OSoI=',
+  '11.9': 'Cd7im_5dbmzfMED9MOoTB8GV4LCnpN1Amt4rKYtVcpo=',
 };
 
 /** The fingerprint the English pages that explain a rule were last read against, if any. */

@@ -109,6 +109,11 @@ const runtimeCopy = {
   gpuFailed: t.gpuFailed,
   computeNeedsWebgpu: t.computeNeedsWebgpu,
   computeRan: t.computeRan,
+  consoleIdle: t.consoleIdle,
+  consoleLines: t.consoleLines,
+  consoleNone: t.consoleNone,
+  consoleDropped: t.consoleDropped,
+  consoleMore: t.consoleMore,
   bindings: t.bindings,
   canvasNeedsVertex: t.canvasNeedsVertex,
   canvasFlat: t.canvasFlat,
@@ -232,6 +237,7 @@ const runtimeCopy = {
           <button type="button" role="tab" id="pg-tab-glslVertex" aria-controls="pg-output" data-target="glslVertex" aria-selected="false" tabindex="-1">{t.glslVertexTab}</button>
           <button type="button" role="tab" id="pg-tab-glslFragment" aria-controls="pg-output" data-target="glslFragment" aria-selected="false" tabindex="-1">{t.glslFragmentTab}</button>
           <button type="button" role="tab" id="pg-tab-reflection" aria-controls="pg-panel-reflection" data-target="reflection" aria-selected="false" tabindex="-1">{t.reflection}</button>
+          <button type="button" role="tab" id="pg-tab-console" aria-controls="pg-panel-console" data-target="console" aria-selected="false" tabindex="-1">{t.consoleTab}</button>
         </div>
         {/* The controls the selected tab owns, one group per tab, in the row the tabs are in. */}
         <div class="canvas-meta" data-meta="result">
@@ -285,6 +291,8 @@ const runtimeCopy = {
         </div>
         <pre id="pg-output" role="tabpanel" aria-labelledby="pg-tab-wgsl" data-output aria-live="polite" hidden></pre>
         <div class="reflection" id="pg-panel-reflection" role="tabpanel" aria-labelledby="pg-tab-reflection" data-reflection aria-live="polite" hidden></div>
+        {/* The lines the last compute run's console calls delivered, CPU or WebGPU. */}
+        <div class="console" id="pg-panel-console" role="tabpanel" aria-labelledby="pg-tab-console" data-console aria-live="polite" hidden><p><Rich text={t.consoleIdle} locale={locale} /></p></div>
       </div>
     </div>
   </div>
@@ -448,6 +456,13 @@ const runtimeCopy = {
   .bindings :global(.binding-result) { margin: 0; padding: 6px 8px; max-height: 12rem; overflow: auto; border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-1); font: 400 .6875rem/1.5 var(--font-mono); white-space: pre; }
   .bindings :global(.binding-storage) { display: flex; flex-direction: column; gap: 4px; }
   .bindings :global(.binding-storage > .binding-label) { padding-inline-start: 12px; }
+  .console { flex: 1 1 0; min-height: 320px; padding: 14px 16px; overflow: auto; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
+  .console :global(p) { margin: 0 0 8px; font-family: var(--font-sans); }
+  .console :global(ol) { margin: 0; padding: 0; list-style: none; }
+  .console :global(li) { display: flex; gap: 12px; padding: 1px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .console :global(.at) { flex: none; color: var(--color-text-3); }
+  .console :global(.warn) { color: var(--color-text-1); font-weight: 500; }
+  .console :global(.error) { color: var(--color-diag); }
   .reflection { flex: 1 1 0; min-height: 320px; padding: 14px 16px; overflow: auto; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
   .reflection :global(.group-title) { margin: 0 0 8px; color: var(--color-text-3); font: 600 .6875rem/1.3 var(--font-sans); letter-spacing: .06em; }
   .reflection :global(.group + .group) { margin-top: 20px; }

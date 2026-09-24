@@ -1,7 +1,8 @@
 ---
 id: emitting-and-reflection
-source: bf469fe9302ce5a755da0360bc4d29fbe0ee5b42b59ee4050ee5654de315d218
+source: 7a2b430f5f3d733d57a30f6d122e43dac97ef79794cf2dff7afb9ef0be963b24
 sourceLine: 1212
+rules: 3.4 cBJ4sIX0HcejBNG6fEyGL7SGg-P7dy-fGrNcKHqGCKo=, 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=
 ---
 
 이 페이지를 읽고 나면 모듈을 WGSL로, GLSL 스테이지 둘로, 또는 호스트가 자기 프로그램에
@@ -64,7 +65,9 @@ const whole = emitGlslModule(m)
 쓰는 것만 담깁니다. 하향 변환은 결정적이라 두 스테이지가 공유하는 이름은 전부 같게 나오고,
 그래서 둘을 링크할 수 있습니다. 한 스테이지 안에 진입점을 여러 개 담은 모듈이라면
 `emitGlslStages`에 `vertexEntry`와 `fragmentEntry`도 넘길 수 있으며, 이름을 지정해도 하향
-변환은 여전히 한 번입니다. GLSL 쪽 함수는 WGSL 생성 옵션에 GLSL 전용 옵션을 더해 받습니다.
+변환은 여전히 한 번입니다. GLSL은 스테이지마다 `main()`이 하나뿐이라, 이런 스테이지에서 진입점
+이름을 지정하지 않으면 `emitGlslStages`와 `emitGlslModule` 모두 거부합니다. `compile()`은 이를
+`TS8015` 경고로 알리고 `glsl`은 undefined로 둡니다. GLSL 쪽 함수는 WGSL 생성 옵션에 GLSL 전용 옵션을 더해 받습니다.
 전체 목록은 `GlslEmitOptions` 참고 문서에 있습니다.
 
 ### 모듈 조각

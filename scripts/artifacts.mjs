@@ -130,6 +130,7 @@ export const NO_STILL_REASONS = {
   'compute-reduction-twin': 'no-glsl',
   'array-length': 'no-glsl',
   'atomic-histogram': 'no-glsl',
+  'gpu-console': 'no-glsl',
   'workgroup-scratch': 'no-glsl',
   'workgroup-reduce': 'no-glsl',
   'shadow-compare': 'texture',

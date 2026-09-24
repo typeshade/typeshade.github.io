@@ -442,7 +442,7 @@ cards takes the column. A third measure needs a reason.
   toolbar naming the file over the emit options, then two columns from 48rem of the region's
   own width. The left column is the Monaco editor over its diagnostics. The right one is a
   single Ant tab strip over a single panel, Result first and then WGSL, GLSL vertex, GLSL
-  fragment and Reflection, with the controls the selected tab owns at the right of that same
+  fragment, Reflection and Console, with the controls the selected tab owns at the right of that same
   row. Result holds the canvas, which takes the width of its column at 4:3 the way a
   Shadertoy pane does. A picker beside the tabs chooses what draws it: the GPU in the
   runtime's own order, WebGPU alone, WebGL2 alone, or the CPU oracle's rasteriser. The GPU
@@ -458,7 +458,10 @@ cards takes the column. A third measure needs a reason.
   or a matrix with presets; a texture a built-in picture or the reader's own image; a
   sampler its filter and address mode; a storage buffer a fill pattern and a length; an
   override its value. A module whose only entry is `@compute` is dispatched, and the canvas
-  plots what it wrote while the panel lists it under its buffer. A tab switch shows a panel
+  plots what it wrote while the panel lists it under its buffer. Its `console` calls fill the
+  Console tab, one line each with the invocation that made it: on the CPU from the oracle's
+  sink, on WebGPU from the console buffer the compiler adds when the page compiles it with
+  `console: 'gpu'`, decoded after the dispatch, so the two engines show the same lines. A tab switch shows a panel
   and compiles nothing: every panel holds what the last compile put in it. Under 48rem the
   columns stack with the editor first. A page that names its example passes `seed`, which
   fills the editor from that file and drops the picker, and `still`, the example's

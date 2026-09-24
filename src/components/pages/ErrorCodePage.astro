@@ -195,6 +195,7 @@ const gapText = entry.gap === 'retired' ? e.retired : entry.gap === 'builder' ? 
         <Code code={example.trigger} lang="ts" title={FILE} meta={marks(example.diagnostics, entry.code)} locale={locale} />
       </CodeFrame>
       {example.deprecations && <p lang={locale}><Rich text={e.deprecations} locale={locale} /></p>}
+      {example.consoleGpu && <p lang={locale}><Rich text={e.consoleGpu} locale={locale} /></p>}
       <p lang={locale}><Rich text={example.channel === 'backend' ? e.backend : example.channel === 'diagnose' ? e.diagnose : e.compiled} locale={locale} /></p>
       <div class="error-report" lang="en">
         {example.diagnostics.map((dg) => (
