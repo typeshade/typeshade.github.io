@@ -137,6 +137,47 @@ export function cornersOf(cpu: CpuFunctions, plan: RasterPlan): Corners | undefi
   return { screen, area, outputs };
 }
 
+/** The fragment entry's arguments at pixel (`px`, `py`), or undefined where the triangle does
+ *  not cover it: `position` at the pixel's centre, and every varying interpolated from the
+ *  three vertex outputs. The draw and the Playground's "click a pixel" console run read the
+ *  same numbers from here, so a pixel logs what it drew. */
+export function pixelArguments(
+  plan: RasterPlan,
+  corners: Corners,
+  px: number,
+  py: number,
+): unknown[] | undefined {
+  const [a, b, c] = corners.screen;
+  const fragmentFlat = plan.fragment.io?.inputs ?? [];
+  const vertexOuts = plan.fragment.io ? (plan.vertex.io?.outputs ?? []) : [];
+  const x = px + 0.5;
+  const y = py + 0.5;
+  const w0 = ((b[0] - x) * (c[1] - y) - (c[0] - x) * (b[1] - y)) / corners.area;
+  const w1 = ((c[0] - x) * (a[1] - y) - (a[0] - x) * (c[1] - y)) / corners.area;
+  const w2 = 1 - w0 - w1;
+  if (w0 < 0 || w1 < 0 || w2 < 0) return undefined;
+  const values = fragmentFlat.map((field) => {
+    if (field.builtin === 'position') return [x, y, 0, 1];
+    const from = vertexOuts.find((candidate) => candidate.name === field.name);
+    if (!from?.name) {
+      const zero = zeroFor(field.type);
+      return zero.ok ? zero.value : 0;
+    }
+    const at = corners.outputs.map((corner) => corner[from.name as string]);
+    // An integer varying is never interpolated: WGSL makes it flat, and a flat varying
+    // takes the first vertex's value, which is WebGPU's provoking vertex.
+    if (/^(?:[iu]32|vec[234]<[iu]32>)$/.test(field.type ?? '')) return at[0];
+    if (Array.isArray(at[0])) {
+      const first = at[0] as number[];
+      return first.map(
+        (_, k) => w0 * first[k] + w1 * (at[1] as number[])[k] + w2 * (at[2] as number[])[k],
+      );
+    }
+    return w0 * (at[0] as number) + w1 * (at[1] as number) + w2 * (at[2] as number);
+  });
+  return entryArguments(plan.fragment, plan.structs, (at) => values[at]);
+}
+
 /** One tile of the canvas, drawn a pixel at a time. Returns the tile's own RGBA rows and how
  *  many of its pixels the triangle covered, so the caller can put it straight onto the canvas
  *  without waiting for the rest.
@@ -156,9 +197,6 @@ export function drawTile(
   const tileWidth = x1 - x0;
   const rows = y1 - y0;
   const pixels = new Uint8ClampedArray(tileWidth * rows * 4);
-  const [a, b, c] = corners.screen;
-  const fragmentFlat = plan.fragment.io?.inputs ?? [];
-  const vertexOuts = plan.fragment.io ? (plan.vertex.io?.outputs ?? []) : [];
   const colourField = plan.fragment.io?.outputs?.[0]?.name;
   const run = cpu[plan.fragment.name];
   let covered = 0;
@@ -166,34 +204,9 @@ export function drawTile(
 
   for (let py = y0; py < y1; py += 1) {
     for (let px = x0; px < x1; px += 1) {
-      const x = px + 0.5;
-      const y = py + 0.5;
-      const w0 = ((b[0] - x) * (c[1] - y) - (c[0] - x) * (b[1] - y)) / corners.area;
-      const w1 = ((c[0] - x) * (a[1] - y) - (a[0] - x) * (c[1] - y)) / corners.area;
-      const w2 = 1 - w0 - w1;
-      if (w0 < 0 || w1 < 0 || w2 < 0) continue;
-      const values = fragmentFlat.map((field) => {
-        if (field.builtin === 'position') return [x, y, 0, 1];
-        const from = vertexOuts.find((candidate) => candidate.name === field.name);
-        if (!from?.name) {
-          const zero = zeroFor(field.type);
-          return zero.ok ? zero.value : 0;
-        }
-        const at = corners.outputs.map((corner) => corner[from.name as string]);
-        // An integer varying is never interpolated: WGSL makes it flat, and a flat varying
-        // takes the first vertex's value, which is WebGPU's provoking vertex.
-        if (/^(?:[iu]32|vec[234]<[iu]32>)$/.test(field.type ?? '')) return at[0];
-        if (Array.isArray(at[0])) {
-          const first = at[0] as number[];
-          return first.map(
-            (_, k) => w0 * first[k] + w1 * (at[1] as number[])[k] + w2 * (at[2] as number[])[k],
-          );
-        }
-        return w0 * (at[0] as number) + w1 * (at[1] as number) + w2 * (at[2] as number);
-      });
-      const returned = run(
-        ...(entryArguments(plan.fragment, plan.structs, (at) => values[at]) as never[]),
-      );
+      const args = pixelArguments(plan, corners, px, py);
+      if (!args) continue;
+      const returned = run(...(args as never[]));
       // A fragment entry that returns a bare `vec4` is reflected with one output named `_ret`,
       // and the oracle hands back the vector itself, so only a struct is read by field name.
       // Reading `_ret` off the vector is how a covered canvas came back fully transparent.

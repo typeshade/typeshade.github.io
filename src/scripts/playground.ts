@@ -58,6 +58,7 @@ import { mountShader, type MountedShader, type ShaderData } from '../lib/shader-
 import {
   cornersOf,
   drawTile,
+  pixelArguments,
   RASTER_PRECISION,
   entryArguments,
   zeroFor,
@@ -166,6 +167,15 @@ interface PlaygroundCopy {
   readonly consoleNone: string;
   readonly consoleDropped: string;
   readonly consoleMore: string;
+  readonly consoleIndex: string;
+  readonly consolePixelHint: string;
+  readonly consolePixel: string;
+  readonly consolePixelNone: string;
+  readonly consolePixelOutside: string;
+  readonly consolePixelFailed: string;
+  readonly consolePixelNoRaster: string;
+  readonly pixelNote: string;
+  readonly consoleValue: string;
   readonly bindings: BindingsCopy;
   readonly canvasNeedsVertex: string;
   readonly canvasFlat: string;
@@ -1577,12 +1587,14 @@ function mount(root: HTMLElement): void {
   };
 
   /** The Console tab: the lines the last compute run delivered, in the order the CPU runs the
-   *  invocations (surface §66). Only the first CONSOLE_SHOWN are drawn; the count says the rest. */
+   *  invocations (surface §66), or the ones one clicked pixel delivered (`heading` says which).
+   *  Only the first CONSOLE_SHOWN are drawn; the count says the rest. */
   const CONSOLE_SHOWN = 500;
   const showConsole = (
     events: readonly ConsoleEvent[],
     dropped: number,
     backend: 'webgpu' | 'cpu',
+    heading?: string,
   ): void => {
     if (!(consolePane instanceof HTMLElement)) return;
     consolePane.replaceChildren();
@@ -1592,11 +1604,12 @@ function mount(root: HTMLElement): void {
       consolePane.append(p);
     };
     const name = backendName(backend);
-    if (events.length === 0 && dropped === 0) {
+    if (heading !== undefined) say(heading);
+    else if (events.length === 0 && dropped === 0) {
       say(fillNumbers(copy.consoleNone, { backend: name }));
       return;
-    }
-    say(fillNumbers(copy.consoleLines, { lines: events.length, backend: name }));
+    } else say(fillNumbers(copy.consoleLines, { lines: events.length, backend: name }));
+    if (events.length === 0) return;
     const list = document.createElement('ol');
     const shown = (v: unknown): string =>
       typeof v === 'string' ? v : typeof v === 'number' ? String(v) : JSON.stringify(v);
@@ -1606,9 +1619,14 @@ function mount(root: HTMLElement): void {
       const at = document.createElement('span');
       at.className = 'at';
       at.textContent = e.invocation ? `[${e.invocation.join(', ')}]` : '';
-      const text = document.createElement('span');
-      text.textContent = e.args.map(shown).join(' ');
-      li.append(at, text);
+      // `table` joins ConsoleMethod with compiler proposal 0019; the pin that carries it drops
+      // this widening.
+      const body =
+        (e.method as string) === 'table' && e.args.length === 1 && typeof e.args[0] === 'object'
+          ? consoleTable(e.args[0], shown)
+          : document.createElement('span');
+      if (!(body instanceof HTMLTableElement)) body.textContent = e.args.map(shown).join(' ');
+      li.append(at, body);
       list.append(li);
     }
     consolePane.append(list);
@@ -1616,6 +1634,138 @@ function mount(root: HTMLElement): void {
       say(fillNumbers(copy.consoleMore, { more: events.length - CONSOLE_SHOWN }));
     if (dropped > 0) say(fillNumbers(copy.consoleDropped, { dropped }));
   };
+
+  /** A `console.table` value as the browser's own console lays one out (changes/0019): a row per
+   *  array element or struct field, and a column per field or component when the rows are
+   *  structs or vectors, else one value column. A matrix arrives as its columns already. */
+  const consoleTable = (value: unknown, shown: (v: unknown) => string): HTMLTableElement => {
+    const rows: [string, unknown][] = Array.isArray(value)
+      ? value.map((v, i) => [String(i), v])
+      : Object.entries(value as Record<string, unknown>);
+    const columns: string[] = [];
+    for (const [, v] of rows) {
+      if (v === null || typeof v !== 'object') continue;
+      for (const k of Object.keys(v)) if (!columns.includes(k)) columns.push(k);
+    }
+    const table = document.createElement('table');
+    const cell = (tag: 'th' | 'td', text: string): HTMLTableCellElement => {
+      const c = document.createElement(tag);
+      c.textContent = text;
+      return c;
+    };
+    const head = document.createElement('tr');
+    head.append(cell('th', copy.consoleIndex));
+    for (const k of columns.length > 0 ? columns : [copy.consoleValue]) head.append(cell('th', k));
+    table.append(head);
+    for (const [key, v] of rows) {
+      const tr = document.createElement('tr');
+      tr.append(cell('th', key));
+      if (columns.length === 0) tr.append(cell('td', shown(v)));
+      else {
+        const o = (v !== null && typeof v === 'object' ? v : {}) as Record<string, unknown>;
+        for (const k of columns) tr.append(cell('td', k in o ? shown(o[k]) : ''));
+      }
+      table.append(tr);
+    }
+    return table;
+  };
+
+  /** A module that draws runs its fragment entry once per pixel, which is far too many lines to
+   *  show, so its console calls are read one pixel at a time: the Console tab says so until the
+   *  reader clicks one, and a click runs the fragment entry for that pixel on the CPU oracle,
+   *  with the inputs the CPU draw gives it (surface §66). */
+  const pixelNote = root.querySelector('[data-pixel-note]');
+  /** The idle line the page was served with, which carries its code span. */
+  const consoleIdle =
+    consolePane instanceof HTMLElement
+      ? [...consolePane.childNodes].map((n) => n.cloneNode(true))
+      : [];
+  const showPixelHint = (): void => {
+    if (pixelNote instanceof HTMLElement) pixelNote.hidden = true;
+    if (!(consolePane instanceof HTMLElement)) return;
+    const logs = compiled !== undefined && hasConsoleCall(compiled.module);
+    if (logs) {
+      const p = document.createElement('p');
+      p.textContent = copy.consolePixelHint;
+      consolePane.replaceChildren(p);
+    } else consolePane.replaceChildren(...consoleIdle.map((n) => n.cloneNode(true)));
+    if (frame instanceof HTMLElement) frame.dataset.logs = logs ? '1' : '0';
+  };
+  const logPixel = (target: HTMLCanvasElement, event: MouseEvent): void => {
+    if (!compiled || isComputeModule() || !hasConsoleCall(compiled.module)) return;
+    const box = target.getBoundingClientRect();
+    if (box.width === 0 || box.height === 0) return;
+    const width = target.width;
+    const height = target.height;
+    const x = Math.min(
+      width - 1,
+      Math.max(0, Math.floor(((event.clientX - box.left) / box.width) * width)),
+    );
+    const y = Math.min(
+      height - 1,
+      Math.max(0, Math.floor(((event.clientY - box.top) / box.height) * height)),
+    );
+    const at = { x, y };
+    const lines: ConsoleEvent[] = [];
+    const report = (heading: string): void => {
+      showConsole(lines, 0, 'cpu', heading);
+      if (pixelNote instanceof HTMLElement) {
+        pixelNote.textContent = fillNumbers(copy.pixelNote, { x, y, lines: lines.length });
+        pixelNote.hidden = false;
+      }
+    };
+    const base = rasterPlan();
+    if (!base) return report(copy.consolePixelNoRaster);
+    // The pixel grid of the canvas that was clicked, so `position` is the pixel the reader
+    // pointed at on the GPU canvas as on the CPU one.
+    const plan: RasterPlan = {
+      ...base,
+      width,
+      height,
+      bindings: bindings.cpuBindings(frozen ?? 0, width, height, pointer),
+    };
+    // The vertex entry runs three times to place the triangle; only the fragment's own call is
+    // listened to, so a vertex entry's console call does not read as the pixel's.
+    let listening = false;
+    try {
+      const oracle = compileModule(compiled.module, {
+        gpuStubs: true,
+        precision: RASTER_PRECISION,
+        consoleSink: (e) => {
+          if (listening) lines.push({ ...e, invocation: [x, y, 0] });
+        },
+      });
+      for (const [name, value] of Object.entries(plan.bindings ?? {}))
+        oracle.setBinding(name, value as never);
+      const cpu = oracle.fns as CpuFunctions;
+      const corners = cornersOf(cpu, plan);
+      const args = corners && pixelArguments(plan, corners, x, y);
+      if (!args) return report(fillNumbers(copy.consolePixelOutside, at));
+      listening = true;
+      cpu[plan.fragment.name]!(...(args as never[]));
+    } catch (error) {
+      listening = false;
+      return report(
+        fillNumbers(copy.consolePixelFailed, {
+          ...at,
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+      );
+    }
+    listening = false;
+    report(
+      lines.length === 0
+        ? fillNumbers(copy.consolePixelNone, at)
+        : fillNumbers(copy.consolePixel, { ...at, lines: lines.length }),
+    );
+  };
+  if (frame instanceof HTMLElement) {
+    // On the frame and not the canvas, because the GPU canvas is replaced on every mount.
+    frame.addEventListener('click', (event) => {
+      const target = event.target;
+      if (target instanceof HTMLCanvasElement) logPixel(target, event);
+    });
+  }
 
   /** Room for this many words of console entries in the WebGPU run's buffer. */
   const CONSOLE_WORDS = 1 << 16;
@@ -1769,6 +1919,7 @@ function mount(root: HTMLElement): void {
     // lands, and the first run gives way to the second. Only the latest may mark the frame.
     const mine = ++lastResult;
     if (frame instanceof HTMLElement) delete frame.dataset.settled;
+    if (!isComputeModule()) showPixelHint();
     if (isComputeModule()) await runCompute();
     else if (engineIsCpu()) {
       resultRun += 1;
