@@ -157,6 +157,7 @@ export const NO_STILL_REASONS = {
   'uniform-array': 'uniform',
   'loops-over-data': 'uniform',
   'path-tracer': 'uniform',
+  'rt-renderer-class': 'uniform',
   'workgroup-tile-2d': 'no-glsl',
 };
 
