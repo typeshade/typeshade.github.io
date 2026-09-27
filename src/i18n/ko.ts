@@ -1772,6 +1772,7 @@ export const ko: Copy = {
         'rng-method': '자기 객체를 바꾸고 값을 돌려주는 메서드',
         'class-builder': '빌더 체인, 접근자의 super, 서브클래스가 물려받는 정적 멤버',
         'class-parts':
+        'rt-renderer-class': '클래스 기반 3D SDF 레이 트레이서',
           '객체 안의 객체, 객체를 담은 const, 함수를 담은 필드, 계약으로서의 인터페이스',
         closures: '주변 변수를 읽고 쓰는 로컬 함수',
         'higher-order': '함수를 받는 함수',
@@ -1886,6 +1887,7 @@ export const ko: Copy = {
         'class-builder':
           '모든 `return`이 `return this`인 메서드는 자기 객체를 돌려주므로 `a.at(p).tinted(c)`는 호출을 차례로 `a`에서 실행하고, `new Disc().at(p).sized(r)`는 `new`가 만든 값을 임시 변수에 담습니다(규칙 8.10).',
         'class-parts':
+        'rt-renderer-class': '추상 SDF 도형 클래스와 상속으로 만든 3D 레이 트레이서입니다. 구체, 상자, 토러스, 평면을 구면 추적으로 렌더링합니다.',
           '`ring.advance(dt)`는 자신이 담은 `Mover`의 `step`을 불러 고리를 옮깁니다. 그래서 `step`이 어느 클래스의 것이든 `advance`는 자기 객체를 바꾸고 참조로 받습니다(규칙 8.10).',
         closures:
           '`ring`은 TypeScript 클로저처럼 프래그먼트 진입점의 `p`와 `width`를 읽고 그 `glow`에 더합니다.',
