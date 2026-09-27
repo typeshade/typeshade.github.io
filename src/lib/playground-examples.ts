@@ -75,6 +75,7 @@ export const playgroundExampleIds = [
   'rng-method',
   'class-builder',
   'class-parts',
+  'rt-renderer-class',
   'private-state',
   'workgroup-scratch',
   'workgroup-reduce',
