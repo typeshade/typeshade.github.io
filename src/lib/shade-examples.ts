@@ -189,6 +189,7 @@ export const SHADE_GROUPS = [
       'rng-method',
       'class-builder',
       'class-parts',
+      'rt-renderer-class',
     ],
   },
   {
