@@ -98,7 +98,7 @@
 //
 // Run: bun run check:playground (after a build, which writes dist/)
 import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -144,10 +144,65 @@ const RAN_FLOOR = 69;
 const AGREE_UNITS = 6;
 const CPU_PAINTED_FLOOR = 61;
 const AGREE_FLOOR = 54;
+// The check runs in parts, one CI job each (deploy.yml), since the two walks over the picker
+// below take most of its time. PLAYGROUND_SHARD=k/n draws every n-th example from the k-th and
+// compares the engines on those; part 1 also runs the Playground's other steps and the seeded
+// and no-WebGPU pages, and part 2 (part 1 when there is one part) the Korean route. The floors
+// above are totals, so a part of several writes its counts to PLAYGROUND_REPORT and
+// `--merge <reports>` holds their sum to the floors. With no PLAYGROUND_SHARD it is one part.
+const [SHARD_K, SHARD_N] = (process.env.PLAYGROUND_SHARD ?? '1/1').split('/').map(Number);
+if (!(SHARD_N >= 1 && SHARD_K >= 1 && SHARD_K <= SHARD_N)) {
+  console.error(
+    `[playground] PLAYGROUND_SHARD is k/n with 1 <= k <= n, not ${process.env.PLAYGROUND_SHARD}`,
+  );
+  process.exit(1);
+}
+const SHARDED = SHARD_N > 1;
+const RUNS_REST = SHARD_K === 1;
+const RUNS_KOREAN = SHARD_K === Math.min(2, SHARD_N);
+/** What a part of several leaves for `--merge`: its rows of the picker walk and its counts of
+ *  the engine comparison. */
+const tally = {
+  drawn: [],
+  engines: { ids: 0, asked: 0, cpuPainted: [], agree: [], differ: [], noCpu: [], flatAtClock: [] },
+};
 const EDITOR_TIMEOUT = Number(process.env.PLAYGROUND_TIMEOUT ?? 45_000);
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1';
 // How long Monaco's TypeScript worker gets to report after the editor mounts.
 const SETTLE = Number(process.env.PLAYGROUND_SETTLE ?? 3_000);
+
+if (process.argv[2] === '--merge') {
+  const reports = process.argv.slice(3).map((file) => JSON.parse(readFileSync(file, 'utf8')));
+  if (reports.length === 0) {
+    console.error('[playground] --merge takes the reports the parts wrote');
+    process.exit(1);
+  }
+  const parts = new Set(reports.map((r) => r.shard));
+  const expected = reports[0].of;
+  if (parts.size !== expected || reports.some((r) => r.of !== expected)) {
+    console.error(
+      `[playground] --merge needs one report from each of ${expected} parts, got ${[...parts].join(', ')}`,
+    );
+    process.exit(1);
+  }
+  const problems = [];
+  const drawn = reports.flatMap((r) => r.drawn);
+  const engines = reports.reduce((sum, r) => {
+    for (const key of Object.keys(sum))
+      sum[key] =
+        typeof sum[key] === 'number' ? sum[key] + r.engines[key] : [...sum[key], ...r.engines[key]];
+    return sum;
+  }, structuredClone(tally.engines));
+  console.log(`[playground] the picker, over ${expected} parts`);
+  walkFloors(drawn, problems);
+  engineFloors(engines, problems);
+  if (problems.length > 0) {
+    for (const problem of problems) console.error(`  - ${problem}`);
+    process.exit(1);
+  }
+  console.log(`[playground] ${drawn.length} examples drawn and compared, every floor held`);
+  process.exit(0);
+}
 
 if (!existsSync(dist)) {
   console.error('[playground] dist/ does not exist. Run `bun run build` first.');
@@ -435,6 +490,38 @@ async function openPage(browser) {
   return { page, pageErrors, cdnFailures };
 }
 
+/** The picker walk's rows held to their floors: the whole picker's, from one part or the rows of
+ *  every part. */
+function walkFloors(drawn, problems) {
+  const ran = drawn.filter((row) => row.backend !== 'none');
+  // A picture is more than one colour on a canvas a backend drew. A canvas with no
+  // backend is transparent over the frame, so a count there would be of the frame.
+  const painted = drawn.filter((row) => row.colours > 1 && row.backend !== 'none');
+  console.log(
+    `  examples: ${painted.length} of ${drawn.length} paint more than one colour, ${ran.length} of ${drawn.length} get a backend`,
+  );
+  // Grouped by what the page says about them, so a count that moves names what moved.
+  const byReason = new Map();
+  for (const row of drawn.filter((r) => r.colours <= 1 || r.backend === 'none')) {
+    const reason =
+      row.backend === 'none'
+        ? row.note
+        : `${row.note} (a backend ran it and it came out one flat colour)`;
+    byReason.set(reason, [...(byReason.get(reason) ?? []), row.id]);
+  }
+  for (const [reason, names] of byReason) console.log(`    ${names.join(', ')}\n      ${reason}`);
+  if (painted.length < PAINTED_FLOOR) {
+    problems.push(
+      `${painted.length} of ${drawn.length} examples paint the canvas, and ${PAINTED_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped drawing in the list above`,
+    );
+  }
+  if (ran.length < RAN_FLOOR) {
+    problems.push(
+      `${ran.length} of ${drawn.length} examples get a backend, and ${RAN_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped running in the list above`,
+    );
+  }
+}
+
 // ── the two engines agree ──────────────────────────────────────────────────────────────
 
 /** For every example the GPU paints: the CPU backend paints it too, and a dozen pixels of one
@@ -561,8 +648,24 @@ async function checkEnginesAgree(page, problems, ids) {
     );
   }
   const asked = ids.length - flatAtClock.length;
+  const counts = { ids: ids.length, asked, cpuPainted, agree, differ, noCpu, flatAtClock };
+  if (SHARDED) {
+    console.log(
+      `  engines, part ${SHARD_K} of ${SHARD_N}: ${cpuPainted.length} of ${asked} paint on the CPU, ${agree.length} of ${ids.length} agree`,
+    );
+    for (const key of Object.keys(tally.engines))
+      tally.engines[key] =
+        typeof counts[key] === 'number'
+          ? tally.engines[key] + counts[key]
+          : [...tally.engines[key], ...counts[key]];
+  } else engineFloors(counts, problems);
+}
+
+/** The engine comparison's counts held to their floors: the whole picker's, from one part or
+ *  the sum of several. */
+function engineFloors({ ids, asked, cpuPainted, agree, differ, noCpu, flatAtClock }, problems) {
   console.log(
-    `  engines: ${cpuPainted.length} of ${asked} the GPU paints at 3 s the CPU paints too, ${agree.length} of ${ids.length} agree within ${AGREE_UNITS} of 255`,
+    `  engines: ${cpuPainted.length} of ${asked} the GPU paints at 3 s the CPU paints too, ${agree.length} of ${ids} agree within ${AGREE_UNITS} of 255`,
   );
   if (flatAtClock.length > 0)
     console.log(
@@ -577,7 +680,7 @@ async function checkEnginesAgree(page, problems, ids) {
   }
   if (agree.length < AGREE_FLOOR) {
     problems.push(
-      `${agree.length} of ${ids.length} examples draw the same pixels on both engines, and ${AGREE_FLOOR} did when this check was written. Do not lower the floor: ${differ.join(', ')}`,
+      `${agree.length} of ${ids} examples draw the same pixels on both engines, and ${AGREE_FLOOR} did when this check was written. Do not lower the floor: ${differ.join(', ')}`,
     );
   }
 }
@@ -2617,10 +2720,11 @@ async function checkRoute(browser, origin, route) {
       // route runs every other step.
       if (route === ROUTES[0]) {
         await openTab(page, 'result');
-        const ids = await page.evaluate(() =>
+        const every = await page.evaluate(() =>
           [...document.querySelectorAll('[data-example] option')].map((o) => o.value),
         );
-        if (ids.length === 0) problems.push('the example picker offers nothing to draw');
+        if (every.length === 0) problems.push('the example picker offers nothing to draw');
+        const ids = every.filter((_, i) => i % SHARD_N === SHARD_K - 1);
         const drawn = [];
         for (const id of ids) {
           // The compile is debounced, so the canvas holds the example before this one until
@@ -2648,34 +2752,10 @@ async function checkRoute(browser, origin, route) {
           }));
           drawn.push({ id, ...state, ...seen });
         }
-        const ran = drawn.filter((row) => row.backend !== 'none');
-        // A picture is more than one colour on a canvas a backend drew. A canvas with no
-        // backend is transparent over the frame, so a count there would be of the frame.
-        const painted = drawn.filter((row) => row.colours > 1 && row.backend !== 'none');
-        console.log(
-          `  examples: ${painted.length} of ${drawn.length} paint more than one colour, ${ran.length} of ${drawn.length} get a backend`,
-        );
-        // Grouped by what the page says about them, so a count that moves names what moved.
-        const byReason = new Map();
-        for (const row of drawn.filter((r) => r.colours <= 1 || r.backend === 'none')) {
-          const reason =
-            row.backend === 'none'
-              ? row.note
-              : `${row.note} (a backend ran it and it came out one flat colour)`;
-          byReason.set(reason, [...(byReason.get(reason) ?? []), row.id]);
-        }
-        for (const [reason, names] of byReason)
-          console.log(`    ${names.join(', ')}\n      ${reason}`);
-        if (painted.length < PAINTED_FLOOR) {
-          problems.push(
-            `${painted.length} of ${drawn.length} examples paint the canvas, and ${PAINTED_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped drawing in the list above`,
-          );
-        }
-        if (ran.length < RAN_FLOOR) {
-          problems.push(
-            `${ran.length} of ${drawn.length} examples get a backend, and ${RAN_FLOOR} did when this check was written. Do not lower the floor: find the example that stopped running in the list above`,
-          );
-        }
+        if (SHARDED) {
+          tally.drawn.push(...drawn);
+          console.log(`  examples, part ${SHARD_K} of ${SHARD_N}: ${drawn.length} drawn`);
+        } else walkFloors(drawn, problems);
         // Every example in the picker is a program the compiler and the editor both accept,
         // so none opens with an error. The counts above cannot see this for a compute kernel,
         // which paints nothing either way: four of them opened with TypeScript's TS2454 on
@@ -2689,61 +2769,67 @@ async function checkRoute(browser, origin, route) {
           );
         }
 
-        // And the thing the maintainer actually asked for: that an example on the page is
-        // editable. A build that compiles is not evidence; a keystroke that reaches the
-        // emitted text and the frame is. `plasma-twin` is a fullscreen pass whose look
-        // follows its own arithmetic, so an edit to it has to move both.
-        await pickExample(page, 'plasma-twin');
-        await page.waitForTimeout(AFTER_EDIT);
-        const beforeFrame = await canvasColours(page);
-        const beforeWgsl = await wgslPane(page);
-        await openTab(page, 'result');
-        const edited = await page.evaluate(() => {
-          const model = window.monaco.editor.getModels()[0];
-          // One number in the pass: the wave count the three sines run at, which is an edit
-          // a reader could make by eye and see in the picture.
-          const next = model.getValue().replaceAll('* 10. +', '* 3. +');
-          const changed = next !== model.getValue();
-          model.setValue(next);
-          return changed;
-        });
-        if (!edited)
-          problems.push(
-            'the edit the check types found nothing to replace in plasma-twin, so it proved nothing',
-          );
-        await page.waitForTimeout(AFTER_EDIT);
-        await settleResult(page);
-        const afterWgsl = await wgslPane(page);
-        await openTab(page, 'result');
-        await page.waitForTimeout(600);
-        const afterFrame = await canvasColours(page);
-        if (afterWgsl === beforeWgsl)
-          problems.push('typing into the editor did not change the emitted WGSL');
-        if (
-          afterFrame.colours === beforeFrame.colours &&
-          afterFrame.opaque === beforeFrame.opaque
-        ) {
-          problems.push(
-            `typing into the editor did not repaint the canvas: ${beforeFrame.colours} colours before and after`,
+        if (RUNS_REST) {
+          // And the thing the maintainer actually asked for: that an example on the page is
+          // editable. A build that compiles is not evidence; a keystroke that reaches the
+          // emitted text and the frame is. `plasma-twin` is a fullscreen pass whose look
+          // follows its own arithmetic, so an edit to it has to move both.
+          await pickExample(page, 'plasma-twin');
+          await page.waitForTimeout(AFTER_EDIT);
+          const beforeFrame = await canvasColours(page);
+          const beforeWgsl = await wgslPane(page);
+          await openTab(page, 'result');
+          const edited = await page.evaluate(() => {
+            const model = window.monaco.editor.getModels()[0];
+            // One number in the pass: the wave count the three sines run at, which is an edit
+            // a reader could make by eye and see in the picture.
+            const next = model.getValue().replaceAll('* 10. +', '* 3. +');
+            const changed = next !== model.getValue();
+            model.setValue(next);
+            return changed;
+          });
+          if (!edited)
+            problems.push(
+              'the edit the check types found nothing to replace in plasma-twin, so it proved nothing',
+            );
+          await page.waitForTimeout(AFTER_EDIT);
+          await settleResult(page);
+          const afterWgsl = await wgslPane(page);
+          await openTab(page, 'result');
+          await page.waitForTimeout(600);
+          const afterFrame = await canvasColours(page);
+          if (afterWgsl === beforeWgsl)
+            problems.push('typing into the editor did not change the emitted WGSL');
+          if (
+            afterFrame.colours === beforeFrame.colours &&
+            afterFrame.opaque === beforeFrame.opaque
+          ) {
+            problems.push(
+              `typing into the editor did not repaint the canvas: ${beforeFrame.colours} colours before and after`,
+            );
+          }
+          console.log(
+            `  an edit reaches the output: WGSL ${beforeWgsl.length} B to ${afterWgsl.length} B, canvas ${beforeFrame.colours} colours to ${afterFrame.colours}`,
           );
         }
-        console.log(
-          `  an edit reaches the output: WGSL ${beforeWgsl.length} B to ${afterWgsl.length} B, canvas ${beforeFrame.colours} colours to ${afterFrame.colours}`,
-        );
 
         await checkEnginesAgree(
           page,
           problems,
-          painted.filter((row) => !row.plotted).map((row) => row.id),
+          drawn
+            .filter((row) => row.colours > 1 && row.backend !== 'none' && !row.plotted)
+            .map((row) => row.id),
         );
-        await checkBackends(page, problems);
-        await checkBindings(page, problems);
-        await checkUniformBlocks(page, problems);
-        await checkNestedUniform(page, problems);
-        await checkStorageTextures(page, problems);
-        await checkConsole(page, problems);
-        await checkPixelConsole(page, problems);
-        await checkFrameConsole(page, problems);
+        if (RUNS_REST) {
+          await checkBackends(page, problems);
+          await checkBindings(page, problems);
+          await checkUniformBlocks(page, problems);
+          await checkNestedUniform(page, problems);
+          await checkStorageTextures(page, problems);
+          await checkConsole(page, problems);
+          await checkPixelConsole(page, problems);
+          await checkFrameConsole(page, problems);
+        }
         await pickExample(page, 'hello');
       }
     }
@@ -2856,24 +2942,32 @@ const server = await serveDist(dist, Number(process.env.PLAYGROUND_PORT ?? 4473)
 const browser = await launchChromium();
 const results = [];
 try {
-  for (const route of ROUTES) {
-    console.log(`[playground] ${route}`);
+  for (const route of ROUTES.filter((r) => r === ROUTES[0] || RUNS_KOREAN)) {
+    console.log(`[playground] ${route}${SHARDED ? `, part ${SHARD_K} of ${SHARD_N}` : ''}`);
     results.push(await checkRoute(browser, server.url, route));
   }
-  console.log(`[playground] ${SEEDED_ROUTE}`);
-  results.push(await checkSeeded(browser, server.url));
-  console.log('[playground] /playground/ with no WebGPU');
-  const missing = [];
-  await checkMissingWebGpu(browser, server.url, missing);
-  results.push({
-    route: '/playground/ with no WebGPU',
-    problems: missing,
-    cdnFailures: [],
-    cdnOnly: false,
-  });
+  if (RUNS_REST) {
+    console.log(`[playground] ${SEEDED_ROUTE}`);
+    results.push(await checkSeeded(browser, server.url));
+    console.log('[playground] /playground/ with no WebGPU');
+    const missing = [];
+    await checkMissingWebGpu(browser, server.url, missing);
+    results.push({
+      route: '/playground/ with no WebGPU',
+      problems: missing,
+      cdnFailures: [],
+      cdnOnly: false,
+    });
+  }
 } finally {
   await browser.close();
   server.close();
+}
+
+if (SHARDED) {
+  const report = process.env.PLAYGROUND_REPORT ?? `playground-part-${SHARD_K}.json`;
+  writeFileSync(report, JSON.stringify({ shard: SHARD_K, of: SHARD_N, ...tally }));
+  console.log(`[playground] part ${SHARD_K} of ${SHARD_N} wrote ${report} for --merge`);
 }
 
 const broken = results.filter((r) => r.problems.length > 0);
