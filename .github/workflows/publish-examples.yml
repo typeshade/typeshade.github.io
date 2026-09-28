@@ -55,6 +55,9 @@ jobs:
         with:
           submodules: true
           persist-credentials: false
+          # The dictionaries the words step reads count the rules changed since the previous
+          # pin (src/lib/rule-history.ts), which walks this repository's history.
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         if: steps.secrets.outputs.ok == 'true'
         with:
