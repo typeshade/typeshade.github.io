@@ -85,7 +85,8 @@
 //      overflows the buffer keeps whole lines and counts every call it dropped
 //  51. an example drawn in several passes (compiler change 0026): feedback-trail opens with
 //      its pass as a marked tab, draws into rgba16float on WebGPU, builds a trail over frames
-//      that Restart clears, and draws on WebGL2 and on the CPU oracle; separable-blur draws;
+//      that Pause holds and Restart clears, and draws on WebGL2 and on the CPU oracle;
+//      separable-blur draws;
 //      the link carries the graph, and the WGSL tab shows a pass's own module on its tab
 //  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
 //      editor with a tab for each file it imports, an edit to the imported file changes the
@@ -3130,6 +3131,16 @@ async function checkMultipass(browser, origin) {
         );
       await page.waitForTimeout(2000);
       const long = await litPixels(page);
+      // Pause holds the frame: the trail neither fades nor moves while the clock is held.
+      await page.click('[data-play]');
+      const paused = await litPixels(page);
+      await page.waitForTimeout(1500);
+      const stillPaused = await litPixels(page);
+      await page.click('[data-play]');
+      if (!(paused > 0 && stillPaused >= paused * 0.95))
+        problems.push(
+          `feedback-trail's trail faded while paused: ${paused} lit pixels at Pause, ${stillPaused} a second and a half later`,
+        );
       await page.click('[data-restart]');
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(undefined))));
       const short = await litPixels(page);
@@ -3137,7 +3148,9 @@ async function checkMultipass(browser, origin) {
         problems.push(
           `feedback-trail's trail did not build up and clear: ${long} lit pixels after two seconds, ${short} after Restart`,
         );
-      report.push(`trail ${long} lit pixels, ${short} after Restart`);
+      report.push(
+        `trail ${long} lit pixels, ${paused} to ${stillPaused} paused, ${short} after Restart`,
+      );
       // The link carries the graph once the workspace is edited, and the WGSL tab shows the
       // pass's own module while its tab is open.
       await page.click('[data-file-tab="passes/trail.shade.ts"]');

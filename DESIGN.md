@@ -495,7 +495,9 @@ cards takes the column. A third measure needs a reason.
   frame. The bindings panel shows such a texture as the pass's output. An example whose
   `@example` block names passes opens with them on. The WGSL and GLSL tabs show the module of
   the file in the editor, a pass's own when its tab is open. Restart drops every pass's output
-  and takes `frame` back to 0. The link carries the graph as `passes`, `name:path` pairs, with
+  and takes `frame` back to 0. Pause holds the frame with the clock: the canvas draws that
+  frame again, with its `frame` and from the same frame before, so a pass that reads its frame
+  before stands still until Play. The link carries the graph as `passes`, `name:path` pairs, with
   the files. The CPU oracle draws the passes in order at the grid's size, keeping each pass's
   colour as floats, at frame 0. A still of an example with passes is the frame after a second
   of them at 1/60 s apart.

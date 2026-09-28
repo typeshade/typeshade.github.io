@@ -274,6 +274,11 @@ export interface MountedShader {
   swap(next: ShaderData): Promise<boolean>;
   /** Draw one frame now, at the clock the loop is on. What an `onDemand` mount runs on. */
   redraw(): void;
+  /** Hold the frame on the canvas, or let the frames move on again. While it is held, the
+   *  loop and `redraw()` draw that frame again, with the frame count it had and, for a
+   *  program drawn in several passes, from the same frame before, so a control a reader moves
+   *  still shows and a pass that reads its frame before stands still. A host's Pause holds it. */
+  holdFrames(hold: boolean): void;
   /** The bytes the packer last wrote into the uniform buffer, copied. Empty when the module
    *  binds no block. scripts/check-live.mjs reads it to see a control reach the shader. */
   uniformBytes(): Float32Array;
@@ -444,7 +449,9 @@ function createFrameState(
 
 /** One compiled, bound, ready-to-draw fullscreen pass. */
 interface Pass {
-  draw(): void;
+  /** Draw the next frame, or with `again` the frame last drawn once more: a program drawn in
+   *  several passes writes the textures it wrote then and reads the frame before it read. */
+  draw(again?: boolean): void;
   /** Whether the frame last submitted is still being drawn. The loop waits for it, so the GPU
    *  is never handed a second frame while the first is running. */
   busy(): boolean;
@@ -1658,7 +1665,20 @@ export async function mountShader(
   const qa = { backend: 'none' as Backend, frames: 0, failure: '' };
   /** Draw one frame at `seconds`, counting it. The first call is also the backend's audition:
    *  a pass that compiled but cannot draw throws here and the next backend gets its turn. */
-  const drawOnce = (pass: Pass, frame: FrameState, seconds: number): void => {
+  const drawOnce = (pass: Pass, frame: FrameState, seconds: number, again = false): void => {
+    // The frame last drawn, drawn once more: its own frame count and step, and its passes'
+    // textures as they were. Before the first frame there is none, and this draws the first.
+    if (again && clock.last !== null) {
+      clock.frame--;
+      try {
+        frame.pack(seconds);
+        pass.draw(true);
+      } finally {
+        clock.frame++;
+      }
+      qa.frames++;
+      return;
+    }
     clock.delta = clock.last === null ? 0 : Math.max(0, seconds - clock.last);
     clock.last = seconds;
     frame.pack(seconds);
@@ -1666,6 +1686,8 @@ export async function mountShader(
     qa.frames++;
     clock.frame++;
   };
+  /** Whether the frame on the canvas is held: drawn again, and the next not drawn. */
+  let held = false;
 
   /** A program drawn in several passes (compiler change 0026) as one pass: each of its passes
    *  draws into a texture the size of the canvas, in order, and then the program draws into
@@ -1819,8 +1841,10 @@ export async function mountShader(
     }
     return {
       passFormat,
-      draw(): void {
+      draw(again?: boolean): void {
         ensure();
+        // The frame last drawn wrote the textures of the parity before this one.
+        if (again) parity = 1 - parity;
         subs.forEach((sub, i) => {
           states[i]!.pack(frame.seconds);
           sub.draw();
@@ -1942,6 +1966,9 @@ export async function mountShader(
         clock.delta = 0;
         current?.reset?.();
       },
+      holdFrames(hold: boolean) {
+        held = hold;
+      },
       get passFormat() {
         return current?.passFormat ?? '';
       },
@@ -1984,7 +2011,7 @@ export async function mountShader(
         return false;
       }
       try {
-        drawOnce(built, frame, seconds);
+        drawOnce(built, frame, seconds, held);
       } catch (error) {
         // The new pass is bound but cannot draw. Drop it and leave the old one running.
         built.dispose(false);
@@ -2008,11 +2035,11 @@ export async function mountShader(
     }
   };
 
-  /** Draw one frame at the clock the loop is on. */
+  /** Draw one frame at the clock the loop is on: the next, or the one held on the canvas. */
   const redraw = (): void => {
     if (stopped) return;
     try {
-      drawOnce(live, state, seconds);
+      drawOnce(live, state, seconds, held);
     } catch {
       stop();
     }
@@ -2056,9 +2083,9 @@ export async function mountShader(
     }
     if (opts.adaptive && !scaleHeld) adapt(live.lastFrameMs());
     // A driver that fails mid-flight must not spray the console: stop, go transparent, and
-    // relabel, `stop()` does all three.
+    // relabel, `stop()` does all three. A held frame is drawn again.
     try {
-      drawOnce(live, state, seconds);
+      drawOnce(live, state, seconds, held);
     } catch {
       stop();
     }
