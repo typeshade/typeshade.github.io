@@ -8,7 +8,12 @@ const locale = 'ko' as Locale;
 const t = copyFor(locale);
 ---
 
-<Base locale={locale} path="/playground/" searchable searchTitle="Playground">
+<Base
+  locale={locale}
+  path="/playground/"
+  title={t.playground.title}
+  description={t.playground.description}
+  searchable searchTitle="Playground">
   <main class="playground-page">
     <header class="playground-intro">
       <h1>{t.playground.h1}</h1>
