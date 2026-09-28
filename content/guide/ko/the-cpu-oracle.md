@@ -1,8 +1,8 @@
 ---
 id: the-cpu-oracle
-source: ec2b9d25e0d5310e843b6de269c1780dc16e0cb0fb85030ba3398b16821ff116
-sourceLine: 1390
-rules: 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
+source: c38a4f3e836a893d51238209a14f379f12d7603f6a0c7ec41217c650a283f4c4
+sourceLine: 1391
+rules: 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 8.22 CSipAu_lP4nuQbNgkYGyi9q-TIQ0sDBvNaUJxFl4U1s=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -228,6 +228,19 @@ const h = height([0.5, 0.5], [1, 0.5, 2, 0.25]) // a number
 납니다. 설정은 네 줄입니다. `vite.config.ts`에 플러그인 한 줄, `tsconfig.json`에 두 줄,
 `prepare`에 `tshc sync` 한 줄을 씁니다. 이 설정과 호스트 값 표 전체는
 `docs/use-typeshade-surface.md` §64에 있습니다.
+
+### 배열을 도는 루프
+
+크기가 없는 배열 `array<T>`를 받는 내보낸 함수는 커널 함수입니다. 호스트 코드는 이 함수를
+`await`로 기다리고, 배열은 호출한 쪽의 배열이며 그 자리에서 바뀝니다. 함수 본문 맨 위에 있는
+`for`는 어떤 반복도 다른 반복이 건드리는 것을 건드리지 않는다고 컴파일러가 증명하면 반복마다
+호출 하나씩 GPU에서 실행되고, 증명하지 못하면 CPU에서 실행됩니다. 이때 그 줄과 해결 방법을
+밝히는 `TS8070` 경고가 납니다(`docs/use-typeshade-surface.md` §65).
+
+디스패치는 맨 위 루프의 것이므로, 그 안에 중첩된 루프는 호출 하나 안에서 통째로 실행됩니다.
+두 겹의 중첩 루프로 쓴 격자는 행 하나가 호출 하나입니다. 칸마다 호출 하나가 되어야 한다면 격자를
+평평한 루프 하나 `for (let i: u32 = 0; i < w * h; i++)`로 쓰고, 인덱스에서 `x = i % w`와
+`y = i / w`를 구합니다.
 
 ### 다른 셰이더 모듈을 가져오는 모듈
 

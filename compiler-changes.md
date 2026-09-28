@@ -79,3 +79,7 @@ id first, then the pull request that did the work.
   frame 0; separable-blur and feedback-trail join the gallery, the picker, the Korean titles
   and lines and the stills (a still of a program with passes is the frame after a second of
   them); check-playground opens both on every engine, handled in #117.
+- 0027: WebGL2 gives WGSL's answer for integer division, remainder and shift, and for a float's
+  conversion to an integer: the Korean guide's values-and-mutation section says a float converts
+  the same way on every target, through `_f2i` and `_f2u` on GLSL (Rule 11.12); no page shows
+  GLSL's spelling of an integer operator, handled in #PR.

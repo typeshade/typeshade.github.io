@@ -629,7 +629,7 @@ export const ko: Copy = {
         MISSING_DIRECTIVE:
           'TypeShade로 컴파일하는 파일에 `"use typeshade"` 지시문이 아예 없습니다.',
         TYPE_MISMATCH:
-          '연산자나 조건, 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않습니다.',
+          '연산자나 조건, 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않거나, 컴파일러가 접는 상수를 WGSL이 거부합니다. 31을 넘는 시프트 양, 0인 제수, 서로 엇갈린 clamp 경계, 범위를 넘는 f32 값이 그렇습니다.',
         UNKNOWN_FN: '파일이 선언하지도 가져오지도 않은 함수를 부릅니다.',
         CONST_ASSIGN: '`const`나 읽기 전용 리소스처럼 바뀔 수 없는 이름에 값을 대입합니다.',
         LOOP_BOUND:

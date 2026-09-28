@@ -574,7 +574,7 @@ export const en = {
         MISSING_DIRECTIVE:
           'A file compiled as TypeShade that has no `"use typeshade"` directive at all.',
         TYPE_MISMATCH:
-          'Two types that do not fit where they meet: an operator, a condition, a declaration, a return or an argument.',
+          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross or an f32 past its range.',
         UNKNOWN_FN: 'A call to a function the file neither declares nor imports.',
         CONST_ASSIGN:
           'An assignment to a name that cannot change, such as a `const` or a read-only resource.',
