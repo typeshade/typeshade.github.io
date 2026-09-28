@@ -60,7 +60,7 @@ Stop at the first step that fails, say which one and why, and leave the pull req
 6. **Verify the deploy.** Find the merge commit (`gh pr view N --json mergeCommit`) and the
    `deploy` run for it: `gh run list --workflow deploy.yml --branch main --event push --json databaseId,headSha,status,conclusion`,
    then `gh run watch <id> --exit-status`; MCP `actions_list` with `list_workflow_runs`,
-   `resource_id: deploy.yml` and `branch: main`. Both jobs, `build` and `deploy`, succeed.
+   `resource_id: deploy.yml` and `branch: main`. Both jobs, `build` and `cloudflare`, succeed.
    - `deploy.yml` cancels a run on main when a newer push arrives. That is fine when the newer
      run deploys. When a cancelled run leaves the head of main with no successful deploy,
      dispatch the workflow on main: `gh workflow run deploy.yml --ref main`, MCP

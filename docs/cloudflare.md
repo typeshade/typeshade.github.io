@@ -46,7 +46,7 @@ within the hour, before the pin bump and the build that make it a built page.
 - **The Playground** adds the release's `.shade.ts` examples it does not have to its picker, in
   a group of their own, so `#example=<id>` opens one.
 
-Without the Worker (`astro dev`, `astro preview`, GitHub Pages), `/data/` does not answer JSON
+Without the Worker (`astro dev`, `astro preview`), `/data/` does not answer JSON
 and every page shows what its build has.
 
 A page filled in from the data compiles in the reader's browser with the compiler the build
@@ -90,24 +90,23 @@ edge cache.
 
 `deploy.yml`'s `cloudflare` job deploys `dist/` and the Worker on every push to `main`
 (`wrangler d1 migrations apply`, then `wrangler deploy`), and `cloudflare-preview` uploads a
-version of each pull request under a preview URL of its own (the job summary has it). Until the
-domain moves, the Pages steps keep publishing to GitHub Pages as before.
+version of each pull request under a preview URL of its own (the job summary has it).
 
-The jobs need one repository secret, `CLOUDFLARE_API_TOKEN`: the account is `account_id` in
-`wrangler.jsonc`, and the publisher reaches R2 and D1 through the same API wrangler does. On
-github.com, from a phone too: Settings > Secrets and variables > Actions > New repository
-secret. `scripts/cloudflare-setup.ps1` does the same from PowerShell, and moves the domain.
+The jobs need one secret, `CLOUDFLARE_API_TOKEN`: the account is `account_id` in
+`wrangler.jsonc`, and the publisher reaches R2 and D1 through the same API wrangler does. It is
+an organization secret of `typeshade` shared with this repository (Organization settings >
+Secrets and variables > Actions); a repository secret of the same name would do as well.
 
 The API token needs: Workers Scripts edit, Workers R2 Storage edit, D1 edit, and, for the
 domain, Workers Routes edit and DNS edit on the `typeshade.dev` zone.
 
-## Moving the domain
+## The domain
 
-`typeshade.dev` is proxied by Cloudflare to GitHub Pages today. Once the Worker answers on its
-`workers.dev` URL, the domain moves in one step: attach `typeshade.dev` to the Worker as a
-custom domain (Workers > typeshade-site > Settings > Domains & Routes, or the script above),
-which replaces the DNS record that points at GitHub Pages. Then the Pages steps in
-`deploy.yml` and `public/CNAME` can go, in a pull request of their own.
+`typeshade.dev` is the Worker's custom domain (Workers > typeshade-site > Settings > Domains &
+Routes). It moved from GitHub Pages on 2026-09-28: the A and AAAA records that pointed at
+GitHub Pages were removed and the custom domain attached in their place. The
+`_github-pages-challenge-typeshade` TXT record stays, since it keeps the domain verified to the
+organization on GitHub.
 
 ## Locally
 

@@ -52,7 +52,7 @@ export function localePath(locale: Locale, path: string): string {
   // A URL with a scheme is not a page of this site (the examples directory on GitHub, say); it
   // has no locale to carry.
   if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return path;
-  // Pages end in a slash, which is the URL GitHub Pages serves them at; files keep their name.
+  // Pages end in a slash, which is the URL the host serves them at; files keep their name.
   const p = path.endsWith('/') || /\.[a-z0-9]+$/i.test(path) ? path : `${path}/`;
   return locale === defaultLocale ? p : `/${locale}${p}`;
 }

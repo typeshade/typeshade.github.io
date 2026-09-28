@@ -39,7 +39,7 @@ for (const file of pages) {
   const rel = file.slice(dist.length + 1);
   if (html.includes('http-equiv="refresh"')) continue;
   const fail = (what) => problems.push(`${rel}: ${what}`);
-  // The root 404 GitHub Pages serves, and the Korean one it sends a /ko/ path on to.
+  // The root 404 the host serves, and the Korean one it sends a /ko/ path on to.
   const isNotFound = rel === '404.html' || rel.endsWith('/404/index.html');
   // The example page template the Worker fills in (worker/index.ts) is noindex until it is.
   const isPreview =
