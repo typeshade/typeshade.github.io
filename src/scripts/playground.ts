@@ -1669,6 +1669,8 @@ function mount(root: HTMLElement): void {
     mounted = next;
     mountedEngine = picked;
     mountedSignature = signature;
+    // A paused clock holds the new mount's frame too.
+    next.holdFrames(clockHeld !== null);
     if (next.backend !== 'none') retireStill();
     sayGpu(
       next.passFormat === 'rgba8' ? `${backendNote(picked)} ${w.passesRgba8}` : backendNote(picked),
@@ -3648,6 +3650,9 @@ function mount(root: HTMLElement): void {
       }
       syncPlay();
       paintClock();
+      // Pause holds the frame with the clock, so a pass that reads its frame before stands
+      // still with it (compiler change 0026).
+      mounted?.holdFrames(clockHeld !== null);
       mounted?.redraw();
     });
   }
