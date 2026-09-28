@@ -11,7 +11,7 @@ interface Props { locale: Locale }
 const { locale } = Astro.props;
 const content = copyFor(locale).language.topics.controlFlow;
 const headings = [
-  ['ts', content.ts], ['branch', content.branch], ['loop', content.loop], ['boundary', content.boundary],
+  ['ts', content.ts], ['branch', content.branch], ['loop', content.loop], ['kernel', content.kernel], ['boundary', content.boundary],
 ].map(([slug, text]) => ({ depth: 2, slug, text }));
 ---
 
@@ -22,6 +22,10 @@ const headings = [
   <TypeShadeCode code={`@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  if (camera.pos.x > 0) {\n    pixels[gid.x] = 1\n  } else {\n    pixels[gid.x] = 0\n  }\n}`} />
   <h2 id="loop">{content.loop}</h2><p>{content.loopP}</p>
   <TypeShadeCode code={`for (let i = 0; i < 4; i++) {\n  pixels[i] = pixels[i] + camera.pos.x\n}`} />
+  <h2 id="kernel">{content.kernel}</h2><p><Rich text={content.kernelP} locale={locale} /></p>
+  <TypeShadeCode code={`export function render(k: vec4, size: u32, out: array<f32>) {\n  for (let i: u32 = 0; i < size * size; i++) {\n    const p = vec2(f32(i % size), f32(i / size)) / f32(size)\n    out[i] = k.x * sin(p.x * k.y) + k.z * cos(p.y * k.w)\n  }\n}`} />
+  <p><Rich text={content.kernelRulesP} locale={locale} /></p>
+  <p><Rich text={content.kernelWarnP} locale={locale} /></p>
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <p><a href={localePath(locale, links.languageGpuTypes.href)}>{content.next}</a></p>
 </Docs>

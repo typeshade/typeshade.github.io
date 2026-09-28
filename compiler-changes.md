@@ -58,3 +58,13 @@ id first, then the pull request that did the work.
   host file that draws `hello.shade.ts`), in both locales, handled in #104.
 - 0023: the command is `tshc`: the Korean translation of the guide section The CPU oracle, read
   again at the pin, and the quick start's import setup, which runs `tshc sync`, handled in #104.
+- 0013: a loop that runs as a kernel: the control-flow page gains the kernel function, the
+  proof's rules in one paragraph and the `TS8070` warning (en and ko); the WebGPU and WebGL2
+  concept page's runtime copy gains the tiers, `configure({ prefer })` and `Resident`; the four
+  loop examples, their gallery group, picker rows, Korean blurbs and the API reference's Runtime
+  category came with #97, handled in #113.
+- 0024: a shader module imports a package's by the package's name: the language service page's
+  paragraph on imports (en and ko) names packages and the `package.json` reads; the Korean guide
+  section The CPU oracle translated again from the pinned AUTHORING.md; the `TS8072` page reads
+  the registry's sentences; the Playground has no `node_modules`, so it needs nothing, handled in
+  #113.
