@@ -1,0 +1,68 @@
+---
+// The Playground's gallery: the files people sent in with the Playground's Submit, once the
+// maintainer approves them (docs/cloudflare.md). The build writes the page and its words; the
+// list is the Worker's (/data/gallery/), read in the browser, so an approved entry appears
+// without a build. Where there is no Worker (astro dev, astro preview) the list says it could
+// not be loaded.
+import Base from '../../layouts/Base.astro';
+import Rich from '../Rich.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import { links } from '../../lib/links.ts';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = copyFor(locale).gallery;
+const words = {
+  empty: t.empty,
+  unavailable: t.unavailable,
+  by: t.by,
+  views: t.views,
+  viewOne: t.viewOne,
+  open: t.open,
+};
+---
+
+<Base
+  locale={locale}
+  path={links.playgroundGallery.href}
+  title={t.title}
+  description={t.description}
+  searchable
+  searchTitle={t.h1}>
+  <main class="gallery-page">
+    <header class="gallery-intro">
+      <h1>{t.h1}</h1>
+      <p>{t.intro}</p>
+      <p><Rich text={t.howTo} locale={locale} /></p>
+    </header>
+    <p class="gallery-status" data-gallery-status role="status">{t.loading}</p>
+    <ul class="gallery-list" data-gallery-list data-copy={JSON.stringify(words)} data-locale={locale} hidden></ul>
+  </main>
+</Base>
+
+<script>
+  import { initGallery } from '../../scripts/gallery.ts';
+  initGallery();
+</script>
+
+<style>
+  /* The Playground page's shell and heading, so the two pages read as one tool. */
+  .gallery-page { max-inline-size: var(--container); margin-inline: auto; padding: 32px var(--gutter-x) 64px; }
+  .gallery-intro { max-inline-size: 716px; margin-bottom: 24px; }
+  h1 { margin: 0 0 8px; font-size: 1.5rem; line-height: 1.25; }
+  .gallery-intro p { margin: 0 0 4px; color: var(--color-text-2); font-size: .875rem; line-height: 1.5; }
+  .gallery-intro :global(a) { color: var(--color-accent); }
+  .gallery-status { margin: 0; color: var(--color-text-2); font-size: .875rem; }
+  .gallery-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .gallery-list :global(li) { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); padding: 14px 16px; background: var(--color-ground); }
+  .gallery-list :global(li:hover) { border-color: var(--color-line-2); }
+  .gallery-list :global(h2) { margin: 0; font-size: 1rem; line-height: 1.35; overflow-wrap: anywhere; }
+  .gallery-list :global(h2 a) { color: var(--color-text-1); text-decoration: none; }
+  .gallery-list :global(h2 a:hover) { color: var(--color-accent); }
+  .gallery-list :global(.gallery-meta) { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.4; }
+  .gallery-list :global(.gallery-open) { margin-top: auto; padding-top: 4px; color: var(--color-accent); font-size: .8125rem; text-decoration: none; }
+  .gallery-list :global(.gallery-open:hover) { text-decoration: underline; }
+  @media (min-width: 64rem) { .gallery-page { padding-block-start: 40px; } }
+</style>

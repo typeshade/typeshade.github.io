@@ -22,6 +22,7 @@ within the hour, before the pin bump and the build that make it a built page.
 | `/data/releases/`                            | the Worker: the releases D1 records, newest first                     |
 | `/data/shares/` (POST)                       | the Worker: stores a Playground link in D1, answers its short link    |
 | `/data/shares/<id>/`                         | the Worker: a share's page, views, and when it was made and opened    |
+| `/data/gallery/`                             | the Worker: GET the approved entries; POST sends a share in, pending  |
 | `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored      |
 | `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
 | `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
@@ -34,7 +35,8 @@ within the hour, before the pin bump and the build that make it a built page.
 - `DB`: the D1 database `typeshade`. `releases` is the history and
   `settings.current_release` names the release the Worker serves
   (`worker/migrations/0001_releases.sql`); `shares` holds the Playground's short links
-  (`0002_shares.sql`), with how often each was opened (`0003_share_views.sql`).
+  (`0002_shares.sql`), with how often each was opened (`0003_share_views.sql`); `submissions` is the gallery's
+  queue (`0004_gallery.sql`).
 
 ## What a page does with the data
 
@@ -71,6 +73,15 @@ within the hour, before the pin bump and the build that make it a built page.
     --command "SELECT id, path, views, last_opened_at FROM shares ORDER BY views DESC LIMIT 20"
   ```
 
+- **The gallery** (`/playground/gallery/`). Submit, beside Share in the Playground, asks for a
+  title and, if the reader wants, a name, stores the file as a share and posts it to
+  `/data/gallery/`, where it waits as `pending`. The page lists the approved entries, the last
+  approved first, each a card whose link is the share's short link. A title is at most 60
+  characters and a name 40 (`GALLERY_TITLE_MAX` and `GALLERY_AUTHOR_MAX` in
+  `src/lib/example-data.ts`); one address sends at most five in a day, counted by a hash of the
+  address, which is never stored itself. A share sent to the gallery is never expired by the
+  cron.
+
 Without the Worker (`astro dev`, `astro preview`), `/data/` does not answer JSON
 and every page shows what its build has.
 
@@ -78,6 +89,28 @@ A page filled in from the data compiles in the reader's browser with the compile
 pinned. A new example that needs a compiler change the pin does not have yet shows that
 compiler's diagnostics until the pin moves. The emitted tabs of an `fn()` example are the
 compiler's own goldens at the published commit, so they are right either way.
+
+## Reviewing the gallery
+
+Nothing appears in the gallery until it is approved. The queue, oldest first, with the link
+that opens each one:
+
+```bash
+bunx wrangler d1 execute typeshade --remote --command \
+  "SELECT share_id, title, author, created_at FROM submissions WHERE status = 'pending' ORDER BY created_at"
+```
+
+Open `https://typeshade.dev/s/<share_id>/` to read the file, then approve it or turn it down:
+
+```bash
+bunx wrangler d1 execute typeshade --remote --command \
+  "UPDATE submissions SET status = 'approved', reviewed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE share_id = '<share_id>'"
+bunx wrangler d1 execute typeshade --remote --command \
+  "UPDATE submissions SET status = 'rejected', reviewed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE share_id = '<share_id>'"
+```
+
+Setting an approved entry back to `rejected` takes it off the page within a minute (the list
+carries a minute of edge cache). A title can be corrected the same way, with `SET title = ...`.
 
 ## Headers
 

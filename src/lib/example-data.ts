@@ -57,6 +57,11 @@ export const DATABASE = 'typeshade';
 /** Where a release's files sit in the bucket. */
 export const releaseKey = (release: string, file: string): string => `releases/${release}/${file}`;
 
+/** A gallery entry's title and its author's name, in characters: the Playground's Submit
+ *  dialog caps its fields at these, and the Worker refuses anything longer. */
+export const GALLERY_TITLE_MAX = 60;
+export const GALLERY_AUTHOR_MAX = 40;
+
 /** The route the prebuilt template of an example page sits at. The Worker serves it, filled
  *  in, for an example the build did not have (worker/index.ts). */
 export const TEMPLATE_ID = 'runtime-example';

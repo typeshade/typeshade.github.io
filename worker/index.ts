@@ -9,6 +9,7 @@
 // /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
 //                         its short link
 // /data/shares/<id>/      one short link's page, its views and when it was made and last opened
+// /data/gallery/          GET: the approved gallery entries; POST: sends a share in, pending
 // /s/<id>/                the short link: a redirect to the page with its fragment, counted
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
 // /ko/guide/examples/...  the current release has, the prebuilt template page filled in with
@@ -16,6 +17,8 @@
 //
 // A daily cron (wrangler.jsonc) deletes the shares nobody has opened for SHARE_TTL_DAYS.
 import {
+  GALLERY_AUTHOR_MAX,
+  GALLERY_TITLE_MAX,
   releaseKey,
   TEMPLATE_ID,
   type DataLocale,
@@ -56,8 +59,12 @@ const SHARE_FRAGMENT = /^code=[A-Za-z0-9._~%&=-]+$/;
 /** A deflated file of a few thousand lines, with room to spare. */
 const SHARE_MAX = 64 * 1024;
 const SHARE_ID = /^[A-Za-z0-9_-]{8,43}$/;
-/** A share nobody opens for this long is deleted. */
+/** A share nobody opens for this long is deleted, unless it was sent to the gallery. */
 const SHARE_TTL_DAYS = 365;
+/** Submissions one address may send in a day. */
+const GALLERY_DAILY_MAX = 5;
+/** Entries the gallery lists. */
+const GALLERY_LIST_MAX = 100;
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -81,6 +88,9 @@ async function api(request: Request, url: URL, env: Env): Promise<Response> {
   if (parts[1] === 'examples' && parts.length === 3 && ID.test(parts[2]!)) {
     const record = await readJson<ExampleRecord>(env, `examples/${parts[2]}.json`);
     return record ? json(record) : json({ error: `no example '${parts[2]}'` }, 404);
+  }
+  if (parts[1] === 'gallery' && parts.length === 2) {
+    return request.method === 'POST' ? submitToGallery(request, url, env) : listGallery(env);
   }
   if (parts[1] === 'shares' && parts.length === 2) {
     return request.method === 'POST'
@@ -135,25 +145,37 @@ async function shareId(target: string, length: number): Promise<string> {
   return b64.slice(0, length);
 }
 
-/** POST /data/shares/ with `{ path, fragment }`: the short link to that page and fragment. */
-async function createShare(request: Request, url: URL, env: Env): Promise<Response> {
+/** A request body read as JSON, or the response that refuses it: a request from another site,
+ *  one larger than a share can be, or one that is not JSON. */
+async function readBody(request: Request, url: URL): Promise<Record<string, unknown> | Response> {
   const origin = request.headers.get('origin');
   if (origin && origin !== url.origin) return json({ error: 'another site' }, 403);
   const body = await request.text();
-  if (body.length > SHARE_MAX + 512) return json({ error: 'too large' }, 413);
-  let share: { path?: unknown; fragment?: unknown };
+  if (body.length > SHARE_MAX + 1024) return json({ error: 'too large' }, 413);
   try {
-    share = JSON.parse(body) as typeof share;
+    const value: unknown = JSON.parse(body);
+    if (value && typeof value === 'object') return value as Record<string, unknown>;
   } catch {
-    return json({ error: 'not JSON' }, 400);
+    // Falls through to the refusal below.
   }
-  const { path, fragment } = share;
+  return json({ error: 'not JSON' }, 400);
+}
+
+/** The page and fragment a body names, or the response that refuses them. */
+function readShare(body: Record<string, unknown>): { path: string; fragment: string } | Response {
+  const { path, fragment } = body;
   if (typeof path !== 'string' || !SHARE_PATH.test(path))
     return json({ error: 'not a page a link can open' }, 400);
   if (typeof fragment !== 'string' || !SHARE_FRAGMENT.test(fragment) || fragment.length > SHARE_MAX)
     return json({ error: 'not a Playground fragment' }, 400);
+  return { path, fragment };
+}
+
+/** Stores a share, or finds the one already stored for the same page and fragment, and
+ *  answers its id. Eight characters are 48 bits; a different share that already holds them
+ *  takes a longer id. */
+async function storeShare(env: Env, path: string, fragment: string): Promise<string | null> {
   const target = `${path}#${fragment}`;
-  // Eight characters are 48 bits; a different share that already holds them takes a longer id.
   for (const length of [8, 12, 16, 43]) {
     const id = await shareId(target, length);
     await env.DB.prepare(
@@ -164,13 +186,105 @@ async function createShare(request: Request, url: URL, env: Env): Promise<Respon
     const row = await env.DB.prepare(`SELECT path, fragment FROM shares WHERE id = ?`)
       .bind(id)
       .first<{ path: string; fragment: string }>();
-    if (row?.path === path && row.fragment === fragment) {
-      return new Response(JSON.stringify({ id, url: `${url.origin}/s/${id}/` }), {
-        headers: { 'content-type': 'application/json; charset=utf-8', ...noStore },
-      });
-    }
+    if (row?.path === path && row.fragment === fragment) return id;
   }
-  return json({ error: 'no free id' }, 500);
+  return null;
+}
+
+const privateJson = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { 'content-type': 'application/json; charset=utf-8', ...noStore },
+  });
+
+/** POST /data/shares/ with `{ path, fragment }`: the short link to that page and fragment. */
+async function createShare(request: Request, url: URL, env: Env): Promise<Response> {
+  const body = await readBody(request, url);
+  if (body instanceof Response) return body;
+  const share = readShare(body);
+  if (share instanceof Response) return share;
+  const id = await storeShare(env, share.path, share.fragment);
+  if (!id) return json({ error: 'no free id' }, 500);
+  return privateJson({ id, url: `${url.origin}/s/${id}/` });
+}
+
+/** A title or a name as the gallery shows it: one line, trimmed, no control characters, and
+ *  at most `max` characters. Undefined when it is not a string or is too long. */
+function readLine(value: unknown, max: number): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  // eslint-disable-next-line no-control-regex
+  const line = value
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return [...line].length <= max ? line : undefined;
+}
+
+/** POST /data/gallery/ with `{ path, fragment, title, author, locale }`: stores the share and
+ *  queues it for the gallery as `pending`. The maintainer approves it (docs/cloudflare.md). */
+async function submitToGallery(request: Request, url: URL, env: Env): Promise<Response> {
+  const body = await readBody(request, url);
+  if (body instanceof Response) return body;
+  const share = readShare(body);
+  if (share instanceof Response) return share;
+  const title = readLine(body.title, GALLERY_TITLE_MAX);
+  if (!title)
+    return json({ error: `a title of 1 to ${GALLERY_TITLE_MAX} characters is required` }, 400);
+  const author = readLine(body.author ?? '', GALLERY_AUTHOR_MAX);
+  if (author === undefined) return json({ error: 'the name is too long' }, 400);
+  const locale = body.locale === 'ko' ? 'ko' : 'en';
+  // The address, hashed, so one sender cannot flood the queue; the address is never stored.
+  const sender = await shareId(`sender:${request.headers.get('cf-connecting-ip') ?? ''}`, 16);
+  const since = new Date(Date.now() - 86_400_000).toISOString();
+  const recent = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM submissions WHERE sender = ? AND created_at > ?`,
+  )
+    .bind(sender, since)
+    .first<{ n: number }>();
+  if ((recent?.n ?? 0) >= GALLERY_DAILY_MAX) return privateJson({ error: 'limit' }, 429);
+  const id = await storeShare(env, share.path, share.fragment);
+  if (!id) return json({ error: 'no free id' }, 500);
+  const { meta } = await env.DB.prepare(
+    `INSERT OR IGNORE INTO submissions (share_id, title, author, locale, sender, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  )
+    .bind(id, title, author, locale, sender, new Date().toISOString())
+    .run();
+  if (meta.changes > 0) return privateJson({ id, status: 'pending' }, 201);
+  const row = await env.DB.prepare(`SELECT status FROM submissions WHERE share_id = ?`)
+    .bind(id)
+    .first<{ status: string }>();
+  return privateJson({ id, status: row?.status ?? 'pending' });
+}
+
+/** GET /data/gallery/: the approved submissions, the most recently approved first. */
+async function listGallery(env: Env): Promise<Response> {
+  const { results } = await env.DB.prepare(
+    `SELECT s.share_id AS id, s.title, s.author, h.path, h.views, s.reviewed_at
+     FROM submissions s JOIN shares h ON h.id = s.share_id
+     WHERE s.status = 'approved'
+     ORDER BY s.reviewed_at DESC LIMIT ?`,
+  )
+    .bind(GALLERY_LIST_MAX)
+    .all<{
+      id: string;
+      title: string;
+      author: string;
+      path: string;
+      views: number;
+      reviewed_at: string | null;
+    }>();
+  return json({
+    entries: results.map((row) => ({
+      id: row.id,
+      title: row.title,
+      author: row.author,
+      path: row.path,
+      views: row.views,
+      approvedAt: row.reviewed_at,
+      url: `/s/${row.id}/`,
+    })),
+  });
 }
 
 /** GET /s/<id>/: the page the share opens, with its fragment. The open is counted after the
@@ -203,7 +317,8 @@ async function openShare(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
 async function expireShares(env: Env): Promise<void> {
   const cutoff = new Date(Date.now() - SHARE_TTL_DAYS * 86_400_000).toISOString();
   const { meta } = await env.DB.prepare(
-    `DELETE FROM shares WHERE COALESCE(last_opened_at, created_at) < ?`,
+    `DELETE FROM shares WHERE COALESCE(last_opened_at, created_at) < ?
+     AND id NOT IN (SELECT share_id FROM submissions)`,
   )
     .bind(cutoff)
     .run();
