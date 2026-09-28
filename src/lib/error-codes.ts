@@ -1300,24 +1300,24 @@ export function main(@location(0) uv: vec2): vec4 {
   TS8032: {
     trigger: `"use typeshade"
 
-function count(xs: array<f32>): f32 {
-  return f32(xs.length)
-}
+declare const u: uniform<array<f32>>
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(uv, 0., 1.)
+  return vec4(f32(u.length), 0., 0., 1.)
 }
 `,
     fix: `"use typeshade"
 
-function count(xs: array<f32, 3>): f32 {
-  return f32(xs.length)
+class Uniforms {
+  items: array<f32, 3>
 }
+
+declare const u: uniform<Uniforms>
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(uv, 0., 1.)
+  return vec4(f32(u.items.length), 0., 0., 1.)
 }
 `,
   },
