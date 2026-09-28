@@ -86,9 +86,10 @@ edge cache.
 version of each pull request under a preview URL of its own (the job summary has it). Until the
 domain moves, the Pages steps keep publishing to GitHub Pages as before.
 
-The jobs need five repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and for
-R2's S3 API `CLOUDFLARE_ACCESS_KEY_ID`, `CLOUDFLARE_SECRET_ACCESS_KEY`,
-`CLOUDFLARE_S3_API_ENDPOINT`. `scripts/cloudflare-setup.ps1` sets them, and moves the domain.
+The jobs need one repository secret, `CLOUDFLARE_API_TOKEN`: the account is `account_id` in
+`wrangler.jsonc`, and the publisher reaches R2 and D1 through the same API wrangler does. On
+github.com, from a phone too: Settings > Secrets and variables > Actions > New repository
+secret. `scripts/cloudflare-setup.ps1` does the same from PowerShell, and moves the domain.
 
 The API token needs: Workers Scripts edit, Workers R2 Storage edit, D1 edit, and, for the
 domain, Workers Routes edit and DNS edit on the `typeshade.dev` zone.

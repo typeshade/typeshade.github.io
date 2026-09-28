@@ -5,6 +5,9 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "typeshade-site",
   "main": "worker/index.ts",
+  // Not a secret: the account the Worker, the bucket and the database are in. CI then needs one
+  // secret, CLOUDFLARE_API_TOKEN.
+  "account_id": "7c029c2ac777ff3c45a4bcbe67918a1e",
   "compatibility_date": "2026-09-01",
   "assets": {
     "directory": "./dist",

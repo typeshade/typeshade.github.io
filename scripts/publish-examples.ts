@@ -21,9 +21,9 @@
 //   bun scripts/publish-examples.ts words                 # titles and page meta, at the pin
 //   bun scripts/publish-examples.ts upload [--force]      # R2, then the release row in D1
 //
-// Each step writes under .cache/examples/ (gitignored). `upload` reads the
-// credentials from the environment: CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY and
-// CLOUDFLARE_S3_API_ENDPOINT for R2, CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID for D1.
+// Each step writes under .cache/examples/ (gitignored). `upload` reaches R2 and D1 through the
+// Cloudflare API with one credential, CLOUDFLARE_API_TOKEN; the account is wrangler.jsonc's
+// `account_id`, or CLOUDFLARE_ACCOUNT_ID where that is set.
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -260,13 +260,25 @@ function need(name: string): string {
   return value;
 }
 
+/** The Cloudflare account: the environment's, else the one wrangler.jsonc deploys to. */
+function account(): string {
+  if (process.env.CLOUDFLARE_ACCOUNT_ID) return process.env.CLOUDFLARE_ACCOUNT_ID;
+  const config = readFileSync(path.join(root, 'wrangler.jsonc'), 'utf8');
+  const id = /"account_id":\s*"([0-9a-f]+)"/.exec(config)?.[1];
+  if (!id)
+    throw new Error('[publish] no CLOUDFLARE_ACCOUNT_ID and no account_id in wrangler.jsonc');
+  return id;
+}
+
+const api = (): string => `https://api.cloudflare.com/client/v4/accounts/${account()}`;
+const auth = (): Record<string, string> => ({
+  authorization: `Bearer ${need('CLOUDFLARE_API_TOKEN')}`,
+});
+
 /** Runs one SQL statement on the D1 database through the Cloudflare API. */
 async function d1(sql: string, params: unknown[] = []): Promise<unknown[]> {
-  const headers = {
-    authorization: `Bearer ${need('CLOUDFLARE_API_TOKEN')}`,
-    'content-type': 'application/json',
-  };
-  const base = `https://api.cloudflare.com/client/v4/accounts/${need('CLOUDFLARE_ACCOUNT_ID')}/d1/database`;
+  const headers = { ...auth(), 'content-type': 'application/json' };
+  const base = `${api()}/d1/database`;
   const list = (await (await fetch(`${base}?name=${DATABASE}`, { headers })).json()) as {
     result?: { name: string; uuid: string }[];
   };
@@ -296,21 +308,20 @@ async function upload(): Promise<void> {
     console.log(`upload: ${index.release} is already current; nothing to do`);
     return;
   }
-  const { S3Client } = await import('bun');
-  const s3 = new S3Client({
-    accessKeyId: need('CLOUDFLARE_ACCESS_KEY_ID'),
-    secretAccessKey: need('CLOUDFLARE_SECRET_ACCESS_KEY'),
-    endpoint: need('CLOUDFLARE_S3_API_ENDPOINT').replace(/\/+$/, ''),
-    bucket: BUCKET,
-  });
   const files = [
     'index.json',
     ...readdirSync(path.join(outDir, 'examples')).map((f) => `examples/${f}`),
   ];
-  const put = (file: string) =>
-    s3.write(releaseKey(index.release, file), readFileSync(path.join(outDir, file)), {
-      type: 'application/json',
+  // One object per request, through the same API wrangler's `r2 object put` calls.
+  const put = async (file: string): Promise<void> => {
+    const key = releaseKey(index.release, file).split('/').map(encodeURIComponent).join('/');
+    const res = await fetch(`${api()}/r2/buckets/${BUCKET}/objects/${key}`, {
+      method: 'PUT',
+      headers: { ...auth(), 'content-type': 'application/json' },
+      body: readFileSync(path.join(outDir, file)),
     });
+    if (!res.ok) throw new Error(`[publish] R2 ${file}: ${res.status} ${await res.text()}`);
+  };
   for (let i = 0; i < files.length; i += 16) await Promise.all(files.slice(i, i + 16).map(put));
   await d1(
     `INSERT INTO releases (id, compiler_commit, compiler_date, site_commit, example_count, created_at)
