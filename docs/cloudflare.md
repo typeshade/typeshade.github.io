@@ -17,9 +17,9 @@ within the hour, before the pin bump and the build that make it a built page.
 | Path                                         | Served by                                                             |
 | -------------------------------------------- | --------------------------------------------------------------------- |
 | everything in `dist/`                        | Workers static assets; the Worker never runs                          |
-| `/api/examples/`                             | the Worker: the current release's index (`ReleaseIndex`)              |
-| `/api/examples/<id>/`                        | the Worker: one example with its file and its emitted text            |
-| `/api/releases/`                             | the Worker: the releases D1 records, newest first                     |
+| `/data/examples/`                            | the Worker: the current release's index (`ReleaseIndex`)              |
+| `/data/examples/<id>/`                       | the Worker: one example with its file and its emitted text            |
+| `/data/releases/`                            | the Worker: the releases D1 records, newest first                     |
 | `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
 | `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
 
@@ -46,7 +46,7 @@ within the hour, before the pin bump and the build that make it a built page.
 - **The Playground** adds the release's `.shade.ts` examples it does not have to its picker, in
   a group of their own, so `#example=<id>` opens one.
 
-Without the Worker (`astro dev`, `astro preview`, GitHub Pages), `/api/` does not answer JSON
+Without the Worker (`astro dev`, `astro preview`, GitHub Pages), `/data/` does not answer JSON
 and every page shows what its build has.
 
 A page filled in from the data compiles in the reader's browser with the compiler the build
@@ -76,7 +76,7 @@ bunx wrangler d1 execute typeshade --remote \
   --command "UPDATE settings SET value = '<release>' WHERE key = 'current_release'"
 ```
 
-The Worker reads the pointer at most once a minute, and `/api/` answers carry a minute of
+The Worker reads the pointer at most once a minute, and `/data/` answers carry a minute of
 edge cache.
 
 ## Deploying

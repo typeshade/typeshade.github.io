@@ -1,6 +1,6 @@
 // The shape of the example data the Worker serves (docs/cloudflare.md): what
 // scripts/publish-examples.ts writes to R2, what worker/index.ts reads back, and what the
-// gallery and the Playground fetch from /api/examples/. Types and routes only, so the Worker
+// gallery and the Playground fetch from /data/examples/. Types and routes only, so the Worker
 // and the browser import it without the build-time libraries.
 
 import type { Locale } from '../i18n/locales.ts';

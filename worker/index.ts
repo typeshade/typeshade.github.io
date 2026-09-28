@@ -2,10 +2,10 @@
 // static assets; wrangler.jsonc runs this Worker first on three prefixes only, and everything
 // else never reaches it.
 //
-// /api/examples/          the current release's index: every example the compiler has, with
+// /data/examples/         the current release's index: every example the compiler has, with
 //                         the site's words for it (scripts/publish-examples.ts writes it)
-// /api/examples/<id>/     one example: its file, its emitted WGSL and GLSL, its page meta
-// /api/releases/          the releases the database records, newest first
+// /data/examples/<id>/    one example: its file, its emitted WGSL and GLSL, its page meta
+// /data/releases/         the releases the database records, newest first
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
 // /ko/guide/examples/...  the current release has, the prebuilt template page filled in with
 //                         it, so an example merged upstream has a page before the next build
@@ -57,7 +57,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 async function api(url: URL, env: Env): Promise<Response> {
-  const parts = url.pathname.split('/').filter(Boolean); // ['api', 'examples', id?]
+  const parts = url.pathname.split('/').filter(Boolean); // ['data', 'examples', id?]
   if (parts[1] === 'examples' && parts.length === 2) {
     const index = await readJson<ReleaseIndex>(env, 'index.json');
     return index ? json(index) : json({ error: 'no release is current' }, 503);
@@ -283,7 +283,7 @@ async function examplePage(request: Request, url: URL, env: Env): Promise<Respon
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === '/api' || url.pathname.startsWith('/api/')) return api(url, env);
+    if (url.pathname.startsWith('/data/')) return api(url, env);
     if (/^(\/ko)?\/guide\/examples\//.test(url.pathname)) return examplePage(request, url, env);
     return env.ASSETS.fetch(request);
   },

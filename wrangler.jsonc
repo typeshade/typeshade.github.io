@@ -16,7 +16,7 @@
     // redirects to it, the way GitHub Pages served the site.
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*", "/guide/examples/*", "/ko/guide/examples/*"],
+    "run_worker_first": ["/data/*", "/guide/examples/*", "/ko/guide/examples/*"],
   },
   "r2_buckets": [{ "binding": "DATA", "bucket_name": "typeshade-data" }],
   "d1_databases": [
