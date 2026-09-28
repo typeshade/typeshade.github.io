@@ -1123,6 +1123,11 @@ export const en = {
           'A decorated export is an entry point',
           '`@vertex`, `@fragment` and `@compute([64, 1, 1])` name the stage; a function without one is a helper. Stage inputs are explicit parameters, a `@builtin("vertex_index")` or a `@location`. There is no hidden global.',
         ],
+        [
+          'await scale({ k, xs, ys }, 4)',
+          'A host file imports the module and calls it',
+          "Through the `typeshade/vite` plugin, a host file imports a `.shade.ts` and calls what it exports. A helper runs on the CPU, a `@compute` entry dispatches on WebGPU, and a full-screen `@fragment` entry draws into a canvas as `fs(canvas, bindings)`. The bindings object is typed from the module, so a binding the call leaves out is a type error on the host's line.",
+        ],
       ],
     },
     oracle: {
@@ -1159,11 +1164,25 @@ export const en = {
         'GPU entry inputs are explicit parameters such as `@builtin(...)`, not hidden globals.',
         'Resource types such as `uniform<T>` and `storage<T>` express GPU resource semantics.',
       ],
+      hostP0:
+        'A host uses the file one of two ways. It compiles the file and passes the shader source to its own WebGPU or WebGL2 code, or it imports the file and calls what the file exports.',
+      compileH: 'Compiling the file',
       hostWgslLabel: 'Where the host consumes WGSL',
       hostP1:
-        'TypeShade is not the rendering runtime. Write and compile the shader in TypeScript, then let the host application pass the generated WGSL or GLSL ES 3.00 source to WebGPU or WebGL2.',
+        'This way works today. Compile the file, then let the host application pass the generated WGSL or GLSL ES 3.00 source to WebGPU or WebGL2.',
       hostP2:
         'TypeShade owns the language semantics and shader emission. The host owns runtime objects and their lifetimes, including the device, pipeline, bind groups, buffers, textures and command encoders.',
+      importH: 'Importing the file',
+      importP: `This way arrives with ${facts.nextVersion} on npm. A host file imports a \`.shade.ts\` and calls what it exports, and TypeShade's runtime creates the device and the pipelines those calls need. A helper runs on the CPU. A \`@compute\` entry is \`await entry(bindings, workgroups)\`: it dispatches on WebGPU and reads back what it wrote. A full-screen \`@fragment\` entry draws into a canvas as \`entry(canvas, bindings)\`, on WebGPU, then WebGL2, then the CPU.`,
+      setupP:
+        'After `npm install typeshade`, the setup is the Vite plugin, two lines of the host `tsconfig.json`, and `tshc sync` in `prepare`, which writes the host view `tsc` reads in place of each shader file. The views are generated files, and `*.shade.typeshade.ts` in `.gitignore` keeps them out of the repository.',
+      viteLabel: 'The Vite plugin, vite.config.ts',
+      tsconfigLabel: 'Two lines of the host tsconfig.json',
+      packageLabel: 'The prepare script, package.json',
+      drawP:
+        'A host file then draws `hello.shade.ts`, the file at the top of this page, with one call. A vertex entry cannot be called from host code yet, so the view declares `vs` as `never`, and `fs` fills the whole canvas in red.',
+      drawLabel: 'Drawing hello.shade.ts from a host file, app.ts',
+      untilP: `Until ${facts.nextVersion} is on npm, compile the file. [WebGPU and WebGL2](conceptsWebgpu) says which side owns what in each way.`,
       nextLearnP: 'Now connect familiar TypeScript concepts to their TypeShade GPU meaning.',
       nextLinks: nextLinks([
         { linkKey: 'languageTypes', label: 'Types: value shapes and GPU structs' },
@@ -1384,11 +1403,11 @@ export const en = {
       [
         'Web APIs',
         'The host application owns devices, pipelines, buffers and rendering.',
-        'Shader source and reflection metadata; it does not replace the WebGPU or WebGL host API.',
+        "Shader source and reflection metadata for the host's own WebGPU or WebGL2 code. A module the host imports through the Vite plugin brings a runtime that creates the device and the pipelines its calls need.",
       ],
     ],
     fitH: 'Where WebGPU fits',
-    fitP: 'Think of TypeShade as the authoring and compilation layer above the browser graphics API. TypeShade produces shader code; the application still creates a `GPUDevice`, configures a pipeline, binds resources and submits work.',
+    fitP: 'Think of TypeShade as the authoring and compilation layer above the browser graphics API. TypeShade produces shader code, and the application creates a `GPUDevice`, configures a pipeline, binds resources and submits work. A module the application imports through the Vite plugin does those steps inside the calls it exports.',
     fitLinks: [
       ['TypeScript documentation ↗', 'https://www.typescriptlang.org/docs/'],
       ['MDN WebGPU API ↗', 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API'],
@@ -1532,17 +1551,18 @@ export const en = {
     webgpuAndWebgl2: {
       title: 'WebGPU and WebGL2',
       description:
-        'What the host application owns, what TypeShade owns, how the compiler’s reflection feeds a bind group layout, and where WebGL2 differs.',
+        'What the host and TypeShade each own, for a module the host compiles or imports, how reflection feeds a bind group layout, and where WebGL2 differs.',
       h1: 'WebGPU and WebGL2',
-      lead: 'TypeShade produces shader text and the data a host needs in order to bind resources to it. The rest of the GPU side belongs to the application: the device, the pipelines, the bind groups, the buffers and the textures. Knowing which side owns what is most of what a first TypeShade program needs.',
+      lead: "A host uses a TypeShade module one of two ways. It compiles the module and hands the shader text to its own WebGPU or WebGL2 code, which owns the device, the pipelines, the bind groups, the buffers and the textures. Or it imports the module through the Vite plugin and calls its entry points, and TypeShade's runtime creates those objects for the calls. Knowing which side owns what is most of what a first TypeShade program needs.",
       ownsH: 'Ownership',
-      ownsP: 'One row per object a WebGPU application creates.',
+      ownsP:
+        'One row per object a WebGPU application creates, for a host that compiles the module and wires it into its own code.',
       ownsColumns: ['Object', 'What the application does', 'What TypeShade contributes'],
       ownsRows: [
         [
           'Device',
           'Asks for an adapter and a `GPUDevice`, and keeps them for the life of the page.',
-          'Nothing. No TypeShade code touches a WebGPU object.',
+          'Nothing. The compiled module touches no WebGPU object.',
         ],
         [
           'Pipeline',
@@ -1565,12 +1585,15 @@ export const en = {
           'The binding the shader declares and the type it expects to find there.',
         ],
       ],
+      importH: 'Importing a module',
+      importP:
+        "A host can import a `.shade.ts` into its own TypeScript through the `typeshade/vite` plugin instead, and call what the module exports. A helper runs on the CPU. A `@compute` entry is `await entry(bindings, workgroups)`, and a full-screen `@fragment` entry is `entry(canvas, bindings)`, drawn on WebGPU, then WebGL2, then the CPU. The application's column of the table above is then the runtime's: it requests the device on the first call and every later call shares it, builds each entry's pipeline, packs each binding from the object the call passes, and reads back what a compute entry wrote.",
       reflectionH: 'Reflection',
       reflectionP: `\`reflect()\` reads a compiled module and returns its bindings: the group and index the shader declared, the address space, the access the shader needs, and for a uniform struct the fields with their offsets and sizes under the ${facts.layoutStandards.join(' and ')} layouts. A host builds its bind group layout entries out of that list and packs its uniform buffer from those offsets. The numbers the shader was compiled with are the numbers the host writes, so the two sides stay in step.`,
       reflectionNote:
         'A field renamed in the shader changes the reflection at the next build, and the host code that reads the reflection follows it.',
-      runtimeH: 'No runtime',
-      runtimeP: `The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService). What reaches the browser is the emitted shader source and the host code the application already had. TypeShade installs ${facts.runtimeDeps} runtime dependency, TypeScript, which \`compile()\` and the language service read source with, and there is no TypeShade object to create at startup and none to keep alive.`,
+      runtimeH: 'Runtime',
+      runtimeP: `A module the host compiles needs nothing of TypeShade in the browser. The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService), and what reaches the browser is the emitted shader source and the host code the application already had. A module the host imports carries \`typeshade/runtime\` into the bundle, the code its calls run on, and no compiler, because the Vite plugin compiles the module when the bundle is built. TypeShade installs ${facts.runtimeDeps} runtime dependency, TypeScript, which \`compile()\` and the language service read source with.`,
       webgl2H: 'Where WebGL2 differs',
       webgl2P: 'The same source compiles for WebGL2, and the host side of it looks different.',
       webgl2Items: [

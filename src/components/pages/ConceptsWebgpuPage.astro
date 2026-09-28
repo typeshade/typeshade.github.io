@@ -14,7 +14,7 @@ import { slugify } from '../../lib/slug.ts';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const c = copyFor(locale).concepts.webgpuAndWebgl2;
-const headings = [c.ownsH, c.reflectionH, c.runtimeH, c.webgl2H, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
+const headings = [c.ownsH, c.importH, c.reflectionH, c.runtimeH, c.webgl2H, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 
 <Docs locale={locale} path={links.conceptsWebgpu.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
@@ -25,6 +25,11 @@ const headings = [c.ownsH, c.reflectionH, c.runtimeH, c.webgl2H, c.furtherH].map
     <h2 id={slugify(c.ownsH)}>{c.ownsH}</h2>
     <p>{c.ownsP}</p>
     <ConceptDoc locale={locale} rows={c.ownsRows} columns={c.ownsColumns} strongTerm />
+  </section>
+
+  <section>
+    <h2 id={slugify(c.importH)}>{c.importH}</h2>
+    <p><Rich text={c.importP} locale={locale} /></p>
   </section>
 
   <section>

@@ -671,7 +671,7 @@ const EXPLAINERS: readonly {
   },
 ];
 
-/** The fingerprint each rule's explaining pages were last read against, at 6c6ea1d. */
+/** The fingerprint each rule's explaining pages were last read against, at 22120e7. */
 const READ_AGAINST: Readonly<Record<string, string>> = {
   '1.2': 't6OvP1FlcnvK4mIZKbcPULikBSKQ5LJ59oSe_GWWSio=',
   '2.1': 'JKQKf6lgUiCKC3Gzz3E1NGu_InxSbrY2f6lV6mkU1J8=',
@@ -681,7 +681,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '3.2': 'qpOoLJzsY-LatyVtg3odXHYb6lNJE3SA_z8Yq-K2IvQ=',
   '3.3': 'km920wkBuPaz0OXge_Xv96_s_n_Tgb6knaVrEvkmyWs=',
   '3.4': 'cBJ4sIX0HcejBNG6fEyGL7SGg-P7dy-fGrNcKHqGCKo=',
-  '3.9': 'irhR4O4rSI_BD62CMjiedfDBSpIOXY1SvIT_ExKoixs=',
+  '3.9': 'M8V5xons2shR8RLQPfEMLyRvSzdhl3in7EKOaC621q8=',
   '4.1': 'LP3By33VWErDu7PrWT7ra-cVYi9Bt0Ct4IekEwkzgq0=',
   '4.2': 'MpVj8dEE3vyccKw-6hZlbejYh8Eot8TKjXivzSjJ4KI=',
   '4.6': 'RwdafG75jJiCMgm6Du1X3zVcPigfJdPEwfy6iWlDksU=',
@@ -698,7 +698,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '6.9': 'qi0W6dDsL08MCwIYGCDtMbTulbALP34qs5vuFsoiS0s=',
   '6.10': 'OLairZeuEbOS4mRu6Mk4jEY7nzisA7VAnKXhkjTxYs4=',
   '7.1': 'UFX5x6t2_pm0hKz-JXQbn3GhNx0yKdrlpgmNPEZowog=',
-  '7.2': 'vDUTZO3SeWPUp9KH0kCi_U4gfYItTSle7IQn4QsF5FU=',
+  '7.2': 'hcZZVUBWM6MYljeqQEMADAV28hvp0cOLU8-wy6vOvWs=',
   '7.3': 'dg4uzav_rg6XoVu7GPWJl1-ldfIExMJUCzfIWZ_t6i0=',
   '7.4': 'Uv0vLGCbLp5zz7Re_EgMql76iLGf_NAzyMWkXNxIdZA=',
   '7.5': '4308LIgSysAnlue51NfkW0VyNcY9-VTAPwyWJ1UyQN4=',

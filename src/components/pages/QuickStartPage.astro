@@ -18,7 +18,12 @@ const { locale } = Astro.props;
 const t = copyFor(locale);
 const q = t.quickStart as typeof t.quickStart & { p0?: string };
 const host = t.quickStart.host;
-const headings = [q.installH, q.live.h, host.boundaryH, host.hostH, q.status.h, host.nextLearnH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
+const heading = (depth: number) => (h: string) => ({ depth, slug: slugify(h), text: h });
+const headings = [
+  ...[q.installH, q.live.h, host.boundaryH, host.hostH].map(heading(2)),
+  ...[host.compileH, host.importH].map(heading(3)),
+  ...[q.status.h, host.nextLearnH].map(heading(2)),
+];
 const p0 = q.p0 ?? host.p0;
 const useLabel = t.codeLabels.useTypeshade ?? 'hello.shade.ts';
 
@@ -45,6 +50,28 @@ export function main(@location(0) uv: vec2): vec4 {
   return vec4(mix(u.low, u.high, wave), 1.)
 }
 `;
+
+// The import setup and a host file that draws the sample above. Code, so it stays here too.
+const viteConfig = `import { defineConfig } from 'vite';
+import { typeshade } from 'typeshade/vite';
+
+export default defineConfig({ plugins: [typeshade()] });`;
+const tsconfig = `{
+  "compilerOptions": {
+    // ...
+    "moduleSuffixes": [".typeshade", ""]
+  },
+  "exclude": ["src/**/*.shade.ts"]
+}`;
+const packageJson = `{
+  "scripts": {
+    "prepare": "tshc sync"
+  }
+}`;
+const appTs = `import { fs } from './hello.shade.ts';
+
+const canvas = document.querySelector('canvas')!;
+fs(canvas, {});`;
 ---
 
 <Docs locale={locale} path={links.quickStart.href} title={q.title} description={q.description} headings={headings} editHref={editCopy(locale, 'quickStart')}>
@@ -93,6 +120,8 @@ export function main(@location(0) uv: vec2): vec4 {
   </section>
   <section>
     <h2 id={slugify(host.hostH)}>{host.hostH}</h2>
+    <p><Rich text={host.hostP0} locale={locale} /></p>
+    <h3 id={slugify(host.compileH)}>{host.compileH}</h3>
     <p><Rich text={host.hostP1} locale={locale} /></p>
     <CodeFrame label={host.hostWgslLabel}>
       <Code code={`const shaderCode = /* WGSL emitted from the TypeShade module */
@@ -107,6 +136,23 @@ const pipeline = device.createComputePipeline({
 })`} lang="ts" title="webgpu.ts" locale={locale} />
     </CodeFrame>
     <p><Rich text={host.hostP2} locale={locale} /></p>
+    <h3 id={slugify(host.importH)}>{host.importH}</h3>
+    <p><Rich text={host.importP} locale={locale} /></p>
+    <p><Rich text={host.setupP} locale={locale} /></p>
+    <CodeFrame label={host.viteLabel}>
+      <Code code={viteConfig} lang="ts" title="vite.config.ts" locale={locale} />
+    </CodeFrame>
+    <CodeFrame label={host.tsconfigLabel}>
+      <Code code={tsconfig} lang="jsonc" title="tsconfig.json" locale={locale} />
+    </CodeFrame>
+    <CodeFrame label={host.packageLabel}>
+      <Code code={packageJson} lang="json" title="package.json" locale={locale} />
+    </CodeFrame>
+    <p><Rich text={host.drawP} locale={locale} /></p>
+    <CodeFrame label={host.drawLabel}>
+      <Code code={appTs} lang="ts" title="app.ts" locale={locale} />
+    </CodeFrame>
+    <p><Rich text={host.untilP} locale={locale} /></p>
   </section>
   <section>
     <h2 id={slugify(q.status.h)}>{q.status.h}</h2>
