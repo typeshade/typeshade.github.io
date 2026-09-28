@@ -33,3 +33,6 @@ id first, then the pull request that did the work.
   gallery, the picker and the Korean blurbs, a `TS8071` page compiled with the option, a Console
   category in the API reference, and glossary terms kept apart from the driver log, handled in
   #83.
+- 0009: ordinary TypeScript can import callable `.shade.ts` exports through the generated host view; the site-facing host-import copy and documentation are updated in #89.
+- 0019: the Playground Console pane supports `console.table` events and the related method copy/checks are updated in #89.
+- 0020: the class-builder documentation follows the compiler's `this`-parameter spelling in #89.
