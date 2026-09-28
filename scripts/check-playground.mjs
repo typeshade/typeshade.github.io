@@ -147,7 +147,7 @@ const AGREE_FLOOR = 54;
 // The check runs in parts, one CI job each (deploy.yml), since the two walks over the picker
 // below take most of its time. PLAYGROUND_SHARD=k/n draws every n-th example from the k-th and
 // compares the engines on those; part 1 also runs the Playground's other steps and the seeded
-// and no-WebGPU pages, and part 2 (part 1 when there is one part) the Korean route. The floors
+// and no-WebGPU pages, and part 3 (the last, when there are fewer) the Korean route. The floors
 // above are totals, so a part of several writes its counts to PLAYGROUND_REPORT and
 // `--merge <reports>` holds their sum to the floors. With no PLAYGROUND_SHARD it is one part.
 const [SHARD_K, SHARD_N] = (process.env.PLAYGROUND_SHARD ?? '1/1').split('/').map(Number);
@@ -159,7 +159,7 @@ if (!(SHARD_N >= 1 && SHARD_K >= 1 && SHARD_K <= SHARD_N)) {
 }
 const SHARDED = SHARD_N > 1;
 const RUNS_REST = SHARD_K === 1;
-const RUNS_KOREAN = SHARD_K === Math.min(2, SHARD_N);
+const RUNS_KOREAN = SHARD_K === Math.min(3, SHARD_N);
 /** What a part of several leaves for `--merge`: its rows of the picker walk and its counts of
  *  the engine comparison. */
 const tally = {

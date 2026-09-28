@@ -80,10 +80,10 @@ jobs:
   # The Playground is the one page whose worth is that it runs: it is a compiler behind an
   # editor, and a build stays green while the page throws on its first line. Chromium opens
   # dist/ and checks it, in four parts: each draws a quarter of the picker's examples and
-  # compares the two engines on them, part 1 runs the Playground's other steps and part 2 the
+  # compares the two engines on them, part 1 runs the Playground's other steps and part 3 the
   # Korean route (scripts/check-playground.mjs, PLAYGROUND_SHARD). Monaco itself comes from
   # jsdelivr, so a runner with no route there reports that on its own; see the note at the
-  # top of that script. Part 3 also opens the live examples (scripts/check-live.mjs) and part 4
+  # top of that script. Part 2 also opens the live examples (scripts/check-live.mjs) and part 4
   # checks the outbound links, so no part waits on the others.
   browser:
     needs: site
@@ -114,7 +114,7 @@ jobs:
       # checks that the canvas mounts, the compiler stays out of the initial bundle, an edit
       # recompiles and a moved control reaches the frame. See scripts/check-live.mjs.
       - run: bun run check:live
-        if: matrix.part == 3
+        if: matrix.part == 2
       # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
       - run: bun run qa:links
         if: matrix.part == 4
