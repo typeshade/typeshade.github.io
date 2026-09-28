@@ -78,6 +78,11 @@
 //      nothing included
 //  47. the Console tab: the gpu-console example's console calls come back from WebGPU and
 //      from the CPU oracle as the same lines, in the same order (surface §66)
+//  48. a module that draws logs a clicked pixel: on WebGPU the frame is drawn once more for
+//      that pixel with its console calls recorded, on WebGL2 the CPU oracle runs it, the two
+//      give the same line, and the vertex entry's calls are the CPU oracle's
+//  49. recording the frame on WebGPU gives every pixel's lines, row by row, and a frame that
+//      overflows the buffer keeps whole lines and counts every call it dropped
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -980,10 +985,45 @@ async function checkConsole(page, problems) {
   );
 }
 
-/** A module that draws logs one clicked pixel at a time: the Console tab says so before a
- *  click, a click inside the triangle runs the fragment entry for that pixel on the CPU oracle
- *  and lists what it logged (and not the vertex entry's call), and a click outside says no
- *  fragment runs there. It used to show the compute-only idle line whatever the reader wrote. */
+/** The Console tab's next report after `before`, once it is one of `reports`: what it says,
+ *  its counts, and its lines by block, each as the place it ran and the text it logged. */
+async function nextReport(page, before, reports) {
+  await page.waitForFunction(
+    ([b, wanted]) => {
+      const pane = document.querySelector('[data-console]');
+      return Number(pane?.dataset.paint ?? 0) > b && wanted.includes(pane?.dataset.report ?? '');
+    },
+    [before, reports],
+    { timeout: 60_000 },
+  );
+  return page.evaluate(() => {
+    const pane = document.querySelector('[data-console]');
+    const blocks = {};
+    for (const list of pane.querySelectorAll('ol[data-console-block]'))
+      blocks[list.dataset.consoleBlock] = [...list.children].map((li) => [
+        li.querySelector('.at')?.textContent ?? '',
+        li.lastElementChild?.textContent ?? '',
+      ]);
+    return {
+      report: pane.dataset.report,
+      lines: Number(pane.dataset.lines ?? -1),
+      dropped: Number(pane.dataset.dropped ?? -1),
+      heading: pane.querySelector('p')?.textContent ?? '',
+      text: pane.textContent,
+      blocks,
+    };
+  });
+}
+
+const paintsOf = (page) =>
+  page.evaluate(() => Number(document.querySelector('[data-console]')?.dataset.paint ?? 0));
+
+/** A module that draws logs a pixel at a time (surface §66). The Console tab says so before a
+ *  click. On WebGPU a click draws the frame once more for that pixel alone with its console
+ *  calls recorded and lists what the pixel logged; the vertex entry's calls, which no GPU
+ *  records, come from the CPU oracle for the three vertices, under a sentence that says why.
+ *  On WebGL2, which records nothing, the same pixel runs on the CPU oracle and lists the same
+ *  lines. A click outside the triangle says no fragment runs there. */
 async function checkPixelConsole(page, problems) {
   await pickExample(page, 'hello');
   const source = await sourceOf(page);
@@ -1000,32 +1040,172 @@ async function checkPixelConsole(page, problems) {
   await openTab(page, 'console');
   const hint = (await page.textContent('[data-console]')).trim();
   await openTab(page, 'result');
-  const lines = async () => {
-    await openTab(page, 'console');
-    const read = await page.evaluate(() => ({
-      heading: document.querySelector('[data-console] p')?.textContent ?? '',
-      lines: [...document.querySelectorAll('[data-console] li')].map((li) => li.textContent),
-    }));
-    await openTab(page, 'result');
-    return read;
-  };
   const frame = await page.$('[data-gpu-frame]');
   const box = await frame.boundingBox();
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.6);
-  const inside = await lines();
-  const note = (await page.textContent('[data-pixel-note]')).trim();
-  await page.mouse.click(box.x + 3, box.y + 3);
-  const outside = await lines();
+  const clickAt = async (x, y, reports) => {
+    const before = await paintsOf(page);
+    await page.mouse.click(x, y);
+    return nextReport(page, before, reports);
+  };
+  const inside = [box.x + box.width / 2, box.y + box.height * 0.6];
+  const backend = await page.evaluate(
+    () => document.querySelector('[data-gpu-canvas]')?.dataset.backend,
+  );
   if (!/Click a pixel|픽셀을 클릭/.test(hint))
     problems.push(`a module that draws and logs shows no pixel hint in the Console tab: "${hint}"`);
-  if (inside.lines.length !== 1 || !/^\[\d+, \d+, 0\]at \d+\.5 \d+\.5$/.test(inside.lines[0] ?? ''))
+  if (backend !== 'webgpu') {
+    problems.push(`the pixel console needs the Result tab on WebGPU, and it drew on ${backend}`);
+    await pickExample(page, 'hello');
+    return;
+  }
+  const onGpu = await clickAt(...inside, ['pixel/webgpu', 'pixel/cpu']);
+  const note = (await page.textContent('[data-pixel-note]')).trim();
+  const fragmentLine = /^\[(\d+), (\d+), 0\]$/;
+  const pixelOf = (report) => {
+    const [at, text] = report.blocks.pixel?.[0] ?? ['', ''];
+    const m = fragmentLine.exec(at);
+    return m && text === `at ${m[1]}.5 ${m[2]}.5` ? `${m[1]},${m[2]}` : '';
+  };
+  if (onGpu.report !== 'pixel/webgpu')
+    problems.push(`a click on the WebGPU canvas was not recorded on WebGPU: ${onGpu.heading}`);
+  if ((onGpu.blocks.pixel ?? []).length !== 1 || pixelOf(onGpu) === '')
     problems.push(
-      `a click inside the triangle should list the fragment's one line: ${JSON.stringify(inside)}`,
+      `a click inside the triangle should list the pixel's one line from WebGPU: ${JSON.stringify(onGpu.blocks)}`,
     );
+  const vertexBodies = (report) => (report.blocks.vertex ?? []).map(([, text]) => text);
+  if (JSON.stringify(vertexBodies(onGpu)) !== JSON.stringify(['vertex 0', 'vertex 1', 'vertex 2']))
+    problems.push(
+      `the vertex entry's calls should be the CPU oracle's, one per vertex: ${JSON.stringify(onGpu.blocks.vertex)}`,
+    );
+  if (!/vertex stage|버텍스 단계/.test(onGpu.text))
+    problems.push('the WebGPU report does not say why a vertex entry records nothing');
   if (!/\(\d+, \d+\)/.test(note)) problems.push(`the pixel note names no pixel: "${note}"`);
-  if (outside.lines.length !== 0 || !/triangle|삼각형/.test(outside.heading))
+
+  // The same pixel on WebGL2, whose GLSL records nothing: the CPU oracle's lines, the same ones.
+  await page.selectOption('[data-engine]', 'webgl2');
+  await settleResult(page);
+  const onGl = await clickAt(...inside, ['pixel/cpu', 'pixel/webgpu']);
+  if (onGl.report !== 'pixel/cpu' || !/WebGL2/.test(onGl.heading))
+    problems.push(`a click on WebGL2 should run the pixel on the CPU oracle: ${onGl.heading}`);
+  if (pixelOf(onGl) !== pixelOf(onGpu) || pixelOf(onGl) === '')
+    problems.push(
+      `the same pixel logged differently on WebGPU and on the CPU oracle: ${JSON.stringify(onGpu.blocks.pixel)} and ${JSON.stringify(onGl.blocks.pixel)}`,
+    );
+  if (JSON.stringify(vertexBodies(onGl)) !== JSON.stringify(vertexBodies(onGpu)))
+    problems.push(`the vertex entry's lines differ between the two reports`);
+  await page.selectOption('[data-engine]', 'auto');
+  await settleResult(page);
+
+  const outside = await clickAt(box.x + 3, box.y + 3, ['pixel/webgpu', 'pixel/cpu']);
+  if ((outside.blocks.pixel ?? []).length !== 0 || !/triangle|삼각형/.test(outside.heading))
     problems.push(`a click outside the triangle should say so: ${JSON.stringify(outside)}`);
-  console.log(`  pixel console: ${inside.lines[0] ?? 'nothing'}; outside: ${outside.heading}`);
+  console.log(
+    `  pixel console: ${pixelOf(onGpu) || 'nothing'} on WebGPU and ${pixelOf(onGl) || 'nothing'} on the CPU oracle, ${vertexBodies(onGpu).length} vertex lines; outside: ${outside.heading}`,
+  );
+  await pickExample(page, 'hello');
+}
+
+/** Record the frame on WebGPU (surface §66): the canvas's frame drawn once more with every
+ *  pixel's console calls recorded. A fragment that logs on a grid of pixels comes back as
+ *  exactly those lines, row by row, each marked with its own pixel. One that logs every pixel
+ *  overflows the buffer, and the report keeps whole lines, each still its own pixel's, and
+ *  counts every call it dropped: kept and dropped add up to the pixels of the frame. The CPU
+ *  oracle's own draw lists the same grid's lines at its own resolution. */
+async function checkFrameConsole(page, problems) {
+  const grid = (every) => `"use typeshade";
+
+@fragment
+export function main(@location(0) uv: vec2, @builtin("position") p: vec4): vec4 {
+  if (i32(p.x) % ${every} === 0 && i32(p.y) % ${every} === 0) {
+    console.log("grid", p.x, p.y);
+  }
+  return vec4(uv, 0.5, 1.);
+}
+`;
+  const record = async () => {
+    await openTab(page, 'console');
+    await page.waitForSelector('[data-record-frame]:not([hidden])', { timeout: 30_000 });
+    const before = await paintsOf(page);
+    await page.click('[data-record-frame]');
+    const report = await nextReport(page, before, ['frame/webgpu', 'frame/failed']);
+    const size = await page.evaluate(() => {
+      const canvas = document.querySelector('[data-gpu-canvas]');
+      return [canvas.width, canvas.height];
+    });
+    await openTab(page, 'result');
+    return { report, size };
+  };
+
+  await typeSource(page, grid(40));
+  await settleResult(page);
+  const backend = await page.evaluate(
+    () => document.querySelector('[data-gpu-canvas]')?.dataset.backend,
+  );
+  if (backend !== 'webgpu') {
+    problems.push(`recording a frame needs the Result tab on WebGPU, and it drew on ${backend}`);
+    await pickExample(page, 'hello');
+    return;
+  }
+  const { report: sparse, size } = await record();
+  const [w, h] = size;
+  const expected = [];
+  for (let y = 0; y < h; y += 40)
+    for (let x = 0; x < w; x += 40) expected.push([`[${x}, ${y}, 0]`, `grid ${x}.5 ${y}.5`]);
+  const got = sparse.blocks.frame ?? [];
+  if (sparse.report !== 'frame/webgpu')
+    problems.push(`the frame was not recorded: ${sparse.heading}`);
+  if (sparse.lines !== expected.length || sparse.dropped !== 0)
+    problems.push(
+      `a ${w} x ${h} frame logging every 40th pixel should give ${expected.length} lines and drop none, and gave ${sparse.lines} and dropped ${sparse.dropped}`,
+    );
+  const shown = expected.slice(0, got.length);
+  if (got.length === 0 || JSON.stringify(got) !== JSON.stringify(shown))
+    problems.push(
+      `the recorded frame's lines are not the grid's, row by row: ${JSON.stringify(got.slice(0, 4))} for ${JSON.stringify(shown.slice(0, 4))}`,
+    );
+
+  await typeSource(page, grid(1));
+  await settleResult(page);
+  const { report: dense, size: denseSize } = await record();
+  const pixels = denseSize[0] * denseSize[1];
+  const own = (dense.blocks.frame ?? []).every(([at, text]) => {
+    const m = /^\[(\d+), (\d+), 0\]$/.exec(at);
+    return m !== null && text === `grid ${m[1]}.5 ${m[2]}.5`;
+  });
+  if (dense.lines + dense.dropped !== pixels || dense.lines <= 0)
+    problems.push(
+      `a frame logging every pixel should keep and drop ${pixels} calls between them, and kept ${dense.lines} and dropped ${dense.dropped}`,
+    );
+  if (!own) problems.push("a line kept from an overflowing frame is not its own pixel's");
+  if (dense.dropped > 0 && !/dropped|버려/.test(dense.text))
+    problems.push('the report of an overflowing frame does not say calls were dropped');
+
+  // The CPU oracle draws the whole frame itself, and lists what its pixels logged once done.
+  await typeSource(page, grid(40));
+  await settleResult(page);
+  const before = await paintsOf(page);
+  await page.selectOption('[data-engine]', 'cpu');
+  const onCpu = await nextReport(page, before, ['frame/cpu']);
+  const [cw, ch] = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-canvas]');
+    return [canvas.width, canvas.height];
+  });
+  const cpuExpected = [];
+  for (let y = 0; y < ch; y += 40)
+    for (let x = 0; x < cw; x += 40) cpuExpected.push([`[${x}, ${y}, 0]`, `grid ${x}.5 ${y}.5`]);
+  if (
+    onCpu.lines !== cpuExpected.length ||
+    onCpu.dropped !== 0 ||
+    JSON.stringify(onCpu.blocks.frame ?? []) !== JSON.stringify(cpuExpected)
+  )
+    problems.push(
+      `the CPU oracle's ${cw} x ${ch} frame should list ${cpuExpected.length} grid lines row by row, and listed ${onCpu.lines}: ${JSON.stringify((onCpu.blocks.frame ?? []).slice(0, 4))}`,
+    );
+  await page.selectOption('[data-engine]', 'auto');
+  await settleResult(page);
+  console.log(
+    `  frame console: ${sparse.lines} lines from a ${w} x ${h} grid of every 40th pixel on WebGPU, ${onCpu.lines} from ${cw} x ${ch} on the CPU oracle; every pixel logging kept ${dense.lines} and dropped ${dense.dropped} of ${pixels}`,
+  );
   await pickExample(page, 'hello');
 }
 
@@ -2563,6 +2743,7 @@ async function checkRoute(browser, origin, route) {
         await checkStorageTextures(page, problems);
         await checkConsole(page, problems);
         await checkPixelConsole(page, problems);
+        await checkFrameConsole(page, problems);
         await pickExample(page, 'hello');
       }
     }
