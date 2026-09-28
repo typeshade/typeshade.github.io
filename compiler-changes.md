@@ -78,4 +78,4 @@ id first, then the pull request that did the work.
   the graph in the link and clears it on Restart; the CPU oracle draws the passes in order at
   frame 0; separable-blur and feedback-trail join the gallery, the picker, the Korean titles
   and lines and the stills (a still of a program with passes is the frame after a second of
-  them); check-playground opens both on every engine, handled in #PR.
+  them); check-playground opens both on every engine, handled in #117.
