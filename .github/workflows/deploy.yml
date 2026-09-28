@@ -18,8 +18,12 @@ concurrency:
   group: deploy-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The checks run in three stages, so the slow ones run side by side: `site` builds dist/ and runs
+# the checks that read files; `browser` opens dist/ in Chromium in four parts at once; `build`,
+# the one required check, holds the parts' counts to their floors and passes only when every
+# stage passed. A stage that fails or is skipped fails `build`.
 jobs:
-  build:
+  site:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -58,32 +62,96 @@ jobs:
       # The build runs scripts/check-style.mjs, check-copy.ts and check-api.ts first; see
       # DESIGN.md.
       - run: bun run build
-      # The Playground is the one page whose worth is that it runs: it is a compiler behind an
-      # editor, and a build stays green while the page throws on its first line. Chromium opens
-      # dist/ and checks it. Monaco itself comes from jsdelivr, so a runner with no route there
-      # reports that on its own; see the note at the top of scripts/check-playground.mjs.
-      - run: bunx playwright install --with-deps chromium
-      - run: bun run check:playground
-      # The live examples are the other pages whose worth is that they run: an editor, a
-      # canvas and the controls the reflection asks for. Chromium opens one per page and
-      # checks that the canvas mounts, the compiler stays out of the initial bundle, an edit
-      # recompiles and a moved control reaches the frame. See scripts/check-live.mjs.
-      - run: bun run check:live
-      # The translations are typed against the English copy; a missing string fails here.
-      - run: bun run check:types
-      # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
-      - run: bun run qa:links
-      - run: bun run qa:seo
-      # The Worker answers first on the prefixes wrangler.jsonc lists; none may shadow a page.
-      - run: bun run qa:worker-routes
-      # OpenSEO's audit engine over dist, pinned; see scripts/openseo-audit.mts.
-      - run: bun run qa:openseo
-      # dist/ for the Cloudflare jobs below, which deploy it with the Worker (wrangler.jsonc).
+      # dist/ for the browser checks and the Cloudflare jobs below, which deploy it with the
+      # Worker (wrangler.jsonc).
       - uses: actions/upload-artifact@v4
         with:
           name: site
           path: dist
           retention-days: 3
+      # The translations are typed against the English copy; a missing string fails here.
+      - run: bun run check:types
+      - run: bun run qa:seo
+      # The Worker answers first on the prefixes wrangler.jsonc lists; none may shadow a page.
+      - run: bun run qa:worker-routes
+      # OpenSEO's audit engine over dist, pinned; see scripts/openseo-audit.mts.
+      - run: bun run qa:openseo
+
+  # The Playground is the one page whose worth is that it runs: it is a compiler behind an
+  # editor, and a build stays green while the page throws on its first line. Chromium opens
+  # dist/ and checks it, in four parts: each draws a quarter of the picker's examples and
+  # compares the two engines on them, part 1 runs the Playground's other steps and part 3 the
+  # Korean route (scripts/check-playground.mjs, PLAYGROUND_SHARD). Monaco itself comes from
+  # jsdelivr, so a runner with no route there reports that on its own; see the note at the
+  # top of that script. Part 2 also opens the live examples (scripts/check-live.mjs) and part 4
+  # checks the outbound links, so no part waits on the others.
+  browser:
+    needs: site
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: dist
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run check:playground
+        env:
+          PLAYGROUND_SHARD: ${{ matrix.part }}/4
+          PLAYGROUND_REPORT: playground-part-${{ matrix.part }}.json
+      # The live examples are the other pages whose worth is that they run: an editor, a
+      # canvas and the controls the reflection asks for. Chromium opens one per page and
+      # checks that the canvas mounts, the compiler stays out of the initial bundle, an edit
+      # recompiles and a moved control reaches the frame. See scripts/check-live.mjs.
+      - run: bun run check:live
+        if: matrix.part == 2
+      # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
+      - run: bun run qa:links
+        if: matrix.part == 4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playground-part-${{ matrix.part }}
+          path: playground-part-${{ matrix.part }}.json
+          retention-days: 3
+
+  # The required check. The floors in scripts/check-playground.mjs are totals over the picker,
+  # so they are held here to the sum of the four parts; and this job fails unless `site` and
+  # every part of `browser` passed, since a required check that is skipped counts as passed.
+  build:
+    needs: [site, browser]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every stage passed
+        env:
+          SITE: ${{ needs.site.result }}
+          BROWSER: ${{ needs.browser.result }}
+        run: |
+          echo "site: $SITE, browser: $BROWSER"
+          [ "$SITE" = success ] && [ "$BROWSER" = success ]
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: playground-part-*
+          path: parts
+          merge-multiple: true
+      - run: node scripts/check-playground.mjs --merge parts/playground-part-*.json
 
   # typeshade.dev on Cloudflare Workers (docs/cloudflare.md): dist/ as static assets and the
   # Worker in worker/index.ts, which serves the example data in R2. A manual dispatch on
