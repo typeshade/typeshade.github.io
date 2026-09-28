@@ -1605,6 +1605,7 @@ export const en = {
         '[WGSL specification](specWgsl) defines the first of the two targets.',
         `[${facts.glslTarget} specification](specGlslEs) and the [WebGL2 specification](specWebgl2) define the second.`,
         '[MDN WebGPU API](mdnWebgpu) and [MDN WebGL2RenderingContext](mdnWebgl2) show how a host hands each of them to a driver.',
+        `[Functions](referenceFunctions) in the language reference gives each builtin with the WGSL and ${facts.glslTarget} text the compiler writes for it, and [Types](referenceTypes) does the same for every type.`,
       ],
       nextP:
         'Next: [Examples](examples), where every example in the compiler’s registry names the targets it emits.',
