@@ -1309,11 +1309,15 @@ export function main(@location(0) uv: vec2): vec4 {
 `,
     fix: `"use typeshade"
 
-declare const u: uniform<array<f32, 3>>
+class Uniforms {
+  items: array<f32, 3>
+}
+
+declare const u: uniform<Uniforms>
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(f32(u.length), 0., 0., 1.)
+  return vec4(f32(u.items.length), 0., 0., 1.)
 }
 `,
   },
