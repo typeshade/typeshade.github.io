@@ -744,6 +744,10 @@ export const en = {
   // compiler writes from what is typed into it. Monaco carries its own English inside the
   // editor box.
   playground: {
+    // The page's <title> and meta description, so the Playground does not repeat the front
+    // page's in search results.
+    title: 'TypeShade Playground: compile a shader in your browser',
+    description: `Write a "use typeshade" file in the browser, compile it to WGSL and ${glsl}, run it on WebGPU or WebGL2, and read the diagnostics and the reflection.`,
     h1: 'Playground',
     intro:
       'Write a TypeShade TypeScript file, compile it in your browser, and inspect the generated WGSL and diagnostics.',
@@ -826,13 +830,28 @@ export const en = {
     computeRan:
       'Ran {entry} over {invocations} invocations on {backend} in {ms} ms. The canvas plots what it wrote.',
     // The Console tab: the lines a compute run's console calls delivered, from the CPU oracle's
-    // sink or, on WebGPU, from the console buffer the compiler adds (surface §66).
+    // sink or, on WebGPU, from the console buffer the compiler adds (surface §66). A module that
+    // draws logs one clicked pixel at a time, run on the CPU oracle.
     consoleTab: 'Console',
-    consoleIdle: 'Run a compute module that calls `console.log` to see its lines here.',
+    consoleIdle:
+      'Call `console.log` in a shader to see its lines here. A compute module logs every invocation; in a module that draws, click a pixel of the canvas.',
     consoleLines: '{lines} lines from {backend}, in the order the CPU runs the invocations.',
     consoleNone: 'The run on {backend} logged nothing.',
     consoleDropped: '{dropped} more lines did not fit the buffer.',
     consoleMore: '{more} more lines are not shown.',
+    consoleIndex: '(index)',
+    consoleValue: 'Value',
+    consolePixelHint:
+      'This module draws, and its fragment entry runs once for every pixel. Click a pixel of the canvas to see what that pixel logs.',
+    consolePixel:
+      'What pixel ({x}, {y}) logged. It ran on the CPU oracle with the inputs the canvas gives it.',
+    consolePixelNone: 'Pixel ({x}, {y}) reached no console call.',
+    consolePixelOutside:
+      'Pixel ({x}, {y}) is outside the triangle the vertex entry draws, so no fragment runs there.',
+    consolePixelFailed: 'Pixel ({x}, {y}) did not run on the CPU oracle: {reason}',
+    consolePixelNoRaster:
+      "The CPU oracle cannot place this module's triangle. Its vertex entry needs `vertex_index` or the generated vertices, and a `position` output.",
+    pixelNote: 'Console lines from pixel ({x}, {y}): {lines}.',
     // The panel under the canvas: one block per binding the module declares, with what the
     // reader supplies it with. The texture sources and matrix presets are the choices a
     // select offers; the filter and address values are WebGPU's own words and stay in code.
