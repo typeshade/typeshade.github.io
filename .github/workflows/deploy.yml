@@ -78,6 +78,12 @@ jobs:
       - run: bun run qa:seo
       # OpenSEO's audit engine over dist, pinned; see scripts/openseo-audit.mts.
       - run: bun run qa:openseo
+      # dist/ for the Cloudflare jobs below, which deploy it with the Worker (wrangler.jsonc).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: dist
+          retention-days: 3
       # Pages is only configured for deployment runs on main; PRs still execute every build/QA check above.
       # A manual dispatch on another branch (pin-compiler.yml sends one for the pull request it
       # opens, which starts no pull_request run) builds and checks the same way and publishes nothing.
@@ -102,3 +108,71 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # typeshade.dev on Cloudflare Workers (docs/cloudflare.md): dist/ as static assets and the
+  # Worker in worker/index.ts, which serves the example data in R2. GitHub Pages above keeps
+  # publishing until the domain moves to the Worker; after that, the Pages steps go. Without
+  # the Cloudflare secrets (a fork's pull request has none) both jobs say so and pass.
+  cloudflare:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare
+      url: https://typeshade.dev/
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: dist
+      - name: Deploy the Worker and dist/
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::No CLOUDFLARE_API_TOKEN secret; the Worker is not deployed."
+            exit 0
+          fi
+          bunx wrangler d1 migrations apply typeshade --remote
+          bunx wrangler deploy
+
+  # A pull request's own copy of the site, uploaded as a Worker version that serves no traffic
+  # and answers at a preview URL of its own, so a reviewer opens the change running on
+  # Cloudflare, the example data included.
+  cloudflare-preview:
+    needs: build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: dist
+      - name: Upload a preview version
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::No CLOUDFLARE_API_TOKEN secret; no preview is uploaded."
+            exit 0
+          fi
+          bunx wrangler versions upload --preview-alias "pr-$PR" --message "pull request #$PR" \
+            | tee upload.log
+          url=$(grep -o 'https://[^ ]*workers.dev' upload.log | tail -1)
+          echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"

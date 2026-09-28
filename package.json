@@ -13,7 +13,7 @@
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:guide": "bun scripts/check-guide-translations.ts",
     "check:api": "bun scripts/check-api.ts",
-    "check:types": "tsc --noEmit -p tsconfig.json",
+    "check:types": "tsc --noEmit -p tsconfig.json && tsc -p worker/tsconfig.json",
     "format": "prettier --write . && bun scripts/astro-semicolons.ts",
     "format:check": "prettier --check . && bun scripts/astro-semicolons.ts --check",
     "build:icons": "bun scripts/build-icons.ts",
@@ -37,6 +37,7 @@
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260928.1",
     "@webgpu/types": "^0.1.72",
     "fast-xml-parser": "^5.4.1",
     "htmlparser2": "^10.1.0",
@@ -46,6 +47,7 @@
     "robots-parser": "^3.0.1",
     "sharp": "^0.35.4",
     "typescript": "^5.6.3",
+    "wrangler": "^4.142.0",
     "zod": "^4.1.12"
   },
   "engines": {

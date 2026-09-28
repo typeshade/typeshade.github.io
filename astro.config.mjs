@@ -78,6 +78,9 @@ export default defineConfig({
           '/ko/examples',
           '/ko/guide',
           '/ko/404',
+          // The template worker/index.ts fills in for an example newer than the build.
+          '/guide/examples/runtime-example',
+          '/ko/guide/examples/runtime-example',
         ].includes(new URL(page).pathname.replace(/\/$/, '')) &&
         // /guide/authoring/ and its sections only redirect to /guide/internals/.
         !/^\/(ko\/)?guide\/authoring\//.test(new URL(page).pathname),

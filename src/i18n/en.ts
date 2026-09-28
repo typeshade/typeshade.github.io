@@ -1727,6 +1727,12 @@ export const en = {
     /** A tile whose example has nothing the page can draw shows Ant's Empty mark and this
      *  line instead of a bare grey frame. */
     noStill: 'No picture: this example is not one the page can draw.',
+    /** The gallery's last group, which the page fills in from the example data when the
+     *  compiler has examples this build does not (src/scripts/examples-runtime.ts). */
+    runtime: {
+      h: 'Added since this build',
+      p: 'The compiler has these examples and this build of the site does not yet. Their pages are filled in from the example data its main branch published.',
+    },
     /** The Description column, one line per example, keyed by the registry's id. English
      *  takes the compiler's own wording; a translation writes the same lines in its language. */
     blurbs: registryBlurbs(),
@@ -1811,6 +1817,17 @@ export const en = {
       /** The line on an `fn()` example's page, which carries the static card instead. */
       builder:
         'This example is written against the `fn()` builder API, which the editor in the [Playground](playground) does not take.',
+      /** The template page the Worker fills in for an example the compiler added after the
+       *  site was built (worker/index.ts). Its own words stand in until the Worker writes the
+       *  example's, and `note` is the line the filled page keeps. */
+      runtime: {
+        title: 'A TypeShade example newer than this site build',
+        description:
+          'A TypeShade example the compiler added after this site was built, with its source file and the WGSL and GLSL it emits.',
+        name: 'A TypeShade example',
+        blurb: 'An example the compiler added after this site was built.',
+        note: "The compiler added this example after the site was last built, so this page is filled in from the example data its main branch published. The next build gives it a picture and the site's own words.",
+      },
       /** What the page says where it draws no picture, one line per reason in
        *  NO_STILL_REASONS (scripts/artifacts.mjs). */
       noPicture: {

@@ -6,8 +6,9 @@ import { guideSectionIds } from '../lib/guide.ts';
 import { en } from './en.ts';
 import { ko } from './ko.ts';
 
-export const locales = ['en', 'ko'] as const;
-export type Locale = (typeof locales)[number];
+import { locales, type Locale } from './locales.ts';
+
+export { locales, type Locale };
 export const defaultLocale: Locale = 'en';
 
 /** Locale behaviour that is not copy: the things a page needs to know about a locale beyond

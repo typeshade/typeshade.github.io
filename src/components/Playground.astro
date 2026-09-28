@@ -14,8 +14,12 @@ interface Props {
   /** The build-time still of the seeded example, shown in the frame until the reader's own
    *  program has drawn a frame over it. */
   still?: string;
+  /** The template the Worker fills for an example newer than the build (worker/index.ts):
+   *  seeded like a page that names its example, with the example, its file name and its
+   *  still written in at request time. */
+  runtime?: boolean;
 }
-const { locale, seed, still } = Astro.props;
+const { locale, seed, still, runtime = false } = Astro.props;
 const t = copyFor(locale).playground;
 
 // The examples arrive from the vendored checkout at build time: the source text from the
@@ -35,9 +39,10 @@ const all = playgroundExamples().map((example) => ({
 if (seed && !all.some((example) => example.id === seed)) {
   throw new Error(`[playground] no .shade.ts example '${seed}' to seed the editor with`);
 }
-const examples = seed ? all.filter((example) => example.id === seed) : all;
+const examples = runtime ? [] : seed ? all.filter((example) => example.id === seed) : all;
+const seeded = seed !== undefined || runtime;
 // The name over the toolbar is the file the editor holds, so a seeded page names its own.
-const fileName = seed ? `${seed}.shade.ts` : t.fileName;
+const fileName = seed ? `${seed}.shade.ts` : runtime ? '' : t.fileName;
 const sample = `"use typeshade";
 
 class Clip {
@@ -64,6 +69,7 @@ export function fs(): Color {
 // the script that holds the logic is a bundled module and takes no `define:vars`.
 const runtimeCopy = {
   fileName,
+  releaseGroup: copyFor(locale).examples.runtime.h,
   idle: t.idle,
   ready: t.ready,
   errors: t.errors,
@@ -151,13 +157,13 @@ const runtimeCopy = {
   data-playground
   data-sample={sample}
   data-examples={JSON.stringify(examples)}
-  data-default-example={seed ?? defaultPlaygroundExample}
+  data-default-example={runtime ? '' : (seed ?? defaultPlaygroundExample)}
   data-copy={JSON.stringify(runtimeCopy)}
 >
   <div class="playground-toolbar">
     <div class="playground-pick">
-      <strong>{fileName}</strong>
-      {!seed && (
+      <strong data-runtime="file-name">{fileName}</strong>
+      {!seeded && (
         <div class="pick-row">
           <label for="playground-example">{t.exampleLabel}</label>
           <select id="playground-example" data-example>
@@ -165,7 +171,7 @@ const runtimeCopy = {
           </select>
         </div>
       )}
-      {!seed && <p data-example-note>{examples[0]?.description}</p>}
+      {!seeded && <p data-example-note>{examples[0]?.description}</p>}
     </div>
     <div class="playground-actions"><button type="button" data-share>{t.share}</button><button type="button" data-reset>{t.reset}</button><button type="button" class="primary" data-run>{t.run}</button></div>
   </div>

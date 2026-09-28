@@ -1692,6 +1692,10 @@ export const ko: Copy = {
     tableCaption: `아래 ${facts.examples}개 예제 가운데 ${facts.bothTargets}개는 WGSL과 ${glsl}을 모두 냅니다. ${facts.wgslOnlyExample.title}은 ${glsl}으로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL 전용으로 표시했습니다. WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다.`,
     wgslOnly: 'WGSL 전용',
     noStill: '그림 없음: 이 예제는 페이지가 그릴 수 있는 것이 아닙니다.',
+    runtime: {
+      h: '이 빌드 이후에 추가된 예제',
+      p: '컴파일러에는 있지만 이 사이트 빌드에는 아직 없는 예제입니다. 각 페이지는 컴파일러의 main 브랜치가 게시한 예제 데이터로 채웁니다.',
+    },
     blurbs: {
       graticule: '지도라면 다 그리는 경위선 격자.',
       hillshade: '음영 기복.',
@@ -2003,6 +2007,14 @@ export const ko: Copy = {
         '편집기에는 이 예제의 파일이 들어 있습니다. 내용을 고치면 브라우저에서 다시 컴파일하고, 편집기 옆의 탭이 따라 바뀝니다.',
       builder:
         '이 예제는 `fn()` 빌더 API로 작성해서 [Playground](playground)의 편집기가 받지 않습니다.',
+      runtime: {
+        title: '이 사이트 빌드 이후에 추가된 TypeShade 예제',
+        description:
+          '이 사이트를 빌드한 뒤 컴파일러에 추가된 TypeShade 예제입니다. 소스 파일과 컴파일러가 내는 WGSL, GLSL을 함께 보여 줍니다.',
+        name: 'TypeShade 예제',
+        blurb: '이 사이트를 빌드한 뒤 컴파일러에 추가된 예제입니다.',
+        note: '이 예제는 사이트를 마지막으로 빌드한 뒤 컴파일러에 추가되어, 컴파일러의 main 브랜치가 게시한 예제 데이터로 이 페이지를 채웠습니다. 다음 빌드에서 그림과 사이트의 번역이 붙습니다.',
+      },
       noPicture: {
         'no-glsl': `이 예제는 ${glsl} 형태가 없고 캔버스는 두 백엔드에서 같은 프로그램을 돌리므로, 이 페이지에는 그림이 없습니다.`,
         control:
