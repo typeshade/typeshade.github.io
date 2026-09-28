@@ -907,8 +907,8 @@ export const en = {
     // names and the lines under them are the gallery's, in `examples.shade`, and the source
     // text comes from the vendored checkout at build time.
     exampleLabel: 'Example',
-    // The line under the file name while the editor holds an example that imports another
-    // shader file (Rule 3.9). `{files}` is each file it imports, in code and linked to the file
+    // The line under the emit options, beside the prelude note, while the editor holds an
+    // example that imports another shader file (Rule 3.9). `{files}` is each file it imports, in code and linked to the file
     // at the pinned commit. The editor holds one file; the language worker reads the others.
     importsNote:
       'This example imports {files}. The compiler reads this file and what it imports as one program, and the editor holds this file alone.',

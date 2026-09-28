@@ -469,8 +469,8 @@ cards takes the column. A third measure needs a reason.
   (`imported-noise` imports `lib/noise.shade.ts`) is one program with it, so the page carries
   the imported file's text and the language worker reads the import through it, in the
   service and in the compile, the way `compile()` reads one through `readDocument`. A line
-  under the file name names each file the example imports, linked to it at the pinned
-  commit.
+  under the emit options, beside the note on the fullscreen triangle, names each file the
+  example imports, linked to it at the pinned commit.
 
 ## Structure of the site
 
