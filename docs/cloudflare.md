@@ -133,6 +133,10 @@ GitHub Pages were removed and the custom domain attached in their place. The
 `_github-pages-challenge-typeshade` TXT record stays, since it keeps the domain verified to the
 organization on GitHub.
 
+The Worker has no `workers.dev` address of its own (`workers_dev: false` in `wrangler.jsonc`),
+so no second copy of the site answers outside the domain. A pull request's preview version still
+answers at `pr-<n>-typeshade-site.<account>.workers.dev` (`preview_urls: true`).
+
 ## Locally
 
 ```bash
