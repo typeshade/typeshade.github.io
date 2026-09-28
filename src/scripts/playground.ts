@@ -26,6 +26,7 @@ import { decodeConsole, type ConsoleEvent } from '../../vendor/shader-dsl/src/co
 import {
   consoleBuffer,
   hasConsoleCall,
+  type ConsoleBufferResult,
 } from '../../vendor/shader-dsl/src/core/passes/console-buffer.ts';
 import type { OptLevel } from '../../vendor/shader-dsl/src/core/passes/opt/optimize.ts';
 import { reflect } from '../../vendor/shader-dsl/src/core/reflect.ts';
@@ -59,6 +60,7 @@ import { mountShader, type MountedShader, type ShaderData } from '../lib/shader-
 import {
   cornersOf,
   drawTile,
+  FRAME_LINES,
   pixelArguments,
   RASTER_PRECISION,
   entryArguments,
@@ -173,11 +175,27 @@ interface PlaygroundCopy {
   readonly consoleIndex: string;
   readonly consolePixelHint: string;
   readonly consolePixel: string;
+  readonly consolePixelGl: string;
+  readonly consolePixelGpu: string;
+  readonly consolePixelGpuNone: string;
+  readonly consolePixelGpuFailed: string;
   readonly consolePixelNone: string;
   readonly consolePixelOutside: string;
   readonly consolePixelFailed: string;
   readonly consolePixelNoRaster: string;
+  readonly consoleNotRecorded: string;
+  readonly consoleNotRecordedFrame: string;
+  readonly consoleVertex: string;
+  readonly consoleVertexGpu: string;
+  readonly consoleVertexAt: string;
+  readonly consoleRecording: string;
+  readonly consoleFrameGpu: string;
+  readonly consoleFrameDropped: string;
+  readonly consoleFrameFailed: string;
+  readonly consoleFrameCpu: string;
+  readonly consoleFrameKept: string;
   readonly pixelNote: string;
+  readonly pixelNoteRecording: string;
   readonly consoleValue: string;
   readonly bindings: BindingsCopy;
   readonly canvasNeedsVertex: string;
@@ -1328,6 +1346,7 @@ function mount(root: HTMLElement): void {
     mounted = undefined;
     mountedEngine = undefined;
     mountedSignature = '';
+    syncRecordFrame();
   };
 
   /** The still under the canvas goes for good once the reader's own program has drawn, or once
@@ -1460,6 +1479,7 @@ function mount(root: HTMLElement): void {
         mountedSignature = signature;
         retireStill();
         sayGpu(backendNote(picked));
+        syncRecordFrame();
         return;
       }
     }
@@ -1499,6 +1519,7 @@ function mount(root: HTMLElement): void {
     mountedSignature = signature;
     if (next.backend !== 'none') retireStill();
     sayGpu(backendNote(picked));
+    syncRecordFrame();
   };
 
   // ── A compute entry, dispatched ───────────────────────────────────────────────────────
@@ -1589,51 +1610,85 @@ function mount(root: HTMLElement): void {
     retireStill();
   };
 
-  /** The Console tab: the lines the last compute run delivered, in the order the CPU runs the
-   *  invocations (surface §66), or the ones one clicked pixel delivered (`heading` says which).
-   *  Only the first CONSOLE_SHOWN are drawn; the count says the rest. */
+  /** The Console tab. A report is sentences that say where its lines came from, and lists of
+   *  the lines. Only the first CONSOLE_SHOWN of a list are drawn; a sentence says the rest. */
   const CONSOLE_SHOWN = 500;
-  const showConsole = (
+  const shown = (v: unknown): string =>
+    typeof v === 'string' ? v : typeof v === 'number' ? String(v) : JSON.stringify(v);
+  const sentence = (text: string): HTMLParagraphElement => {
+    const p = document.createElement('p');
+    p.textContent = text;
+    return p;
+  };
+  /** One list of console lines, marked with `block` for a check to find. Each line leads with
+   *  where it ran: its invocation, unless `at` says otherwise. */
+  const consoleList = (
     events: readonly ConsoleEvent[],
-    dropped: number,
-    backend: 'webgpu' | 'cpu',
-    heading?: string,
-  ): void => {
-    if (!(consolePane instanceof HTMLElement)) return;
-    consolePane.replaceChildren();
-    const say = (text: string): void => {
-      const p = document.createElement('p');
-      p.textContent = text;
-      consolePane.append(p);
-    };
-    const name = backendName(backend);
-    if (heading !== undefined) say(heading);
-    else if (events.length === 0 && dropped === 0) {
-      say(fillNumbers(copy.consoleNone, { backend: name }));
-      return;
-    } else say(fillNumbers(copy.consoleLines, { lines: events.length, backend: name }));
-    if (events.length === 0) return;
+    block: string,
+    at: (e: ConsoleEvent, index: number) => string = (e) =>
+      e.invocation ? `[${e.invocation.join(', ')}]` : '',
+  ): HTMLElement[] => {
+    if (events.length === 0) return [];
     const list = document.createElement('ol');
-    const shown = (v: unknown): string =>
-      typeof v === 'string' ? v : typeof v === 'number' ? String(v) : JSON.stringify(v);
-    for (const e of events.slice(0, CONSOLE_SHOWN)) {
+    list.dataset.consoleBlock = block;
+    events.slice(0, CONSOLE_SHOWN).forEach((e, index) => {
       const li = document.createElement('li');
       if (e.method === 'warn' || e.method === 'error') li.className = e.method;
-      const at = document.createElement('span');
-      at.className = 'at';
-      at.textContent = e.invocation ? `[${e.invocation.join(', ')}]` : '';
+      const where = document.createElement('span');
+      where.className = 'at';
+      where.textContent = at(e, index);
       const body =
         e.method === 'table' && e.args.length === 1 && typeof e.args[0] === 'object'
           ? consoleTable(e.args[0], shown)
           : document.createElement('span');
       if (!(body instanceof HTMLTableElement)) body.textContent = e.args.map(shown).join(' ');
-      li.append(at, body);
+      li.append(where, body);
       list.append(li);
+    });
+    return events.length > CONSOLE_SHOWN
+      ? [list, sentence(fillNumbers(copy.consoleMore, { more: events.length - CONSOLE_SHOWN }))]
+      : [list];
+  };
+  /** How many reports the tab has shown, so a check can wait for the next one. */
+  let consolePaints = 0;
+  /** Replace the tab's contents with one report. `report` says what it is and where it ran,
+   *  and a capture adds how many lines came back and how many were dropped, for a check that
+   *  waits on one. */
+  const paintConsole = (
+    report: { readonly report: string; readonly lines?: number; readonly dropped?: number },
+    ...parts: (HTMLElement | HTMLElement[])[]
+  ): void => {
+    if (!(consolePane instanceof HTMLElement)) return;
+    consolePane.replaceChildren(...parts.flat());
+    consolePane.dataset.report = report.report;
+    consolePane.dataset.paint = String(++consolePaints);
+    if (report.lines === undefined) delete consolePane.dataset.lines;
+    else consolePane.dataset.lines = String(report.lines);
+    if (report.dropped === undefined) delete consolePane.dataset.dropped;
+    else consolePane.dataset.dropped = String(report.dropped);
+  };
+
+  /** The lines the last compute run delivered, in the order the CPU runs the invocations
+   *  (surface §66). */
+  const showConsole = (
+    events: readonly ConsoleEvent[],
+    dropped: number,
+    backend: 'webgpu' | 'cpu',
+  ): void => {
+    const name = backendName(backend);
+    if (events.length === 0 && dropped === 0) {
+      paintConsole(
+        { report: `compute/${backend}`, lines: 0, dropped: 0 },
+        sentence(fillNumbers(copy.consoleNone, { backend: name })),
+      );
+      return;
     }
-    consolePane.append(list);
-    if (events.length > CONSOLE_SHOWN)
-      say(fillNumbers(copy.consoleMore, { more: events.length - CONSOLE_SHOWN }));
-    if (dropped > 0) say(fillNumbers(copy.consoleDropped, { dropped }));
+    paintConsole(
+      { report: `compute/${backend}`, lines: events.length, dropped },
+      sentence(fillNumbers(copy.consoleLines, { lines: events.length, backend: name })),
+      consoleList(events, 'lines'),
+      dropped > 0 ? [sentence(fillNumbers(copy.consoleDropped, { dropped }))] : [],
+    );
   };
 
   /** A `console.table` value as the browser's own console lays one out (changes/0019): a row per
@@ -1671,29 +1726,273 @@ function mount(root: HTMLElement): void {
     return table;
   };
 
-  /** A module that draws runs its fragment entry once per pixel, which is far too many lines to
-   *  show, so its console calls are read one pixel at a time: the Console tab says so until the
-   *  reader clicks one, and a click runs the fragment entry for that pixel on the CPU oracle,
-   *  with the inputs the CPU draw gives it (surface §66). */
+  // ── The console of a module that draws ─────────────────────────────────────────────────
+  // Its fragment entry runs once per pixel, far too many lines to list as they come, so its
+  // console calls are read one clicked pixel or one recorded frame at a time (surface §66). On
+  // WebGPU the frame on the canvas is drawn once more from the module the compiler rewrote to
+  // record its calls, over that one pixel or over all of them. WebGL2 records nothing, so a
+  // click there, like a click on the CPU canvas, runs the pixel's fragment entry on the CPU
+  // oracle with the inputs the CPU draw gives it. A vertex entry records nothing on any GPU:
+  // its calls are the CPU oracle's, for the three vertices it places.
+
   const pixelNote = root.querySelector('[data-pixel-note]');
+  const recordFrameButton = root.querySelector('[data-record-frame]');
   /** The idle line the page was served with, which carries its code span. */
   const consoleIdle =
     consolePane instanceof HTMLElement
       ? [...consolePane.childNodes].map((n) => n.cloneNode(true))
       : [];
+  /** Room for one pixel's console entries on WebGPU, in words, and for a whole frame's. A
+   *  fragment that logs in a loop fills far more than one entry. */
+  const PIXEL_WORDS = 1 << 14;
+  const FRAME_WORDS = 1 << 18;
+  /** Each report takes the next number, so a capture a later click overtook paints nothing. */
+  let consoleRun = 0;
+
+  /** Whether the module draws and calls `console.*`, which is when a pixel or a frame logs. */
+  const logsWhileDrawing = (): boolean =>
+    compiled !== undefined && !isComputeModule() && hasConsoleCall(compiled.module);
+
+  /** The canvas WebGPU is drawing this module on, which is the one a capture can record. */
+  const recordingCanvas = (): HTMLCanvasElement | undefined =>
+    !engineIsCpu() && mounted?.backend === 'webgpu' ? gpuCanvasNow() : undefined;
+
+  /** The record button is there while WebGPU draws a module that logs. */
+  const syncRecordFrame = (): void => {
+    if (recordFrameButton instanceof HTMLButtonElement)
+      recordFrameButton.hidden = !logsWhileDrawing() || !recordingCanvas();
+  };
+
   const showPixelHint = (): void => {
     if (pixelNote instanceof HTMLElement) pixelNote.hidden = true;
-    if (!(consolePane instanceof HTMLElement)) return;
-    const logs = compiled !== undefined && hasConsoleCall(compiled.module);
-    if (logs) {
-      const p = document.createElement('p');
-      p.textContent = copy.consolePixelHint;
-      consolePane.replaceChildren(p);
-    } else consolePane.replaceChildren(...consoleIdle.map((n) => n.cloneNode(true)));
+    const logs = logsWhileDrawing();
+    if (logs) paintConsole({ report: 'hint' }, sentence(copy.consolePixelHint));
+    else if (consolePane instanceof HTMLElement) {
+      consolePane.replaceChildren(...consoleIdle.map((n) => n.cloneNode(true)));
+      consolePane.dataset.report = 'idle';
+    }
     if (frame instanceof HTMLElement) frame.dataset.logs = logs ? '1' : '0';
+    syncRecordFrame();
   };
+
+  /** The last compile's module rewritten to record its console calls: the WGSL that writes the
+   *  console buffer, the slots the fp64 guards moved to, and the calls it leaves out with the
+   *  reason for each. Made on the first capture after a compile, for the options it is made
+   *  under. */
+  let recording:
+    | {
+        readonly module: ModuleDecl;
+        readonly choice: string;
+        readonly result: ConsoleBufferResult;
+        readonly wgsl: string;
+        readonly guards: readonly { readonly name: string; readonly binding: number }[];
+      }
+    | undefined;
+  const recordingNow = (): NonNullable<typeof recording> | undefined => {
+    if (!compiled) return undefined;
+    const choice = currentChoice();
+    const key = JSON.stringify(choice);
+    if (recording?.module === compiled.module && recording.choice === key) return recording;
+    const result = consoleBuffer(compiled.module);
+    // The buffer takes the slot the guard had, so the guard is found in the rewritten module.
+    const guards = result.log
+      ? reflect(result.module, { fp64Flavor: choice.fp64Flavor })
+          .bindGroups.flatMap((group) => group.entries)
+          .filter((entry) => entry.name === '_fp64')
+          .map((entry) => ({ name: entry.name, binding: entry.binding }))
+      : [];
+    recording = {
+      module: compiled.module,
+      choice: key,
+      result,
+      wgsl: result.log ? emitWgsl(result.module, choice) : '',
+      guards,
+    };
+    return recording;
+  };
+
+  /** Draw the frame on the canvas once more on WebGPU with its console calls recorded, over
+   *  `scissor` or over all of it, and decode what came back. A module whose every call is left
+   *  out records nothing, and the frame is not drawn. */
+  const captureOnGpu = async (
+    shader: MountedShader,
+    target: HTMLCanvasElement,
+    words: number,
+    scissor?: readonly [number, number, number, number],
+  ): Promise<{
+    readonly result: ConsoleBufferResult;
+    readonly events: readonly ConsoleEvent[];
+    readonly dropped: number;
+    readonly width: number;
+    readonly height: number;
+  }> => {
+    const made = recordingNow();
+    if (!made) throw new Error('no module');
+    const log = made.result.log;
+    if (!log)
+      return {
+        result: made.result,
+        events: [],
+        dropped: 0,
+        width: target.width,
+        height: target.height,
+      };
+    const captured = await shader.captureConsole({
+      wgsl: made.wgsl,
+      group: log.group,
+      binding: log.binding,
+      textures: made.guards,
+      words,
+      ...(scissor ? { scissor } : {}),
+    });
+    if (!captured) throw new Error('the canvas has stopped drawing');
+    const decoded = decodeConsole(captured.words, log);
+    return {
+      result: made.result,
+      events: decoded.events,
+      dropped: decoded.dropped,
+      width: captured.width,
+      height: captured.height,
+    };
+  };
+
+  /** What the CPU oracle logs for the grid of a `width` by `height` canvas, with the inputs the
+   *  CPU draw gives it: the vertex entry's lines for the three vertices it places, each with
+   *  its index, and at `pixel` the fragment entry's lines, marked with that pixel. `why` is the
+   *  sentence to show when the fragment entry did not run there, and `outside` says the reason
+   *  was that the triangle does not cover the pixel. */
+  interface CpuConsole {
+    readonly vertex: readonly { readonly index: number; readonly event: ConsoleEvent }[];
+    readonly pixel: readonly ConsoleEvent[];
+    readonly why?: string;
+    readonly outside?: boolean;
+  }
+  const consoleOnCpu = (
+    width: number,
+    height: number,
+    pixel?: { readonly x: number; readonly y: number },
+  ): CpuConsole => {
+    const vertex: { index: number; event: ConsoleEvent }[] = [];
+    const lines: ConsoleEvent[] = [];
+    const base = rasterPlan();
+    if (!compiled || !base) return { vertex, pixel: lines, why: copy.consolePixelNoRaster };
+    const plan: RasterPlan = {
+      ...base,
+      width,
+      height,
+      bindings: bindings.cpuBindings(frozen ?? 0, width, height, pointer),
+    };
+    // Which entry is running, so each line is filed under the entry that made it.
+    let running: 'vertex' | 'fragment' | undefined;
+    let index = -1;
+    try {
+      const oracle = compileModule(compiled.module, {
+        gpuStubs: true,
+        precision: RASTER_PRECISION,
+        consoleSink: (e) => {
+          if (running === 'vertex') vertex.push({ index, event: e });
+          else if (running === 'fragment' && pixel)
+            lines.push({ ...e, invocation: [pixel.x, pixel.y, 0] });
+        },
+      });
+      for (const [name, value] of Object.entries(plan.bindings ?? {}))
+        oracle.setBinding(name, value as never);
+      const cpu = oracle.fns as CpuFunctions;
+      const place = cpu[plan.vertex.name];
+      // `cornersOf` runs the vertex entry for the indices 0, 1 and 2, in that order.
+      running = 'vertex';
+      const corners = place
+        ? cornersOf(
+            {
+              [plan.vertex.name]: (...args: never[]) => {
+                index += 1;
+                return place(...args);
+              },
+            },
+            plan,
+          )
+        : undefined;
+      running = undefined;
+      if (!pixel) return { vertex, pixel: lines };
+      const args = corners && pixelArguments(plan, corners, pixel.x, pixel.y);
+      if (!args)
+        return {
+          vertex,
+          pixel: lines,
+          why: fillNumbers(copy.consolePixelOutside, pixel),
+          outside: true,
+        };
+      running = 'fragment';
+      cpu[plan.fragment.name]!(...(args as never[]));
+      running = undefined;
+    } catch (error) {
+      running = undefined;
+      return {
+        vertex,
+        pixel: lines,
+        ...(pixel
+          ? {
+              why: fillNumbers(copy.consolePixelFailed, {
+                ...pixel,
+                reason: error instanceof Error ? error.message : String(error),
+              }),
+            }
+          : {}),
+      };
+    }
+    return { vertex, pixel: lines };
+  };
+
+  const spanKey = (span: ConsoleEvent['span']): string =>
+    span ? `${span.start}:${span.length}` : '';
+
+  /** The vertex entry's lines, under the sentence that says why they come from the CPU. */
+  const vertexPart = (cpu: CpuConsole, onGpu: boolean): HTMLElement[] =>
+    cpu.vertex.length === 0
+      ? []
+      : [
+          sentence(onGpu ? copy.consoleVertexGpu : copy.consoleVertex),
+          ...consoleList(
+            cpu.vertex.map((v) => v.event),
+            'vertex',
+            (_, i) => fillNumbers(copy.consoleVertexAt, { index: cpu.vertex[i]!.index }),
+          ),
+        ];
+
+  /** The calls the recorded module leaves out, a sentence each with the compiler's reason,
+   *  and at a pixel what each logged there on the CPU oracle. A call the vertex entry logged
+   *  is the vertex part's, and at a pixel a call the pixel did not reach is left unsaid. */
+  const notRecordedPart = (
+    result: ConsoleBufferResult,
+    cpu: CpuConsole,
+    atPixel: boolean,
+  ): HTMLElement[] => {
+    const byVertex = new Set(cpu.vertex.map((v) => spanKey(v.event.span)));
+    const said = new Set<string>();
+    const out: HTMLElement[] = [];
+    for (const call of result.notRecorded) {
+      const key = spanKey(call.span);
+      if (!call.span || said.has(key) || byVertex.has(key)) continue;
+      said.add(key);
+      const line = outOfDocument(call.span.line) + 1;
+      if (!atPixel) {
+        out.push(
+          sentence(fillNumbers(copy.consoleNotRecordedFrame, { line, reason: call.reason })),
+        );
+        continue;
+      }
+      const lines = cpu.pixel.filter((e) => spanKey(e.span) === key);
+      if (lines.length === 0) continue;
+      out.push(
+        sentence(fillNumbers(copy.consoleNotRecorded, { line, reason: call.reason })),
+        ...consoleList(lines, 'not-recorded'),
+      );
+    }
+    return out;
+  };
+
   const logPixel = (target: HTMLCanvasElement, event: MouseEvent): void => {
-    if (!compiled || isComputeModule() || !hasConsoleCall(compiled.module)) return;
+    if (!logsWhileDrawing()) return;
     const box = target.getBoundingClientRect();
     if (box.width === 0 || box.height === 0) return;
     const width = target.width;
@@ -1707,57 +2006,62 @@ function mount(root: HTMLElement): void {
       Math.max(0, Math.floor(((event.clientY - box.top) / box.height) * height)),
     );
     const at = { x, y };
-    const lines: ConsoleEvent[] = [];
-    const report = (heading: string): void => {
-      showConsole(lines, 0, 'cpu', heading);
+    const mine = ++consoleRun;
+    const cpu = consoleOnCpu(width, height, at);
+    const note = (text: string): void => {
       if (pixelNote instanceof HTMLElement) {
-        pixelNote.textContent = fillNumbers(copy.pixelNote, { x, y, lines: lines.length });
+        pixelNote.textContent = text;
         pixelNote.hidden = false;
       }
     };
-    const base = rasterPlan();
-    if (!base) return report(copy.consolePixelNoRaster);
-    // The pixel grid of the canvas that was clicked, so `position` is the pixel the reader
-    // pointed at on the GPU canvas as on the CPU one.
-    const plan: RasterPlan = {
-      ...base,
-      width,
-      height,
-      bindings: bindings.cpuBindings(frozen ?? 0, width, height, pointer),
-    };
-    // The vertex entry runs three times to place the triangle; only the fragment's own call is
-    // listened to, so a vertex entry's console call does not read as the pixel's.
-    let listening = false;
-    try {
-      const oracle = compileModule(compiled.module, {
-        gpuStubs: true,
-        precision: RASTER_PRECISION,
-        consoleSink: (e) => {
-          if (listening) lines.push({ ...e, invocation: [x, y, 0] });
-        },
-      });
-      for (const [name, value] of Object.entries(plan.bindings ?? {}))
-        oracle.setBinding(name, value as never);
-      const cpu = oracle.fns as CpuFunctions;
-      const corners = cornersOf(cpu, plan);
-      const args = corners && pixelArguments(plan, corners, x, y);
-      if (!args) return report(fillNumbers(copy.consolePixelOutside, at));
-      listening = true;
-      cpu[plan.fragment.name]!(...(args as never[]));
-    } catch (error) {
-      listening = false;
-      return report(
-        fillNumbers(copy.consolePixelFailed, {
-          ...at,
-          reason: error instanceof Error ? error.message : String(error),
-        }),
+    const onCpu = (heading: string): void => {
+      paintConsole(
+        { report: 'pixel/cpu', lines: cpu.pixel.length, dropped: 0 },
+        sentence(
+          cpu.why ?? (cpu.pixel.length === 0 ? fillNumbers(copy.consolePixelNone, at) : heading),
+        ),
+        consoleList(cpu.pixel, 'pixel'),
+        vertexPart(cpu, false),
       );
+      note(fillNumbers(copy.pixelNote, { x, y, lines: cpu.pixel.length }));
+    };
+    const shader = mounted;
+    if (!shader || target !== recordingCanvas()) {
+      // The CPU canvas, or a GPU canvas that cannot record: the CPU oracle's lines.
+      const onGl = target === gpuCanvasNow() && shader?.backend === 'webgl2';
+      onCpu(fillNumbers(onGl ? copy.consolePixelGl : copy.consolePixel, at));
+      return;
     }
-    listening = false;
-    report(
-      lines.length === 0
-        ? fillNumbers(copy.consolePixelNone, at)
-        : fillNumbers(copy.consolePixel, { ...at, lines: lines.length }),
+    note(fillNumbers(copy.pixelNoteRecording, at));
+    void captureOnGpu(shader, target, PIXEL_WORDS, [x, y, 1, 1]).then(
+      (got) => {
+        if (mine !== consoleRun) return;
+        const none = got.events.length === 0 && got.dropped === 0;
+        paintConsole(
+          { report: 'pixel/webgpu', lines: got.events.length, dropped: got.dropped },
+          sentence(
+            none && cpu.outside
+              ? (cpu.why ?? '')
+              : fillNumbers(none ? copy.consolePixelGpuNone : copy.consolePixelGpu, at),
+          ),
+          consoleList(got.events, 'pixel'),
+          got.dropped > 0
+            ? [sentence(fillNumbers(copy.consoleDropped, { dropped: got.dropped }))]
+            : [],
+          notRecordedPart(got.result, cpu, true),
+          vertexPart(cpu, true),
+        );
+        note(fillNumbers(copy.pixelNote, { x, y, lines: got.events.length }));
+      },
+      (error: unknown) => {
+        if (mine !== consoleRun) return;
+        onCpu(
+          fillNumbers(copy.consolePixelGpuFailed, {
+            ...at,
+            reason: error instanceof Error ? error.message : String(error),
+          }),
+        );
+      },
     );
   };
   if (frame instanceof HTMLElement) {
@@ -1767,6 +2071,49 @@ function mount(root: HTMLElement): void {
       if (target instanceof HTMLCanvasElement) logPixel(target, event);
     });
   }
+
+  /** Every pixel of the frame on the canvas, recorded on WebGPU. */
+  const recordFrame = async (): Promise<void> => {
+    const shader = mounted;
+    const target = recordingCanvas();
+    if (!logsWhileDrawing() || !shader || !target) return;
+    const mine = ++consoleRun;
+    if (pixelNote instanceof HTMLElement) pixelNote.hidden = true;
+    paintConsole({ report: 'frame/pending' }, sentence(copy.consoleRecording));
+    const cpu = consoleOnCpu(target.width, target.height);
+    try {
+      const got = await captureOnGpu(shader, target, FRAME_WORDS);
+      if (mine !== consoleRun) return;
+      paintConsole(
+        { report: 'frame/webgpu', lines: got.events.length, dropped: got.dropped },
+        sentence(
+          fillNumbers(copy.consoleFrameGpu, {
+            width: got.width,
+            height: got.height,
+            lines: got.events.length,
+          }),
+        ),
+        consoleList(got.events, 'frame'),
+        got.dropped > 0
+          ? [sentence(fillNumbers(copy.consoleFrameDropped, { dropped: got.dropped }))]
+          : [],
+        notRecordedPart(got.result, cpu, false),
+        vertexPart(cpu, true),
+      );
+    } catch (error) {
+      if (mine !== consoleRun) return;
+      paintConsole(
+        { report: 'frame/failed' },
+        sentence(
+          fillNumbers(copy.consoleFrameFailed, {
+            reason: error instanceof Error ? error.message : String(error),
+          }),
+        ),
+      );
+    }
+  };
+  if (recordFrameButton instanceof HTMLButtonElement)
+    recordFrameButton.addEventListener('click', () => void recordFrame());
 
   /** Room for this many words of console entries in the WebGPU run's buffer. */
   const CONSOLE_WORDS = 1 << 16;
@@ -2041,6 +2388,7 @@ function mount(root: HTMLElement): void {
       })),
       bindings: bindings.cpuBindings(frozen ?? 0, canvas.width, canvas.height, pointer),
       ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
+      ...(hasConsoleCall(compiled.module) ? { console: true } : {}),
     };
   };
 
@@ -2056,12 +2404,72 @@ function mount(root: HTMLElement): void {
     return out;
   };
 
+  /** The console lines one CPU draw collects from its tiles, and the report it paints once
+   *  the draw is done. A report the reader moved past, by a click or a newer draw, paints
+   *  nothing. */
+  interface FrameConsole {
+    add(lines: readonly ConsoleEvent[], logged: number): void;
+    show(): void;
+  }
+  const frameConsoleFor = (plan: RasterPlan, mine: number): FrameConsole => {
+    const kept: ConsoleEvent[] = [];
+    let logged = 0;
+    const run = plan.console ? ++consoleRun : consoleRun;
+    return {
+      add(lines, calls) {
+        logged += calls;
+        for (const line of lines) {
+          if (kept.length >= FRAME_LINES) break;
+          kept.push(line);
+        }
+      },
+      show() {
+        if (!plan.console || run !== consoleRun || mine !== job) return;
+        // Tiles land in the order the workers finish them. The lines are listed row by row,
+        // and one pixel's in the order it made them.
+        const rows = [...kept].sort(
+          (a, b) =>
+            (a.invocation?.[1] ?? 0) - (b.invocation?.[1] ?? 0) ||
+            (a.invocation?.[0] ?? 0) - (b.invocation?.[0] ?? 0),
+        );
+        const cpu = consoleOnCpu(plan.width, plan.height);
+        paintConsole(
+          { report: 'frame/cpu', lines: rows.length, dropped: logged - rows.length },
+          sentence(
+            fillNumbers(copy.consoleFrameCpu, {
+              width: plan.width,
+              height: plan.height,
+              lines: rows.length,
+            }),
+          ),
+          consoleList(rows, 'frame'),
+          logged > rows.length
+            ? [sentence(fillNumbers(copy.consoleFrameKept, { more: logged - rows.length }))]
+            : [],
+          vertexPart(cpu, false),
+        );
+      },
+    };
+  };
+
   const drawHere = async (
     plan: RasterPlan,
     context: CanvasRenderingContext2D,
     mine: number,
+    frameConsole: FrameConsole,
   ): Promise<void> => {
-    const oracle = compileModule(compiled!.module, { gpuStubs: true, precision: RASTER_PRECISION });
+    let pixel: [number, number, number] | undefined;
+    const oracle = compileModule(compiled!.module, {
+      gpuStubs: true,
+      precision: RASTER_PRECISION,
+      ...(plan.console
+        ? {
+            consoleSink: (e: ConsoleEvent) => {
+              if (pixel) frameConsole.add([{ ...e, invocation: pixel }], 1);
+            },
+          }
+        : {}),
+    });
     for (const [name, value] of Object.entries(plan.bindings ?? {}))
       oracle.setBinding(name, value as never);
     const cpu = oracle.fns as CpuFunctions;
@@ -2075,7 +2483,21 @@ function mount(root: HTMLElement): void {
       if (mine !== job) return;
       const x1 = Math.min(plan.width, x0 + tile);
       const y1 = Math.min(plan.height, y0 + tile);
-      const drawn = drawTile(cpu, plan, corners, x0, y0, x1, y1);
+      const drawn = drawTile(
+        cpu,
+        plan,
+        corners,
+        x0,
+        y0,
+        x1,
+        y1,
+        plan.console
+          ? (px, py) => {
+              pixel = [px, py, 0];
+            }
+          : undefined,
+      );
+      pixel = undefined;
       covered += drawn.covered;
       context.putImageData(new ImageData(drawn.pixels, x1 - x0, y1 - y0), x0, y0);
       // Handing the page back costs a task turn, so it happens every few tiles and not every
@@ -2097,6 +2519,7 @@ function mount(root: HTMLElement): void {
       canvasNote.dataset.px = String(covered);
       canvasNote.dataset.workers = '1';
     }
+    frameConsole.show();
   };
 
   const drawOnCpu = (): void => {
@@ -2125,9 +2548,10 @@ function mount(root: HTMLElement): void {
       drawing = 0;
       syncDrawButton();
     };
+    const frameConsole = frameConsoleFor(plan, mine);
 
     if (typeof Worker !== 'function') {
-      void drawHere(plan, context, mine)
+      void drawHere(plan, context, mine, frameConsole)
         .catch((error) => {
           canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
         })
@@ -2136,7 +2560,7 @@ function mount(root: HTMLElement): void {
     }
 
     if (!openPool()) {
-      void drawHere(plan, context, mine)
+      void drawHere(plan, context, mine, frameConsole)
         .catch((error) => {
           canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
         })
@@ -2232,6 +2656,7 @@ function mount(root: HTMLElement): void {
       canvasNote.dataset.px = String(covered);
       canvasNote.dataset.workers = String(pool.length);
       finish();
+      frameConsole.show();
     };
 
     const handOut = (worker: Worker): void => {
@@ -2271,6 +2696,7 @@ function mount(root: HTMLElement): void {
         running -= 1;
         done += 1;
         covered += message.covered;
+        if (message.lines) frameConsole.add(message.lines, message.logged ?? 0);
         inFlight.delete(`${message.x0},${message.y0},${message.x1},${message.y1}`);
         pending.push({
           image: new ImageData(message.pixels, message.x1 - message.x0, message.y1 - message.y0),
@@ -2285,7 +2711,7 @@ function mount(root: HTMLElement): void {
         // A worker that cannot start at all leaves the drawing to this thread.
         for (const other of pool) other.terminate();
         pool = [];
-        void drawHere(plan, context, mine)
+        void drawHere(plan, context, mine, frameConsoleFor(plan, mine))
           .catch((error) => {
             canvasNote.textContent = rasterFailure(error instanceof Error ? error.message : '');
           })
