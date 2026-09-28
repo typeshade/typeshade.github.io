@@ -27,7 +27,7 @@ interface Props {
   editHref?: string;
   /** The document is in another language than the page's chrome. */
   bodyLang?: string;
-  /** Keep the page out of search indexes (a template preview). */
+  /** Keep the page out of search indexes, the site's own included (a template preview). */
   noindex?: boolean;
   /** A page of the API reference: the category whose members the sidebar opens. */
   openCategory?: string;
@@ -102,7 +102,7 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2;
         ))}
       </nav>
     </aside>
-    <article class="doc docs-content" lang={bodyLang} data-pagefind-body data-pagefind-meta={meta} data-permalink={d.permalink}>
+    <article class="doc docs-content" lang={bodyLang} data-pagefind-body={noindex ? undefined : true} data-pagefind-meta={meta} data-permalink={d.permalink}>
       <slot />
       <p class="docs-edit" lang={locale} data-pagefind-ignore>
         <a href={editHref}>

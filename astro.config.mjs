@@ -81,6 +81,9 @@ export default defineConfig({
           '/ko/examples',
           '/ko/guide',
           '/ko/404',
+          // The template worker/index.ts fills in for an example newer than the build.
+          '/guide/examples/runtime-example',
+          '/ko/guide/examples/runtime-example',
         ].includes(new URL(page).pathname.replace(/\/$/, '')),
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
       serialize: (item) => ({ ...item, lastmod }),

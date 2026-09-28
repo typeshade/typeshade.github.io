@@ -161,6 +161,35 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
       ))}
     </section>
 
+    {/* Examples the compiler has and this build does not: the section stays hidden until
+        src/scripts/examples-runtime.ts finds some in the example data the Worker serves, and
+        fills a tile for each from the template below. */}
+    <section data-examples-runtime hidden>
+      <h2 id={slugify(e.runtime.h)}>{e.runtime.h}</h2>
+      <p>{e.runtime.p}</p>
+      <ul class="example-grid grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-x-4 gap-y-6" data-runtime-grid>
+        <template data-runtime-tile>
+          <li>
+            <a class={tile} href="">
+              <span class="tile-cover">
+                <img src="" alt="" loading="lazy" decoding="async" data-tile-still />
+                <span class="no-still" data-tile-empty>
+                  <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                    <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
+                    <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
+                    <circle cx="14.5" cy="15.5" r="2.25" />
+                  </svg>
+                  <span class="no-still-note">{e.noStill}</span>
+                </span>
+              </span>
+              <span class={tileTitle}><span data-tile-title></span><span class={tag} data-tile-wgsl>{e.wgslOnly}</span></span>
+              <span class={tileBlurb} data-tile-blurb></span>
+            </a>
+          </li>
+        </template>
+      </ul>
+    </section>
+
     <p>{e.printIntro}</p>
     <CodeFrame label={t.codeLabels.print}><Code code={printCommands} lang="bash" locale={locale} /></CodeFrame>
     <section><h2 id={slugify(e.glsl.h)}>{e.glsl.h}</h2><p><Rich text={e.glsl.p1} locale={locale} /></p><CodeFrame label={t.codeLabels.glsl}><Code code={hero.glsl} lang="glsl" locale={locale} /></CodeFrame><p><Rich text={e.glsl.p2} locale={locale} /></p></section>
@@ -187,3 +216,7 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
   @media (hover: hover) and (pointer: fine) { .example-tile:hover .tile-cover img { transform: scale(1.03) } }
   .example-tile-blurb :global(code) { font-family: var(--font-mono); font-size: 0.9em }
 </style>
+
+<script>
+  import '../../scripts/examples-runtime.ts';
+</script>

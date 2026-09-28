@@ -23,3 +23,5 @@ src/lib/typed-error-shader.ts
 # The TypeScript inside a component (its frontmatter and <script>) gets its `;` from
 # scripts/astro-semicolons.ts instead.
 *.astro
+.wrangler
+.cache

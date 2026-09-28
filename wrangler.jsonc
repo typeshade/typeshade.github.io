@@ -1,0 +1,28 @@
+// typeshade.dev on Cloudflare Workers (docs/cloudflare.md). The Astro build in dist/ is served
+// as static assets; the Worker in worker/index.ts runs first only on the routes below, where it
+// adds what the build does not have: the example data in R2, named current by D1.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "typeshade-site",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // The routes are written with a trailing slash (astro.config.mjs), and a path without one
+    // redirects to it, the way GitHub Pages served the site.
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*", "/guide/examples/*", "/ko/guide/examples/*"],
+  },
+  "r2_buckets": [{ "binding": "DATA", "bucket_name": "typeshade-data" }],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "typeshade",
+      "database_id": "bd328565-57f1-47b9-b970-98fb2b3b792a",
+      "migrations_dir": "worker/migrations",
+    },
+  ],
+  "observability": { "enabled": true },
+}

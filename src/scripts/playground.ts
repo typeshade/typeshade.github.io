@@ -51,6 +51,7 @@ import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
+import { fetchExample, fetchIndex, pageLocale } from './example-data-client.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
 // what this page already holds after a compile.
@@ -102,6 +103,8 @@ interface EmitChoice {
 /** The words the component wrote into `data-copy`; they live in src/i18n. */
 interface PlaygroundCopy {
   readonly fileName: string;
+  /** The picker's group for the examples newer than the build. */
+  readonly releaseGroup: string;
   readonly idle: string;
   readonly ready: string;
   readonly errors: string;
@@ -2517,9 +2520,37 @@ function mount(root: HTMLElement): void {
     });
   }
 
+  /** The examples the compiler has and this build does not, from the example data the Worker
+   *  serves (src/scripts/example-data-client.ts), added to the picker in a group of their own
+   *  so a link can name one. Where there is no Worker, the picker keeps the build's list. */
+  const addReleaseExamples = async (): Promise<void> => {
+    if (!(examplePicker instanceof HTMLSelectElement)) return;
+    const index = await fetchIndex();
+    const fresh = (index?.examples ?? []).filter(
+      (x) => x.corpus === 'shade' && !examples.some((e) => e.id === x.id),
+    );
+    if (fresh.length === 0) return;
+    const records = await Promise.all(fresh.map((x) => fetchExample(x.id)));
+    const locale = pageLocale();
+    const group = document.createElement('optgroup');
+    group.label = copy.releaseGroup;
+    for (const record of records) {
+      if (!record) continue;
+      examples.push({
+        id: record.id,
+        source: record.source,
+        title: record.title[locale],
+        description: record.blurb[locale],
+      });
+      group.append(new Option(record.title[locale], record.id));
+    }
+    if (group.childElementCount > 0) examplePicker.append(group);
+  };
+
   /** What the page opens with: the source in the link, else the example the link names, else
    *  the first example. */
   const openingSource = async (): Promise<{ source: string; example?: PlaygroundExample }> => {
+    await addReleaseExamples();
     const params = hashParams();
     // The options come off the fragment before the first render, so the panes are painted
     // once, under the settings the link carried.
