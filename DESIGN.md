@@ -511,6 +511,23 @@ cards takes the column. A third measure needs a reason.
   the files. The CPU oracle draws the passes in order at the grid's size, keeping each pass's
   colour as floats, at frame 0. A still of an example with passes is the frame after a second
   of them at 1/60 s apart.
+- **The link and the folder.** The link is a format another program reads too, the VS Code
+  extension (vscode-typeshade `docs/playground-bridge.md`), so it changes only on purpose. Its
+  fragment is URL search parameters. One names what the editor holds: `example`, an example
+  as it ships, `blank`, or `code`, the main file, which `files`, a JSON object of the other
+  files by path, and `passes`, `name:path` pairs in draw order, go with. The emit options and
+  the backend pick follow (`opt`, `parens`, `minify`, `numbers`, `obfuscate`, `fp64`,
+  `precision`, `backend`), each only when it is not the default. `code` and `files` are
+  `encodeSource` (`src/scripts/source-link.ts`): a `z` then the UTF-8 bytes `deflate-raw`
+  compressed in base64url, or a `u` then the bytes uncompressed where the browser has no
+  `CompressionStream`. Share stores the fragment with the Worker behind `/s/<id>`, which
+  redirects to the Playground with it. The download button beside + writes the same workspace
+  as a zip of a folder VS Code opens: the files at their paths with the main file at the root,
+  `typeshade.json` naming the main file and the passes in the `{ name, file }` shape of the
+  `@example` block, a `tsconfig.json` over `**/*.shade.ts`, and `.vscode/extensions.json`
+  recommending the extension (`src/scripts/workspace-folder.ts`). It is stored without
+  compression and every entry carries one fixed time, so a workspace gives the same bytes
+  each time.
 
 ## Structure of the site
 

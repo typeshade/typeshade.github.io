@@ -59,6 +59,7 @@ import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
 import { decodeSource, encodeSource } from './source-link.ts';
+import { workspaceFolder, zipStored } from './workspace-folder.ts';
 import { provideProgram } from './report-context.ts';
 import {
   fetchExample,
@@ -254,6 +255,7 @@ interface PlaygroundCopy {
   readonly workspace: {
     readonly files: string;
     readonly newFile: string;
+    readonly download: string;
     readonly newFileName: string;
     readonly badName: string;
     readonly takenName: string;
@@ -4039,6 +4041,24 @@ export function wave(x: f32, t: f32): f32 {
   };
   if (newFileButton instanceof HTMLButtonElement)
     newFileButton.addEventListener('click', askFileName);
+  // Download: the workspace as a zip of a folder VS Code opens, the files as the tabs hold them
+  // and the pass graph in typeshade.json (src/scripts/workspace-folder.ts).
+  const downloadButton = root.querySelector('[data-download]');
+  if (downloadButton instanceof HTMLButtonElement)
+    downloadButton.addEventListener('click', () => {
+      if (!model) return;
+      const folder = workspaceFolder(
+        { path: fileName, text: model.getValue() },
+        workspaceFiles(),
+        passGraph,
+      );
+      const url = URL.createObjectURL(new Blob([zipStored(folder)], { type: 'application/zip' }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${openedExample || fileName.replace(/\.shade\.ts$/, '')}.zip`;
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
 
   // ── The gallery ────────────────────────────────────────────────────────────────────────
   // A link that names nothing opens on the examples as tiles; a tile opens the editor on that

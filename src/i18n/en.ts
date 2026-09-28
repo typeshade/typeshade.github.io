@@ -1004,6 +1004,8 @@ export const en = {
       noStill: 'No preview',
       files: 'Files',
       newFile: 'New file',
+      // The workspace as a folder VS Code opens (src/scripts/workspace-folder.ts).
+      download: 'Download as a folder',
       newFileName: 'File name',
       badName:
         'A file name ends in .shade.ts and uses letters, digits, dots, hyphens, underscores and slashes.',
