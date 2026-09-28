@@ -700,7 +700,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '7.1': 'UFX5x6t2_pm0hKz-JXQbn3GhNx0yKdrlpgmNPEZowog=',
   '7.2': 'hcZZVUBWM6MYljeqQEMADAV28hvp0cOLU8-wy6vOvWs=',
   '7.3': 'dg4uzav_rg6XoVu7GPWJl1-ldfIExMJUCzfIWZ_t6i0=',
-  '7.4': 'Uv0vLGCbLp5zz7Re_EgMql76iLGf_NAzyMWkXNxIdZA=',
+  '7.4': 'Emky1db0T6Mhf0H1_VyxRD8Ub8JLKEB_0DqK59uhD-M=',
   '7.5': '4308LIgSysAnlue51NfkW0VyNcY9-VTAPwyWJ1UyQN4=',
   '7.6': 'm4mWGf9QgS6Ru5ZCXxLWnPz_fSECO5xWs7hGS_XZAVI=',
   '7.7': 'rVsyjMQJvLpuTdW-wJpX7HLIu1Xi8dgLyl4zp6KiDoE=',
@@ -723,7 +723,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '8.17': 'bmgiPFsEG2Yblp2DIpYIO5VBhGkKFOOZm3PGAYCW__U=',
   '8.18': 'Y8IT_8FTtqB3t_T4_Rg8dC6G8BTY7BuEbQUHM1MNMRw=',
   '8.19': 'C4CCOJUbq6DPSVzJtfwTX_uFWxk4Rc_-ISBYsfrtxKk=',
-  '8.22': '8zf-L536xQRzH92fUkwszTQ9pU-OwuOe95h6KZvVhP4=',
+  '8.22': 'CSipAu_lP4nuQbNgkYGyi9q-TIQ0sDBvNaUJxFl4U1s=',
   '8.23': '5X2lEcDkoSD2N8ZiiXRKk3_AVJlejFcaPJl4X4n611U=',
   '9.2': 'UjdAYZRLzP-1L7XryMHNvYUQDbMNmFmw-YnvSbJL2LU=',
   '10.1': 'd8TWuezE06vSk0zrFfeQ9pKxFXYk_P4q_IC94Ny_CF8=',
@@ -731,7 +731,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '11.9': 'abpvFP8_FeG5Irb_u9A74_sdrqDUWxKV-5gR39Azldg=',
   '12.3': '8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=',
   '12.4': 'BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=',
-  '12.6': '-wvwEbwrA-76jY_oUQPGlpEGUVnoMywBTiEqpmQ56qE=',
+  '12.6': 'mtagVARmVcrr7MFUlSWwsp__ZpD9GjxUFaerAkPz5WI=',
 };
 
 /** The fingerprint the English pages that explain a rule were last read against, if any. */
