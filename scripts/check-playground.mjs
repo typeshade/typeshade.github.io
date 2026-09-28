@@ -87,7 +87,8 @@
 //      its pass as a marked tab, draws into rgba16float on WebGPU, builds a trail over frames
 //      that Pause holds and Restart clears, and draws on WebGL2 and on the CPU oracle;
 //      separable-blur draws;
-//      the link carries the graph, and the WGSL tab shows a pass's own module on its tab
+//      the link carries the graph, and the WGSL tab shows a pass's own module on its tab;
+//      Download writes the workspace, pass graph and edits included, as a zip of a folder
 //  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
 //      editor with a tab for each file it imports, an edit to the imported file changes the
 //      emitted WGSL, a new file is a tab the main file can import, the link carries the
@@ -3165,6 +3166,30 @@ async function checkMultipass(browser, origin) {
       // The program itself holds no 0.9; the pass's fade, as edited above, does.
       if (!wgsl.includes('0.9'))
         problems.push("the WGSL tab does not show the pass's own module while its tab is open");
+      // Download writes the workspace as a zip of a folder: the edited pass file, and
+      // typeshade.json naming the main file and the graph (src/scripts/workspace-folder.ts).
+      const [download] = await Promise.all([
+        page.waitForEvent('download', { timeout: 10_000 }),
+        page.click('[data-download]'),
+      ]);
+      const zip = readFileSync(await download.path());
+      const text = zip.toString('utf8');
+      const manifest = /\{\n {2}"main"[\s\S]*?\n\}\n/.exec(text)?.[0];
+      const parsed = manifest ? JSON.parse(manifest) : undefined;
+      if (
+        zip.readUInt32LE(0) !== 0x04034b50 ||
+        zip.readUInt32LE(zip.length - 22) !== 0x06054b50 ||
+        download.suggestedFilename() !== 'feedback-trail.zip' ||
+        parsed?.passes?.[0]?.name !== 'trail' ||
+        parsed?.passes?.[0]?.file !== 'passes/trail.shade.ts' ||
+        !text.includes('passes/trail.shade.ts') ||
+        !text.includes('.vscode/extensions.json') ||
+        !/\b0\.9\b/.test(text)
+      )
+        problems.push(
+          `the folder download is not the workspace: ${download.suggestedFilename()}, ${zip.length} bytes, typeshade.json ${JSON.stringify(parsed)}`,
+        );
+      report.push(`folder ${zip.length} bytes`);
     }
     for (const message of errorsOf(opened)) problems.push(`the page threw: ${message}`);
   } finally {
