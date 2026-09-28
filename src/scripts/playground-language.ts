@@ -44,6 +44,14 @@ export interface FilesRequest {
   readonly files: Readonly<Record<string, string>>;
 }
 
+/** Drops a document the editor held: a file the reader deleted, or one an example that is no
+ *  longer open brought. No reply. A document that imported it resolves the import again on its
+ *  next query and finds nothing, which is the diagnostic the reader should see. */
+export interface CloseRequest {
+  readonly kind: 'close';
+  readonly uri: string;
+}
+
 interface Asked {
   readonly id: number;
   readonly uri: string;
@@ -70,7 +78,7 @@ export type QueryRequest =
     })
   | (Asked & { readonly kind: 'semanticTokens' });
 
-export type LanguageRequest = UpdateRequest | FilesRequest | QueryRequest;
+export type LanguageRequest = UpdateRequest | FilesRequest | CloseRequest | QueryRequest;
 
 /** What one analysis of a document comes back as: the service's diagnostics, whether the file
  *  carried the directive, and the lowered module when nothing was an error. The module is the
@@ -115,6 +123,8 @@ export interface LanguageClient {
   files(files: Readonly<Record<string, string>>): void;
   /** Hands the worker the document as it is now. No reply; the next query answers for it. */
   update(uri: string, text: string, version: number): void;
+  /** Drops a document the worker holds. No reply. */
+  close(uri: string): void;
   /** Asks the worker one question about `uri` at `version`. Resolves to the answer, or to
    *  `undefined` when the editor moved past `version` before the answer arrived, or when the
    *  worker failed to answer (in which case `onFailure` has been told why). */
@@ -165,6 +175,9 @@ export function createLanguageClient(
     },
     update(uri, text, version) {
       worker.postMessage({ kind: 'update', uri, text, version } satisfies UpdateRequest);
+    },
+    close(uri) {
+      worker.postMessage({ kind: 'close', uri } satisfies CloseRequest);
     },
     request(kind, uri, version, extra) {
       const id = nextId;

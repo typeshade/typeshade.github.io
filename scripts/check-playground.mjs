@@ -83,6 +83,10 @@
 //      give the same line, and the vertex entry's calls are the CPU oracle's
 //  49. recording the frame on WebGPU gives every pixel's lines, row by row, and a frame that
 //      overflows the buffer keeps whole lines and counts every call it dropped
+//  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
+//      editor with a tab for each file it imports, an edit to the imported file changes the
+//      emitted WGSL, a new file is a tab the main file can import, the link carries the
+//      files, Back returns to the gallery, and the transport holds and restarts the clock
 //
 // Monaco comes from jsdelivr, the way the page loads it for a reader, so a runner with no
 // route to that host cannot check 2, 3 or 4. That case is reported on its own, with the
@@ -1445,7 +1449,9 @@ async function checkRoute(browser, origin, route) {
   const problems = [];
   let cdnOnly = false;
   try {
-    await page.goto(`${origin}${route}`, { waitUntil: 'load' });
+    // A bare link opens on the gallery (checkWorkspace); the tool is checked on the example it
+    // opened on before the gallery came first.
+    await page.goto(`${origin}${route}#example=hello`, { waitUntil: 'load' });
 
     let mounted = true;
     try {
@@ -2938,6 +2944,135 @@ async function checkSeeded(browser, origin) {
   return { route: SEEDED_ROUTE, problems, cdnFailures, cdnOnly };
 }
 
+/** The workspace around the editor (50 above): the gallery a bare link opens on, the file
+ *  tabs, a file the reader adds, the link that carries them, and the transport. */
+async function checkWorkspace(browser, origin) {
+  const route = ROUTES[0];
+  const { page, pageErrors, cdnFailures } = await openPage(browser);
+  const problems = [];
+  let mounted = true;
+  try {
+    await page.goto(`${origin}${route}`, { waitUntil: 'load' });
+    const view = await page.getAttribute('[data-playground]', 'data-view');
+    if (view !== 'gallery')
+      problems.push(`a bare link opened on the ${view} view, not the gallery`);
+    const tiles = await page.locator('[data-open-example]').count();
+    if (tiles < 10) problems.push(`the gallery holds ${tiles} example tiles`);
+    if (await page.isVisible('.editor-host')) problems.push('the editor shows under the gallery');
+    try {
+      await page.waitForSelector('.monaco-editor', { state: 'attached', timeout: EDITOR_TIMEOUT });
+    } catch {
+      mounted = false;
+      problems.push('the editor did not mount under the gallery');
+    }
+
+    if (mounted) {
+      await page.click('[data-open-example="imported-noise"]');
+      await page.waitForFunction(
+        () => document.querySelector('[data-playground]')?.dataset.view === 'editor',
+      );
+      if (!(await page.isVisible('.editor-host')))
+        problems.push('picking a tile did not show the editor');
+      if (!/example=imported-noise/.test(page.url()))
+        problems.push(`picking a tile did not name the example in the link: ${page.url()}`);
+      await page.waitForTimeout(AFTER_EDIT);
+      await settleResult(page).catch(() => {});
+      const tabs = await page.$$eval('[data-file-tab]', (nodes) =>
+        nodes.map((node) => node.getAttribute('data-file-tab')),
+      );
+      if (!tabs.includes('lib/noise.shade.ts'))
+        problems.push(`the imported file has no tab: ${tabs.join(', ')}`);
+
+      // An edit to the imported file is an edit to the program.
+      const before = await wgslPane(page);
+      await page.click('[data-file-tab="lib/noise.shade.ts"]');
+      const shows = await page.evaluate(() =>
+        window.monaco.editor.getEditors()[0]?.getModel()?.uri.toString(),
+      );
+      if (!shows?.endsWith('/lib/noise.shade.ts'))
+        problems.push(`the imported file's tab did not put that file in the editor: ${shows}`);
+      const edited = await page.evaluate(() => {
+        const model = window.monaco.editor.getEditors()[0].getModel();
+        const next = model.getValue().replace('vec2(3.)', 'vec2(2.5)');
+        if (next === model.getValue()) return false;
+        model.setValue(next);
+        return true;
+      });
+      if (!edited) problems.push('the check found nothing to edit in lib/noise.shade.ts');
+      await page.waitForTimeout(AFTER_EDIT);
+      await settleResult(page).catch(() => {});
+      const after = await wgslPane(page);
+      if (after === before || !after.includes('2.5'))
+        problems.push('an edit to the imported file did not reach the emitted WGSL');
+      if (!/[#&]files=/.test(page.url()))
+        problems.push('the link does not carry the edited imported file');
+
+      // A new file, imported by the main one.
+      await page.click('[data-new-file]');
+      await page.fill('[data-file-tabs] input', 'lib/extra');
+      await page.press('[data-file-tabs] input', 'Enter');
+      await page.waitForSelector('[data-file-tab="lib/extra.shade.ts"]');
+      await page.click(
+        '[data-file-tab="imported-noise.shade.ts"], [data-file-tab="hello.shade.ts"]',
+      );
+      await page.evaluate(() => {
+        const model = window.monaco.editor.getModels()[0];
+        model.setValue(
+          model
+            .getValue()
+            .replace(
+              'import { fbm } from "./lib/noise.shade.ts";',
+              'import { fbm } from "./lib/noise.shade.ts";\nimport { wave } from "./lib/extra.shade.ts";',
+            )
+            .replace(/return vec4\(/, 'return wave(0.0, 0.0) * vec4('),
+        );
+      });
+      await page.waitForTimeout(AFTER_EDIT);
+      await settleResult(page).catch(() => {});
+      const status = (await page.textContent('[data-status]'))?.trim() ?? '';
+      const diagnostics = (await page.textContent('[data-diagnostics]'))?.trim() ?? '';
+      const withImport = await wgslPane(page);
+      if (!/fn wave/.test(withImport))
+        problems.push(
+          `the main file's import of a new file did not compile (${status}): ${diagnostics.slice(0, 300)}`,
+        );
+
+      // The transport holds the clock and takes it back to zero.
+      await openTab(page, 'result');
+      await page.click('[data-play]');
+      await page.waitForTimeout(300);
+      const held = await page.textContent('[data-clock]');
+      await page.waitForTimeout(700);
+      const stillHeld = await page.textContent('[data-clock]');
+      if (held !== stillHeld)
+        problems.push(`Pause did not hold the clock: ${held} then ${stillHeld}`);
+      await page.click('[data-restart]');
+      await page.waitForTimeout(400);
+      const restarted = await page.textContent('[data-clock]');
+      if (restarted !== '0.00s') problems.push(`Restart while held left the clock at ${restarted}`);
+      await page.click('[data-play]');
+
+      await page.goBack();
+      await page.waitForTimeout(300);
+      const back = await page.getAttribute('[data-playground]', 'data-view');
+      if (back !== 'gallery') problems.push(`Back from a picked tile opened the ${back} view`);
+      console.log(
+        `  ${tiles} tiles; tabs ${tabs.join(', ')}; an imported file's edit and a new file both compile`,
+      );
+    }
+    const realErrors = pageErrors.filter((message) => !/ResizeObserver|Canceled/.test(message));
+    for (const message of realErrors) problems.push(`the page threw: ${message}`);
+  } finally {
+    await page.close();
+  }
+  return {
+    route: `${route} workspace`,
+    problems,
+    cdnFailures,
+    cdnOnly: !mounted && cdnFailures.length > 0,
+  };
+}
+
 const server = await serveDist(dist, Number(process.env.PLAYGROUND_PORT ?? 4473));
 const browser = await launchChromium();
 const results = [];
@@ -2949,6 +3084,8 @@ try {
   if (RUNS_REST) {
     console.log(`[playground] ${SEEDED_ROUTE}`);
     results.push(await checkSeeded(browser, server.url));
+    console.log('[playground] /playground/ workspace');
+    results.push(await checkWorkspace(browser, server.url));
     console.log('[playground] /playground/ with no WebGPU');
     const missing = [];
     await checkMissingWebGpu(browser, server.url, missing);
