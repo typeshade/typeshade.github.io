@@ -150,6 +150,9 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
         <div class="live-bar">
           <button type="button" data-live-edit aria-label={`${l.edit} ${file ?? l.file}`}>{l.edit}</button>
           <button type="button" data-live-reset aria-label={`${l.reset} ${file ?? l.file}`}>{l.reset}</button>
+          {/* The file as it stands, opened in the Playground, which shows what its console
+              calls log and what the compiler emits for it. */}
+          <a data-live-playground href={localePath(locale, links.playground.href)} aria-label={`${l.playground} ${file ?? l.file}`}>{l.playground}</a>
         </div>
       </div>
 
@@ -217,15 +220,16 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   /* Edit and Reset: Ant's small default button, one rule for the hero card and the figure
      column alike, so the two places cannot drift apart. */
   .live-bar { display: flex; align-items: center; gap: 8px }
-  .live-bar button {
+  .live-bar button, .live-bar a {
     display: inline-flex; align-items: center; block-size: 24px; padding: 0 8px;
     border: 1px solid var(--color-line-2); border-radius: var(--radius-sm);
     background: var(--color-ground); color: var(--color-text-1);
     font-family: inherit; font-size: 0.75rem; line-height: 1.5; cursor: pointer;
+    text-decoration: none;
     transition: color var(--motion), border-color var(--motion);
   }
-  .live-bar button:hover { color: var(--color-primary-hover); border-color: var(--color-primary-hover) }
-  .live-bar button:active { color: var(--color-primary-active); border-color: var(--color-primary-active) }
+  .live-bar button:hover, .live-bar a:hover { color: var(--color-primary-hover); border-color: var(--color-primary-hover) }
+  .live-bar button:active, .live-bar a:active { color: var(--color-primary-active); border-color: var(--color-primary-active) }
   /* The canvas takes the pointer, which the reserved `mouse` field is filled from. Every
      other figure on the site is a picture and lets the pointer through. */
   .live-frame > canvas { pointer-events: auto }

@@ -10,6 +10,8 @@
 //      good edit puts a new program on the canvas
 //   4. moving a control reaches the shader: with the clock pinned, the packed uniform bytes
 //      change and so does the image
+//   5. the link to the Playground carries the file as it stands: the sample before an edit,
+//      and the edited text after one
 //
 // Exit codes: 1 for a broken page, 2 when no backend was reachable, which is the one failure
 // that is the runner and not the page. LIVE_GPU_OPTIONAL=1 lets a runner with no software
@@ -125,6 +127,23 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
       if (frames < 2) problems.push(`the canvas drew ${frames} frame(s) on ${backend}`);
     }
 
+    // The link to the Playground, in the Playground's own encoding, read as the text it
+    // opens there. Before any edit it holds the sample.
+    const linked = () =>
+      page.evaluate(async (at) => {
+        const link = document.querySelector(`${at} [data-live-playground]`);
+        const code = /[#&]code=([^&]+)/.exec(new URL(link?.href ?? '', location.href).hash)?.[1];
+        if (!code) return null;
+        const binary = atob(code.slice(1).replace(/-/g, '+').replace(/_/g, '/'));
+        const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+        if (code.startsWith('u')) return new TextDecoder().decode(bytes);
+        const stream = new Blob([bytes])
+          .stream()
+          .pipeThrough(new DecompressionStream('deflate-raw'));
+        return new Response(stream).text();
+      }, `[data-live-id="${id}"]`);
+    const linkedBefore = await linked();
+
     // 2. Nothing large before the first edit.
     const before = (await fetched()).filter((s) => s.length >= SMALL_SCRIPT);
     if (before.length > 0) {
@@ -146,6 +165,8 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
     await area.waitFor({ timeout: TIMEOUT });
     const source = await area.inputValue();
     if (source.trim().length === 0) problems.push('the editor opened with no source in it');
+    if (linkedBefore !== source)
+      problems.push('before an edit, the Playground link does not carry the sample');
 
     // A broken edit: diagnostics under the canvas, and the frame that compiled stays up.
     await area.fill(`${source}\nthis is not TypeShade`);
@@ -229,6 +250,20 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
           );
       }
     }
+
+    // 5. The link to the Playground carries the file as it stands, the edited text after an
+    // edit (the sample before one is read above).
+    const marked = `${source}\n// opened from the page`;
+    await area.fill(marked);
+    let carried = await linked();
+    for (let i = 0; i < 20 && carried !== marked; i++) {
+      await page.waitForTimeout(100);
+      carried = await linked();
+    }
+    if (carried !== marked)
+      problems.push(
+        `the Playground link does not carry the edited file: ${JSON.stringify(carried?.slice(-60) ?? carried)}`,
+      );
 
     if (pageErrors.length > 0) {
       problems.push(
