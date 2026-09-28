@@ -829,10 +829,12 @@ export const en = {
       'Ran {entry} over {invocations} invocations on {backend} in {ms} ms. The canvas plots what it wrote.',
     // The Console tab: the lines a compute run's console calls delivered, from the CPU oracle's
     // sink or, on WebGPU, from the console buffer the compiler adds (surface §66). A module that
-    // draws logs one clicked pixel at a time, run on the CPU oracle.
+    // draws logs one clicked pixel at a time, or one whole frame: on WebGPU the frame is drawn
+    // once more with the calls recorded, and WebGL2, which records nothing, leaves the pixel to
+    // the CPU oracle.
     consoleTab: 'Console',
     consoleIdle:
-      'Call `console.log` in a shader to see its lines here. A compute module logs every invocation; in a module that draws, click a pixel of the canvas.',
+      'Call `console.log` in a shader to see its lines here. A compute module logs every invocation. In a module that draws, click a pixel of the canvas, or record the whole frame on WebGPU.',
     consoleLines: '{lines} lines from {backend}, in the order the CPU runs the invocations.',
     consoleNone: 'The run on {backend} logged nothing.',
     consoleDropped: '{dropped} more lines did not fit the buffer.',
@@ -840,16 +842,42 @@ export const en = {
     consoleIndex: '(index)',
     consoleValue: 'Value',
     consolePixelHint:
-      'This module draws, and its fragment entry runs once for every pixel. Click a pixel of the canvas to see what that pixel logs.',
+      'This module draws, and its fragment entry runs once for every pixel. Click a pixel of the canvas to see what it logs. On WebGPU, Record the frame lists the lines of every pixel, and the CPU oracle lists them once it has drawn.',
     consolePixel:
       'What pixel ({x}, {y}) logged. It ran on the CPU oracle with the inputs the canvas gives it.',
+    consolePixelGl:
+      'What pixel ({x}, {y}) logged. WebGL2 records no console call, so the pixel ran on the CPU oracle with the inputs the canvas gives it.',
+    consolePixelGpu:
+      'What pixel ({x}, {y}) logged on WebGPU. The frame on the canvas was drawn once more for this pixel alone, with its console calls recorded.',
+    consolePixelGpuNone: 'Pixel ({x}, {y}) reached no console call that WebGPU records.',
+    consolePixelGpuFailed:
+      'WebGPU could not record pixel ({x}, {y}), so the pixel ran on the CPU oracle. WebGPU said: {reason}',
     consolePixelNone: 'Pixel ({x}, {y}) reached no console call.',
     consolePixelOutside:
       'Pixel ({x}, {y}) is outside the triangle the vertex entry draws, so no fragment runs there.',
     consolePixelFailed: 'Pixel ({x}, {y}) did not run on the CPU oracle: {reason}',
     consolePixelNoRaster:
       "The CPU oracle cannot place this module's triangle. Its vertex entry needs `vertex_index` or the generated vertices, and a `position` output.",
+    consoleNotRecorded:
+      'WebGPU records no call on line {line}: {reason}. The CPU oracle ran it for this pixel:',
+    consoleNotRecordedFrame:
+      'WebGPU records no call on line {line}: {reason}. Click a pixel to run it on the CPU oracle.',
+    consoleVertex: 'The vertex entry, on the CPU oracle, for the three vertices it places:',
+    consoleVertexGpu:
+      'WebGPU records no call a vertex entry reaches, since a vertex stage cannot write a storage buffer. The vertex entry, on the CPU oracle, for the three vertices it places:',
+    consoleVertexAt: 'vertex {index}',
+    consoleRecordFrame: 'Record the frame',
+    consoleRecording: 'Drawing the frame once more on WebGPU, with its console calls recorded.',
+    consoleFrameGpu:
+      'Console lines from the whole frame on WebGPU, drawn at {width} × {height}: {lines}. They are listed row by row.',
+    consoleFrameDropped:
+      'The frame made {dropped} more calls than the buffer holds, and those were dropped. The GPU keeps the calls it runs first, which need not be the top rows.',
+    consoleFrameFailed: 'WebGPU could not record the frame: {reason}',
+    consoleFrameCpu:
+      'Console lines from the whole frame on the CPU oracle, drawn at {width} × {height}: {lines}. They are listed row by row.',
+    consoleFrameKept: 'The frame made {more} more calls, past what the page keeps.',
     pixelNote: 'Console lines from pixel ({x}, {y}): {lines}.',
+    pixelNoteRecording: 'Recording pixel ({x}, {y}) on WebGPU.',
     // The panel under the canvas: one block per binding the module declares, with what the
     // reader supplies it with. The texture sources and matrix presets are the choices a
     // select offers; the filter and address values are WebGPU's own words and stay in code.
@@ -967,6 +995,7 @@ export const en = {
     file: 'live.shade.ts',
     edit: 'Edit',
     reset: 'Reset',
+    playground: 'Open in the Playground',
     editorAria: 'Editable shader source',
     loading: 'Loading the compiler',
     keptFrame: 'The canvas holds the last frame that compiled.',

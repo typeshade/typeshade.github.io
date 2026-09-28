@@ -23,6 +23,7 @@ import {
 import { mountEditor, type LiveEditor } from './live-shader-editor.ts';
 import { highlight } from './live-shader-highlight.ts';
 import { errorLink, linkedMessage } from './error-links.ts';
+import { playgroundLink } from './source-link.ts';
 
 /** What LiveShader.astro inlined for one example. */
 interface LivePayload {
@@ -458,8 +459,24 @@ function setUp(root: HTMLElement): void {
     say(report.length > 0 ? 'error' : 'ok', report, report.length > 0 ? copy.keptFrame : undefined);
   }
 
+  // The link to the Playground carries the file as it stands, so an edit made here opens
+  // there, where the console calls it makes are listed. `linked` is the text the link holds.
+  const openLink = root.querySelector<HTMLAnchorElement>('[data-live-playground]');
+  const playground = openLink?.getAttribute('href') ?? '';
+  let linked = '';
+  const syncLink = (): void => {
+    const source = editor ? editor.value() : payload.source;
+    if (!openLink || source === linked) return;
+    linked = source;
+    void playgroundLink(playground, source).then((href) => {
+      if (linked === source) openLink.href = href;
+    });
+  };
+  syncLink();
+
   function onEdit(): void {
     handle.edits++;
+    syncLink();
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
       timer = 0;
@@ -571,6 +588,7 @@ function setUp(root: HTMLElement): void {
     }
     controls = payload.controls;
     drawControls();
+    syncLink();
     void (async () => {
       generation++;
       if (handle.compilerLoaded) {

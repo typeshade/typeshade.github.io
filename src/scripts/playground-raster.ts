@@ -1,10 +1,11 @@
 // The pixels, and the shapes both halves of the Playground need to compute them.
 //
-// Nothing here imports the compiler. The main thread already holds it, and the raster worker
-// imports only `core/oracle.ts`, which reaches no part of the TypeScript compiler, so the
-// worker's chunk is the oracle and this file and not another copy of the front end. The
-// compiled functions arrive as a parameter for that reason: whoever calls in has already
-// decided where the module was compiled.
+// Nothing here imports the compiler at run time. The main thread already holds it, and the
+// raster worker imports only `core/oracle.ts`, which reaches no part of the TypeScript
+// compiler, so the worker's chunk is the oracle and this file and not another copy of the
+// front end. The compiled functions arrive as a parameter for that reason: whoever calls in
+// has already decided where the module was compiled.
+import type { ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
 
 /** The oracle's precision for everything the Result tab draws or dispatches on the CPU: every
  *  f32 operation rounded to f32, the way the GPU computes it. The oracle's default keeps full
@@ -58,7 +59,13 @@ export interface RasterPlan {
   /** The three values of each `@location` input of the vertex entry, by input name: the same
    *  vertices the GPU canvas draws from. */
   readonly attributes?: Readonly<Record<string, readonly (number | readonly number[])[]>>;
+  /** Keep the fragment entry's console calls, each marked with its pixel (surface §66). */
+  readonly console?: boolean;
 }
+
+/** The most console lines a draw on the CPU keeps: the most one tile sends, and the most the
+ *  page holds across the tiles. The calls past it are counted. */
+export const FRAME_LINES = 1 << 16;
 
 /** The zero of a reflected type, for calling an entry point with something valid. A type this
  *  has no case for (a matrix or a texture, say) cannot be synthesised. */
@@ -193,6 +200,8 @@ export function drawTile(
   y0: number,
   x1: number,
   y1: number,
+  /** Told each pixel before its fragment entry runs, so a console sink can mark its lines. */
+  atPixel?: (px: number, py: number) => void,
 ): { pixels: Uint8ClampedArray<ArrayBuffer>; covered: number } {
   const tileWidth = x1 - x0;
   const rows = y1 - y0;
@@ -206,6 +215,7 @@ export function drawTile(
     for (let px = x0; px < x1; px += 1) {
       const args = pixelArguments(plan, corners, px, py);
       if (!args) continue;
+      atPixel?.(px, py);
       const returned = run(...(args as never[]));
       // A fragment entry that returns a bare `vec4` is reflected with one output named `_ret`,
       // and the oracle hands back the vector itself, so only a struct is read by field name.
@@ -269,4 +279,8 @@ export type RasterReply =
       readonly y1: number;
       readonly covered: number;
       readonly pixels: Uint8ClampedArray<ArrayBuffer>;
+      /** With `plan.console`: the console lines the tile's pixels logged, no more than
+       *  FRAME_LINES of them, and how many calls they made in all. */
+      readonly lines?: readonly ConsoleEvent[];
+      readonly logged?: number;
     };

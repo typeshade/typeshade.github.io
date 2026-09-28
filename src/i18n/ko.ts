@@ -856,7 +856,7 @@ export const ko: Copy = {
       '{entry}을(를) {backend}에서 호출 {invocations}회로 실행했고 {ms} ms 걸렸습니다. 캔버스는 이 진입점이 쓴 값을 그래프로 보여 줍니다.',
     consoleTab: '콘솔',
     consoleIdle:
-      '셰이더에서 `console.log`를 부르면 그 줄이 여기에 나옵니다. 컴퓨트 모듈은 모든 인보케이션의 줄을 보여 주고, 그리는 모듈은 캔버스의 픽셀을 클릭하면 됩니다.',
+      '셰이더에서 `console.log`를 부르면 그 줄이 여기에 나옵니다. 컴퓨트 모듈은 모든 인보케이션의 줄을 보여 줍니다. 그리는 모듈은 캔버스의 픽셀을 클릭하거나, WebGPU에서 프레임 전체를 기록하면 됩니다.',
     consoleLines:
       '{backend}에서 받은 줄 {lines}개입니다. CPU가 인보케이션을 실행하는 순서로 보여 줍니다.',
     consoleNone: '{backend}에서 실행한 결과 기록된 줄이 없습니다.',
@@ -865,16 +865,43 @@ export const ko: Copy = {
     consoleIndex: '(인덱스)',
     consoleValue: '값',
     consolePixelHint:
-      '이 모듈은 화면을 그리며, 프래그먼트 진입점이 픽셀마다 한 번씩 실행됩니다. 캔버스의 픽셀을 클릭하면 그 픽셀이 기록한 줄을 볼 수 있습니다.',
+      '이 모듈은 화면을 그리며, 프래그먼트 진입점이 픽셀마다 한 번씩 실행됩니다. 캔버스의 픽셀을 클릭하면 그 픽셀이 기록한 줄을 볼 수 있습니다. WebGPU에서는 프레임 기록 버튼으로, CPU 오라클에서는 그리기가 끝난 뒤 모든 픽셀의 줄을 볼 수 있습니다.',
     consolePixel:
       '픽셀 ({x}, {y})이(가) 기록한 줄입니다. 캔버스가 주는 입력으로 CPU 오라클에서 실행한 결과입니다.',
+    consolePixelGl:
+      '픽셀 ({x}, {y})이(가) 기록한 줄입니다. WebGL2는 콘솔 호출을 기록하지 않으므로, 캔버스가 주는 입력으로 CPU 오라클에서 실행했습니다.',
+    consolePixelGpu:
+      '픽셀 ({x}, {y})이(가) WebGPU에서 기록한 줄입니다. 캔버스의 프레임을 이 픽셀 하나에 대해서만 다시 그리면서 콘솔 호출을 기록했습니다.',
+    consolePixelGpuNone: '픽셀 ({x}, {y})은(는) WebGPU가 기록하는 콘솔 호출에 도달하지 않았습니다.',
+    consolePixelGpuFailed:
+      'WebGPU가 픽셀 ({x}, {y})을(를) 기록하지 못해 CPU 오라클에서 실행했습니다. WebGPU가 알려 준 이유: {reason}',
     consolePixelNone: '픽셀 ({x}, {y})은(는) 콘솔 호출에 도달하지 않았습니다.',
     consolePixelOutside:
       '픽셀 ({x}, {y})은(는) 버텍스 진입점이 그리는 삼각형 밖이라 프래그먼트가 실행되지 않습니다.',
     consolePixelFailed: '픽셀 ({x}, {y})을(를) CPU 오라클에서 실행하지 못했습니다: {reason}',
     consolePixelNoRaster:
       'CPU 오라클이 이 모듈의 삼각형을 배치하지 못합니다. 버텍스 진입점에 `vertex_index`나 생성된 정점 입력, 그리고 `position` 출력이 있어야 합니다.',
+    consoleNotRecorded:
+      '{line}번째 줄의 호출은 WebGPU에 기록되지 않습니다: {reason}. 이 픽셀에 대해 CPU 오라클에서 실행한 결과입니다.',
+    consoleNotRecordedFrame:
+      '{line}번째 줄의 호출은 WebGPU에 기록되지 않습니다: {reason}. 픽셀을 클릭하면 CPU 오라클에서 실행합니다.',
+    consoleVertex: '버텍스 진입점이 배치하는 꼭짓점 세 개에 대해 CPU 오라클에서 실행한 결과입니다.',
+    consoleVertexGpu:
+      '버텍스 단계는 스토리지 버퍼에 쓸 수 없으므로, 버텍스 진입점에서 실행되는 콘솔 호출은 WebGPU에 기록되지 않습니다. 버텍스 진입점이 배치하는 꼭짓점 세 개에 대해 CPU 오라클에서 실행한 결과입니다.',
+    consoleVertexAt: '버텍스 {index}',
+    consoleRecordFrame: '프레임 기록',
+    consoleRecording: 'WebGPU에서 콘솔 호출을 기록하며 프레임을 다시 그리는 중입니다.',
+    consoleFrameGpu:
+      'WebGPU에서 {width} × {height}로 그린 프레임 전체의 콘솔 줄: {lines}개. 행 순서로 보여 줍니다.',
+    consoleFrameDropped:
+      '프레임이 버퍼에 담을 수 있는 것보다 {dropped}번 더 호출했고, 그 호출은 버려졌습니다. GPU는 먼저 실행한 호출을 남기며, 그것이 위쪽 행이라는 보장은 없습니다.',
+    consoleFrameFailed: 'WebGPU가 프레임을 기록하지 못했습니다: {reason}',
+    consoleFrameCpu:
+      'CPU 오라클에서 {width} × {height}로 그린 프레임 전체의 콘솔 줄: {lines}개. 행 순서로 보여 줍니다.',
+    consoleFrameKept:
+      '프레임이 {more}번 더 호출했지만, 페이지가 담아 두는 한도를 넘어 남기지 않았습니다.',
     pixelNote: '픽셀 ({x}, {y})의 콘솔 줄: {lines}개',
+    pixelNoteRecording: 'WebGPU에서 픽셀 ({x}, {y})을(를) 기록하는 중입니다.',
     bindings: {
       title: '바인딩',
       empty: '이 모듈은 바인딩하는 것이 없습니다.',
@@ -971,6 +998,7 @@ export const ko: Copy = {
     file: 'live.shade.ts',
     edit: '수정',
     reset: '초기화',
+    playground: 'Playground에서 열기',
     editorAria: '수정할 수 있는 셰이더 소스',
     loading: '컴파일러를 불러오는 중',
     keptFrame: '마지막으로 컴파일된 프레임을 캔버스가 그대로 두고 있습니다.',

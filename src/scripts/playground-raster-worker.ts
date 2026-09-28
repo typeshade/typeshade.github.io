@@ -8,9 +8,11 @@
 // parser. The module arrives already compiled, as IR, which is plain data and crosses
 // postMessage by structured clone.
 import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
+import type { ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
 import {
   cornersOf,
   drawTile,
+  FRAME_LINES,
   RASTER_PRECISION,
   type Corners,
   type CpuFunctions,
@@ -28,6 +30,11 @@ let job = -1;
 let plan: RasterPlan | undefined;
 let corners: Corners | undefined;
 let cpu: CpuFunctions | undefined;
+/** The console lines of the tile being drawn, the calls it made, and the pixel running. The
+ *  vertex entry's calls, made once per worker while it prepares, belong to no pixel. */
+let lines: ConsoleEvent[] = [];
+let logged = 0;
+let pixel: [number, number, number] | undefined;
 
 const reply = (message: RasterReply, transfer?: Transferable[]): void => {
   (self as unknown as Worker).postMessage(message, transfer ?? []);
@@ -45,6 +52,15 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
       const compiledModule = compileModule(request.module as never, {
         gpuStubs: true,
         precision: RASTER_PRECISION,
+        ...(plan.console
+          ? {
+              consoleSink: (e: ConsoleEvent) => {
+                if (!pixel) return;
+                logged += 1;
+                if (lines.length < FRAME_LINES) lines.push({ ...e, invocation: pixel });
+              },
+            }
+          : {}),
       });
       for (const [name, value] of Object.entries(plan.bindings ?? {}))
         compiledModule.setBinding(name, value as never);
@@ -68,6 +84,8 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
   // A tile for a job this worker has moved past, or was never prepared for, is dropped.
   if (request.job !== job || !plan || !corners || !cpu) return;
   try {
+    lines = [];
+    logged = 0;
     const { pixels, covered } = drawTile(
       cpu,
       plan,
@@ -76,7 +94,13 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
       request.y0,
       request.x1,
       request.y1,
+      plan.console
+        ? (px, py) => {
+            pixel = [px, py, 0];
+          }
+        : undefined,
     );
+    pixel = undefined;
     reply(
       {
         kind: 'tile',
@@ -87,10 +111,12 @@ self.addEventListener('message', (event: MessageEvent<RasterRequest>) => {
         y1: request.y1,
         covered,
         pixels,
+        ...(plan.console ? { lines, logged } : {}),
       },
       [pixels.buffer],
     );
   } catch (error) {
+    pixel = undefined;
     reply({ kind: 'failed', job, message: error instanceof Error ? error.message : String(error) });
   }
 });
