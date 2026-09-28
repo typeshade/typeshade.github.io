@@ -1302,22 +1302,30 @@ export function main(@location(0) uv: vec2): vec4 {
 
 declare const u: uniform<array<f32>>
 
+function count(): f32 {
+  return f32(u.length)
+}
+
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(f32(u.length), 0., 0., 1.)
+  return vec4(uv, count(), 1.)
 }
 `,
     fix: `"use typeshade"
 
-class Uniforms {
+class UData {
   items: array<f32, 3>
 }
 
-declare const u: uniform<Uniforms>
+declare const u: uniform<UData>
+
+function count(): f32 {
+  return f32(u.items.length)
+}
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(f32(u.items.length), 0., 0., 1.)
+  return vec4(uv, count(), 1.)
 }
 `,
   },
