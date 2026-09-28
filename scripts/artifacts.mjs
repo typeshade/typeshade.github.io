@@ -92,6 +92,7 @@ export const SHADE_STILL_EXAMPLES = [
   'higher-order',
   'inferred-returns',
   'array-methods',
+  'imported-noise',
 ];
 
 /** Why one example has no still, keyed by id, for every example of either corpus that is not
@@ -159,6 +160,10 @@ export const NO_STILL_REASONS = {
   'path-tracer': 'uniform',
   'rt-renderer-class': 'uniform',
   'workgroup-tile-2d': 'no-glsl',
+  'loop-kernel': 'no-glsl',
+  'loop-reduction': 'no-glsl',
+  'loop-struct-array': 'no-glsl',
+  'loop-on-cpu': 'no-glsl',
 };
 
 /** The reason keys above, so a dictionary can be held to one sentence for each. */

@@ -1,6 +1,6 @@
 ---
 id: overview
-source: 0f2066454e496501eff6a02f215ab9fd6c0ecad2f0a3a5acdbbb88e56020231c
+source: 58f62f18bfdfad8a114b8b94f82f12741aef8bf96a2a9c094ea9e5ac9e18a2c2
 sourceLine: 1
 ---
 
@@ -75,7 +75,9 @@ import {
 } from 'typeshade'
 ```
 
-`typeshade/dev`에는 개발용 진단과 최적화 측정, 오류의 소스 위치가 있고, `typeshade/emit-prod`에는 배포용 이름 변경과 압축 및 난독화 도구가 있습니다. `typeshade/compute`에는 호스트의 백엔드에서 compute 커널을 실행하는 도구가 있습니다. `typeshade/debug`는 `"use typeshade"` 셰이더의 인보케이션 하나를 CPU 오라클 위에서 한 문장씩 진행합니다. 작성자가 쓴 문장마다 멈춰 소스 구간과 프레임의 지역 변수를 보고하고, 중단점을 줄 번호로 찾아 줍니다. 실행 하나를 데이터로 적어 두는 실행 구성도 함께 담는데, 인수 위치가 아니라 진입점이 선언한 이름을 키로 삼으며, `launch.json`용 JSON Schema와 값을 작성자가 쓴 셰이더 타입으로 보여 주는 포매터가 들어 있습니다. 편집기의 디버그 어댑터와 Playground의 단계 실행 패널이 모두 이것을 바탕으로 만들어졌습니다. 자세한 내용은 `docs/debugging.md`를 보십시오. 실제 셰이더는 사용하는 저장소에 두고 이 패키지를 다른 의존성과 같은 방식으로 가져옵니다.
+`typeshade/dev`에는 개발용 진단과 최적화 측정, 오류의 소스 위치가 있고, `typeshade/emit-prod`에는 배포용 이름 변경과 압축 및 난독화 도구가 있습니다. `typeshade/compute`에는 호스트의 백엔드에서 compute 커널을 실행하는 도구가 있습니다. `typeshade/debug`는 `"use typeshade"` 셰이더의 인보케이션 하나를 CPU 오라클 위에서 한 문장씩 진행합니다. 작성자가 쓴 문장마다 멈춰 소스 구간과 프레임의 지역 변수를 보고하고, 중단점을 줄 번호로 찾아 줍니다. 실행 하나를 데이터로 적어 두는 실행 구성도 함께 담는데, 인수 위치가 아니라 진입점이 선언한 이름을 키로 삼으며, `launch.json`용 JSON Schema와 값을 작성자가 쓴 셰이더 타입으로 보여 주는 포매터가 들어 있습니다. 편집기의 디버그 어댑터와 Playground의 단계 실행 패널이 모두 이것을 바탕으로 만들어졌습니다. 자세한 내용은 `docs/debugging.md`를 보십시오. `typeshade/vite`에는 평범한 호스트 파일이 `.shade.ts`를 가져와 그 헬퍼 함수를 부르게 해 주는 Vite 플러그인이 있고, 이 함수는 CPU에서 실행됩니다. [모듈의 헬퍼를 호스트 코드에서 부르기](#calling-a-modules-helpers-from-host-code)를 보십시오.
+
+이 패키지에는 작성 인터페이스와, 호스트가 가져온 모듈이 실행되는 작은 런타임이 들어 있습니다. 실제 셰이더는 사용하는 저장소에 두고 이 패키지를 다른 의존성과 같은 방식으로 가져옵니다.
 
 ### 이 가이드의 순서
 

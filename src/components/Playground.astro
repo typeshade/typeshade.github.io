@@ -2,8 +2,13 @@
 import Rich from './Rich.astro';
 import { copyFor, localePath, type Locale } from '../i18n/index.ts';
 import { links } from '../lib/links.ts';
-import { defaultPlaygroundExample, playgroundExamples } from '../lib/playground-examples.ts';
+import {
+  defaultPlaygroundExample,
+  playgroundExamples,
+  playgroundLibrary,
+} from '../lib/playground-examples.ts';
 import { twinUniformDefaults } from '../lib/hero-shader.ts';
+import { exampleSourceHref } from '../lib/example-pages.ts';
 import { shadeExampleList } from '../lib/shade-examples.ts';
 
 interface Props {
@@ -30,6 +35,7 @@ const shade = copyFor(locale).examples.shade;
 const all = playgroundExamples().map((example) => ({
   id: example.id,
   source: example.source,
+  imports: example.imports,
   title: shade.titles[example.id]!,
   description: shade.descriptions[example.id]!,
   // Where a source twin's uniform fields start: its `fn()` original's values, the frame its
@@ -41,6 +47,13 @@ if (seed && !all.some((example) => example.id === seed)) {
 }
 const examples = runtime ? [] : seed ? all.filter((example) => example.id === seed) : all;
 const seeded = seed !== undefined || runtime;
+// The files the examples on this page import (Rule 3.9), which the editor does not hold: the
+// language worker reads an import through them, and a line under the emit options names them,
+// each a link to the file at the pinned commit, beside the other notes on how the file is
+// compiled.
+const library = playgroundLibrary(examples);
+const opening = runtime ? '' : (seed ?? defaultPlaygroundExample);
+const [importsBefore, importsAfter] = t.importsNote.split('{files}');
 // The name over the toolbar is the file the editor holds, so a seeded page names its own.
 const fileName = seed ? `${seed}.shade.ts` : runtime ? '' : t.fileName;
 const sample = `"use typeshade";
@@ -173,7 +186,8 @@ const runtimeCopy = {
   data-playground
   data-sample={sample}
   data-examples={JSON.stringify(examples)}
-  data-default-example={runtime ? '' : (seed ?? defaultPlaygroundExample)}
+  data-library={JSON.stringify(library)}
+  data-default-example={opening}
   data-copy={JSON.stringify(runtimeCopy)}
 >
   <div class="playground-toolbar">
@@ -245,6 +259,11 @@ const runtimeCopy = {
     </div>
     <p data-level-note hidden><Rich text={t.emit.levelNote} locale={locale} /></p>
     <p data-prelude-note hidden><Rich text={t.preludeNote} locale={locale} /></p>
+    {examples
+      .filter((example) => example.imports.length > 0)
+      .map((example) => (
+        <p data-imports-note={example.id} hidden={example.id !== opening}>{importsBefore}{example.imports.map((file, i) => <>{i > 0 && ', '}<a href={exampleSourceHref(file)}><code>{file}</code></a></>)}{importsAfter}</p>
+      ))}
   </div>
 
   <div class="playground-grid">
@@ -370,7 +389,7 @@ const runtimeCopy = {
   .playground-check { display: flex; align-items: center; gap: 6px; padding-bottom: 7px; }
   .playground-check label { margin-bottom: 0; }
   .playground-check input { accent-color: var(--color-accent); }
-  .playground-options [data-level-note], .playground-options [data-prelude-note] { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
+  .playground-options [data-level-note], .playground-options [data-prelude-note], .playground-options [data-imports-note] { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
   .playground-options :global(code) { font: 400 .75rem/1.5 var(--font-mono); }
 
   .output-meta { display: flex; flex: none; align-items: center; gap: 10px; }

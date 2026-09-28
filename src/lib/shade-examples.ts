@@ -93,14 +93,27 @@ export const shadeCounts = {
   renderable: shadeExampleList.filter((e) => e.renderable).length,
 };
 
+/** A file of the examples directory, by its path relative to it, or `undefined` when there is
+ *  none: what `compile()` reads an example's imports through, as the registry's `readHere`. */
+function readExampleFile(name: string): string | undefined {
+  try {
+    return readFileSync(path.join(examplesDir, name), 'utf8');
+  } catch {
+    return undefined;
+  }
+}
+
 /** One example's compiled module, from the file's own bytes, the way the registry compiles
- *  it. An error diagnostic throws, so a file that stopped being a program cannot reach a
- *  page as an empty module. */
+ *  it. A file that imports another is one program with it, read from the same directory:
+ *  `imported-noise` reads `lib/noise.shade.ts`, which is not an example of its own. An error
+ *  diagnostic throws, so a file that stopped being a program cannot reach a page as an empty
+ *  module. */
 export function shadeModule(id: string): ModuleDecl {
   const example = shadeExampleList.find((e) => e.id === id);
   if (!example) throw new Error(`[shade] no example '${id}' in ${REGISTRY}`);
   const { diagnostics, module } = compile(
     readFileSync(path.join(examplesDir, example.file), 'utf8'),
+    { fileName: example.file, readDocument: readExampleFile },
   );
   const errors = diagnostics.filter((d) => d.category === 'error');
   if (errors.length > 0) {
@@ -193,6 +206,10 @@ export const SHADE_GROUPS = [
     ],
   },
   {
+    key: 'imports',
+    ids: ['imported-noise'],
+  },
+  {
     key: 'compute',
     ids: [
       'private-state',
@@ -204,6 +221,10 @@ export const SHADE_GROUPS = [
       'compute-reduction-twin',
       'workgroup-tile-2d',
     ],
+  },
+  {
+    key: 'kernels',
+    ids: ['loop-kernel', 'loop-reduction', 'loop-struct-array', 'loop-on-cpu'],
   },
   {
     key: 'twins',

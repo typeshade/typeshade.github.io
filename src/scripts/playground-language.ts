@@ -35,6 +35,15 @@ export interface UpdateRequest {
   readonly version: number;
 }
 
+/** The files a document may import that the editor does not hold, by uri: an example's
+ *  library, such as `imported-noise`'s `lib/noise.shade.ts` (Rule 3.9). Sent once, before the
+ *  first `update`, and answered by nothing; the worker reads an import through them, in the
+ *  service and in the compile, as `readDocument` reads one. */
+export interface FilesRequest {
+  readonly kind: 'files';
+  readonly files: Readonly<Record<string, string>>;
+}
+
 interface Asked {
   readonly id: number;
   readonly uri: string;
@@ -61,7 +70,7 @@ export type QueryRequest =
     })
   | (Asked & { readonly kind: 'semanticTokens' });
 
-export type LanguageRequest = UpdateRequest | QueryRequest;
+export type LanguageRequest = UpdateRequest | FilesRequest | QueryRequest;
 
 /** What one analysis of a document comes back as: the service's diagnostics, whether the file
  *  carried the directive, and the lowered module when nothing was an error. The module is the
@@ -101,6 +110,9 @@ export type LanguageReply =
 // ── The client ─────────────────────────────────────────────────────────────────────────────
 
 export interface LanguageClient {
+  /** Hands the worker the files a document may import and the editor does not hold, by uri.
+   *  No reply; sent before the first `update`. */
+  files(files: Readonly<Record<string, string>>): void;
   /** Hands the worker the document as it is now. No reply; the next query answers for it. */
   update(uri: string, text: string, version: number): void;
   /** Asks the worker one question about `uri` at `version`. Resolves to the answer, or to
@@ -148,6 +160,9 @@ export function createLanguageClient(
   });
 
   return {
+    files(files) {
+      worker.postMessage({ kind: 'files', files } satisfies FilesRequest);
+    },
     update(uri, text, version) {
       worker.postMessage({ kind: 'update', uri, text, version } satisfies UpdateRequest);
     },
