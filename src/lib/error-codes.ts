@@ -88,7 +88,7 @@ const GROUP_OF: Readonly<Record<string, ErrorGroup>> = {
   MISSING_DIRECTIVE: 'file',
   SYNTAX: 'file',
   TOP_LEVEL: 'file',
-  HOST_API: 'file',
+  IMPORT: 'file',
   HOST_STMT: 'file',
   ENABLE_NAME: 'file',
   UNSUPPORTED: 'file',
@@ -200,6 +200,8 @@ export interface ErrorExample {
   readonly deprecations: boolean;
   /** Compiled with `{ console: 'gpu' }`, the option under which the WGSL records console calls. */
   readonly consoleGpu: boolean;
+  /** The other files of the program the fix imports from, in the order the page shows them. */
+  readonly files: readonly { readonly name: string; readonly text: string }[];
 }
 
 /** A front-end code that stops the same mistake before the core check can see it. */
@@ -371,8 +373,17 @@ function readTsRegistry(): TsRegistry {
   // A retired number is one the header says is retired. It is never reused, and it has a page
   // that says so, since a reader who meets it in an old log has nowhere else to look.
   const numbers = new Set(codes.map((c) => c.code));
+  // "8011 is retired", and "8011 and 8012 are retired" once there are two.
   const retired = [
-    ...new Set([...header.join(' ').matchAll(/\b(\d{4}) is retired\b/g)].map((m) => `TS${m[1]}`)),
+    ...new Set(
+      [
+        ...header
+          .join(' ')
+          .matchAll(/\b((?:\d{4}(?:,\s*|\s+and\s+))*\d{4})\s+(?:is|are)\s+retired\b/g),
+      ]
+        .flatMap((m) => m[1]!.match(/\d{4}/g) ?? [])
+        .map((digits) => `TS${digits}`),
+    ),
   ];
   for (const code of retired) {
     if (numbers.has(code))
@@ -608,6 +619,9 @@ function raiseSites(): ReadonlyMap<string, ErrorSite[]> {
 interface ExampleSpec {
   readonly trigger: string;
   readonly fix: string;
+  /** The other files of the program, by name. A trigger or a fix that imports one reads it
+   *  through `compile()`'s `readDocument` (Rule 3.9), and the page shows each under the fix. */
+  readonly files?: Readonly<Record<string, string>>;
   readonly deprecations?: true;
   readonly consoleGpu?: true;
 }
@@ -684,16 +698,21 @@ export function main(@location(0) uv: vec2): vec4 {
 }
 `,
     fix: `"use typeshade"
-
-function brightness(uv: vec2): f32 {
-  return (uv.x + uv.y) * 0.5
-}
+import { brightness } from "./brightness.shade.ts"
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
   return vec4(uv, brightness(uv), 1.)
 }
 `,
+    files: {
+      'brightness.shade.ts': `"use typeshade"
+
+export function brightness(uv: vec2): f32 {
+  return (uv.x + uv.y) * 0.5
+}
+`,
+    },
   },
   TS8005: {
     trigger: `"use typeshade"
@@ -845,28 +864,6 @@ function tint(uv: vec2): Tint {
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
   return vec4(tint(uv).rgb, 1.)
-}
-`,
-  },
-  TS8012: {
-    trigger: `"use typeshade"
-
-@fragment
-export function main(@location(0) uv: vec2): vec4 {
-  return vec4(uv, window.devicePixelRatio, 1.)
-}
-`,
-    fix: `"use typeshade"
-
-class Uniforms {
-  pixelRatio: f32
-}
-
-declare const u: uniform<Uniforms>
-
-@fragment
-export function main(@location(0) uv: vec2): vec4 {
-  return vec4(uv, u.pixelRatio, 1.)
 }
 `,
   },
@@ -1654,6 +1651,32 @@ export function fs(@builtin("position") p: vec4): vec4 {
 }
 `,
   },
+  TS8072: {
+    trigger: `"use typeshade"
+import { wave } from "./wav.shade.ts"
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  return vec4(uv, wave(uv), 1.)
+}
+`,
+    fix: `"use typeshade"
+import { wave } from "./wave.shade.ts"
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  return vec4(uv, wave(uv), 1.)
+}
+`,
+    files: {
+      'wave.shade.ts': `"use typeshade"
+
+export function wave(p: vec2): f32 {
+  return sin(p.x * 6.) * cos(p.y * 6.) * 0.5 + 0.5
+}
+`,
+    },
+  },
   TS8099: {
     trigger: `"use typeshade"
 
@@ -1700,38 +1723,6 @@ declare const data: storage<array<f32>, "read_write">
 @compute([64])
 export function double(@builtin("global_invocation_id") id: vec3u): void {
   data[id.x] = data[id.x] * 2.
-}
-`,
-  },
-  // A matrix of doubles has a df64 body for `*` alone, and no conversion to `f32`, so the
-  // remedy the hint names, narrowing first, is the matrix's own declaration.
-  SD0041: {
-    trigger: `"use typeshade"
-
-class Uniforms {
-  m: mat3<f64>
-}
-
-declare const u: uniform<Uniforms>
-
-@fragment
-export function main(@location(0) uv: vec2): vec4 {
-  const k = u.m + u.m
-  return vec4(uv, 0., 1.)
-}
-`,
-    fix: `"use typeshade"
-
-class Uniforms {
-  m: mat3
-}
-
-declare const u: uniform<Uniforms>
-
-@fragment
-export function main(@location(0) uv: vec2): vec4 {
-  const k = u.m + u.m
-  return vec4(uv, 0., 1.)
 }
 `,
   },
@@ -1947,6 +1938,26 @@ export function fs(@location(1) uv: vec2): vec4 {
 }
 `,
   },
+  // A matrix of doubles has a df64 body for `*` alone. Since proposal 0008 the front end refuses
+  // `+`, `-` and their compound forms on one by the operands' kind (Rule 7.1), naming the
+  // matrix's own declaration as the remedy, before the fp64 pass could raise SD0041.
+  SD0041: {
+    code: 'TS8003',
+    program: `"use typeshade"
+
+class Uniforms {
+  m: mat3<f64>
+}
+
+declare const u: uniform<Uniforms>
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  const k = u.m + u.m
+  return vec4(uv, 0., 1.)
+}
+`,
+  },
   SD0044: {
     code: 'TS8038',
     program: `"use typeshade"
@@ -2011,9 +2022,11 @@ function compiled(
   source: string,
   deprecations: boolean,
   consoleGpu = false,
+  files: Readonly<Record<string, string>> = {},
 ): ReturnType<typeof compile> {
   return compile(source, {
     fileName: 'example.shade.ts',
+    readDocument: (name) => files[name],
     ...(deprecations ? { deprecations: true } : {}),
     ...(consoleGpu ? { console: 'gpu' as const } : {}),
   });
@@ -2058,7 +2071,8 @@ function exampleFor(
 ): { example: ErrorExample | null; problem: string | null } {
   const deprecations = spec.deprecations === true;
   const consoleGpu = spec.consoleGpu === true;
-  const result = compiled(spec.trigger, deprecations, consoleGpu);
+  const files = spec.files ?? {};
+  const result = compiled(spec.trigger, deprecations, consoleGpu, files);
   const report = reportOf(result);
   const errors = result.diagnostics.filter((d) => d.category === 'error');
   let channel: ErrorChannel | null = null;
@@ -2092,7 +2106,7 @@ function exampleFor(
     };
   }
 
-  const fixed = compiled(spec.fix, deprecations, consoleGpu);
+  const fixed = compiled(spec.fix, deprecations, consoleGpu, files);
   const left = fixed.diagnostics.filter((d) => d.category === 'error' || d.category === 'warning');
   if (left.length > 0) {
     return {
@@ -2117,6 +2131,7 @@ function exampleFor(
       thrown,
       deprecations,
       consoleGpu,
+      files: Object.entries(files).map(([name, text]) => ({ name, text })),
     },
     problem: null,
   };

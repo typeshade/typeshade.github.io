@@ -8,6 +8,11 @@
 // version it names, and the reply carries that version back so the page can drop an answer
 // about a document it no longer holds. Every method of the service is synchronous, so each
 // message is one call and one reply, in order.
+//
+// A document can import another shader file (Rule 3.9), and the editor holds one file. The
+// page sends the files an example imports once, as `files`, and both halves read an import
+// through them: the service through its host's `readDocument`, and the compile that lowers the
+// module through `compile()`'s, so the two read one program.
 import { compile } from '../../vendor/shader-dsl/src/compiler/ts/compile.ts';
 import {
   createTypeshadeLanguageService,
@@ -19,6 +24,9 @@ let service: TypeshadeLanguageService | undefined;
 /** The text of every open document, since the service keeps its own copy and does not hand
  *  it back, and an analysis compiles the text again for the module. */
 const texts = new Map<string, string>();
+/** The files a document may import and the editor does not hold, by uri. */
+const files = new Map<string, string>();
+const readDocument = (uri: string): string | undefined => files.get(uri);
 
 const reply = (message: LanguageReply): void => {
   (self as unknown as Worker).postMessage(message);
@@ -38,7 +46,7 @@ function analyse(languageService: TypeshadeLanguageService, uri: string): Analys
   if (failed || !hasDirective) return { diagnostics, hasDirective };
   const text = texts.get(uri);
   if (text === undefined) return { diagnostics, hasDirective };
-  const result = compile(text);
+  const result = compile(text, { fileName: uri, readDocument });
   if (result.diagnostics.some((diagnostic) => diagnostic.category === 'error'))
     return { diagnostics, hasDirective };
   return { diagnostics, hasDirective, module: result.module };
@@ -47,7 +55,13 @@ function analyse(languageService: TypeshadeLanguageService, uri: string): Analys
 self.addEventListener('message', (event: MessageEvent<LanguageRequest>) => {
   const request = event.data;
   try {
-    service ??= createTypeshadeLanguageService();
+    if (request.kind === 'files') {
+      files.clear();
+      for (const [uri, text] of Object.entries(request.files)) files.set(uri, text);
+      return;
+    }
+
+    service ??= createTypeshadeLanguageService({ readDocument });
 
     if (request.kind === 'update') {
       if (texts.has(request.uri))
@@ -103,7 +117,7 @@ self.addEventListener('message', (event: MessageEvent<LanguageRequest>) => {
         return;
     }
   } catch (error) {
-    if (request.kind === 'update') return;
+    if (request.kind === 'update' || request.kind === 'files') return;
     reply({
       id: request.id,
       version: request.version,

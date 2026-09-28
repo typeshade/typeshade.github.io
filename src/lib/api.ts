@@ -109,6 +109,12 @@ export const API_CATEGORIES: readonly ApiCategory[] = [
       'What a shader says through console.log: the events the CPU delivers, and the decoder for the ones the GPU records.',
   },
   {
+    slug: 'runtime',
+    name: 'Runtime',
+    summary:
+      'The array a kernel call keeps on the device, and the order in which a call tries WebGPU, WebGL2 and the CPU.',
+  },
+  {
     slug: 'diagnostics',
     name: 'Diagnostics',
     summary: 'The coded error class and the validation gate every emit goes through.',
@@ -153,6 +159,7 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/core/ir/span.ts': 'ir',
   'src/core/debug/dispatch.ts': 'cpu-oracle',
   'src/core/console.ts': 'console',
+  'src/core/resident.ts': 'runtime',
   'src/core/passes/determinism.ts': 'tooling',
   'src/core/ir/builder.ts': 'authoring',
   'src/core/ir/types.ts': 'types',

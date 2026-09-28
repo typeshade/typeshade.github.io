@@ -141,6 +141,11 @@ const apiCategories: Record<string, { name: string; summary: string }> = {
     summary:
       '셰이더가 console.log로 남기는 내용입니다. CPU가 전달하는 이벤트와, GPU가 기록한 이벤트를 읽는 디코더가 여기 있습니다.',
   },
+  runtime: {
+    name: '런타임',
+    summary:
+      '커널 호출이 디바이스에 남겨 두는 배열과, 호출이 WebGPU와 WebGL2, CPU를 시도하는 순서입니다.',
+  },
   diagnostics: {
     name: '진단',
     summary:
@@ -595,6 +600,8 @@ export const ko: Copy = {
         fixed: '같은 프로그램을 고친 모습입니다. 진단 없이 컴파일됩니다.',
         fixedDiagnose:
           '같은 프로그램을 고친 모습입니다. 진단 없이 컴파일되고, `diagnose()`도 더는 이 코드를 알리지 않습니다.',
+        otherFiles:
+          '같은 프로그램의 다른 파일에서 가져오며, `compile()`은 그 파일을 `readDocument` 옵션으로 읽습니다.',
         lineAt: (line: number) => `${line}행`,
         retired:
           '폐기된 번호입니다. 이 코드를 단 진단은 없고, 레지스트리는 이 번호를 다른 규칙에 다시 주지 않습니다.',
@@ -615,22 +622,19 @@ export const ko: Copy = {
       lines: {
         MISSING_DIRECTIVE:
           'TypeShade로 컴파일하는 파일에 `"use typeshade"` 지시문이 아예 없습니다.',
-        UNKNOWN_TYPE: '컴파일러가 모르는 타입 이름입니다.',
         TYPE_MISMATCH:
-          '연산자나 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않습니다.',
+          '연산자나 조건, 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않습니다.',
         UNKNOWN_FN: '파일이 선언하지도 가져오지도 않은 함수를 부릅니다.',
         CONST_ASSIGN: '`const`나 읽기 전용 리소스처럼 바뀔 수 없는 이름에 값을 대입합니다.',
         LOOP_BOUND:
           '컴파일러가 종료를 증명할 수 없는 `for` 루프입니다. 카운터를 경계와 비교하지 않거나, 본문이 경계를 씁니다.',
         LOOP_INFINITE:
-          '끝나지 않는 것이 확실한 루프입니다. `break`나 `return`이 없는 `while (true)`, 또는 카운터를 경계에서 멀어지게 하는 증가입니다.',
+          '끝나지 않는 것이 확실한 루프입니다. `break`나 `return`이 없는데 조건이 `true`인 `while`, 또는 카운터를 경계에서 멀어지게 하는 증가입니다. 조건은 그대로 썼든 상수만으로 계산했든 같습니다.',
         LOOP_INDUCTION:
           '`for` 루프의 카운터가 `i32`나 `u32` 타입의 `let` 하나가 아니거나, 갱신이 상수만큼 움직이지 않습니다.',
         BREAK_OUTSIDE: '감싸는 루프나 `switch`가 없는 곳에 `break`를 썼습니다.',
         STRUCT_FIELD:
           '구조체 리터럴이나 진입점의 입출력이 선언과 맞지 않습니다. 필드가 빠졌거나, 구조체에 없는 필드가 있거나, `@location`이 서로 어긋난 경우입니다.',
-        HOST_API: '셰이더 파일 안에서 `window`나 `fetch` 같은 JavaScript 호스트 API를 가리킵니다.',
-        HOST_STMT: '`try`, `throw`, `await`처럼 셰이더에 대응하는 형태가 없는 JavaScript 문입니다.',
         TOP_LEVEL:
           '파일 최상위에 컴파일러가 선언으로 받을 수 없는 것이 있습니다. 선언이 아닌 문이거나, 거부하는 형태의 모듈 수준 선언입니다.',
         BACKEND:
@@ -902,6 +906,8 @@ export const ko: Copy = {
     cpuFailed: 'CPU 오라클이 이 진입점을 실행하지 못했습니다.',
     entryCount: (n: number) => `진입점 ${n}개`,
     exampleLabel: '예제',
+    importsNote:
+      '이 예제는 {files}를 가져옵니다. 컴파일러는 이 파일과 이 파일이 가져오는 파일을 한 프로그램으로 읽고, 편집기에는 이 파일만 있습니다.',
     copy: '복사',
     copied: '복사됨',
     share: '링크 복사',
@@ -1016,7 +1022,7 @@ export const ko: Copy = {
     },
     targets: {
       h: '파일 하나, 출력 둘',
-      p: '컴파일러는 `hello.shade.ts`를 하나의 중간 표현으로 내린 뒤 거기서 두 출력을 냅니다. 이 파일이 프로그램 전부이고, 옆 창에는 호스트가 WebGPU나 WebGL2에 넘기는 WGSL과 GLSL ES 3.00 프래그먼트가 탭 하나씩으로 들어 있습니다.',
+      p: '컴파일러는 `hello.shade.ts`를 하나의 중간 표현으로 내린 뒤 거기서 두 출력을 냅니다. 이 파일은 다른 파일을 가져오지 않으므로 그 자체가 프로그램 전부이고, 옆 창에는 호스트가 WebGPU나 WebGL2에 넘기는 WGSL과 GLSL ES 3.00 프래그먼트가 탭 하나씩으로 들어 있습니다.',
       source: 'hello.shade.ts',
       wgsl: 'WGSL',
       glsl: `${glsl} 프래그먼트`,
@@ -1095,7 +1101,7 @@ export const ko: Copy = {
       hostH: '호스트 애플리케이션에 연결하기',
       boundaryH: 'TypeShade와 호스트의 경계',
       nextLearnH: '다음 학습',
-      p0: '파일이 `"use typeshade"`로 시작하면 그 파일은 셰이더 컴파일 단위입니다. 아래 예제는 TypeShade의 실제 authoring surface입니다.',
+      p0: '`"use typeshade"`로 시작하는 파일은 셰이더 파일이며, 그 파일이 가져오는 셰이더 파일과 함께 한 프로그램으로 컴파일됩니다. 아래 예제가 TypeShade의 작성 인터페이스입니다.',
       boundaryP:
         'TypeShade 코드는 TypeScript처럼 작성하지만, `"use typeshade"`가 붙은 파일에서는 셰이더 언어 규칙이 적용됩니다. TypeScript 타입과 문법은 authoring surface를 만들고, TypeShade의 GPU 타입·리소스·shader stage 규칙이 실제 셰이더 의미를 결정합니다.',
       boundaryBullets: [
@@ -1187,7 +1193,11 @@ export const ko: Copy = {
       rows: [
         ['함수', '함수 선언과 호출', '셰이더 함수와 엔트리 포인트 규칙이 추가됩니다.'],
         ['타입', '타입 주석과 추론', 'GPU-native 타입과 벡터·행렬 타입이 추가됩니다.'],
-        ['모듈', 'import / export', '셰이더 컴파일 단위와 출력 가능한 모듈 규칙이 적용됩니다.'],
+        [
+          '모듈',
+          'import / export',
+          '셰이더 파일은 자신이 가져오는 셰이더 파일과 함께 한 프로그램으로 컴파일됩니다.',
+        ],
         ['제어 흐름', 'if / for 등의 문법', 'GPU 실행 모델과 타깃 제약을 만족해야 합니다.'],
         ['실행', 'JavaScript 런타임', '컴파일 결과를 WebGPU/WebGL2 호스트가 실행합니다.'],
       ],
@@ -1282,7 +1292,7 @@ export const ko: Copy = {
     lead: 'TypeShade는 TypeScript 개발 경험에서 출발해 GPU 전용 의미론을 더합니다. 이미 아는 개념을 셰이더를 작성하는 데 필요한 개념으로 연결해 봅니다.',
     startH: 'TypeScript 파일에서 시작합니다',
     startP:
-      '`"use typeshade"`는 파일을 TypeShade 컴파일 단위로 선택합니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.',
+      '`"use typeshade"`는 파일을 TypeShade 소스로 표시합니다. 그 파일과 그 파일이 가져오는 TypeShade 파일은 한 프로그램으로 컴파일됩니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.',
     modelH: '머릿속 모델',
     adds: 'TypeShade 추가 사항',
     model: [
@@ -1298,8 +1308,8 @@ export const ko: Copy = {
       ],
       [
         '모듈',
-        '`import`와 `export`로 재사용 가능한 프로그램 경계를 만듭니다.',
-        'GPU 코드로 내릴 수 있도록 셰이더 모듈에 필요한 제약을 적용합니다.',
+        '`import`와 `export`로 한 프로그램을 이루는 파일끼리 코드를 나눠 씁니다.',
+        '셰이더 파일은 상대 경로로 서로를 가져오고 한 프로그램으로 컴파일됩니다. 컴파일러는 진입점이 닿는 코드만 GPU 코드로 내립니다.',
       ],
       [
         'Web API',
@@ -1618,6 +1628,8 @@ export const ko: Copy = {
       '`typeshade/language-service` 하위 경로에서 `createTypeshadeLanguageService`를 가져오고, 문서를 `uri`와 텍스트, 선택적인 버전으로 엽니다. 내용이 바뀔 때마다 전체 텍스트로 갱신하고, 에디터가 문서를 닫으면 함께 닫습니다. 다른 메서드는 모두 `uri`를 받고, 필요한 경우 위치를 함께 받습니다. 서비스 안에는 비동기 동작이 없으며, 오래된 버전의 결과를 버리는 일은 어댑터가 맡습니다.',
     documentsP2:
       '위치는 줄과 문자의 쌍이며 둘 다 영에서 시작하고, 문자는 UTF-16 코드 단위로 셉니다. 범위는 끝을 포함하지 않는 반개구간입니다. LSP가 쓰는 규약 그대로이므로 언어 서버는 필드를 그대로 넘기면 됩니다. Monaco는 하나부터 세기 때문에 Playground의 어댑터가 자기 쪽에서 하나를 더하고, 돌아올 때 다시 뺍니다. 두 좌표계가 만나는 곳은 그 어댑터 하나뿐입니다.',
+    documentsP3:
+      '문서는 상대 경로로 다른 셰이더 파일을 가져올 수 있습니다(규칙 3.9). 서비스는 그 가져오기를 `compile()`이 따르는 규칙대로, 또는 넘겨준 `resolveImport`로 문서의 `uri`에 대해 해석합니다. 열지 않은 파일은 `readDocument`로 읽으며, 이 함수는 파일의 텍스트를 돌려주고 그런 파일이 없으면 `undefined`를 돌려줍니다. `compile()`도 같은 두 옵션을 받으므로 편집기와 컴파일러는 한 프로그램을 읽고, 둘 다 따라갈 수 없는 가져오기는 양쪽에서 `TS8072`가 됩니다.',
     packagingH: '패키지 구성',
     packagingP:
       '이 서비스는 `typescript` 위에서 돌아가며, 패키지는 이것을 필수 피어 의존성으로 둡니다. `compile()`이 `"use typeshade"` 파일을 TypeScript 파서로 읽기 때문에 기본 진입점에도 필요합니다. 그래서 컴파일러만 가져오는 프로그램도 TypeScript를 함께 설치하고, `typeshade/language-service`는 같은 패키지를 그대로 씁니다.',
@@ -1728,7 +1740,9 @@ export const ko: Copy = {
         resources: '리소스',
         values: '값과 제어 흐름',
         classes: '클래스와 제네릭',
+        imports: '가져오기',
         compute: '모듈 상태와 컴퓨트',
+        kernels: '커널이 되는 루프',
         twins: '소스 트윈',
       },
       titles: {
@@ -1774,6 +1788,7 @@ export const ko: Copy = {
         'class-parts':
           '객체 안의 객체, 객체를 담은 const, 함수를 담은 필드, 계약으로서의 인터페이스',
         'rt-renderer-class': '클래스 기반 3D SDF 레이 트레이서',
+        'imported-noise': '가져온 노이즈',
         closures: '주변 변수를 읽고 쓰는 로컬 함수',
         'higher-order': '함수를 받는 함수',
         'inferred-returns': '본문이 정하는 반환 타입',
@@ -1781,6 +1796,10 @@ export const ko: Copy = {
         'loops-over-data': '데이터를 도는 루프',
         'path-tracer': '경로 추적기',
         'workgroup-tile-2d': '이차원 워크그룹',
+        'loop-kernel': '커널로 도는 루프',
+        'loop-reduction': '루프 안의 리덕션',
+        'loop-struct-array': '구조체 배열을 도는 루프',
+        'loop-on-cpu': 'CPU에서 도는 루프',
         'private-state': '인보케이션별 상태',
         'workgroup-scratch': '워크그룹 스크래치 메모리',
         'workgroup-reduce': '워크그룹 리덕션',
@@ -1890,6 +1909,7 @@ export const ko: Copy = {
           '`ring.advance(dt)`는 자신이 담은 `Mover`의 `step`을 불러 고리를 옮깁니다. 그래서 `step`이 어느 클래스의 것이든 `advance`는 자기 객체를 바꾸고 참조로 받습니다(규칙 8.10).',
         'rt-renderer-class':
           '추상 SDF 도형 클래스와 상속으로 만든 3D 레이 트레이서입니다. 구체, 상자, 토러스, 평면을 구면 추적으로 렌더링합니다.',
+        'imported-noise': '다른 셰이더 파일의 `fbm`으로 구름을 그립니다.',
         closures:
           '`ring`은 TypeScript 클로저처럼 프래그먼트 진입점의 `p`와 `width`를 읽고 그 `glow`에 더합니다.',
         'higher-order':
@@ -1902,6 +1922,11 @@ export const ko: Copy = {
           '데이터를 다루는 프로그램이 쓰는 세 가지 루프를 Tint와 실제 WebGL2 컨텍스트로 확인합니다.',
         'path-tracer': '평범한 TypeScript로 쓴 작은 경로 추적기입니다.',
         'workgroup-tile-2d': '`@compute([8, 8])`는 WGSL의 `@workgroup_size(8, 8)`입니다.',
+        'loop-kernel': '로드맵에 나오는 지형 예제입니다.',
+        'loop-reduction': '배열을 도는 루프로 합, 평균과 분산, 히스토그램을 구합니다.',
+        'loop-struct-array': '파티클 한 걸음을 `array<Particle>`을 도는 루프로 씁니다.',
+        'loop-on-cpu':
+          '반복이 서로 독립인지 보는 증명이 거부하는 루프를 규칙마다(R1부터 R6까지) 하나씩 둡니다.',
         'private-state':
           '최상위의 평범한 `let seed: u32`는 WGSL의 `var<private>`입니다. 인보케이션마다 복사본이 하나씩 있고, 그 인보케이션의 모든 함수가 함께 씁니다.',
         'workgroup-scratch':
@@ -1983,7 +2008,7 @@ export const ko: Copy = {
       github: 'GitHub의 파일',
       playground: 'Playground에서 열기',
       editable:
-        '편집기에는 이 예제의 파일이 들어 있습니다. 내용을 고치면 브라우저에서 다시 컴파일하고, 편집기 옆의 탭이 따라 바뀝니다.',
+        '편집기에는 이 예제의 파일이 들어 있고, 프로그램은 이 파일과 이 파일이 가져오는 파일로 이루어집니다. 내용을 고치면 브라우저에서 다시 컴파일하고, 편집기 옆의 탭이 따라 바뀝니다.',
       builder:
         '이 예제는 `fn()` 빌더 API로 작성해서 [Playground](playground)의 편집기가 받지 않습니다.',
       noPicture: {
@@ -2521,7 +2546,7 @@ export const ko: Copy = {
           },
           genericFunction: {
             name: '제네릭 함수',
-            p: '파일이 쓰는 타입 인자 조합마다 함수가 하나씩 생기고, `pick`이라는 이름은 없습니다. [generic-helpers](shadeGenericHelpers)',
+            p: '프로그램이 쓰는 타입 인자 조합마다 함수가 하나씩 생기고, `pick`이라는 이름은 없습니다. [generic-helpers](shadeGenericHelpers)',
           },
           genericClass: {
             name: '제네릭 클래스',

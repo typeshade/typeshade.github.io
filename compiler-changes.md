@@ -36,3 +36,16 @@ id first, then the pull request that did the work.
 - 0009: ordinary TypeScript can import callable `.shade.ts` exports through the generated host view; the site-facing host-import copy and documentation are updated in #89.
 - 0019: the Playground Console pane supports `console.table` events and the related method copy/checks are updated in #89.
 - 0020: the class-builder documentation follows the compiler's `this`-parameter spelling in #89.
+- 0008: a diagnostic says what the program is: the `TS8012` example goes, since its trigger is
+  `TS8022` now, and its page says the number is retired, as `TS8011`'s does, once the registry
+  reads "8011 and 8012 are retired"; no copy quoted a message with `struct:`, `vec3<f32>` or
+  the `new` sentences, and the error-code pages compile their triggers at the pin, handled in
+  #95.
+- 0022: a shader file imports another: the `TS8004` page's fix imports the function from the
+  file that declares it, a new `TS8072` page with a trigger and a fix, each showing the file it
+  imports, in both locales; the copy that called a file a compilation unit or the whole
+  program; the gallery's build-time compile and the Playground's language worker read an
+  import through `readDocument`, and the toolbar names the file an example imports; the
+  language service page names `readDocument` and `resolveImport`; the `imported-noise` example
+  in the gallery, the picker and the Korean blurbs; and the Korean guide's two new sections,
+  handled in #95.

@@ -465,7 +465,12 @@ cards takes the column. A third measure needs a reason.
   and compiles nothing: every panel holds what the last compile put in it. Under 48rem the
   columns stack with the editor first. A page that names its example passes `seed`, which
   fills the editor from that file and drops the picker, and `still`, the example's
-  build-time still.
+  build-time still. The editor holds one file. An example that imports another shader file
+  (`imported-noise` imports `lib/noise.shade.ts`) is one program with it, so the page carries
+  the imported file's text and the language worker reads the import through it, in the
+  service and in the compile, the way `compile()` reads one through `readDocument`. A line
+  under the file name names each file the example imports, linked to it at the pinned
+  commit.
 
 ## Structure of the site
 
@@ -504,8 +509,8 @@ why lives on its own page.
     `.shade.ts` examples are `"use typeshade"` files, which is what the Playground's editor
     compiles, so their page carries the Playground itself, seeded with that file and with the
     picker gone, since the page already names the example. One line under the tool says the
-    editor holds the example's own file and that an edit recompiles it in the reader's
-    browser. The 36 `fn()` examples are TypeScript against the compiler's builder API, which
+    editor holds the example's own file, that the program is that file and any file it
+    imports, and that an edit recompiles it in the reader's browser. The 36 `fn()` examples are TypeScript against the compiler's builder API, which
     that editor does not take, so their page keeps the card, laid out the way ShaderToy lays
     one out: one card split down the middle, the shader running over its build-time still on
     the left and its text on the right, and nothing else in either pane. The card is the

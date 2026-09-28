@@ -541,6 +541,8 @@ export const en = {
         fixed: 'The same program, corrected. It compiles with no diagnostic.',
         fixedDiagnose:
           'The same program, corrected. It compiles with no diagnostic, and `diagnose()` no longer reports the code.',
+        otherFiles:
+          'It imports from another file of the same program, which `compile()` reads through its `readDocument` option:',
         lineAt: (line: number) => `line ${line}`,
         retired:
           'This number is retired. No diagnostic carries it, and the registry never gives it to another rule.',
@@ -563,24 +565,20 @@ export const en = {
       lines: {
         MISSING_DIRECTIVE:
           'A file compiled as TypeShade that has no `"use typeshade"` directive at all.',
-        UNKNOWN_TYPE: 'A type name the compiler does not know.',
         TYPE_MISMATCH:
-          'Two types that do not fit where they meet: an operator, a declaration, a return or an argument.',
+          'Two types that do not fit where they meet: an operator, a condition, a declaration, a return or an argument.',
         UNKNOWN_FN: 'A call to a function the file neither declares nor imports.',
         CONST_ASSIGN:
           'An assignment to a name that cannot change, such as a `const` or a read-only resource.',
         LOOP_BOUND:
           'A counted `for` loop whose exit the compiler cannot prove: the counter is not compared to a bound, or the body writes the bound.',
         LOOP_INFINITE:
-          'A loop that certainly never ends: `while (true)` with no `break` or `return`, or a step that moves the counter away from its bound.',
+          'A loop that certainly never ends: a `while` whose condition is `true`, written or folded from constants, with no `break` or `return`, or a step that moves the counter away from its bound.',
         LOOP_INDUCTION:
           'A `for` loop whose counter is not one `let` of type `i32` or `u32`, or whose update is not a constant step.',
         BREAK_OUTSIDE: 'A `break` with no loop or `switch` around it.',
         STRUCT_FIELD:
           "A struct literal or an entry's IO that does not match its declaration: a field missing, a field the struct does not have, or a `@location` that does not line up.",
-        HOST_API: 'A JavaScript host API, such as `window` or `fetch`, named inside a shader file.',
-        HOST_STMT:
-          'A JavaScript statement a shader has no form for, such as `try`, `throw` or `await`.',
         TOP_LEVEL:
           'Something at the top level of the file the compiler cannot declare: a bare statement, or a module-level declaration of a shape it refuses.',
         BACKEND:
@@ -890,6 +888,11 @@ export const en = {
     // names and the lines under them are the gallery's, in `examples.shade`, and the source
     // text comes from the vendored checkout at build time.
     exampleLabel: 'Example',
+    // The line under the file name while the editor holds an example that imports another
+    // shader file (Rule 3.9). `{files}` is each file it imports, in code and linked to the file
+    // at the pinned commit. The editor holds one file; the language worker reads the others.
+    importsNote:
+      'This example imports {files}. The compiler reads this file and what it imports as one program, and the editor holds this file alone.',
     copy: 'Copy',
     copied: 'Copied',
     share: 'Copy link',
@@ -1019,7 +1022,7 @@ export const en = {
     },
     targets: {
       h: 'One file, two targets',
-      p: 'The compiler lowers `hello.shade.ts` to one intermediate representation and emits both targets from it. The file is the whole program; the pane beside it holds the WGSL and the GLSL ES 3.00 fragment a host hands to WebGPU or WebGL2, one tab each.',
+      p: 'The compiler lowers `hello.shade.ts` to one intermediate representation and emits both targets from it. The file imports nothing, so it is the whole program; the pane beside it holds the WGSL and the GLSL ES 3.00 fragment a host hands to WebGPU or WebGL2, one tab each.',
       source: 'hello.shade.ts',
       wgsl: 'WGSL',
       glsl: `${glsl} fragment`,
@@ -1100,7 +1103,7 @@ export const en = {
       hostH: 'Connect it to the host application',
       boundaryH: 'The TypeShade / host boundary',
       nextLearnH: 'What to learn next',
-      p0: 'A file that starts with `"use typeshade"` is a shader compilation unit. The example below is the TypeShade authoring surface.',
+      p0: 'A file that starts with `"use typeshade"` is a shader file, and it compiles with the shader files it imports as one program. The example below is the TypeShade authoring surface.',
       boundaryP:
         'TypeShade source is authored with TypeScript syntax, but a file marked with `"use typeshade"` follows the shader language rules. TypeScript types and syntax form the authoring surface; TypeShade GPU types, resources and shader-stage rules define the shader semantics.',
       boundaryBullets: [
@@ -1201,7 +1204,11 @@ export const en = {
           'Annotations and inference',
           'GPU-native values plus vector and matrix types are added.',
         ],
-        ['Modules', 'import / export', 'Shader compilation-unit and emit rules apply.'],
+        [
+          'Modules',
+          'import / export',
+          'A shader file and the shader files it imports compile as one program.',
+        ],
         [
           'Control flow',
           'if / for and related syntax',
@@ -1307,7 +1314,7 @@ export const en = {
     lead: 'TypeShade starts from TypeScript authoring and adds GPU-specific semantics. This page connects the concepts you already know to the concepts you need to write shaders.',
     startH: 'Start with a TypeScript file',
     startP:
-      '`"use typeshade"` marks the file as a TypeShade compilation unit. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports.',
+      '`"use typeshade"` marks the file as TypeShade source, and the file compiles with the TypeShade files it imports as one program. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports.',
     modelH: 'The mental model',
     adds: 'TypeShade adds',
     model: [
@@ -1323,8 +1330,8 @@ export const en = {
       ],
       [
         'Modules',
-        '`import` and `export` define reusable program boundaries.',
-        'Shader-module constraints so the compiler can lower the reachable program to GPU code.',
+        '`import` and `export` share code between the files of a program.',
+        'Shader files import one another by relative paths and compile as one program, which the compiler lowers to GPU code from what its entry points reach.',
       ],
       [
         'Web APIs',
@@ -1648,6 +1655,8 @@ export const en = {
       "Import `createTypeshadeLanguageService` from the `typeshade/language-service` subpath and open a document by `uri` with its text and an optional version. Update it with the whole text on each change and close it when the editor does; every other method takes the `uri` and, where it applies, a position. Nothing in the service is asynchronous, and a result for a stale version is the adapter's to drop.",
     documentsP2:
       "Positions are zero-based line and character pairs, with the character counted in UTF-16 code units, and a range is half-open with its end exclusive. These are the conventions LSP uses, so a language server passes them through field for field. Monaco counts from one, so the Playground's adapter adds one on its own side and takes it off on the way back; that adapter is the only place the two coordinate systems meet.",
+    documentsP3:
+      "A document can import another shader file by a relative path (Rule 3.9). The service resolves the import against the document's `uri` by the rule `compile()` follows, or through the `resolveImport` you pass it, and reads a file it has not opened through `readDocument`, which returns the file's text or `undefined`. `compile()` takes the same two options, so the editor and the compiler read one program, and an import the two cannot follow is `TS8072` in both.",
     packagingH: 'Packaging',
     packagingP:
       'The service runs on `typescript`, which the package lists as a required peer dependency. The main entry needs it too, because `compile()` reads a `"use typeshade"` file with the TypeScript parser, so a program that imports only the compiler installs it as well, and `typeshade/language-service` uses that same copy.',
@@ -1723,7 +1732,9 @@ export const en = {
         resources: 'Resources',
         values: 'Values and control flow',
         classes: 'Classes and generics',
+        imports: 'Imports',
         compute: 'Module state and compute',
+        kernels: 'Loops as kernels',
         twins: 'Source twins',
       },
       titles: shadeTitles(),
@@ -1787,7 +1798,7 @@ export const en = {
       /** The line over the tool on a `.shade.ts` example's page, which carries the whole
        *  Playground seeded with that file. */
       editable:
-        "The editor holds this example's own file. An edit recompiles it in your browser, and the tabs beside the editor follow.",
+        "The editor holds this example's own file, and the program is that file and any file it imports. An edit recompiles it in your browser, and the tabs beside the editor follow.",
       /** The line on an `fn()` example's page, which carries the static card instead. */
       builder:
         'This example is written against the `fn()` builder API, which the editor in the [Playground](playground) does not take.',
@@ -2344,7 +2355,7 @@ export const en = {
           },
           genericFunction: {
             name: 'Generic function',
-            p: 'One function per set of type arguments the file uses, and nothing called `pick`. [generic-helpers](shadeGenericHelpers)',
+            p: 'One function per set of type arguments the program uses, and nothing called `pick`. [generic-helpers](shadeGenericHelpers)',
           },
           genericClass: {
             name: 'Generic class',

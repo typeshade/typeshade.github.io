@@ -17,7 +17,8 @@ const c = copyFor(locale).languageService;
 const headings = [c.layersH, c.requestsH, c.documentsH, c.packagingH, c.exampleH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 const sample = `import { createTypeshadeLanguageService } from '${PACKAGE_NAME}/language-service'
 
-const service = createTypeshadeLanguageService()
+// readDocument reads a file a document imports that the editor has not opened.
+const service = createTypeshadeLanguageService({ readDocument: (uri) => files.get(uri) })
 const uri = 'file:///hello.shade.ts'
 
 service.openDocument(uri, source)
@@ -50,6 +51,7 @@ service.closeDocument(uri)`;
     <h2 id={slugify(c.documentsH)}>{c.documentsH}</h2>
     <p><Rich text={c.documentsP1} locale={locale} /></p>
     <p>{c.documentsP2}</p>
+    <p><Rich text={c.documentsP3} locale={locale} /></p>
   </section>
 
   <section>

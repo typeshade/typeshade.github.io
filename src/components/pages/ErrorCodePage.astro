@@ -241,6 +241,12 @@ const gapText = entry.gap === 'retired' ? e.retired : entry.gap === 'builder' ? 
           <CodeFrame label={`${e.fixH}, ${FILE}`}>
             <Code code={example.fix} lang="ts" title={FILE} locale={locale} />
           </CodeFrame>
+          {example.files.length > 0 && <p lang={locale}><Rich text={e.otherFiles} locale={locale} /></p>}
+          {example.files.map((f) => (
+            <CodeFrame label={`${e.fixH}, ${f.name}`}>
+              <Code code={f.text} lang="ts" title={f.name} locale={locale} />
+            </CodeFrame>
+          ))}
         </>
       )}
     </section>

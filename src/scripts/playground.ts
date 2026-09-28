@@ -767,12 +767,29 @@ function mount(root: HTMLElement): void {
     }
   };
   const client = openLanguageWorker();
+  // The files an example imports (Rule 3.9), which the editor does not hold, by the uri an
+  // import beside the document resolves to. Sent before the first update, so the worker holds
+  // them by the time it reads an import.
+  const library = JSON.parse(root.dataset.library ?? '{}') as Record<string, string>;
+  client?.files(
+    Object.fromEntries(
+      Object.entries(library).map(([name, text]) => [new URL(name, documentUri).toString(), text]),
+    ),
+  );
   const reflectionPane = root.querySelector('[data-reflection]');
   const consolePane = root.querySelector('[data-console]');
   const runCpu = root.querySelector('[data-run-cpu]');
   const examples = JSON.parse(root.dataset.examples ?? '[]') as PlaygroundExample[];
   const examplePicker = root.querySelector('[data-example]');
   const exampleNote = root.querySelector('[data-example-note]');
+  /** One line per example that imports another file, naming it, shown while the editor holds
+   *  that example. */
+  const importsNotes = [...root.querySelectorAll('[data-imports-note]')].filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
+  const showImportsNote = (id: string | undefined): void => {
+    for (const note of importsNotes) note.hidden = note.dataset.importsNote !== id;
+  };
   const share = root.querySelector('[data-share]');
   const copyOutput = root.querySelector('[data-copy-output]');
   const sizeLabel = root.querySelector('[data-size]');
@@ -2438,6 +2455,7 @@ function mount(root: HTMLElement): void {
     openedExample = example.id;
     if (examplePicker instanceof HTMLSelectElement) examplePicker.value = example.id;
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
+    showImportsNote(example.id);
     bindings.seed(example.defaults ?? {});
     editor.setValue(example.source);
     // The edit handler queued a render for the new text; this one is immediate, so that one
@@ -2601,6 +2619,7 @@ function mount(root: HTMLElement): void {
 
       // Colourising bakes the theme into the markup, so the pane is painted again on a change.
       followSiteTheme(monaco, paintOutput);
+      showImportsNote(opening.example?.id);
       if (opening.example) {
         openedExample = opening.example.id;
         bindings.seed(opening.example.defaults ?? {});

@@ -1,7 +1,8 @@
 ---
 id: the-cpu-oracle
-source: 4169032959e1ed2a3f0bed9a4b40558b2b0c2abdd5210771b0343fcfac7029bd
-sourceLine: 1385
+source: 78e13acf11a4f2b4deaf481882efaa681bab8f4ef55a5edc4dc4081f3681a39d
+sourceLine: 1390
+rules: 3.9 irhR4O4rSI_BD62CMjiedfDBSpIOXY1SvIT_ExKoixs=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -197,3 +198,63 @@ compileModule(d.module).fns[d.name](0.5, 2) // → cos(1) * 0.5 * 2 + sin(1) = 1
 매개변수가 그 구성 요소에 닿을 때만 일어납니다. 이 패스는 유도하지 않은 미분을 영으로
 채워 돌려주는 일이 없습니다. 생성된 함수는 오라클 위에서 중앙 유한 차분과 비교해 검사하며,
 직접 만든 함수도 같은 방법으로 검사하면 됩니다.
+
+### 모듈의 헬퍼를 호스트 코드에서 부르기
+
+`"use typeshade"` 모듈은 애플리케이션이 가져올 수 있는 모듈이기도 합니다. Vite 플러그인을
+설정하면 평범한 `.ts` 파일이 `.shade.ts`를 가져와 그 파일이 내보내는 헬퍼 함수를 부릅니다.
+호출마다 그 함수의 코드가 GPU가 아니라 **CPU에서** 실행되며, GPU가 반올림하는 방식대로
+`f32` 정밀도로 계산합니다. 높이 조회나 피킹 검사, 단위 테스트처럼 호스트 코드가 셰이더의 계산을
+함께 쓸 때 이 방법을 씁니다. 같은 방식으로 가져온 `@compute` 진입점은 반대로 GPU에서 실행됩니다.
+`await entry(bindings, workgroups)`는 진입점을 WebGPU에서 디스패치하고 진입점이 쓴 값을 배열로
+다시 읽어 오며, `entry(canvas, bindings)`는 전체 화면 프래그먼트 진입점을 캔버스에
+그립니다(`docs/use-typeshade-surface.md` §67).
+
+```ts
+// app.ts, ordinary TypeScript: terrain.shade.ts exports `height(p: vec2, k: vec4): f32`
+import { height } from './terrain.shade.ts'
+
+const h = height([0.5, 0.5], [1, 0.5, 2, 0.25]) // a number
+```
+
+값은 평범한 JavaScript 값입니다. 스칼라는 `number`나 `boolean`, 벡터는 튜플(`[x, y]`), 행렬은
+열 우선으로 펼친 배열, `array<T, N>`은 배열, 구조체는 객체가 됩니다. 호출은 인자를 하나씩
+검사하고, 맞지 않는 인자가 있으면 그 매개변수를 밝힌 `TypeError`를 던집니다. 돌려주는 값은
+새로 만든 값이며, 호출은 동기적으로 끝납니다.
+
+호스트가 부를 수 있는 함수는 내보낸 함수 가운데 진입점이 아니고, 제네릭이 아니며, 함수를 인자로
+받지 않고, 바인딩이나 GPU에서만 계산되는 내장 함수에 닿지 않는 것입니다. 모듈이 내보내는
+나머지는 호스트에게 이유와 함께 `never`로 보이므로, 그것을 부르면 호출을 쓴 자리에서 타입 오류가
+납니다. 설정은 네 줄입니다. `vite.config.ts`에 플러그인 한 줄, `tsconfig.json`에 두 줄,
+`prepare`에 `typeshade sync` 한 줄을 씁니다. 이 설정과 호스트 값 표 전체는
+`docs/use-typeshade-surface.md` §64에 있습니다.
+
+### 다른 셰이더 모듈을 가져오는 모듈
+
+`"use typeshade"` 파일은 다른 TypeScript 모듈처럼 다른 셰이더 파일이 내보낸 것을 가져옵니다.
+`import { fbm } from './noise.shade.ts'`처럼 씁니다. 컴파일하는 파일과, 그 파일이 직접 또는 다른
+파일을 거쳐 가져오는 셰이더 파일은 하나의 프로그램이고, 프로그램은 모듈 하나가 됩니다. 가져온
+파일에서 컴파일하는 파일이 닿는 헬퍼와 구조체, 상수, 바인딩은 함께 들어오지만, 가져온 파일의
+진입점은 들어오지 않습니다. 파일마다 스코프를 따로 가지므로 두 파일이 각자 비공개 `hash`를 둘 수
+있고, 모듈은 두 번째 것을 다른 이름으로 생성합니다.
+
+`compile()`은 소스가 가져오는 파일을 직접 넘겨준 `readDocument`로 읽습니다. 이 함수는 경로를 받아
+파일의 텍스트를 돌려주고, 그런 파일이 없으면 `undefined`를 돌려줍니다. Vite 플러그인과
+`typeshade check`, `typeshade sync`, 편집기는 파일을 스스로 읽습니다.
+
+```ts
+import { existsSync, readFileSync } from 'node:fs'
+import { compile } from 'typeshade'
+
+const read = (path: string) => (existsSync(path) ? readFileSync(path, 'utf8') : undefined)
+const { wgsl, diagnostics } = compile(read('src/clouds.shade.ts')!, {
+  fileName: 'src/clouds.shade.ts',
+  readDocument: read,
+})
+```
+
+가져온 파일에 있는 실수는 그 파일의 줄과 열에서 보고됩니다. 컴파일러가 따라갈 수 없는 가져오기는
+그 가져오기 자리에서 `TS8072`가 됩니다. 파일을 가리키지 않는 경로, 지시문으로 시작하지 않는 파일,
+그 파일이 내보내지 않는 이름, 기본 가져오기가 여기에 해당합니다. `node_modules`를 거쳐 패키지
+이름만으로 가져오는 패키지는 아직 지원하지 않습니다. 가져오기의 모든 형태와 모듈이 생성하는 이름,
+거부하는 경우는 `docs/use-typeshade-surface.md` §68에 모두 있습니다.
