@@ -27,7 +27,9 @@ import { editCopy, links } from '../../lib/links.ts';
 import { cardClass } from '../../lib/live-card.ts';
 import { checkedBlurbs } from '../../lib/examples.ts';
 import { checkedShade } from '../../lib/shade-examples.ts';
-import { examplePage, examplePath, exampleSourceHref, noPictureReasons } from '../../lib/example-pages.ts';
+import { exampleMeta, META_MIN } from '../../lib/example-meta.ts';
+import { examplePage, examplePath, exampleSourceHref, noPictureReasons, type ExamplePage } from '../../lib/example-pages.ts';
+import { TEMPLATE_ID } from '../../lib/example-data.ts';
 
 interface Props {
   locale: Locale;
@@ -37,7 +39,13 @@ const { locale, id } = Astro.props;
 const t = copyFor(locale);
 const e = t.examples;
 const p = e.page;
-const example = examplePage(id);
+// The template the Worker fills in for an example newer than the build (worker/index.ts):
+// the page's markup, scripts and styles, with the dictionary's words standing in for the
+// example's and both corpora's halves present, since the Worker keeps the one it needs.
+const template = id === TEMPLATE_ID;
+const example: ExamplePage = template
+  ? { id, corpus: 'shade', file: '', title: '', group: '', drawn: false, source: ' ', entryLine: 0, emitted: { wgsl: ' ', glsl: { vertex: ' ', fragment: ' ' } }, inPlayground: false }
+  : examplePage(id);
 
 // Every reason NO_STILL_REASONS can hand a page has a sentence in this language. A reason
 // added upstream without one would print nothing under an empty frame.
@@ -53,44 +61,16 @@ const blurbs = checkedBlurbs(e.blurbs);
 const nameOf = (which: string): string => (examplePage(which).corpus === 'shade' ? shadeTitles[which]! : examplePage(which).title);
 const blurbOf = (which: string): string => (examplePage(which).corpus === 'shade' ? shadeBlurbs[which]! : blurbs[which]!);
 
-const name = nameOf(id);
-const blurb = blurbOf(id);
+const name = template ? p.runtime.name : nameOf(id);
+const blurb = template ? p.runtime.blurb : blurbOf(id);
 
-// A meta description is plain text, so the code marks and links the gallery's own line
-// carries come off it first.
-const plain = (text: string): string => text.replace(/`([^`]*)`/g, '$1').replace(/\[([^\]]*)\]\(([^)]+)\)/g, '$1');
-const META_MIN = 70;
+// The title and the description are composed in src/lib/example-meta.ts, which the example
+// data the Worker serves composes them with too; the bounds the SEO checks want are held here.
+const { title, description } = template ? { title: p.runtime.title, description: p.runtime.description } : exampleMeta(locale, name, blurb);
 const META_MAX = localeSettings[locale].metaDescriptionMax;
-const HARD_MAX = 160;
-// The same cut the reference makes: at the end of a sentence, else at a clause, else at a
-// word. A short registry line leaves the description under the floor the SEO checks want, so
-// the dictionary's own sentence about the page fills it out.
-const markEnd = (window: string, marks: readonly string[]): number => {
-  let best = -1;
-  for (const mark of marks) {
-    const withSpace = window.lastIndexOf(`${mark} `);
-    if (withSpace >= 0) best = Math.max(best, withSpace + mark.length);
-    if (window.endsWith(mark)) best = Math.max(best, window.length);
-  }
-  return best;
-};
-const cutAt = (text: string, limit: number): string | null => {
-  const window = text.slice(0, limit);
-  const sentenceEnd = markEnd(window, ['.', '!', '?']);
-  if (sentenceEnd >= META_MIN) return window.slice(0, sentenceEnd);
-  const clauseEnd = markEnd(window, [',', ';', ':']);
-  if (clauseEnd >= META_MIN) return `${window.slice(0, clauseEnd - 1)}…`;
-  return null;
-};
-const truncate = (text: string, max: number): string =>
-  text.length <= max ? text : cutAt(text, max) ?? cutAt(text, HARD_MAX) ?? `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`;
-
-const title = p.title(name);
-if (title.length < 45 || title.length > 60) {
+if (!template && (title.length < 45 || title.length > 60)) {
   throw new Error(`[example-page] '${id}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`);
 }
-const composed = plain(p.description(name, blurb));
-const description = truncate(composed.length < META_MIN ? `${composed} ${plain(p.descriptionPad)}` : composed, META_MAX);
 if (description.length < META_MIN || description.length > META_MAX) {
   throw new Error(`[example-page] '${id}' has a ${description.length}-character description, outside ${META_MIN} to ${META_MAX}`);
 }
@@ -135,19 +115,22 @@ const editable = example.corpus === 'shade';
   description={description}
   editHref={editCopy(locale, 'examples')}
   label={name}
+  noindex={template}
   previous={pager(example.previous)}
   next={pager(example.next)}
 >
-  <h1>{name}</h1>
-  <p><Rich text={blurb} locale={locale} /></p>
+  <h1 data-runtime="name">{name}</h1>
+  <p data-runtime="blurb"><Rich text={blurb} locale={locale} /></p>
+  {template && <p class="max-inline-(--content) text-label text-text-2">{p.runtime.note}</p>}
 
-  {editable ? (
-    <div class="example-playground">
-      <Playground locale={locale} seed={id} still={example.drawn ? `/stills/${id}.webp` : undefined} />
+  {editable && (
+    <div class="example-playground" data-runtime-corpus={template ? 'shade' : undefined}>
+      {template ? <Playground locale={locale} runtime /> : <Playground locale={locale} seed={id} still={example.drawn ? `/stills/${id}.webp` : undefined} />}
       <p class="max-inline-(--content) text-label text-text-2">{p.editable}</p>
     </div>
-  ) : (
-    <div class="example-stage @container mbs-6" data-front-tabs data-shader-scope>
+  )}
+  {(template || !editable) && (
+    <div class="example-stage @container mbs-6" data-front-tabs data-shader-scope data-runtime-corpus={template ? 'registry' : undefined}>
       <div class={cardClass}>
         <div class="example-stage-body grid grid-cols-1">
           <div class="example-stage-view min-inline-0 min-block-0 bg-surface-2">
@@ -175,6 +158,7 @@ const editable = example.corpus === 'shade';
                   id={`${paneId(pane.key)}-tab`}
                   aria-controls={paneId(pane.key)}
                   aria-selected={i === 0 ? 'true' : 'false'}
+                  data-runtime-tab={template ? pane.key : undefined}
                 >{pane.label}</button>
               ))}
             </div>
@@ -189,8 +173,9 @@ const editable = example.corpus === 'shade';
                   id={paneId(pane.key)}
                   aria-labelledby={`${paneId(pane.key)}-tab`}
                   data-entry-line={pane.key === 'source' ? String(example.entryLine) : undefined}
+                  data-runtime-pane={template ? pane.key : undefined}
                 >
-                  <CodeFrame label={pane.region}><Code code={pane.code} lang={pane.lang} locale={locale} wrap /></CodeFrame>
+                  <CodeFrame label={pane.region}>{template ? <pre class="runtime-code" tabindex="0" data-runtime-code></pre> : <Code code={pane.code} lang={pane.lang} locale={locale} wrap />}</CodeFrame>
                 </div>
               ))}
             </div>
@@ -199,15 +184,15 @@ const editable = example.corpus === 'shade';
       </div>
 
       <div class="example-stage-notes mbs-3 max-inline-(--content) text-label text-text-2">
-        <p>{example.drawn ? <span data-shader-caption>{caption.neutral}</span> : p.noPicture[example.reason!]}</p>
-        <p><Rich text={p.emittedNote} locale={locale} /></p>
+        {!template && <p>{example.drawn ? <span data-shader-caption>{caption.neutral}</span> : p.noPicture[example.reason!]}</p>}
+        {!template && <p><Rich text={p.emittedNote} locale={locale} /></p>}
         <p><Rich text={p.builder} locale={locale} /></p>
       </div>
     </div>
   )}
 
   <p class="flex flex-wrap gap-x-6 gap-y-4">
-    <a href={sourceHref}>{p.github}</a>
+    <a href={sourceHref} data-runtime="source-link">{p.github}</a>
     {example.inPlayground && !editable && <a href={playgroundHref}>{p.playground}</a>}
   </p>
 </Docs>
@@ -287,6 +272,11 @@ const editable = example.corpus === 'shade';
   .example-stage-panels[data-scrolled] {
     -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
     mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
+  }
+  /* The template's panes (worker/index.ts writes the text in): plain text in the site's mono
+     face, set the way Expressive Code sets a frame's lines. */
+  .example-stage-code :global(.runtime-code) {
+    margin: 0; padding: 16px 20px; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); white-space: pre-wrap; overflow-wrap: anywhere;
   }
   .example-stage-code :global(.expressive-code) { margin: 0; --ec-brdRad: 0; --ec-brdWd: 0; --ec-frm-shdCol: transparent }
   /* The notes are three short paragraphs, and these outrank the document's own `.doc p`. */

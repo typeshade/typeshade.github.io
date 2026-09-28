@@ -742,6 +742,10 @@ export const en = {
   // compiler writes from what is typed into it. Monaco carries its own English inside the
   // editor box.
   playground: {
+    // The page's <title> and meta description, so the Playground does not repeat the front
+    // page's in search results.
+    title: 'TypeShade Playground: compile a shader in your browser',
+    description: `Write a "use typeshade" file in the browser, compile it to WGSL and ${glsl}, run it on WebGPU or WebGL2, and read the diagnostics and the reflection.`,
     h1: 'Playground',
     intro:
       'Write a TypeShade TypeScript file, compile it in your browser, and inspect the generated WGSL and diagnostics.',
@@ -824,13 +828,28 @@ export const en = {
     computeRan:
       'Ran {entry} over {invocations} invocations on {backend} in {ms} ms. The canvas plots what it wrote.',
     // The Console tab: the lines a compute run's console calls delivered, from the CPU oracle's
-    // sink or, on WebGPU, from the console buffer the compiler adds (surface §66).
+    // sink or, on WebGPU, from the console buffer the compiler adds (surface §66). A module that
+    // draws logs one clicked pixel at a time, run on the CPU oracle.
     consoleTab: 'Console',
-    consoleIdle: 'Run a compute module that calls `console.log` to see its lines here.',
+    consoleIdle:
+      'Call `console.log` in a shader to see its lines here. A compute module logs every invocation; in a module that draws, click a pixel of the canvas.',
     consoleLines: '{lines} lines from {backend}, in the order the CPU runs the invocations.',
     consoleNone: 'The run on {backend} logged nothing.',
     consoleDropped: '{dropped} more lines did not fit the buffer.',
     consoleMore: '{more} more lines are not shown.',
+    consoleIndex: '(index)',
+    consoleValue: 'Value',
+    consolePixelHint:
+      'This module draws, and its fragment entry runs once for every pixel. Click a pixel of the canvas to see what that pixel logs.',
+    consolePixel:
+      'What pixel ({x}, {y}) logged. It ran on the CPU oracle with the inputs the canvas gives it.',
+    consolePixelNone: 'Pixel ({x}, {y}) reached no console call.',
+    consolePixelOutside:
+      'Pixel ({x}, {y}) is outside the triangle the vertex entry draws, so no fragment runs there.',
+    consolePixelFailed: 'Pixel ({x}, {y}) did not run on the CPU oracle: {reason}',
+    consolePixelNoRaster:
+      "The CPU oracle cannot place this module's triangle. Its vertex entry needs `vertex_index` or the generated vertices, and a `position` output.",
+    pixelNote: 'Console lines from pixel ({x}, {y}): {lines}.',
     // The panel under the canvas: one block per binding the module declares, with what the
     // reader supplies it with. The texture sources and matrix presets are the choices a
     // select offers; the filter and address values are WebGPU's own words and stay in code.
@@ -1593,6 +1612,7 @@ export const en = {
         '[WGSL specification](specWgsl) defines the first of the two targets.',
         `[${facts.glslTarget} specification](specGlslEs) and the [WebGL2 specification](specWebgl2) define the second.`,
         '[MDN WebGPU API](mdnWebgpu) and [MDN WebGL2RenderingContext](mdnWebgl2) show how a host hands each of them to a driver.',
+        `[Functions](referenceFunctions) in the language reference gives each builtin with the WGSL and ${facts.glslTarget} text the compiler writes for it, and [Types](referenceTypes) does the same for every type.`,
       ],
       nextP:
         'Next: [Examples](examples), where every example in the compiler’s registry names the targets it emits.',
@@ -1716,6 +1736,12 @@ export const en = {
     /** A tile whose example has nothing the page can draw shows Ant's Empty mark and this
      *  line instead of a bare grey frame. */
     noStill: 'No picture: this example is not one the page can draw.',
+    /** The gallery's last group, which the page fills in from the example data when the
+     *  compiler has examples this build does not (src/scripts/examples-runtime.ts). */
+    runtime: {
+      h: 'Added since this build',
+      p: 'The compiler has these examples and this build of the site does not yet. Their pages are filled in from the example data its main branch published.',
+    },
     /** The Description column, one line per example, keyed by the registry's id. English
      *  takes the compiler's own wording; a translation writes the same lines in its language. */
     blurbs: registryBlurbs(),
@@ -1802,6 +1828,17 @@ export const en = {
       /** The line on an `fn()` example's page, which carries the static card instead. */
       builder:
         'This example is written against the `fn()` builder API, which the editor in the [Playground](playground) does not take.',
+      /** The template page the Worker fills in for an example the compiler added after the
+       *  site was built (worker/index.ts). Its own words stand in until the Worker writes the
+       *  example's, and `note` is the line the filled page keeps. */
+      runtime: {
+        title: 'A TypeShade example newer than this site build',
+        description:
+          'A TypeShade example the compiler added after this site was built, with its source file and the WGSL and GLSL it emits.',
+        name: 'A TypeShade example',
+        blurb: 'An example the compiler added after this site was built.',
+        note: "The compiler added this example after the site was last built, so this page is filled in from the example data its main branch published. The next build gives it a picture and the site's own words.",
+      },
       /** What the page says where it draws no picture, one line per reason in
        *  NO_STILL_REASONS (scripts/artifacts.mjs). */
       noPicture: {

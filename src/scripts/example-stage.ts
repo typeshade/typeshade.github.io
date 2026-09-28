@@ -41,7 +41,9 @@ for (const panel of document.querySelectorAll<HTMLElement>('[data-entry-line]'))
   scroller.addEventListener('scroll', mark, { passive: true });
 
   const line = Number(panel.dataset.entryLine);
-  const rows = panel.querySelectorAll<HTMLElement>('pre > code > .ec-line');
+  // A built pane's lines are Expressive Code's; a pane the Worker filled (worker/index.ts)
+  // writes one span per line.
+  const rows = panel.querySelectorAll<HTMLElement>('pre > code > .ec-line, pre > .runtime-line');
   const row = Number.isInteger(line) && line > 0 ? rows[line] : undefined;
   if (!row) {
     mark();

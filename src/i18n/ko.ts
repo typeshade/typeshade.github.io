@@ -779,6 +779,8 @@ export const ko: Copy = {
     },
   },
   playground: {
+    title: 'TypeShade Playground, 브라우저에서 셰이더 컴파일',
+    description: `브라우저에서 "use typeshade" 파일을 작성해 WGSL과 ${glsl}으로 컴파일합니다. WebGPU나 WebGL2에서 실행하고 진단과 리플렉션도 확인할 수 있습니다.`,
     h1: 'Playground',
     intro:
       'TypeShade TypeScript 파일을 작성하고 브라우저에서 컴파일한 뒤, 나온 WGSL과 진단을 확인하십시오.',
@@ -853,12 +855,26 @@ export const ko: Copy = {
     computeRan:
       '{entry}을(를) {backend}에서 호출 {invocations}회로 실행했고 {ms} ms 걸렸습니다. 캔버스는 이 진입점이 쓴 값을 그래프로 보여 줍니다.',
     consoleTab: '콘솔',
-    consoleIdle: '`console.log`를 부르는 컴퓨트 모듈을 실행하면 그 줄이 여기에 나옵니다.',
+    consoleIdle:
+      '셰이더에서 `console.log`를 부르면 그 줄이 여기에 나옵니다. 컴퓨트 모듈은 모든 인보케이션의 줄을 보여 주고, 그리는 모듈은 캔버스의 픽셀을 클릭하면 됩니다.',
     consoleLines:
       '{backend}에서 받은 줄 {lines}개입니다. CPU가 인보케이션을 실행하는 순서로 보여 줍니다.',
     consoleNone: '{backend}에서 실행한 결과 기록된 줄이 없습니다.',
     consoleDropped: '버퍼에 들어가지 못한 줄이 {dropped}개 더 있습니다.',
     consoleMore: '보여 주지 않은 줄이 {more}개 더 있습니다.',
+    consoleIndex: '(인덱스)',
+    consoleValue: '값',
+    consolePixelHint:
+      '이 모듈은 화면을 그리며, 프래그먼트 진입점이 픽셀마다 한 번씩 실행됩니다. 캔버스의 픽셀을 클릭하면 그 픽셀이 기록한 줄을 볼 수 있습니다.',
+    consolePixel:
+      '픽셀 ({x}, {y})이(가) 기록한 줄입니다. 캔버스가 주는 입력으로 CPU 오라클에서 실행한 결과입니다.',
+    consolePixelNone: '픽셀 ({x}, {y})은(는) 콘솔 호출에 도달하지 않았습니다.',
+    consolePixelOutside:
+      '픽셀 ({x}, {y})은(는) 버텍스 진입점이 그리는 삼각형 밖이라 프래그먼트가 실행되지 않습니다.',
+    consolePixelFailed: '픽셀 ({x}, {y})을(를) CPU 오라클에서 실행하지 못했습니다: {reason}',
+    consolePixelNoRaster:
+      'CPU 오라클이 이 모듈의 삼각형을 배치하지 못합니다. 버텍스 진입점에 `vertex_index`나 생성된 정점 입력, 그리고 `position` 출력이 있어야 합니다.',
+    pixelNote: '픽셀 ({x}, {y})의 콘솔 줄: {lines}개',
     bindings: {
       title: '바인딩',
       empty: '이 모듈은 바인딩하는 것이 없습니다.',
@@ -1573,6 +1589,7 @@ export const ko: Copy = {
         '[WGSL 명세](specWgsl)가 두 타깃 가운데 첫 번째를 정의합니다.',
         `[${glsl} 명세](specGlslEs)와 [WebGL2 명세](specWebgl2)가 두 번째를 정의합니다.`,
         '[MDN WebGPU API](mdnWebgpu)와 [MDN WebGL2RenderingContext](mdnWebgl2)에서 호스트가 각각을 드라이버에 어떻게 넘기는지 볼 수 있습니다.',
+        `언어 참조의 [함수](referenceFunctions)에는 내장 함수마다 컴파일러가 쓰는 WGSL과 ${glsl} 코드가 있고, [타입](referenceTypes)에는 타입마다 같은 내용이 있습니다.`,
       ],
       nextP:
         '다음은 [예제](examples)입니다. 컴파일러 레지스트리의 예제마다 어떤 타깃을 생성하는지 적혀 있습니다.',
@@ -1687,6 +1704,10 @@ export const ko: Copy = {
     tableCaption: `아래 ${facts.examples}개 예제 가운데 ${facts.bothTargets}개는 WGSL과 ${glsl}을 모두 냅니다. ${facts.wgslOnlyExample.title}은 ${glsl}으로 낼 버텍스나 프래그먼트 단계가 없어서 WGSL 전용으로 표시했습니다. WebGL2 경로는 옵션으로 켜는 에뮬레이션입니다.`,
     wgslOnly: 'WGSL 전용',
     noStill: '그림 없음: 이 예제는 페이지가 그릴 수 있는 것이 아닙니다.',
+    runtime: {
+      h: '이 빌드 이후에 추가된 예제',
+      p: '컴파일러에는 있지만 이 사이트 빌드에는 아직 없는 예제입니다. 각 페이지는 컴파일러의 main 브랜치가 게시한 예제 데이터로 채웁니다.',
+    },
     blurbs: {
       graticule: '지도라면 다 그리는 경위선 격자.',
       hillshade: '음영 기복.',
@@ -2011,6 +2032,14 @@ export const ko: Copy = {
         '편집기에는 이 예제의 파일이 들어 있고, 프로그램은 이 파일과 이 파일이 가져오는 파일로 이루어집니다. 내용을 고치면 브라우저에서 다시 컴파일하고, 편집기 옆의 탭이 따라 바뀝니다.',
       builder:
         '이 예제는 `fn()` 빌더 API로 작성해서 [Playground](playground)의 편집기가 받지 않습니다.',
+      runtime: {
+        title: '이 사이트 빌드 이후에 추가된 TypeShade 예제',
+        description:
+          '이 사이트를 빌드한 뒤 컴파일러에 추가된 TypeShade 예제입니다. 소스 파일과 컴파일러가 내는 WGSL, GLSL을 함께 보여 줍니다.',
+        name: 'TypeShade 예제',
+        blurb: '이 사이트를 빌드한 뒤 컴파일러에 추가된 예제입니다.',
+        note: '이 예제는 사이트를 마지막으로 빌드한 뒤 컴파일러에 추가되어, 컴파일러의 main 브랜치가 게시한 예제 데이터로 이 페이지를 채웠습니다. 다음 빌드에서 그림과 사이트의 번역이 붙습니다.',
+      },
       noPicture: {
         'no-glsl': `이 예제는 ${glsl} 형태가 없고 캔버스는 두 백엔드에서 같은 프로그램을 돌리므로, 이 페이지에는 그림이 없습니다.`,
         control:

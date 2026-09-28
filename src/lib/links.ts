@@ -93,6 +93,8 @@ export const links = {
   examples: { label: 'Examples', href: '/guide/examples/' },
   api: { label: 'Compiler API reference', href: '/api/' },
   reference: { label: 'Language reference', href: '/reference/' },
+  referenceFunctions: { label: 'Functions', href: '/reference/functions/' },
+  referenceTypes: { label: 'Types', href: '/reference/types/' },
   errors: { label: 'Error codes', href: '/reference/errors/' },
   rules: { label: 'Design rules', href: '/reference/rules/' },
   rulesGuarantees: { label: 'What is guaranteed', href: '/reference/rules/guarantees/' },

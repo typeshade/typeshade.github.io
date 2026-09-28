@@ -41,7 +41,9 @@ for (const file of pages) {
   const fail = (what) => problems.push(`${rel}: ${what}`);
   // The root 404 GitHub Pages serves, and the Korean one it sends a /ko/ path on to.
   const isNotFound = rel === '404.html' || rel.endsWith('/404/index.html');
-  const isPreview = html.includes('class="api-preview"');
+  // The example page template the Worker fills in (worker/index.ts) is noindex until it is.
+  const isPreview =
+    html.includes('class="api-preview"') || /(^|\/)guide\/examples\/runtime-example\//.test(rel);
 
   const title = decode(one(html, /<title>([^<]*)<\/title>/) ?? '');
   const description = decode(one(html, /name="description" content="([^"]*)"/) ?? '');

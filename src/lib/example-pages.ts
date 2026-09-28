@@ -16,6 +16,7 @@ import {
   SHADE_STILL_EXAMPLES,
   STILL_EXAMPLES,
 } from '../../scripts/artifacts.mjs';
+import { TEMPLATE_ID } from './example-data.ts';
 import { facts } from './examples.ts';
 import { playgroundExampleIds } from './playground-examples.ts';
 import { SHADE_GROUPS, shadeExampleList } from './shade-examples.ts';
@@ -241,9 +242,10 @@ export function examplePage(id: string): ExamplePage {
   return page;
 }
 
-/** The routes the two dynamic route files build, one per example in each language. */
+/** The routes the two dynamic route files build, one per example in each language, and the
+ *  template the Worker fills in for an example newer than the build (worker/index.ts). */
 export function examplePaths(): { params: { id: string } }[] {
-  return examplePages.map((p) => ({ params: { id: p.id } }));
+  return [...examplePages.map((p) => ({ params: { id: p.id } })), { params: { id: TEMPLATE_ID } }];
 }
 
 /** Where one example's file sits on GitHub, at the pinned commit. */
