@@ -21,7 +21,7 @@ within the hour, before the pin bump and the build that make it a built page.
 | `/data/examples/<id>/`                       | the Worker: one example with its file and its emitted text            |
 | `/data/releases/`                            | the Worker: the releases D1 records, newest first                     |
 | `/data/shares/` (POST)                       | the Worker: stores a Playground link in D1, answers its short link    |
-| `/s/<id>`                                    | the Worker: a redirect to the page and fragment the share stored      |
+| `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored      |
 | `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
 | `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
 
@@ -51,12 +51,13 @@ within the hour, before the pin bump and the build that make it a built page.
 
 - **Share** in the Playground writes the file and its options into the page's fragment, as it
   always has, then posts the page's path and that fragment to `/data/shares/` and copies the
-  short link it gets back, `typeshade.dev/s/<id>`. The id is the first eight characters of the
-  SHA-256 of the two, so the same file shared twice is one row and one link; a different share
-  that already holds those eight characters takes a longer id. The Worker takes only the
-  Playground and an example's page, in either language, and a fragment that starts `code=`, of
-  64 KB at most; anything else, or no Worker, and Share copies the long link, which carries the
-  whole file and opens with no service at all.
+  short link it gets back, `typeshade.dev/s/<id>/`. It ends in a slash as every route does, so
+  it opens in one redirect, not two. The id is the first eight characters of the SHA-256 of the
+  two, so the same file shared twice is one row and one link; a different share that already
+  holds those eight characters takes a longer id. The Worker takes only the Playground and an
+  example's page, in either language, and a fragment that starts `code=`, of 64 KB at most;
+  anything else, or no Worker, and Share copies the long link, which carries the whole file and
+  opens with no service at all.
 
 Without the Worker (`astro dev`, `astro preview`), `/data/` does not answer JSON
 and every page shows what its build has.
