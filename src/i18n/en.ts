@@ -2207,11 +2207,13 @@ export const en = {
         // A kernel function (compiler change 0013): the loop the compiler may run on the GPU.
         kernel: '4. A loop that runs as a kernel',
         kernelP:
-          'An exported function that takes an array with no size, `array<T>`, is a kernel function. Each `for` at the top of its body is a loop the compiler may run on the GPU, one invocation per iteration, and a host file awaits the function like any import. No `@compute`, binding or `global_invocation_id` is written.',
+          "An exported function that is not an entry point and takes an array with no size, `array<T>`, is a kernel function (Rule 8.22). Its array is the caller's, read and written in place. Each `for` at the top of its body is a loop the compiler may run on the GPU, one invocation per iteration, and a host file awaits the function like any import. No `@compute`, binding or `global_invocation_id` is written.",
         kernelRulesP:
-          'The compiler runs a loop on the GPU when it proves that no iteration touches what another one does: a counted `for` or a `for...of` that steps by a constant, no `return` or `break` inside it, each write at an index made from the counter, on a name declared inside the loop or on a variable it combines with `+=`, `min` or `max`, no read of an element another iteration writes, no call that writes a module variable or a binding, and no barrier or `console` call.',
+          "The compiler runs a loop on the GPU when it proves that no iteration touches what another one does. The loop is a counted `for`, or a `for...of`, that steps by a constant and that nothing returns from or breaks out of. Each write lands on a name declared inside the loop, on an outer array or a texture at an index made from the loop's own, on an integer array the loop combines into at any index, or on a variable the loop combines with `+=`, `*=`, `min`, `max`, `&`, `|` or `^`, which the GPU and the CPU fold in one tree order. The loop reads an array it writes only where it writes it and never reads a variable it combines, calls no function that writes a module variable or a binding, and has no barrier, no workgroup memory and no `console` call.",
         kernelWarnP:
-          'A loop the proof refuses runs on the CPU, and the program is correct either way. The compiler says so with the warning `TS8070` on the loop: its first sentence names the line and the rule, and its second gives the remedy. A loop in an entry, a helper or a fragment shader stays per-invocation code.',
+          'A loop the proof refuses runs on the CPU, and the program is correct either way. The proof never looks at a loop in an entry, a helper or a fragment shader, which stays per-invocation code. The compiler marks a refused loop with the warning `TS8070`: its first sentence names the line and the names in your code, and its second gives the remedy. At the pinned compiler the warnings read:',
+        kernelRule: 'Rule',
+        kernelWarning: 'Warning',
         boundary: '5. Where JavaScript control flow stops',
         boundaryItems: [
           'Write filter, find and the other array methods that change a length or search for an element as a loop.',
