@@ -1620,7 +1620,7 @@ export const en = {
       reflectionNote:
         'A field renamed in the shader changes the reflection at the next build, and the host code that reads the reflection follows it.',
       runtimeH: 'Runtime',
-      runtimeP: `A module the host compiles needs nothing of TypeShade in the browser. The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService), and what reaches the browser is the emitted shader source and the host code the application already had. A module the host imports carries \`typeshade/runtime\` into the bundle, the code its calls run on, and no compiler, because the Vite plugin compiles the module when the bundle is built. TypeShade installs ${facts.runtimeDeps} runtime dependency, TypeScript, which \`compile()\` and the language service read source with.`,
+      runtimeP: `A module the host compiles needs nothing of TypeShade in the browser. The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService), and what reaches the browser is the emitted shader source and the host code the application already had. A module the host imports carries \`typeshade/runtime\` into the bundle, the code its calls run on, and no compiler, because the Vite plugin compiles the module when the bundle is built. A call runs on the first tier the browser has, WebGPU, then WebGL2, then the CPU; \`configure({ prefer })\` orders the tiers a compute entry and a kernel function try, and a \`Resident\` keeps an array on the GPU between calls. TypeShade installs ${facts.runtimeDeps} runtime dependency, TypeScript, which \`compile()\` and the language service read source with.`,
       webgl2H: 'Where WebGL2 differs',
       webgl2P: 'The same source compiles for WebGL2, and the host side of it looks different.',
       webgl2Items: [
@@ -1755,7 +1755,7 @@ export const en = {
     documentsP2:
       "Positions are zero-based line and character pairs, with the character counted in UTF-16 code units, and a range is half-open with its end exclusive. These are the conventions LSP uses, so a language server passes them through field for field. Monaco counts from one, so the Playground's adapter adds one on its own side and takes it off on the way back; that adapter is the only place the two coordinate systems meet.",
     documentsP3:
-      "A document can import another shader file by a relative path (Rule 3.9). The service resolves the import against the document's `uri` by the rule `compile()` follows, or through the `resolveImport` you pass it, and reads a file it has not opened through `readDocument`, which returns the file's text or `undefined`. `compile()` takes the same two options, so the editor and the compiler read one program, and an import the two cannot follow is `TS8072` in both.",
+      "A document can import another shader file by a relative path, or a package's by the package's name, found in `node_modules` the way Node finds one (Rule 3.9). The service resolves the import against the document's `uri` by the rule `compile()` follows, or through the `resolveImport` you pass it, and reads a file it has not opened through `readDocument`, which returns the file's text or `undefined` and is asked for each package's `package.json` too. `compile()` takes the same two options, so the editor and the compiler read one program, and an import the two cannot follow is `TS8072` in both.",
     packagingH: 'Packaging',
     packagingP:
       'The service runs on `typescript`, which the package lists as a required peer dependency. The main entry needs it too, because `compile()` reads a `"use typeshade"` file with the TypeScript parser, so a program that imports only the compiler installs it as well, and `typeshade/language-service` uses that same copy.',
@@ -2168,7 +2168,15 @@ export const en = {
         loop: '3. Loops',
         loopP:
           "Write a for loop, a while loop, or for...of over an array. A for loop may count to a value known only at run time, such as a uniform field or the length of an array. An array's map, forEach, some, every and reduce compile too, each to a counted loop, and map takes an array with a fixed length.",
-        boundary: '4. Where JavaScript control flow stops',
+        // A kernel function (compiler change 0013): the loop the compiler may run on the GPU.
+        kernel: '4. A loop that runs as a kernel',
+        kernelP:
+          'An exported function that takes an array with no size, `array<T>`, is a kernel function. Each `for` at the top of its body is a loop the compiler may run on the GPU, one invocation per iteration, and a host file awaits the function like any import. No `@compute`, binding or `global_invocation_id` is written.',
+        kernelRulesP:
+          'The compiler runs a loop on the GPU when it proves that no iteration touches what another one does: a counted `for` or a `for...of` that steps by a constant, no `return` or `break` inside it, each write at an index made from the counter, on a name declared inside the loop or on a variable it combines with `+=`, `min` or `max`, no read of an element another iteration writes, no call that writes a module variable or a binding, and no barrier or `console` call.',
+        kernelWarnP:
+          'A loop the proof refuses runs on the CPU, and the program is correct either way. The compiler says so with the warning `TS8070` on the loop: its first sentence names the line and the rule, and its second gives the remedy. A loop in an entry, a helper or a fragment shader stays per-invocation code.',
+        boundary: '5. Where JavaScript control flow stops',
         boundaryItems: [
           'Write filter, find and the other array methods that change a length or search for an element as a loop.',
           'Do not rely on general runtime objects.',

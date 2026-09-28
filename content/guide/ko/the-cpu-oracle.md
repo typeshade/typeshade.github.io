@@ -1,8 +1,8 @@
 ---
 id: the-cpu-oracle
-source: 26b42e178db1670fbcd8dfd7e11f605436f18cc0dd530bdc42d8a4b80eeaab81
+source: ec2b9d25e0d5310e843b6de269c1780dc16e0cb0fb85030ba3398b16821ff116
 sourceLine: 1390
-rules: 3.9 M8V5xons2shR8RLQPfEMLyRvSzdhl3in7EKOaC621q8=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
+rules: 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -253,8 +253,31 @@ const { wgsl, diagnostics } = compile(read('src/clouds.shade.ts')!, {
 })
 ```
 
+셰이더 라이브러리는 다른 패키지처럼 npm으로 설치하고, 셰이더 파일은 그 패키지를 이름으로 가져옵니다.
+`import { fbm } from 'shade-noise'`처럼 씁니다. 패키지는 Node가 찾는 방식 그대로, 가져오는 파일의
+디렉터리에서 위로 올라가며 `node_modules`에서 찾습니다. 읽는 파일은 패키지의 `package.json`이
+`exports`의 `typeshade` 조건으로 공개한 파일입니다. 호스트 코드용으로 공개하는 JavaScript는 그 옆에
+따로 둡니다.
+
+```json
+{
+  "name": "shade-noise",
+  "exports": {
+    ".": { "typeshade": "./src/index.shade.ts", "default": "./dist/index.js" },
+    "./*": { "typeshade": "./src/*.shade.ts" }
+  }
+}
+```
+
+`'shade-noise'`는 패키지의 `src/index.shade.ts`를 읽고, `'shade-noise/hash'`는 그 옆의
+`hash.shade.ts`를 읽습니다. `exports`가 없는 패키지는 파일 경로로 가져오며,
+`'shade-noise/noise.shade.ts'`처럼 씁니다. `readDocument`에는 각 `package.json`도 요청하므로 위의 `read`는
+고치지 않아도 패키지를 따라갑니다. 여러 의존성이 같은 패키지 버전에 닿더라도 프로그램에는 한 벌만
+들어갑니다. 모듈이 이름을 바꾸는 패키지 헬퍼에는 패키지와 파일 이름이 붙어 `shade_noise_noise_hash`처럼
+생성됩니다.
+
 가져온 파일에 있는 실수는 그 파일의 줄과 열에서 보고됩니다. 컴파일러가 따라갈 수 없는 가져오기는
 그 가져오기 자리에서 `TS8072`가 됩니다. 파일을 가리키지 않는 경로, 지시문으로 시작하지 않는 파일,
-그 파일이 내보내지 않는 이름, 기본 가져오기가 여기에 해당합니다. `node_modules`를 거쳐 패키지
-이름만으로 가져오는 패키지는 아직 지원하지 않습니다. 가져오기의 모든 형태와 모듈이 생성하는 이름,
+어느 `node_modules`에도 없는 패키지, 패키지의 `exports`에 없는 하위 경로, 그 파일이 내보내지 않는
+이름, 기본 가져오기가 여기에 해당합니다. 가져오기의 모든 형태와 모듈이 생성하는 이름,
 거부하는 경우는 `docs/use-typeshade-surface.md` §68에 모두 있습니다.
