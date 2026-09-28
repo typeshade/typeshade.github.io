@@ -992,6 +992,7 @@ export const ko: Copy = {
     file: 'live.shade.ts',
     edit: '수정',
     reset: '초기화',
+    playground: 'Playground에서 열기',
     editorAria: '수정할 수 있는 셰이더 소스',
     loading: '컴파일러를 불러오는 중',
     keptFrame: '마지막으로 컴파일된 프레임을 캔버스가 그대로 두고 있습니다.',

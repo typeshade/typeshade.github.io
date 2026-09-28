@@ -992,6 +992,7 @@ export const en = {
     file: 'live.shade.ts',
     edit: 'Edit',
     reset: 'Reset',
+    playground: 'Open in the Playground',
     editorAria: 'Editable shader source',
     loading: 'Loading the compiler',
     keptFrame: 'The canvas holds the last frame that compiled.',

@@ -52,6 +52,7 @@ import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
+import { decodeSource, encodeSource } from './source-link.ts';
 import { fetchExample, fetchIndex, pageLocale } from './example-data-client.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
@@ -609,52 +610,8 @@ function defineTypeshadeThemes(monaco: any): void {
 
 // ── The source in the URL ──────────────────────────────────────────────────────────────────
 // A shared link carries the whole file in its fragment, so nothing is stored and no service
-// has to hand the source back. The bytes are deflated where the browser has
-// CompressionStream and passed through where it does not; the first character says which, so
-// a link written by one browser opens in another.
-const PACKED = 'z';
-const PLAIN = 'u';
-
-function toBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function fromBase64Url(text: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-async function encodeSource(source: string): Promise<string> {
-  // A Blob built from the string is already UTF-8, so the same bytes feed the compressed path
-  // and the plain one.
-  const plain = new Blob([source]);
-  if (typeof CompressionStream === 'function') {
-    try {
-      const packed = plain.stream().pipeThrough(new CompressionStream('deflate-raw'));
-      return PACKED + toBase64Url(new Uint8Array(await new Response(packed).arrayBuffer()));
-    } catch {
-      // A browser that has the constructor but refuses the format falls through.
-    }
-  }
-  return PLAIN + toBase64Url(new Uint8Array(await plain.arrayBuffer()));
-}
-
-async function decodeSource(text: string): Promise<string | undefined> {
-  if (text.length < 2) return undefined;
-  try {
-    const bytes = fromBase64Url(text.slice(1));
-    if (text.startsWith(PLAIN)) return new TextDecoder().decode(bytes);
-    if (!text.startsWith(PACKED) || typeof DecompressionStream !== 'function') return undefined;
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-    return await new Response(stream).text();
-  } catch {
-    return undefined;
-  }
-}
+// has to hand the source back. The encoding is src/scripts/source-link.ts, which a live
+// example's link to the Playground writes too.
 
 const hashParams = (): URLSearchParams =>
   new URLSearchParams(window.location.hash.replace(/^#/, ''));
