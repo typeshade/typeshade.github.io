@@ -38,6 +38,7 @@ const all = playgroundExamples().map((example) => ({
   id: example.id,
   source: example.source,
   imports: example.imports,
+  ...(example.passes ? { passes: example.passes } : {}),
   title: shade.titles[example.id]!,
   description: shade.descriptions[example.id]!,
   // Where a source twin's uniform fields start: its `fn()` original's values, the frame its
@@ -255,7 +256,7 @@ const runtimeCopy = {
                     {tile.still ? <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" /> : <span class="tile-none">{w.noStill}</span>}
                   </span>
                   <span class="tile-title">{tile.title}</span>
-                  <span class="tile-note"><Rich text={tile.description} locale={locale} /></span>
+                  <span class="tile-note"><Rich text={tile.description} locale={locale} inert /></span>
                 </a>
               </li>
             ))}
@@ -347,6 +348,7 @@ const runtimeCopy = {
     <p data-level-note hidden><Rich text={t.emit.levelNote} locale={locale} /></p>
     <p data-prelude-note hidden><Rich text={t.preludeNote} locale={locale} /></p>
     {examples
+      .map((example) => ({ ...example, imports: example.imports.filter((file) => !(example.passes ?? []).some((p) => p.file === file)) }))
       .filter((example) => example.imports.length > 0)
       .map((example) => (
         <p data-imports-note={example.id} hidden={example.id !== opening}>{importsBefore}{example.imports.map((file, i) => <>{i > 0 && ', '}<a href={exampleSourceHref(file)}><code>{file}</code></a></>)}{importsAfter}</p>
@@ -532,7 +534,13 @@ const runtimeCopy = {
   .file-tabs :global(.file-tab:hover) { color: var(--color-text-1); }
   .file-tabs :global(.file-tab[aria-current='true']) { background: var(--color-ground); color: var(--color-text-1); }
   .file-tabs :global(.file-tab:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 1px; }
-  .file-tabs :global(.file-pair) { display: inline-flex; flex: none; align-items: center; }
+  .file-tabs :global(.file-pair) { display: inline-flex; flex: none; align-items: center; gap: 2px; }
+  /* A file drawn as a pass before the main file (compiler change 0026): its tab names the pass,
+     and the small toggle beside it says whether it is one. */
+  .file-tabs :global(.file-pass) { color: var(--color-accent); }
+  .file-tabs :global(.file-pass-toggle) { flex: none; border: 1px solid var(--color-line-2); border-radius: 3px; padding: 0 4px; background: none; color: var(--color-text-3); font: 500 .625rem/1.5 var(--font-sans); cursor: pointer; }
+  .file-tabs :global(.file-pass-toggle[aria-pressed='true']) { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-ground); }
+  .file-tabs :global(.file-pass-toggle:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 1px; }
   .file-tabs :global(.file-errors) { color: var(--color-diag); }
   .file-tabs :global(.file-close) { flex: none; border: 0; padding: 0; background: none; cursor: pointer; display: inline-grid; place-items: center; inline-size: 16px; block-size: 16px; border-radius: 3px; color: var(--color-text-3); font: 400 .8125rem/1 var(--font-sans); }
   .file-tabs :global(.file-close:hover) { background: var(--color-surface-2); color: var(--color-text-1); }

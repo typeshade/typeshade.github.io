@@ -39,6 +39,8 @@ export interface ShadeExample {
   readonly renderable: boolean;
   /** The `fn()` example this file is the source-language twin of, where it has one. */
   readonly twinOf?: string;
+  /** The passes drawn before this file each frame, in draw order (compiler change 0026). */
+  readonly passes?: readonly { readonly name: string; readonly file: string }[];
 }
 
 function readRegistry(): readonly ShadeExample[] {
@@ -71,6 +73,19 @@ function readRegistry(): readonly ShadeExample[] {
       throw new Error(`[shade] ${file}'s @example block has no boolean 'renderable'`);
     if (spec.twinOf !== undefined && typeof spec.twinOf !== 'string')
       throw new Error(`[shade] ${file}'s 'twinOf' is not a string`);
+    const passes = spec.passes;
+    if (
+      passes !== undefined &&
+      (!Array.isArray(passes) ||
+        !passes.every(
+          (p: unknown) =>
+            typeof p === 'object' &&
+            p !== null &&
+            typeof (p as Record<string, unknown>).name === 'string' &&
+            typeof (p as Record<string, unknown>).file === 'string',
+        ))
+    )
+      throw new Error(`[shade] ${file}'s 'passes' is not a list of { name, file }`);
     return {
       id,
       title: text('title'),
@@ -78,6 +93,7 @@ function readRegistry(): readonly ShadeExample[] {
       file,
       renderable: spec.renderable,
       ...(spec.twinOf ? { twinOf: spec.twinOf } : {}),
+      ...(passes ? { passes: passes as { name: string; file: string }[] } : {}),
     };
   });
 }
@@ -111,6 +127,12 @@ function readExampleFile(name: string): string | undefined {
 export function shadeModule(id: string): ModuleDecl {
   const example = shadeExampleList.find((e) => e.id === id);
   if (!example) throw new Error(`[shade] no example '${id}' in ${REGISTRY}`);
+  return shadeFileModule(example.file);
+}
+
+/** The module one file of the examples directory compiles to: an example, or a pass of one. */
+export function shadeFileModule(file: string): ModuleDecl {
+  const example = { file };
   const { diagnostics, module } = compile(
     readFileSync(path.join(examplesDir, example.file), 'utf8'),
     { fileName: example.file, readDocument: readExampleFile },
@@ -208,6 +230,10 @@ export const SHADE_GROUPS = [
   {
     key: 'imports',
     ids: ['imported-noise'],
+  },
+  {
+    key: 'passes',
+    ids: ['separable-blur', 'feedback-trail'],
   },
   {
     key: 'compute',

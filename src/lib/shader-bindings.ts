@@ -42,6 +42,13 @@ export interface TextureSpec {
   readonly texels: readonly Uint8Array<ArrayBuffer>[];
   /** Depth per layer in 0 to 1, `width * height` values each. Set only on a depth texture. */
   readonly depth?: readonly Float32Array<ArrayBuffer>[];
+  /** The pass whose output this texture reads (compiler change 0026): the runtime binds that
+   *  pass's target, the size of the canvas, and `texels` is empty. */
+  readonly pass?: string;
+  /** RGBA as floats per layer, `width * height * 4` each, read in place of `texels`: a pass's
+   *  output as the CPU oracle drew it, which keeps a value outside 0 to 1 the way the GPU's
+   *  float target does. */
+  readonly floats?: readonly Float32Array<ArrayBuffer>[];
 }
 
 export interface SamplerSpec {

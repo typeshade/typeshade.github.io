@@ -917,6 +917,7 @@ export const ko: Copy = {
         image: '내 이미지',
       },
       dropImage: '이미지 파일',
+      passOutput: '{name} 패스의 출력',
       depthRamp: '왼쪽 위의 0에서 오른쪽 아래의 1로 이어지는 깊이 램프입니다.',
       filter: '필터',
       address: '주소 모드',
@@ -1009,6 +1010,15 @@ export const ko: Copy = {
       exitFullscreen: '전체 화면 끝내기',
       clock: '셰이더 시계',
       dropHint: '캔버스에 이미지를 끌어다 놓으면 `{texture}`에 연결됩니다.',
+      pass: '패스',
+      passTitle:
+        '{file} 파일을 메인 파일보다 먼저 그리는 패스로 쓰고, 그 이름의 텍스처에 결과를 담습니다',
+      passFailed:
+        '{name} 패스가 컴파일되지 않아 프레임을 그리지 않았습니다. 이유는 그 탭에 나옵니다.',
+      passTexture:
+        '{name} 패스가 패스의 출력이 아닌 텍스처 {texture}를 읽습니다. 패스는 다른 패스의 출력을 그 이름으로 읽습니다.',
+      passesRgba8:
+        '이 브라우저는 WebGL2에서 float 텍스처에 그릴 수 없어서, 각 패스가 채널당 8비트만 담고 0에서 1을 벗어나는 값은 잘립니다.',
     },
   },
 
@@ -1853,6 +1863,7 @@ export const ko: Copy = {
         values: '값과 제어 흐름',
         classes: '클래스와 제네릭',
         imports: '가져오기',
+        passes: '여러 패스',
         compute: '모듈 상태와 컴퓨트',
         kernels: '커널이 되는 루프',
         twins: '소스 트윈',
@@ -1901,6 +1912,8 @@ export const ko: Copy = {
           '객체 안의 객체, 객체를 담은 const, 함수를 담은 필드, 계약으로서의 인터페이스',
         'rt-renderer-class': '클래스 기반 3D SDF 레이 트레이서',
         'imported-noise': '가져온 노이즈',
+        'separable-blur': '두 패스로 나눈 블러',
+        'feedback-trail': '피드백 궤적',
         closures: '주변 변수를 읽고 쓰는 로컬 함수',
         'higher-order': '함수를 받는 함수',
         'inferred-returns': '본문이 정하는 반환 타입',
@@ -2022,6 +2035,8 @@ export const ko: Copy = {
         'rt-renderer-class':
           '추상 SDF 도형 클래스와 상속으로 만든 3D 레이 트레이서입니다. 구체, 상자, 토러스, 평면을 구면 추적으로 렌더링합니다.',
         'imported-noise': '다른 셰이더 파일의 `fbm`으로 구름을 그립니다.',
+        'separable-blur': '두 패스로 나눈 블러입니다.',
+        'feedback-trail': '궤적을 남기는 점입니다.',
         closures:
           '`ring`은 TypeScript 클로저처럼 프래그먼트 진입점의 `p`와 `width`를 읽고 그 `glow`에 더합니다.',
         'higher-order':

@@ -88,6 +88,8 @@ export const playgroundExampleIds = [
   'class-parts',
   'rt-renderer-class',
   'imported-noise',
+  'separable-blur',
+  'feedback-trail',
   'private-state',
   'workgroup-scratch',
   'workgroup-reduce',
@@ -132,8 +134,12 @@ export interface PlaygroundExample {
   readonly id: PlaygroundExampleId;
   readonly source: string;
   /** The shader files the example imports, directly or through another, by their path in the
-   *  examples directory (`lib/noise.shade.ts`), in the order the imports are written. */
+   *  examples directory (`lib/noise.shade.ts`), in the order the imports are written. Its
+   *  passes and what they import are listed here too, since the page carries them the same way. */
   readonly imports: readonly string[];
+  /** The passes drawn before the example's own file each frame, in draw order (compiler change
+   *  0026): each pass's name and its file under `passes/`. */
+  readonly passes?: readonly { readonly name: string; readonly file: string }[];
 }
 
 const fileFor = (id: string): string => path.join(examplesDir, `${id}.shade.ts`);
@@ -155,6 +161,15 @@ function importsOf(name: string, text: string, seen = new Set<string>()): string
     importsOf(imported, readFileSync(onDisk, 'utf8'), seen);
   }
   return [...seen];
+}
+
+/** The passes an example's `@example` block names (compiler change 0026), or undefined. The
+ *  compiler's registry has already refused a list of any other shape. */
+function passesOf(source: string): { name: string; file: string }[] | undefined {
+  const block = /\/\*\s*@example\s*([\s\S]*?)\*\//.exec(source);
+  if (!block) return undefined;
+  const spec = JSON.parse(block[1] ?? '{}') as { passes?: { name: string; file: string }[] };
+  return spec.passes?.map(({ name, file }) => ({ name, file }));
 }
 
 /** The examples, in curated order, with their sources. Throws when the list and the directory
@@ -180,7 +195,13 @@ export function playgroundExamples(): readonly PlaygroundExample[] {
 
   return playgroundExampleIds.map((id) => {
     const source = readFileSync(fileFor(id), 'utf8');
-    return { id, source, imports: importsOf(`${id}.shade.ts`, source) };
+    const passes = passesOf(source);
+    const seen = new Set<string>(importsOf(`${id}.shade.ts`, source));
+    for (const pass of passes ?? []) {
+      seen.add(pass.file);
+      importsOf(pass.file, readFileSync(path.join(examplesDir, pass.file), 'utf8'), seen);
+    }
+    return { id, source, imports: [...seen], ...(passes ? { passes } : {}) };
   });
 }
 

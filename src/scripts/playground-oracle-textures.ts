@@ -64,6 +64,11 @@ function texel(t: TextureSpec, layer: number, x: number, y: number): number[] {
     const d = t.depth?.[layer]?.[at] ?? 1;
     return [d, d, d, d];
   }
+  const floats = t.floats?.[layer];
+  if (floats) {
+    const o = at * 4;
+    return [floats[o]!, floats[o + 1]!, floats[o + 2]!, floats[o + 3]!];
+  }
   const bytes = t.texels[layer];
   if (!bytes) return [0, 0, 0, 1];
   const o = at * 4;

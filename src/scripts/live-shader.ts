@@ -9,6 +9,7 @@
 
 import {
   mountShader,
+  type FrameClock,
   type MountedShader,
   type ShaderData,
   type StateStrings,
@@ -173,8 +174,13 @@ function setUp(root: HTMLElement): void {
 
   // ── the canvas ────────────────────────────────────────────────────────────
 
-  const uniformValues = (name: string, seconds: number): readonly number[] | null =>
-    reservedValue(name, frozen ?? seconds, canvas.width, canvas.height, pointer) ??
+  const uniformValues = (
+    name: string,
+    seconds: number,
+    _instance?: string,
+    clock?: FrameClock,
+  ): readonly number[] | null =>
+    reservedValue(name, frozen ?? seconds, canvas.width, canvas.height, pointer, clock) ??
     values[name] ??
     null;
 

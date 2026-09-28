@@ -47,7 +47,13 @@ import {
   type Analysis,
   type LanguageClient,
 } from './playground-language.ts';
-import { codeOnly, FRAGMENT_PRELUDE, sampleShape } from '../lib/live-shader-contract.ts';
+import {
+  codeOnly,
+  FRAGMENT_PRELUDE,
+  isReserved,
+  reservedValue,
+  sampleShape,
+} from '../lib/live-shader-contract.ts';
 import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
@@ -63,7 +69,13 @@ import {
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
 // what this page already holds after a compile.
-import { mountShader, type MountedShader, type ShaderData } from '../lib/shader-runtime.ts';
+import {
+  mountShader,
+  type MountedShader,
+  type ShaderData,
+  type ShaderPassData,
+} from '../lib/shader-runtime.ts';
+import type { ResourceSpec } from '../lib/shader-bindings.ts';
 import {
   cornersOf,
   drawTile,
@@ -93,6 +105,8 @@ interface PlaygroundExample {
   /** The files it imports, by their path in the examples directory, which the page carries
    *  in its library. An example the build does not have carries none. */
   readonly imports?: readonly string[];
+  /** The passes drawn before it each frame, in draw order (compiler change 0026). */
+  readonly passes?: readonly { readonly name: string; readonly file: string }[];
   /** Where a source twin's uniform fields start, by field name. */
   readonly defaults?: Readonly<Record<string, readonly number[]>>;
 }
@@ -249,6 +263,11 @@ interface PlaygroundCopy {
     readonly fullscreen: string;
     readonly exitFullscreen: string;
     readonly dropHint: string;
+    readonly pass: string;
+    readonly passTitle: string;
+    readonly passFailed: string;
+    readonly passTexture: string;
+    readonly passesRgba8: string;
   };
 }
 
@@ -1429,6 +1448,14 @@ function mount(root: HTMLElement): void {
       return { why: fillNumbers(copy.gpuNeedsAttributes, { fields: attributes.join(', ') }) };
     }
     if (picked === 'webgl2' && !emitted.glslVertex) return { why: noGlslNote() };
+    // The passes drawn before the program (compiler change 0026), each from its own module.
+    const passes: ShaderPassData[] = [];
+    const passNames = passGraph.map((p) => p.name);
+    for (const p of passGraph) {
+      const made = passPayload(p.name, passNames, picked);
+      if ('why' in made) return made;
+      passes.push(made.data);
+    }
     const block = bindings.renderBlock();
     const guards = reflection.bindGroups
       .flatMap((group) => group.entries)
@@ -1460,6 +1487,100 @@ function mount(root: HTMLElement): void {
         controls: {},
         constants: bindings.constants(),
         features: gpuFeatures(),
+        ...(passes.length > 0 ? { passes } : {}),
+      },
+    };
+  };
+
+  /** One pass's program as the runtime draws it: emitted under the options bar, laid out from
+   *  its own reflection. A texture named like a pass reads that pass's output and a sampler
+   *  reads it linearly, clamped to the edge; any other texture has nothing to show, so it is
+   *  refused by name. Its uniform fields are the page's reserved ones or the main file's of the
+   *  same name, and zero otherwise. */
+  /** The type of each uniform field the passes declare, by name, for the reserved values a
+   *  pass reads (a `frame` is the page's only as a `u32`). */
+  const passFieldTypes = new Map<string, string>();
+  const passPayload = (
+    name: string,
+    passNames: readonly string[],
+    picked: Engine,
+  ): { readonly data: ShaderPassData } | { readonly why: string } => {
+    const failed = { why: w.passFailed.replace('{name}', name) };
+    const module = passModules.get(name);
+    if (!module) return failed;
+    const choice = currentChoice();
+    const r = reflect(module, { fp64Flavor: choice.fp64Flavor });
+    const vertex = r.entries.find((e) => e.stage === 'vertex');
+    const fragment = r.entries.find((e) => e.stage === 'fragment');
+    if (!vertex || !fragment) return failed;
+    const glsl = emitGlsl(module, choice);
+    if (picked === 'webgl2' && 'failed' in glsl) return failed;
+    const resources: ResourceSpec[] = [];
+    const guards: { name: string; binding: number }[] = [];
+    for (const group of r.bindGroups) {
+      for (const e of group.entries) {
+        if (e.name === '_fp64') guards.push({ name: e.name, binding: e.binding });
+        else if (e.resourceKind === 'texture') {
+          if (!passNames.includes(e.name))
+            return {
+              why: w.passTexture.replace('{name}', name).replace('{texture}', e.name),
+            };
+          resources.push({
+            kind: 'texture',
+            name: e.name,
+            group: group.group,
+            binding: e.binding,
+            dim: '2d',
+            sample: 'float',
+            width: 0,
+            height: 0,
+            layers: 1,
+            texels: [],
+            pass: e.name,
+          });
+        } else if (e.resourceKind === 'sampler')
+          resources.push({
+            kind: 'sampler',
+            name: e.name,
+            group: group.group,
+            binding: e.binding,
+            comparison: false,
+            filter: 'linear',
+            address: 'clamp-to-edge',
+          });
+      }
+    }
+    const block = r.uniforms[0];
+    for (const f of block?.fields ?? []) passFieldTypes.set(f.name, f.type);
+    const uniform = r.bindGroups
+      .flatMap((g) => g.entries.map((e) => ({ ...e, group: g.group })))
+      .find((e) => e.resourceKind === 'uniform-buffer');
+    return {
+      data: {
+        id: `playground.${name}`,
+        name,
+        title: name,
+        wgsl: emitWgsl(module, choice),
+        vertex: 'failed' in glsl ? '' : glsl.vertex,
+        fragment: 'failed' in glsl ? '' : glsl.fragment,
+        layout: {
+          size: block?.size ?? 0,
+          block: block?.name ?? '',
+          group: uniform?.group ?? 0,
+          binding: uniform?.binding ?? 0,
+          instance: uniform?.name ?? '',
+          fields: (block?.fields ?? []).map((f) => ({
+            name: f.name,
+            type: f.type,
+            offset: f.offset,
+          })),
+          vertexEntry: vertex.name,
+          fragmentEntry: fragment.name,
+          textures: guards,
+          resources,
+        },
+        controls: {},
+        features: [...hostFeaturesFor(wgslBackend, r.requiredFeatures)],
       },
     };
   };
@@ -1490,7 +1611,7 @@ function mount(root: HTMLElement): void {
       sayGpu(payload.why);
       return;
     }
-    const signature = `${payload.data.wgsl}\n${payload.data.vertex}\n${payload.data.fragment}\n${resourceGeneration}\n${JSON.stringify(payload.data.constants)}`;
+    const signature = `${payload.data.wgsl}\n${payload.data.vertex}\n${payload.data.fragment}\n${resourceGeneration}\n${JSON.stringify(payload.data.constants)}\n${(payload.data.passes ?? []).map((p) => `${p.name}\n${p.wgsl}\n${p.fragment}`).join('\n')}`;
     if (mounted && mountedEngine === picked && mounted.backend !== 'none') {
       if (signature === mountedSignature) return;
       const swapped = await mounted.swap(payload.data);
@@ -1524,7 +1645,9 @@ function mount(root: HTMLElement): void {
         : emitted.glslVertex
           ? {}
           : { backend: 'webgpu' as const }),
-      uniformValues: (name, seconds, instance) =>
+      // A pass's field the main file does not declare (compiler change 0026) is filled when
+      // the page reserves its name, so a pass reads the clock the program reads.
+      uniformValues: (name, seconds, instance, clock) =>
         bindings.renderValue(
           name,
           shaderClock(seconds),
@@ -1532,7 +1655,11 @@ function mount(root: HTMLElement): void {
           target.height,
           pointer,
           instance,
-        ),
+          clock,
+        ) ??
+        (isReserved(name, passFieldTypes.get(name))
+          ? reservedValue(name, shaderClock(seconds), target.width, target.height, pointer, clock)
+          : null),
     });
     if (mine !== resultRun) {
       next.stop();
@@ -1542,7 +1669,9 @@ function mount(root: HTMLElement): void {
     mountedEngine = picked;
     mountedSignature = signature;
     if (next.backend !== 'none') retireStill();
-    sayGpu(backendNote(picked));
+    sayGpu(
+      next.passFormat === 'rgba8' ? `${backendNote(picked)} ${w.passesRgba8}` : backendNote(picked),
+    );
     syncRecordFrame();
   };
 
@@ -1904,7 +2033,7 @@ function mount(root: HTMLElement): void {
       ...base,
       width,
       height,
-      bindings: bindings.cpuBindings(frozen ?? 0, width, height, pointer),
+      bindings: cpuFrameBindings(frozen ?? 0, width, height),
     };
     // Which entry is running, so each line is filed under the entry that made it.
     let running: 'vertex' | 'fragment' | undefined;
@@ -2328,7 +2457,7 @@ function mount(root: HTMLElement): void {
           name: struct.name,
           fields: struct.fields.map((f) => ({ name: f.name })),
         })),
-        bindings: bindings.cpuBindings(frozen ?? 0, width, height, pointer),
+        bindings: cpuFrameBindings(frozen ?? 0, width, height),
         ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
       };
       try {
@@ -2389,6 +2518,110 @@ function mount(root: HTMLElement): void {
     return message || copy.cpuFailed;
   };
 
+  /** The bindings the CPU oracle draws a frame with: the panel's, and for a program drawn in
+   *  several passes (compiler change 0026) each pass's output, drawn here in order at the
+   *  frame's size. The CPU draws frame 0, so a pass read as the frame before reads zeroes, as
+   *  the first frame on the GPU does. A pass's colour is kept as floats, so a value outside 0
+   *  to 1 reaches the next program as it does on the GPU. */
+  const cpuFrameBindings = (
+    seconds: number,
+    width: number,
+    height: number,
+  ): Record<string, unknown> => {
+    const out = bindings.cpuBindings(seconds, width, height, pointer);
+    if (passGraph.length === 0) return out;
+    const names = passGraph.map((p) => p.name);
+    const drawn = new Map<string, Float32Array<ArrayBuffer>>();
+    const specFor = (
+      name: string,
+      group: number,
+      binding: number,
+      floats: Float32Array<ArrayBuffer>,
+    ) => ({
+      kind: 'texture' as const,
+      name,
+      group,
+      binding,
+      dim: '2d' as const,
+      sample: 'float' as const,
+      width,
+      height,
+      layers: 1,
+      texels: [],
+      pass: name,
+      floats: [floats],
+    });
+    const zeroes = new Float32Array(width * height * 4);
+    passGraph.forEach((p, i) => {
+      const module = passModules.get(p.name);
+      if (!module) return;
+      const r = reflect(module, { fp64Flavor: currentChoice().fp64Flavor });
+      const vertex = r.entries.find((e) => e.stage === 'vertex');
+      const fragment = r.entries.find((e) => e.stage === 'fragment');
+      if (!vertex || !fragment) return;
+      const values: Record<string, unknown> = {};
+      for (const group of r.bindGroups) {
+        for (const e of group.entries) {
+          if (e.resourceKind === 'texture' && names.includes(e.name)) {
+            // An earlier pass is read as this frame's, itself or a later one as frame 0's before.
+            const j = names.indexOf(e.name);
+            values[e.name] = specFor(
+              e.name,
+              group.group,
+              e.binding,
+              (j < i && drawn.get(e.name)) || zeroes,
+            );
+          } else if (e.resourceKind === 'sampler') {
+            values[e.name] = {
+              kind: 'sampler',
+              name: e.name,
+              group: group.group,
+              binding: e.binding,
+              comparison: false,
+              filter: 'linear',
+              address: 'clamp-to-edge',
+            };
+          } else if (e.resourceKind === 'uniform-buffer') {
+            const block = r.uniforms[0];
+            const fields: Record<string, unknown> = {};
+            for (const f of block?.fields ?? []) {
+              const v = isReserved(f.name, f.type)
+                ? reservedValue(f.name, seconds, width, height, pointer)
+                : null;
+              fields[f.name] = v === null ? 0 : v.length === 1 ? v[0] : [...v];
+            }
+            values[e.name] = fields;
+          }
+        }
+      }
+      const plan: RasterPlan = {
+        width,
+        height,
+        vertex,
+        fragment,
+        structs: module.structs.map((struct) => ({
+          name: struct.name,
+          fields: struct.fields.map((f) => ({ name: f.name })),
+        })),
+        bindings: values,
+      };
+      const oracle = compileModule(module, { gpuStubs: true, precision: RASTER_PRECISION });
+      for (const [name, value] of Object.entries(values)) oracle.setBinding(name, value as never);
+      const cpu = oracle.fns as CpuFunctions;
+      const corners = cornersOf(cpu, plan);
+      const floats = new Float32Array(width * height * 4);
+      if (corners) drawTile(cpu, plan, corners, 0, 0, width, height, undefined, floats);
+      drawn.set(p.name, floats);
+    });
+    // The program reads every pass as this frame's.
+    for (const [key, value] of Object.entries(out)) {
+      const spec = value as { kind?: string; pass?: string; group?: number; binding?: number };
+      if (spec?.kind === 'texture' && spec.pass && drawn.has(spec.pass))
+        out[key] = specFor(spec.pass, spec.group ?? 0, spec.binding ?? 0, drawn.get(spec.pass)!);
+    }
+    return out;
+  };
+
   const rasterPlan = (): RasterPlan | undefined => {
     if (!compiled || !(canvas instanceof HTMLCanvasElement)) return undefined;
     const vertex = entries.find((entry) => entry.stage === 'vertex');
@@ -2410,7 +2643,7 @@ function mount(root: HTMLElement): void {
         name: struct.name,
         fields: struct.fields.map((f) => ({ name: f.name })),
       })),
-      bindings: bindings.cpuBindings(frozen ?? 0, canvas.width, canvas.height, pointer),
+      bindings: cpuFrameBindings(frozen ?? 0, canvas.width, canvas.height),
       ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
       ...(hasConsoleCall(compiled.module) ? { console: true } : {}),
     };
@@ -2746,12 +2979,28 @@ function mount(root: HTMLElement): void {
     say();
   };
 
+  /** The three texts the file at `path` emits: a pass's own, or the program's. */
+  const emittedFor = (path: string): Partial<Record<Target, string>> => {
+    const pass = passGraph.find((p) => p.path === path);
+    const module = pass ? passModules.get(pass.name) : undefined;
+    if (!pass || !module) return emitted;
+    const choice = currentChoice();
+    const glsl = emitGlsl(module, choice);
+    return {
+      wgsl: emitWgsl(module, choice),
+      glslVertex: 'failed' in glsl ? undefined : glsl.vertex,
+      glslFragment: 'failed' in glsl ? undefined : glsl.fragment,
+    };
+  };
+
   const paintOutput = (): void => {
     const token = ++painted;
     // The three texts are emitted on every compile whichever tab is up; only the one the
     // text panel is showing is written into it, and the panel is repainted on a tab switch.
     if (!isTarget(view)) return;
-    const source = emitted[target];
+    // The text tabs follow the file tabs: with a pass's file in the editor they show what that
+    // pass emits (compiler change 0026), and with any other file the program's.
+    const source = emittedFor(activeFile)[target];
     if (!source) {
       output.textContent = target === 'wgsl' ? copy.noOutput : copy.noGlsl;
       sizeLabel.textContent = '';
@@ -2998,8 +3247,18 @@ function mount(root: HTMLElement): void {
     }
     const asked = version;
     status.textContent = analysedVersion < 0 ? copy.starting : copy.idle;
-    void client.request('analysis', documentUri, asked, {}).then((analysis) => {
+    void client.request('analysis', documentUri, asked, {}).then(async (analysis) => {
       if (!analysis || asked !== version) return;
+      // Each pass is a program of its own (compiler change 0026), compiled beside the main
+      // file at the same version, so the canvas draws one consistent set.
+      const passes = await Promise.all(
+        passGraph.map(async (p) => {
+          const result = await client.request('analysis', uriOf(p.path), asked, {});
+          return [p.name, result?.module as ModuleDecl | undefined] as const;
+        }),
+      );
+      if (asked !== version) return;
+      passModules = new Map(passes);
       lastAnalysis = analysis;
       analysedVersion = asked;
       paintAnalysis(analysis);
@@ -3011,9 +3270,14 @@ function mount(root: HTMLElement): void {
    *  `files`, one JSON object by path, only where they are other than the example's own. */
   const publishSource = async (): Promise<void> => {
     if (!model) return;
-    const more = filesMoved()
-      ? [`files=${await encodeSource(JSON.stringify(workspaceFiles()))}`]
-      : [];
+    // A graph of passes names files beside the main one, so a link that carries one carries
+    // those files too, whatever the main file has become.
+    const more =
+      filesMoved() || passGraph.length > 0
+        ? [`files=${await encodeSource(JSON.stringify(workspaceFiles()))}`]
+        : [];
+    if (passGraph.length > 0)
+      more.push(`passes=${passGraph.map((p) => `${p.name}:${p.path}`).join(',')}`);
     writeHash('code', await encodeSource(model.getValue()), currentChoice(), more);
   };
 
@@ -3109,7 +3373,7 @@ function mount(root: HTMLElement): void {
 
   copyOutput.addEventListener('click', () => {
     void navigator.clipboard
-      .writeText(emitted[target] ?? '')
+      .writeText(emittedFor(activeFile)[target] ?? '')
       .then(() => flash(copyOutput, copy.copied, copy.copy))
       .catch(() => {});
   });
@@ -3127,7 +3391,7 @@ function mount(root: HTMLElement): void {
     showImportsNote(example.id);
     bindings.seed(example.defaults ?? {});
     // The files it imports go in first, so the worker holds them when the new text asks.
-    setFiles(filesFor(example.source, example));
+    setFiles(filesFor(example.source, example), graphFor(example));
     model.setValue(example.source);
     // The edit handler queued a render for the new text; this one is immediate, so that one
     // is dropped and the example is painted once.
@@ -3255,6 +3519,26 @@ function mount(root: HTMLElement): void {
     }
   };
 
+  /** The passes an example draws, as the workspace holds them. */
+  const graphFor = (example: PlaygroundExample | undefined): { name: string; path: string }[] =>
+    (example?.passes ?? []).map((p) => ({ name: p.name, path: p.file }));
+
+  /** The pass graph a link carries, `name:path` pairs joined by commas, or undefined. */
+  const linkedGraph = (packed: string | null): { name: string; path: string }[] | undefined => {
+    if (!packed) return undefined;
+    const graph = packed
+      .split(',')
+      .map((pair) => pair.split(':'))
+      .filter(
+        (pair): pair is [string, string] =>
+          pair.length === 2 &&
+          /^[A-Za-z_][A-Za-z0-9_]*$/.test(pair[0]!) &&
+          FILE_PATH.test(pair[1]!),
+      )
+      .map(([name, path]) => ({ name, path }));
+    return graph.length > 0 ? graph : undefined;
+  };
+
   /** The files an example brings, or, for a file with no example behind it, the library files
    *  it names in an import, so a link written before the workspace had tabs still opens them. */
   const filesFor = (
@@ -3274,6 +3558,7 @@ function mount(root: HTMLElement): void {
     source: string;
     example?: PlaygroundExample;
     files?: Record<string, string>;
+    graph?: { name: string; path: string }[];
   }> => {
     await addReleaseExamples();
     const params = hashParams();
@@ -3303,6 +3588,7 @@ function mount(root: HTMLElement): void {
           source,
           example: examples.find((candidate) => candidate.source === source),
           files: await linkedFiles(params.get('files')),
+          graph: linkedGraph(params.get('passes')),
         };
     }
     if (params.has('blank') && root.dataset.blank) return { source: root.dataset.blank };
@@ -3356,6 +3642,9 @@ function mount(root: HTMLElement): void {
     restartButton.addEventListener('click', () => {
       clockOffset = runtimeSeconds;
       if (clockHeld !== null) clockHeld = 0;
+      // Back to frame 0, and every pass's output dropped, so a pass that reads its frame
+      // before starts again from nothing (compiler change 0026).
+      mounted?.restart();
       paintClock();
       mounted?.redraw();
     });
@@ -3437,6 +3726,22 @@ function mount(root: HTMLElement): void {
   const extras = new Map<string, WorkspaceFile>();
   /** The file the editor shows: '' for the one the canvas runs, else a key of `extras`. */
   let activeFile = '';
+  /** The files drawn as passes before the main file each frame (compiler change 0026), in
+   *  draw order: each file's path and the name its output is read by. */
+  let passGraph: { name: string; path: string }[] = [];
+  /** The module each pass compiled to at the version the panes show, by the pass's name;
+   *  undefined for one that did not compile. */
+  let passModules = new Map<string, ModuleDecl | undefined>();
+  /** A pass's name from its file: the stem, as an identifier, since the bindings that read the
+   *  pass are named by it. `passes/blur-x.shade.ts` reads as `blur_x`. */
+  const passNameOf = (path: string): string => {
+    const stem = (path.split('/').pop() ?? path).replace(/\.shade\.ts$/, '').replace(/\.ts$/, '');
+    const name = stem.replace(/[^A-Za-z0-9_]/g, '_');
+    return /^[A-Za-z_]/.test(name) ? name : `_${name}`;
+  };
+  const syncPasses = (): void => {
+    bindings.setPasses(passGraph.map((p) => p.name));
+  };
   const fileTabs = root.querySelector('[data-file-tabs]');
   const newFileButton = root.querySelector('[data-new-file]');
   const fileError = root.querySelector('[data-file-error]');
@@ -3461,6 +3766,12 @@ function mount(root: HTMLElement): void {
       if (library[path] !== undefined) out[path] = library[path];
     return out;
   };
+  /** The passes the example the editor was filled from draws. */
+  const pristineGraph = (): { name: string; path: string }[] =>
+    (examples.find((candidate) => candidate.id === openedExample)?.passes ?? []).map((p) => ({
+      name: p.name,
+      path: p.file,
+    }));
   const workspaceFiles = (): Record<string, string> =>
     Object.fromEntries([...extras].map(([path, file]) => [path, file.model.getValue() as string]));
   /** Whether the files beside the main one are other than the example's own, which is when a
@@ -3486,7 +3797,9 @@ function mount(root: HTMLElement): void {
     };
     fileTabs.append(tab('', fileName));
     for (const [path, file] of extras) {
+      const pass = passGraph.find((p) => p.path === path);
       const button = tab(path, path);
+      if (pass) button.classList.add('file-pass');
       if (pristine[path] !== undefined && pristine[path] !== file.model.getValue())
         button.classList.add('file-dirty');
       if (file.markers > 0) button.classList.add('file-errors');
@@ -3498,8 +3811,31 @@ function mount(root: HTMLElement): void {
       close.addEventListener('click', () => {
         if (window.confirm(w.confirmDelete.replace('{file}', path))) removeFile(path);
       });
+      // Whether this file is drawn as a pass before the main file (compiler change 0026).
+      const toggle = el(
+        'button',
+        'file-pass-toggle',
+        pass ? `${w.pass} ${pass.name}` : w.pass,
+      ) as HTMLButtonElement;
+      toggle.type = 'button';
+      toggle.setAttribute('aria-pressed', String(Boolean(pass)));
+      toggle.title = w.passTitle.replace('{file}', path);
+      toggle.addEventListener('click', () => {
+        passGraph = pass
+          ? passGraph.filter((p) => p.path !== path)
+          : [
+              ...passGraph,
+              // Draw order is the order of the tabs.
+              { name: passNameOf(path), path },
+            ].sort(
+              (a, b) => [...extras.keys()].indexOf(a.path) - [...extras.keys()].indexOf(b.path),
+            );
+        syncPasses();
+        paintTabs();
+        workspaceEdited();
+      });
       const pair = el('span', 'file-pair');
-      pair.append(button, close);
+      pair.append(button, toggle, close);
       fileTabs.append(pair);
     }
   };
@@ -3572,6 +3908,8 @@ function mount(root: HTMLElement): void {
     const file = extras.get(path);
     if (!file) return;
     extras.delete(path);
+    passGraph = passGraph.filter((p) => p.path !== path);
+    syncPasses();
     file.listener.dispose();
     file.model.dispose();
     client?.close(uriOf(path));
@@ -3581,7 +3919,10 @@ function mount(root: HTMLElement): void {
   };
 
   /** Empties the workspace down to the main file and fills it with `files`. */
-  const setFiles = (files: Readonly<Record<string, string>>): void => {
+  const setFiles = (
+    files: Readonly<Record<string, string>>,
+    graph: readonly { name: string; path: string }[] = [],
+  ): void => {
     for (const [path, file] of extras) {
       file.listener.dispose();
       file.model.dispose();
@@ -3589,6 +3930,9 @@ function mount(root: HTMLElement): void {
     }
     extras.clear();
     for (const [path, text] of Object.entries(files)) addFile(path, text);
+    passGraph = graph.filter((p) => extras.has(p.path));
+    passModules = new Map();
+    syncPasses();
     activeFile = '';
     if (editor && model) editor.setModel(model);
     sayFileError('');
@@ -3602,6 +3946,7 @@ function mount(root: HTMLElement): void {
     activeFile = path;
     editor.setModel(file ? file.model : model);
     paintTabs();
+    paintOutput();
   }
 
   /** A path the workspace can hold: relative, no `..`, the characters a URL keeps as they are,
@@ -4130,7 +4475,10 @@ export function wave(x: f32, t: f32): f32 {
 
       // The files beside it first, then the document: the worker holds each from the moment
       // its model exists, so the first analysis reads the imports the tabs show.
-      setFiles(opening.files ?? filesFor(opening.source, opening.example));
+      setFiles(
+        opening.files ?? filesFor(opening.source, opening.example),
+        opening.graph ?? graphFor(opening.example),
+      );
       syncDocument();
 
       model.onDidChangeContent((event: { isFlush?: boolean }) => {

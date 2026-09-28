@@ -4,10 +4,12 @@
 // the build.
 
 import { examples } from '../../vendor/shader-dsl/examples/index.ts';
-import { shadeExampleList, shadeModule } from './shade-examples.ts';
+import { shadeExampleList, shadeFileModule, shadeModule } from './shade-examples.ts';
 import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts';
 import type { Control as MirrorControl } from '../../vendor/shader-dsl/examples/_shared.ts';
-import type { Control, ShaderData, ShaderLayout } from './shader-runtime.ts';
+import type { Control, ShaderData, ShaderLayout, ShaderPassData } from './shader-runtime.ts';
+import type { ResourceSpec } from './shader-bindings.ts';
+import { isReserved } from './live-shader-contract.ts';
 
 /** Translate the registry's `Control` union into the runtime's. Throws on a kind the packer
  *  has no case for. */
@@ -54,6 +56,12 @@ function shadeControls(
   const twin = twinOf ? examples.find((e) => e.id === twinOf) : undefined;
   const out: Record<string, MirrorControl> = {};
   for (const field of reflect(module).uniforms[0]?.fields ?? []) {
+    // The frame count and its step are the runtime's own (see heroShader).
+    if (
+      isReserved(field.name, field.type) &&
+      (field.name === 'frame' || field.name === 'timeDelta')
+    )
+      continue;
     const control = twin?.controls?.[field.name] ?? RESERVED[field.name];
     if (!control) {
       throw new Error(
@@ -107,7 +115,11 @@ export function twinUniformDefaults(twinOf: string | undefined): Record<string, 
 }
 
 /** The reflected interface of one module, reduced to what the runtime binds against. */
-function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayout {
+function layoutOf(
+  id: string,
+  module: Parameters<typeof reflect>[0],
+  passes: readonly string[] = [],
+): ShaderLayout {
   const r = reflect(module);
   const group = r.bindGroups[0];
   const uniformEntry = group?.entries.find((e) => e.resourceKind === 'uniform-buffer');
@@ -120,8 +132,37 @@ function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayo
     throw new Error(`[hero-shader] '${id}' binds a uniform the reflection has no block for`);
   }
 
+  // A texture named like a pass reads that pass's output (compiler change 0026), and the
+  // sampler it is read through is supplied beside it: linear, clamped to the edge.
+  const resources: ResourceSpec[] = [];
+  for (const e of group?.entries ?? []) {
+    if (e.resourceKind === 'texture' && passes.includes(e.name))
+      resources.push({
+        kind: 'texture',
+        name: e.name,
+        group: 0,
+        binding: e.binding,
+        dim: '2d',
+        sample: 'float',
+        width: 0,
+        height: 0,
+        layers: 1,
+        texels: [],
+        pass: e.name,
+      });
+    if (e.resourceKind === 'sampler' && passes.length > 0)
+      resources.push({
+        kind: 'sampler',
+        name: e.name,
+        group: 0,
+        binding: e.binding,
+        comparison: false,
+        filter: 'linear',
+        address: 'clamp-to-edge',
+      });
+  }
   const textures = (group?.entries ?? [])
-    .filter((e) => e.resourceKind === 'texture')
+    .filter((e) => e.resourceKind === 'texture' && !passes.includes(e.name))
     .map((e) => {
       // The runtime only supplies the compiler's fp64 guard texture (a 1x1 white texel).
       if (e.name !== '_fp64') {
@@ -148,7 +189,20 @@ function layoutOf(id: string, module: Parameters<typeof reflect>[0]): ShaderLayo
     vertexEntry: entry('vertex'),
     fragmentEntry: entry('fragment'),
     textures,
+    ...(resources.length > 0 ? { resources } : {}),
   };
+}
+
+/** The runtime's own values for the two fields a pass graph steps by, where the module has
+ *  them: the frame count and the seconds since the frame before. */
+function clockControls(module: Parameters<typeof reflect>[0]): Record<string, Control> {
+  const out: Record<string, Control> = {};
+  for (const field of reflect(module).uniforms[0]?.fields ?? []) {
+    if (!isReserved(field.name, field.type)) continue;
+    if (field.name === 'frame') out[field.name] = { kind: 'frame' };
+    if (field.name === 'timeDelta') out[field.name] = { kind: 'timeDelta' };
+  }
+  return out;
 }
 
 /** Emit one registry example as the runtime's payload: both targets plus the reflected layout.
@@ -168,10 +222,30 @@ export function heroShader(id: string): ShaderData {
   if (!ex) throw new Error(`[hero-shader] no example '${id}' in the mirror's registry`);
   if (!ex.renderable) throw new Error(`[hero-shader] example '${id}' is not renderable (compute)`);
 
-  const controls: Record<string, Control> = {};
+  const controls: Record<string, Control> = { ...clockControls(ex.module) };
   for (const [field, c] of Object.entries(ex.controls ?? {})) {
     controls[field] = toRuntimeControl(id, field, c);
   }
+
+  // An example drawn in several passes (compiler change 0026) carries each pass's program,
+  // bound the same way: a texture named like a pass reads it.
+  const passNames = (shade?.passes ?? []).map((p) => p.name);
+  const passes: ShaderPassData[] = (shade?.passes ?? []).map((p) => {
+    const module = shadeFileModule(p.file);
+    const passControls: Record<string, Control> = { ...clockControls(module) };
+    for (const [field, c] of Object.entries(shadeControls(`${id}.${p.name}`, undefined, module)))
+      passControls[field] = toRuntimeControl(id, field, c);
+    return {
+      id: `${id}.${p.name}`,
+      name: p.name,
+      title: p.name,
+      wgsl: emitModule(module),
+      vertex: emitGlslModule(module, 'vertex'),
+      fragment: emitGlslModule(module, 'fragment'),
+      layout: layoutOf(`${id}.${p.name}`, module, passNames),
+      controls: passControls,
+    };
+  });
 
   return {
     id: ex.id,
@@ -179,8 +253,9 @@ export function heroShader(id: string): ShaderData {
     wgsl: emitModule(ex.module),
     vertex: emitGlslModule(ex.module, 'vertex'),
     fragment: emitGlslModule(ex.module, 'fragment'),
-    layout: layoutOf(id, ex.module),
+    layout: layoutOf(id, ex.module, passNames),
     controls,
+    ...(passes.length > 0 ? { passes } : {}),
   };
 }
 

@@ -18,8 +18,13 @@ import { copyFor, defaultLocale, localePath, ruleWords, type Locale } from '../i
 interface Props {
   text: string;
   locale: Locale;
+  /** The text sits inside a link, a gallery tile say: every link it would carry is written as
+   *  its text, since a link inside a link closes the outer one where the inner one opens and
+   *  spills the rest of the tile onto the page. A rule it names is not linked either, so the
+   *  first link to that rule is still the first one the reader can follow. */
+  inert?: boolean;
 }
-const { text, locale } = Astro.props;
+const { text, locale, inert = false } = Astro.props;
 
 const PAGES: Record<string, string> = {
   home: '/',
@@ -82,7 +87,7 @@ const rules = copyFor(locale).docs.rules;
 const route = locale === defaultLocale ? here : here.replace(new RegExp(`^/${locale}(?=/)`), '');
 const onGuide = route.startsWith('/guide/');
 const withRules: Part[] = parts.flatMap((p): Part[] => {
-  if (p.kind !== 'text') return [p];
+  if (p.kind !== 'text' || inert) return [p];
   return mentionParts(p.value, (n) => rulePath(n) !== undefined, ruleWords()).flatMap((m): Part[] => {
     if (m.kind === 'text' || linkedRules.has(m.number)) return [{ kind: 'text', value: m.value }];
     const href = localePath(locale, rulePath(m.number)!);
@@ -114,6 +119,8 @@ if (written !== rendered) {
       <code>{p.value}</code>
     ) : p.kind === 'flag' ? (
       <span class="ms-1.5 whitespace-nowrap rounded-sm border border-line-2 bg-surface-1 px-1.5 text-label text-text-2">{p.value}</span>
+    ) : inert ? (
+      p.code ? <code>{p.value}</code> : p.value
     ) : (
       <a href={p.href}>{p.code ? <code>{p.value}</code> : p.value}</a>
     ),

@@ -33,27 +33,46 @@ import type { ShaderLayout, UniformField } from './shader-runtime.ts';
  *    space the prelude's `uv` is in, so `mouse` and `uv` compare directly and
  *    `mouse * resolution` is the pointer in pixels. A canvas the pointer has not touched
  *    holds (0.5, 0.5), so the first frame is the one a still capture sees.
+ *  - `frame`: the frames drawn since the clock started, as a `u32`, 0 on the first. A pass
+ *    that reads its own frame before (compiler change 0026) starts from it.
+ *  - `timeDelta`: the seconds since the frame before, as an `f32`, 0 on the first.
  */
 export const RESERVED_UNIFORMS: Readonly<Record<string, string>> = {
   time: 'f32',
   resolution: 'vec2<f32>',
   mouse: 'vec2<f32>',
+  frame: 'u32',
+  timeDelta: 'f32',
 };
 
-export const isReserved = (field: string): boolean => field in RESERVED_UNIFORMS;
+/** The two fields reserved only at their own type. They came to the contract after examples
+ *  already used the names for fields of their own (`rt-renderer-class` passes an `f32`
+ *  `frame` to its jitter), and a field of another type stays that module's own, with the
+ *  control its type gets. */
+const RESERVED_AT_TYPE: ReadonlySet<string> = new Set(['frame', 'timeDelta']);
+
+/** Whether the page fills `field` itself. `type`, where the caller has it, is the field's
+ *  WGSL type, which decides for the fields reserved only at their own type. */
+export const isReserved = (field: string, type?: string): boolean =>
+  field in RESERVED_UNIFORMS &&
+  (type === undefined || !RESERVED_AT_TYPE.has(field) || type === RESERVED_UNIFORMS[field]);
 
 /** What the runtime writes into a reserved field. `seconds` is the shader clock, `width` and
- *  `height` the drawing buffer in device pixels, `pointer` the 0 to 1 pointer position. */
+ *  `height` the drawing buffer in device pixels, `pointer` the 0 to 1 pointer position, and
+ *  `clock` the frame count and the step since the frame before. */
 export function reservedValue(
   field: string,
   seconds: number,
   width: number,
   height: number,
   pointer: readonly [number, number],
+  clock: { readonly frame: number; readonly delta: number } = { frame: 0, delta: 0 },
 ): readonly number[] | null {
   if (field === 'time') return [seconds];
   if (field === 'resolution') return [width, height];
   if (field === 'mouse') return [pointer[0], pointer[1]];
+  if (field === 'frame') return [clock.frame];
+  if (field === 'timeDelta') return [clock.delta];
   return null;
 }
 
@@ -233,7 +252,7 @@ const spread = (
 /** One control for one uniform field, or null when the field is reserved or has a type no
  *  control covers. `prop` is what the page's author wrote for this field. */
 export function controlFor(field: UniformField, prop: ControlProp = {}): LiveControl | null {
-  if (isReserved(field.name)) return null;
+  if (isReserved(field.name, field.type)) return null;
   const base = DEFAULTS[field.type];
   if (!base) return null;
   const numeric = typeof prop.value === 'boolean' ? (prop.value ? 1 : 0) : prop.value;

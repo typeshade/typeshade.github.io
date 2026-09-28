@@ -4,6 +4,8 @@
 // preview still sees the shader.
 //
 // Run: bun run capture:stills  (builds with STILLS_REBASELINE=1 first, then runs this)
+// STILLS_ONLY=<id>,<id> captures those stills alone and leaves every other file as it is, for
+// an example added upstream whose neighbours have not moved.
 import { existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,7 +31,11 @@ try {
   });
   const page = await context.newPage();
   let current = '';
-  for (const { id, example, live, page: route, forceWebGl2, backend: expected } of STILLS) {
+  const only = (process.env.STILLS_ONLY ?? '').split(',').filter(Boolean);
+  const wanted = only.length > 0 ? STILLS.filter((s) => only.includes(s.id)) : STILLS;
+  if (only.length > 0 && wanted.length !== only.length)
+    throw new Error(`[stills] STILLS_ONLY names a still STILLS does not have: ${only.join(', ')}`);
+  for (const { id, example, live, page: route, forceWebGl2, backend: expected } of wanted) {
     if (route !== current) {
       await page.goto(`${server.url}${route}`, { waitUntil: 'networkidle' });
       await page.evaluate(() => document.fonts.ready);

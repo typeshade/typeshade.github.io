@@ -18,6 +18,9 @@ const MAX_DPR = 1.5;
 /** The clock value of the single frame drawn under `prefers-reduced-motion: reduce` ,
  *  far enough in for the noise-driven examples to have settled into their steady look. */
 const STILL_SECONDS = 3;
+/** The frames a still of a program drawn in several passes draws before its one frame, at
+ *  1/60 s apart: a second of history for a pass that reads the frame before. */
+const STILL_WARMUP = 60;
 /** What an adaptive mount aims a frame at, in milliseconds, and the least of the box it will
  *  draw at: an eighth of its side. */
 const FRAME_BUDGET = 33;
@@ -36,6 +39,10 @@ export type Control =
   // [0,0,0,0], and `used = 0` is exactly the flag the examples read to render their canonical
   // autopilot framing (the one thumbnails and render gates see).
   | { readonly kind: 'mouse' }
+  // The frame count since the clock started, and the seconds since the frame before, the
+  // fields a pass that reads its own frame before (compiler change 0026) seeds and steps by.
+  | { readonly kind: 'frame' }
+  | { readonly kind: 'timeDelta' }
   | { readonly kind: 'const'; readonly value: readonly number[] }
   | { readonly kind: 'slider'; readonly value: number } // held at the author's default
   | { readonly kind: 'toggle'; readonly value: boolean } // f32 1 / 0
@@ -122,6 +129,25 @@ export interface ShaderData {
   /** The optional WebGPU features the module needs, as WebGPU names them (`clip-distances`).
    *  The device is asked for them; an adapter without one refuses the mount by name. */
   readonly features?: readonly string[];
+  /** The passes drawn before this program each frame, in draw order (compiler change 0026).
+   *  Each draws into a texture the size of the canvas; a binding of this program or of a pass
+   *  that reads one by name (`TextureSpec.pass`) gets this frame's output of a pass drawn
+   *  earlier and the frame before's of itself or a later one. */
+  readonly passes?: readonly ShaderPassData[];
+}
+
+/** One pass of a program drawn in several: a program of its own, named by the bindings that
+ *  read its output. */
+export interface ShaderPassData extends ShaderData {
+  readonly name: string;
+}
+
+/** Where the mount's frame count stands: the frames drawn since it started or since the last
+ *  `restart()`, and the seconds since the frame before. The reserved `frame` and `timeDelta`
+ *  fields read it. */
+export interface FrameClock {
+  readonly frame: number;
+  readonly delta: number;
 }
 
 export type Backend = 'webgpu' | 'webgl2' | 'none';
@@ -184,6 +210,8 @@ export interface MountOptions {
     seconds: number,
     /** The block the field is in, given for a block after the first. */
     instance?: string,
+    /** The frame this is and the seconds since the one before. */
+    clock?: FrameClock,
   ) => readonly number[] | null;
   /** Lower the drawing buffer's resolution while a frame takes longer than a budget to draw,
    *  and raise it back once frames are cheap. A program too heavy for this GPU then draws at
@@ -255,6 +283,12 @@ export interface MountedShader {
    *  WebGL2, whose GLSL ES 3.00 has no storage buffer to record into, and once the mount has
    *  stopped. */
   captureConsole(capture: ConsoleCapture): Promise<CapturedConsole | null>;
+  /** Start the frame count again from 0, and for a program drawn in several passes drop what
+   *  each pass drew, so the frame after reads zeroes as the first frame did. */
+  restart(): void;
+  /** What the passes of a program drawn in several draw into: `rgba16float`, or `rgba8` where
+   *  WebGL2 cannot render to floats. '' for a program drawn in one pass. */
+  readonly passFormat: string;
   stop(): void;
 }
 
@@ -288,6 +322,8 @@ interface FrameState {
   resize(): boolean;
   /** Repack every uniform field at shader time `seconds`. */
   pack(seconds: number): void;
+  /** The shader time the last `pack` was at, which the passes of a frame are packed at too. */
+  readonly seconds: number;
 }
 
 /** Writes one field's numbers at its std140 offset in `buf`, under the field's own type.
@@ -317,7 +353,9 @@ function createFrameState(
   canvas: HTMLCanvasElement,
   data: ShaderData,
   override?: MountOptions['uniformValues'],
+  clock: () => FrameClock = () => ({ frame: 0, delta: 0 }),
 ): FrameState {
+  let packedAt = 0;
   const { layout, controls } = data;
   const byteLength = layout.size;
   const buf = byteLength > 0 ? new Float32Array(byteLength / 4) : null;
@@ -347,6 +385,10 @@ function createFrameState(
         return [canvas.width, canvas.height];
       case 'mouse':
         return [0, 0, 0, 0];
+      case 'frame':
+        return [clock().frame];
+      case 'timeDelta':
+        return [clock().delta];
       case 'const':
         return c.value;
       case 'slider':
@@ -375,17 +417,22 @@ function createFrameState(
       canvas.height = h;
       return true;
     },
+    get seconds(): number {
+      return packedAt;
+    },
     pack(seconds: number): void {
+      packedAt = seconds;
+      const now = clock();
       if (buf) {
         for (const f of layout.fields) {
-          const v = override?.(f.name, seconds) ?? valueFor(f.name, seconds);
+          const v = override?.(f.name, seconds, undefined, now) ?? valueFor(f.name, seconds);
           if (v) write(f, v);
         }
       }
       // A later block has no controls of its own: only the host's values reach it.
       for (const block of more) {
         for (const f of block.layout.fields) {
-          const v = override?.(f.name, seconds, block.layout.instance);
+          const v = override?.(f.name, seconds, block.layout.instance, now);
           if (v) block.write(f, v);
         }
       }
@@ -412,6 +459,11 @@ interface Pass {
   /** The frame this pass last drew, drawn once more with its console recorded. Only a backend
    *  with storage buffers has it. */
   captureConsole?(capture: ConsoleCapture): Promise<CapturedConsole>;
+  /** Drop every pass's output, so the next frame reads zeroes where it would read the frame
+   *  before. Only a program drawn in several passes has any. */
+  reset?(): void;
+  /** The format the passes draw into, or '' for a program drawn in one. */
+  readonly passFormat?: string;
 }
 
 /** A render pipeline and the bind group layouts it was built over. */
@@ -497,7 +549,19 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLSh
 // ── resources the reader binds ──────────────────────────────────────────────
 
 interface GlTextures {
+  /** Put every texture and sampler back on its unit. A program that shares its context with
+   *  the other passes of a frame finds the units as the last pass left them. */
+  rebind(): void;
   dispose(): void;
+}
+
+/** What a pass draws into and reads beside its own resources, when it is one of several drawn
+ *  each frame (compiler change 0026). A pass drawn alone has neither. */
+interface GlPassIo {
+  /** The framebuffer this pass draws into; null is the canvas. */
+  readonly target?: () => WebGLFramebuffer | null;
+  /** The texture a binding named like a pass reads this frame. */
+  readonly readPass?: (name: string) => WebGLTexture | null;
 }
 
 /** The sampler a WebGL2 texture unit reads through. GLSL pairs a texture with its sampler at
@@ -520,9 +584,18 @@ function bindGlTextures(
   prog: WebGLProgram,
   resources: readonly ResourceSpec[],
   firstUnit: number,
+  readPass?: (name: string) => WebGLTexture | null,
 ): GlTextures {
   const textures: WebGLTexture[] = [];
   const samplers: WebGLSampler[] = [];
+  /** Each unit this program reads, with what goes on it: its own texture, or a pass's. */
+  const units: {
+    unit: number;
+    target: number;
+    texture: WebGLTexture | null;
+    pass?: string;
+    sampler: WebGLSampler;
+  }[] = [];
   const dispose = (): void => {
     for (const t of textures) gl.deleteTexture(t);
     for (const s of samplers) gl.deleteSampler(s);
@@ -546,6 +619,23 @@ function bindGlTextures(
                 ? gl.TEXTURE_3D
                 : null;
       if (target === null) throw new Error(`WebGL2 has no ${spec.dim} texture for '${spec.name}'`);
+      if (spec.pass !== undefined) {
+        // A pass's output: the composite owns the texture and hands this frame's one to
+        // `rebind`. Only the sampler state is this program's.
+        const chosen = samplerFor(spec, samplerSpecs);
+        const sampler = gl.createSampler();
+        if (!sampler) throw new Error('createSampler failed');
+        samplers.push(sampler);
+        const filter = chosen?.filter === 'nearest' ? gl.NEAREST : gl.LINEAR;
+        gl.samplerParameteri(sampler, gl.TEXTURE_MIN_FILTER, filter);
+        gl.samplerParameteri(sampler, gl.TEXTURE_MAG_FILTER, filter);
+        const wrap = GL_WRAP(gl, chosen?.address ?? 'clamp-to-edge');
+        gl.samplerParameteri(sampler, gl.TEXTURE_WRAP_S, wrap);
+        gl.samplerParameteri(sampler, gl.TEXTURE_WRAP_T, wrap);
+        gl.uniform1i(loc, unit);
+        units.push({ unit, target, texture: null, pass: spec.pass, sampler });
+        return;
+      }
       const tex = gl.createTexture();
       if (!tex) throw new Error('createTexture failed');
       textures.push(tex);
@@ -628,15 +718,29 @@ function bindGlTextures(
       }
       gl.bindSampler(unit, sampler);
       gl.uniform1i(loc, unit);
+      units.push({ unit, target, texture: tex, sampler });
     });
   } catch (error) {
     dispose();
     throw error;
   }
-  return { dispose };
+  const rebind = (): void => {
+    for (const u of units) {
+      gl.activeTexture(gl.TEXTURE0 + u.unit);
+      gl.bindTexture(u.target, u.pass !== undefined ? (readPass?.(u.pass) ?? null) : u.texture);
+      gl.bindSampler(u.unit, u.sampler);
+    }
+    gl.activeTexture(gl.TEXTURE0);
+  };
+  return { rebind, dispose };
 }
 
-function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: FrameState): Pass {
+function createWebGl2Pass(
+  canvas: HTMLCanvasElement,
+  data: ShaderData,
+  state: FrameState,
+  io: GlPassIo = {},
+): Pass {
   // alpha:true + a transparent clear: a pass that stops drawing reveals the page behind it.
   const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, depth: false });
   if (!gl) throw new Error('no WebGL2 context');
@@ -699,6 +803,7 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
   // The compiler's fp64 fast-math guard: a 1×1 white texel the emitted df64 helpers multiply
   // by, so no driver can constant-fold the error terms away.
   const guards: WebGLTexture[] = [];
+  const guardUnits: number[] = [];
   data.layout.textures.forEach((t, i) => {
     const loc = gl.getUniformLocation(prog, t.name);
     if (!loc) return;
@@ -711,13 +816,20 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.uniform1i(loc, i);
     guards.push(tex);
+    guardUnits.push(i);
   });
   // The textures the reader bound, each on a unit after the guards, with the sampler it is
   // read through. GLSL ES 3.00 has no separate sampler: the emit folds each texture and its
   // sampler into one `sampler2D`, so the sampler's state goes on the unit as a sampler object.
   let bound: GlTextures;
   try {
-    bound = bindGlTextures(gl, prog, data.layout.resources ?? [], guards.length);
+    bound = bindGlTextures(
+      gl,
+      prog,
+      data.layout.resources ?? [],
+      data.layout.textures.length,
+      io.readPass,
+    );
   } catch (error) {
     for (const t of guards) gl.deleteTexture(t);
     if (ubo) gl.deleteBuffer(ubo);
@@ -746,16 +858,33 @@ function createWebGl2Pass(canvas: HTMLCanvasElement, data: ShaderData, state: Fr
   let fence: WebGLSync | null = null;
   let submitted = 0;
   let frameMs = 0;
+  /** The binding point each later block went on, beside the first block's 0. */
+  const morePoints = moreUbos.map((_, i) => i + 1);
   return {
     draw(): void {
+      // Every piece of state this program reads goes back on the context first: the other
+      // passes of a frame (change 0026) share it and leave their own program, vertex array,
+      // blocks and units behind. A program drawn alone finds them as it left them.
+      gl.useProgram(prog);
+      gl.bindVertexArray(vao);
       if (ubo && state.data) {
         gl.bindBuffer(gl.UNIFORM_BUFFER, ubo);
         gl.bufferSubData(gl.UNIFORM_BUFFER, 0, state.data);
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, ubo);
       }
-      for (const m of moreUbos) {
+      moreUbos.forEach((m, i) => {
         gl.bindBuffer(gl.UNIFORM_BUFFER, m.ubo);
         gl.bufferSubData(gl.UNIFORM_BUFFER, 0, m.data);
-      }
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, morePoints[i]!, m.ubo);
+      });
+      guards.forEach((t, i) => {
+        const unit = guardUnits[i]!;
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.bindSampler(unit, null);
+      });
+      bound.rebind();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, io.target?.() ?? null);
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1030,17 +1159,27 @@ export async function gpuResource(
   }
 }
 
+/** What a WebGPU pass draws into and reads beside its own resources, when it is one of
+ *  several drawn each frame (compiler change 0026). A pass drawn alone has neither. */
+interface GpuPassIo {
+  /** The texture this pass draws into, in place of the canvas. */
+  readonly target?: { readonly format: GPUTextureFormat; view(): GPUTextureView };
+  /** The texture view a binding named like a pass reads this frame. */
+  readonly readPass?: (name: string) => GPUTextureView | null;
+}
+
 async function createWebGpuPass(
   canvas: HTMLCanvasElement,
   data: ShaderData,
   state: FrameState,
+  io: GpuPassIo = {},
 ): Promise<Pass> {
   const device = await sharedDevice(data.features ?? []);
   if (!device) throw new Error('no WebGPU device');
   // The canvas's context is taken only once the pipeline and its resources are built. A
   // canvas holds one kind of context for life, so a WebGPU context taken for a program that
   // then fails to build would leave WebGL2 nothing to draw on.
-  const format = navigator.gpu.getPreferredCanvasFormat();
+  const format = io.target?.format ?? navigator.gpu.getPreferredCanvasFormat();
 
   // The bind group layout is written from the module's own reflection instead of asked of
   // the pipeline. `layout: 'auto'` reports only the bindings the shader reads, so an edit
@@ -1211,8 +1350,14 @@ async function createWebGpuPass(
   const owned: { destroy(): void }[] = [];
   device.pushErrorScope('validation');
   let resourceFailure: unknown = null;
+  /** The bindings that read a pass's output: bound to this frame's texture on every draw. */
+  const passFills: { group: number; binding: number; name: string }[] = [];
   try {
     for (const r of resources) {
+      if (r.kind === 'texture' && r.pass !== undefined) {
+        passFills.push({ group: r.group, binding: r.binding, name: r.pass });
+        continue;
+      }
       const made = await gpuResource(device, r);
       if (made.owned) owned.push(made.owned);
       fills.push({ group: r.group, binding: r.binding, resource: made.resource });
@@ -1253,6 +1398,11 @@ async function createWebGpuPass(
       return list;
     };
     for (const f of fills) entryList(f.group).push({ binding: f.binding, resource: f.resource });
+    for (const f of passFills) {
+      const view = io.readPass?.(f.name);
+      if (!view) throw new Error(`no output for the pass '${f.name}'`);
+      entryList(f.group).push({ binding: f.binding, resource: view });
+    }
     for (const t of guards)
       entryList(data.layout.group).push({ binding: t.binding, resource: guardView() });
     if (extra)
@@ -1266,6 +1416,10 @@ async function createWebGpuPass(
     return groups;
   };
   const bindGroups = bindGroupsFor(groupLayouts, data.layout.textures);
+  /** The groups a draw binds: the ones built above, or, for a pass that reads another's output,
+   *  groups built again over this frame's textures, which change every frame. */
+  const groupsNow = (): [number, GPUBindGroup][] =>
+    passFills.length > 0 ? bindGroupsFor(groupLayouts, data.layout.textures) : bindGroups;
   /** The one draw both the canvas and a capture make: three vertices. */
   const encode = (
     pass: GPURenderPassEncoder,
@@ -1277,8 +1431,9 @@ async function createWebGpuPass(
     if (vertexBuffer) pass.setVertexBuffer(0, vertexBuffer);
     pass.draw(3);
   };
-  const ctx = canvas.getContext('webgpu');
-  if (!ctx) {
+  // A pass that draws into a texture takes no context: the canvas is the last pass's.
+  const ctx = io.target ? null : canvas.getContext('webgpu');
+  if (!io.target && !ctx) {
     freeAll();
     vertexBuffer?.destroy();
     throw new Error('no WebGPU canvas context');
@@ -1286,7 +1441,9 @@ async function createWebGpuPass(
   // premultiplied + a transparent clear, for the same reason WebGL2 asks for alpha:true.
   // Configuring a canvas that is already configured for this device is a no-op, so a swap
   // costs nothing here.
-  ctx.configure({ device, format, alphaMode: 'premultiplied' });
+  ctx?.configure({ device, format, alphaMode: 'premultiplied' });
+  const targetView = (): GPUTextureView =>
+    io.target ? io.target.view() : ctx!.getCurrentTexture().createView();
 
   let disposed = false;
   let inFlight = false;
@@ -1416,14 +1573,14 @@ async function createWebGpuPass(
       const pass = encoder.beginRenderPass({
         colorAttachments: [
           {
-            view: ctx.getCurrentTexture().createView(),
+            view: targetView(),
             clearValue: { r: 0, g: 0, b: 0, a: 0 },
             loadOp: 'clear',
             storeOp: 'store',
           },
         ],
       });
-      encode(pass, built, bindGroups);
+      encode(pass, built, groupsNow());
       pass.end();
       device.queue.submit([encoder.finish()]);
       inFlight = true;
@@ -1444,7 +1601,7 @@ async function createWebGpuPass(
       // `unconfigure()` is what clears the canvas to transparent. A swap keeps the canvas
       // configured, so the frame this pass drew stays up until the new pass draws. The device
       // is shared by every mount on the page and outlives all of them.
-      if (release) ctx.unconfigure();
+      if (release) ctx?.unconfigure();
     },
     onLost(handler): void {
       void device.lost.then(() => {
@@ -1480,7 +1637,11 @@ export async function mountShader(
   data: ShaderData,
   opts: MountOptions = {},
 ): Promise<MountedShader> {
-  let state = createFrameState(canvas, data, opts.uniformValues);
+  /** The frame count and the step since the frame before, which `frame` and `timeDelta` read.
+   *  `last` is null before the first frame and after a restart, when the step is 0. */
+  const clock = { frame: 0, delta: 0, last: null as number | null };
+  const readClock = (): FrameClock => ({ frame: clock.frame, delta: clock.delta });
+  let state = createFrameState(canvas, data, opts.uniformValues, readClock);
   const still = opts.still === true || (prefersReducedMotion() && opts.interactive !== true);
   const skipWebGpu = opts.forceWebGl2 === true || forceGl2FromUrl();
   state.resize();
@@ -1498,18 +1659,201 @@ export async function mountShader(
   /** Draw one frame at `seconds`, counting it. The first call is also the backend's audition:
    *  a pass that compiled but cannot draw throws here and the next backend gets its turn. */
   const drawOnce = (pass: Pass, frame: FrameState, seconds: number): void => {
+    clock.delta = clock.last === null ? 0 : Math.max(0, seconds - clock.last);
+    clock.last = seconds;
     frame.pack(seconds);
     pass.draw();
     qa.frames++;
+    clock.frame++;
+  };
+
+  /** A program drawn in several passes (compiler change 0026) as one pass: each of its passes
+   *  draws into a texture the size of the canvas, in order, and then the program draws into
+   *  the canvas. A pass has two textures, written in turn, so a reader of the pass itself or of
+   *  a later one gets the frame before's and a reader of an earlier one gets this frame's. */
+  const buildMultipass = async (
+    backend: 'webgpu' | 'webgl2',
+    d: ShaderData,
+    frame: FrameState,
+  ): Promise<Pass> => {
+    const passes = d.passes ?? [];
+    const states = passes.map((p) => createFrameState(canvas, p, opts.uniformValues, readClock));
+    /** Which of each pass's two textures this frame writes. */
+    let parity = 0;
+    const indexOf = (name: string): number => passes.findIndex((p) => p.name === name);
+    /** The texture `reader` (a pass's index, or `passes.length` for the program) reads as `name`. */
+    const slot = (reader: number, name: string): [number, number] | null => {
+      const j = indexOf(name);
+      return j < 0 ? null : [j, j < reader ? parity : 1 - parity];
+    };
+    const subs: Pass[] = [];
+    let main: Pass;
+    let passFormat: string;
+    let ensure: () => void;
+    let drop: () => void;
+    if (backend === 'webgpu') {
+      const device = await sharedDevice([
+        ...(d.features ?? []),
+        ...passes.flatMap((p) => p.features ?? []),
+      ]);
+      if (!device) throw new Error('no WebGPU device');
+      const format: GPUTextureFormat = 'rgba16float';
+      passFormat = format;
+      let textures: GPUTexture[][] = [];
+      let size = '';
+      drop = () => {
+        for (const pair of textures) for (const t of pair) t.destroy();
+        textures = [];
+        size = '';
+      };
+      ensure = () => {
+        const want = `${String(canvas.width)}x${String(canvas.height)}`;
+        if (want === size && textures.length > 0) return;
+        drop();
+        textures = passes.map(() =>
+          [0, 1].map(() =>
+            device.createTexture({
+              size: [canvas.width, canvas.height],
+              format,
+              usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+            }),
+          ),
+        );
+        size = want;
+      };
+      ensure();
+      const reads = (reader: number) => (name: string) => {
+        const at = slot(reader, name);
+        return at ? textures[at[0]]![at[1]]!.createView() : null;
+      };
+      try {
+        for (const [i, p] of passes.entries()) {
+          subs.push(
+            await createWebGpuPass(canvas, p, states[i]!, {
+              target: { format, view: () => textures[i]![parity]!.createView() },
+              readPass: reads(i),
+            }),
+          );
+        }
+        main = await createWebGpuPass(canvas, d, frame, { readPass: reads(passes.length) });
+      } catch (error) {
+        for (const sub of subs) sub.dispose(false);
+        drop();
+        throw error;
+      }
+    } else {
+      const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, depth: false });
+      if (!gl) throw new Error('no WebGL2 context');
+      // Rendering to a float texture is an extension in WebGL2. Without it the passes draw
+      // into 8 bits a channel, and a value outside 0 to 1 is clamped: the mount says so.
+      const float = gl.getExtension('EXT_color_buffer_float') !== null;
+      passFormat = float ? 'rgba16float' : 'rgba8';
+      let targets: { texture: WebGLTexture; framebuffer: WebGLFramebuffer }[][] = [];
+      let size = '';
+      drop = () => {
+        for (const pair of targets)
+          for (const t of pair) {
+            gl.deleteTexture(t.texture);
+            gl.deleteFramebuffer(t.framebuffer);
+          }
+        targets = [];
+        size = '';
+      };
+      ensure = () => {
+        const want = `${String(canvas.width)}x${String(canvas.height)}`;
+        if (want === size && targets.length > 0) return;
+        drop();
+        targets = passes.map(() =>
+          [0, 1].map(() => {
+            const texture = gl.createTexture();
+            const framebuffer = gl.createFramebuffer();
+            if (!texture || !framebuffer) throw new Error('no WebGL2 render target');
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(
+              gl.TEXTURE_2D,
+              0,
+              float ? gl.RGBA16F : gl.RGBA8,
+              canvas.width,
+              canvas.height,
+              0,
+              gl.RGBA,
+              float ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE,
+              null,
+            );
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, 0);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+            gl.framebufferTexture2D(
+              gl.FRAMEBUFFER,
+              gl.COLOR_ATTACHMENT0,
+              gl.TEXTURE_2D,
+              texture,
+              0,
+            );
+            return { texture, framebuffer };
+          }),
+        );
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        size = want;
+      };
+      ensure();
+      const reads = (reader: number) => (name: string) => {
+        const at = slot(reader, name);
+        return at ? targets[at[0]]![at[1]]!.texture : null;
+      };
+      try {
+        for (const [i, p] of passes.entries()) {
+          subs.push(
+            createWebGl2Pass(canvas, p, states[i]!, {
+              target: () => targets[i]![parity]!.framebuffer,
+              readPass: reads(i),
+            }),
+          );
+        }
+        main = createWebGl2Pass(canvas, d, frame, { readPass: reads(passes.length) });
+      } catch (error) {
+        for (const sub of subs) sub.dispose(false);
+        drop();
+        throw error;
+      }
+    }
+    return {
+      passFormat,
+      draw(): void {
+        ensure();
+        subs.forEach((sub, i) => {
+          states[i]!.pack(frame.seconds);
+          sub.draw();
+        });
+        main.draw();
+        parity = 1 - parity;
+      },
+      busy: () => main.busy() || subs.some((sub) => sub.busy()),
+      lastFrameMs: () => Math.max(main.lastFrameMs(), ...subs.map((sub) => sub.lastFrameMs())),
+      dispose(release: boolean): void {
+        for (const sub of subs) sub.dispose(false);
+        drop();
+        main.dispose(release);
+      },
+      onLost: (handler) => main.onLost(handler),
+      ...(main.captureConsole ? { captureConsole: main.captureConsole } : {}),
+      reset(): void {
+        drop();
+        parity = 0;
+        ensure();
+      },
+    };
   };
 
   /** Build one pass for `d` on one backend. Building is queued across the page, because the
    *  WebGPU error scope it reads belongs to the device every mount shares. */
   const build = (backend: 'webgpu' | 'webgl2', d: ShaderData, frame: FrameState): Promise<Pass> =>
     serialize(async () =>
-      backend === 'webgpu'
-        ? await createWebGpuPass(canvas, d, frame)
-        : createWebGl2Pass(canvas, d, frame),
+      d.passes !== undefined && d.passes.length > 0
+        ? await buildMultipass(backend, d, frame)
+        : backend === 'webgpu'
+          ? await createWebGpuPass(canvas, d, frame)
+          : createWebGl2Pass(canvas, d, frame),
     );
 
   let pass: Pass | null = null;
@@ -1521,6 +1865,13 @@ export async function mountShader(
   for (const backend of order) {
     try {
       const p = await build(backend, data, state);
+      // A still of a program whose passes read the frame before (compiler change 0026) is
+      // the frame after a second of them, at a fixed step, so it shows what the history
+      // builds up to. The handle still counts the one frame the still path promises.
+      if (still && (data.passes?.length ?? 0) > 0) {
+        for (let k = STILL_WARMUP; k > 0; k--) drawOnce(p, state, STILL_SECONDS - k / 60);
+        qa.frames = 0;
+      }
       drawOnce(p, state, still ? STILL_SECONDS : 0);
       pass = p;
       qa.backend = backend;
@@ -1553,6 +1904,8 @@ export async function mountShader(
   const uniformBytes = (): Float32Array => (state.data ? state.data.slice() : new Float32Array(0));
 
   let scaleHeld = false;
+  /** The pass on the canvas, for the handle's methods, which exist before it does. */
+  let current: Pass | null = null;
   const handle = (
     stop: () => void,
     swap: MountedShader['swap'],
@@ -1583,6 +1936,15 @@ export async function mountShader(
       redraw,
       uniformBytes,
       captureConsole,
+      restart() {
+        clock.frame = 0;
+        clock.last = null;
+        clock.delta = 0;
+        current?.reset?.();
+      },
+      get passFormat() {
+        return current?.passFormat ?? '';
+      },
       stop,
     };
     // The per-element handle is the census source , so the runtime parks it rather
@@ -1598,6 +1960,7 @@ export async function mountShader(
       async () => null,
     );
   let live = pass;
+  current = live;
 
   let stopped = false;
   let raf = 0;
@@ -1629,6 +1992,7 @@ export async function mountShader(
       }
       const previous = live;
       live = built;
+      current = built;
       // The loop may have moved the scale while this pass was building.
       if (frame.scale !== state.scale) {
         frame.scale = state.scale;

@@ -202,6 +202,9 @@ export function drawTile(
   y1: number,
   /** Told each pixel before its fragment entry runs, so a console sink can mark its lines. */
   atPixel?: (px: number, py: number) => void,
+  /** The colour each pixel returned, unclamped, at `(py * plan.width + px) * 4`: a pass's
+   *  output, which the next program reads as a float texture (compiler change 0026). */
+  floats?: Float32Array<ArrayBuffer>,
 ): { pixels: Uint8ClampedArray<ArrayBuffer>; covered: number } {
   const tileWidth = x1 - x0;
   const rows = y1 - y0;
@@ -231,6 +234,13 @@ export function drawTile(
       // Counted once its colour is written, so the note never claims a pixel it dropped.
       covered += 1;
       const offset = ((py - y0) * tileWidth + (px - x0)) * 4;
+      if (floats) {
+        const at = (py * plan.width + px) * 4;
+        for (let k = 0; k < 4; k += 1) {
+          const v = colour[k];
+          floats[at + k] = Number.isFinite(v) ? (v as number) : k === 3 ? 1 : 0;
+        }
+      }
       for (let channel = 0; channel < 3; channel += 1) {
         const value = colour[channel];
         pixels[offset + channel] = Number.isFinite(value)
