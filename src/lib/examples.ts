@@ -309,6 +309,15 @@ const errorCounts = errorCodeCounts();
 const rules = ruleCounts();
 const ruleMoves = ruleHistory();
 
+/** The English name of the pinned compiler's license, from its SPDX id. An id the site has no
+ *  name for stops the build, so the footer never prints a guess. */
+function licenseName(spdx: string): string {
+  const names: Record<string, string> = { MIT: 'MIT License', 'Apache-2.0': 'Apache License 2.0' };
+  const name = names[spdx];
+  if (name === undefined) throw new Error(`[examples] no name for the pinned license '${spdx}'`);
+  return name;
+}
+
 export const facts = {
   examples: examples.length,
   /** The other corpus: the `.shade.ts` files, written in TypeScript source and compiled from
@@ -331,6 +340,10 @@ export const facts = {
   testFiles: testFiles.length,
   pinnedCommit: pinnedCommit(),
   license: pkg.license,
+  /** The license's name and URL, read from the pinned `package.json` so a pin that relicenses
+   *  the compiler moves the footer, the link and the structured data together. */
+  licenseName: licenseName(pkg.license),
+  licenseUrl: `https://opensource.org/licenses/${pkg.license}`,
   author: authorName(),
   /** The year of the pinned commit, for the copyright line. */
   year: pinnedYear(),

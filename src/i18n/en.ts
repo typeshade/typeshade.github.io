@@ -944,6 +944,25 @@ export const en = {
     copied: 'Copied',
     share: 'Copy link',
     shared: 'Link copied',
+    // Sending the file to the gallery (/playground/gallery/). A submission waits for the
+    // maintainer's approval (worker/index.ts), so the dialog says so before and after.
+    submit: {
+      button: 'Submit',
+      title: 'Submit to the gallery',
+      intro:
+        'The file goes to the gallery under the title you give it. The maintainer reviews each submission before it appears.',
+      titleLabel: 'Title',
+      authorLabel: 'Your name (optional)',
+      send: 'Submit',
+      cancel: 'Cancel',
+      close: 'Close',
+      sending: 'Sending…',
+      sent: 'Sent. It appears in the gallery once it is approved.',
+      already: 'This file was already sent in.',
+      limit: 'This address has sent as many as it can today. Try again tomorrow.',
+      failed: 'It could not be sent. Try again later.',
+    },
+    galleryLink: 'Gallery',
     // Shown while the file declares no `@vertex` entry of its own, which is when the page
     // compiles it behind the fullscreen triangle src/lib/live-shader-contract.ts fixes.
     preludeNote:
@@ -998,7 +1017,7 @@ export const en = {
     readme: 'README',
     releases: 'Releases',
     npm: 'npm package',
-    license: 'Released under the [MIT License](license).',
+    license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
   },
@@ -2918,6 +2937,25 @@ export const en = {
     },
   },
 
+  // The Playground's gallery (/playground/gallery/): the files people sent in with Submit,
+  // listed once the maintainer approves them. The list is read from the Worker at runtime.
+  gallery: {
+    title: 'Playground gallery, TypeShade',
+    description:
+      'Shaders people wrote in the TypeShade Playground and sent in. Each one opens in the Playground, ready to change.',
+    h1: 'Gallery',
+    intro:
+      'Shaders people wrote in the Playground and sent in. Each one opens in the Playground, where you can change it.',
+    howTo:
+      'To add yours, write it in the [Playground](playground) and choose Submit. The maintainer reviews each submission before it appears.',
+    loading: 'Loading the gallery…',
+    empty: 'Nothing has been approved yet.',
+    unavailable: 'The gallery could not be loaded.',
+    by: 'by {name}',
+    views: '{count} views',
+    viewOne: '1 view',
+    open: 'Open in the Playground',
+  },
   notFound: {
     title: 'Page not found, TypeShade',
     description: 'There is nothing at this address on typeshade.dev.',

@@ -33,6 +33,7 @@ export const links = {
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
+  playgroundGallery: { label: 'Gallery', href: '/playground/gallery/' },
   concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
   conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
   conceptsPipeline: { label: 'The pipeline', href: '/guide/concepts/the-pipeline/' },
@@ -110,7 +111,7 @@ export const links = {
   llms: { label: 'llms.txt', href: '/llms.txt' },
   commit: { label: facts.pinnedCommit, href: `${mirror}/tree/${facts.pinnedCommit}` },
   releases: { label: 'Watch releases', href: `${mirror}/releases` },
-  license: { label: 'MIT License', href: at('LICENSE') },
+  license: { label: facts.licenseName, href: at('LICENSE') },
   changelog: { label: 'Changelog', href: at('CHANGELOG.md') },
   examplesIndex: { label: 'examples/index.ts', href: at('examples/index.ts') },
   examplesDir: {

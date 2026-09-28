@@ -955,6 +955,22 @@ export const ko: Copy = {
     copied: '복사됨',
     share: '링크 복사',
     shared: '링크 복사됨',
+    submit: {
+      button: '제출',
+      title: '갤러리에 제출',
+      intro: '입력한 제목으로 파일을 갤러리에 보냅니다. 관리자가 검토한 뒤에 공개됩니다.',
+      titleLabel: '제목',
+      authorLabel: '이름 (선택)',
+      send: '제출',
+      cancel: '취소',
+      close: '닫기',
+      sending: '보내는 중…',
+      sent: '보냈습니다. 승인되면 갤러리에 나타납니다.',
+      already: '이미 제출한 파일입니다.',
+      limit: '이 주소에서 오늘 보낼 수 있는 만큼 보냈습니다. 내일 다시 시도해 주십시오.',
+      failed: '보내지 못했습니다. 잠시 뒤에 다시 시도해 주십시오.',
+    },
+    galleryLink: '갤러리',
     preludeNote:
       '이 파일에는 `@vertex` 진입점이 없어서, 화면 전체를 덮는 삼각형 뒤에 놓고 컴파일합니다. 그 삼각형이 프래그먼트 단계에 0에서 1까지 도는 `uv`를 넘깁니다. 탭과 캔버스에는 그렇게 만든 프로그램이 나옵니다.',
     emit: {
@@ -1003,7 +1019,7 @@ export const ko: Copy = {
     readme: 'README',
     releases: '릴리스',
     npm: 'npm 패키지',
-    license: '[MIT 라이선스](license)로 배포합니다.',
+    license: `[${{ MIT: 'MIT 라이선스', 'Apache-2.0': 'Apache 라이선스 2.0' }[facts.license] ?? facts.licenseName}](license)로 배포합니다.`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: '빌드한 커밋',
   },
@@ -3089,6 +3105,23 @@ export const ko: Copy = {
     },
   },
 
+  gallery: {
+    title: 'Playground 갤러리, TypeShade',
+    description:
+      'TypeShade Playground에서 작성해 제출한 셰이더를 모았습니다. 하나씩 Playground에서 열어 고칠 수 있습니다.',
+    h1: '갤러리',
+    intro:
+      'Playground에서 작성해 제출한 셰이더입니다. 하나씩 Playground에서 열고 고쳐 볼 수 있습니다.',
+    howTo:
+      '직접 올리려면 [Playground](playground)에서 작성한 뒤 제출을 누르십시오. 관리자가 검토한 뒤에 공개됩니다.',
+    loading: '갤러리를 불러오는 중…',
+    empty: '아직 승인된 작품이 없습니다.',
+    unavailable: '갤러리를 불러오지 못했습니다.',
+    by: '{name} 작성',
+    views: '조회 {count}회',
+    viewOne: '조회 1회',
+    open: 'Playground에서 열기',
+  },
   notFound: {
     title: '페이지를 찾을 수 없음, TypeShade',
     description: 'typeshade.dev의 이 주소에는 아무것도 없습니다.',
