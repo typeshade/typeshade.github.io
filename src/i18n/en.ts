@@ -74,6 +74,12 @@ export const en = {
   /** How this locale names itself, shown in the language switch of other locales. */
   name: 'English',
   skip: 'Skip to content',
+  // The notice over every page (src/components/SiteNotice.astro). Its text is a row in D1,
+  // written in each language there; the dictionary holds the button that hides it.
+  notice: {
+    label: 'Notice',
+    dismiss: 'Dismiss notice',
+  },
 
   meta: {
     title: 'TypeShade: typed shaders in TypeScript for WebGPU and WebGL2',

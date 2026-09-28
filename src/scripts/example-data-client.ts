@@ -102,3 +102,14 @@ export interface GalleryEntry {
 /** The gallery's approved entries, the most recently approved first. */
 export const fetchGallery = async (): Promise<readonly GalleryEntry[] | undefined> =>
   (await get<{ entries: readonly GalleryEntry[] }>('/data/gallery/'))?.entries;
+
+/** The notice over every page (worker/migrations/0005_notices.sql). */
+export interface SiteNotice {
+  readonly id: number;
+  readonly text: Readonly<Record<DataLocale, string>>;
+  readonly href: string | null;
+}
+
+/** The current notice, or undefined when there is none or no Worker to ask. */
+export const fetchNotice = async (): Promise<SiteNotice | undefined> =>
+  (await get<{ notice: SiteNotice | null }>('/data/notice/'))?.notice ?? undefined;

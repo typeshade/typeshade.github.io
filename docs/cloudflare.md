@@ -23,6 +23,7 @@ within the hour, before the pin bump and the build that make it a built page.
 | `/data/shares/` (POST)                       | the Worker: stores a Playground link in D1, answers its short link    |
 | `/data/shares/<id>/`                         | the Worker: a share's page, views, and when it was made and opened    |
 | `/data/gallery/`                             | the Worker: GET the approved entries; POST sends a share in, pending  |
+| `/data/notice/`                              | the Worker: the notice over every page, or null                       |
 | `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored      |
 | `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
 | `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
@@ -36,7 +37,7 @@ within the hour, before the pin bump and the build that make it a built page.
   `settings.current_release` names the release the Worker serves
   (`worker/migrations/0001_releases.sql`); `shares` holds the Playground's short links
   (`0002_shares.sql`), with how often each was opened (`0003_share_views.sql`); `submissions` is the gallery's
-  queue (`0004_gallery.sql`).
+  queue (`0004_gallery.sql`); `notices` holds the notice over every page (`0005_notices.sql`).
 
 ## What a page does with the data
 
@@ -89,6 +90,27 @@ A page filled in from the data compiles in the reader's browser with the compile
 pinned. A new example that needs a compiler change the pin does not have yet shows that
 compiler's diagnostics until the pin moves. The emitted tabs of an `fn()` example are the
 compiler's own goldens at the published commit, so they are right either way.
+
+## The notice
+
+A notice is one line under the header of every page, in the reader's language, changed with a
+row in D1 and no build (`src/components/SiteNotice.astro`). The Worker serves the newest row
+that is active and whose window holds the current time, and keeps that answer in the edge cache
+for a minute, so a change shows within a minute. A reader who closes a notice does not see it
+again in that browser; the next notice shows. Post one, with an optional link (a path on the site
+or an `https://` address) and an optional window:
+
+```bash
+bunx wrangler d1 execute typeshade --remote --command \
+  "INSERT INTO notices (text_en, text_ko, href, ends_at) VALUES ('TypeShade 0.1.0 is out.', 'TypeShade 0.1.0을 공개했습니다.', 'https://github.com/typeshade/typeshade/releases', '2026-10-31T00:00:00Z')"
+```
+
+Take it down, or list what is there:
+
+```bash
+bunx wrangler d1 execute typeshade --remote --command "UPDATE notices SET active = 0 WHERE active = 1"
+bunx wrangler d1 execute typeshade --remote --command "SELECT id, text_en, href, starts_at, ends_at, active FROM notices ORDER BY id DESC"
+```
 
 ## Reviewing the gallery
 
