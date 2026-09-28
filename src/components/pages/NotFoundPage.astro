@@ -1,5 +1,5 @@
 ---
-// The not-found page. GitHub Pages serves the root 404.html for every missing path, so that
+// The not-found page. The host (Workers static assets, wrangler.jsonc) serves the root 404.html for every missing path, so that
 // page is English and, when the missing path is under /ko/, sends the reader on to /ko/404/,
 // a Korean page with Korean chrome. Both pages are noindex and out of the sitemap.
 import Base from '../../layouts/Base.astro';
@@ -12,15 +12,15 @@ interface Props {
 const { locale } = Astro.props;
 const t = copyFor(locale).notFound;
 // Base prefixes the locale itself, so this is the neutral path. The default locale has no
-// /404/ route, only the /404.html GitHub Pages serves for every missing address.
+// /404/ route, only the /404.html the host serves for every missing address.
 const path = locale === defaultLocale ? '/404.html' : '/404/';
-// GitHub Pages serves this file for every missing path, so the English page also carries the
+// The host serves this file for every missing path, so the English page also carries the
 // redirect that sends a reader under another locale's prefix on to that locale's own 404 page.
 const otherLocaleRedirects = locale === defaultLocale
   ? locales.filter((l) => l !== defaultLocale).map((l) => ({ prefix: `/${l}/`, target: localePath(l, '/404/') }))
   : [];
 // The language switch needs each locale's own 404 page. The default locale has no /404/ route,
-// only the /404.html GitHub Pages serves, so localizing the neutral path would send the switch
+// only the /404.html the host serves, so localizing the neutral path would send the switch
 // to an address that does not exist.
 const switchTarget = Object.fromEntries(
   locales.map((l) => [l, l === defaultLocale ? '/404.html' : localePath(l, '/404/')]),

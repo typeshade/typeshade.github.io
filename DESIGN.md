@@ -809,7 +809,7 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - Numbers are interpolated from `facts` in every language. Captions, accessible names, table
   headers and code-frame labels are in the dictionary too.
 - Every page links its other languages in the header and carries `hreflang` alternates.
-  `/llms.txt` and the social card are English only. GitHub Pages serves one 404 page, in
+  `/llms.txt` and the social card are English only. The host serves one 404 page, in
   English; a missing path under `/ko/` is sent on to `/ko/404/`, a Korean page with Korean
   chrome. Both are noindex and out of the sitemap.
 - Korean text is set in IBM Plex Sans KR, the Korean companion to Plex Sans, at 400 and 600,

@@ -52,7 +52,7 @@ The important concept to understand first is **`"use typeshade"`**. It is the bo
 | `typeshade.github.io/` | Documentation site, examples, and generated reference |
 | `.github/`             | CI and repository automation                          |
 
-The documentation site is built with Astro and served by a Cloudflare Worker, which also serves the examples the compiler has added since the last build ([docs/cloudflare.md](docs/cloudflare.md)); GitHub Pages keeps publishing until the domain moves. The compiler is vendored as a git submodule so examples and generated API documentation can be checked against a pinned compiler revision.
+The documentation site is built with Astro and served by a Cloudflare Worker, which also serves the examples the compiler has added since the last build ([docs/cloudflare.md](docs/cloudflare.md)). The compiler is vendored as a git submodule so examples and generated API documentation can be checked against a pinned compiler revision.
 
 ## Development
 
