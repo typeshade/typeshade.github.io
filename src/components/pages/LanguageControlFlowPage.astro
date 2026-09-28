@@ -6,6 +6,7 @@ import TypeShadeCode from '../TypeShadeCode.astro';
 import Rich from '../Rich.astro';
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
+import { kernelLoopWarnings } from '../../lib/kernel-loops.ts';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
@@ -13,6 +14,8 @@ const content = copyFor(locale).language.topics.controlFlow;
 const headings = [
   ['ts', content.ts], ['branch', content.branch], ['loop', content.loop], ['kernel', content.kernel], ['boundary', content.boundary],
 ].map(([slug, text]) => ({ depth: 2, slug, text }));
+// TS8070's warnings as the pinned compiler writes them (surface §65), in both languages.
+const warnings = kernelLoopWarnings();
 ---
 
 <Docs locale={locale} path={links.languageControlFlow.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'language')}>
@@ -26,6 +29,10 @@ const headings = [
   <TypeShadeCode code={`export function render(k: vec4, size: u32, out: array<f32>) {\n  for (let i: u32 = 0; i < size * size; i++) {\n    const p = vec2(f32(i % size), f32(i / size)) / f32(size)\n    out[i] = k.x * sin(p.x * k.y) + k.z * cos(p.y * k.w)\n  }\n}`} />
   <p><Rich text={content.kernelRulesP} locale={locale} /></p>
   <p><Rich text={content.kernelWarnP} locale={locale} /></p>
+  <table>
+    <thead><tr><th>{content.kernelRule}</th><th>{content.kernelWarning}</th></tr></thead>
+    <tbody>{warnings.map((w) => <tr><td data-label={content.kernelRule}><code>{w.rule}</code></td><td data-label={content.kernelWarning}><code lang="en">{w.warning}</code></td></tr>)}</tbody>
+  </table>
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <p><a href={localePath(locale, links.languageGpuTypes.href)}>{content.next}</a></p>
 </Docs>
