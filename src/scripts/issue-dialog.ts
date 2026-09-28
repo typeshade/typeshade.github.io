@@ -1,11 +1,10 @@
 // The issue dialog (src/components/IssueDialog.astro). Its template's script imports this on
-// the first Report an issue click. The dialog asks the Worker whether it can open an issue
-// here (/data/issues/, worker/index.ts): where it can, Send posts the title, the description,
-// the images, the page and the Playground's program there; where it cannot, or the Worker
-// refuses, GitHub's own form opens in a new tab with what the reader wrote.
+// the first Report a problem click. The Worker says first whether it takes reports here
+// (/data/issues/, worker/index.ts): where it does, the dialog opens and Send posts the title,
+// the description, the images, the page and the Playground's program there; where it does
+// not, the link is followed to GitHub's own form, as it is with no script.
 import type { Copy as SiteCopy } from '../i18n/index.ts';
 import {
-  githubNewIssue,
   isIssueRepo,
   ISSUE_FILE_NAME,
   ISSUE_FILES_MAX,
@@ -14,8 +13,8 @@ import {
   ISSUE_IMAGES_MAX,
   ISSUE_PAGE,
   ISSUE_PROGRAM_MAX,
-  ISSUE_REPOS,
   type IssueAnswer,
+  type IssueError,
   type IssueField,
   type IssueFile,
   type IssueRepo,
@@ -26,9 +25,6 @@ import { currentProgram, type ReportProgram } from './report-context.ts';
 import { decodeSource } from './source-link.ts';
 
 type Copy = SiteCopy['issue']['runtime'];
-
-/** GitHub refuses a longer address, so the form it opens prefilled stops short of this. */
-const GITHUB_URL_MAX = 8000;
 
 interface Turnstile {
   render(box: HTMLElement, options: Record<string, unknown>): string | undefined;
@@ -66,7 +62,7 @@ async function readProgram(program: ReportProgram | undefined): Promise<Program 
 }
 
 let asked: Promise<IssueStatus> | undefined;
-/** Whether the Worker opens issues here, asked once per page. No answer is a no. */
+/** Whether the Worker takes reports here, asked once per page. No answer is a no. */
 const readStatus = (): Promise<IssueStatus> =>
   (asked ??= fetch('/data/issues/', { headers: { accept: 'application/json' } })
     .then(async (res) =>
@@ -102,7 +98,7 @@ const icon = (path: string): SVGSVGElement => {
 const CROSS = 'M6 6l12 12M18 6L6 18';
 
 interface Dialog {
-  open(link: HTMLAnchorElement): Promise<void>;
+  open(link: HTMLAnchorElement, status: IssueStatus): Promise<void>;
 }
 
 /** The page's one dialog, made from the template on the first report. */
@@ -123,7 +119,6 @@ function makeDialog(): Dialog | undefined {
   const trap = find<HTMLInputElement>('input[name="website"]');
   const challengeBox = find<HTMLElement>('[data-issue-challenge]');
   const status = find<HTMLElement>('[data-issue-status]');
-  const note = find<HTMLElement>('[data-issue-note]');
   const cancel = find<HTMLButtonElement>('[data-issue-cancel]');
   const send = find<HTMLButtonElement>('[data-issue-send]');
   const copy = JSON.parse(form.dataset.copy ?? '{}') as Copy;
@@ -137,7 +132,9 @@ function makeDialog(): Dialog | undefined {
   let known: IssueStatus | undefined;
   let done = false;
 
-  const say = (...parts: (Node | string)[]): void => status.replaceChildren(...parts);
+  const say = (words: string): void => {
+    status.textContent = words;
+  };
 
   /** The chips under the box: the program, then each image, each with its own remove. */
   const paint = (): void => {
@@ -208,19 +205,19 @@ function makeDialog(): Dialog | undefined {
     const files = [...(event.clipboardData?.files ?? [])].filter((f) =>
       f.type.startsWith('image/'),
     );
-    if (files.length === 0 || add.hidden) return;
+    if (files.length === 0) return;
     event.preventDefault();
     addImages(files);
   });
   box.addEventListener('dragover', (event) => {
-    if (add.hidden || !event.dataTransfer?.types.includes('Files')) return;
+    if (!event.dataTransfer?.types.includes('Files')) return;
     event.preventDefault();
     box.dataset.dragging = '';
   });
   box.addEventListener('dragleave', () => delete box.dataset.dragging);
   box.addEventListener('drop', (event) => {
     delete box.dataset.dragging;
-    if (add.hidden || !event.dataTransfer?.files.length) return;
+    if (!event.dataTransfer?.files.length) return;
     event.preventDefault();
     addImages(event.dataTransfer.files);
   });
@@ -228,36 +225,6 @@ function makeDialog(): Dialog | undefined {
   dialog.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) form.requestSubmit(send);
   });
-
-  /** GitHub's own form, prefilled. The program's link goes first when the address runs long,
-   *  then the description is cut. */
-  const githubForm = (share?: string): string => {
-    const kept = keepProgram ? program : undefined;
-    const programLink = share
-      ? `${window.location.origin}/s/${share}/`
-      : kept && `${window.location.origin}${kept.page}#${kept.fragment}`;
-    const context = [
-      page ? `Page: ${window.location.origin}${page}` : '',
-      programLink ? `Program: ${programLink}` : '',
-      compiler ? `Compiler: ${ISSUE_REPOS.compiler}@${compiler}` : '',
-    ].filter(Boolean);
-    const build = (words: string, lines: readonly string[]): string =>
-      `${githubNewIssue(repo)}?${new URLSearchParams({
-        title: title.value.trim(),
-        body: [words, lines.length > 0 ? `---\n${lines.join('\n')}` : '']
-          .filter(Boolean)
-          .join('\n\n'),
-      })}`;
-    const words = text.value.trim();
-    let href = build(words, context);
-    const shorter = context.filter((line) => !line.startsWith('Program: '));
-    if (href.length > GITHUB_URL_MAX) href = build(words, shorter);
-    for (let keep = words.length; href.length > GITHUB_URL_MAX && keep > 0;) {
-      keep = Math.floor(keep * 0.9);
-      href = build(`${words.slice(0, keep)}…`, shorter);
-    }
-    return href;
-  };
 
   // Cloudflare Turnstile, where the Worker asks for it. It shows itself only when it needs the
   // reader to act, and a token is good for one request.
@@ -306,16 +273,13 @@ function makeDialog(): Dialog | undefined {
   let mounted = false;
   const applyStatus = (answer: IssueStatus): void => {
     known = answer;
-    if (answer.open) {
-      if (answer.challenge && !mounted) mountChallenge(answer.challenge);
-      mounted = true;
-      return;
-    }
-    // GitHub's form takes no image through a link, so the box offers none here.
-    add.hidden = true;
-    send.textContent = copy.githubSend;
-    note.textContent = copy.github;
+    if (answer.challenge && !mounted) mountChallenge(answer.challenge);
+    mounted = true;
   };
+
+  /** What the reader reads when the Worker files nothing. */
+  const told = (error: IssueError | undefined): string =>
+    error === 'limit' || error === 'image' || error === 'challenge' ? copy[error] : copy.failed;
 
   const reset = (): void => {
     form.reset();
@@ -336,13 +300,7 @@ function makeDialog(): Dialog | undefined {
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    if (done) return;
-    // Where the site cannot send, GitHub's form opens now, inside the click.
-    if (known && !known.open) {
-      window.open(githubForm(), '_blank', 'noopener');
-      return;
-    }
-    void deliver();
+    if (!done) void deliver();
   });
 
   const deliver = async (): Promise<void> => {
@@ -370,55 +328,40 @@ function makeDialog(): Dialog | undefined {
     token = '';
     if (widget !== undefined) turnstile()?.reset(widget);
     send.disabled = false;
-    if (answer && 'number' in answer) {
+    if (answer && !('error' in answer)) {
       done = true;
       form.dataset.done = '';
       send.hidden = true;
       cancel.textContent = form.dataset.close ?? '';
-      const [before = '', after = ''] = copy.sent.split('{link}');
-      const a = document.createElement('a');
-      a.href = answer.url;
-      a.textContent = `#${answer.number}`;
-      say(before, a, after);
+      say('preview' in answer ? copy.preview : copy.sent);
       cancel.focus();
       return;
     }
-    const reason =
-      answer && answer.error !== 'github' && answer.error !== 'invalid'
-        ? copy[answer.error]
-        : copy.failed;
-    const onward = document.createElement('a');
-    onward.href = githubForm(share);
-    onward.target = '_blank';
-    onward.rel = 'noopener';
-    onward.textContent = copy.fallback;
-    say(`${reason} `, onward, images.length > 0 ? ` ${copy.reattach}` : '');
+    // The draft stays, so the reader can send it again.
+    say(told(answer?.error));
   };
 
   return {
-    async open(link) {
+    async open(link, answer) {
       if (done) reset();
       repo = isIssueRepo(link.dataset.report) ? link.dataset.report : 'compiler';
       page = ISSUE_PAGE.test(window.location.pathname) ? window.location.pathname : undefined;
-      const [before = '', after = ''] = copy.note.split('{repo}');
-      const name = document.createElement('code');
-      name.textContent = ISSUE_REPOS[repo];
-      note.replaceChildren(before, name, after);
+      applyStatus(answer);
       program = await readProgram(await currentProgram());
       paint();
       if (!dialog.open) dialog.showModal();
       title.focus();
-      applyStatus(await readStatus());
     },
   };
 }
 
 let made: Dialog | undefined;
 
-/** Opens the dialog for a Report an issue link, or follows the link where the page has no
- *  dialog to open. */
+/** Opens the dialog for a Report a problem link. Where the Worker takes no reports, or the
+ *  page has no dialog, the link is followed: GitHub's own form, as with no script. */
 export async function openIssueDialog(link: HTMLAnchorElement): Promise<void> {
-  made ??= makeDialog();
-  if (made) await made.open(link);
+  const answer = await readStatus();
+  if (answer.open) made ??= makeDialog();
+  if (answer.open && made) await made.open(link, answer);
   else window.location.assign(link.href);
 }

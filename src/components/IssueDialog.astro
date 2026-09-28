@@ -1,10 +1,11 @@
 ---
-// The issue dialog, which every Report an issue link opens: a title, a description if the
-// reader has one, images, and Send. The Worker opens the issue on GitHub for a reader with no
-// account there (worker/index.ts, /data/issues/, docs/cloudflare.md). The link names the
-// repository (`data-report`); the page's address, and the Playground's program where the page
-// holds one, go along. The dialog sits in a template and its script loads on the first click,
-// so a page nobody reports from carries neither. With no script, the link is GitHub's own form.
+// The dialog every Report a problem link opens: a title, a description if the reader has one,
+// images, and Send. The Worker files the report as an issue on GitHub (worker/index.ts,
+// /data/issues/, docs/cloudflare.md), in the repository the link names (`data-report`); the
+// page's address, and the Playground's program where the page holds one, go along. The dialog
+// sits in a template and its script loads on the first click, so a page nobody reports from
+// carries neither. With no script, or where the Worker takes no reports, the link is GitHub's
+// own form.
 import { copyFor, type Locale } from '../i18n/index.ts';
 import { facts } from '../lib/examples.ts';
 import { ISSUE_IMAGE_TYPES, ISSUE_TEXT_MAX, ISSUE_TITLE_MAX } from '../lib/issue-data.ts';
@@ -37,7 +38,7 @@ const t = copyFor(locale).issue;
       <input class="issue-trap" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
       <div data-issue-challenge hidden></div>
       <p class="issue-status" role="status" data-issue-status></p>
-      <p class="issue-note" data-issue-note></p>
+      <p class="issue-note">{t.note}</p>
       <div class="issue-actions">
         <button type="button" class="button" data-issue-cancel>{t.cancel}</button>
         <button type="submit" class="button button-primary" data-issue-send>{t.send}</button>
@@ -47,7 +48,7 @@ const t = copyFor(locale).issue;
 </template>
 
 <script>
-  // Every Report an issue link opens the dialog; the dialog's own module loads on the first
+  // Every Report a problem link opens the dialog; the dialog's own module loads on the first
   // one. A click that opens a new tab follows the link, which is GitHub's own form.
   document.addEventListener('click', (event) => {
     const link = event.target instanceof Element ? event.target.closest('a[data-report]') : null;
@@ -72,7 +73,7 @@ const t = copyFor(locale).issue;
   @media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .issue-dialog::backdrop { background: rgb(0 0 0 / 0.72); } }
   @media (max-width: 40rem) { .issue-dialog { margin-block-start: var(--gutter-x); } }
   .issue-form { display: flex; flex-direction: column; }
-  /* Sent: the heading, which issue it became, and Close. */
+  /* Sent: the heading, the thanks, and Close. */
   .issue-form[data-done] > :not(h2, .issue-status, .issue-actions) { display: none; }
   h2 { margin: 0 0 16px; font-size: var(--text-h5); line-height: var(--text-h5--line-height); font-weight: 600; }
   label { margin: 0 0 4px; color: var(--color-text-1); }
@@ -109,9 +110,7 @@ const t = copyFor(locale).issue;
   .issue-trap { position: absolute; inset-inline-start: -10000px; inline-size: 1px; block-size: 1px; overflow: hidden; }
   .issue-status { margin: 0 0 8px; color: var(--color-text-1); }
   .issue-status:empty { display: none; }
-  .issue-status :global(a) { color: var(--color-accent); }
   .issue-note { margin: 0 0 16px; color: var(--color-text-2); font-size: var(--text-label); line-height: var(--text-label--line-height); }
-  .issue-note :global(code) { font-family: var(--font-mono); }
   .issue-actions { display: flex; justify-content: flex-end; gap: 8px; }
   :lang(ko) .issue-dialog { line-height: 1.6; }
 </style>

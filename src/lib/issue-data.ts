@@ -1,6 +1,6 @@
-// The issue dialog (src/components/IssueDialog.astro) and the Worker that opens the issue on
-// GitHub (worker/index.ts, docs/cloudflare.md) agree here on where an issue goes and what a
-// request carries. Types and constants only, so the Worker and the browser import it without
+// The issue dialog (src/components/IssueDialog.astro) and the Worker that files a reader's
+// report as an issue on GitHub (worker/index.ts, docs/cloudflare.md) agree here on where a
+// report goes and what a request carries. Types and constants only, so the Worker and the browser import it without
 // the build-time libraries.
 
 /** The repositories the dialog files into, by the key a request names. A request never names
@@ -14,7 +14,8 @@ export type IssueRepo = keyof typeof ISSUE_REPOS;
 export const isIssueRepo = (key: unknown): key is IssueRepo =>
   typeof key === 'string' && Object.hasOwn(ISSUE_REPOS, key);
 
-/** GitHub's own form for the repository, where a reader signed in there files the issue. */
+/** GitHub's own form for the repository: where a report link goes with no script, or where
+ *  the Worker takes no reports. */
 export const githubNewIssue = (repo: IssueRepo): string =>
   `https://github.com/${ISSUE_REPOS[repo]}/issues/new`;
 
@@ -67,19 +68,22 @@ export type IssueField =
   | 'website'
   | 'image';
 
-/** GET /data/issues/: whether the Worker opens issues here, and the Turnstile site key where
+/** GET /data/issues/: whether the Worker takes reports here, and the Turnstile site key where
  *  it checks for a person first. */
 export interface IssueStatus {
   readonly open: boolean;
   readonly challenge?: string;
 }
 
-/** Why the Worker opened no issue. `closed`: it holds no credential, or it is a preview.
- *  `invalid`: the request is not one the dialog sends. `image`: an image is too large or not
- *  an image. `challenge`: Turnstile did not pass. `limit`: too many issues from one address,
- *  or from the site today. `github`: GitHub refused it or did not answer. */
+/** Why the Worker opened no issue. `closed`: it holds no credential, or the host is not the
+ *  site's. `invalid`: the request is not one the dialog sends. `image`: an image is too large
+ *  or not an image. `challenge`: Turnstile did not pass. `limit`: too many issues from one
+ *  address, or from the site today. `github`: GitHub refused it or did not answer. */
 export type IssueError = 'closed' | 'invalid' | 'image' | 'challenge' | 'limit' | 'github';
 
-/** POST /data/issues/'s answer: the issue, or why there is none. */
+/** POST /data/issues/'s answer: the issue, or why there is none. A pull request's preview
+ *  checks the request and files nothing, and answers `preview`. */
 export type IssueAnswer =
-  { readonly number: number; readonly url: string } | { readonly error: IssueError };
+  | { readonly number: number; readonly url: string }
+  | { readonly preview: true }
+  | { readonly error: IssueError };

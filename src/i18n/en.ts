@@ -206,7 +206,7 @@ export const en = {
     previous: 'Previous',
     next: 'Next',
     editPage: 'Edit this page',
-    reportIssue: 'Report an issue',
+    reportIssue: 'Report a problem',
     permalink: 'Link to heading',
     // The API reference: the words around a generated ApiEntry (src/lib/api-types.ts).
     api: {
@@ -1035,7 +1035,7 @@ export const en = {
     readme: 'README',
     releases: 'Releases',
     npm: 'npm package',
-    newIssue: 'Report an issue',
+    newIssue: 'Report a problem',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
@@ -2977,34 +2977,29 @@ export const en = {
     open: 'Open in the Playground',
   },
 
-  // The dialog every Report an issue link opens (src/components/IssueDialog.astro): a reader
-  // with no GitHub account files an issue, and the Worker opens it on GitHub.
+  // The dialog every Report a problem link opens (src/components/IssueDialog.astro): a reader
+  // with no GitHub account sends a report, and the Worker files it on GitHub as an issue.
   issue: {
-    heading: 'Report an issue',
+    heading: 'Report a problem',
     titleLabel: 'Title',
     textLabel: 'Description (optional)',
     addImages: 'Paste, drop or choose images',
+    note: 'Anyone can read what you send. Leave out anything private.',
     send: 'Send',
     cancel: 'Cancel',
     close: 'Close',
-    // What the script writes once it runs (src/scripts/issue-dialog.ts). `{repo}` is the
-    // repository, `{link}` the issue.
+    // What the script writes once it runs (src/scripts/issue-dialog.ts).
     runtime: {
-      note: 'The issue is public on GitHub, in {repo}, with a link to this page.',
-      github: "GitHub's own form opens in a new tab with what you wrote.",
-      githubSend: 'Continue on GitHub',
       removeImage: 'Remove the image',
       removeProgram: 'Leave the program out',
-      program: "The Playground's program goes into the issue.",
+      program: "The Playground's program goes with the report.",
       sending: 'Sending…',
-      sent: 'Sent: {link} on GitHub.',
-      closed: 'The site cannot send issues right now.',
-      limit: 'The site has sent as many issues as it can for now. Try again later.',
+      sent: 'Sent. Thank you.',
+      preview: 'A preview checks the report and sends nothing.',
+      limit: 'No more reports can be sent today. Try again tomorrow.',
       image: `Images go up to ${ISSUE_IMAGE_BYTES / 1024 / 1024} MB each and ${ISSUE_IMAGES_MAX} in all, as PNG, JPEG, GIF or WebP.`,
-      challenge: 'Cloudflare could not confirm that a person sent it. Try again.',
-      failed: 'It could not be sent.',
-      fallback: 'Continue on GitHub',
-      reattach: 'Add the images there again.',
+      challenge: 'The check for a person did not pass. Try again.',
+      failed: 'It could not be sent. Try again later.',
     },
   },
 

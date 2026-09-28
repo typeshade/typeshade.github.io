@@ -11,8 +11,8 @@
 // /data/shares/<id>/      one short link's page, its views and when it was made and last opened
 // /data/notice/           the notice over every page, or null (worker/migrations/0005)
 // /data/gallery/          GET: the approved gallery entries; POST: sends a share in, pending
-// /data/issues/           GET: whether the issue dialog can open an issue here; POST: opens
-//                         one on GitHub for a reader with no account there (worker/github.ts)
+// /data/issues/           GET: whether the issue dialog takes reports here; POST: opens one as
+//                         an issue on GitHub for a reader with no account there (worker/github.ts)
 // /data/issue-images/<n>  an image an issue shows, which the dialog sent with it
 // /s/<id>/                the short link: a redirect to the page with its fragment, counted
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
@@ -397,11 +397,14 @@ async function expireShares(env: Env): Promise<void> {
 // The issue dialog (src/components/IssueDialog.astro, docs/cloudflare.md): a reader with no
 // GitHub account files an issue, and the Worker opens it with the credential it holds.
 
-/** The hosts that open issues: the site, and `wrangler dev`. A pull request's preview version
- *  answers at workers.dev with the same bindings and secrets, so testing one files nothing. */
+/** The hosts that open issues: the site, and `wrangler dev`. */
 const ISSUE_HOSTS = new Set(['typeshade.dev', 'localhost', '127.0.0.1']);
+/** A pull request's preview version answers at workers.dev with the site's bindings and
+ *  secrets. There the dialog runs as it does on the site, and the Worker checks each report
+ *  and files nothing, so a reviewer can try it. */
+const isPreview = (url: URL): boolean => url.hostname.endsWith('.workers.dev');
 /** Issues the dialog opens in a day, from one address and from every reader together. Past
- *  either, the dialog offers GitHub's own form. */
+ *  either, the dialog asks the reader to try again the next day. */
 const ISSUES_PER_ADDRESS = 5;
 const ISSUES_PER_DAY = 20;
 const COMMIT = /^[0-9a-f]{7,40}$/;
@@ -424,8 +427,10 @@ const challengeKey = (env: Env): string | undefined =>
     ? env.TURNSTILE_SITE_KEY.trim()
     : undefined;
 
-/** GET /data/issues/: the dialog asks first, and offers GitHub's own form where this says no. */
+/** GET /data/issues/: the dialog asks first. Where this says no, a report link is followed to
+ *  GitHub's own form. A preview has no Turnstile: the widget knows only the site's host. */
 function issueStatus(url: URL, env: Env): Response {
+  if (isPreview(url)) return privateJson({ open: true } satisfies IssueStatus);
   const open = issueOpen(url, env);
   const challenge = challengeKey(env);
   return privateJson((open && challenge ? { open, challenge } : { open }) satisfies IssueStatus);
@@ -670,7 +675,8 @@ function issueBody(draft: IssueDraft, origin: string, shared: boolean): string {
 
 /** POST /data/issues/: opens the issue the dialog describes, once. */
 async function createIssue(request: Request, url: URL, env: Env): Promise<Response> {
-  if (!issueOpen(url, env)) return refuse('closed', 503);
+  const preview = isPreview(url);
+  if (!preview && !issueOpen(url, env)) return refuse('closed', 503);
   if (request.headers.get('origin') !== url.origin) return refuse('invalid', 403);
   if (Number(request.headers.get('content-length') ?? 0) > ISSUE_REQUEST_MAX)
     return refuse('image', 413);
@@ -678,6 +684,8 @@ async function createIssue(request: Request, url: URL, env: Env): Promise<Respon
   if (!form) return refuse('invalid', 400);
   const draft = await readIssue(form);
   if (typeof draft === 'string') return refuse(draft, 400);
+  // A preview stops here: no row, no image, and nothing against the site's limits.
+  if (preview) return privateJson({ preview: true } satisfies IssueAnswer);
 
   // The same issue sent twice, a second click or a retry, is the one issue.
   const repo = ISSUE_REPOS[draft.repo];

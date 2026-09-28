@@ -25,7 +25,7 @@ issues a reader files from the site with no GitHub account (Issues, below).
 | `/data/shares/<id>/`                         | the Worker: a share's page, views, and when it was made and opened    |
 | `/data/gallery/`                             | the Worker: GET the approved entries; POST sends a share in, pending  |
 | `/data/notice/`                              | the Worker: the notice over every page, or null                       |
-| `/data/issues/` (GET)                        | the Worker: whether the issue dialog can open an issue here           |
+| `/data/issues/` (GET)                        | the Worker: whether the issue dialog takes reports here               |
 | `/data/issues/` (POST)                       | the Worker: opens the dialog's issue on GitHub, answers its number    |
 | `/data/issue-images/<name>`                  | the Worker: an image an issue shows, from R2                          |
 | `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored      |
@@ -142,21 +142,22 @@ carries a minute of edge cache). A title can be corrected the same way, with `SE
 
 ## Issues
 
-Every "Report an issue" link opens a dialog on the page it is on: a title, a description if
+Every "Report a problem" link opens a dialog on the page it is on: a title, a description if
 the reader has one, images (a button, a paste or a drop), and Send (`IssueDialog.astro`,
-`src/scripts/issue-dialog.ts`). Every documentation page has one beside Edit this page, and it
-names the repository its text is written in (the compiler, `typeshade/typeshade`, or this
-site); the footer's goes to the compiler, and so does the Playground's header. The page's
-address goes along, and where the page holds a Playground, so does its program, as a chip the
-reader can take out, in the fragment the way Share carries it. With no script, the link is
-GitHub's own new-issue form.
+`src/scripts/issue-dialog.ts`). The dialog's words are about the report alone: it says that
+anyone can read what is sent, and thanks the reader once it is. Every documentation page
+has one beside Edit this page, and it names the repository its text is written in (the
+compiler, `typeshade/typeshade`, or this site); the footer's goes to the compiler, and so does
+the Playground's header. The page's address goes along, and where the page holds a
+Playground, so does its program, as a chip the reader can take out, in the fragment the way
+Share carries it. With no script, the link is GitHub's own new-issue form.
 
-The dialog asks `/data/issues/` whether the Worker can open an issue. Where it can, Send posts
-multipart form data there. The Worker opens the issue on GitHub under the label `site form`
-and answers its number, and the dialog links to it. The body starts with where it came from:
-the dialog, the page, and the commit of the compiler the page was built from. The reader's
-words follow, then the images, then the program: its short link (`/s/<id>/`), which the cron
-then never expires, and each file.
+The dialog asks `/data/issues/` whether the Worker takes reports before it opens. Where it
+does, Send posts multipart form data there. The Worker opens the issue on GitHub under the
+label `site form` and answers its number. The body starts with where it came from: the
+dialog, the page, and the commit of the compiler the page was built from. The reader's words
+follow, then the images, then the program: its short link (`/s/<id>/`), which the cron then
+never expires, and each file.
 
 GitHub's API takes no attachment, so the Worker keeps the images itself: in the `DATA` bucket
 under `issue-images/`, named by their content, and served at `/data/issue-images/<name>` for a
@@ -191,12 +192,17 @@ What stands between the dialog and GitHub:
   code fence the reader leaves open is closed and an HTML comment is written out as text, so
   neither hides the images and the program under them.
 
-Where the Worker cannot open an issue (no credential, a pull request's preview version, `astro
-dev` or `astro preview`), Send becomes Continue on GitHub and opens GitHub's own form in a new
-tab, prefilled with what the reader wrote; images are added there. Where the Worker refuses or
-GitHub does, the dialog says so and links the same form. A preview answers at workers.dev with
-the production secrets, so it opens no issue at all: the Worker opens one only at
-`typeshade.dev` and under `wrangler dev`.
+Where the Worker takes no reports (no credential, `astro dev` or `astro preview`), no dialog
+opens: the link is followed to GitHub's own new-issue form, as it is with no script. Where the
+Worker refuses a report or GitHub does, the dialog says why, or to try again later, and keeps
+the draft.
+
+A pull request's preview version answers at workers.dev with the production secrets, so it
+opens no issue at all: the Worker opens one only at `typeshade.dev` and under `wrangler dev`.
+On a preview the dialog opens as it does on the site and the Worker checks the report (the
+fields, the images), then opens no issue, stores no image, counts nothing against the limits
+and answers `preview`, which the dialog says in place of its thanks. Turnstile stays off
+there, since its widget knows only `typeshade.dev`.
 
 Setting it up is the owner's (the Worker's secrets and the App are account settings):
 
