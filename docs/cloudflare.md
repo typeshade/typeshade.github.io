@@ -54,6 +54,13 @@ pinned. A new example that needs a compiler change the pin does not have yet sho
 compiler's diagnostics until the pin moves. The emitted tabs of an `fn()` example are the
 compiler's own goldens at the published commit, so they are right either way.
 
+## Headers
+
+`public/_headers` sets the cache the static assets get: a year, immutable, for the files whose
+names carry their content hash (`/_astro/`, Pagefind's fragments and index), and a week for the
+fonts. Everything else keeps the asset handler's default, `max-age=0, must-revalidate`, so a
+page is never older than the last deploy.
+
 ## Publishing a release
 
 `.github/workflows/publish-examples.yml` runs at :23 and :53 every hour, on
