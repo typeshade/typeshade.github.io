@@ -163,11 +163,15 @@ GitHub's API takes no attachment, so the Worker keeps the images itself: in the 
 under `issue-images/`, named by their content, and served at `/data/issue-images/<name>` for a
 year, which is where the issue shows them from. It takes PNG, JPEG, GIF and WebP, known by
 their first bytes, up to 5 MB each and 4 to an issue (`ISSUE_IMAGE_BYTES`, `ISSUE_IMAGES_MAX`
-in `src/lib/issue-data.ts`). An image stays when its issue is deleted; remove it by name:
+in `src/lib/issue-data.ts`). The images a request stored are deleted again when GitHub does not
+open its issue. An image stays when its issue is deleted; remove it by name:
 
 ```bash
 bunx wrangler r2 object delete typeshade-data/issue-images/<name> --remote
 ```
+
+GitHub shows an issue's images through its own image proxy, which can go on showing a copy for a
+while after the object is gone; edit the image out of the issue, or delete the issue, as well.
 
 The Worker holds the credential, so a reader needs no GitHub account:
 
@@ -184,15 +188,18 @@ What stands between the dialog and GitHub:
 - Five issues a day from one address and 20 from every reader together (`ISSUES_PER_ADDRESS`
   and `ISSUES_PER_DAY` in `worker/index.ts`), counted over the `issues` rows of the last day. An
   address is kept as a hash, the way the gallery keeps its senders.
-- Cloudflare Turnstile, where the Worker holds `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`.
-  The dialog loads the widget only then, and it shows itself only when it needs the reader to
-  act.
+- Cloudflare Turnstile (`TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`). The issues are
+  public as soon as they are opened, with nobody approving them first, so on `typeshade.dev` the
+  Worker takes no report without both keys: with a credential and no Turnstile, the links go to
+  GitHub's own form. Under `wrangler dev` the dialog opens without them. The widget shows itself
+  only when it needs the reader to act.
 - The same title, text and images sent twice are one issue: the row's id is a hash of them.
 - A mention (`@name`) in the reader's words is set as code, so the dialog notifies nobody. A
   code fence the reader leaves open is closed and an HTML comment is written out as text, so
   neither hides the images and the program under them.
 
-Where the Worker takes no reports (no credential, `astro dev` or `astro preview`), no dialog
+Where the Worker takes no reports (no credential, no Turnstile on the site, `astro dev` or
+`astro preview`), no dialog
 opens: the link is followed to GitHub's own new-issue form, as it is with no script. Where the
 Worker refuses a report or GitHub does, the dialog says why, or to try again later, and keeps
 the draft.
@@ -210,12 +217,12 @@ Setting it up is the owner's (the Worker's secrets and the App are account setti
    Homepage `https://typeshade.dev/`, Webhook off, Repository permissions > Issues: Read and
    write, installable on this account only. Generate a private key (a `.pem` file downloads),
    then Install App on `typeshade` for the two repositories.
-2. For Turnstile, which the dialog should have before it is announced: Cloudflare dashboard >
-   Turnstile > Add widget, hostname `typeshade.dev`, Managed.
+2. Turnstile, which the site's dialog needs: Cloudflare dashboard > Turnstile > Add widget,
+   hostname `typeshade.dev`, Managed. Keep its site key and secret key for the next step.
 3. From a checkout, after `gh auth login` and `bunx wrangler login`, in PowerShell:
 
    ```powershell
-   ./scripts/setup-issue-form.ps1 -AppId <App ID> -KeyFile <path to the .pem> -Turnstile
+   ./scripts/setup-issue-form.ps1 -AppId <App ID> -KeyFile <path to the .pem>
    ```
 
    It creates the `site form` label in both repositories and puts the secrets on the Worker
