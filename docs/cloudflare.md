@@ -21,6 +21,7 @@ within the hour, before the pin bump and the build that make it a built page.
 | `/data/examples/<id>/`                       | the Worker: one example with its file and its emitted text            |
 | `/data/releases/`                            | the Worker: the releases D1 records, newest first                     |
 | `/data/shares/` (POST)                       | the Worker: stores a Playground link in D1, answers its short link    |
+| `/data/shares/<id>/`                         | the Worker: a share's page, views, and when it was made and opened    |
 | `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored      |
 | `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
 | `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
@@ -33,7 +34,7 @@ within the hour, before the pin bump and the build that make it a built page.
 - `DB`: the D1 database `typeshade`. `releases` is the history and
   `settings.current_release` names the release the Worker serves
   (`worker/migrations/0001_releases.sql`); `shares` holds the Playground's short links
-  (`0002_shares.sql`).
+  (`0002_shares.sql`), with how often each was opened (`0003_share_views.sql`).
 
 ## What a page does with the data
 
@@ -58,6 +59,17 @@ within the hour, before the pin bump and the build that make it a built page.
   example's page, in either language, and a fragment that starts `code=`, of 64 KB at most;
   anything else, or no Worker, and Share copies the long link, which carries the whole file and
   opens with no service at all.
+- **A short link's views.** Each open of `/s/<id>/` adds one to the share's `views` and sets
+  `last_opened_at`, after the redirect is sent; the redirect is `no-store`, so a browser that
+  opens it again is counted again. `/data/shares/<id>/` answers the count. A cron
+  (`triggers.crons` in `wrangler.jsonc`, daily at 03:17 UTC) deletes the shares nobody has
+  opened for a year (`SHARE_TTL_DAYS`); a link never opened counts from the day
+  it was made. The shares most opened:
+
+  ```bash
+  bunx wrangler d1 execute typeshade --remote \
+    --command "SELECT id, path, views, last_opened_at FROM shares ORDER BY views DESC LIMIT 20"
+  ```
 
 Without the Worker (`astro dev`, `astro preview`), `/data/` does not answer JSON
 and every page shows what its build has.

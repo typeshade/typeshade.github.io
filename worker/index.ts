@@ -8,10 +8,13 @@
 // /data/releases/         the releases the database records, newest first
 // /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
 //                         its short link
-// /s/<id>/                the short link: a redirect to the page with its fragment
+// /data/shares/<id>/      one short link's page, its views and when it was made and last opened
+// /s/<id>/                the short link: a redirect to the page with its fragment, counted
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
 // /ko/guide/examples/...  the current release has, the prebuilt template page filled in with
 //                         it, so an example merged upstream has a page before the next build
+//
+// A daily cron (wrangler.jsonc) deletes the shares nobody has opened for SHARE_TTL_DAYS.
 import {
   releaseKey,
   TEMPLATE_ID,
@@ -53,6 +56,8 @@ const SHARE_FRAGMENT = /^code=[A-Za-z0-9._~%&=-]+$/;
 /** A deflated file of a few thousand lines, with room to spare. */
 const SHARE_MAX = 64 * 1024;
 const SHARE_ID = /^[A-Za-z0-9_-]{8,43}$/;
+/** A share nobody opens for this long is deleted. */
+const SHARE_TTL_DAYS = 365;
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -81,6 +86,30 @@ async function api(request: Request, url: URL, env: Env): Promise<Response> {
     return request.method === 'POST'
       ? createShare(request, url, env)
       : json({ error: 'POST a page and a fragment' }, 405);
+  }
+  if (parts[1] === 'shares' && parts.length === 3 && SHARE_ID.test(parts[2]!)) {
+    const row = await env.DB.prepare(
+      `SELECT id, path, views, created_at, last_opened_at FROM shares WHERE id = ?`,
+    )
+      .bind(parts[2])
+      .first<{
+        id: string;
+        path: string;
+        views: number;
+        created_at: string;
+        last_opened_at: string | null;
+      }>();
+    if (!row) return json({ error: `no share '${parts[2]}'` }, 404);
+    return new Response(
+      JSON.stringify({
+        id: row.id,
+        path: row.path,
+        views: row.views,
+        createdAt: row.created_at,
+        lastOpenedAt: row.last_opened_at,
+      }),
+      { headers: { 'content-type': 'application/json; charset=utf-8', ...noStore } },
+    );
   }
   if (parts[1] === 'releases' && parts.length === 2) {
     const { results } = await env.DB.prepare(
@@ -144,8 +173,9 @@ async function createShare(request: Request, url: URL, env: Env): Promise<Respon
   return json({ error: 'no free id' }, 500);
 }
 
-/** GET /s/<id>/ (and /s/<id>): the page the share opens, with its fragment. */
-async function openShare(url: URL, env: Env): Promise<Response> {
+/** GET /s/<id>/: the page the share opens, with its fragment. The open is counted after the
+ *  answer is sent, so the redirect does not wait on the write. */
+async function openShare(url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
   const id = /^\/s\/([^/]+)\/?$/.exec(url.pathname)?.[1];
   const row =
     id && SHARE_ID.test(id)
@@ -156,14 +186,28 @@ async function openShare(url: URL, env: Env): Promise<Response> {
       : null;
   // /s/ is no page of the build's, so the asset handler answers it with the 404 page.
   if (!row) return env.ASSETS.fetch(new Request(new URL('/s/', url)));
-  // A share never changes, so the redirect is cached like the file it names.
+  ctx.waitUntil(
+    env.DB.prepare(`UPDATE shares SET views = views + 1, last_opened_at = ? WHERE id = ?`)
+      .bind(new Date().toISOString(), id)
+      .run()
+      .catch(() => undefined),
+  );
+  // Not cached, so every open reaches the Worker and is counted.
   return new Response(null, {
     status: 302,
-    headers: {
-      location: `${url.origin}${row.path}#${row.fragment}`,
-      'cache-control': 'public, max-age=86400',
-    },
+    headers: { location: `${url.origin}${row.path}#${row.fragment}`, ...noStore },
   });
+}
+
+/** The daily cron: the shares nobody has opened for SHARE_TTL_DAYS. */
+async function expireShares(env: Env): Promise<void> {
+  const cutoff = new Date(Date.now() - SHARE_TTL_DAYS * 86_400_000).toISOString();
+  const { meta } = await env.DB.prepare(
+    `DELETE FROM shares WHERE COALESCE(last_opened_at, created_at) < ?`,
+  )
+    .bind(cutoff)
+    .run();
+  console.log(`expired ${meta.changes} shares not opened since ${cutoff}`);
 }
 
 const escapeHtml = (text: string): string =>
@@ -371,11 +415,14 @@ async function examplePage(request: Request, url: URL, env: Env): Promise<Respon
 }
 
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/data/')) return api(request, url, env);
-    if (url.pathname.startsWith('/s/')) return openShare(url, env);
+    if (url.pathname.startsWith('/s/')) return openShare(url, env, ctx);
     if (/^(\/ko)?\/guide\/examples\//.test(url.pathname)) return examplePage(request, url, env);
     return env.ASSETS.fetch(request);
+  },
+  async scheduled(_controller, env, ctx): Promise<void> {
+    ctx.waitUntil(expireShares(env));
   },
 } satisfies ExportedHandler<Env>;

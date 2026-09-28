@@ -27,5 +27,7 @@
       "migrations_dir": "worker/migrations",
     },
   ],
+  // Daily at 03:17 UTC: delete the short links nobody has opened for a year (worker/index.ts).
+  "triggers": { "crons": ["17 3 * * *"] },
   "observability": { "enabled": true },
 }
