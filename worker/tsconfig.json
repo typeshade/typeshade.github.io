@@ -11,5 +11,10 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["./**/*.ts", "../src/lib/example-data.ts", "../src/i18n/locales.ts"]
+  "include": [
+    "./**/*.ts",
+    "../src/lib/example-data.ts",
+    "../src/lib/issue-data.ts",
+    "../src/i18n/locales.ts"
+  ]
 }

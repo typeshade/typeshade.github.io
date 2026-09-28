@@ -1,13 +1,15 @@
 ---
 // A documentation page: the sidebar on the left, the document in the middle, and on a wide
 // screen an outline of the page on the right. Under 64rem the sidebar folds into a bar
-// under the header. Every page ends with a link to the file it is written in and with
-// previous and next, which follow the sidebar's order. The document is what the search
-// indexes; the sidebar, the outline, the pager and the edit link stay out of it.
+// under the header. Every page ends with a link to the file it is written in, a link to
+// report a problem with the page, and previous and next, which follow the sidebar's order. The
+// document is what the search indexes; the sidebar, the outline, the pager and the two links
+// stay out of it.
 import { getCollection } from 'astro:content';
 import Base from './Base.astro';
 import { links, sidebar, type Destination } from '../lib/links.ts';
 import { copyFor, guideSection, localePath, type Locale } from '../i18n/index.ts';
+import { githubNewIssue, ISSUE_REPOS } from '../lib/issue-data.ts';
 
 export interface Heading {
   readonly depth: number;
@@ -66,6 +68,10 @@ const previous = Astro.props.previous ?? (at > 0 ? flat[at - 1] : undefined);
 const next = Astro.props.next ?? (at >= 0 && at < flat.length - 1 ? flat[at + 1] : undefined);
 const current = label ?? (at >= 0 ? flat[at]!.label : undefined);
 const outline = headings.filter((h) => h.depth === 2 || h.depth === 3);
+// The issue dialog (src/components/IssueDialog.astro). An issue about text the compiler writes
+// (the reference, the internals) belongs in the compiler's repository, which is where the edit
+// link points.
+const reportRepo = editHref.startsWith(`https://github.com/${ISSUE_REPOS.compiler}/`) ? 'compiler' : 'site';
 // A section of the guide has h3 headings under the page's h1, so the outline indents from
 // the shallowest heading it was given.
 const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2;
@@ -108,6 +114,10 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2;
         <a href={editHref}>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z" /></svg>
           {d.editPage}
+        </a>
+        <a href={githubNewIssue(reportRepo)} data-report={reportRepo}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="12" cy="12" r="1.5" fill="currentColor" /></svg>
+          {d.reportIssue}
         </a>
       </p>
       <nav class="docs-pager" aria-label={`${d.previous} / ${d.next}`} lang={locale} data-pagefind-ignore>

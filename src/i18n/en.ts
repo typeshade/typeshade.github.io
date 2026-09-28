@@ -5,6 +5,7 @@ import { API_CATEGORIES } from '../lib/api.ts';
 import { exampleFile, facts, hero, quickStartFile, registryBlurbs } from '../lib/examples.ts';
 import { shadeDescriptions, shadeTitles } from '../lib/shade-examples.ts';
 import { guideSections } from '../lib/guide.ts';
+import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import type { LinkKey } from '../lib/links.ts';
 import { typedError } from '../lib/typed-error.ts';
 
@@ -205,6 +206,7 @@ export const en = {
     previous: 'Previous',
     next: 'Next',
     editPage: 'Edit this page',
+    reportIssue: 'Report a problem',
     permalink: 'Link to heading',
     // The API reference: the words around a generated ApiEntry (src/lib/api-types.ts).
     api: {
@@ -1033,6 +1035,7 @@ export const en = {
     readme: 'README',
     releases: 'Releases',
     npm: 'npm package',
+    newIssue: 'Report a problem',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
@@ -2973,6 +2976,33 @@ export const en = {
     viewOne: '1 view',
     open: 'Open in the Playground',
   },
+
+  // The dialog every Report a problem link opens (src/components/IssueDialog.astro): a reader
+  // with no GitHub account sends a report, and the Worker files it on GitHub as an issue.
+  issue: {
+    heading: 'Report a problem',
+    titleLabel: 'Title',
+    textLabel: 'Description (optional)',
+    addImages: 'Paste, drop or choose images',
+    note: 'Anyone can read what you send. Leave out anything private.',
+    send: 'Send',
+    cancel: 'Cancel',
+    close: 'Close',
+    // What the script writes once it runs (src/scripts/issue-dialog.ts).
+    runtime: {
+      removeImage: 'Remove the image',
+      removeProgram: 'Leave the program out',
+      program: "The Playground's program goes with the report.",
+      sending: 'Sending…',
+      sent: 'Sent. Thank you.',
+      preview: 'A preview checks the report and sends nothing.',
+      limit: 'No more reports can be sent today. Try again tomorrow.',
+      image: `Images go up to ${ISSUE_IMAGE_BYTES / 1024 / 1024} MB each and ${ISSUE_IMAGES_MAX} in all, as PNG, JPEG, GIF or WebP.`,
+      challenge: 'The check for a person did not pass. Try again.',
+      failed: 'It could not be sent. Try again later.',
+    },
+  },
+
   notFound: {
     title: 'Page not found, TypeShade',
     description: 'There is nothing at this address on typeshade.dev.',

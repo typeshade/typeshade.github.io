@@ -4,6 +4,7 @@ import '../styles/global.css';
 import SiteNotice from '../components/SiteNotice.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import IssueDialog from '../components/IssueDialog.astro';
 import { facts } from '../lib/examples.ts';
 import { copyFor, defaultLocale, localeSettings, locales, localeUrl, type Locale } from '../i18n/index.ts';
 
@@ -159,6 +160,7 @@ const jsonLd = {
       <slot />
     </main>
     <SiteFooter locale={locale} path={path} switchTarget={switchTarget} />
+    <IssueDialog locale={locale} />
     <dialog class="search-dialog" aria-label={t.nav.search} data-pagefind-ignore>
       <div class="search-dialog-bar">
         <button class="search-dialog-close" type="button" aria-label={t.nav.close} data-search-close>

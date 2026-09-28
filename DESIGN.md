@@ -351,7 +351,7 @@ element is fully round except the two-axis pad's dot.
   under the header that names the current page, with the page's own headings folded under it.
 - Sections inside a document are 48px apart, 56px from 40rem. The footer starts 96px below the
   content.
-- The Playground is one heading over the tool. The heading, its sentence and its two links sit
+- The Playground is one heading over the tool. The heading, its sentence and its links sit
   on the tool's own content edge, 15px in from the region, so they line up with the file name
   in the toolbar under them, and the heading keeps the 40px a documentation page's h1 has under
   the header, 32px under 64rem.
@@ -423,6 +423,16 @@ cards takes the column. A third measure needs a reason.
 - **Empty.** A tile whose example has nothing the page can draw shows Ant's Empty instead of a
   bare grey frame: a 40px outlined mark at one 1.5px stroke in tertiary text, and one 12px
   secondary sentence under it saying why there is no picture.
+- **Issue dialog.** Every "Report a problem" link opens it on the page it is on, the way the
+  search dialog opens: Ant's Modal, a 520px elevated card over the dimmed page, 10vh down on a
+  wide screen and a gutter down on a phone. It holds a title, a description the reader may
+  leave empty, and one box under it that takes images from a button, a paste or a drop, shown
+  as 46px thumbnails a reader can take out; then one line saying that anyone can read the
+  report, and Cancel and Send at the foot. The page's address and, on a page that holds a
+  Playground, its program go along; the program shows as a chip that comes out the same way.
+  Sent, the dialog thanks the reader and keeps only Close. Its words are about the report
+  alone. The Worker files the report on GitHub as an issue; where it cannot, the link is
+  followed to GitHub's own form and no dialog opens (docs/cloudflare.md, Issues).
 - **Dropdowns.** The version menu, the language menu and the mobile panel are `details`
   elements. The version's summary is one of the header's 32px controls, with the row's radius
   and its 0.04 hover fill; it keeps the mono face and tabular figures at the row's 14px,
@@ -524,7 +534,8 @@ why lives on its own page.
   wide screen an outline of the page on the right. Under 64rem the sidebar is a bar under the
   header that names the current page. Every page carries its own headings in that outline,
   and closes with a link to the file it is written in ("Edit this page", the VitePress
-  convention) and with previous and next, which follow the sidebar's order.
+  convention), a link to report a problem with the page (MDN's "Report a problem with this
+  content"), and previous and next, which follow the sidebar's order.
   - Get started: `/guide/introduction/` (the language boundary, what stays familiar from
     TypeScript, what the compiler produces), `/guide/quick-start/` (the submodule command,
     the authored file, the WGSL it emits, the host code, the release state) and

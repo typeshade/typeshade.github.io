@@ -10,7 +10,8 @@ The site is two things with two clocks:
   R2. It fails soft where the build fails hard, and it moves when the compiler does.
 
 A Cloudflare Worker serves both from one origin, so an example merged upstream is on the site
-within the hour, before the pin bump and the build that make it a built page.
+within the hour, before the pin bump and the build that make it a built page. It also opens the
+issues a reader files from the site with no GitHub account (Issues, below).
 
 ## What serves what
 
@@ -24,6 +25,9 @@ within the hour, before the pin bump and the build that make it a built page.
 | `/data/shares/<id>/`                         | the Worker: a share's page, views, and when it was made and opened    |
 | `/data/gallery/`                             | the Worker: GET the approved entries; POST sends a share in, pending  |
 | `/data/notice/`                              | the Worker: the notice over every page, or null                       |
+| `/data/issues/` (GET)                        | the Worker: whether the issue dialog takes reports here               |
+| `/data/issues/` (POST)                       | the Worker: opens the dialog's issue on GitHub, answers its number    |
+| `/data/issue-images/<name>`                  | the Worker: an image an issue shows, from R2                          |
 | `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored      |
 | `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
 | `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
@@ -32,12 +36,14 @@ within the hour, before the pin bump and the build that make it a built page.
 
 - `ASSETS`: `dist/`.
 - `DATA`: the R2 bucket `typeshade-data`. A release is `releases/<release>/index.json` and
-  `releases/<release>/examples/<id>.json`, shaped by `src/lib/example-data.ts`.
+  `releases/<release>/examples/<id>.json`, shaped by `src/lib/example-data.ts`; the images the
+  issues show are under `issue-images/`.
 - `DB`: the D1 database `typeshade`. `releases` is the history and
   `settings.current_release` names the release the Worker serves
   (`worker/migrations/0001_releases.sql`); `shares` holds the Playground's short links
   (`0002_shares.sql`), with how often each was opened (`0003_share_views.sql`); `submissions` is the gallery's
-  queue (`0004_gallery.sql`); `notices` holds the notice over every page (`0005_notices.sql`).
+  queue (`0004_gallery.sql`); `notices` holds the notice over every page (`0005_notices.sql`);
+  `issues` holds the issues the dialog opened (`0006_issues.sql`).
 
 ## What a page does with the data
 
@@ -134,6 +140,95 @@ bunx wrangler d1 execute typeshade --remote --command \
 Setting an approved entry back to `rejected` takes it off the page within a minute (the list
 carries a minute of edge cache). A title can be corrected the same way, with `SET title = ...`.
 
+## Issues
+
+Every "Report a problem" link opens a dialog on the page it is on: a title, a description if
+the reader has one, images (a button, a paste or a drop), and Send (`IssueDialog.astro`,
+`src/scripts/issue-dialog.ts`). The dialog's words are about the report alone: it says that
+anyone can read what is sent, and thanks the reader once it is. Every documentation page
+has one beside Edit this page, and it names the repository its text is written in (the
+compiler, `typeshade/typeshade`, or this site); the footer's goes to the compiler, and so does
+the Playground's header. The page's address goes along, and where the page holds a
+Playground, so does its program, as a chip the reader can take out, in the fragment the way
+Share carries it. With no script, the link is GitHub's own new-issue form.
+
+The dialog asks `/data/issues/` whether the Worker takes reports before it opens. Where it
+does, Send posts multipart form data there. The Worker opens the issue on GitHub under the
+label `site form` and answers its number. The body starts with where it came from: the
+dialog, the page, and the commit of the compiler the page was built from. The reader's words
+follow, then the images, then the program: its short link (`/s/<id>/`), which the cron then
+never expires, and each file.
+
+GitHub's API takes no attachment, so the Worker keeps the images itself: in the `DATA` bucket
+under `issue-images/`, named by their content, and served at `/data/issue-images/<name>` for a
+year, which is where the issue shows them from. It takes PNG, JPEG, GIF and WebP, known by
+their first bytes, up to 5 MB each and 4 to an issue (`ISSUE_IMAGE_BYTES`, `ISSUE_IMAGES_MAX`
+in `src/lib/issue-data.ts`). An image stays when its issue is deleted; remove it by name:
+
+```bash
+bunx wrangler r2 object delete typeshade-data/issue-images/<name> --remote
+```
+
+The Worker holds the credential, so a reader needs no GitHub account:
+
+- A GitHub App (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`) opens the issue as its bot. For each
+  issue the Worker signs a JWT with the key and mints an installation token for that
+  repository with Issues: write and nothing else, which it keeps until five minutes before it
+  expires. The key can be the file GitHub downloads (`BEGIN RSA PRIVATE KEY`) or PKCS#8.
+- Without an App, a fine-grained token (`GITHUB_TOKEN`) with Issues: Read and write on the two
+  repositories opens it as the token's owner.
+
+What stands between the dialog and GitHub:
+
+- The request comes from the site itself (`Origin`), and a field hidden from people is empty.
+- Five issues a day from one address and 20 from every reader together (`ISSUES_PER_ADDRESS`
+  and `ISSUES_PER_DAY` in `worker/index.ts`), counted over the `issues` rows of the last day. An
+  address is kept as a hash, the way the gallery keeps its senders.
+- Cloudflare Turnstile, where the Worker holds `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`.
+  The dialog loads the widget only then, and it shows itself only when it needs the reader to
+  act.
+- The same title, text and images sent twice are one issue: the row's id is a hash of them.
+- A mention (`@name`) in the reader's words is set as code, so the dialog notifies nobody. A
+  code fence the reader leaves open is closed and an HTML comment is written out as text, so
+  neither hides the images and the program under them.
+
+Where the Worker takes no reports (no credential, `astro dev` or `astro preview`), no dialog
+opens: the link is followed to GitHub's own new-issue form, as it is with no script. Where the
+Worker refuses a report or GitHub does, the dialog says why, or to try again later, and keeps
+the draft.
+
+A pull request's preview version answers at workers.dev with the production secrets, so it
+opens no issue at all: the Worker opens one only at `typeshade.dev` and under `wrangler dev`.
+On a preview the dialog opens as it does on the site and the Worker checks the report (the
+fields, the images), then opens no issue, stores no image, counts nothing against the limits
+and answers `preview`, which the dialog says in place of its thanks. Turnstile stays off
+there, since its widget knows only `typeshade.dev`.
+
+Setting it up is the owner's (the Worker's secrets and the App are account settings):
+
+1. Create the App: Organization settings > Developer settings > GitHub Apps > New GitHub App.
+   Homepage `https://typeshade.dev/`, Webhook off, Repository permissions > Issues: Read and
+   write, installable on this account only. Generate a private key (a `.pem` file downloads),
+   then Install App on `typeshade` for the two repositories.
+2. For Turnstile, which the dialog should have before it is announced: Cloudflare dashboard >
+   Turnstile > Add widget, hostname `typeshade.dev`, Managed.
+3. From a checkout, after `gh auth login` and `bunx wrangler login`, in PowerShell:
+
+   ```powershell
+   ./scripts/setup-issue-form.ps1 -AppId <App ID> -KeyFile <path to the .pem> -Turnstile
+   ```
+
+   It creates the `site form` label in both repositories and puts the secrets on the Worker
+   (`wrangler secret put`), asking for the Turnstile keys at the prompt. The secrets take
+   effect at once; the dialog opens issues from the first deploy that carries it.
+
+The dialog's issues, newest first:
+
+```bash
+bunx wrangler d1 execute typeshade --remote \
+  --command "SELECT repo, number, created_at FROM issues ORDER BY created_at DESC LIMIT 20"
+```
+
 ## Headers
 
 `public/_headers` sets the cache the static assets get: a year, immutable, for the files whose
@@ -203,3 +298,11 @@ bunx wrangler dev          # http://localhost:8787, with a local D1 and R2
 `wrangler dev` starts with an empty local bucket and database; put a release in them with
 `wrangler r2 object put --local` and `wrangler d1 execute --local`, or run it with `--remote`
 against the real ones.
+
+The issue dialog reads its secrets from `.dev.vars`, which git ignores. `GITHUB_API_URL` there
+points the Worker at a stand-in for `api.github.com`, so a local run files nothing:
+
+```bash
+GITHUB_TOKEN=test
+GITHUB_API_URL=http://localhost:9999
+```
