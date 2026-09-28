@@ -1579,6 +1579,7 @@ export const ko: Copy = {
         '[WGSL 명세](specWgsl)가 두 타깃 가운데 첫 번째를 정의합니다.',
         `[${glsl} 명세](specGlslEs)와 [WebGL2 명세](specWebgl2)가 두 번째를 정의합니다.`,
         '[MDN WebGPU API](mdnWebgpu)와 [MDN WebGL2RenderingContext](mdnWebgl2)에서 호스트가 각각을 드라이버에 어떻게 넘기는지 볼 수 있습니다.',
+        `언어 참조의 [함수](referenceFunctions)에는 내장 함수마다 컴파일러가 쓰는 WGSL과 ${glsl} 코드가 있고, [타입](referenceTypes)에는 타입마다 같은 내용이 있습니다.`,
       ],
       nextP:
         '다음은 [예제](examples)입니다. 컴파일러 레지스트리의 예제마다 어떤 타깃을 생성하는지 적혀 있습니다.',
