@@ -64,8 +64,9 @@ drawing the same pass.
   Today the site renders 6 stills; the rest are available.
 - Live examples on guide pages (`LiveShader`) let the reader edit a shader in place, with
   sliders bound to its uniforms.
-- Emitted targets: WGSL, GLSL ES 3.00. No other targets. No runtime dependency ships with an
-  application.
+- Emitted targets: WGSL, GLSL ES 3.00. No other targets. An application that hands the emitted
+  source to its own WebGPU or WebGL2 code ships nothing of TypeShade; one that imports a module
+  through the Vite plugin ships `typeshade/runtime` and no compiler.
 - Undecided product facts: the release date of 0.1.0; whether a versioned docs site exists
   after it (DESIGN.md says one version per pin, older docs move under `/v0.1/`).
 

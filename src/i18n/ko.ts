@@ -1117,6 +1117,11 @@ export const ko: Copy = {
           '데코레이터가 붙은 export가 엔트리 포인트입니다',
           '`@vertex`, `@fragment`, `@compute([64, 1, 1])`가 스테이지를 정하고, 없는 함수는 헬퍼입니다. 스테이지 입력은 `@builtin("vertex_index")`나 `@location` 같은 명시적 매개변수로 받습니다. 숨은 전역 변수는 없습니다.',
         ],
+        [
+          'await scale({ k, xs, ys }, 4)',
+          '호스트 파일이 모듈을 가져와 부릅니다',
+          '호스트 파일은 `typeshade/vite` 플러그인으로 `.shade.ts`를 가져와 그 파일이 내보내는 것을 부릅니다. 헬퍼는 CPU에서 실행되고, `@compute` 진입점은 WebGPU에서 디스패치되며, 전체 화면 `@fragment` 진입점은 `fs(canvas, bindings)`로 캔버스에 그립니다. 바인딩 객체의 타입은 모듈에서 나오므로, 호출이 빠뜨린 바인딩은 호스트 코드의 그 줄에서 타입 오류가 됩니다.',
+        ],
       ],
     },
     oracle: {
@@ -1153,11 +1158,25 @@ export const ko: Copy = {
         'entry point의 GPU 입력은 `@builtin(...)` 같은 명시적인 매개변수로 표현합니다.',
         '`uniform<T>`와 `storage<T>` 같은 리소스 타입은 GPU 리소스의 의미를 표현합니다.',
       ],
+      hostP0:
+        '호스트가 이 파일을 쓰는 방법은 두 가지입니다. 파일을 컴파일해 셰이더 소스를 자신의 WebGPU나 WebGL2 코드에 넘기거나, 파일을 가져와 그 파일이 내보내는 것을 부릅니다.',
+      compileH: '파일 컴파일하기',
       hostWgslLabel: '호스트가 WGSL을 소비하는 위치',
       hostP1:
-        'TypeShade는 렌더링 런타임이 아닙니다. TypeScript에서 셰이더를 작성하고 컴파일한 뒤, 호스트 애플리케이션이 생성된 WGSL 또는 GLSL ES 3.00 문자열을 WebGPU나 WebGL2에 넘깁니다.',
+        '지금 쓸 수 있는 방법입니다. 파일을 컴파일한 뒤, 호스트 애플리케이션이 생성된 WGSL 또는 GLSL ES 3.00 문자열을 WebGPU나 WebGL2에 넘깁니다.',
       hostP2:
         'TypeShade가 담당하는 것은 언어 의미와 셰이더 코드 생성입니다. device, pipeline, bind group, buffer, texture, command encoder 같은 GPU 런타임 객체의 생성과 수명 관리는 호스트가 담당합니다.',
+      importH: '파일 가져오기',
+      importP: `${facts.nextVersion}이 npm에 나오면 쓸 수 있는 방법입니다. 호스트 파일이 \`.shade.ts\`를 가져와 그 파일이 내보내는 것을 부르면, 호출에 필요한 디바이스와 파이프라인은 TypeShade의 런타임이 만듭니다. 헬퍼는 CPU에서 실행됩니다. \`@compute\` 진입점은 \`await entry(bindings, workgroups)\`로 부릅니다. WebGPU에서 디스패치하고, 진입점이 쓴 값을 다시 읽어 옵니다. 전체 화면 \`@fragment\` 진입점은 \`entry(canvas, bindings)\`로 캔버스에 그리는데, WebGPU가 먼저이고 다음이 WebGL2, 마지막이 CPU입니다.`,
+      setupP:
+        '`npm install typeshade` 다음에 할 설정은 Vite 플러그인, 호스트 `tsconfig.json`의 두 줄, 그리고 `prepare`에 넣는 `tshc sync`입니다. 이 명령은 `tsc`가 셰이더 파일 대신 읽는 호스트 뷰를 만듭니다. 뷰는 생성되는 파일이므로 `.gitignore`에 `*.shade.typeshade.ts`를 넣어 저장소에서 뺍니다.',
+      viteLabel: 'Vite 플러그인, vite.config.ts',
+      tsconfigLabel: '호스트 tsconfig.json의 두 줄',
+      packageLabel: 'prepare 스크립트, package.json',
+      drawP:
+        '그러면 호스트 파일이 이 페이지 맨 위의 `hello.shade.ts`를 호출 하나로 그립니다. 버텍스 진입점은 아직 호스트 코드에서 부를 수 없어서 뷰가 `vs`를 `never`로 선언하고, `fs`는 캔버스 전체를 빨간색으로 채웁니다.',
+      drawLabel: '호스트 파일에서 hello.shade.ts 그리기, app.ts',
+      untilP: `${facts.nextVersion}이 npm에 나오기 전까지는 파일을 컴파일해 연결합니다. 방법마다 어느 쪽이 무엇을 소유하는지는 [WebGPU와 WebGL2](conceptsWebgpu)에 있습니다.`,
       nextLearnP: '이제 TypeScript에서 익숙한 개념을 TypeShade의 GPU 의미로 연결해 보세요.',
       nextLinks: [
         { linkKey: 'languageTypes', label: 'Types: 타입과 GPU struct' },
@@ -1358,11 +1377,11 @@ export const ko: Copy = {
       [
         'Web API',
         '디바이스, 파이프라인, 버퍼와 렌더링은 호스트 애플리케이션이 소유합니다.',
-        '셰이더 소스와 리플렉션 메타데이터를 제공하며 WebGPU나 WebGL 호스트 API를 대체하지 않습니다.',
+        '호스트가 직접 쓰는 WebGPU나 WebGL2 코드에 셰이더 소스와 리플렉션 메타데이터를 제공합니다. 호스트가 Vite 플러그인으로 가져오는 모듈은 호출에 필요한 디바이스와 파이프라인을 만드는 런타임을 함께 가져옵니다.',
       ],
     ],
     fitH: 'WebGPU는 어디에 있나요?',
-    fitP: 'TypeShade를 브라우저 그래픽 API 위에 놓인 작성·컴파일 계층으로 생각하면 됩니다. TypeShade가 셰이더 코드를 만들고, 애플리케이션은 여전히 `GPUDevice`를 만들고 파이프라인을 구성하고 리소스를 바인딩하고 작업을 제출합니다.',
+    fitP: 'TypeShade를 브라우저 그래픽 API 위에 놓인 작성·컴파일 계층으로 생각하면 됩니다. TypeShade가 셰이더 코드를 만들면, 애플리케이션은 `GPUDevice`를 만들고 파이프라인을 구성하고 리소스를 바인딩하고 작업을 제출합니다. 애플리케이션이 Vite 플러그인으로 가져오는 모듈은 이 단계를 자신이 내보내는 호출 안에서 처리합니다.',
     fitLinks: [
       ['TypeScript 문서 ↗', 'https://www.typescriptlang.org/docs/'],
       ['MDN WebGPU API ↗', 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API'],
@@ -1506,17 +1525,18 @@ export const ko: Copy = {
     webgpuAndWebgl2: {
       title: 'WebGPU와 WebGL2',
       description:
-        '호스트 애플리케이션이 소유하는 것과 TypeShade가 소유하는 것, 컴파일러의 리플렉션이 바인드 그룹 레이아웃으로 이어지는 경로, 그리고 WebGL2에서 달라지는 지점을 설명합니다.',
+        '모듈을 컴파일할 때와 가져올 때 호스트와 TypeShade가 각각 무엇을 소유하는지, 리플렉션이 바인드 그룹 레이아웃으로 이어지는 경로, 그리고 WebGL2에서 달라지는 지점을 설명합니다.',
       h1: 'WebGPU와 WebGL2',
-      lead: 'TypeShade는 셰이더 텍스트와, 호스트가 거기에 리소스를 바인딩할 때 필요한 데이터를 만들어 냅니다. GPU 쪽의 나머지는 애플리케이션 몫입니다. 디바이스, 파이프라인, 바인드 그룹, 버퍼, 텍스처가 모두 여기에 들어갑니다. 어느 쪽이 무엇을 소유하는지 알면 첫 TypeShade 프로그램에 필요한 것은 거의 다 아는 셈입니다.',
+      lead: '호스트가 TypeShade 모듈을 쓰는 방법은 두 가지입니다. 모듈을 컴파일해 셰이더 텍스트를 자신의 WebGPU나 WebGL2 코드에 넘기면, 디바이스와 파이프라인, 바인드 그룹, 버퍼, 텍스처는 그 코드가 소유합니다. Vite 플러그인으로 모듈을 가져와 진입점을 부르면, 호출에 필요한 그 객체들은 TypeShade의 런타임이 만듭니다. 어느 쪽이 무엇을 소유하는지 알면 첫 TypeShade 프로그램에 필요한 것은 거의 다 아는 셈입니다.',
       ownsH: '소유 관계',
-      ownsP: 'WebGPU 애플리케이션이 만드는 객체마다 한 행입니다.',
+      ownsP:
+        'WebGPU 애플리케이션이 만드는 객체마다 한 행이며, 호스트가 모듈을 컴파일해 자신의 코드에 연결하는 경우를 보여 줍니다.',
       ownsColumns: ['객체', '애플리케이션이 하는 일', 'TypeShade가 보태는 것'],
       ownsRows: [
         [
           '디바이스',
           '어댑터와 `GPUDevice`를 요청하고 페이지가 살아 있는 동안 들고 있습니다.',
-          '없습니다. TypeShade 코드는 WebGPU 객체를 건드리지 않습니다.',
+          '없습니다. 컴파일된 모듈은 WebGPU 객체를 건드리지 않습니다.',
         ],
         [
           '파이프라인',
@@ -1539,12 +1559,15 @@ export const ko: Copy = {
           '셰이더가 선언한 바인딩과, 거기에서 기대하는 타입을 알려 줍니다.',
         ],
       ],
+      importH: '모듈 가져오기',
+      importP:
+        '호스트는 `typeshade/vite` 플러그인으로 `.shade.ts`를 자신의 TypeScript에 가져와, 모듈이 내보내는 것을 부를 수도 있습니다. 헬퍼는 CPU에서 실행됩니다. `@compute` 진입점은 `await entry(bindings, workgroups)`로 부르고, 전체 화면 `@fragment` 진입점은 `entry(canvas, bindings)`로 WebGPU, WebGL2, CPU 순서로 그립니다. 이때 위 표에서 애플리케이션이 하던 일은 런타임이 맡습니다. 첫 호출에서 디바이스를 요청해 이후 호출과 함께 쓰고, 진입점마다 파이프라인을 만들며, 호출이 넘긴 객체로 바인딩을 채우고, 컴퓨트 진입점이 쓴 값을 다시 읽어 옵니다.',
       reflectionH: '리플렉션',
       reflectionP: `\`reflect()\`는 컴파일된 모듈을 읽어 그 바인딩을 돌려줍니다. 셰이더가 선언한 그룹과 번호, 주소 공간, 셰이더에 필요한 접근 권한이 들어 있고, 유니폼 구조체라면 ${facts.layoutStandards.join('과 ')} 레이아웃에 따른 필드별 오프셋과 크기도 함께 있습니다. 호스트는 그 목록으로 바인드 그룹 레이아웃 항목을 만들고, 그 오프셋대로 유니폼 버퍼를 채웁니다. 셰이더를 컴파일할 때 쓰인 수치를 호스트가 그대로 쓰므로 양쪽이 어긋나지 않습니다.`,
       reflectionNote:
         '셰이더에서 필드 이름을 바꾸면 다음 빌드에서 리플렉션이 따라 바뀌고, 리플렉션을 읽는 호스트 코드도 함께 따라옵니다.',
-      runtimeH: '런타임 없음',
-      runtimeP: `컴파일러는 셰이더 텍스트가 만들어지는 곳에서 돌아갑니다. 빌드, 테스트, 그리고 [언어 서비스](languageService)를 거친 편집기가 그런 곳입니다. 브라우저에 도달하는 것은 생성된 셰이더 소스와, 애플리케이션이 원래 쓰던 호스트 코드뿐입니다. TypeShade가 설치하는 런타임 의존성은 ${facts.runtimeDeps}개, \`compile()\`과 언어 서비스가 소스를 읽을 때 쓰는 TypeScript뿐입니다. 시작할 때 만들어야 할 TypeShade 객체도 없으며 살려 둘 객체도 없습니다.`,
+      runtimeH: '런타임',
+      runtimeP: `호스트가 컴파일하는 모듈은 브라우저에서 TypeShade의 어떤 코드도 필요로 하지 않습니다. 컴파일러는 셰이더 텍스트가 만들어지는 곳에서 돌아갑니다. 빌드, 테스트, 그리고 [언어 서비스](languageService)를 거친 편집기가 그런 곳이며, 브라우저에 도달하는 것은 생성된 셰이더 소스와 애플리케이션이 원래 쓰던 호스트 코드뿐입니다. 호스트가 가져오는 모듈은 호출이 실행될 코드인 \`typeshade/runtime\`을 번들에 싣고, 컴파일러는 싣지 않습니다. Vite 플러그인이 번들을 만들 때 모듈을 컴파일하기 때문입니다. TypeShade가 설치하는 런타임 의존성은 ${facts.runtimeDeps}개, \`compile()\`과 언어 서비스가 소스를 읽을 때 쓰는 TypeScript뿐입니다.`,
       webgl2H: 'WebGL2에서 달라지는 것',
       webgl2P: '같은 소스가 WebGL2용으로도 컴파일되고, 호스트 쪽 모습은 달라집니다.',
       webgl2Items: [

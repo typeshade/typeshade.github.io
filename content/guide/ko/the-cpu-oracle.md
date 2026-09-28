@@ -1,8 +1,8 @@
 ---
 id: the-cpu-oracle
-source: 78e13acf11a4f2b4deaf481882efaa681bab8f4ef55a5edc4dc4081f3681a39d
+source: 26b42e178db1670fbcd8dfd7e11f605436f18cc0dd530bdc42d8a4b80eeaab81
 sourceLine: 1390
-rules: 3.9 irhR4O4rSI_BD62CMjiedfDBSpIOXY1SvIT_ExKoixs=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
+rules: 3.9 M8V5xons2shR8RLQPfEMLyRvSzdhl3in7EKOaC621q8=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -226,7 +226,7 @@ const h = height([0.5, 0.5], [1, 0.5, 2, 0.25]) // a number
 받지 않고, 바인딩이나 GPU에서만 계산되는 내장 함수에 닿지 않는 것입니다. 모듈이 내보내는
 나머지는 호스트에게 이유와 함께 `never`로 보이므로, 그것을 부르면 호출을 쓴 자리에서 타입 오류가
 납니다. 설정은 네 줄입니다. `vite.config.ts`에 플러그인 한 줄, `tsconfig.json`에 두 줄,
-`prepare`에 `typeshade sync` 한 줄을 씁니다. 이 설정과 호스트 값 표 전체는
+`prepare`에 `tshc sync` 한 줄을 씁니다. 이 설정과 호스트 값 표 전체는
 `docs/use-typeshade-surface.md` §64에 있습니다.
 
 ### 다른 셰이더 모듈을 가져오는 모듈
@@ -240,7 +240,7 @@ const h = height([0.5, 0.5], [1, 0.5, 2, 0.25]) // a number
 
 `compile()`은 소스가 가져오는 파일을 직접 넘겨준 `readDocument`로 읽습니다. 이 함수는 경로를 받아
 파일의 텍스트를 돌려주고, 그런 파일이 없으면 `undefined`를 돌려줍니다. Vite 플러그인과
-`typeshade check`, `typeshade sync`, 편집기는 파일을 스스로 읽습니다.
+`tshc check`, `tshc sync`, 편집기는 파일을 스스로 읽습니다.
 
 ```ts
 import { existsSync, readFileSync } from 'node:fs'

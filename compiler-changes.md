@@ -49,3 +49,12 @@ id first, then the pull request that did the work.
   language service page names `readDocument` and `resolveImport`; the `imported-noise` example
   in the gallery, the picker and the Korean blurbs; and the Korean guide's two new sections,
   handled in #97.
+- 0016: a host file calls a `@compute` entry and draws a full-screen `@fragment` entry, so the
+  import the site held back is shown with its GPU call: the WebGPU and WebGL2 concept page's
+  lead, ownership table and runtime section, and a new section on importing a module; the
+  familiar-concepts row on Web APIs and the paragraph on where WebGPU fits; a front-page row for
+  the host call; and the quick start's host section, which compiles the file today and imports
+  it from 0.1.0 (the Vite plugin, the two `tsconfig.json` lines, `tshc sync` in `prepare`, and a
+  host file that draws `hello.shade.ts`), in both locales, handled in #104.
+- 0023: the command is `tshc`: the Korean translation of the guide section The CPU oracle, read
+  again at the pin, and the quick start's import setup, which runs `tshc sync`, handled in #104.

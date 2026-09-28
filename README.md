@@ -30,7 +30,7 @@ TypeShade is designed around that boundary:
 - **TypeShade semantics:** `"use typeshade"` marks the file as a shader compilation unit instead of ordinary application code.
 - **Static diagnostics:** invalid shader operations are reported before the host runs the program.
 - **Multiple targets:** one source model can emit WGSL or GLSL for the supported hosts.
-- **No runtime layer:** the host consumes the emitted shader source directly.
+- **Two ways into a host:** the host consumes the emitted shader source directly, or imports the module through the Vite plugin and calls its entry points, which `typeshade/runtime` runs on WebGPU, WebGL2 or the CPU.
 
 ## Learn
 
