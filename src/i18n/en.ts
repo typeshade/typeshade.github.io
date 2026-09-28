@@ -937,9 +937,9 @@ export const en = {
     exampleLabel: 'Example',
     // The line under the emit options, beside the prelude note, while the editor holds an
     // example that imports another shader file (Rule 3.9). `{files}` is each file it imports, in code and linked to the file
-    // at the pinned commit. The editor holds one file; the language worker reads the others.
+    // at the pinned commit. Each of those files is a tab over the editor.
     importsNote:
-      'This example imports {files}. The compiler reads this file and what it imports as one program, and the editor holds this file alone.',
+      'This example imports {files}. The compiler reads this file and what it imports as one program, and each file is a tab over the editor.',
     copy: 'Copy',
     copied: 'Copied',
     share: 'Copy link',
@@ -961,6 +961,33 @@ export const en = {
       precision: `${glsl} float precision`,
       levelNote:
         'At O0 and O1 the compiler emits WGSL from the level alone, so parentheses, minify, the number literals, obfuscate and the f64 emulation reach the GLSL tabs only. The f64 emulation still reaches the reflection at every level, since `reflect()` takes it on its own.',
+    },
+    // The workspace around the editor: the gallery the page opens on when the link names
+    // nothing, the file tabs, and the transport under the canvas. Every example in the gallery
+    // is one of the compiler's own .shade.ts files, so its tile words are the gallery's.
+    workspace: {
+      galleryTitle: 'Start from an example',
+      galleryIntro:
+        'Each tile is one of the .shade.ts files in the compiler repository. Open one, change it, add files beside it, and bind your own images to its textures.',
+      openGallery: 'All examples',
+      blankTitle: 'Blank file',
+      blankNote: 'A fragment shader that reads `time`, `resolution` and `mouse`.',
+      noStill: 'No preview',
+      files: 'Files',
+      newFile: 'New file',
+      newFileName: 'File name',
+      badName:
+        'A file name ends in .shade.ts and uses letters, digits, dots, hyphens, underscores and slashes.',
+      takenName: 'The workspace already has a file with that name.',
+      deleteFile: 'Delete {file}',
+      confirmDelete: 'Delete {file}? A file that imports it stops compiling.',
+      play: 'Play',
+      pause: 'Pause',
+      restart: 'Restart',
+      fullscreen: 'Full screen',
+      exitFullscreen: 'Exit full screen',
+      clock: 'Shader clock',
+      dropHint: 'Drop an image on the canvas to bind it to `{texture}`.',
     },
   },
 

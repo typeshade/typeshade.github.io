@@ -327,6 +327,8 @@ export class BindingsModel {
   private storage: StorageBlock[] = [];
   private samplers: Binding[] = [];
   private textures: Binding[] = [];
+  /** Where the panel was last drawn, so a picture dropped on the canvas can redraw it. */
+  private host: HTMLElement | undefined;
   private storageTextures: Binding[] = [];
   /** Bindings the panel has nothing to put in, by name. */
   private unfillable: string[] = [];
@@ -1102,6 +1104,7 @@ export class BindingsModel {
   /** Paint the panel into `host`: a head row per binding, `@group(g) @binding(b) name: kind`,
    *  and the control under it. */
   render(host: HTMLElement): void {
+    this.host = host;
     host.textContent = '';
     const reflection = this.reflection;
     const rows = el('div', 'binding-rows');
@@ -1421,22 +1424,10 @@ export class BindingsModel {
     file.setAttribute('aria-label', `${t.name} ${this.copy.dropImage}`);
     file.hidden = choice.source !== 'image';
     const take = async (blob: Blob): Promise<void> => {
-      const { width, height } = textureSize((t.textureDim ?? '2d') as TextureDim);
-      try {
-        const bitmap = await createImageBitmap(blob);
-        const scratch = document.createElement('canvas');
-        scratch.width = width;
-        scratch.height = height;
-        const context = scratch.getContext('2d');
-        if (!context) return;
-        context.drawImage(bitmap, 0, 0, width, height);
-        choice.image = context.getImageData(0, 0, width, height);
-        choice.source = 'image';
-        pick.value = 'image';
-        changed();
-      } catch {
-        // An image the browser cannot decode leaves the texture as it was.
-      }
+      if (!(await this.takeImage(t, blob))) return;
+      pick.value = 'image';
+      colour.hidden = true;
+      file.hidden = false;
     };
     file.addEventListener('change', () => {
       const f = file.files?.[0];
@@ -1462,6 +1453,46 @@ export class BindingsModel {
       changed();
     });
     return row;
+  }
+
+  /** Scales `blob` to the texture's size and binds it as that texture's picture. False, and
+   *  the texture as it was, when the browser cannot decode it. */
+  private async takeImage(t: Binding, blob: Blob): Promise<boolean> {
+    const { width, height } = textureSize((t.textureDim ?? '2d') as TextureDim);
+    try {
+      const bitmap = await createImageBitmap(blob);
+      const scratch = document.createElement('canvas');
+      scratch.width = width;
+      scratch.height = height;
+      const context = scratch.getContext('2d');
+      if (!context) return false;
+      context.drawImage(bitmap, 0, 0, width, height);
+      const choice = this.textureChoice(t);
+      choice.image = context.getImageData(0, 0, width, height);
+      choice.source = 'image';
+      this.texelCache.delete(this.textureKey(t));
+      this.hooks.resources();
+      return true;
+    } catch {
+      // An image the browser cannot decode leaves the texture as it was.
+      return false;
+    }
+  }
+
+  /** The texture a picture dropped on the canvas goes to: the first sampled 2D texture the
+   *  module declares, the channel a Shadertoy pane's first input is. Undefined when there is
+   *  none, since a depth, cube or 3D texture takes no single picture. */
+  imageTarget(): string | undefined {
+    return this.textures.find((t) => !t.textureDepth && (t.textureDim ?? '2d') === '2d')?.name;
+  }
+
+  /** Binds a picture dropped on the canvas to `imageTarget()`, and redraws the panel so its
+   *  row shows the picture as the texture's source. The name it went to, or undefined. */
+  async dropImage(blob: Blob): Promise<string | undefined> {
+    const t = this.textures.find((x) => x.name === this.imageTarget());
+    if (!t || !(await this.takeImage(t, blob))) return undefined;
+    if (this.host) this.render(this.host);
+    return t.name;
   }
 
   private samplerControl(s: Binding): HTMLElement {

@@ -84,6 +84,9 @@ interface PlaygroundExample {
   readonly source: string;
   readonly title: string;
   readonly description: string;
+  /** The files it imports, by their path in the examples directory, which the page carries
+   *  in its library. An example the build does not have carries none. */
+  readonly imports?: readonly string[];
   /** Where a source twin's uniform fields start, by field name. */
   readonly defaults?: Readonly<Record<string, readonly number[]>>;
 }
@@ -216,6 +219,21 @@ interface PlaygroundCopy {
   readonly serviceFailed: string;
   readonly sourceTypescript: string;
   readonly sourceTypeshade: string;
+  /** The gallery, the file tabs and the transport, in src/i18n under `playground.workspace`. */
+  readonly workspace: {
+    readonly files: string;
+    readonly newFile: string;
+    readonly newFileName: string;
+    readonly badName: string;
+    readonly takenName: string;
+    readonly deleteFile: string;
+    readonly confirmDelete: string;
+    readonly play: string;
+    readonly pause: string;
+    readonly fullscreen: string;
+    readonly exitFullscreen: string;
+    readonly dropHint: string;
+  };
 }
 
 /** The files the compiler emits, one per tab over the text panel. */
@@ -618,8 +636,8 @@ const hashParams = (): URLSearchParams =>
 
 /** The fragment: what to open, and the options to open it under. Only a setting that differs
  *  from the default is written, so a link to an untouched Playground stays short. */
-function writeHash(key: string, value: string, choice?: EmitChoice): void {
-  const parts = [`${key}=${value}`];
+function writeHash(key: string, value: string, choice?: EmitChoice, more: string[] = []): void {
+  const parts = [`${key}=${value}`, ...more];
   if (choice) {
     if (choice.level !== 'O2') parts.push(`opt=${choice.level}`);
     if (choice.parens !== 'full') parts.push(`parens=${choice.parens}`);
@@ -1242,6 +1260,17 @@ function mount(root: HTMLElement): void {
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
       ? 3
       : null;
+  /** The transport's clock over the runtime's. The runtime counts seconds from its mount and
+   *  the canvas draws at that count less `clockOffset`, which Restart moves to the count it
+   *  has reached; Pause holds the drawn time at `clockHeld` until Play takes it up again from
+   *  there. A check's `frozen` wins over both. */
+  let clockOffset = 0;
+  let clockHeld: number | null = null;
+  let runtimeSeconds = 0;
+  const shaderClock = (seconds: number): number => {
+    runtimeSeconds = seconds;
+    return frozen ?? clockHeld ?? Math.max(0, seconds - clockOffset);
+  };
   let mounted: MountedShader | undefined;
   /** The engine and the program the mount is running, so a compile that changes neither does
    *  not rebuild the pipeline. */
@@ -1460,6 +1489,10 @@ function mount(root: HTMLElement): void {
     stopMount();
     const target = freshCanvas();
     if (!target) return;
+    // A new mount counts from zero, so the offset Restart left against the old one goes. A
+    // held clock stays where the reader held it.
+    clockOffset = 0;
+    runtimeSeconds = 0;
     const next = await mountShader(target, payload.data, {
       // The Playground's canvas is the reader's own program running, so it keeps its clock
       // under `prefers-reduced-motion` the way a live example does and redraws on a change.
@@ -1477,7 +1510,7 @@ function mount(root: HTMLElement): void {
       uniformValues: (name, seconds, instance) =>
         bindings.renderValue(
           name,
-          frozen ?? seconds,
+          shaderClock(seconds),
           target.width,
           target.height,
           pointer,
@@ -2761,6 +2794,7 @@ function mount(root: HTMLElement): void {
 
   const goTo = (position: TypeshadePosition): void => {
     if (!editor) return;
+    if (activeFile !== '') showFile('');
     const target = toMonacoPosition(position);
     editor.setPosition(target);
     editor.revealPositionInCenter(target);
@@ -2909,6 +2943,7 @@ function mount(root: HTMLElement): void {
     // rasteriser drawing a canvas nobody is shown is the page's own CPU for nothing.
     evaluateOnCpu();
     if (bindingsHost instanceof HTMLElement) bindings.render(bindingsHost);
+    syncDropHint();
     // A compute module has no rasteriser half, so the engine's canvases are set for it again.
     const cpu = engineIsCpu() && !isComputeModule();
     for (const node of cpuOnly) node.hidden = !cpu;
@@ -2921,10 +2956,10 @@ function mount(root: HTMLElement): void {
    *  worker never answers a hover or a completion about text the editor has already left
    *  behind: storing the text costs the service nothing until something is asked. */
   const syncDocument = (): void => {
-    if (!editor || !client) return;
+    if (!editor || !model || !client) return;
     version += 1;
     root.dataset.version = String(version);
-    const composed = compose(editor.getValue());
+    const composed = compose(model.getValue());
     preludeAt = composed.at;
     preludeLines = composed.lines;
     if (preludeNote instanceof HTMLElement) preludeNote.hidden = composed.lines === 0;
@@ -2951,12 +2986,18 @@ function mount(root: HTMLElement): void {
       lastAnalysis = analysis;
       analysedVersion = asked;
       paintAnalysis(analysis);
+      paintFileMarkers();
     });
   };
 
+  /** Writes the workspace into the link: the main file as `code`, and the files beside it as
+   *  `files`, one JSON object by path, only where they are other than the example's own. */
   const publishSource = async (): Promise<void> => {
-    if (!editor) return;
-    writeHash('code', await encodeSource(editor.getValue()), currentChoice());
+    if (!model) return;
+    const more = filesMoved()
+      ? [`files=${await encodeSource(JSON.stringify(workspaceFiles()))}`]
+      : [];
+    writeHash('code', await encodeSource(model.getValue()), currentChoice(), more);
   };
 
   const flash = (button: HTMLButtonElement, word: string, back: string): void => {
@@ -2986,13 +3027,15 @@ function mount(root: HTMLElement): void {
 
   const showExample = (id: string): void => {
     const example = examples.find((candidate) => candidate.id === id);
-    if (!example || !editor) return;
+    if (!example || !editor || !model) return;
     openedExample = example.id;
     if (examplePicker instanceof HTMLSelectElement) examplePicker.value = example.id;
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
     showImportsNote(example.id);
     bindings.seed(example.defaults ?? {});
-    editor.setValue(example.source);
+    // The files it imports go in first, so the worker holds them when the new text asks.
+    setFiles(filesFor(example.source, example));
+    model.setValue(example.source);
     // The edit handler queued a render for the new text; this one is immediate, so that one
     // is dropped and the example is painted once.
     window.clearTimeout(timer);
@@ -3097,9 +3140,48 @@ function mount(root: HTMLElement): void {
     if (group.childElementCount > 0) examplePicker.append(group);
   };
 
+  /** The files a link carries beside the main one, or undefined where it carries none or
+   *  what it carries is not a set of files the workspace can hold. */
+  const linkedFiles = async (
+    packed: string | null,
+  ): Promise<Record<string, string> | undefined> => {
+    if (!packed) return undefined;
+    const text = await decodeSource(packed);
+    if (text === undefined) return undefined;
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
+      const files: Record<string, string> = {};
+      for (const [path, value] of Object.entries(parsed)) {
+        if (typeof value !== 'string' || !FILE_PATH.test(path) || path === fileName) continue;
+        files[path] = value;
+      }
+      return files;
+    } catch {
+      return undefined;
+    }
+  };
+
+  /** The files an example brings, or, for a file with no example behind it, the library files
+   *  it names in an import, so a link written before the workspace had tabs still opens them. */
+  const filesFor = (
+    source: string,
+    example: PlaygroundExample | undefined,
+  ): Record<string, string> => {
+    const out: Record<string, string> = {};
+    const paths =
+      example?.imports ?? Object.keys(library).filter((path) => source.includes(`./${path}`));
+    for (const path of paths) if (library[path] !== undefined) out[path] = library[path];
+    return out;
+  };
+
   /** What the page opens with: the source in the link, else the example the link names, else
    *  the first example. */
-  const openingSource = async (): Promise<{ source: string; example?: PlaygroundExample }> => {
+  const openingSource = async (): Promise<{
+    source: string;
+    example?: PlaygroundExample;
+    files?: Record<string, string>;
+  }> => {
     await addReleaseExamples();
     const params = hashParams();
     // The options come off the fragment before the first render, so the panes are painted
@@ -3124,8 +3206,13 @@ function mount(root: HTMLElement): void {
     if (code) {
       const source = await decodeSource(code);
       if (source !== undefined)
-        return { source, example: examples.find((candidate) => candidate.source === source) };
+        return {
+          source,
+          example: examples.find((candidate) => candidate.source === source),
+          files: await linkedFiles(params.get('files')),
+        };
     }
+    if (params.has('blank') && root.dataset.blank) return { source: root.dataset.blank };
     const named = params.get('example');
     const chosen =
       examples.find((candidate) => candidate.id === named) ??
@@ -3133,6 +3220,443 @@ function mount(root: HTMLElement): void {
       examples[0];
     return { source: chosen?.source ?? sample, example: chosen };
   };
+
+  // ── The transport ──────────────────────────────────────────────────────────────────────
+  // Play and pause, back to zero, the clock and the frame rate, and the frame on the whole
+  // screen: the row an engine's viewport carries. It drives the clock `shaderClock` reads, so
+  // it moves the GPU canvas; the rasteriser draws one frame at a time and has no clock to run.
+
+  const w = copy.workspace;
+  const playButton = root.querySelector('[data-play]');
+  const restartButton = root.querySelector('[data-restart]');
+  const clockOut = root.querySelector('[data-clock]');
+  const fpsOut = root.querySelector('[data-fps]');
+  const fullscreenButton = root.querySelector('[data-fullscreen]');
+  const dropHint = root.querySelector('[data-drop-hint]');
+  const shownTime = (): number => frozen ?? clockHeld ?? Math.max(0, runtimeSeconds - clockOffset);
+  const paintClock = (): void => {
+    if (clockOut instanceof HTMLElement) clockOut.textContent = `${shownTime().toFixed(2)}s`;
+  };
+  const syncPlay = (): void => {
+    if (!(playButton instanceof HTMLButtonElement)) return;
+    const held = clockHeld !== null;
+    const word = held ? w.play : w.pause;
+    playButton.setAttribute('aria-pressed', String(held));
+    playButton.setAttribute('aria-label', word);
+    playButton.title = word;
+    playButton.querySelector('[data-icon-pause]')?.toggleAttribute('hidden', held);
+    playButton.querySelector('[data-icon-play]')?.toggleAttribute('hidden', !held);
+  };
+  if (playButton instanceof HTMLButtonElement) {
+    playButton.addEventListener('click', () => {
+      if (clockHeld === null) clockHeld = shownTime();
+      else {
+        clockOffset = runtimeSeconds - clockHeld;
+        clockHeld = null;
+      }
+      syncPlay();
+      paintClock();
+      mounted?.redraw();
+    });
+  }
+  if (restartButton instanceof HTMLButtonElement) {
+    restartButton.addEventListener('click', () => {
+      clockOffset = runtimeSeconds;
+      if (clockHeld !== null) clockHeld = 0;
+      paintClock();
+      mounted?.redraw();
+    });
+  }
+  // The readout follows the canvas four times a second, and the rate is the frames the mount
+  // counted over the last second. Nothing is written while the tool is out of view.
+  let lastFrames = 0;
+  let lastSample = performance.now();
+  window.setInterval(() => {
+    if (document.hidden || root.dataset.view === 'gallery') return;
+    paintClock();
+    const now = performance.now();
+    if (now - lastSample < 1000) return;
+    const frames = mounted?.frames ?? 0;
+    const rate =
+      mounted && mounted.backend !== 'none'
+        ? ((frames - lastFrames) * 1000) / (now - lastSample)
+        : 0;
+    lastFrames = frames;
+    lastSample = now;
+    if (fpsOut instanceof HTMLElement)
+      fpsOut.textContent = rate > 0 && clockHeld === null ? `${Math.round(rate)} fps` : '';
+  }, 250);
+  if (fullscreenButton instanceof HTMLButtonElement && frame instanceof HTMLElement) {
+    fullscreenButton.hidden = typeof frame.requestFullscreen !== 'function';
+    fullscreenButton.addEventListener('click', () => {
+      if (document.fullscreenElement === frame) void document.exitFullscreen().catch(() => {});
+      else void frame.requestFullscreen().catch(() => {});
+    });
+    document.addEventListener('fullscreenchange', () => {
+      const on = document.fullscreenElement === frame;
+      fullscreenButton.setAttribute('aria-label', on ? w.exitFullscreen : w.fullscreen);
+      fullscreenButton.title = on ? w.exitFullscreen : w.fullscreen;
+    });
+  }
+
+  // A picture dropped on the canvas goes to the module's first 2D texture, the way a
+  // Shadertoy pane takes a file on its first channel. The line under the transport names the
+  // texture while the module has one.
+  const syncDropHint = (): void => {
+    if (!(dropHint instanceof HTMLElement)) return;
+    const target = bindings.imageTarget();
+    dropHint.hidden = target === undefined;
+    dropHint.textContent = '';
+    if (target === undefined) return;
+    const [before, after] = w.dropHint.split(`\`{texture}\``);
+    dropHint.append(before ?? '', el('code', undefined, target), after ?? '');
+  };
+  if (frame instanceof HTMLElement) {
+    frame.addEventListener('dragover', (event) => {
+      if (bindings.imageTarget() === undefined) return;
+      event.preventDefault();
+      frame.classList.add('dropping');
+    });
+    frame.addEventListener('dragleave', () => frame.classList.remove('dropping'));
+    frame.addEventListener('drop', (event) => {
+      frame.classList.remove('dropping');
+      const file = event.dataTransfer?.files?.[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      event.preventDefault();
+      void bindings.dropImage(file);
+    });
+  }
+
+  // ── The workspace ──────────────────────────────────────────────────────────────────────
+  // The file the canvas runs, and beside it the files it imports and any the reader adds, each
+  // a model of its own under one editor and a tab over it. Every file is an open document in
+  // the language worker, so an import reads the text the reader sees and an edit to an
+  // imported file recompiles the program. Only the first file is a program the canvas runs;
+  // the others are what it imports.
+
+  interface WorkspaceFile {
+    readonly model: any;
+    readonly listener: { dispose(): void };
+    markers: number;
+  }
+  /** The files beside the one the canvas runs, by their path from it (`lib/noise.shade.ts`),
+   *  in the order they were opened. */
+  const extras = new Map<string, WorkspaceFile>();
+  /** The file the editor shows: '' for the one the canvas runs, else a key of `extras`. */
+  let activeFile = '';
+  const fileTabs = root.querySelector('[data-file-tabs]');
+  const newFileButton = root.querySelector('[data-new-file]');
+  const fileError = root.querySelector('[data-file-error]');
+  const uriOf = (path: string): string => new URL(path, documentUri).toString();
+  /** The path of a workspace file by its uri, '' for the one the canvas runs. */
+  const pathOfUri = (uri: string): string | undefined => {
+    if (uri === documentUri) return '';
+    for (const path of extras.keys()) if (uriOf(path) === uri) return path;
+    return undefined;
+  };
+  const sayFileError = (text: string): void => {
+    if (!(fileError instanceof HTMLElement)) return;
+    fileError.textContent = text;
+    fileError.hidden = text === '';
+  };
+
+  /** The files the example the editor was filled from brings, as the library holds them. */
+  const pristineFiles = (): Record<string, string> => {
+    const example = examples.find((candidate) => candidate.id === openedExample);
+    const out: Record<string, string> = {};
+    for (const path of example?.imports ?? [])
+      if (library[path] !== undefined) out[path] = library[path];
+    return out;
+  };
+  const workspaceFiles = (): Record<string, string> =>
+    Object.fromEntries([...extras].map(([path, file]) => [path, file.model.getValue() as string]));
+  /** Whether the files beside the main one are other than the example's own, which is when a
+   *  link has to carry them. */
+  const filesMoved = (): boolean => {
+    const now = workspaceFiles();
+    const was = pristineFiles();
+    const keys = Object.keys(now);
+    return keys.length !== Object.keys(was).length || keys.some((key) => now[key] !== was[key]);
+  };
+
+  const paintTabs = (): void => {
+    if (!(fileTabs instanceof HTMLElement)) return;
+    fileTabs.textContent = '';
+    const pristine = pristineFiles();
+    const tab = (path: string, label: string): HTMLButtonElement => {
+      const button = el('button', 'file-tab', label) as HTMLButtonElement;
+      button.type = 'button';
+      button.dataset.fileTab = path || fileName;
+      if (path === activeFile) button.setAttribute('aria-current', 'true');
+      button.addEventListener('click', () => showFile(path));
+      return button;
+    };
+    fileTabs.append(tab('', fileName));
+    for (const [path, file] of extras) {
+      const button = tab(path, path);
+      if (pristine[path] !== undefined && pristine[path] !== file.model.getValue())
+        button.classList.add('file-dirty');
+      if (file.markers > 0) button.classList.add('file-errors');
+      const close = el('button', 'file-close', '×') as HTMLButtonElement;
+      close.type = 'button';
+      const label = w.deleteFile.replace('{file}', path);
+      close.setAttribute('aria-label', label);
+      close.title = label;
+      close.addEventListener('click', () => {
+        if (window.confirm(w.confirmDelete.replace('{file}', path))) removeFile(path);
+      });
+      const pair = el('span', 'file-pair');
+      pair.append(button, close);
+      fileTabs.append(pair);
+    }
+  };
+
+  /** Asks the worker about each file beside the main one and puts its diagnostics on its own
+   *  model, since the list under the editor is the program's. A file with no prelude has its
+   *  lines as the service counts them. */
+  const paintFileMarkers = (): void => {
+    if (!client || !monacoApi) return;
+    const asked = version;
+    for (const [path, file] of extras) {
+      void client.request('analysis', uriOf(path), asked, {}).then((analysis) => {
+        if (!analysis || asked !== version || extras.get(path) !== file) return;
+        const found = analysis.diagnostics;
+        file.markers = found.filter((diagnostic) => diagnostic.severity === 'error').length;
+        monacoApi.editor.setModelMarkers(
+          file.model,
+          'typeshade',
+          found.map((diagnostic) => ({
+            startLineNumber: diagnostic.range.start.line + 1,
+            startColumn: diagnostic.range.start.character + 1,
+            endLineNumber: diagnostic.range.end.line + 1,
+            endColumn: Math.max(
+              diagnostic.range.end.character + 1,
+              diagnostic.range.start.line === diagnostic.range.end.line
+                ? diagnostic.range.start.character + 2
+                : 1,
+            ),
+            message: diagnostic.message,
+            source:
+              diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
+            code: String(diagnostic.code),
+            severity: markerSeverity(monacoApi, diagnostic.severity),
+          })),
+        );
+        paintTabs();
+      });
+    }
+  };
+
+  /** An edit anywhere in the workspace is an edit to the program: the main document is sent
+   *  again under a new version, so every answer about the old program is dropped, and the
+   *  panes and the link follow once the typing settles. */
+  const workspaceEdited = (): void => {
+    syncDocument();
+    window.clearTimeout(timer);
+    timer = window.setTimeout(render, 350);
+    window.clearTimeout(urlTimer);
+    urlTimer = window.setTimeout(() => {
+      void publishSource();
+    }, 600);
+  };
+
+  const addFile = (path: string, text: string): void => {
+    if (!monacoApi || !client) return;
+    const uri = monacoApi.Uri.parse(uriOf(path));
+    monacoApi.editor.getModel(uri)?.dispose();
+    const fileModel = monacoApi.editor.createModel(text, 'typescript', uri);
+    client.update(uriOf(path), text, version);
+    const listener = fileModel.onDidChangeContent(() => {
+      client.update(uriOf(path), fileModel.getValue(), version + 1);
+      retireStill();
+      workspaceEdited();
+      paintTabs();
+    });
+    extras.set(path, { model: fileModel, listener, markers: 0 });
+  };
+
+  const removeFile = (path: string): void => {
+    const file = extras.get(path);
+    if (!file) return;
+    extras.delete(path);
+    file.listener.dispose();
+    file.model.dispose();
+    client?.close(uriOf(path));
+    if (activeFile === path) showFile('');
+    else paintTabs();
+    workspaceEdited();
+  };
+
+  /** Empties the workspace down to the main file and fills it with `files`. */
+  const setFiles = (files: Readonly<Record<string, string>>): void => {
+    for (const [path, file] of extras) {
+      file.listener.dispose();
+      file.model.dispose();
+      client?.close(uriOf(path));
+    }
+    extras.clear();
+    for (const [path, text] of Object.entries(files)) addFile(path, text);
+    activeFile = '';
+    if (editor && model) editor.setModel(model);
+    sayFileError('');
+    paintTabs();
+  };
+
+  function showFile(path: string): void {
+    if (!editor || !model) return;
+    const file = path === '' ? undefined : extras.get(path);
+    if (path !== '' && !file) return;
+    activeFile = path;
+    editor.setModel(file ? file.model : model);
+    paintTabs();
+  }
+
+  /** A path the workspace can hold: relative, no `..`, the characters a URL keeps as they are,
+   *  and the `.shade.ts` ending the compiler reads a shader import by. A bare name gets the
+   *  ending. */
+  const FILE_PATH = /^(?!\/)(?!.*(?:^|\/)\.\.?(?:\/|$))[A-Za-z0-9_\-./]+\.shade\.ts$/;
+  const normalisePath = (typed: string): string => {
+    const trimmed = typed.trim().replace(/^\.\//, '');
+    return /\.ts$/.test(trimmed) ? trimmed : `${trimmed}.shade.ts`;
+  };
+  const newFileText = (path: string): string => `"use typeshade"
+
+// ${fileName} imports this file with: import { wave } from "./${path}"
+export function wave(x: f32, t: f32): f32 {
+  return 0.5 + 0.5 * sin(x * 6.0 + t)
+}
+`;
+
+  const askFileName = (): void => {
+    if (!(fileTabs instanceof HTMLElement) || !editor) return;
+    if (fileTabs.querySelector('input')) return;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'lib/name.shade.ts';
+    input.setAttribute('aria-label', w.newFileName);
+    input.spellcheck = false;
+    fileTabs.append(input);
+    input.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    input.focus();
+    let done = false;
+    const finish = (commit: boolean): void => {
+      if (done) return;
+      const typed = input.value.trim();
+      if (commit && typed !== '') {
+        const path = normalisePath(typed);
+        const why = !FILE_PATH.test(path)
+          ? w.badName
+          : path === fileName || extras.has(path)
+            ? w.takenName
+            : '';
+        if (why) {
+          input.setAttribute('aria-invalid', 'true');
+          sayFileError(why);
+          input.focus();
+          return;
+        }
+        done = true;
+        sayFileError('');
+        input.remove();
+        addFile(path, newFileText(path));
+        showFile(path);
+        workspaceEdited();
+        return;
+      }
+      done = true;
+      sayFileError('');
+      input.remove();
+    };
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        finish(true);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        finish(false);
+        editor.focus();
+      }
+    });
+    input.addEventListener('blur', () => {
+      if (input.value.trim() === '') finish(false);
+    });
+  };
+  if (newFileButton instanceof HTMLButtonElement)
+    newFileButton.addEventListener('click', askFileName);
+
+  // ── The gallery ────────────────────────────────────────────────────────────────────────
+  // A link that names nothing opens on the examples as tiles; a tile opens the editor on that
+  // example, as a new entry in the history, so Back returns to the tiles. The editor stays
+  // mounted under the gallery, so its state survives a look at the tiles and back.
+
+  const gallery = root.querySelector('[data-gallery]');
+  const openGallery = root.querySelector('[data-open-gallery]');
+  const blankSource = root.dataset.blank ?? '';
+  /** An example a tile asked for before the editor was up, opened once it is. */
+  let pendingOpen: string | undefined;
+  /** Opens the Blank tile's file: one file, no example behind it, so Reset comes back here. */
+  const openBlank = (): void => {
+    if (!editor || !model) return;
+    openedExample = '';
+    if (examplePicker instanceof HTMLSelectElement) examplePicker.selectedIndex = -1;
+    if (exampleNote instanceof HTMLElement) exampleNote.textContent = '';
+    showImportsNote(undefined);
+    bindings.seed({});
+    setFiles({});
+    model.setValue(blankSource);
+    window.clearTimeout(timer);
+    writeHash('blank', '1', currentChoice());
+    render();
+  };
+  const setView = (view: 'gallery' | 'editor'): void => {
+    if (!(gallery instanceof HTMLElement)) return;
+    root.dataset.view = view;
+    if (view === 'editor') editor?.layout();
+  };
+  const hashOpensEditor = (): boolean =>
+    /(^|&)(example|code|blank)(=|&|$)/.test(window.location.hash.replace(/^#/, ''));
+  const pushHash = (hash: string): void => {
+    const url = new URL(window.location.href);
+    url.hash = hash;
+    window.history.pushState(null, '', url);
+  };
+  if (gallery instanceof HTMLElement) {
+    gallery.addEventListener('click', (event) => {
+      const tile = (event.target as Element | null)?.closest(
+        'a[data-open-example], a[data-open-blank]',
+      );
+      if (!(tile instanceof HTMLAnchorElement)) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      const id = tile.dataset.openExample ?? 'blank';
+      pushHash(id === 'blank' ? 'blank' : `example=${id}`);
+      setView('editor');
+      window.scrollTo({ top: 0 });
+      if (!editor) pendingOpen = id;
+      else if (id === 'blank') openBlank();
+      else showExample(id);
+    });
+    if (openGallery instanceof HTMLButtonElement) {
+      openGallery.addEventListener('click', () => {
+        // The link keeps what the editor holds, so Back returns to it; the bare address is the
+        // gallery's.
+        void publishSource().finally(() => {
+          pushHash('');
+          setView('gallery');
+          window.scrollTo({ top: 0 });
+        });
+      });
+    }
+    window.addEventListener('popstate', () => {
+      if (!hashOpensEditor()) {
+        setView('gallery');
+        return;
+      }
+      setView('editor');
+      const named = hashParams().get('example');
+      if (named && !hashParams().get('code') && named !== openedExample) showExample(named);
+    });
+  }
 
   status.textContent = copy.loading;
   Promise.all([loadMonaco(), openingSource()])
@@ -3218,19 +3742,47 @@ function mount(root: HTMLElement): void {
       // back what it answers; the client resolves `undefined` for an answer about a version
       // the editor has left, and each provider turns that into nothing. Positions cross in
       // the four helpers at the top of this file and nowhere else.
-      const isOurs = (currentModel: any): boolean =>
-        currentModel.uri.toString() === model.uri.toString();
-      const monacoRange = (range: TypeshadeRange) => {
+      // Every file of the workspace is a document the service holds, so every provider
+      // answers for whichever one the editor shows. The main file's lines cross through the
+      // prelude helpers; a file beside it has no prelude, so its lines are the service's.
+      /** The document a model is, or undefined for a model that is not the workspace's. */
+      const docOf = (currentModel: any): { uri: string; main: boolean } | undefined => {
+        const uri = currentModel.uri.toString();
+        if (uri === model.uri.toString()) return { uri: documentUri, main: true };
+        const path = pathOfUri(uri);
+        return path ? { uri, main: false } : undefined;
+      };
+      const isOurs = (currentModel: any): boolean => docOf(currentModel) !== undefined;
+      const uriIn = (currentModel: any): string => docOf(currentModel)?.uri ?? documentUri;
+      const mainModel = (currentModel: any): boolean => docOf(currentModel)?.main ?? true;
+      const monacoRange = (range: TypeshadeRange, main = true) => {
+        if (!main) {
+          return new monaco.Range(
+            range.start.line + 1,
+            range.start.character + 1,
+            range.end.line + 1,
+            range.end.character + 1,
+          );
+        }
         const r = toMonacoRange(range);
         return new monaco.Range(r.startLineNumber, r.startColumn, r.endLineNumber, r.endColumn);
       };
-      const here = (position: MonacoPosition) => ({ position: toServicePosition(position) });
+      const here = (position: MonacoPosition, main = true) => ({
+        position: main
+          ? toServicePosition(position)
+          : { line: position.lineNumber - 1, character: position.column - 1 },
+      });
 
       monaco.languages.registerCompletionItemProvider('typescript', {
         triggerCharacters: ['@', '"', ':', '.'],
         provideCompletionItems: async (currentModel: any, position: MonacoPosition) => {
           if (!isOurs(currentModel) || !client) return { suggestions: [] };
-          const items = await client.request('completions', documentUri, version, here(position));
+          const items = await client.request(
+            'completions',
+            uriIn(currentModel),
+            version,
+            here(position, mainModel(currentModel)),
+          );
           if (!items) return { suggestions: [] };
           const word = currentModel.getWordUntilPosition(position);
           const range = new monaco.Range(
@@ -3264,7 +3816,9 @@ function mount(root: HTMLElement): void {
               documentation: item.documentation ? { value: item.documentation } : undefined,
               sortText: item.sortText,
               filterText: item.filterText,
-              range: item.textEdit ? monacoRange(item.textEdit.range) : range,
+              range: item.textEdit
+                ? monacoRange(item.textEdit.range, mainModel(currentModel))
+                : range,
             })),
           };
         },
@@ -3273,28 +3827,67 @@ function mount(root: HTMLElement): void {
       monaco.languages.registerHoverProvider('typescript', {
         provideHover: async (currentModel: any, position: MonacoPosition) => {
           if (!isOurs(currentModel) || !client) return null;
-          const hover = await client.request('hover', documentUri, version, here(position));
+          const hover = await client.request(
+            'hover',
+            uriIn(currentModel),
+            version,
+            here(position, mainModel(currentModel)),
+          );
           if (!hover) return null;
-          return { contents: [{ value: hover.contents }], range: monacoRange(hover.range) };
+          return {
+            contents: [{ value: hover.contents }],
+            range: monacoRange(hover.range, mainModel(currentModel)),
+          };
         },
       });
 
-      // A location in another document is dropped: the Playground holds one file. So is one
-      // inside the prelude, which the editor does not hold either.
+      // A location in a workspace file lands on that file's model, and the opener below
+      // brings its tab up. One inside the prelude is dropped, since the editor does not hold
+      // those lines, and so is one outside the workspace.
       const ownLocations = (
         locations: readonly { uri: string; range: TypeshadeRange }[] | undefined,
       ) =>
-        (locations ?? [])
-          .filter(
-            (location) => location.uri === documentUri && !inPrelude(location.range.start.line),
-          )
-          .map((location) => ({ uri: model.uri, range: monacoRange(location.range) }));
+        (locations ?? []).flatMap((location) => {
+          const path = pathOfUri(location.uri);
+          if (path === undefined) return [];
+          if (path === '') {
+            if (inPrelude(location.range.start.line)) return [];
+            return [{ uri: model.uri, range: monacoRange(location.range) }];
+          }
+          const file = extras.get(path);
+          return file ? [{ uri: file.model.uri, range: monacoRange(location.range, false) }] : [];
+        });
+      // Go to definition into another file: the standalone editor opens nothing on its own,
+      // so the page switches the tab and puts the cursor where the definition is.
+      monaco.editor.registerEditorOpener?.({
+        openCodeEditor: (_source: any, resource: any, selectionOrPosition: any) => {
+          const path = pathOfUri(resource.toString());
+          if (path === undefined) return false;
+          showFile(path);
+          if (selectionOrPosition) {
+            if ('startLineNumber' in selectionOrPosition) {
+              editor.setSelection(selectionOrPosition);
+              editor.revealRangeInCenter(selectionOrPosition);
+            } else {
+              editor.setPosition(selectionOrPosition);
+              editor.revealPositionInCenter(selectionOrPosition);
+            }
+          }
+          editor.focus();
+          return true;
+        },
+      });
 
       monaco.languages.registerDefinitionProvider('typescript', {
         provideDefinition: async (currentModel: any, position: MonacoPosition) => {
           if (!isOurs(currentModel) || !client) return null;
           return ownLocations(
-            await client.request('definition', documentUri, version, here(position)),
+            await client.request(
+              'definition',
+              uriIn(currentModel),
+              version,
+              here(position, mainModel(currentModel)),
+            ),
           );
         },
       });
@@ -3307,28 +3900,29 @@ function mount(root: HTMLElement): void {
         ) => {
           if (!isOurs(currentModel) || !client) return null;
           return ownLocations(
-            await client.request('references', documentUri, version, {
-              ...here(position),
+            await client.request('references', uriIn(currentModel), version, {
+              ...here(position, mainModel(currentModel)),
               includeDeclaration: context.includeDeclaration,
             }),
           );
         },
       });
 
-      const toDocumentSymbol = (symbol: TypeshadeDocumentSymbol): any => ({
+      const toDocumentSymbol = (symbol: TypeshadeDocumentSymbol, main = true): any => ({
         name: symbol.name,
         detail: symbol.detail ?? '',
         kind: symbolKind(monaco, symbol.kind),
         tags: [],
-        range: monacoRange(symbol.range),
-        selectionRange: monacoRange(symbol.selectionRange),
-        children: symbol.children?.map(toDocumentSymbol),
+        range: monacoRange(symbol.range, main),
+        selectionRange: monacoRange(symbol.selectionRange, main),
+        children: symbol.children?.map((child) => toDocumentSymbol(child, main)),
       });
       monaco.languages.registerDocumentSymbolProvider('typescript', {
         provideDocumentSymbols: async (currentModel: any) => {
           if (!isOurs(currentModel) || !client) return null;
-          const symbols = await client.request('symbols', documentUri, version, {});
-          return symbols ? symbols.map(toDocumentSymbol) : null;
+          const symbols = await client.request('symbols', uriIn(currentModel), version, {});
+          const main = mainModel(currentModel);
+          return symbols ? symbols.map((symbol) => toDocumentSymbol(symbol, main)) : null;
         },
       });
 
@@ -3337,7 +3931,12 @@ function mount(root: HTMLElement): void {
         signatureHelpRetriggerCharacters: [','],
         provideSignatureHelp: async (currentModel: any, position: MonacoPosition) => {
           if (!isOurs(currentModel) || !client) return null;
-          const help = await client.request('signatureHelp', documentUri, version, here(position));
+          const help = await client.request(
+            'signatureHelp',
+            uriIn(currentModel),
+            version,
+            here(position, mainModel(currentModel)),
+          );
           if (!help) return null;
           return {
             value: {
@@ -3366,12 +3965,15 @@ function mount(root: HTMLElement): void {
           if (!isOurs(currentModel) || !client) return null;
           const prepared = await client.request(
             'prepareRename',
-            documentUri,
+            uriIn(currentModel),
             version,
-            here(position),
+            here(position, mainModel(currentModel)),
           );
           return prepared
-            ? { range: monacoRange(prepared.range), text: prepared.placeholder }
+            ? {
+                range: monacoRange(prepared.range, mainModel(currentModel)),
+                text: prepared.placeholder,
+              }
             : null;
         },
         provideRenameEdits: async (
@@ -3380,23 +3982,32 @@ function mount(root: HTMLElement): void {
           newName: string,
         ) => {
           if (!isOurs(currentModel) || !client) return null;
-          const edits = await client.request('rename', documentUri, version, {
-            ...here(position),
+          const edits = await client.request('rename', uriIn(currentModel), version, {
+            ...here(position, mainModel(currentModel)),
             newName,
           });
           if (!edits) return null;
           // A name the prelude also declares would be renamed in there too, and the editor
           // holds none of those lines, so the edit has nowhere to land. The rename is
-          // refused whole instead of applied to half the occurrences.
+          // refused whole instead of applied to half the occurrences. So is one that reaches
+          // a file outside the workspace.
           if ((edits[documentUri] ?? []).some((edit) => inPrelude(edit.range.start.line)))
             return null;
-          return {
-            edits: (edits[documentUri] ?? []).map((edit) => ({
-              resource: model.uri,
-              textEdit: { range: monacoRange(edit.range), text: edit.newText },
-              versionId: undefined,
-            })),
-          };
+          const out: { resource: any; textEdit: any; versionId: undefined }[] = [];
+          for (const [uri, list] of Object.entries(edits)) {
+            const path = pathOfUri(uri);
+            if (path === undefined) return null;
+            const target = path === '' ? model : extras.get(path)?.model;
+            if (!target) return null;
+            for (const edit of list) {
+              out.push({
+                resource: target.uri,
+                textEdit: { range: monacoRange(edit.range, path === ''), text: edit.newText },
+                versionId: undefined,
+              });
+            }
+          }
+          return { edits: out };
         },
       });
 
@@ -3410,8 +4021,9 @@ function mount(root: HTMLElement): void {
         }),
         provideDocumentSemanticTokens: async (currentModel: any) => {
           if (!isOurs(currentModel) || !client) return null;
-          const tokens = await client.request('semanticTokens', documentUri, version, {});
+          const tokens = await client.request('semanticTokens', uriIn(currentModel), version, {});
           if (!tokens) return null;
+          if (!mainModel(currentModel)) return { data: encodeSemanticTokens(tokens) };
           // The compiler classified the composed text, so the prelude's tokens come back
           // too. They are dropped and the rest move up, since the encoding is a delta over
           // the lines the editor actually holds.
@@ -3423,10 +4035,12 @@ function mount(root: HTMLElement): void {
         releaseDocumentSemanticTokens: () => {},
       });
 
-      // The worker holds the document from the moment the model does.
+      // The files beside it first, then the document: the worker holds each from the moment
+      // its model exists, so the first analysis reads the imports the tabs show.
+      setFiles(opening.files ?? filesFor(opening.source, opening.example));
       syncDocument();
 
-      editor.onDidChangeModelContent((event: { isFlush?: boolean }) => {
+      model.onDidChangeContent((event: { isFlush?: boolean }) => {
         // A keystroke makes the still a picture of a file the editor no longer holds. Loading
         // an example is a flush and leaves it, so the example's own still covers its first frame.
         if (!event.isFlush) retireStill();
@@ -3463,13 +4077,20 @@ function mount(root: HTMLElement): void {
         });
       });
       reset.addEventListener('click', () => {
-        showExample(openedExample);
+        if (openedExample === '' && blankSource) openBlank();
+        else showExample(openedExample);
         editor.focus();
       });
       levelNote.hidden = levelPicker.value === 'O2';
       numbersField.hidden = !minifyToggle.checked;
       syncEngine();
+      syncPlay();
+      paintTabs();
       render();
+      // A tile picked while the editor was loading.
+      if (pendingOpen === 'blank') openBlank();
+      else if (pendingOpen) showExample(pendingOpen);
+      pendingOpen = undefined;
     })
     .catch((error) => {
       status.textContent = copy.errors;

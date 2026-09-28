@@ -9,7 +9,8 @@ import {
 } from '../lib/playground-examples.ts';
 import { twinUniformDefaults } from '../lib/hero-shader.ts';
 import { exampleSourceHref } from '../lib/example-pages.ts';
-import { shadeExampleList } from '../lib/shade-examples.ts';
+import { shadeExampleList, SHADE_GROUPS } from '../lib/shade-examples.ts';
+import { SHADE_STILL_EXAMPLES } from '../../scripts/artifacts.mjs';
 
 interface Props {
   locale: Locale;
@@ -78,6 +79,42 @@ export function fs(): Color {
   return { color: vec4(1., 0., 0., 1.) };
 }
 `;
+// The gallery the page opens on when its link names nothing: every example the picker holds,
+// in the gallery's groups, each tile its still where the build captured one. A page that names
+// its example has no gallery, since the page already chose.
+const w = t.workspace;
+const shadeStills = new Set<string>(SHADE_STILL_EXAMPLES);
+const galleryGroups = seeded
+  ? []
+  : SHADE_GROUPS.map((group) => ({
+      key: group.key,
+      heading: shade.groups[group.key],
+      tiles: examples
+        .filter((example) => (group.ids as readonly string[]).includes(example.id))
+        .map((example) => ({ ...example, still: shadeStills.has(example.id) })),
+    })).filter((group) => group.tiles.length > 0);
+// The file the Blank tile opens. Code is not copy, so it lives here beside the sample: the
+// three fields the runtime fills and one fragment entry that reads all of them.
+const blank = `"use typeshade"
+
+class Uniforms {
+  time: f32
+  resolution: vec2
+  mouse: vec2
+}
+
+declare const u: uniform<Uniforms>
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  const aspect = u.resolution.x / max(u.resolution.y, 1.0)
+  const p = (uv - u.mouse) * vec2(aspect, 1.0)
+  const ring = 0.5 + 0.5 * sin(length(p) * 24.0 - u.time * 3.0)
+  const tint = vec3(0.35, 0.55, 0.95) + vec3(0.4, 0.2, -0.3) * uv.x
+  return vec4(mix(vec3(0.05, 0.06, 0.1), tint, ring * ring), 1.0)
+}
+`;
+
 // The words the browser half needs once it is running. It reads them off the element, since
 // the script that holds the logic is a bundled module and takes no `define:vars`.
 const runtimeCopy = {
@@ -177,6 +214,7 @@ const runtimeCopy = {
   share: t.share,
   shared: t.shared,
   emit: t.emit,
+  workspace: w,
   errorsHref: localePath(locale, links.errors.href),
 };
 ---
@@ -189,12 +227,47 @@ const runtimeCopy = {
   data-library={JSON.stringify(library)}
   data-default-example={opening}
   data-copy={JSON.stringify(runtimeCopy)}
+  data-blank={seeded ? undefined : blank}
+  data-view={seeded ? 'editor' : undefined}
 >
+  {!seeded && (
+    <div class="playground-gallery" data-gallery>
+      <div class="gallery-head">
+        <div>
+          <h2>{w.galleryTitle}</h2>
+          <p>{w.galleryIntro}</p>
+        </div>
+        <div class="gallery-blank">
+          <a href="#blank" data-open-blank><span aria-hidden="true">+</span> {w.blankTitle}</a>
+          <p><Rich text={w.blankNote} locale={locale} /></p>
+        </div>
+      </div>
+      {galleryGroups.map((group) => (
+        <section class="gallery-group" aria-labelledby={`gallery-${group.key}`}>
+          <h3 id={`gallery-${group.key}`}>{group.heading}</h3>
+          <ul class="gallery-grid" role="list">
+            {group.tiles.map((tile) => (
+              <li>
+                <a class="gallery-tile" href={`#example=${tile.id}`} data-open-example={tile.id}>
+                  <span class="tile-cover">
+                    {tile.still ? <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" /> : <span class="tile-none">{w.noStill}</span>}
+                  </span>
+                  <span class="tile-title">{tile.title}</span>
+                  <span class="tile-note"><Rich text={tile.description} locale={locale} /></span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  )}
   <div class="playground-toolbar">
     <div class="playground-pick">
       <strong data-runtime="file-name">{fileName}</strong>
       {!seeded && (
         <div class="pick-row">
+          <button type="button" class="gallery-button" data-open-gallery>{w.openGallery}</button>
           <label for="playground-example">{t.exampleLabel}</label>
           <select id="playground-example" data-example>
             {examples.map((example) => <option value={example.id}>{example.title}</option>)}
@@ -268,7 +341,17 @@ const runtimeCopy = {
 
   <div class="playground-grid">
     <section class="pane source-pane">
-      <div class="pane-title"><span>{t.editor}</span><kbd>TS</kbd></div>
+      {/* One tab per file in the workspace: the file the canvas runs first, then the files it
+          imports and any the reader adds. Built by src/scripts/playground.ts once the editor
+          is up; until then the tab names the one file there is. */}
+      <div class="pane-title file-bar">
+        <div class="file-tabs" role="group" aria-label={w.files} data-file-tabs>
+          <button type="button" class="file-tab" aria-current="true" data-file-tab={fileName || 'main'}>{fileName || t.editor}</button>
+        </div>
+        <button type="button" class="file-add" data-new-file aria-label={w.newFile} title={w.newFile}>+</button>
+        <kbd>TS</kbd>
+      </div>
+      <p data-file-error role="alert" hidden></p>
       <div class="editor-host" data-editor aria-label={t.editor}></div>
       <div class="diagnostics">
         <div class="diagnostics-title"><span>{t.diagnostics}</span><span data-status>{t.idle}</span></div>
@@ -337,6 +420,16 @@ const runtimeCopy = {
             <canvas data-gpu-canvas data-backend="none" role="img" aria-label={t.canvas}></canvas>
             <canvas data-canvas width="192" height="144" aria-label={t.canvas} data-cpu-only hidden></canvas>
           </div>
+          {/* The transport: the shader clock the canvas draws at, held or run from zero, and
+              the frame on the whole screen. */}
+          <div class="transport" role="group" aria-label={w.clock} data-transport>
+            <button type="button" data-play aria-pressed="false" aria-label={w.pause} title={w.pause}><svg aria-hidden="true" viewBox="0 0 16 16" data-icon-pause><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg><svg aria-hidden="true" viewBox="0 0 16 16" data-icon-play hidden><path d="M4 2.5v11l9-5.5z"/></svg></button>
+            <button type="button" data-restart aria-label={w.restart} title={w.restart}><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M3 3v10h2V3zM6 8l7-5v10z"/></svg></button>
+            <output data-clock aria-label={w.clock}>0.00s</output>
+            <output data-fps></output>
+            <button type="button" class="transport-end" data-fullscreen aria-label={w.fullscreen} title={w.fullscreen}><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M2 2h5v2H4v3H2zM9 2h5v5h-2V4H9zM2 9h2v3h3v2H2zM12 9h2v5H9v-2h3z"/></svg></button>
+          </div>
+          <p data-drop-hint hidden></p>
           <p data-gpu-note>{t.gpuIdle}</p>
           {/* Which pixel the reader clicked in a module that logs, and how many lines it gave
               the Console tab. */}
@@ -356,6 +449,20 @@ const runtimeCopy = {
   </div>
 </section>
 
+{/* Which view the tool opens on, set before the first paint so a link to an example never
+    shows the gallery for a frame and a bare link never shows the editor. The bundled script
+    below runs later and owns the view from then on. */}
+{!seeded && (
+  <script is:inline>
+    (function () {
+      var root = document.currentScript && document.currentScript.previousElementSibling;
+      if (!root || !root.hasAttribute('data-playground')) return;
+      var hash = location.hash.replace(/^#/, '');
+      root.setAttribute('data-view', /(^|&)(example|code|blank)(=|&|$)/.test(hash) ? 'editor' : 'gallery');
+    })();
+  </script>
+)}
+
 <script>
   import '../scripts/playground.ts';
 </script>
@@ -368,9 +475,80 @@ const runtimeCopy = {
      section gap in front of every section it holds, so a page that embeds the tool would get
      that gap twice over and inside the grid. The component owns its own spacing. */
   .ts-playground { margin: 0; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-1); }
+  /* The two views: the gallery a bare link opens on, and the tool. One is shown at a time, and
+     the tool stays mounted under the gallery so the editor is ready when a tile is picked. */
+  .ts-playground[data-view='gallery'] > :not([data-gallery]) { display: none; }
+  .ts-playground:not([data-view='gallery']) > [data-gallery] { display: none; }
+  .playground-gallery { padding: 20px 14px 28px; background: var(--color-ground); }
+  /* The heading and its line on the left, and on the right the one way in that is not an
+     example: a blank file, the button a new project is in an engine's start screen. */
+  .gallery-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 24px; margin-bottom: 4px; }
+  .gallery-head > div:first-child { flex: 1 1 32ch; max-width: 72ch; }
+  .gallery-head h2 { margin: 0 0 6px; font-size: 1.125rem; line-height: 1.4; }
+  .gallery-head p { margin: 0; color: var(--color-text-2); font-size: .875rem; line-height: 1.55; }
+  .gallery-blank { display: flex; flex: 0 1 18rem; flex-direction: column; gap: 6px; }
+  .gallery-blank a { align-self: flex-start; border: 1px solid var(--color-accent); border-radius: var(--radius-sm); padding: 7px 14px; background: var(--color-accent); color: var(--color-ground); font: 500 .8125rem/1.3 var(--font-sans); text-decoration: none; white-space: nowrap; }
+  .gallery-blank a:hover { filter: brightness(0.92); }
+  .gallery-blank a:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  .gallery-blank p { color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
+  .gallery-blank :global(code) { font: 400 .6875rem/1.5 var(--font-mono); }
+  .gallery-group { margin: 28px 0 0; }
+  .gallery-group h3 { margin: 0 0 10px; color: var(--color-text-2); font-size: .8125rem; font-weight: 600; letter-spacing: .02em; }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .gallery-tile { display: flex; flex-direction: column; block-size: 100%; overflow: hidden; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-elevated); color: inherit; text-decoration: none; transition: border-color .15s; }
+  .gallery-tile:hover, .gallery-tile:focus-visible { border-color: var(--color-accent); }
+  .gallery-tile:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+  .tile-cover { display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; background: var(--color-surface-2); }
+  .tile-cover img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+  .tile-none { color: var(--color-text-3); font: 400 .6875rem/1.4 var(--font-mono); }
+  .tile-title { padding: 10px 12px 0; color: var(--color-text-1); font-size: .875rem; font-weight: 600; line-height: 1.4; }
+  .gallery-tile:hover .tile-title { color: var(--color-accent); }
+  .tile-note { margin: 2px 12px 12px; padding: 0; color: var(--color-text-2); font-size: .75rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .tile-note :global(code) { font: 400 .6875rem/1.5 var(--font-mono); }
+  .gallery-button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 5px 9px; background: var(--color-ground); color: var(--color-text-1); font: 500 .75rem/1.3 var(--font-sans); white-space: nowrap; cursor: pointer; }
+  .gallery-button:hover { background: var(--color-surface-1); }
+
+  /* The file tabs sit where the pane's title was, the way an editor's open files do. The add
+     button closes the row; a row with more tabs than room scrolls sideways inside itself. */
+  .pane-title.file-bar { padding-block: 6px; gap: 6px; }
+  .file-bar kbd { flex: none; }
+  .file-tabs { display: flex; flex: 1 1 auto; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .file-tabs::-webkit-scrollbar { display: none; }
+  .file-tabs :global(.file-tab) { display: inline-flex; flex: none; align-items: center; gap: 6px; border: 0; border-radius: var(--radius-sm); padding: 4px 8px; background: transparent; color: var(--color-text-3); font: 500 .75rem/1.4 var(--font-mono); white-space: nowrap; cursor: pointer; }
+  .file-tabs :global(.file-tab:hover) { color: var(--color-text-1); }
+  .file-tabs :global(.file-tab[aria-current='true']) { background: var(--color-ground); color: var(--color-text-1); }
+  .file-tabs :global(.file-tab:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+  .file-tabs :global(.file-pair) { display: inline-flex; flex: none; align-items: center; }
+  .file-tabs :global(.file-errors) { color: var(--color-diag); }
+  .file-tabs :global(.file-close) { flex: none; border: 0; padding: 0; background: none; cursor: pointer; display: inline-grid; place-items: center; inline-size: 16px; block-size: 16px; border-radius: 3px; color: var(--color-text-3); font: 400 .8125rem/1 var(--font-sans); }
+  .file-tabs :global(.file-close:hover) { background: var(--color-surface-2); color: var(--color-text-1); }
+  .file-tabs :global(.file-dirty)::after { content: ''; display: inline-block; inline-size: 6px; block-size: 6px; margin-inline-start: 4px; border-radius: 50%; background: var(--color-accent); vertical-align: middle; }
+  .file-tabs :global(input) { inline-size: 16ch; border: 1px solid var(--color-accent); border-radius: var(--radius-sm); padding: 2px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .75rem/1.4 var(--font-mono); }
+  .file-tabs :global(input[aria-invalid='true']) { border-color: var(--color-diag); }
+  .file-add { flex: none; inline-size: 24px; block-size: 24px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 0; background: var(--color-ground); color: var(--color-text-2); font: 400 1rem/1 var(--font-sans); cursor: pointer; }
+  .file-add:hover { color: var(--color-text-1); background: var(--color-surface-1); }
+  [data-file-error] { margin: 0; padding: 6px 12px; color: var(--color-diag); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }
+
+  /* The transport under the frame: the clock held or run, back to zero, and the frame on the
+     whole screen, the row every engine's viewport carries. */
+  .transport { display: flex; align-items: center; gap: 6px; }
+  .transport button { display: inline-grid; place-items: center; inline-size: 28px; block-size: 26px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 0; background: var(--color-ground); color: var(--color-text-1); cursor: pointer; }
+  .transport button:hover { background: var(--color-surface-1); }
+  .transport button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+  .transport svg { inline-size: 12px; block-size: 12px; fill: currentColor; }
+  .transport svg[hidden] { display: none; }
+  .transport output { color: var(--color-text-2); font: 400 .6875rem/1.3 var(--font-mono); font-variant-numeric: tabular-nums; }
+  .transport [data-clock] { min-inline-size: 7ch; }
+  .transport .transport-end { margin-inline-start: auto; }
+  .gpu-frame:fullscreen { border: 0; border-radius: 0; background: #000; }
+  .gpu-frame.dropping { outline: 2px dashed var(--color-accent); outline-offset: 2px; }
+  .canvas-host [data-drop-hint] { margin: 0; color: var(--color-text-3); font: 400 .6875rem/1.45 var(--font-sans); text-align: center; }
+
   .playground-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--color-line-1); background: var(--color-ground); }
   .playground-toolbar strong { font: 500 .8125rem/1.4 var(--font-mono); }
-  .playground-actions { display: flex; gap: 8px; }
+  /* The buttons keep their own width: a long example line wraps beside them instead of
+     squeezing a label under its neighbour. */
+  .playground-actions { display: flex; flex: none; gap: 8px; }
   .playground-actions button { border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 7px 11px; background: var(--color-ground); color: var(--color-text-1); font: 500 .75rem/1.3 var(--font-sans); white-space: nowrap; cursor: pointer; }
   .playground-actions button:hover { background: var(--color-surface-1); }
   .playground-actions .primary { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-ground); }
@@ -378,7 +556,8 @@ const runtimeCopy = {
   /* One row: the file, the picker and its blurb read left to right, so the toolbar is a
      toolbar and not a card. The blurb wraps inside its own space when it has to. */
   .playground-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; min-width: 0; }
-  .playground-pick .pick-row { display: flex; align-items: center; gap: 8px; }
+  .playground-pick .pick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+  .playground-pick .pick-row label { white-space: nowrap; }
   .playground-pick label { color: var(--color-text-3); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; }
   .playground-pick select { max-width: 100%; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 5px 8px; background: var(--color-ground); color: var(--color-text-1); font: 500 .75rem/1.3 var(--font-sans); }
   .playground-pick [data-example-note] { flex: 1 1 24ch; min-width: 0; max-width: 52ch; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.45; }
@@ -549,6 +728,7 @@ const runtimeCopy = {
   .reflection :global(.to-binding:hover) { text-decoration: underline; }
   .reflection :global(.failed) { color: var(--color-diag); }
   @container (min-width: 48rem) {
+    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 12px; }
     .playground-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
     .source-pane { border-bottom: 0; border-right: 1px solid var(--color-line-1); }
     /* Beside the result the editor shows 26 lines of the file at the 21px line height it is

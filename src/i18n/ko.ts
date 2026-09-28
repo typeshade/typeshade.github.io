@@ -950,7 +950,7 @@ export const ko: Copy = {
     entryCount: (n: number) => `진입점 ${n}개`,
     exampleLabel: '예제',
     importsNote:
-      '이 예제는 {files}를 가져옵니다. 컴파일러는 이 파일과 이 파일이 가져오는 파일을 한 프로그램으로 읽고, 편집기에는 이 파일만 있습니다.',
+      '이 예제는 {files}를 가져옵니다. 컴파일러는 이 파일과 이 파일이 가져오는 파일을 한 프로그램으로 읽으며, 파일마다 편집기 위에 탭이 하나씩 있습니다.',
     copy: '복사',
     copied: '복사됨',
     share: '링크 복사',
@@ -969,6 +969,30 @@ export const ko: Copy = {
       precision: `${glsl} float 정밀도`,
       levelNote:
         'O0과 O1에서는 컴파일러가 레벨만 받아 WGSL을 생성하므로, 괄호와 최소화, 숫자 리터럴, 난독화, f64 에뮬레이션은 GLSL 탭에만 적용됩니다. f64 에뮬레이션은 `reflect()`가 따로 받으므로 모든 레벨에서 리플렉션에 반영됩니다.',
+    },
+    workspace: {
+      galleryTitle: '예제에서 시작하기',
+      galleryIntro:
+        '타일 하나가 컴파일러 저장소의 .shade.ts 파일 하나입니다. 예제를 열어 고치고 옆에 파일을 더할 수 있으며, 텍스처에는 직접 고른 이미지를 연결할 수 있습니다.',
+      openGallery: '모든 예제',
+      blankTitle: '빈 파일',
+      blankNote: '`time`, `resolution`, `mouse`를 읽는 프래그먼트 셰이더입니다.',
+      noStill: '미리보기 없음',
+      files: '파일',
+      newFile: '새 파일',
+      newFileName: '파일 이름',
+      badName:
+        '파일 이름은 .shade.ts로 끝나야 하고 영문자, 숫자, 점, 하이픈, 밑줄, 슬래시만 쓸 수 있습니다.',
+      takenName: '같은 이름의 파일이 이미 있습니다.',
+      deleteFile: '{file} 삭제',
+      confirmDelete: '{file} 파일을 삭제할까요? 이 파일을 가져오는 파일은 컴파일되지 않습니다.',
+      play: '재생',
+      pause: '일시정지',
+      restart: '처음부터',
+      fullscreen: '전체 화면',
+      exitFullscreen: '전체 화면 끝내기',
+      clock: '셰이더 시계',
+      dropHint: '캔버스에 이미지를 끌어다 놓으면 `{texture}`에 연결됩니다.',
     },
   },
 

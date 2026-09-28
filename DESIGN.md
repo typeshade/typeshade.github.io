@@ -438,13 +438,22 @@ cards takes the column. A third measure needs a reason.
   its content is taken out of flow so the picture sets the row's height and keeps its aspect,
   and the pane scrolls inside behind a 32px fade at its foot, since the pane's height rarely
   lands on a whole line and a cut glyph reads as a defect.
-- **The Playground.** `src/components/Playground.astro`: one region on the page field, a
-  toolbar naming the file over the emit options, then two columns from 48rem of the region's
-  own width. The left column is the Monaco editor over its diagnostics. The right one is a
+- **The Playground.** `src/components/Playground.astro`: one region on the page field. A
+  link that names nothing (no `example`, `code` or `blank` in its fragment) opens it on the
+  gallery: the examples the picker holds as tiles in the gallery's groups, each its build-time
+  still over its name and line, after a Blank tile that opens a fragment shader reading the
+  three reserved fields. A tile opens the tool on that example as a new history entry, so Back
+  returns to the tiles, and All examples in the toolbar goes back to them with the editor kept
+  as it was. An inline script picks the view before the first paint. The gallery holds the
+  compiler's own examples only. The tool is a toolbar naming the file over the emit options,
+  then two columns from 48rem of the region's own width. The left column is the Monaco editor over its diagnostics. The right one is a
   single Ant tab strip over a single panel, Result first and then WGSL, GLSL vertex, GLSL
   fragment, Reflection and Console, with the controls the selected tab owns at the right of that same
   row. Result holds the canvas, which takes the width of its column at 4:3 the way a
-  Shadertoy pane does. A picker beside the tabs chooses what draws it: the GPU in the
+  Shadertoy pane does, and under it the transport: pause and play, restart, the shader clock,
+  the frame rate, and full screen. The transport moves the clock the GPU canvas draws at; a
+  check's held clock wins over it. A picture dropped on the canvas binds to the module's first
+  2D texture, which the line under the transport names. A picker beside the tabs chooses what draws it: the GPU in the
   runtime's own order, WebGPU alone, WebGL2 alone, or the CPU oracle's rasteriser. The GPU
   half goes through `src/lib/shader-runtime.ts`, the runtime every figure on the site draws
   through. A backend the browser lacks, or a WebGPU feature the module needs and the GPU does
@@ -465,12 +474,18 @@ cards takes the column. A third measure needs a reason.
   and compiles nothing: every panel holds what the last compile put in it. Under 48rem the
   columns stack with the editor first. A page that names its example passes `seed`, which
   fills the editor from that file and drops the picker, and `still`, the example's
-  build-time still. The editor holds one file. An example that imports another shader file
-  (`imported-noise` imports `lib/noise.shade.ts`) is one program with it, so the page carries
-  the imported file's text and the language worker reads the import through it, in the
-  service and in the compile, the way `compile()` reads one through `readDocument`. A line
-  under the emit options, beside the note on the fullscreen triangle, names each file the
-  example imports, linked to it at the pinned commit.
+  build-time still. The editor holds a workspace: the file the canvas runs, and a tab for
+  each file beside it, the files the example imports (`imported-noise` imports
+  `lib/noise.shade.ts`) and any the reader adds with the + at the end of the tabs. A new file
+  is a `.shade.ts` path relative to the main file, and it opens on an exported function the
+  main file can import. Every file is an open document in the language worker, so the service
+  and the compile read an import through the text the reader sees, the way `compile()` reads
+  one through `readDocument`, and an edit to any file recompiles the program. Hover,
+  completion, go to definition, rename and the colouring answer in every tab; the list under
+  the editor is the program's, and a file beside it carries its own markers. The link carries
+  the main file as `code` and, when the files beside it are other than the example's own, all
+  of them as `files`. A line under the emit options, beside the note on the fullscreen
+  triangle, names each file the example imports, linked to it at the pinned commit.
 
 ## Structure of the site
 
@@ -844,6 +859,9 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   and moves a control of every kind the bindings panel has and asserts the frame followed.
   For every example the GPU paints, the CPU backend has to paint it too, and a dozen pixels
   of one frame, held at three seconds, have to agree between the two engines; both counts
-  are floors in the file, and the examples under them are listed by name. A runner with no
+  are floors in the file, and the examples under them are listed by name. It opens a bare
+  link on the gallery, picks a tile, edits the imported file and adds one the main file
+  imports, and asserts the WGSL followed, the link carries the files, the transport holds and
+  restarts the clock, and Back returns to the tiles. A runner with no
   route to the Monaco CDN is reported on its own.
 - `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).
