@@ -1,6 +1,7 @@
 ---
 // The frame every page shares: head metadata, hreflang alternates, header and footer.
 import '../styles/global.css';
+import SiteNotice from '../components/SiteNotice.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { facts } from '../lib/examples.ts';
@@ -148,6 +149,7 @@ const jsonLd = {
   <body>
     <a class="skip" href="#main">{t.skip}</a>
     <SiteHeader locale={locale} path={path} switchTarget={switchTarget} />
+    <SiteNotice locale={locale} />
     <main
       id="main"
       tabindex="-1"

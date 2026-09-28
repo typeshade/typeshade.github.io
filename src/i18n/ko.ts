@@ -179,6 +179,10 @@ export const ko: Copy = {
   lang: 'ko',
   name: '한국어',
   skip: '본문으로 건너뛰기',
+  notice: {
+    label: '공지',
+    dismiss: '공지 닫기',
+  },
 
   meta: {
     title: 'TypeShade, 검증 가능한 TypeScript 셰이더 라이브러리',

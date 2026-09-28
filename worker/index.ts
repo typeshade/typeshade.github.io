@@ -9,6 +9,7 @@
 // /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
 //                         its short link
 // /data/shares/<id>/      one short link's page, its views and when it was made and last opened
+// /data/notice/           the notice over every page, or null (worker/migrations/0005)
 // /data/gallery/          GET: the approved gallery entries; POST: sends a share in, pending
 // /s/<id>/                the short link: a redirect to the page with its fragment, counted
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
@@ -79,7 +80,7 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-async function api(request: Request, url: URL, env: Env): Promise<Response> {
+async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
   const parts = url.pathname.split('/').filter(Boolean); // ['data', 'examples', id?]
   if (parts[1] === 'examples' && parts.length === 2) {
     const index = await readJson<ReleaseIndex>(env, 'index.json');
@@ -89,6 +90,7 @@ async function api(request: Request, url: URL, env: Env): Promise<Response> {
     const record = await readJson<ExampleRecord>(env, `examples/${parts[2]}.json`);
     return record ? json(record) : json({ error: `no example '${parts[2]}'` }, 404);
   }
+  if (parts[1] === 'notice' && parts.length === 2) return currentNotice(url, env, ctx);
   if (parts[1] === 'gallery' && parts.length === 2) {
     return request.method === 'POST' ? submitToGallery(request, url, env) : listGallery(env);
   }
@@ -255,6 +257,39 @@ async function submitToGallery(request: Request, url: URL, env: Env): Promise<Re
     .bind(id)
     .first<{ status: string }>();
   return privateJson({ id, status: row?.status ?? 'pending' });
+}
+
+/** A notice's link: a path on the site or an https address, and nothing else. */
+const NOTICE_HREF = /^(\/(?!\/)|https:\/\/)[^\s"'<>]*$/;
+
+/** GET /data/notice/: the newest active notice whose window holds the current time, or
+ *  null. Every page asks for it, so the answer is kept in the edge cache for its minute and
+ *  D1 is read at most once a minute per location. */
+async function currentNotice(url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
+  const key = new Request(new URL('/data/notice/', url).toString());
+  const cache = caches.default;
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  const now = new Date().toISOString();
+  const row = await env.DB.prepare(
+    `SELECT id, text_en, text_ko, href FROM notices
+     WHERE active = 1 AND (starts_at IS NULL OR starts_at <= ?) AND (ends_at IS NULL OR ends_at > ?)
+     ORDER BY id DESC LIMIT 1`,
+  )
+    .bind(now, now)
+    .first<{ id: number; text_en: string; text_ko: string; href: string | null }>()
+    .catch(() => null);
+  const response = json({
+    notice: row
+      ? {
+          id: row.id,
+          text: { en: row.text_en, ko: row.text_ko || row.text_en },
+          href: row.href && NOTICE_HREF.test(row.href) ? row.href : null,
+        }
+      : null,
+  });
+  ctx.waitUntil(cache.put(key, response.clone()));
+  return response;
 }
 
 /** GET /data/gallery/: the approved submissions, the most recently approved first. */
@@ -532,7 +567,7 @@ async function examplePage(request: Request, url: URL, env: Env): Promise<Respon
 export default {
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/data/')) return api(request, url, env);
+    if (url.pathname.startsWith('/data/')) return api(request, url, env, ctx);
     if (url.pathname.startsWith('/s/')) return openShare(url, env, ctx);
     if (/^(\/ko)?\/guide\/examples\//.test(url.pathname)) return examplePage(request, url, env);
     return env.ASSETS.fetch(request);
