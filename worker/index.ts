@@ -11,6 +11,9 @@
 // /data/shares/<id>/      one short link's page, its views and when it was made and last opened
 // /data/notice/           the notice over every page, or null (worker/migrations/0005)
 // /data/gallery/          GET: the approved gallery entries; POST: sends a share in, pending
+// /data/issues/           GET: whether the issue dialog can open an issue here; POST: opens
+//                         one on GitHub for a reader with no account there (worker/github.ts)
+// /data/issue-images/<n>  an image an issue shows, which the dialog sent with it
 // /s/<id>/                the short link: a redirect to the page with its fragment, counted
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
 // /ko/guide/examples/...  the current release has, the prebuilt template page filled in with
@@ -26,11 +29,34 @@ import {
   type ExampleRecord,
   type ReleaseIndex,
 } from '../src/lib/example-data.ts';
+import {
+  ISSUE_FILE_NAME,
+  ISSUE_FILES_MAX,
+  ISSUE_IMAGE_BYTES,
+  ISSUE_IMAGES_MAX,
+  ISSUE_LABEL,
+  ISSUE_PAGE,
+  ISSUE_PROGRAM_MAX,
+  ISSUE_REPOS,
+  ISSUE_TEXT_MAX,
+  ISSUE_TITLE_MAX,
+  isIssueRepo,
+  type IssueAnswer,
+  type IssueError,
+  type IssueField,
+  type IssueFile,
+  type IssueRepo,
+  type IssueStatus,
+} from '../src/lib/issue-data.ts';
+import { hasCredential, openIssue, type GitHubEnv } from './github.ts';
 
-export interface Env {
+export interface Env extends GitHubEnv {
   readonly ASSETS: Fetcher;
   readonly DATA: R2Bucket;
   readonly DB: D1Database;
+  /** Cloudflare Turnstile's pair, where the dialog asks for a person before it opens an issue. */
+  readonly TURNSTILE_SITE_KEY?: string;
+  readonly TURNSTILE_SECRET_KEY?: string;
 }
 
 /** The current release's id, read from D1 at most once a minute per isolate. */
@@ -122,6 +148,13 @@ async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext):
       }),
       { headers: { 'content-type': 'application/json; charset=utf-8', ...noStore } },
     );
+  }
+  if (parts[1] === 'issues' && parts.length === 2) {
+    if (request.method === 'POST') return createIssue(request, url, env);
+    return request.method === 'GET' ? issueStatus(url, env) : refuse('invalid', 405);
+  }
+  if (parts[1] === 'issue-images' && parts.length === 3 && IMAGE_NAME.test(parts[2]!)) {
+    return issueImage(parts[2]!, env);
   }
   if (parts[1] === 'releases' && parts.length === 2) {
     const { results } = await env.DB.prepare(
@@ -353,11 +386,375 @@ async function expireShares(env: Env): Promise<void> {
   const cutoff = new Date(Date.now() - SHARE_TTL_DAYS * 86_400_000).toISOString();
   const { meta } = await env.DB.prepare(
     `DELETE FROM shares WHERE COALESCE(last_opened_at, created_at) < ?
-     AND id NOT IN (SELECT share_id FROM submissions)`,
+     AND id NOT IN (SELECT share_id FROM submissions)
+     AND id NOT IN (SELECT share_id FROM issues WHERE share_id IS NOT NULL)`,
   )
     .bind(cutoff)
     .run();
   console.log(`expired ${meta.changes} shares not opened since ${cutoff}`);
+}
+
+// The issue dialog (src/components/IssueDialog.astro, docs/cloudflare.md): a reader with no
+// GitHub account files an issue, and the Worker opens it with the credential it holds.
+
+/** The hosts that open issues: the site, and `wrangler dev`. A pull request's preview version
+ *  answers at workers.dev with the same bindings and secrets, so testing one files nothing. */
+const ISSUE_HOSTS = new Set(['typeshade.dev', 'localhost', '127.0.0.1']);
+/** Issues the dialog opens in a day, from one address and from every reader together. Past
+ *  either, the dialog offers GitHub's own form. */
+const ISSUES_PER_ADDRESS = 5;
+const ISSUES_PER_DAY = 20;
+const COMMIT = /^[0-9a-f]{7,40}$/;
+/** The images every issue shows, under /data/issue-images/ and issue-images/ in the bucket,
+ *  named by their content so the same picture sent twice is one object. */
+const IMAGE_NAME = /^[A-Za-z0-9_-]{22}\.(?:png|jpg|gif|webp)$/;
+/** A request the dialog sends: every image at its largest, and room for the words. */
+const ISSUE_REQUEST_MAX = ISSUE_IMAGES_MAX * ISSUE_IMAGE_BYTES + 256 * 1024;
+
+const issueOpen = (url: URL, env: Env): boolean =>
+  ISSUE_HOSTS.has(url.hostname) && hasCredential(env);
+
+const refuse = (error: IssueError, status: number): Response =>
+  privateJson({ error } satisfies IssueAnswer, status);
+
+/** Turnstile's site key, where the Worker holds both halves of the pair and checks for a
+ *  person before it opens an issue. */
+const challengeKey = (env: Env): string | undefined =>
+  env.TURNSTILE_SITE_KEY?.trim() && env.TURNSTILE_SECRET_KEY?.trim()
+    ? env.TURNSTILE_SITE_KEY.trim()
+    : undefined;
+
+/** GET /data/issues/: the dialog asks first, and offers GitHub's own form where this says no. */
+function issueStatus(url: URL, env: Env): Response {
+  const open = issueOpen(url, env);
+  const challenge = challengeKey(env);
+  return privateJson((open && challenge ? { open, challenge } : { open }) satisfies IssueStatus);
+}
+
+/** GET /data/issue-images/<name>: a picture an issue shows. Its name is its content, so it is
+ *  kept for a year and never looked up again. */
+async function issueImage(name: string, env: Env): Promise<Response> {
+  const object = await env.DATA.get(`issue-images/${name}`).catch(() => null);
+  if (!object) return json({ error: `no image '${name}'` }, 404);
+  return new Response(object.body, {
+    headers: {
+      'content-type': object.httpMetadata?.contentType ?? 'application/octet-stream',
+      'cache-control': 'public, max-age=31536000, immutable',
+      'x-content-type-options': 'nosniff',
+      'content-security-policy': "default-src 'none'",
+    },
+  });
+}
+
+interface IssueImage {
+  readonly name: string;
+  readonly type: string;
+  readonly bytes: ArrayBuffer;
+}
+
+/** The kinds of image an issue takes, known by their first bytes, whatever the file says. */
+const IMAGE_KINDS: readonly {
+  readonly ext: string;
+  readonly type: string;
+  readonly magic: readonly (readonly [number, number])[];
+}[] = [
+  {
+    ext: 'png',
+    type: 'image/png',
+    magic: [
+      [0, 0x89],
+      [1, 0x50],
+      [2, 0x4e],
+      [3, 0x47],
+    ],
+  },
+  {
+    ext: 'jpg',
+    type: 'image/jpeg',
+    magic: [
+      [0, 0xff],
+      [1, 0xd8],
+      [2, 0xff],
+    ],
+  },
+  {
+    ext: 'gif',
+    type: 'image/gif',
+    magic: [
+      [0, 0x47],
+      [1, 0x49],
+      [2, 0x46],
+      [3, 0x38],
+    ],
+  },
+  // RIFF, then WEBP at byte 8.
+  {
+    ext: 'webp',
+    type: 'image/webp',
+    magic: [
+      [0, 0x52],
+      [1, 0x49],
+      [2, 0x46],
+      [3, 0x46],
+      [8, 0x57],
+      [9, 0x45],
+      [10, 0x42],
+      [11, 0x50],
+    ],
+  },
+];
+
+/** One uploaded file as an image the issue can show, or undefined for anything else. */
+async function readImage(file: File): Promise<IssueImage | undefined> {
+  if (file.size === 0 || file.size > ISSUE_IMAGE_BYTES) return undefined;
+  const bytes = await file.arrayBuffer();
+  const head = new Uint8Array(bytes, 0, Math.min(12, bytes.byteLength));
+  const kind = IMAGE_KINDS.find((k) => k.magic.every(([at, byte]) => head[at] === byte));
+  if (!kind) return undefined;
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  const id = btoa(String.fromCharCode(...digest.slice(0, 17)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .slice(0, 22);
+  return { name: `${id}.${kind.ext}`, type: kind.type, bytes };
+}
+
+interface IssueDraft {
+  readonly repo: IssueRepo;
+  readonly title: string;
+  readonly text: string;
+  readonly page?: string;
+  readonly share?: string;
+  readonly files: readonly IssueFile[];
+  readonly images: readonly IssueImage[];
+  readonly compiler?: string;
+  readonly challenge: string;
+}
+
+/** The request as the dialog sends it; `invalid` or `image` for anything else. */
+async function readIssue(form: FormData): Promise<IssueDraft | IssueError> {
+  const field = (name: IssueField): string | undefined => {
+    const value = form.get(name);
+    return typeof value === 'string' ? value : undefined;
+  };
+  // The dialog hides this field from a person; a script that fills in every field fills it.
+  if (field('website')) return 'invalid';
+  const repo = field('repo');
+  if (!isIssueRepo(repo)) return 'invalid';
+  const title = (field('title') ?? '').replace(/\s+/g, ' ').trim();
+  const text = (field('text') ?? '').replace(/\r\n?/g, '\n').trim();
+  if (!title || title.length > ISSUE_TITLE_MAX || text.length > ISSUE_TEXT_MAX) return 'invalid';
+  const page = field('page');
+  const share = field('share');
+  const compiler = field('compiler');
+  if (page !== undefined && !ISSUE_PAGE.test(page)) return 'invalid';
+  if (share !== undefined && !SHARE_ID.test(share)) return 'invalid';
+  if (compiler !== undefined && !COMMIT.test(compiler)) return 'invalid';
+  const files: IssueFile[] = [];
+  const program = field('files');
+  if (program !== undefined) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(program);
+    } catch {
+      return 'invalid';
+    }
+    if (!Array.isArray(parsed) || parsed.length > ISSUE_FILES_MAX) return 'invalid';
+    for (const file of parsed as unknown[]) {
+      const { name, text: source } = (file ?? {}) as { name?: unknown; text?: unknown };
+      if (typeof name !== 'string' || !ISSUE_FILE_NAME.test(name) || typeof source !== 'string')
+        return 'invalid';
+      files.push({ name, text: source });
+    }
+    if (files.reduce((size, file) => size + file.text.length, 0) > ISSUE_PROGRAM_MAX)
+      return 'invalid';
+  }
+  const uploads = form.getAll('image');
+  if (uploads.length > ISSUE_IMAGES_MAX) return 'image';
+  const images: IssueImage[] = [];
+  for (const upload of uploads) {
+    const image = typeof upload === 'string' ? undefined : await readImage(upload);
+    if (!image) return 'image';
+    if (!images.some((held) => held.name === image.name)) images.push(image);
+  }
+  return {
+    repo,
+    title,
+    text,
+    ...(page ? { page } : {}),
+    ...(share ? { share } : {}),
+    files,
+    images,
+    ...(compiler ? { compiler } : {}),
+    challenge: field('challenge') ?? '',
+  };
+}
+
+/** Whether Turnstile saw a person send this token. */
+async function passesChallenge(secret: string, token: string, address: string): Promise<boolean> {
+  if (!token) return false;
+  const form = new FormData();
+  form.append('secret', secret);
+  form.append('response', token);
+  if (address) form.append('remoteip', address);
+  const outcome = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    body: form,
+  })
+    .then((res) => res.json<{ success?: boolean }>())
+    .catch(() => undefined);
+  return outcome?.success === true;
+}
+
+/** The fence around a file: longer than any run of backticks in it, so the file cannot close
+ *  its own block. */
+const fence = (text: string): string =>
+  '`'.repeat(Math.max(3, ...[...text.matchAll(/`+/g)].map((m) => m[0].length + 1)));
+
+/** A mention outside code notifies the account it names, and the form speaks for nobody, so
+ *  `@name` in the reader's words is set as code, the way a decorator reads in a shader file. */
+const quiet = (prose: string): string =>
+  prose.replace(/(^|[^\w`])@([A-Za-z0-9][\w-]*)/g, '$1`@$2`');
+
+/** The reader's words as the body's Markdown, mentions quieted outside code. A code fence left
+ *  open is closed and an HTML comment is written out, so neither swallows the program under
+ *  them. */
+function readerMarkdown(text: string): string {
+  const out: string[] = [];
+  let open: string | undefined;
+  for (const line of text.split('\n')) {
+    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+    if (open) {
+      if (marker && marker[0] === open[0] && marker.length >= open.length && line.trim() === marker)
+        open = undefined;
+      out.push(line);
+    } else if (marker) {
+      open = marker;
+      out.push(line);
+    } else {
+      out.push(
+        line
+          .split(/(`+[^`]*`+)/)
+          .map((part, i) => (i % 2 === 1 ? part : quiet(part).replace(/<!--/g, '&lt;!--')))
+          .join(''),
+      );
+    }
+  }
+  if (open) out.push(open);
+  return out.join('\n');
+}
+
+/** The issue's body: where it came from, the reader's words and images, then the program. */
+function issueBody(draft: IssueDraft, origin: string, shared: boolean): string {
+  const lines = [
+    `> Filed through the issue dialog on ${origin}/ by a reader who is not signed in to GitHub.`,
+  ];
+  if (draft.page || draft.compiler) lines.push('>');
+  if (draft.page) lines.push(`> - Page: ${origin}${draft.page}`);
+  if (draft.compiler) lines.push(`> - Compiler: ${ISSUE_REPOS.compiler}@${draft.compiler}`);
+  if (draft.text) lines.push('', readerMarkdown(draft.text));
+  draft.images.forEach((image, i) =>
+    lines.push('', `![Image ${i + 1}](${origin}/data/issue-images/${image.name})`),
+  );
+  // A program too long to copy in comes as its link alone.
+  if (draft.files.length > 0 || shared) {
+    lines.push('', '### Program', '');
+    if (shared) lines.push(`The Playground opens it at ${origin}/s/${draft.share}/.`, '');
+    for (const file of draft.files) {
+      const mark = fence(file.text);
+      lines.push(`\`${file.name}\``, '', `${mark}ts`, file.text.replace(/\n$/, ''), mark, '');
+    }
+  }
+  return lines.join('\n').trimEnd();
+}
+
+/** POST /data/issues/: opens the issue the dialog describes, once. */
+async function createIssue(request: Request, url: URL, env: Env): Promise<Response> {
+  if (!issueOpen(url, env)) return refuse('closed', 503);
+  if (request.headers.get('origin') !== url.origin) return refuse('invalid', 403);
+  if (Number(request.headers.get('content-length') ?? 0) > ISSUE_REQUEST_MAX)
+    return refuse('image', 413);
+  const form = await request.formData().catch(() => undefined);
+  if (!form) return refuse('invalid', 400);
+  const draft = await readIssue(form);
+  if (typeof draft === 'string') return refuse(draft, 400);
+
+  // The same issue sent twice, a second click or a retry, is the one issue.
+  const repo = ISSUE_REPOS[draft.repo];
+  const id = await shareId(
+    JSON.stringify([
+      repo,
+      draft.title,
+      draft.text,
+      draft.page ?? '',
+      draft.share ?? '',
+      draft.images.map((image) => image.name),
+    ]),
+    43,
+  );
+  const held = await env.DB.prepare(`SELECT number, url, created_at FROM issues WHERE id = ?`)
+    .bind(id)
+    .first<{ number: number | null; url: string | null; created_at: string }>();
+  if (held && held.number !== null && held.url !== null)
+    return privateJson({ number: held.number, url: held.url } satisfies IssueAnswer);
+  // A row with no number is a request still waiting on GitHub, or one that died before it
+  // could clear its row.
+  if (held) {
+    if (Date.parse(held.created_at) > Date.now() - 60_000) return refuse('limit', 429);
+    await env.DB.prepare(`DELETE FROM issues WHERE id = ? AND number IS NULL`).bind(id).run();
+  }
+
+  // The address, hashed, as the gallery counts its senders; the address is never stored.
+  const address = request.headers.get('cf-connecting-ip') ?? '';
+  const sender = await shareId(`sender:${address}`, 16);
+  const since = new Date(Date.now() - 86_400_000).toISOString();
+  const today = await env.DB.prepare(
+    `SELECT COUNT(*) AS total, COALESCE(SUM(sender = ?), 0) AS mine
+     FROM issues WHERE created_at > ?`,
+  )
+    .bind(sender, since)
+    .first<{ total: number; mine: number }>();
+  if ((today?.mine ?? 0) >= ISSUES_PER_ADDRESS || (today?.total ?? 0) >= ISSUES_PER_DAY)
+    return refuse('limit', 429);
+  const secret = challengeKey(env) && env.TURNSTILE_SECRET_KEY?.trim();
+  if (secret && !(await passesChallenge(secret, draft.challenge, address)))
+    return refuse('challenge', 403);
+  // The program's short link, where the share is one the Worker holds. The issue keeps it
+  // from the cron that expires the shares nobody opens.
+  const shared = draft.share
+    ? (await env.DB.prepare(`SELECT id FROM shares WHERE id = ?`).bind(draft.share).first()) !==
+      null
+    : false;
+  const claim = await env.DB.prepare(
+    `INSERT OR IGNORE INTO issues (id, repo, share_id, sender, created_at) VALUES (?, ?, ?, ?, ?)`,
+  )
+    .bind(id, repo, shared ? draft.share : null, sender, new Date().toISOString())
+    .run();
+  if (claim.meta.changes === 0) return refuse('limit', 429);
+  try {
+    // The images go in first, so the issue never shows one that is not there yet.
+    for (const image of draft.images)
+      await env.DATA.put(`issue-images/${image.name}`, image.bytes, {
+        httpMetadata: { contentType: image.type },
+      });
+    const opened = await openIssue(env, repo, {
+      title: draft.title,
+      body: issueBody(draft, url.origin, shared),
+      labels: [ISSUE_LABEL],
+    });
+    await env.DB.prepare(`UPDATE issues SET number = ?, url = ? WHERE id = ?`)
+      .bind(opened.number, opened.url, id)
+      .run();
+    console.log(`the dialog opened ${repo}#${opened.number}`);
+    return privateJson(opened satisfies IssueAnswer, 201);
+  } catch (error) {
+    console.error(`the dialog's issue in ${repo} was not opened: ${String(error)}`);
+    await env.DB.prepare(`DELETE FROM issues WHERE id = ?`)
+      .bind(id)
+      .run()
+      .catch(() => undefined);
+    return refuse('github', 502);
+  }
 }
 
 const escapeHtml = (text: string): string =>

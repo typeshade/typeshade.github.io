@@ -14,3 +14,6 @@ shots/
 # Wrangler's local state (wrangler dev) and the example data scripts/publish-examples.ts writes.
 .wrangler/
 .cache/
+
+# Wrangler's local secrets for `wrangler dev` (docs/cloudflare.md, Locally).
+.dev.vars*

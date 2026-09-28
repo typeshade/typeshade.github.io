@@ -5,6 +5,7 @@ import Rich from './Rich.astro';
 import { facts } from '../lib/examples.ts';
 import { docsPages, links } from '../lib/links.ts';
 import { copyFor, localePath, locales, type Locale } from '../i18n/index.ts';
+import { githubNewIssue } from '../lib/issue-data.ts';
 
 interface Props {
   locale: Locale;
@@ -30,6 +31,7 @@ const columns = [
     h: t.footer.project,
     items: [
       { label: t.nav.github, href: links.mirror.href },
+      { label: t.footer.newIssue, href: githubNewIssue('compiler'), report: 'compiler' },
       { label: t.footer.releases, href: links.releases.href },
       { label: t.footer.npm, href: links.npm.href },
       { label: t.nav.llms, href: links.llms.href },
@@ -53,7 +55,7 @@ const columns = [
         <h2>{c.h}</h2>
         <ul>
           {c.items.map((i) => (
-            <li><a href={i.href} lang={'locale' in i ? i.locale : undefined} hreflang={'locale' in i ? i.locale : undefined}>{i.label}</a></li>
+            <li><a href={i.href} lang={'locale' in i ? i.locale : undefined} hreflang={'locale' in i ? i.locale : undefined} data-report={'report' in i ? i.report : undefined}>{i.label}</a></li>
           ))}
         </ul>
       </div>

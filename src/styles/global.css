@@ -1009,6 +1009,10 @@ body > main {
 .docs-edit a:hover {
   color: var(--color-primary-text-hover);
 }
+/* The issue form about the page, after the file it is written in. */
+.docs-edit a + a {
+  margin-inline-start: 20px;
+}
 .docs-edit svg {
   inline-size: 14px;
   block-size: 14px;

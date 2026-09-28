@@ -5,6 +5,7 @@ import { API_CATEGORIES } from '../lib/api.ts';
 import { exampleFile, facts, hero, quickStartFile, registryBlurbs } from '../lib/examples.ts';
 import { shadeDescriptions, shadeTitles } from '../lib/shade-examples.ts';
 import { guideSections } from '../lib/guide.ts';
+import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import type { LinkKey } from '../lib/links.ts';
 import { typedError } from '../lib/typed-error.ts';
 
@@ -205,6 +206,7 @@ export const en = {
     previous: 'Previous',
     next: 'Next',
     editPage: 'Edit this page',
+    reportIssue: 'Report an issue',
     permalink: 'Link to heading',
     // The API reference: the words around a generated ApiEntry (src/lib/api-types.ts).
     api: {
@@ -1033,6 +1035,7 @@ export const en = {
     readme: 'README',
     releases: 'Releases',
     npm: 'npm package',
+    newIssue: 'Report an issue',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
@@ -2973,6 +2976,38 @@ export const en = {
     viewOne: '1 view',
     open: 'Open in the Playground',
   },
+
+  // The dialog every Report an issue link opens (src/components/IssueDialog.astro): a reader
+  // with no GitHub account files an issue, and the Worker opens it on GitHub.
+  issue: {
+    heading: 'Report an issue',
+    titleLabel: 'Title',
+    textLabel: 'Description (optional)',
+    addImages: 'Paste, drop or choose images',
+    send: 'Send',
+    cancel: 'Cancel',
+    close: 'Close',
+    // What the script writes once it runs (src/scripts/issue-dialog.ts). `{repo}` is the
+    // repository, `{link}` the issue.
+    runtime: {
+      note: 'The issue is public on GitHub, in {repo}, with a link to this page.',
+      github: "GitHub's own form opens in a new tab with what you wrote.",
+      githubSend: 'Continue on GitHub',
+      removeImage: 'Remove the image',
+      removeProgram: 'Leave the program out',
+      program: "The Playground's program goes into the issue.",
+      sending: 'Sending…',
+      sent: 'Sent: {link} on GitHub.',
+      closed: 'The site cannot send issues right now.',
+      limit: 'The site has sent as many issues as it can for now. Try again later.',
+      image: `Images go up to ${ISSUE_IMAGE_BYTES / 1024 / 1024} MB each and ${ISSUE_IMAGES_MAX} in all, as PNG, JPEG, GIF or WebP.`,
+      challenge: 'Cloudflare could not confirm that a person sent it. Try again.',
+      failed: 'It could not be sent.',
+      fallback: 'Continue on GitHub',
+      reattach: 'Add the images there again.',
+    },
+  },
+
   notFound: {
     title: 'Page not found, TypeShade',
     description: 'There is nothing at this address on typeshade.dev.',

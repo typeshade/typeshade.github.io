@@ -59,6 +59,7 @@ import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
 import { decodeSource, encodeSource } from './source-link.ts';
+import { provideProgram } from './report-context.ts';
 import {
   fetchExample,
   fetchIndex,
@@ -3370,6 +3371,18 @@ function mount(root: HTMLElement): void {
         });
     });
   }
+
+  // The issue dialog (src/scripts/issue-dialog.ts) takes the program this page holds, carried
+  // in the fragment the way Share carries it. While the gallery is up, no program is open.
+  provideProgram(async () => {
+    if (root.dataset.view === 'gallery' || !model) return undefined;
+    await publishSource();
+    return {
+      page: window.location.pathname,
+      fragment: window.location.hash.replace(/^#/, ''),
+      file: fileName,
+    };
+  });
 
   copyOutput.addEventListener('click', () => {
     void navigator.clipboard

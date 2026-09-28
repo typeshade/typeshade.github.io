@@ -4,6 +4,7 @@
 // translation tells, and no label wider than the English label it replaces.
 import type { Copy } from './index.ts';
 import { exampleFile, facts, hero, quickStartFile } from '../lib/examples.ts';
+import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import { typedError } from '../lib/typed-error.ts';
 
 const glsl = facts.glslTarget;
@@ -300,6 +301,7 @@ export const ko: Copy = {
     previous: '이전',
     next: '다음',
     editPage: '이 페이지 편집',
+    reportIssue: '이슈 등록',
     permalink: '제목 고정 링크',
     api: {
       // 영어 제목의 45자 하한과 짝을 맞추려 늘렸습니다(SEO 리뷰, onpage, 제목 길이).
@@ -1033,6 +1035,7 @@ export const ko: Copy = {
     readme: 'README',
     releases: '릴리스',
     npm: 'npm 패키지',
+    newIssue: '이슈 등록',
     license: `[${{ MIT: 'MIT 라이선스', 'Apache-2.0': 'Apache 라이선스 2.0' }[facts.license] ?? facts.licenseName}](license)로 배포합니다.`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: '빌드한 커밋',
@@ -3141,6 +3144,34 @@ export const ko: Copy = {
     viewOne: '조회 1회',
     open: 'Playground에서 열기',
   },
+
+  issue: {
+    heading: '이슈 등록',
+    titleLabel: '제목',
+    textLabel: '설명(선택)',
+    addImages: '이미지 붙여넣기, 끌어다 놓기, 선택',
+    send: '보내기',
+    cancel: '취소',
+    close: '닫기',
+    runtime: {
+      note: 'GitHub의 {repo} 저장소에 공개 이슈로 올라가며, 이 페이지의 링크가 함께 붙습니다.',
+      github: '작성한 내용이 담긴 GitHub 양식이 새 탭에서 열립니다.',
+      githubSend: 'GitHub에서 계속',
+      removeImage: '이미지 빼기',
+      removeProgram: '프로그램 빼기',
+      program: 'Playground의 프로그램이 이슈에 함께 들어갑니다.',
+      sending: '보내는 중…',
+      sent: '보냈습니다. GitHub 이슈 {link}',
+      closed: '지금은 사이트가 이슈를 보낼 수 없습니다.',
+      limit: '사이트가 지금 보낼 수 있는 이슈를 모두 보냈습니다. 나중에 다시 시도해 주십시오.',
+      image: `이미지는 한 장에 ${ISSUE_IMAGE_BYTES / 1024 / 1024} MB, 모두 ${ISSUE_IMAGES_MAX}장까지 PNG, JPEG, GIF, WebP로 올릴 수 있습니다.`,
+      challenge: 'Cloudflare가 사람이 보냈는지 확인하지 못했습니다. 다시 시도해 주십시오.',
+      failed: '보내지 못했습니다.',
+      fallback: 'GitHub에서 계속',
+      reattach: '이미지는 그곳에서 다시 올려 주십시오.',
+    },
+  },
+
   notFound: {
     title: '페이지를 찾을 수 없음, TypeShade',
     description: 'typeshade.dev의 이 주소에는 아무것도 없습니다.',
