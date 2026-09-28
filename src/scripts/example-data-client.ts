@@ -1,6 +1,6 @@
 // The example data the Worker serves (worker/index.ts, docs/cloudflare.md), as the pages read
 // it. Every read fails soft: `astro dev`, `astro preview` and a host with no Worker answer
-// /api/ with a 404 or an HTML page, and a page then shows what its build has and no more.
+// /data/ with a 404 or an HTML page, and a page then shows what its build has and no more.
 import type { DataLocale, ExampleRecord, ReleaseIndex } from '../lib/example-data.ts';
 
 async function get<T>(path: string): Promise<T | undefined> {
@@ -17,12 +17,12 @@ let index: Promise<ReleaseIndex | undefined> | undefined;
 
 /** The current release's index, fetched once per page. */
 export const fetchIndex = (): Promise<ReleaseIndex | undefined> =>
-  (index ??= get<ReleaseIndex>('/api/examples/'));
+  (index ??= get<ReleaseIndex>('/data/examples/'));
 
 /** One example with its file and its emitted text. */
 export const fetchExample = (id: string): Promise<ExampleRecord | undefined> =>
   /^[a-z0-9][a-z0-9-]*$/.test(id)
-    ? get<ExampleRecord>(`/api/examples/${id}/`)
+    ? get<ExampleRecord>(`/data/examples/${id}/`)
     : Promise.resolve(undefined);
 
 /** The page's language, as the data keys its words. */
