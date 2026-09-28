@@ -2,11 +2,12 @@
 # carry in both repositories, and the Worker's secrets. Run it from a checkout of
 # typeshade.github.io, after `gh auth login` and `bunx wrangler login`:
 #
-#   ./scripts/setup-issue-form.ps1 -AppId 123456 -KeyFile ~/Downloads/app.private-key.pem -Turnstile
+#   ./scripts/setup-issue-form.ps1 -AppId 123456 -KeyFile ~/Downloads/app.private-key.pem
 #
 # -AppId and -KeyFile are the GitHub App's id and the private key GitHub downloaded for it.
 # -Token instead puts a fine-grained token (Issues: Read and write) on the Worker, which opens
-# the issues as the token's owner. -Turnstile asks for the Turnstile widget's two keys.
+# the issues as the token's owner. It always asks for the Turnstile widget's two keys: the site
+# takes no report without them. -Turnstile is still accepted, and changes nothing.
 # Nothing is typed into the terminal's history: a key or a token is read at a prompt or from
 # its file and piped to wrangler.
 [CmdletBinding(DefaultParameterSetName = 'App')]
@@ -36,10 +37,8 @@ if ($Token) {
   $secrets['GITHUB_APP_ID'] = $AppId
   $secrets['GITHUB_APP_PRIVATE_KEY'] = Get-Content -Raw -LiteralPath $KeyFile
 }
-if ($Turnstile) {
-  $secrets['TURNSTILE_SITE_KEY'] = Read-Host 'Turnstile site key'
-  $secrets['TURNSTILE_SECRET_KEY'] = Read-Secret 'Turnstile secret key'
-}
+$secrets['TURNSTILE_SITE_KEY'] = Read-Host 'Turnstile site key'
+$secrets['TURNSTILE_SECRET_KEY'] = Read-Secret 'Turnstile secret key'
 foreach ($name in $secrets.Keys) {
   if (-not $secrets[$name]) { throw "$name is empty" }
 }

@@ -414,8 +414,16 @@ const IMAGE_NAME = /^[A-Za-z0-9_-]{22}\.(?:png|jpg|gif|webp)$/;
 /** A request the dialog sends: every image at its largest, and room for the words. */
 const ISSUE_REQUEST_MAX = ISSUE_IMAGES_MAX * ISSUE_IMAGE_BYTES + 256 * 1024;
 
+/** The hosts of a local run, where the dialog opens without Turnstile so it can be tried. */
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
+
+/** Whether the Worker takes reports here: a host that opens issues and a credential, and on
+ *  the site itself Turnstile too. Its issues are public the moment they are opened, with no
+ *  one approving them first, so the site never takes one without a check for a person. */
 const issueOpen = (url: URL, env: Env): boolean =>
-  ISSUE_HOSTS.has(url.hostname) && hasCredential(env);
+  ISSUE_HOSTS.has(url.hostname) &&
+  hasCredential(env) &&
+  (challengeKey(env) !== undefined || LOCAL_HOSTS.has(url.hostname));
 
 const refuse = (error: IssueError, status: number): Response =>
   privateJson({ error } satisfies IssueAnswer, status);
@@ -739,12 +747,16 @@ async function createIssue(request: Request, url: URL, env: Env): Promise<Respon
     .bind(id, repo, shared ? draft.share : null, sender, new Date().toISOString())
     .run();
   if (claim.meta.changes === 0) return refuse('limit', 429);
+  const stored: string[] = [];
   try {
-    // The images go in first, so the issue never shows one that is not there yet.
-    for (const image of draft.images)
-      await env.DATA.put(`issue-images/${image.name}`, image.bytes, {
-        httpMetadata: { contentType: image.type },
-      });
+    // The images go in first, so the issue never shows one that is not there yet. An image
+    // an earlier issue already stored is left as it is.
+    for (const image of draft.images) {
+      const key = `issue-images/${image.name}`;
+      if (await env.DATA.head(key)) continue;
+      await env.DATA.put(key, image.bytes, { httpMetadata: { contentType: image.type } });
+      stored.push(key);
+    }
     const opened = await openIssue(env, repo, {
       title: draft.title,
       body: issueBody(draft, url.origin, shared),
@@ -757,6 +769,8 @@ async function createIssue(request: Request, url: URL, env: Env): Promise<Respon
     return privateJson(opened satisfies IssueAnswer, 201);
   } catch (error) {
     console.error(`the dialog's issue in ${repo} was not opened: ${String(error)}`);
+    // No issue shows the images this request stored, so they go too.
+    await Promise.all(stored.map((key) => env.DATA.delete(key).catch(() => undefined)));
     await env.DB.prepare(`DELETE FROM issues WHERE id = ?`)
       .bind(id)
       .run()
