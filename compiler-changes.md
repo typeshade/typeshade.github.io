@@ -40,7 +40,7 @@ id first, then the pull request that did the work.
   `TS8022` now, and its page says the number is retired, as `TS8011`'s does, once the registry
   reads "8011 and 8012 are retired"; no copy quoted a message with `struct:`, `vec3<f32>` or
   the `new` sentences, and the error-code pages compile their triggers at the pin, handled in
-  #95.
+  #97.
 - 0022: a shader file imports another: the `TS8004` page's fix imports the function from the
   file that declares it, a new `TS8072` page with a trigger and a fix, each showing the file it
   imports, in both locales; the copy that called a file a compilation unit or the whole
@@ -48,4 +48,4 @@ id first, then the pull request that did the work.
   import through `readDocument`, and the toolbar names the file an example imports; the
   language service page names `readDocument` and `resolveImport`; the `imported-noise` example
   in the gallery, the picker and the Korean blurbs; and the Korean guide's two new sections,
-  handled in #95.
+  handled in #97.
