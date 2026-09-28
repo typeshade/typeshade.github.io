@@ -82,4 +82,4 @@ id first, then the pull request that did the work.
 - 0027: WebGL2 gives WGSL's answer for integer division, remainder and shift, and for a float's
   conversion to an integer: the Korean guide's values-and-mutation section says a float converts
   the same way on every target, through `_f2i` and `_f2u` on GLSL (Rule 11.12); no page shows
-  GLSL's spelling of an integer operator, handled in #PR.
+  GLSL's spelling of an integer operator, handled in #124.
