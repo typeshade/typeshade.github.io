@@ -8,7 +8,7 @@
 // /data/releases/         the releases the database records, newest first
 // /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
 //                         its short link
-// /s/<id>                 the short link: a redirect to the page with its fragment
+// /s/<id>/                the short link: a redirect to the page with its fragment
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
 // /ko/guide/examples/...  the current release has, the prebuilt template page filled in with
 //                         it, so an example merged upstream has a page before the next build
@@ -136,7 +136,7 @@ async function createShare(request: Request, url: URL, env: Env): Promise<Respon
       .bind(id)
       .first<{ path: string; fragment: string }>();
     if (row?.path === path && row.fragment === fragment) {
-      return new Response(JSON.stringify({ id, url: `${url.origin}/s/${id}` }), {
+      return new Response(JSON.stringify({ id, url: `${url.origin}/s/${id}/` }), {
         headers: { 'content-type': 'application/json; charset=utf-8', ...noStore },
       });
     }
@@ -144,7 +144,7 @@ async function createShare(request: Request, url: URL, env: Env): Promise<Respon
   return json({ error: 'no free id' }, 500);
 }
 
-/** GET /s/<id>: the page the share opens, with its fragment. */
+/** GET /s/<id>/ (and /s/<id>): the page the share opens, with its fragment. */
 async function openShare(url: URL, env: Env): Promise<Response> {
   const id = /^\/s\/([^/]+)\/?$/.exec(url.pathname)?.[1];
   const row =
