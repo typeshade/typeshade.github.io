@@ -1,11 +1,14 @@
 // typeshade.dev's Worker (docs/cloudflare.md). The site is the Astro build in dist/, served as
-// static assets; wrangler.jsonc runs this Worker first on three prefixes only, and everything
+// static assets; wrangler.jsonc runs this Worker first on four prefixes only, and everything
 // else never reaches it.
 //
 // /data/examples/         the current release's index: every example the compiler has, with
 //                         the site's words for it (scripts/publish-examples.ts writes it)
 // /data/examples/<id>/    one example: its file, its emitted WGSL and GLSL, its page meta
 // /data/releases/         the releases the database records, newest first
+// /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
+//                         its short link
+// /s/<id>                 the short link: a redirect to the page with its fragment
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
 // /ko/guide/examples/...  the current release has, the prebuilt template page filled in with
 //                         it, so an example merged upstream has a page before the next build
@@ -43,6 +46,14 @@ async function readJson<T>(env: Env, file: string): Promise<T | null> {
 
 const ID = /^[a-z0-9][a-z0-9-]*$/;
 
+/** The pages a short link may open: the Playground and an example's page, in either language. */
+const SHARE_PATH = /^(\/ko)?\/(playground|guide\/examples\/[a-z0-9][a-z0-9-]*)\/$/;
+/** What the Playground writes (writeHash): `code=` and the options, in URL-safe characters. */
+const SHARE_FRAGMENT = /^code=[A-Za-z0-9._~%&=-]+$/;
+/** A deflated file of a few thousand lines, with room to spare. */
+const SHARE_MAX = 64 * 1024;
+const SHARE_ID = /^[A-Za-z0-9_-]{8,43}$/;
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -56,7 +67,7 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-async function api(url: URL, env: Env): Promise<Response> {
+async function api(request: Request, url: URL, env: Env): Promise<Response> {
   const parts = url.pathname.split('/').filter(Boolean); // ['data', 'examples', id?]
   if (parts[1] === 'examples' && parts.length === 2) {
     const index = await readJson<ReleaseIndex>(env, 'index.json');
@@ -66,6 +77,11 @@ async function api(url: URL, env: Env): Promise<Response> {
     const record = await readJson<ExampleRecord>(env, `examples/${parts[2]}.json`);
     return record ? json(record) : json({ error: `no example '${parts[2]}'` }, 404);
   }
+  if (parts[1] === 'shares' && parts.length === 2) {
+    return request.method === 'POST'
+      ? createShare(request, url, env)
+      : json({ error: 'POST a page and a fragment' }, 405);
+  }
   if (parts[1] === 'releases' && parts.length === 2) {
     const { results } = await env.DB.prepare(
       `SELECT id, compiler_commit, compiler_date, site_commit, example_count, created_at
@@ -74,6 +90,80 @@ async function api(url: URL, env: Env): Promise<Response> {
     return json({ current: await currentRelease(env), releases: results });
   }
   return json({ error: 'not found' }, 404);
+}
+
+const noStore = { 'cache-control': 'no-store' };
+
+/** The id of a share: the SHA-256 of what it opens, in base64url, cut to `length`. */
+async function shareId(target: string, length: number): Promise<string> {
+  const digest = new Uint8Array(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(target)),
+  );
+  const b64 = btoa(String.fromCharCode(...digest))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+  return b64.slice(0, length);
+}
+
+/** POST /data/shares/ with `{ path, fragment }`: the short link to that page and fragment. */
+async function createShare(request: Request, url: URL, env: Env): Promise<Response> {
+  const origin = request.headers.get('origin');
+  if (origin && origin !== url.origin) return json({ error: 'another site' }, 403);
+  const body = await request.text();
+  if (body.length > SHARE_MAX + 512) return json({ error: 'too large' }, 413);
+  let share: { path?: unknown; fragment?: unknown };
+  try {
+    share = JSON.parse(body) as typeof share;
+  } catch {
+    return json({ error: 'not JSON' }, 400);
+  }
+  const { path, fragment } = share;
+  if (typeof path !== 'string' || !SHARE_PATH.test(path))
+    return json({ error: 'not a page a link can open' }, 400);
+  if (typeof fragment !== 'string' || !SHARE_FRAGMENT.test(fragment) || fragment.length > SHARE_MAX)
+    return json({ error: 'not a Playground fragment' }, 400);
+  const target = `${path}#${fragment}`;
+  // Eight characters are 48 bits; a different share that already holds them takes a longer id.
+  for (const length of [8, 12, 16, 43]) {
+    const id = await shareId(target, length);
+    await env.DB.prepare(
+      `INSERT OR IGNORE INTO shares (id, path, fragment, created_at) VALUES (?, ?, ?, ?)`,
+    )
+      .bind(id, path, fragment, new Date().toISOString())
+      .run();
+    const row = await env.DB.prepare(`SELECT path, fragment FROM shares WHERE id = ?`)
+      .bind(id)
+      .first<{ path: string; fragment: string }>();
+    if (row?.path === path && row.fragment === fragment) {
+      return new Response(JSON.stringify({ id, url: `${url.origin}/s/${id}` }), {
+        headers: { 'content-type': 'application/json; charset=utf-8', ...noStore },
+      });
+    }
+  }
+  return json({ error: 'no free id' }, 500);
+}
+
+/** GET /s/<id>: the page the share opens, with its fragment. */
+async function openShare(url: URL, env: Env): Promise<Response> {
+  const id = /^\/s\/([^/]+)\/?$/.exec(url.pathname)?.[1];
+  const row =
+    id && SHARE_ID.test(id)
+      ? await env.DB.prepare(`SELECT path, fragment FROM shares WHERE id = ?`)
+          .bind(id)
+          .first<{ path: string; fragment: string }>()
+          .catch(() => null)
+      : null;
+  // /s/ is no page of the build's, so the asset handler answers it with the 404 page.
+  if (!row) return env.ASSETS.fetch(new Request(new URL('/s/', url)));
+  // A share never changes, so the redirect is cached like the file it names.
+  return new Response(null, {
+    status: 302,
+    headers: {
+      location: `${url.origin}${row.path}#${row.fragment}`,
+      'cache-control': 'public, max-age=86400',
+    },
+  });
 }
 
 const escapeHtml = (text: string): string =>
@@ -283,7 +373,8 @@ async function examplePage(request: Request, url: URL, env: Env): Promise<Respon
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/data/')) return api(url, env);
+    if (url.pathname.startsWith('/data/')) return api(request, url, env);
+    if (url.pathname.startsWith('/s/')) return openShare(url, env);
     if (/^(\/ko)?\/guide\/examples\//.test(url.pathname)) return examplePage(request, url, env);
     return env.ASSETS.fetch(request);
   },
