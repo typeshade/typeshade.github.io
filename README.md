@@ -27,7 +27,7 @@ Shader authoring should keep the parts developers already know from TypeScript: 
 TypeShade is designed around that boundary:
 
 - **TypeScript authoring:** write shader code in a familiar editor environment.
-- **TypeShade semantics:** `"use typeshade"` marks the file as a shader compilation unit instead of ordinary application code.
+- **TypeShade semantics:** `"use typeshade"` marks the file as a shader file instead of ordinary application code. The file compiles with the shader files it imports as one program.
 - **Static diagnostics:** invalid shader operations are reported before the host runs the program.
 - **Multiple targets:** one source model can emit WGSL or GLSL for the supported hosts.
 - **Two ways into a host:** the host consumes the emitted shader source directly, or imports the module through the Vite plugin and calls its entry points, which `typeshade/runtime` runs on WebGPU, WebGL2 or the CPU.
