@@ -121,7 +121,7 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
                   )}
                 </span>
                 <span class={tileTitle}>{row.title}{row.wgslOnly && <span class={tag}>{e.wgslOnly}</span>}</span>
-                <span class={tileBlurb}><Rich text={row.blurb} locale={locale} /></span>
+                <span class={tileBlurb}><Rich text={row.blurb} locale={locale} inert /></span>
               </a>
             </li>
           ))}
@@ -152,7 +152,7 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
                     )}
                   </span>
                   <span class={tileTitle}>{row.title}{row.wgslOnly && <span class={tag}>{e.wgslOnly}</span>}</span>
-                  <span class={tileBlurb}><Rich text={row.blurb} locale={locale} /></span>
+                  <span class={tileBlurb}><Rich text={row.blurb} locale={locale} inert /></span>
                 </a>
               </li>
             ))}

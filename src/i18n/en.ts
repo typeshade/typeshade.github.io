@@ -902,6 +902,8 @@ export const en = {
         image: 'Your image',
       },
       dropImage: 'image file',
+      // A texture named like a pass reads that pass's output (compiler change 0026).
+      passOutput: 'the output of the pass {name}',
       depthRamp: 'A depth ramp from 0 at the top left to 1 at the bottom right.',
       filter: 'filter',
       address: 'address',
@@ -1013,6 +1015,14 @@ export const en = {
       exitFullscreen: 'Exit full screen',
       clock: 'Shader clock',
       dropHint: 'Drop an image on the canvas to bind it to `{texture}`.',
+      // A file drawn as a pass before the main file each frame (compiler change 0026).
+      pass: 'Pass',
+      passTitle: 'Draw {file} as a pass before the main file, into the texture its name reads',
+      passFailed: 'The pass {name} does not compile, so the frame is not drawn. Its tab shows why.',
+      passTexture:
+        'The pass {name} reads the texture {texture}, which is no pass output. A pass reads the output of a pass by its name.',
+      passesRgba8:
+        'This browser cannot draw WebGL2 into float textures, so each pass keeps 8 bits a channel and a value outside 0 to 1 is clamped.',
     },
   },
 
@@ -1863,6 +1873,7 @@ export const en = {
         values: 'Values and control flow',
         classes: 'Classes and generics',
         imports: 'Imports',
+        passes: 'Several passes',
         compute: 'Module state and compute',
         kernels: 'Loops as kernels',
         twins: 'Source twins',

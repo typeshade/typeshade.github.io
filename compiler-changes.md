@@ -68,3 +68,14 @@ id first, then the pull request that did the work.
   section The CPU oracle translated again from the pinned AUTHORING.md; the `TS8072` page reads
   the registry's sentences; the Playground has no `node_modules`, so it needs nothing, handled in
   #113.
+- 0026: an example drawn in several passes: `src/lib/shader-runtime.ts` draws a pass list into
+  canvas-sized `rgba16float` textures on WebGPU and WebGL2 (`RGBA8` where WebGL2 cannot render
+  to floats, which the Playground's note says), two a pass, so a reader gets this frame's output
+  of an earlier pass and the frame before's of itself or a later one; the live-shader contract
+  gains `frame` and `timeDelta`, restated in DESIGN.md; the Playground draws a workspace file as
+  a pass from the Pass toggle on its tab, opens an example's passes on, shows a texture named
+  like a pass as its output in the bindings panel, shows a pass's own emit on its tab, carries
+  the graph in the link and clears it on Restart; the CPU oracle draws the passes in order at
+  frame 0; separable-blur and feedback-trail join the gallery, the picker, the Korean titles
+  and lines and the stills (a still of a program with passes is the frame after a second of
+  them); check-playground opens both on every engine, handled in #117.

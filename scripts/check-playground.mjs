@@ -83,6 +83,10 @@
 //      give the same line, and the vertex entry's calls are the CPU oracle's
 //  49. recording the frame on WebGPU gives every pixel's lines, row by row, and a frame that
 //      overflows the buffer keeps whole lines and counts every call it dropped
+//  51. an example drawn in several passes (compiler change 0026): feedback-trail opens with
+//      its pass as a marked tab, draws into rgba16float on WebGPU, builds a trail over frames
+//      that Restart clears, and draws on WebGL2 and on the CPU oracle; separable-blur draws;
+//      the link carries the graph, and the WGSL tab shows a pass's own module on its tab
 //  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
 //      editor with a tab for each file it imports, an edit to the imported file changes the
 //      emitted WGSL, a new file is a tab the main file can import, the link carries the
@@ -3073,6 +3077,132 @@ async function checkWorkspace(browser, origin) {
   };
 }
 
+/** How many pixels of the Result canvas are lit: a channel above a quarter. A trail is the
+ *  lit pixels behind the dot, so the count is its length. */
+async function litPixels(page) {
+  const shot = await photographCanvas(page);
+  const { data } = await sharp(shot).raw().ensureAlpha().toBuffer({ resolveWithObject: true });
+  let lit = 0;
+  for (let i = 0; i < data.length; i += 4)
+    if (Math.max(data[i], data[i + 1], data[i + 2]) > 64) lit += 1;
+  return lit;
+}
+
+/** Examples drawn in several passes (51 above). */
+async function checkMultipass(browser, origin) {
+  const problems = [];
+  let cdnFailures = [];
+  let mounted = true;
+  const open = async (hash) => {
+    const opened = await openPage(browser);
+    cdnFailures = opened.cdnFailures;
+    await opened.page.goto(`${origin}${ROUTES[0]}#${hash}`, { waitUntil: 'load' });
+    try {
+      await opened.page.waitForSelector('.monaco-editor', { timeout: EDITOR_TIMEOUT });
+    } catch {
+      mounted = false;
+    }
+    await opened.page.waitForTimeout(AFTER_EDIT);
+    await settleResult(opened.page).catch(() => {});
+    return opened;
+  };
+  const errorsOf = (opened) =>
+    opened.pageErrors.filter((message) => !/ResizeObserver|Canceled/.test(message));
+  const report = [];
+
+  // feedback-trail on WebGPU: the pass's tab, the float target, the trail and Restart.
+  let opened = await open('example=feedback-trail');
+  let page = opened.page;
+  try {
+    if (mounted) {
+      const toggles = await page.$$eval('.file-pass-toggle', (nodes) =>
+        nodes.map((n) => [n.textContent, n.getAttribute('aria-pressed')]),
+      );
+      if (!toggles.some(([text, pressed]) => /trail/.test(text ?? '') && pressed === 'true'))
+        problems.push(`feedback-trail's pass is not a marked tab: ${JSON.stringify(toggles)}`);
+      const shader = await page.evaluate(() => {
+        const s = document.querySelector('[data-gpu-canvas]')?.__shader;
+        return s ? { backend: s.backend, passFormat: s.passFormat } : null;
+      });
+      if (shader?.backend !== 'webgpu' || shader.passFormat !== 'rgba16float')
+        problems.push(
+          `feedback-trail did not draw its passes on WebGPU: ${JSON.stringify(shader)}`,
+        );
+      await page.waitForTimeout(2000);
+      const long = await litPixels(page);
+      await page.click('[data-restart]');
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(undefined))));
+      const short = await litPixels(page);
+      if (!(long > 0 && short < long * 0.7))
+        problems.push(
+          `feedback-trail's trail did not build up and clear: ${long} lit pixels after two seconds, ${short} after Restart`,
+        );
+      report.push(`trail ${long} lit pixels, ${short} after Restart`);
+      // The link carries the graph once the workspace is edited, and the WGSL tab shows the
+      // pass's own module while its tab is open.
+      await page.click('[data-file-tab="passes/trail.shade.ts"]');
+      await page.evaluate(() => {
+        const model = window.monaco.editor.getEditors()[0].getModel();
+        model.setValue(model.getValue().replace('0.96', '0.9'));
+      });
+      await page.waitForTimeout(AFTER_EDIT);
+      if (!/[#&]passes=trail:passes\/trail\.shade\.ts/.test(page.url()))
+        problems.push(`the link does not carry the pass graph: ${page.url().slice(-120)}`);
+      const wgsl = await wgslPane(page);
+      // The program itself holds no 0.9; the pass's fade, as edited above, does.
+      if (!wgsl.includes('0.9'))
+        problems.push("the WGSL tab does not show the pass's own module while its tab is open");
+    }
+    for (const message of errorsOf(opened)) problems.push(`the page threw: ${message}`);
+  } finally {
+    await page.close();
+  }
+
+  // The other engines, and the other example.
+  for (const [hash, backend, label] of [
+    ['example=feedback-trail&backend=webgl2', 'webgl2', 'feedback-trail on WebGL2'],
+    ['example=feedback-trail&backend=cpu', 'cpu', 'feedback-trail on the CPU'],
+    ['example=separable-blur', 'webgpu', 'separable-blur on WebGPU'],
+    ['example=separable-blur&backend=cpu', 'cpu', 'separable-blur on the CPU'],
+  ]) {
+    opened = await open(hash);
+    page = opened.page;
+    try {
+      if (!mounted) break;
+      if (backend === 'cpu') {
+        await page
+          .waitForFunction(
+            () => /px in/.test(document.querySelector('[data-canvas-note]')?.textContent ?? ''),
+            undefined,
+            { timeout: 60_000 },
+          )
+          .catch(() => {});
+        const px = await page.getAttribute('[data-canvas-note]', 'data-px');
+        if (!(Number(px) > 0)) problems.push(`${label} drew no pixel`);
+        report.push(`${label} ${px} px`);
+      } else {
+        const drawn = await page.getAttribute('[data-gpu-canvas]', 'data-backend');
+        const seen = await canvasColours(page);
+        if (drawn !== backend || seen.colours < 2)
+          problems.push(`${label} did not paint: ${drawn}, ${seen.colours} colours`);
+        report.push(`${label} ${seen.colours} colours`);
+      }
+      for (const message of errorsOf(opened))
+        problems.push(`the page threw on ${label}: ${message}`);
+    } finally {
+      await page.close();
+    }
+  }
+  if (!mounted) problems.push('the editor did not mount for the multipass examples');
+  else console.log(`  ${report.join('; ')}`);
+  return {
+    route: `${ROUTES[0]} passes`,
+    problems,
+    cdnFailures,
+    cdnOnly: !mounted && cdnFailures.length > 0,
+  };
+}
+
 const server = await serveDist(dist, Number(process.env.PLAYGROUND_PORT ?? 4473));
 const browser = await launchChromium();
 const results = [];
@@ -3086,6 +3216,8 @@ try {
     results.push(await checkSeeded(browser, server.url));
     console.log('[playground] /playground/ workspace');
     results.push(await checkWorkspace(browser, server.url));
+    console.log('[playground] /playground/ passes');
+    results.push(await checkMultipass(browser, server.url));
     console.log('[playground] /playground/ with no WebGPU');
     const missing = [];
     await checkMissingWebGpu(browser, server.url, missing);

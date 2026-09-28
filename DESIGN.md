@@ -441,8 +441,8 @@ cards takes the column. A third measure needs a reason.
 - **The Playground.** `src/components/Playground.astro`: one region on the page field. A
   link that names nothing (no `example`, `code` or `blank` in its fragment) opens it on the
   gallery: the examples the picker holds as tiles in the gallery's groups, each its build-time
-  still over its name and line, after a Blank tile that opens a fragment shader reading the
-  three reserved fields. A tile opens the tool on that example as a new history entry, so Back
+  still over its name and line, under a heading with a Blank file button that opens a fragment
+  shader reading three of the reserved fields. A tile opens the tool on that example as a new history entry, so Back
   returns to the tiles, and All examples in the toolbar goes back to them with the editor kept
   as it was. An inline script picks the view before the first paint. The gallery holds the
   compiler's own examples only. The tool is a toolbar naming the file over the emit options,
@@ -486,6 +486,19 @@ cards takes the column. A third measure needs a reason.
   the main file as `code` and, when the files beside it are other than the example's own, all
   of them as `files`. A line under the emit options, beside the note on the fullscreen
   triangle, names each file the example imports, linked to it at the pinned commit.
+- **Passes** (compiler change 0026). A file beside the main one can be drawn as a pass: the
+  Pass toggle on its tab turns it on, and the toggle then names the pass, the file's stem as
+  an identifier. Passes draw in tab order before the main file, each into a texture the size of
+  the canvas, `rgba16float`, or `rgba8` on WebGL2 without `EXT_color_buffer_float`, which the
+  note under the canvas says. A `texture_2d<f32>` named like a pass reads it: this frame's
+  output of an earlier pass, the frame before's of itself or a later one, zeroes on the first
+  frame. The bindings panel shows such a texture as the pass's output. An example whose
+  `@example` block names passes opens with them on. The WGSL and GLSL tabs show the module of
+  the file in the editor, a pass's own when its tab is open. Restart drops every pass's output
+  and takes `frame` back to 0. The link carries the graph as `passes`, `name:path` pairs, with
+  the files. The CPU oracle draws the passes in order at the grid's size, keeping each pass's
+  colour as floats, at frame 0. A still of an example with passes is the frame after a second
+  of them at 1/60 s apart.
 
 ## Structure of the site
 
@@ -693,8 +706,9 @@ Putting one on a page:
   GLSL ES 3.00 stages, the reflected layout and the controls. A sample the compiler reports
   an error on fails the build.
 
-Three uniform field names are reserved and filled by the runtime every frame, so they get no
-control. A sample declares the ones it reads and leaves out the rest, and the note under the
+Five uniform field names are reserved and filled by the runtime every frame, so they get no
+control. `frame` and `timeDelta` are reserved only at the type below, since examples already used
+the names for fields of their own: an `f32` `frame` stays a field with its control. A sample declares the ones it reads and leaves out the rest, and the note under the
 controls names the ones it declared:
 
 | Field        | Type   | What it holds                                                                                                                                             |
@@ -702,6 +716,8 @@ controls names the ones it declared:
 | `time`       | `f32`  | seconds since the canvas started                                                                                                                          |
 | `resolution` | `vec2` | the drawing buffer in device pixels                                                                                                                       |
 | `mouse`      | `vec2` | the pointer over the canvas, 0 to 1, origin at the bottom left, the space the `uv` parameter is in. A canvas the pointer has not touched holds (0.5, 0.5) |
+| `frame`      | `u32`  | the frames drawn since the clock started, 0 on the first; Restart takes it back to 0                                                                      |
+| `timeDelta`  | `f32`  | the seconds since the frame before, 0 on the first                                                                                                        |
 
 Every other uniform field becomes one control, by its type:
 
@@ -862,6 +878,6 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   are floors in the file, and the examples under them are listed by name. It opens a bare
   link on the gallery, picks a tile, edits the imported file and adds one the main file
   imports, and asserts the WGSL followed, the link carries the files, the transport holds and
-  restarts the clock, and Back returns to the tiles. A runner with no
+  restarts the clock, and Back returns to the tiles. It opens both examples drawn in passes: the trail builds up over frames and Restart clears it, feedback-trail draws on WebGPU, WebGL2 and the CPU oracle and separable-blur on WebGPU and the CPU oracle, and the link carries the graph. A runner with no
   route to the Monaco CDN is reported on its own.
 - `scripts/check-seo.mjs` and `scripts/openseo-audit.mts`, after the build: the metadata every page carries, and OpenSEO's audit over the built site (README, Checks).

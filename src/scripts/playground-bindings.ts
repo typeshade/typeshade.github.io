@@ -52,6 +52,7 @@ export interface BindingsCopy {
   readonly source: string;
   readonly sources: Readonly<Record<TextureSource, string>>;
   readonly dropImage: string;
+  readonly passOutput: string;
   readonly depthRamp: string;
   readonly filter: string;
   readonly address: string;
@@ -329,6 +330,14 @@ export class BindingsModel {
   private textures: Binding[] = [];
   /** Where the panel was last drawn, so a picture dropped on the canvas can redraw it. */
   private host: HTMLElement | undefined;
+  /** The passes drawn before the program (compiler change 0026). A texture named like one
+   *  reads that pass's output, so the panel binds it there and offers no picture for it. */
+  private passes: ReadonlySet<string> = new Set();
+
+  /** The names of the passes the workspace draws before the program, in draw order. */
+  setPasses(names: readonly string[]): void {
+    this.passes = new Set(names);
+  }
   private storageTextures: Binding[] = [];
   /** Bindings the panel has nothing to put in, by name. */
   private unfillable: string[] = [];
@@ -433,7 +442,7 @@ export class BindingsModel {
     for (const block of this.uniforms) {
       for (const field of block.fields) {
         const key = this.fieldKey(block, field);
-        if (this.values.has(key) || isReserved(field.name)) continue;
+        if (this.values.has(key) || isReserved(field.name, field.type)) continue;
         this.values.set(
           key,
           this.startValue(field, () => START_COLOURS[colour++ % START_COLOURS.length]!),
@@ -617,6 +626,7 @@ export class BindingsModel {
     height: number,
     pointer: readonly [number, number],
     instance?: string,
+    clock?: { readonly frame: number; readonly delta: number },
   ): number[] | null {
     const block =
       instance === undefined
@@ -624,8 +634,8 @@ export class BindingsModel {
         : this.uniforms.find((b) => b.binding.name === instance);
     const field = block?.fields.find((f) => f.name === name);
     if (!block || !field) return null;
-    if (!block.bare && isReserved(name)) {
-      const v = reservedValue(name, seconds, width, height, pointer);
+    if (!block.bare && isReserved(name, field.type)) {
+      const v = reservedValue(name, seconds, width, height, pointer, clock);
       if (!v) return null;
       // A registry example's `mouse` is a vec4 of [x, y, down, used]; the rest stay 0.
       return [
@@ -763,7 +773,7 @@ export class BindingsModel {
     for (const block of this.uniforms) {
       const valueOf = (field: PackedField): unknown => {
         let v: number[];
-        if (!block.bare && isReserved(field.name)) {
+        if (!block.bare && isReserved(field.name, field.type)) {
           const r = reservedValue(field.name, seconds, width, height, pointer) ?? [];
           v = [
             ...r,
@@ -951,7 +961,7 @@ export class BindingsModel {
     const u32 = new Uint32Array(bytes.buffer);
     for (const field of block.fields) {
       const numbers =
-        isReserved(field.name) && !block.bare
+        isReserved(field.name, field.type) && !block.bare
           ? []
           : this.std140Numbers(field, this.values.get(this.fieldKey(block, field)) ?? []);
       const base = field.offset / 4;
@@ -1010,6 +1020,22 @@ export class BindingsModel {
   }
 
   private textureSpec(t: Binding): TextureSpec {
+    // A pass's output has no texels here: the runtime binds the pass's own target, the size
+    // of the canvas (compiler change 0026).
+    if (this.passes.has(t.name) && !t.textureDepth && (t.textureDim ?? '2d') === '2d')
+      return {
+        kind: 'texture',
+        name: t.name,
+        group: t.group,
+        binding: t.binding,
+        dim: '2d',
+        sample: 'float',
+        width: 0,
+        height: 0,
+        layers: 1,
+        texels: [],
+        pass: t.name,
+      };
     const key = this.textureKey(t);
     // The texels are kept by name, dimension and kind, so a reader's picture survives an edit;
     // where the texture sits is read from this module, since another example can declare a
@@ -1197,7 +1223,7 @@ export class BindingsModel {
 
   private fieldControl(block: UniformBlock, field: PackedField): HTMLElement {
     const row = this.line(block.bare ? '' : field.name);
-    if (!block.bare && isReserved(field.name)) {
+    if (!block.bare && isReserved(field.name, field.type)) {
       row.append(el('span', 'binding-runtime', this.copy.runtime));
       return row;
     }
@@ -1389,6 +1415,12 @@ export class BindingsModel {
     const row = this.line('', 'binding-line');
     const controls = el('span', 'binding-controls');
     row.append(controls);
+    if (this.passes.has(t.name)) {
+      controls.append(
+        el('span', 'binding-runtime', this.copy.passOutput.replace('{name}', t.name)),
+      );
+      return row;
+    }
     if (t.textureDepth) {
       controls.append(el('span', 'binding-runtime', this.copy.depthRamp));
       return row;
@@ -1483,7 +1515,9 @@ export class BindingsModel {
    *  module declares, the channel a Shadertoy pane's first input is. Undefined when there is
    *  none, since a depth, cube or 3D texture takes no single picture. */
   imageTarget(): string | undefined {
-    return this.textures.find((t) => !t.textureDepth && (t.textureDim ?? '2d') === '2d')?.name;
+    return this.textures.find(
+      (t) => !t.textureDepth && (t.textureDim ?? '2d') === '2d' && !this.passes.has(t.name),
+    )?.name;
   }
 
   /** Binds a picture dropped on the canvas to `imageTarget()`, and redraws the panel so its
