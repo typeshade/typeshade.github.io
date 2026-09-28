@@ -33,6 +33,7 @@ export const links = {
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
+  playgroundGallery: { label: 'Gallery', href: '/playground/gallery/' },
   concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
   conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
   conceptsPipeline: { label: 'The pipeline', href: '/guide/concepts/the-pipeline/' },

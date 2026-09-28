@@ -53,7 +53,13 @@ import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
 import { decodeSource, encodeSource } from './source-link.ts';
-import { fetchExample, fetchIndex, pageLocale, shortLink } from './example-data-client.ts';
+import {
+  fetchExample,
+  fetchIndex,
+  pageLocale,
+  shortLink,
+  submitToGallery,
+} from './example-data-client.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
 // what this page already holds after a compile.
@@ -124,6 +130,16 @@ interface PlaygroundCopy {
   readonly copied: string;
   readonly share: string;
   readonly shared: string;
+  /** Submit's dialog (/playground/gallery/). */
+  readonly submit: {
+    readonly cancel: string;
+    readonly close: string;
+    readonly sending: string;
+    readonly sent: string;
+    readonly already: string;
+    readonly limit: string;
+    readonly failed: string;
+  };
   /** The error codes' index in the page's language, which a code links under. */
   readonly errorsHref: string;
   readonly emit: {
@@ -3032,6 +3048,64 @@ function mount(root: HTMLElement): void {
         : link.then((text) => navigator.clipboard.writeText(text));
     void written.then(() => flash(share, copy.shared, copy.share)).catch(() => {});
   });
+
+  // Submit: the file goes to the gallery as a share with a title, and waits there for the
+  // maintainer's approval (worker/index.ts). The dialog stays open to say what happened.
+  const submitButton = root.querySelector('[data-submit]');
+  const submitDialog = root.querySelector('[data-submit-dialog]');
+  const submitForm = root.querySelector('[data-submit-form]');
+  const submitStatus = root.querySelector('[data-submit-status]');
+  const submitSend = root.querySelector('[data-submit-send]');
+  const submitCancel = root.querySelector('[data-submit-cancel]');
+  if (
+    submitButton instanceof HTMLButtonElement &&
+    submitDialog instanceof HTMLDialogElement &&
+    submitForm instanceof HTMLFormElement &&
+    submitStatus instanceof HTMLElement &&
+    submitSend instanceof HTMLButtonElement &&
+    submitCancel instanceof HTMLButtonElement
+  ) {
+    const say = (text: string): void => {
+      submitStatus.textContent = text;
+      submitStatus.hidden = !text;
+    };
+    submitButton.addEventListener('click', () => {
+      say('');
+      submitSend.hidden = false;
+      submitSend.disabled = false;
+      submitCancel.textContent = copy.submit.cancel;
+      submitDialog.showModal();
+    });
+    submitCancel.addEventListener('click', () => submitDialog.close());
+    submitForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const fields = new FormData(submitForm);
+      const title = String(fields.get('title') ?? '').trim();
+      if (!title) return;
+      submitSend.disabled = true;
+      say(copy.submit.sending);
+      void publishSource()
+        .then(() =>
+          submitToGallery({
+            path: window.location.pathname,
+            fragment: window.location.hash.replace(/^#/, ''),
+            title,
+            author: String(fields.get('author') ?? '').trim(),
+            locale: pageLocale(),
+          }),
+        )
+        .then((outcome) => {
+          say(copy.submit[outcome]);
+          const done = outcome === 'sent' || outcome === 'already';
+          submitSend.hidden = done;
+          submitSend.disabled = done;
+          if (done) {
+            submitCancel.textContent = copy.submit.close;
+            submitForm.reset();
+          }
+        });
+    });
+  }
 
   copyOutput.addEventListener('click', () => {
     void navigator.clipboard
