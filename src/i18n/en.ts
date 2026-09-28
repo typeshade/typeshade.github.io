@@ -998,7 +998,7 @@ export const en = {
     readme: 'README',
     releases: 'Releases',
     npm: 'npm package',
-    license: 'Released under the [MIT License](license).',
+    license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
   },
