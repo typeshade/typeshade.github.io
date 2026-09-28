@@ -20,6 +20,8 @@ within the hour, before the pin bump and the build that make it a built page.
 | `/data/examples/`                            | the Worker: the current release's index (`ReleaseIndex`)              |
 | `/data/examples/<id>/`                       | the Worker: one example with its file and its emitted text            |
 | `/data/releases/`                            | the Worker: the releases D1 records, newest first                     |
+| `/data/shares/` (POST)                       | the Worker: stores a Playground link in D1, answers its short link    |
+| `/s/<id>`                                    | the Worker: a redirect to the page and fragment the share stored      |
 | `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
 | `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
 
@@ -30,7 +32,8 @@ within the hour, before the pin bump and the build that make it a built page.
   `releases/<release>/examples/<id>.json`, shaped by `src/lib/example-data.ts`.
 - `DB`: the D1 database `typeshade`. `releases` is the history and
   `settings.current_release` names the release the Worker serves
-  (`worker/migrations/0001_releases.sql`).
+  (`worker/migrations/0001_releases.sql`); `shares` holds the Playground's short links
+  (`0002_shares.sql`).
 
 ## What a page does with the data
 
@@ -45,6 +48,15 @@ within the hour, before the pin bump and the build that make it a built page.
   `fn()` example). The template itself answers 404.
 - **The Playground** adds the release's `.shade.ts` examples it does not have to its picker, in
   a group of their own, so `#example=<id>` opens one.
+
+- **Share** in the Playground writes the file and its options into the page's fragment, as it
+  always has, then posts the page's path and that fragment to `/data/shares/` and copies the
+  short link it gets back, `typeshade.dev/s/<id>`. The id is the first eight characters of the
+  SHA-256 of the two, so the same file shared twice is one row and one link; a different share
+  that already holds those eight characters takes a longer id. The Worker takes only the
+  Playground and an example's page, in either language, and a fragment that starts `code=`, of
+  64 KB at most; anything else, or no Worker, and Share copies the long link, which carries the
+  whole file and opens with no service at all.
 
 Without the Worker (`astro dev`, `astro preview`), `/data/` does not answer JSON
 and every page shows what its build has.

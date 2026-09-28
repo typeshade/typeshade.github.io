@@ -53,7 +53,7 @@ import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
 import { decodeSource, encodeSource } from './source-link.ts';
-import { fetchExample, fetchIndex, pageLocale } from './example-data-client.ts';
+import { fetchExample, fetchIndex, pageLocale, shortLink } from './example-data-client.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
 // what this page already holds after a compile.
@@ -609,9 +609,10 @@ function defineTypeshadeThemes(monaco: any): void {
 }
 
 // ── The source in the URL ──────────────────────────────────────────────────────────────────
-// A shared link carries the whole file in its fragment, so nothing is stored and no service
-// has to hand the source back. The encoding is src/scripts/source-link.ts, which a live
-// example's link to the Playground writes too.
+// A shared link carries the whole file in its fragment, so the page opens it with no service
+// to hand the source back. The encoding is src/scripts/source-link.ts, which a live example's
+// link to the Playground writes too. Share copies a short link (/s/<id>) to that URL where the
+// Worker stores it (worker/index.ts), and the URL itself where it does not.
 
 const hashParams = (): URLSearchParams =>
   new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -2966,11 +2967,29 @@ function mount(root: HTMLElement): void {
     }, 1400);
   };
 
+  /** The link Share copies: the short one the Worker stores (/s/<id>, docs/cloudflare.md), or
+   *  the page's own URL, which carries the whole file, where there is no Worker to store it. */
+  const shareLink = async (): Promise<string> => {
+    await publishSource();
+    const { pathname, hash, href } = window.location;
+    return (await shortLink(pathname, hash.replace(/^#/, ''))) ?? href;
+  };
+
   share.addEventListener('click', () => {
-    void publishSource()
-      .then(() => navigator.clipboard.writeText(window.location.href))
-      .then(() => flash(share, copy.shared, copy.share))
-      .catch(() => {});
+    // Safari keeps the click's permission to write the clipboard only for a write started in
+    // the handler, so the link goes in as a promise where the browser takes one.
+    const link = shareLink();
+    const written =
+      typeof ClipboardItem === 'function' && ClipboardItem.supports?.('text/plain') !== false
+        ? navigator.clipboard
+            .write([
+              new ClipboardItem({
+                'text/plain': link.then((text) => new Blob([text], { type: 'text/plain' })),
+              }),
+            ])
+            .catch(async () => navigator.clipboard.writeText(await link))
+        : link.then((text) => navigator.clipboard.writeText(text));
+    void written.then(() => flash(share, copy.shared, copy.share)).catch(() => {});
   });
 
   copyOutput.addEventListener('click', () => {

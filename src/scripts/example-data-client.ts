@@ -42,3 +42,20 @@ export function inlineNodes(text: string): Node[] {
   });
   return nodes;
 }
+
+/** A short link (/s/<id>) to the page at `path` with `fragment`, which the Worker stores in D1.
+ *  Undefined where there is no Worker, or it refuses: the caller keeps the long link. */
+export async function shortLink(path: string, fragment: string): Promise<string | undefined> {
+  try {
+    const res = await fetch('/data/shares/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ path, fragment }),
+    });
+    if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return undefined;
+    const { url } = (await res.json()) as { url?: unknown };
+    return typeof url === 'string' ? url : undefined;
+  } catch {
+    return undefined;
+  }
+}
