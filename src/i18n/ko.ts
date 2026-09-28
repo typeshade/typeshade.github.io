@@ -1033,7 +1033,7 @@ export const ko: Copy = {
     readme: 'README',
     releases: '릴리스',
     npm: 'npm 패키지',
-    license: `[${{ MIT: 'MIT 라이선스', 'Apache-2.0': 'Apache 라이선스 2.0' }[facts.license] ?? facts.licenseName}](license)로 배포합니다.`,
+    license: `[${{ MIT: 'MIT 라이선스', 'Apache-2.0': 'Apache 라이선스 2.0' }[facts.license] ?? facts.licenseName}](license)에 따라 배포합니다.`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: '빌드한 커밋',
   },
