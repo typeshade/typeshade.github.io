@@ -62,9 +62,9 @@ id first, then the pull request that did the work.
   proof's rules in one paragraph and the `TS8070` warning (en and ko); the WebGPU and WebGL2
   concept page's runtime copy gains the tiers, `configure({ prefer })` and `Resident`; the four
   loop examples, their gallery group, picker rows, Korean blurbs and the API reference's Runtime
-  category came with #97, handled in #PR.
+  category came with #97, handled in #113.
 - 0024: a shader module imports a package's by the package's name: the language service page's
   paragraph on imports (en and ko) names packages and the `package.json` reads; the Korean guide
   section The CPU oracle translated again from the pinned AUTHORING.md; the `TS8072` page reads
   the registry's sentences; the Playground has no `node_modules`, so it needs nothing, handled in
-  #PR.
+  #113.
