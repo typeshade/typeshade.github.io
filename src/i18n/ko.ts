@@ -775,6 +775,8 @@ export const ko: Copy = {
     },
   },
   playground: {
+    title: 'TypeShade Playground, 브라우저에서 셰이더 컴파일',
+    description: `브라우저에서 "use typeshade" 파일을 작성해 WGSL과 ${glsl}으로 컴파일합니다. WebGPU나 WebGL2에서 실행하고 진단과 리플렉션도 확인할 수 있습니다.`,
     h1: 'Playground',
     intro:
       'TypeShade TypeScript 파일을 작성하고 브라우저에서 컴파일한 뒤, 나온 WGSL과 진단을 확인하십시오.',

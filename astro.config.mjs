@@ -1,5 +1,4 @@
-import { execSync } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { copyFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
@@ -15,8 +14,6 @@ import { verifyArtifacts } from './scripts/artifacts.mjs';
 import { verifyKoreanFonts } from './scripts/fonts.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-// The sitemap's lastmod is the last commit's date, so it moves when the site does.
-const lastmod = execSync('git log -1 --format=%cI', { cwd: root, encoding: 'utf8' }).trim();
 
 // typeshade.dev: a static site built from the compiler vendored at vendor/shader-dsl. Every
 // code sample and number on the page is computed from that checkout at build time.
@@ -81,10 +78,25 @@ export default defineConfig({
           '/ko/examples',
           '/ko/guide',
           '/ko/404',
-        ].includes(new URL(page).pathname.replace(/\/$/, '')),
+        ].includes(new URL(page).pathname.replace(/\/$/, '')) &&
+        // /guide/authoring/ and its sections only redirect to /guide/internals/.
+        !/^\/(ko\/)?guide\/authoring\//.test(new URL(page).pathname),
+      // No lastmod: one build date on every URL tells a crawler nothing, and Google stops
+      // reading a sitemap's lastmod once it proves inaccurate.
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
-      serialize: (item) => ({ ...item, lastmod }),
     }),
+    // Crawlers and people still ask for /sitemap.xml; serve the index there too.
+    {
+      name: 'typeshade:sitemap-alias',
+      hooks: {
+        'astro:build:done': ({ dir }) => {
+          copyFileSync(
+            fileURLToPath(new URL('sitemap-index.xml', dir)),
+            fileURLToPath(new URL('sitemap.xml', dir)),
+          );
+        },
+      },
+    },
   ],
   // The package name first, then the guide's first mention of each export as a link to its
   // reference page, and the first mention of each error code and each design rule as a link to

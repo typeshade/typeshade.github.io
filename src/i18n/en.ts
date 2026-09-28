@@ -744,6 +744,10 @@ export const en = {
   // compiler writes from what is typed into it. Monaco carries its own English inside the
   // editor box.
   playground: {
+    // The page's <title> and meta description, so the Playground does not repeat the front
+    // page's in search results.
+    title: 'TypeShade Playground: compile a shader in your browser',
+    description: `Write a "use typeshade" file in the browser, compile it to WGSL and ${glsl}, run it on WebGPU or WebGL2, and read the diagnostics and the reflection.`,
     h1: 'Playground',
     intro:
       'Write a TypeShade TypeScript file, compile it in your browser, and inspect the generated WGSL and diagnostics.',
