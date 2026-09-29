@@ -34,6 +34,15 @@ const FROM = '@xgis/shader-dsl';
 /** The name the package ships under, which every reference page shows its import line with. */
 export const PACKAGE_NAME = 'typeshade';
 const TO = PACKAGE_NAME;
+/** The package's entry points the reference reads, each with the specifier a host imports it
+ *  by. The barrel comes first, so an export another entry point shares with it is one page,
+ *  whose import line is the barrel's and which names the other specifiers too. The program
+ *  runtime is its own entry point (compiler change 0025): an application that loads compiled
+ *  programs imports it and none of the compiler. */
+const ENTRY_POINTS: readonly { readonly file: string; readonly specifier: string }[] = [
+  { file: BARREL, specifier: PACKAGE_NAME },
+  { file: 'src/runtime.ts', specifier: `${PACKAGE_NAME}/runtime` },
+];
 // The one name from the pre-release scope that stays, because it is what the pinned compiler
 // reads at runtime. scripts/check-seo.mjs exempts it too.
 const KEPT_ENV = 'XGIS_SHADER_DSL_TRACE';
@@ -109,10 +118,11 @@ export const API_CATEGORIES: readonly ApiCategory[] = [
       'What a shader says through console.log: the events the CPU delivers, and the decoder for the ones the GPU records.',
   },
   {
-    slug: 'runtime',
+    // Not 'runtime', which is the page of typeshade/runtime's runtime() export.
+    slug: 'runtime-api',
     name: 'Runtime',
     summary:
-      'The array a kernel call keeps on the device, and the order in which a call tries WebGPU, WebGL2 and the CPU.',
+      'The program runtime that runs compiled programs on WebGPU, and the array a kernel call keeps on the device.',
   },
   {
     slug: 'diagnostics',
@@ -160,7 +170,11 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/core/ir/span.ts': 'ir',
   'src/core/debug/dispatch.ts': 'cpu-oracle',
   'src/core/console.ts': 'console',
-  'src/core/resident.ts': 'runtime',
+  'src/core/resident.ts': 'runtime-api',
+  // typeshade/runtime, the program runtime (compiler change 0025).
+  'src/runtime/runtime.ts': 'runtime-api',
+  'src/runtime/program.ts': 'runtime-api',
+  'src/runtime/resources.ts': 'runtime-api',
   'src/core/passes/determinism.ts': 'tooling',
   'src/core/ir/builder.ts': 'authoring',
   'src/core/ir/types.ts': 'types',
@@ -954,32 +968,58 @@ function build(): Built {
   const configPath = abs('tsconfig.json');
   const config = ts.readConfigFile(configPath, ts.sys.readFile);
   const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, path.dirname(configPath));
-  const program = ts.createProgram([abs(BARREL)], { ...parsed.options, noEmit: true });
+  const program = ts.createProgram(
+    ENTRY_POINTS.map((point) => abs(point.file)),
+    { ...parsed.options, noEmit: true },
+  );
   const checker = program.getTypeChecker();
-  const barrel = program.getSourceFile(abs(BARREL));
-  if (!barrel) throw new Error(`[api] no ${ROOT}/${BARREL} at the pinned commit`);
-  const moduleSymbol = checker.getSymbolAtLocation(barrel);
-  if (!moduleSymbol) throw new Error(`[api] ${ROOT}/${BARREL} is not a module`);
-  const exported = checker.getExportsOfModule(moduleSymbol);
   const tables = compilerTables();
   const root = path.resolve(process.cwd(), ROOT);
 
-  // Every name and its slug first, so a {@link} can resolve to a page that is not built yet.
-  const symbols = exported.map((raw) => {
-    const symbol = raw.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(raw) : raw;
-    const decls = symbol.declarations ?? [];
-    const decl = decls[0];
-    if (!decl) throw new Error(`[api] ${raw.name} has no declaration`);
-    const type = checker.getTypeOfSymbolAtLocation(symbol, decl);
-    return {
-      name: raw.name,
-      symbol,
-      decls,
-      decl,
-      type,
-      kind: kindOf(decl, isCallableConst(decl, type)),
-    };
-  });
+  // Every name and its slug first, so a {@link} can resolve to a page that is not built yet. An
+  // entry point that exports the same declaration as an earlier one adds its specifier to that
+  // page; one that gives a name to another declaration would need a second page with that name,
+  // and stops the build instead.
+  const symbols: {
+    readonly name: string;
+    readonly symbol: ts.Symbol;
+    readonly decls: readonly ts.Declaration[];
+    readonly decl: ts.Declaration;
+    readonly type: ts.Type;
+    readonly kind: ApiKind;
+    readonly modules: string[];
+  }[] = [];
+  for (const point of ENTRY_POINTS) {
+    const file = program.getSourceFile(abs(point.file));
+    if (!file) throw new Error(`[api] no ${ROOT}/${point.file} at the pinned commit`);
+    const moduleSymbol = checker.getSymbolAtLocation(file);
+    if (!moduleSymbol) throw new Error(`[api] ${ROOT}/${point.file} is not a module`);
+    for (const raw of checker.getExportsOfModule(moduleSymbol)) {
+      const symbol = raw.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(raw) : raw;
+      const known = symbols.find((s) => s.name === raw.name);
+      if (known && known.symbol === symbol) {
+        known.modules.push(point.specifier);
+        continue;
+      }
+      if (known)
+        throw new Error(
+          `[api] ${point.specifier} exports ${raw.name}, which ${known.modules[0]} exports as another declaration`,
+        );
+      const decls = symbol.declarations ?? [];
+      const decl = decls[0];
+      if (!decl) throw new Error(`[api] ${raw.name} has no declaration`);
+      const type = checker.getTypeOfSymbolAtLocation(symbol, decl);
+      symbols.push({
+        name: raw.name,
+        symbol,
+        decls,
+        decl,
+        type,
+        kind: kindOf(decl, isCallableConst(decl, type)),
+        modules: [point.specifier],
+      });
+    }
+  }
   const slugs = assignSlugs(symbols);
   const slugOf = (name: string): string | undefined => slugs.get(name);
 
@@ -1029,10 +1069,12 @@ interface ExtractInput {
   readonly root: string;
   readonly tables: CompilerTables;
   readonly slugOf: (name: string) => string | undefined;
+  /** The specifiers that export it, the first the one its import line shows. */
+  readonly modules: readonly string[];
 }
 
 function extract(input: ExtractInput): Extracted {
-  const { name, decls, decl, type, kind, checker, root, tables, slugOf } = input;
+  const { name, decls, decl, type, kind, checker, root, tables, slugOf, modules } = input;
   const callableConst = isCallableConst(decl, type);
   const slug = slugOf(name) ?? slugify(name);
   const file = path.relative(root, decl.getSourceFile().fileName).split(path.sep).join('/');
@@ -1165,6 +1207,7 @@ function extract(input: ExtractInput): Extracted {
     guideSections: guideLinksFor(name),
     seeAlso: uniqueByHref([...links, ...seeTagLinks]),
     source: { file, line: lineOf(decl) },
+    modules,
   };
   return { entry, unresolved, seeTagLinks };
 }

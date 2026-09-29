@@ -739,8 +739,17 @@ const runtimeCopy = {
   .console { flex: 1 1 0; min-height: 320px; padding: 14px 16px; overflow: auto; font: 400 .75rem/1.6 var(--font-mono); color: var(--color-text-2); }
   .console :global(p) { margin: 0 0 8px; font-family: var(--font-sans); }
   .console :global(ol) { margin: 0 0 8px; padding: 0; list-style: none; }
-  .console :global(li) { display: flex; gap: 12px; padding: 1px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .console :global(li) { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 1px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  /* What a line logged takes the rest of its row. Where the row has no 16rem left for it after
+     where the line ran (a phone), it goes under that, at the pane's width; a table keeps its own. */
+  .console :global(li > span:last-child) { flex: 1 1 16rem; min-width: 0; }
   .console :global(.at) { flex: none; color: var(--color-text-3); }
+  /* Where a line ran, the way a host's printed console line says it (surface §66): the tier as
+     a tag, GPU in the accent's wash and the CPU oracle in a neutral one, then the file and line. */
+  .console :global(.tier) { flex: none; align-self: flex-start; margin-block-start: 1px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 0 4px; background: var(--color-surface-2); color: var(--color-text-2); font: 500 .6875rem/1.5 var(--font-mono); }
+  .console :global(.tier[data-tier='GPU']) { border-color: var(--color-primary-border); background: var(--color-primary-bg); color: var(--color-accent); }
+  .console :global(.source) { flex: none; color: var(--color-text-3); }
+  .console :global(.source:empty), .console :global(.at:empty) { display: none; }
   .console :global(.warn) { color: var(--color-text-1); font-weight: 500; }
   .console :global(.error) { color: var(--color-diag); }
   .console :global(table) { border-collapse: collapse; font: inherit; }

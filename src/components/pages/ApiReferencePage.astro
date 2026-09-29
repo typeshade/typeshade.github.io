@@ -10,7 +10,6 @@ import Docs, { type Heading } from '../../layouts/Docs.astro';
 import ApiType from '../ApiType.astro';
 import LinkColumns from '../LinkColumns.astro';
 import Rich from '../Rich.astro';
-import { PACKAGE_NAME } from '../../lib/api.ts';
 import type { ApiEntry, ApiEntryHtml } from '../../lib/api-types.ts';
 import { apiCategoryCopy, assertApiCategories, copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import { apiSiblings } from '../../lib/api-nav.ts';
@@ -60,10 +59,11 @@ const title = a.pageTitle(heading, a.kinds[entry.kind], category.name);
 const composed = a.pageDescription(entry.name, a.kinds[entry.kind], category.name, entry.summary);
 const filled = composed.length < META_MIN ? `${composed} ${category.summary}` : composed;
 const description = fitDescription(filled, localeSettings[locale].metaDescriptionMax);
-// The line a reader types before using any of this. Every entry is a named export of the
-// package's barrel, and a type is imported as one.
+// The line a reader types before using any of this: one per specifier that exports the name,
+// the package's barrel first and then a subpath such as typeshade/runtime, which an application
+// that loads compiled programs imports alone. A type is imported as one.
 const typeOnly = entry.kind === 'interface' || entry.kind === 'type';
-const importLine = `import ${typeOnly ? 'type ' : ''}{ ${entry.name} } from '${PACKAGE_NAME}'`;
+const importLines = entry.modules.map((specifier) => `import ${typeOnly ? 'type ' : ''}{ ${entry.name} } from '${specifier}'`);
 const sourceHref = `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/${entry.source.file}#L${entry.source.line}`;
 // Previous and next walk this category alphabetically, then carry on into the next category,
 // the way the sidebar lists them. The pages of the reference are not in the sidebar's flat
@@ -158,7 +158,7 @@ const supportClass = (s: string) => supportTag[s] ?? `${tag} border-line-2 bg-su
   <h1><code>{heading}</code>{entry.deprecated && <span class="api-optional" lang={locale}>{a.deprecated}</span>}</h1>
   <p class="api-kind" lang={locale} data-pagefind-meta={`${a.kindMeta}:${a.kinds[entry.kind]}`}>{a.kindLine(a.kinds[entry.kind], category.name)}</p>
   <p class="api-summary">{entry.summary}</p>
-  <p class="text-(length:--text-ui) text-text-2"><code>{importLine}</code></p>
+  <p class="text-(length:--text-ui) text-text-2">{importLines.map((line, i) => <>{i > 0 && <br />}<code>{line}</code></>)}</p>
   <p class="guide-note" lang={locale}><Rich text={a.note} locale={locale} /></p>
 
   {sections.some((s) => s.id === 'syntax') && (

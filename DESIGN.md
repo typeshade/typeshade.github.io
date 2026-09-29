@@ -478,9 +478,12 @@ cards takes the column. A third measure needs a reason.
   sampler its filter and address mode; a storage buffer a fill pattern and a length; an
   override its value. A module whose only entry is `@compute` is dispatched, and the canvas
   plots what it wrote while the panel lists it under its buffer. Its `console` calls fill the
-  Console tab, one line each with the invocation that made it: on the CPU from the oracle's
-  sink, on WebGPU from the console buffer the compiler adds when the page compiles it with
-  `console: 'gpu'`, decoded after the dispatch, so the two engines show the same lines. A tab switch shows a panel
+  Console tab: on the CPU from the oracle's sink, on WebGPU from the console buffer the
+  compiler adds when the page compiles it with `console: 'gpu'`, decoded after the dispatch,
+  so the two engines show the same lines. A line says where it ran the way a host's printed
+  console line does (compiler surface §66): the tier that ran it as a tag, GPU in the accent's
+  wash or CPU in a neutral one, the file and line of the call as the editor numbers them, then
+  the invocation that made it. A tab switch shows a panel
   and compiles nothing: every panel holds what the last compile put in it. Under 48rem the
   columns stack with the editor first. A page that names its example passes `seed`, which
   fills the editor from that file and drops the picker, and `still`, the example's

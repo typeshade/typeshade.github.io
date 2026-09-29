@@ -23,6 +23,7 @@ import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
 import type { Fp64Flavor } from '../../vendor/shader-dsl/src/core/passes/fp64-lower.ts';
 import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
 import { decodeConsole, type ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
+import type { ConsoleTier } from '../../vendor/shader-dsl/src/core/console-print.ts';
 import {
   consoleBuffer,
   hasConsoleCall,
@@ -1778,29 +1779,46 @@ function mount(root: HTMLElement): void {
     p.textContent = text;
     return p;
   };
+  /** The file and line a console call was written on, as `file:line` (surface §66): the file
+   *  by the name its tab has, and the line as the editor numbers it, past the prelude the file
+   *  the canvas runs is compiled with. Empty for an event with no span. */
+  const sourceLine = (e: ConsoleEvent): string => {
+    if (!e.span) return '';
+    const path = pathOfUri(e.span.file);
+    const file = path === '' ? fileName : (path ?? e.span.file.split(/[\\/]/).pop());
+    const line = path === '' ? outOfDocument(e.span.line) : e.span.line;
+    return `${file}:${line + 1}`;
+  };
   /** One list of console lines, marked with `block` for a check to find. Each line leads with
-   *  where it ran: its invocation, unless `at` says otherwise. */
+   *  where it ran, the way a host's printed console line does (surface §66): the tier that ran
+   *  it, the file and line of the call, then its invocation, unless `at` says otherwise. */
   const consoleList = (
     events: readonly ConsoleEvent[],
     block: string,
+    tier: ConsoleTier,
     at: (e: ConsoleEvent, index: number) => string = (e) =>
       e.invocation ? `[${e.invocation.join(', ')}]` : '',
   ): HTMLElement[] => {
     if (events.length === 0) return [];
     const list = document.createElement('ol');
     list.dataset.consoleBlock = block;
+    const span = (className: string, text: string): HTMLSpanElement => {
+      const node = document.createElement('span');
+      node.className = className;
+      node.textContent = text;
+      return node;
+    };
     events.slice(0, CONSOLE_SHOWN).forEach((e, index) => {
       const li = document.createElement('li');
       if (e.method === 'warn' || e.method === 'error') li.className = e.method;
-      const where = document.createElement('span');
-      where.className = 'at';
-      where.textContent = at(e, index);
+      const label = span('tier', tier);
+      label.dataset.tier = tier;
       const body =
         e.method === 'table' && e.args.length === 1 && typeof e.args[0] === 'object'
           ? consoleTable(e.args[0], shown)
           : document.createElement('span');
       if (!(body instanceof HTMLTableElement)) body.textContent = e.args.map(shown).join(' ');
-      li.append(where, body);
+      li.append(label, span('source', sourceLine(e)), span('at', at(e, index)), body);
       list.append(li);
     });
     return events.length > CONSOLE_SHOWN
@@ -1844,7 +1862,7 @@ function mount(root: HTMLElement): void {
     paintConsole(
       { report: `compute/${backend}`, lines: events.length, dropped },
       sentence(fillNumbers(copy.consoleLines, { lines: events.length, backend: name })),
-      consoleList(events, 'lines'),
+      consoleList(events, 'lines', backend === 'webgpu' ? 'GPU' : 'CPU'),
       dropped > 0 ? [sentence(fillNumbers(copy.consoleDropped, { dropped }))] : [],
     );
   };
@@ -2113,6 +2131,7 @@ function mount(root: HTMLElement): void {
           ...consoleList(
             cpu.vertex.map((v) => v.event),
             'vertex',
+            'CPU',
             (_, i) => fillNumbers(copy.consoleVertexAt, { index: cpu.vertex[i]!.index }),
           ),
         ];
@@ -2143,7 +2162,7 @@ function mount(root: HTMLElement): void {
       if (lines.length === 0) continue;
       out.push(
         sentence(fillNumbers(copy.consoleNotRecorded, { line, reason: call.reason })),
-        ...consoleList(lines, 'not-recorded'),
+        ...consoleList(lines, 'not-recorded', 'CPU'),
       );
     }
     return out;
@@ -2178,7 +2197,7 @@ function mount(root: HTMLElement): void {
         sentence(
           cpu.why ?? (cpu.pixel.length === 0 ? fillNumbers(copy.consolePixelNone, at) : heading),
         ),
-        consoleList(cpu.pixel, 'pixel'),
+        consoleList(cpu.pixel, 'pixel', 'CPU'),
         vertexPart(cpu, false),
       );
       note(fillNumbers(copy.pixelNote, { x, y, lines: cpu.pixel.length }));
@@ -2202,7 +2221,7 @@ function mount(root: HTMLElement): void {
               ? (cpu.why ?? '')
               : fillNumbers(none ? copy.consolePixelGpuNone : copy.consolePixelGpu, at),
           ),
-          consoleList(got.events, 'pixel'),
+          consoleList(got.events, 'pixel', 'GPU'),
           got.dropped > 0
             ? [sentence(fillNumbers(copy.consoleDropped, { dropped: got.dropped }))]
             : [],
@@ -2251,7 +2270,7 @@ function mount(root: HTMLElement): void {
             lines: got.events.length,
           }),
         ),
-        consoleList(got.events, 'frame'),
+        consoleList(got.events, 'frame', 'GPU'),
         got.dropped > 0
           ? [sentence(fillNumbers(copy.consoleFrameDropped, { dropped: got.dropped }))]
           : [],
@@ -2704,7 +2723,7 @@ function mount(root: HTMLElement): void {
               lines: rows.length,
             }),
           ),
-          consoleList(rows, 'frame'),
+          consoleList(rows, 'frame', 'CPU'),
           logged > rows.length
             ? [sentence(fillNumbers(copy.consoleFrameKept, { more: logged - rows.length }))]
             : [],
