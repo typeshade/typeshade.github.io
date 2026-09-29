@@ -531,6 +531,13 @@ cards takes the column. A third measure needs a reason.
   recommending the extension (`src/scripts/workspace-folder.ts`). It is stored without
   compression and every entry carries one fixed time, so a workspace gives the same bytes
   each time.
+  The button after it, Open in VS Code, takes the link Share would copy, the Worker's short
+  one or the page's own URL where there is none, and hands the editor
+  `vscode://typeshade.vscode-typeshade/open?link=<the link, percent-encoded twice>` by an
+  anchor click, so the page stays where it is. VS Code decodes the query once before the
+  extension's uri handler (vscode-typeshade `packages/vscode-typeshade/src/bridge.ts`) reads
+  `link` with `URLSearchParams`, so a link with `&` in it, the page's own URL, arrives whole
+  only when it was encoded twice.
 
 ## Structure of the site
 

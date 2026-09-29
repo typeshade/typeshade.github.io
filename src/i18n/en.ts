@@ -1006,6 +1006,8 @@ export const en = {
       newFile: 'New file',
       // The workspace as a folder VS Code opens (src/scripts/workspace-folder.ts).
       download: 'Download as a folder',
+      // The extension's uri handler opens the workspace's link (vscode-typeshade, docs/playground-bridge.md).
+      openInVsCode: 'Open in VS Code',
       newFileName: 'File name',
       badName:
         'A file name ends in .shade.ts and uses letters, digits, dots, hyphens, underscores and slashes.',
