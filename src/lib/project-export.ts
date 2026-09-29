@@ -45,7 +45,13 @@ export type TextureFill =
       readonly layers: number;
       readonly solid: readonly number[];
       /** The view the program reads it through, where it is not `2d`. */
-      readonly view?: 'cube' | 'cube-array' | '2d-array' | '3d';
+      readonly view?: 'cube' | 'cube-array' | '2d-array' | '3d' | '1d';
+      /** What its texels are, where they are not RGBA8 colour: an integer texture's bytes, or
+       *  a depth texture's ramp (src/textures.ts). */
+      readonly sample?: 'uint' | 'sint' | 'depth';
+      /** 4 for a multisampled texture. It and a depth texture are drawn by a fill program, as
+       *  the Playground draws them, since WebGPU writes no bytes into either. */
+      readonly samples?: 4;
     }
   /** A picture the reader dropped on the Playground, carried as `public/<file>`. */
   | { readonly kind: 'image'; readonly file: string }
@@ -55,6 +61,8 @@ export type TextureFill =
 export interface SamplerFill {
   readonly filter: 'linear' | 'nearest';
   readonly address: 'clamp' | 'repeat' | 'mirror';
+  /** Set for a comparison sampler, which compares as the Playground's does. */
+  readonly compare?: 'less-equal';
 }
 
 /** One program main.ts draws: a pass of the workspace, drawn into a texture, or the main file,
@@ -198,6 +206,14 @@ const RESERVED_NAMES = new Set([
   'last',
   'frames',
   'uploaded',
+  'uploaded1d',
+  'drawn',
+  'image',
+  'generateTexels',
+  'depthRamp',
+  'FILL_VERTEX',
+  'FILL_DEPTH',
+  'FILL_COLOUR',
   'textures',
   'passFormat',
 ]);
@@ -409,12 +425,14 @@ function mainTs(fill: ProjectFill): string {
     ...(programs.length > 1 ? [`// texture the programs after it read by the pass's name.`] : []),
     `import { createRuntime } from 'typeshade/runtime';`,
   );
-  if (
-    Object.values(programs).some((p) =>
-      Object.values(p.textures).some((t) => t.kind === 'generated'),
-    )
-  )
-    out(`import { generateTexels } from './textures.ts';`);
+  const generated = programs.flatMap((p) =>
+    Object.values(p.textures).filter((t) => t.kind === 'generated'),
+  );
+  const fromTextures = [
+    ...(generated.some((t) => t.sample !== 'depth') ? ['generateTexels'] : []),
+    ...(generated.some((t) => t.sample === 'depth') ? ['depthRamp'] : []),
+  ];
+  if (fromTextures.length > 0) out(`import { ${fromTextures.join(', ')} } from './textures.ts';`);
   for (const p of programs) out(`import ${idOf.get(p)} from './${p.file}';`);
   out(
     '',
@@ -438,29 +456,66 @@ function mainTs(fill: ProjectFill): string {
     const k =
       t.kind === 'image'
         ? `image|${t.file}`
-        : `gen|${t.source}|${t.width}|${t.height}|${t.layers}|${t.solid.join(',')}|${t.view ?? '2d'}`;
+        : `gen|${t.source}|${t.width}|${t.height}|${t.layers}|${t.solid.join(',')}|${t.view ?? '2d'}|${t.sample ?? 'float'}|${t.samples ?? 1}`;
     const seen = madeTextures.get(k);
     if (seen) return seen;
-    let v = name;
-    while (taken.has(v)) v = `${v}Texture`;
-    taken.add(v);
-    madeTextures.set(k, v);
+    const fresh = (base: string): string => {
+      let v = base;
+      while (taken.has(v)) v = `${v}Texture`;
+      taken.add(v);
+      return v;
+    };
+    const v = fresh(name);
+    let bound = v;
     if (t.kind === 'image') {
       uploads.add('image');
       textureLines.push(`const ${v} = await image('/${t.file}');`);
     } else {
-      uploads.add('texels');
+      const depth = t.sample === 'depth';
+      const format =
+        t.sample === 'uint' ? 'rgba8uint' : t.sample === 'sint' ? 'rgba8sint' : undefined;
+      const texels = (layer: string, layers: number): string =>
+        depth
+          ? `depthRamp(${t.width}, ${t.height}, ${layer}, ${layers})`
+          : `generateTexels('${t.source}', ${t.width}, ${t.height}, ${layer}, ${layers}${t.source === 'solid' ? `, [${t.solid.map(num).join(', ')}]` : ''})`;
       const layers =
         t.layers === 1
-          ? `[generateTexels('${t.source}', ${t.width}, ${t.height}, 0, 1${t.source === 'solid' ? `, [${t.solid.map(num).join(', ')}]` : ''})]`
-          : `Array.from({ length: ${t.layers} }, (_, layer) => generateTexels('${t.source}', ${t.width}, ${t.height}, layer, ${t.layers}${t.source === 'solid' ? `, [${t.solid.map(num).join(', ')}]` : ''}))`;
+          ? `[${texels('0', 1)}]`
+          : `Array.from({ length: ${t.layers} }, (_, layer) => ${texels('layer', t.layers)})`;
+      const traits = [
+        ...(t.layers > 1 ? [`${t.layers} layers`] : []),
+        ...(t.samples === 4 ? ['4 samples'] : []),
+        ...(format ? [`as ${format}`] : []),
+        ...(t.view ? [`read as a ${t.view} texture`] : []),
+      ];
       textureLines.push(
-        `// The Playground's ${t.source} picture${t.layers > 1 ? `, ${t.layers} layers` : ''}${t.view ? `, read as a ${t.view} texture` : ''}.`,
-        `const ${v} = uploaded(${t.width}, ${t.height}, ${layers}${t.view === '3d' ? `, '3d'` : ''});`,
+        `// The Playground's ${depth ? 'depth ramp' : `${t.source} picture`}${traits.map((s) => `, ${s}`).join('')}.`,
       );
+      if (depth || t.samples === 4) {
+        uploads.add('drawn');
+        const options = [...(depth ? ['depth: true'] : []), ...(t.samples ? ['samples: 4'] : [])];
+        textureLines.push(
+          `const ${v} = drawn(${t.width}, ${t.height}, ${layers}, { ${options.join(', ')} });`,
+        );
+      } else if (t.view === '1d') {
+        uploads.add('1d');
+        textureLines.push(`const ${v} = uploaded1d(${texels('0', 1)});`);
+      } else {
+        uploads.add('texels');
+        const rest = t.view === '3d' ? `, '3d'` : format ? `, '2d', '${format}'` : '';
+        textureLines.push(`const ${v} = uploaded(${t.width}, ${t.height}, ${layers}${rest});`);
+      }
+      // The runtime binds a texture's default view, which for one of several layers is a 2d
+      // array: a cube, or an array of one layer, is bound through the view the program reads.
+      if (t.view === 'cube' || t.view === 'cube-array' || t.view === '2d-array') {
+        bound = fresh(`${v}View`);
+        const gpu = depth || t.samples === 4 ? v : `(${v}.texture as GPUTexture)`;
+        textureLines.push(`const ${bound} = ${gpu}.createView({ dimension: '${t.view}' });`);
+      }
     }
+    madeTextures.set(k, bound);
     void program;
-    return v;
+    return bound;
   };
   const bindingsOf = new Map<ProgramFill, [string, string][]>(); // binding → expression
   const samplerVars = new Map<string, string>();
@@ -471,15 +526,16 @@ function mainTs(fill: ProjectFill): string {
       pairs.push([name, textureVar(p, name, t)]);
     }
     for (const [name, s] of Object.entries(p.samplers)) {
-      const k = `${s.filter}|${s.address}`;
+      const k = `${s.filter}|${s.address}|${s.compare ?? ''}`;
       let v = samplerVars.get(k);
       if (!v) {
         v = name;
         while (taken.has(v)) v = `${v}Sampler`;
         taken.add(v);
         samplerVars.set(k, v);
+        const compare = s.compare ? `, compare: '${s.compare}'` : '';
         textureLines.push(
-          `const ${v} = rt.sampler({ filter: '${s.filter}', address: '${s.address}' });`,
+          `const ${v} = rt.sampler({ filter: '${s.filter}', address: '${s.address}'${compare} });`,
         );
       }
       pairs.push([name, v]);
@@ -613,8 +669,8 @@ function mainTs(fill: ProjectFill): string {
     out(
       '',
       `/** A texture of RGBA8 texels, one array per layer. */`,
-      `function uploaded(width: number, height: number, layers: Uint8Array<ArrayBuffer>[], dimension: '2d' | '3d' = '2d') {`,
-      `  const texture = rt.texture({ size: [width, height, layers.length], format: 'rgba8unorm', dimension });`,
+      `function uploaded(width: number, height: number, layers: Uint8Array<ArrayBuffer>[], dimension: '2d' | '3d' = '2d', format = 'rgba8unorm') {`,
+      `  const texture = rt.texture({ size: [width, height, layers.length], format, dimension });`,
       `  layers.forEach((texels, layer) =>`,
       `    rt.device.queue.writeTexture(`,
       `      { texture: texture.texture as GPUTexture, origin: [0, 0, layer] },`,
@@ -634,6 +690,101 @@ function mainTs(fill: ProjectFill): string {
       `  const bitmap = await createImageBitmap(await (await fetch(url)).blob());`,
       `  const texture = rt.texture({ size: [bitmap.width, bitmap.height], format: 'rgba8unorm' });`,
       `  rt.device.queue.copyExternalImageToTexture({ source: bitmap }, { texture: texture.texture as GPUTexture }, [bitmap.width, bitmap.height]);`,
+      `  return texture;`,
+      `}`,
+    );
+  if (uploads.has('1d'))
+    out(
+      '',
+      `/** A 1d texture of RGBA8 texels. The runtime's textures are render targets too, and WebGPU`,
+      ` *  draws into no 1d texture, so this one is WebGPU's own, which the runtime binds as it is. */`,
+      `function uploaded1d(texels: Uint8Array<ArrayBuffer>) {`,
+      `  const width = texels.length / 4;`,
+      `  const texture = rt.device.createTexture({`,
+      `    size: [width],`,
+      `    dimension: '1d',`,
+      `    format: 'rgba8unorm',`,
+      `    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,`,
+      `  });`,
+      `  rt.device.queue.writeTexture({ texture }, texels, { bytesPerRow: width * 4 }, [width]);`,
+      `  return texture;`,
+      `}`,
+    );
+  if (uploads.has('drawn'))
+    out(
+      '',
+      `/** A texture WebGPU writes no bytes into, a depth texture or a multisampled one, drawn a layer`,
+      ` *  at a time from a staging copy by a small fill program, as the Playground draws it. */`,
+      `function drawn(`,
+      `  width: number,`,
+      `  height: number,`,
+      `  layers: (Uint8Array<ArrayBuffer> | Float32Array<ArrayBuffer>)[],`,
+      `  { depth = false, samples = 1 }: { depth?: boolean; samples?: number },`,
+      `) {`,
+      `  const device = rt.device;`,
+      `  const texture = device.createTexture({`,
+      `    size: [width, height, layers.length],`,
+      `    format: depth ? 'depth32float' : 'rgba8unorm',`,
+      `    sampleCount: samples,`,
+      `    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,`,
+      `  });`,
+      `  const staging = device.createTexture({`,
+      `    size: [width, height, layers.length],`,
+      `    format: depth ? 'r32float' : 'rgba8unorm',`,
+      `    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,`,
+      `  });`,
+      `  layers.forEach((texels, layer) =>`,
+      `    device.queue.writeTexture(`,
+      `      { texture: staging, origin: [0, 0, layer] },`,
+      `      texels,`,
+      `      { bytesPerRow: width * 4, rowsPerImage: height },`,
+      `      [width, height, 1],`,
+      `    ),`,
+      `  );`,
+      `  // One triangle over the target per layer, which reads the layer from the instance index,`,
+      `  // and a fragment that writes the staging texel as the depth or the colour.`,
+      '  const code = `struct V { @builtin(position) p: vec4f, @location(0) @interpolate(flat) layer: u32 }',
+      '@vertex fn vs(@builtin(vertex_index) i: u32, @builtin(instance_index) layer: u32) -> V {',
+      '  let x = select(-1.0, 3.0, i == 1u);',
+      '  let y = select(-1.0, 3.0, i == 2u);',
+      '  return V(vec4f(x, y, 0.5, 1.0), layer);',
+      '}',
+      '@group(0) @binding(0) var src: texture_2d_array<f32>;',
+      "@fragment fn fs(v: V) -> ${depth ? '@builtin(frag_depth) f32' : '@location(0) vec4f'} {",
+      "  return textureLoad(src, vec2i(v.p.xy), i32(v.layer), 0)${depth ? '.r' : ''};",
+      '}`;',
+      `  const module = device.createShaderModule({ code });`,
+      `  const pipeline = device.createRenderPipeline({`,
+      `    layout: 'auto',`,
+      `    vertex: { module, entryPoint: 'vs' },`,
+      `    fragment: { module, entryPoint: 'fs', targets: depth ? [] : [{ format: 'rgba8unorm' }] },`,
+      `    multisample: { count: samples },`,
+      `    ...(depth`,
+      `      ? { depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'always' } }`,
+      `      : {}),`,
+      `  });`,
+      `  const group = device.createBindGroup({`,
+      `    layout: pipeline.getBindGroupLayout(0),`,
+      `    entries: [{ binding: 0, resource: staging.createView({ dimension: '2d-array' }) }],`,
+      `  });`,
+      `  const encoder = device.createCommandEncoder();`,
+      `  layers.forEach((_, layer) => {`,
+      `    const view = texture.createView({ dimension: '2d', baseArrayLayer: layer, arrayLayerCount: 1 });`,
+      `    const pass = encoder.beginRenderPass(`,
+      `      depth`,
+      `        ? {`,
+      `            colorAttachments: [],`,
+      `            depthStencilAttachment: { view, depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' },`,
+      `          }`,
+      `        : { colorAttachments: [{ view, loadOp: 'clear', storeOp: 'store' }] },`,
+      `    );`,
+      `    pass.setPipeline(pipeline);`,
+      `    pass.setBindGroup(0, group);`,
+      `    pass.draw(3, 1, 0, layer);`,
+      `    pass.end();`,
+      `  });`,
+      `  device.queue.submit([encoder.finish()]);`,
+      `  staging.destroy();`,
       `  return texture;`,
       `}`,
     );

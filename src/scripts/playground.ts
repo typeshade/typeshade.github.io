@@ -458,6 +458,21 @@ function compose(source: string): {
   };
 }
 
+/** The main file as a downloaded project carries it: the program the canvas draws, so a file
+ *  whose only entry is `@fragment` takes the prelude in with it, under a line that says where
+ *  it came from. The project has no Playground to put it in front. */
+function projectSource(source: string): string {
+  const composed = compose(source);
+  const directive = DIRECTIVE_LINE.exec(source);
+  if (composed.lines === 0 || !directive) return source;
+  const head = source.slice(0, directive[0].length);
+  return (
+    `${head}\n// The vertex half the Playground draws a file with only a fragment entry behind: one\n` +
+    `// triangle over the canvas, which hands the fragment \`uv\`, 0 to 1 from the bottom left.\n` +
+    `${FRAGMENT_PRELUDE}\n${source.slice(directive[0].length).replace(/^(?:[\t ]*\r?\n)+/, '')}`
+  );
+}
+
 /** How many lines the prelude took, and the line it went in at. Zero while the reader's file
  *  declares its own vertex entry, which is when the two texts are the same text. */
 let preludeLines = 0;
@@ -4126,7 +4141,7 @@ export function wave(x: f32, t: f32): f32 {
     const name = (openedExample || 'typeshade-program').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
     const extrasNow = workspaceFiles();
     const mainFile = extrasNow[`${name}.shade.ts`] === undefined ? `${name}.shade.ts` : fileName;
-    const files = { ...extrasNow, [mainFile]: model.getValue() };
+    const files = { ...extrasNow, [mainFile]: projectSource(model.getValue()) };
     // A module whose only entry is `@compute` is dispatched once, the way the canvas runs it:
     // over as many workgroups as the invocations the panel asks for need.
     const entries = reflection?.entries ?? [];
@@ -4150,7 +4165,7 @@ export function wave(x: f32, t: f32): f32 {
       return { name, files: projectFiles({ name, files, programs: [program], texturesModule }) };
     }
     if (!entries.some((e) => e.stage === 'fragment'))
-      return { why: `${fileName}: no fragment or compute entry to run` };
+      return { why: `${mainFile}: no fragment or compute entry to run` };
     const main = bindings.projectFill();
     if ('why' in main) return main;
     const passNames = passGraph.map((p) => p.name);

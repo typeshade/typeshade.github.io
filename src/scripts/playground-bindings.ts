@@ -790,17 +790,22 @@ export class BindingsModel {
     const images = new Map<string, ImageData>();
     for (const t of this.textures) {
       const dim = (t.textureDim ?? '2d') as TextureDim;
-      if (t.textureDepth) return why(t.name, 'a depth texture');
-      if (dim === '2d-ms') return why(t.name, 'a multisampled texture');
-      if (dim === '1d') return why(t.name, 'a 1d texture');
-      if (this.passes.has(t.name) && dim === '2d') {
+      if (this.passes.has(t.name) && !t.textureDepth && dim === '2d') {
         textures[t.name] = { kind: 'pass', pass: t.name };
         continue;
       }
-      if (t.textureElem === 'u32' || t.textureElem === 'i32')
-        return why(t.name, 'an integer texture');
+      // What textureSpec makes for the canvas: a depth texture holds the ramp, an integer one
+      // the picture's bytes, and a multisampled one the picture in each of its 4 samples.
+      const sample = t.textureDepth
+        ? 'depth'
+        : t.textureElem === 'u32'
+          ? 'uint'
+          : t.textureElem === 'i32'
+            ? 'sint'
+            : undefined;
       const choice = this.textureChoice(t);
-      if (choice.source === 'image' && choice.image) {
+      if (sample !== 'depth' && choice.source === 'image' && choice.image) {
+        if (dim !== '2d' || sample) return why(t.name, `a picture on a ${dim} texture`);
         const file = `${t.name}.png`;
         images.set(file, choice.image);
         textures[t.name] = { kind: 'image', file };
@@ -814,12 +819,13 @@ export class BindingsModel {
         height,
         layers,
         solid: [...choice.solid],
-        ...(dim === '2d' ? {} : { view: dim }),
+        ...(dim === '2d' || dim === '2d-ms' ? {} : { view: dim }),
+        ...(sample ? { sample } : {}),
+        ...(dim === '2d-ms' ? { samples: 4 as const } : {}),
       };
     }
     const samplers: Record<string, SamplerFill> = {};
     for (const s of this.samplers) {
-      if (s.samplerComparison) return why(s.name, 'a comparison sampler');
       const choice = this.samplerChoice(s);
       samplers[s.name] = {
         filter: choice.filter,
@@ -829,6 +835,7 @@ export class BindingsModel {
             : choice.address === 'mirror-repeat'
               ? 'mirror'
               : 'repeat',
+        ...(s.samplerComparison ? { compare: 'less-equal' as const } : {}),
       };
     }
     const constants: Record<string, number> = {};

@@ -48,10 +48,14 @@ mkdirSync(work, { recursive: true });
 const tarball = process.env.TYPESHADE_TARBALL ? path.resolve(process.env.TYPESHADE_TARBALL) : '';
 /** The clock both sides are held at, the one every build-time still is captured at. */
 const SECONDS = 3;
-/** The largest mean difference per channel, out of 255, two frames of one program may show:
- *  the Playground and the project draw with the same shader on the same device, so what
- *  remains is the canvas's size and filtering. */
+/** The largest mean difference per channel, out of 255, between the 8 by 8 blocks of two frames
+ *  of one program: the Playground and the project draw with the same shader on the same device,
+ *  so what remains is the canvas's size and filtering. A block's mean, not a pixel, is what is
+ *  held to it: a path tracer's noise or a fractal's edge moves a pixel with the canvas's size
+ *  and leaves the block, where a wrong colour or a missing shape moves the block. */
 const MEAN_LIMIT = 6;
+/** The side of the blocks two frames are compared by. */
+const BLOCK = 8;
 const CDN = 'cdn.jsdelivr.net';
 const VIA_NODE = process.env.PLAYGROUND_MONACO_VIA_NODE === '1';
 
@@ -262,10 +266,11 @@ async function projectListing(browser, dir) {
   }
 }
 
-/** The mean difference per channel, out of 255, between two pictures of one size. */
+/** The mean difference per channel, out of 255, between the BLOCK by BLOCK blocks of two
+ *  pictures of one size: each block's mean colour on one side against the other's. */
 async function compare(page, a, b) {
   return page.evaluate(
-    async ([x, y]) => {
+    async ([x, y, block]) => {
       const load = async (b64) =>
         createImageBitmap(await (await fetch(`data:image/png;base64,${b64}`)).blob());
       const [p, q] = await Promise.all([load(x), load(y)]);
@@ -278,15 +283,24 @@ async function compare(page, a, b) {
       };
       const d1 = read(p);
       const d2 = read(q);
+      const across = Math.floor(w / block);
+      const down = Math.floor(h / block);
       let sum = 0;
-      for (let i = 0; i < d1.length; i += 4)
-        sum +=
-          Math.abs(d1[i] - d2[i]) +
-          Math.abs(d1[i + 1] - d2[i + 1]) +
-          Math.abs(d1[i + 2] - d2[i + 2]);
-      return sum / ((d1.length / 4) * 3);
+      for (let by = 0; by < down; by++)
+        for (let bx = 0; bx < across; bx++)
+          for (let c = 0; c < 3; c++) {
+            let s1 = 0;
+            let s2 = 0;
+            for (let y = by * block; y < (by + 1) * block; y++)
+              for (let x = bx * block; x < (bx + 1) * block; x++) {
+                s1 += d1[(y * w + x) * 4 + c];
+                s2 += d2[(y * w + x) * 4 + c];
+              }
+            sum += Math.abs(s1 - s2) / (block * block);
+          }
+      return sum / (across * down * 3);
     },
-    [a.toString('base64'), b.toString('base64')],
+    [a.toString('base64'), b.toString('base64'), BLOCK],
   );
 }
 
@@ -381,7 +395,7 @@ try {
     result.mean = await compare(tool, from.shot, frame.shot);
     if (result.mean > MEAN_LIMIT)
       result.problems.push(
-        `its frame differs from the Playground's: ${result.mean.toFixed(1)} per channel`,
+        `its frame differs from the Playground's: ${result.mean.toFixed(1)} per channel, by ${BLOCK}x${BLOCK} block`,
       );
   }
 } finally {
