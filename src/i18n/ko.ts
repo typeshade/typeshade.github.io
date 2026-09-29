@@ -1812,7 +1812,7 @@ export const ko: Copy = {
       '교차 출처 격리(cross-origin isolated)가 된 페이지. 격리되지 않으면 TypeScript 서버가 브라우저에서 의미 검사를 하지 않으므로 TypeShade도 TypeScript도 오류를 보고하지 않습니다. 직접 호스팅하는 웹용 VS Code에는 `Cross-Origin-Opener-Policy`와 `Cross-Origin-Embedder-Policy` 헤더가 필요합니다.',
     ],
     webTestedP:
-      '조건이 하나라도 빠지면 확장이 경고를 한 번 보여 줍니다. 웹 빌드는 Chromium에서 웹용 VS Code 1.110과 1.139.1로 시험했고 다른 브라우저는 써 보지 않았습니다. vscode.dev가 교차 출처 격리 상태인지는 시험이 확인하지 않으며, 자동 완성, 시그니처 도움말, 참조, 이름 바꾸기에는 브라우저 시험이 없습니다.',
+      '조건이 하나라도 빠지면 확장이 경고를 한 번 보여 줍니다. 웹 빌드는 Chromium에서 웹용 VS Code 1.110과 1.139.1로 시험했고 다른 브라우저는 써 보지 않았습니다. vscode.dev에서는 배포된 확장을 직접 확인했습니다. 페이지와 TypeScript 서버가 교차 출처 격리 상태이고, 진단과 호버가 나타납니다. github.dev는 확인하지 않았고, 자동 완성, 시그니처 도움말, 참조, 이름 바꾸기에는 브라우저 시험이 없습니다.',
     roundH: 'Playground 연동',
     roundP1:
       '[Playground](playground)의 폴더로 내려받기 버튼은 작업 영역을 폴더째 담은 zip 파일로 내려받습니다. 폴더에는 파일, 메인 파일과 패스를 적은 `typeshade.json`, 이 확장을 권장하는 설정이 들어 있습니다. 바로 옆의 VS Code에서 열기 버튼은 작업 영역을 확장에 넘기고, 확장은 폴더를 물은 뒤 파일을 쓰고 그 폴더를 엽니다.',

@@ -1859,7 +1859,7 @@ export const en = {
       'A page that is cross-origin isolated. Without it the TypeScript server runs no semantic checks in the browser, so neither TypeShade nor TypeScript reports an error. A VS Code for the Web you host yourself needs the `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` headers.',
     ],
     webTestedP:
-      'When a condition is missing, the extension shows a warning once. The web build was tested in Chromium on VS Code for the Web 1.110 and 1.139.1, and no other browser was tried. The tests do not check whether vscode.dev itself is cross-origin isolated, and completion, signature help, references and rename have no browser test.',
+      'When a condition is missing, the extension shows a warning once. The web build was tested in Chromium on VS Code for the Web 1.110 and 1.139.1, and no other browser was tried. On vscode.dev itself the published extension was checked by hand: the page and the TypeScript servers are cross-origin isolated, and the diagnostics and hover arrive. github.dev was not checked, and completion, signature help, references and rename have no browser test.',
     roundH: 'Playground round trip',
     roundP1:
       "The [Playground](playground)'s Download as a folder button downloads a zip of the workspace as a folder: the files, a `typeshade.json` that names the main file and the passes, and a recommendation for this extension. Open in VS Code, the button beside it, hands the workspace to the extension, which asks for a folder, writes the files there and opens it.",
