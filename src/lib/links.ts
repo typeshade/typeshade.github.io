@@ -33,6 +33,7 @@ export const links = {
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
+  editor: { label: 'Editor support', href: '/guide/editor/' },
   playgroundGallery: { label: 'Gallery', href: '/playground/gallery/' },
   concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
   conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
@@ -108,6 +109,25 @@ export const links = {
   mirror: { label: 'GitHub', href: mirror },
   docs: { label: 'README', href: at('README.md') },
   npm: { label: 'typeshade', href: 'https://www.npmjs.com/package/typeshade' },
+  // The editor extension and the agent server live in one repository of their own, and each
+  // is published where an editor or an agent client looks for it.
+  extensionMarketplace: {
+    label: 'Visual Studio Marketplace',
+    href: 'https://marketplace.visualstudio.com/items?itemName=typeshade.vscode-typeshade',
+  },
+  extensionOpenVsx: {
+    label: 'Open VSX',
+    href: 'https://open-vsx.org/extension/typeshade/vscode-typeshade',
+  },
+  extensionSource: {
+    label: 'typeshade/vscode-typeshade',
+    href: 'https://github.com/typeshade/vscode-typeshade',
+  },
+  mcpPackage: { label: '@typeshade/mcp', href: 'https://www.npmjs.com/package/@typeshade/mcp' },
+  mcpReadme: {
+    label: 'the @typeshade/mcp README',
+    href: 'https://github.com/typeshade/vscode-typeshade/blob/main/packages/mcp-server/README.md',
+  },
   llms: { label: 'llms.txt', href: '/llms.txt' },
   commit: { label: facts.pinnedCommit, href: `${mirror}/tree/${facts.pinnedCommit}` },
   releases: { label: 'Watch releases', href: `${mirror}/releases` },
@@ -299,6 +319,7 @@ export function docsPages(locale: Locale): readonly Destination[] {
   return [
     docsPage(locale, 'motivation'),
     docsPage(locale, 'quickStart'),
+    docsPage(locale, 'editor'),
     docsPage(locale, 'guide'),
     docsPage(locale, 'languageFromTypescript'),
     docsPage(locale, 'languageFromWgsl'),
@@ -321,6 +342,7 @@ type DocsPageKey =
   | 'motivation'
   | 'quickStart'
   | 'playground'
+  | 'editor'
   | 'guide'
   | 'languageFromTypescript'
   | 'languageFromWgsl'
@@ -345,6 +367,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     motivation: d.introduction,
     quickStart: d.labels.nav.use,
     playground: d.labels.playground,
+    editor: d.labels.editor,
     guide: d.labels.languageGuide,
     languageFromTypescript: d.labels.mapping.fromTypescript,
     languageFromWgsl: d.labels.mapping.fromWgsl,
@@ -487,7 +510,7 @@ export function sidebar(
   return [
     {
       title: labels.getStarted,
-      items: [page('motivation'), page('quickStart'), page('playground')],
+      items: [page('motivation'), page('quickStart'), page('playground'), page('editor')],
     },
     { title: labels.language, items: languagePages },
     {

@@ -1749,7 +1749,7 @@ body > main {
 }
 /* Footer: the site map in three groups on the container's white, held off the page field by
    its #f0f0f0 top rule, then the licence, the copyright and the commit. The three groups sit
-   at their own widths across the shell, and Documentation's 19 links run down two columns
+   at their own widths across the shell, and Documentation's 20 links run down two columns
    32px apart. What spreads is the space between one group and the next; a group stays as
    narrow as its own longest link, so the heading nearest a link is the one it belongs to.
    Tracks of one width spread the links instead: Documentation flowed into five columns
@@ -1816,7 +1816,7 @@ body > main {
 .site-legal a:hover {
   color: var(--color-accent);
 }
-/* One group per row on a phone, where 19 links down one column is what a phone footer does.
+/* One group per row on a phone, where 20 links down one column is what a phone footer does.
    From 40rem Documentation splits into two columns, and from 48rem the three groups go side
    by side, each as wide as its own longest link, spread across the shell so the last one
    ends on its right edge. The space goes between the groups and never inside one:

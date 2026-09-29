@@ -238,6 +238,7 @@ export const ko: Copy = {
       concepts: 'TypeScript와 WebGPU',
       languageService: '언어 서비스',
       playground: 'Playground',
+      editor: '에디터 지원',
       sidebarGroups: {
         getStarted: '시작하기',
         language: '언어',
@@ -1005,6 +1006,9 @@ export const ko: Copy = {
       newFile: '새 파일',
       download: '폴더로 내려받기',
       openInVsCode: 'VS Code에서 열기',
+      openInVsCodeTitle: 'VS Code에서 열기 (TypeShade 확장이 필요합니다)',
+      openInVsCodeHint:
+        'VS Code가 열리지 않았다면 TypeShade 확장이 없는 것일 수 있습니다. [설치 방법](editor)을 확인하십시오.',
       newFileName: '파일 이름',
       badName:
         '파일 이름은 .shade.ts로 끝나야 하고 영문자, 숫자, 점, 하이픈, 밑줄, 슬래시만 쓸 수 있습니다.',
@@ -1246,6 +1250,8 @@ export const ko: Copy = {
         { linkKey: 'languageStages', label: 'Shader stages: compute, vertex, fragment' },
       ],
       nextLearnAllLink: '전체 Language Guide 보기',
+      nextEditorP:
+        '[VS Code 확장](editor)을 설치하면 입력하는 동안 진단과 파일이 컴파일되는 WGSL을 볼 수 있습니다.',
     },
     title: 'Use TypeShade: 설치하고 첫 셰이더 작성하기',
     description:
@@ -1719,7 +1725,7 @@ export const ko: Copy = {
       'Playground 뒤에서 일하는 에디터 중립 계층입니다. TypeScript와 TypeShade 진단, 자동 완성, 호버, 이름 바꾸기, 컴파일 결과를 문서 API 하나로 답합니다.',
     h1: '언어 서비스',
     intro:
-      '컴파일러 프런트엔드와 에디터 사이에는 텍스트와 위치를 받아 데이터를 돌려주는 계층이 있습니다. 이것이 언어 서비스입니다. DOM이나 Node API는 건드리지 않습니다. 지금은 Playground가 Monaco 에디터를 통해 진단, 자동 완성, 호버를 여기에서 읽고, 나중에는 VS Code와 다른 에디터를 위한 언어 서버가 같은 계층을 읽습니다. 그래서 둘이 서로 어긋날 수 없습니다.',
+      '컴파일러 프런트엔드와 에디터 사이에는 텍스트와 위치를 받아 데이터를 돌려주는 계층이 있습니다. 이것이 언어 서비스입니다. DOM이나 Node API는 건드리지 않습니다. 지금은 Playground가 Monaco 에디터를 통해 진단, 자동 완성, 호버를 여기에서 읽고, [VS Code 확장](editor)은 TypeScript 서버 플러그인을 통해 같은 답을 읽습니다. 그래서 둘이 서로 어긋날 수 없습니다. 다른 에디터를 위한 언어 서버는 아직 공개하지 않았습니다.',
     layersH: '계층',
     layersP:
       '프런트엔드는 `"use typeshade"` 파일을 파싱하고 타입, 구조체, 바인딩을 검사한 뒤 소스 위치가 붙은 진단을 보고합니다. 언어 서비스는 두 층 위에 놓입니다. 하나는 그 프런트엔드이고, 다른 하나는 TypeShade 전역을 선언한 앰비언트 선언 위에서 돌아가는 TypeScript 언어 서비스입니다. 문서를 `uri`로 들고 있다가 그 문서에 관한 요청에 답합니다. 어댑터는 그 위에서 의미와 무관한 일만 맡습니다. Playground의 Monaco 어댑터는 좌표를 바꾸고 에디터의 마커를 관리하며, LSP 서버는 같은 답을 JSON-RPC로 옮길 뿐입니다. TypeShade에 관한 판단은 서비스 안에 두고, 어댑터는 형식만 바꿉니다.',
@@ -1773,6 +1779,52 @@ export const ko: Copy = {
     furtherH: '더 읽을 자료',
     furtherP:
       '[Playground](playground)는 브라우저에서 돌아가는 이 서비스입니다. 컴파일러 저장소의 [설계 문서](languageServiceDesign)는 고정한 커밋 기준으로 규약, 어댑터 계약, 작업 순서를 기록합니다.',
+  },
+
+  // /guide/editor/ 페이지입니다. 확장의 README가 말하는 것만 적었고, 웹 시험이 확인한 범위와
+  // 확인하지 않은 범위도 README 그대로 옮겼습니다.
+  editor: {
+    title: '에디터 지원, VS Code에서 TypeShade 쓰기',
+    description:
+      'VS Code 확장 TypeShade를 설치하는 방법과, "use typeshade" 파일에서 데스크톱 VS Code와 웹용 VS Code가 각각 해 주는 일을 설명합니다.',
+    h1: '에디터 지원',
+    intro:
+      'TypeShade에는 VS Code 확장이 있습니다. `"use typeshade"`로 시작하는 파일에서 컴파일러가 내는 진단과 호버, 자동 완성을 보여 주고, 파일이 컴파일되는 WGSL과 GLSL을 미리 볼 수 있게 합니다.',
+    installH: '설치',
+    installP:
+      '`typeshade.vscode-typeshade`를 [Visual Studio Marketplace](extensionMarketplace)에서 설치합니다. Open VSX에서 확장을 받는 에디터는 [Open VSX](extensionOpenVsx)를 씁니다. 터미널에서는 한 줄로 설치합니다.',
+    installLabel: '명령줄에서 설치',
+    installP2:
+      '데스크톱에서는 VS Code 1.90 이상이 필요합니다. 확장은 작업 영역이 쓰는 TypeScript 버전에 TypeScript 서버 플러그인을 켜 주므로, 자체 `typescript`를 고정해 둔 저장소에서도 플러그인이 동작합니다.',
+    desktopH: 'VS Code에서',
+    desktopP: '`"use typeshade"`로 시작하는 파일을 열면 확장이 컴파일러와 같은 기준으로 답합니다.',
+    desktopItems: [
+      '진단, 호버, 자동 완성, 시그니처 도움말, 정의로 이동, 참조, 이름 바꾸기는 TypeScript 서버 플러그인을 거쳐 TypeShade 언어 서비스가 답합니다. 셰이더 파일에 뜨던 TypeScript 자체의 오류는 사라지고, 다른 TypeScript 파일은 그대로 둡니다.',
+      '`TypeShade: Show WGSL`, `TypeShade: Show GLSL`, `TypeShade: Show Reflection`은 에디터 옆에 미리 보기를 엽니다. 미리 보기는 활성 파일을 따라가며 입력할 때마다 다시 컴파일합니다.',
+      '`TypeShade: Show Canvas`는 미리 보기에서 셰이더를 WebGPU로 그립니다. WebGPU 어댑터가 있는 VS Code 웹뷰가 필요하며, 어댑터가 없으면 그렇다는 안내를 보여 줍니다.',
+      '`TypeShade: Run Entry on CPU`는 파일의 함수 하나를 입력한 인자로 CPU에서 실행합니다.',
+    ],
+    webH: '웹용 VS Code',
+    webP: 'vscode.dev를 비롯한 웹용 VS Code 페이지에서는 같은 플러그인이 셰이더 파일에 진단, 호버, 셰이더 파일 사이의 import를 제공합니다. 위 명령은 모두 데스크톱 버전이 필요합니다. 웹에서는 명령마다 그렇다는 메시지만 보여 줍니다.',
+    webConditionsP: '조건이 두 가지 있습니다.',
+    webConditions: [
+      '웹용 VS Code 1.110 이상. 이보다 낮은 버전은 플러그인을 불러오지 않아서 셰이더 파일에 TypeScript 자체의 오류가 그대로 남습니다.',
+      '교차 출처 격리(cross-origin isolated)가 된 페이지. 격리되지 않으면 TypeScript 서버가 브라우저에서 의미 검사를 하지 않으므로 TypeShade도 TypeScript도 오류를 보고하지 않습니다. 직접 호스팅하는 웹용 VS Code에는 `Cross-Origin-Opener-Policy`와 `Cross-Origin-Embedder-Policy` 헤더가 필요합니다.',
+    ],
+    webTestedP:
+      '조건이 하나라도 빠지면 확장이 경고를 한 번 보여 줍니다. 웹 빌드는 Chromium에서 웹용 VS Code 1.110과 1.139.1로 시험했고 다른 브라우저는 써 보지 않았습니다. vscode.dev가 교차 출처 격리 상태인지는 시험이 확인하지 않으며, 자동 완성, 시그니처 도움말, 참조, 이름 바꾸기에는 브라우저 시험이 없습니다.',
+    roundH: 'Playground 연동',
+    roundP1:
+      '[Playground](playground)의 폴더로 내려받기 버튼은 작업 영역을 폴더째 담은 zip 파일로 내려받습니다. 폴더에는 파일, 메인 파일과 패스를 적은 `typeshade.json`, 이 확장을 권장하는 설정이 들어 있습니다. 바로 옆의 VS Code에서 열기 버튼은 작업 영역을 확장에 넘기고, 확장은 폴더를 물은 뒤 파일을 쓰고 그 폴더를 엽니다.',
+    roundP2:
+      '반대 방향에서는 `TypeShade: Open in Playground`가 활성 파일과 그 파일이 가져오는 파일, 패스를 Playground에서 엽니다. `TypeShade: Open Playground Link`는 Playground 링크가 담은 작업 영역을 폴더에 쓰고 엽니다. 두 명령 모두 데스크톱 버전이 필요합니다.',
+    agentsH: '코딩 에이전트',
+    agentsP:
+      '[`@typeshade/mcp`](mcpPackage)는 npm으로 받는 Model Context Protocol 서버입니다. 코딩 에이전트에 에디터가 보여 주는 진단, 컴파일러가 내는 WGSL과 GLSL, 타입과 탐색 정보, 셰이더 함수의 CPU 실행 결과를 줍니다. Claude Code, Codex, Cursor, VS Code 에이전트 모드, Gemini CLI가 이 서버를 실행할 수 있습니다. Claude Code에서는 플러그인 하나가 서버와, 언어를 가르치는 스킬을 함께 설치합니다.',
+    agentsLabel: 'Claude Code 플러그인 설치',
+    agentsP2:
+      '다른 클라이언트는 `npx -y @typeshade/mcp`를 실행하며, 클라이언트별 설정은 [패키지 README](mcpReadme)에 있습니다.',
+    sourceP: '확장과 서버는 [typeshade/vscode-typeshade](extensionSource) 저장소에서 개발합니다.',
   },
 
   examples: {

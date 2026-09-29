@@ -65,7 +65,10 @@ async function probe(url) {
         headers: { 'user-agent': 'typeshade.dev link check (+https://typeshade.dev)' },
       });
       clearTimeout(timer);
-      if (method === 'HEAD' && (res.status === 405 || res.status === 501)) continue; // retry as GET
+      // Some hosts refuse HEAD in their own way: the Visual Studio Marketplace answers an
+      // extension's page with 404 to HEAD and 200 to GET. A HEAD failure is retried as GET
+      // before a link is called dead.
+      if (method === 'HEAD' && [404, 405, 501].includes(res.status)) continue;
       let body = '';
       if (res.status === 403) body = await res.text().catch(() => '');
       const proxied = PROXY_MARKERS.some((m) => body.toLowerCase().includes(m));
@@ -92,12 +95,15 @@ async function probe(url) {
 // same question — does this package name resolve — so a warn there is corroborated rather than
 // shrugged at, and only an unresolvable name is left as a warn.
 async function corroborate(url, res) {
-  const m = /^https:\/\/www\.npmjs\.com\/package\/([^/?#]+)/.exec(url);
+  // A scoped name is `@scope/name` in the page's path and `@scope%2Fname` in the registry's.
+  const m = /^https:\/\/www\.npmjs\.com\/package\/(@[^/?#]+\/[^/?#]+|[^/?#]+)/.exec(url);
   if (!m || res.verdict !== 'warn') return res;
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), TIMEOUT_MS);
   try {
-    const r = await fetch(`https://registry.npmjs.org/${m[1]}`, { signal: ac.signal });
+    const r = await fetch(`https://registry.npmjs.org/${m[1].replace('/', '%2F')}`, {
+      signal: ac.signal,
+    });
     clearTimeout(timer);
     if (r.ok)
       return {

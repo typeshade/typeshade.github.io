@@ -565,8 +565,14 @@ why lives on its own page.
   content"), and previous and next, which follow the sidebar's order.
   - Get started: `/guide/introduction/` (the language boundary, what stays familiar from
     TypeScript, what the compiler produces), `/guide/quick-start/` (the submodule command,
-    the authored file, the WGSL it emits, the host code, the release state) and
-    `/playground/`.
+    the authored file, the WGSL it emits, the host code, the release state), `/playground/`
+    and `/guide/editor/` (the VS Code extension: where to install it, what it gives a shader
+    file on the desktop and in VS Code for the Web with the two conditions the web build
+    has, the round trip with the Playground, and the MCP server for coding agents; every
+    claim is one the extension's own README makes). The Playground points to it from Open in
+    VS Code: the button's tooltip says it needs the extension, and a click opens a line under
+    the file bar, hidden until then, that links to the page, since a browser says nothing when
+    no editor answers the `vscode:` address.
   - Language: `/guide/language/`, the language guide's overview, and one page per topic under
     it (types, functions, control flow, GPU types, resources, shader stages), written in the
     dictionaries.
@@ -641,7 +647,7 @@ tokens through the CSS variables its stylesheet reads.
 The header is the one every library site has: the name on the left; Use TypeShade, Playground,
 Language, API and Examples; then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 groups (Documentation, Project, Languages) across the shell, then the licence, the copyright
-and the commit the page was built from. Documentation carries 19 links and runs them down two
+and the commit the page was built from. Documentation carries 20 links and runs them down two
 columns 32px apart, and the three groups spread to the shell's two edges: 120px between one
 group and the next at a 768 viewport and 396px from 1440 up in English, 148px and 424px in
 Korean, with 64px as the floor. The space that grows is the space between groups, so the wider
