@@ -3235,8 +3235,9 @@ async function checkMultipass(browser, origin) {
       // The program itself holds no 0.9; the pass's fade, as edited above, does.
       if (!wgsl.includes('0.9'))
         problems.push("the WGSL tab does not show the pass's own module while its tab is open");
-      // Download writes the workspace as a zip of a folder: the edited pass file, and
-      // typeshade.json naming the main file and the graph (src/scripts/workspace-folder.ts).
+      // Download writes the workspace as a project (src/lib/project-export.ts): the edited pass
+      // file under src/, typeshade.json naming the main file and the graph, and src/main.ts
+      // drawing them; scripts/check-projects.mjs installs, builds and runs such a project.
       const [download] = await Promise.all([
         page.waitForEvent('download', { timeout: 10_000 }),
         page.click('[data-download]'),
@@ -3250,15 +3251,17 @@ async function checkMultipass(browser, origin) {
         zip.readUInt32LE(zip.length - 22) !== 0x06054b50 ||
         download.suggestedFilename() !== 'feedback-trail.zip' ||
         parsed?.passes?.[0]?.name !== 'trail' ||
-        parsed?.passes?.[0]?.file !== 'passes/trail.shade.ts' ||
-        !text.includes('passes/trail.shade.ts') ||
+        parsed?.passes?.[0]?.file !== 'src/passes/trail.shade.ts' ||
+        !text.includes('feedback-trail/src/passes/trail.shade.ts') ||
+        !text.includes('feedback-trail/src/main.ts') ||
+        !text.includes('feedback-trail/package.json') ||
         !text.includes('.vscode/extensions.json') ||
         !/\b0\.9\b/.test(text)
       )
         problems.push(
-          `the folder download is not the workspace: ${download.suggestedFilename()}, ${zip.length} bytes, typeshade.json ${JSON.stringify(parsed)}`,
+          `the project download is not the workspace: ${download.suggestedFilename()}, ${zip.length} bytes, typeshade.json ${JSON.stringify(parsed)}`,
         );
-      report.push(`folder ${zip.length} bytes`);
+      report.push(`project ${zip.length} bytes`);
       // Open in VS Code: the anchor's click is caught before it navigates, so the page stays.
       // There is no Worker here, so the link the uri carries is the page's own URL.
       await page.evaluate(() => {

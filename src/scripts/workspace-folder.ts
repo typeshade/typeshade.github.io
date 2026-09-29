@@ -1,47 +1,6 @@
-// The Playground's workspace as a folder a reader opens in VS Code: the files as they are in the
-// tabs, `typeshade.json` naming the main file and the pass graph, a `tsconfig.json` over the
-// shader files, and `.vscode/extensions.json` recommending the extension. The folder layout is
-// the one vscode-typeshade's docs/playground-bridge.md §2.1 proposes, and it holds nothing the
-// Playground's link does not also carry (DESIGN.md, Playground, "The link").
-
-/** One pass of the graph, in draw order: its name and the file it is drawn from. */
-export interface FolderPass {
-  readonly name: string;
-  readonly path: string;
-}
-
-/** The extension's id on the Marketplace and on Open VSX. */
-const EXTENSION = 'typeshade.vscode-typeshade';
-
-const json = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
-
-/** Every file of the folder by its path in it, the main file at the root. */
-export function workspaceFolder(
-  main: { readonly path: string; readonly text: string },
-  files: Readonly<Record<string, string>>,
-  passes: readonly FolderPass[],
-): Record<string, string> {
-  return {
-    [main.path]: main.text,
-    ...files,
-    'typeshade.json': json({
-      main: main.path,
-      ...(passes.length > 0 ? { passes: passes.map((p) => ({ name: p.name, file: p.path })) } : {}),
-    }),
-    'tsconfig.json': json({
-      compilerOptions: {
-        module: 'esnext',
-        moduleResolution: 'bundler',
-        allowImportingTsExtensions: true,
-        experimentalDecorators: true,
-        strict: true,
-        noEmit: true,
-      },
-      include: ['**/*.shade.ts'],
-    }),
-    '.vscode/extensions.json': json({ recommendations: [EXTENSION] }),
-  };
-}
+// The zip the Playground's Download writes (src/lib/project-export.ts makes its files). It is
+// stored without compression: the files are a few kilobytes of text and the pictures a reader
+// dropped, which are PNG already, and a stored archive needs no library.
 
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
@@ -59,19 +18,21 @@ function crc32(bytes: Uint8Array): number {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-/** A zip archive of the files, stored without compression: the files are a few kilobytes of
- *  text, and a stored archive needs no library. Every entry carries 1980-01-01 00:00, the
- *  earliest time a zip can name, so the same workspace gives the same bytes. Names are UTF-8
- *  (general purpose flag bit 11). */
-export function zipStored(files: Readonly<Record<string, string>>): Uint8Array<ArrayBuffer> {
+/** A zip archive of the files, each under `folder/` when one is named. Every entry carries
+ *  1980-01-01 00:00, the earliest time a zip can name, so the same files give the same bytes.
+ *  Names are UTF-8 (general purpose flag bit 11). */
+export function zipStored(
+  files: Readonly<Record<string, string | Uint8Array>>,
+  folder?: string,
+): Uint8Array<ArrayBuffer> {
   const encoder = new TextEncoder();
   const local: Uint8Array[] = [];
   const central: Uint8Array[] = [];
   let offset = 0;
   const DOS_DATE = (0 << 9) | (1 << 5) | 1;
-  for (const [path, text] of Object.entries(files)) {
-    const name = encoder.encode(path);
-    const data = encoder.encode(text);
+  for (const [path, content] of Object.entries(files)) {
+    const name = encoder.encode(folder ? `${folder}/${path}` : path);
+    const data = typeof content === 'string' ? encoder.encode(content) : content;
     const crc = crc32(data);
     const head = new Uint8Array(30 + name.length);
     const h = new DataView(head.buffer);

@@ -124,11 +124,38 @@ jobs:
           path: playground-part-${{ matrix.part }}.json
           retention-days: 3
 
+  # The projects the Playground's Download writes (src/lib/project-export.ts), used the way a
+  # reader uses one: each example is downloaded from the built site, its dependencies installed
+  # from npm, `tshc check` and `tsc` run, the project built with Vite and its frame compared with
+  # the Playground's at the same clock. See scripts/check-projects.mjs.
+  projects:
+    needs: site
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: dist
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run check:projects
+
   # The required check. The floors in scripts/check-playground.mjs are totals over the picker,
-  # so they are held here to the sum of the four parts; and this job fails unless `site` and
-  # every part of `browser` passed, since a required check that is skipped counts as passed.
+  # so they are held here to the sum of the four parts; and this job fails unless `site`, every
+  # part of `browser` and `projects` passed, since a required check that is skipped counts as
+  # passed.
   build:
-    needs: [site, browser]
+    needs: [site, browser, projects]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -136,9 +163,10 @@ jobs:
         env:
           SITE: ${{ needs.site.result }}
           BROWSER: ${{ needs.browser.result }}
+          PROJECTS: ${{ needs.projects.result }}
         run: |
-          echo "site: $SITE, browser: $BROWSER"
-          [ "$SITE" = success ] && [ "$BROWSER" = success ]
+          echo "site: $SITE, browser: $BROWSER, projects: $PROJECTS"
+          [ "$SITE" = success ] && [ "$BROWSER" = success ] && [ "$PROJECTS" = success ]
       - uses: actions/checkout@v5
         with:
           persist-credentials: false

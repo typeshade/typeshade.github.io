@@ -29,6 +29,12 @@ export async function serveDist(dist, port) {
     res.writeHead(200, { 'content-type': TYPES[path.extname(file)] ?? 'application/octet-stream' });
     createReadStream(file).pipe(res);
   });
-  await new Promise((resolve) => server.listen(port, '127.0.0.1', resolve));
-  return { url: `http://127.0.0.1:${port}`, close: () => server.close() };
+  // Port 0 asks the system for a free port. A port in use is an error the caller sees, where it
+  // was an unhandled 'error' event that ended the process.
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, '127.0.0.1', resolve);
+  });
+  const bound = server.address().port;
+  return { url: `http://127.0.0.1:${bound}`, close: () => server.close() };
 }

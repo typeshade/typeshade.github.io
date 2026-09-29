@@ -524,13 +524,34 @@ cards takes the column. A third measure needs a reason.
   `encodeSource` (`src/scripts/source-link.ts`): a `z` then the UTF-8 bytes `deflate-raw`
   compressed in base64url, or a `u` then the bytes uncompressed where the browser has no
   `CompressionStream`. Share stores the fragment with the Worker behind `/s/<id>`, which
-  redirects to the Playground with it. The download button beside + writes the same workspace
-  as a zip of a folder VS Code opens: the files at their paths with the main file at the root,
-  `typeshade.json` naming the main file and the passes in the `{ name, file }` shape of the
-  `@example` block, a `tsconfig.json` over `**/*.shade.ts`, and `.vscode/extensions.json`
-  recommending the extension (`src/scripts/workspace-folder.ts`). It is stored without
-  compression and every entry carries one fixed time, so a workspace gives the same bytes
-  each time.
+  redirects to the Playground with it.
+- **The project a reader downloads.** The download button beside + writes the workspace as a
+  project of its own, which npm installs and runs without the site (`src/lib/project-export.ts`):
+  the shader files under `src/` at their paths, the main file named after the example;
+  `src/main.ts`, which draws the passes and the main file every frame with the program runtime
+  (`typeshade/runtime`), with every value the canvas draws them with written out where the
+  reader can change it (the clock, the canvas size, the pointer, each uniform field the panel
+  set, each texture's picture, each sampler, an override the reader moved, a vertex entry's
+  three vertices); `src/textures.ts`, the Playground's own picture generator
+  (`src/lib/texture-sources.ts`, carried as it is) when a texture shows one, and `public/` for a
+  picture the reader dropped; a `package.json` whose scripts are `dev`, `build` and `check`
+  (`tshc check src/` and `tsc` over the host code, which report nothing on a working project,
+  where plain `tsc` over a shader reports errors the shader does not have); `vite.config.ts`
+  with the TypeShade plugin; `typeshade.json` naming the main file and the passes for the
+  extension; and `.vscode/extensions.json` recommending it. A main file whose only entry is
+  `@fragment` carries the vertex half the canvas draws it behind (the prelude), under a comment
+  that says so, since the project has no Playground to put it in front. A texture WebGPU writes
+  no bytes into, a depth or a multisampled one, is drawn in `main.ts` by the same small fill
+  program the Playground's runner draws it with; a 1D texture is WebGPU's own, since the
+  runtime makes only textures it can draw into; a cube or an array is bound through the view
+  the program reads. A program the project cannot carry yet is refused with the binding's name,
+  under the file tabs: a storage binding in a program that draws, a picture dropped on a texture
+  that is not 2D colour, or a module with no fragment or compute entry, which the canvas does
+  not draw either. The zip is stored without compression and every entry carries one fixed
+  time, so a workspace gives the same bytes each time. `bun run check:projects` downloads every
+  example from the built site, installs, checks and builds each project, and compares its frame
+  with the Playground's at the same clock, by the mean colour of 8 by 8 blocks, since a path
+  tracer's noise or a fractal's edge moves single pixels between two canvases of one program.
   The button after it, Open in VS Code, takes the link Share would copy, the Worker's short
   one or the page's own URL where there is none, and hands the editor
   `vscode://typeshade.vscode-typeshade/open?link=<the link, percent-encoded twice>` by an
