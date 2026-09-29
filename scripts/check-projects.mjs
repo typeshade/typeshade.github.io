@@ -200,7 +200,7 @@ function installShared(packageJson) {
 /** A project's frame, drawn by its build, with the clock held at `SECONDS`: the page's clock
  *  reads 0 while the program starts, then `SECONDS`, and a few frames are drawn at it. */
 async function projectFrame(browser, dir, size) {
-  const server = await serveDist(path.join(dir, 'dist'), 4500 + Math.floor(Math.random() * 400));
+  const server = await serveDist(path.join(dir, 'dist'), 0);
   const page = await browser.newPage({ viewport: { width: size[0], height: size[1] } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -241,7 +241,7 @@ async function projectFrame(browser, dir, size) {
 
 /** A dispatch project's page: the names of the bindings it lists, once it has listed them. */
 async function projectListing(browser, dir) {
-  const server = await serveDist(path.join(dir, 'dist'), 4500 + Math.floor(Math.random() * 400));
+  const server = await serveDist(path.join(dir, 'dist'), 0);
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
