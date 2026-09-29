@@ -46,6 +46,7 @@ const reference = apiEntries()
       `## ${entry.name} (${entry.kind})`,
       '',
       `Category: ${entry.category.name}`,
+      `Import from: ${entry.modules.join(', ')}`,
       `Summary: ${entry.summary}`,
       'Signature:',
       signature,

@@ -67,6 +67,14 @@ drawing the same pass.
 - Emitted targets: WGSL, GLSL ES 3.00. No other targets. An application that hands the emitted
   source to its own WebGPU or WebGL2 code ships nothing of TypeShade; one that imports a module
   through the Vite plugin ships `typeshade/runtime` and no compiler.
+- Four entry points, decided by the maintainer in the compiler's issue #335: ① the compiler
+  (`compile()`, `reflect()`, `packModule()`) for an application that already has a renderer;
+  ② the program runtime, `typeshade/runtime`, which loads a compiled program's manifest and
+  runs it on WebGPU in frames the host draws, for an engine built on it (compiler change 0025);
+  ③ an official reference engine on ②, in a repository of its own, which does not exist yet;
+  ④ the call layer, a module imported through the Vite plugin and its entries called. The
+  quick start teaches ① and ④, and the WebGPU and WebGL2 concept page describes ② beside them.
+  The Playground draws through the site's own runner, which moves onto ② next.
 - Undecided product facts: the release date of 0.1.0; whether a versioned docs site exists
   after it (DESIGN.md says one version per pin, older docs move under `/v0.1/`).
 

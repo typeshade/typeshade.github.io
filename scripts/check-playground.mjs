@@ -1055,8 +1055,15 @@ async function checkStorageTextures(page, problems) {
 
 /** The Console tab shows the lines a compute run's console calls delivered: from WebGPU, where
  *  the module is emitted with the console buffer and the page decodes it, and from the CPU
- *  oracle's sink. The two runs give the same lines (surface §66). */
+ *  oracle's sink. The two runs give the same lines, each marked with the tier that ran it and
+ *  the file and line of its call, the way a host's printed line is (surface §66). */
 const firstDiff = (a, b) => a.findIndex((x, i) => x !== b[i]);
+
+/** The `file:line` of each line of `source` that holds `needle`, as the editor numbers it. */
+const linesWith = (source, needle) =>
+  source
+    .split('\n')
+    .flatMap((text, i) => (text.includes(needle) ? [`hello.shade.ts:${i + 1}`] : []));
 
 async function checkConsole(page, problems) {
   await pickExample(page, 'gpu-console');
@@ -1069,18 +1076,42 @@ async function checkConsole(page, problems) {
         { timeout: 60_000 },
       )
       .catch(() => undefined);
+    // What a line logged and where, which the two engines agree on, apart from its tier.
     return page.evaluate(() =>
-      [...document.querySelectorAll('[data-console] li')].map((li) => li.textContent),
+      [...document.querySelectorAll('[data-console] li')].map((li) => ({
+        tier: li.querySelector('.tier')?.textContent ?? '',
+        source: li.querySelector('.source')?.textContent ?? '',
+        text: [...li.children]
+          .filter((child) => !child.classList.contains('tier'))
+          .map((child) => child.textContent)
+          .join('  '),
+      })),
     );
   };
   // The example's console.table of a matrix (changes/0019) is drawn as a table, not one line.
   const tables = () =>
     page.evaluate(() => document.querySelectorAll('[data-console] li table').length);
-  const gpu = await linesOn('webgpu');
+  const calls = linesWith(await sourceOf(page), 'console.');
+  const gpuLines = await linesOn('webgpu');
   const gpuTables = await tables();
   await page.selectOption('[data-engine]', 'cpu');
-  const cpu = await linesOn('cpu');
+  const cpuLines = await linesOn('cpu');
   const cpuTables = await tables();
+  const gpu = gpuLines.map((line) => line.text);
+  const cpu = cpuLines.map((line) => line.text);
+  const untiered = [
+    ...gpuLines.filter((line) => line.tier !== 'GPU'),
+    ...cpuLines.filter((line) => line.tier !== 'CPU'),
+  ];
+  if (untiered.length > 0)
+    problems.push(
+      `gpu-console has ${untiered.length} console line(s) not marked with the tier that ran them: ${JSON.stringify(untiered[0])}`,
+    );
+  const unplaced = [...gpuLines, ...cpuLines].filter((line) => !calls.includes(line.source));
+  if (unplaced.length > 0)
+    problems.push(
+      `gpu-console has ${unplaced.length} console line(s) that name no line of the file with a console call (${calls.join(', ')}): ${JSON.stringify(unplaced[0])}`,
+    );
   if (gpu.length > 0 && gpuTables === 0)
     problems.push('gpu-console drew no console.table as a table from WebGPU');
   if (cpu.length > 0 && cpuTables === 0)
@@ -1094,12 +1125,13 @@ async function checkConsole(page, problems) {
       `gpu-console's console lines differ between WebGPU and the CPU (${gpu.length} and ${cpu.length}; at line ${firstDiff(gpu, cpu)}: ${gpu[firstDiff(gpu, cpu)]} / ${cpu[firstDiff(gpu, cpu)]})`,
     );
   console.log(
-    `  console: gpu-console logged ${gpu.length} lines on WebGPU, the same on the CPU, ${gpuTables} of them tables`,
+    `  console: gpu-console logged ${gpu.length} lines on WebGPU, the same on the CPU, ${gpuTables} of them tables, from ${new Set(gpuLines.map((line) => line.source)).size} calls`,
   );
 }
 
 /** The Console tab's next report after `before`, once it is one of `reports`: what it says,
- *  its counts, and its lines by block, each as the place it ran and the text it logged. */
+ *  its counts, and its lines by block, each as the place it ran and the text it logged, and
+ *  in `places` the tier that ran it and the file and line of its call. */
 async function nextReport(page, before, reports) {
   await page.waitForFunction(
     ([b, wanted]) => {
@@ -1112,11 +1144,17 @@ async function nextReport(page, before, reports) {
   return page.evaluate(() => {
     const pane = document.querySelector('[data-console]');
     const blocks = {};
-    for (const list of pane.querySelectorAll('ol[data-console-block]'))
+    const places = {};
+    for (const list of pane.querySelectorAll('ol[data-console-block]')) {
       blocks[list.dataset.consoleBlock] = [...list.children].map((li) => [
         li.querySelector('.at')?.textContent ?? '',
         li.lastElementChild?.textContent ?? '',
       ]);
+      places[list.dataset.consoleBlock] = [...list.children].map((li) => [
+        li.querySelector('.tier')?.textContent ?? '',
+        li.querySelector('.source')?.textContent ?? '',
+      ]);
+    }
     return {
       report: pane.dataset.report,
       lines: Number(pane.dataset.lines ?? -1),
@@ -1124,6 +1162,7 @@ async function nextReport(page, before, reports) {
       heading: pane.querySelector('p')?.textContent ?? '',
       text: pane.textContent,
       blocks,
+      places,
     };
   });
 }
@@ -1139,16 +1178,18 @@ const paintsOf = (page) =>
  *  lines. A click outside the triangle says no fragment runs there. */
 async function checkPixelConsole(page, problems) {
   await pickExample(page, 'hello');
-  const source = await sourceOf(page);
-  await typeSource(
-    page,
-    source
-      .replace(
-        'export function fs(): Color {',
-        'export function fs(@builtin("position") p: vec4): Color {\n  console.log("at", p.x, p.y);',
-      )
-      .replace('let x = -0.8;', 'console.log("vertex", i);\n  let x = -0.8;'),
-  );
+  const source = (await sourceOf(page))
+    .replace(
+      'export function fs(): Color {',
+      'export function fs(@builtin("position") p: vec4): Color {\n  console.log("at", p.x, p.y);',
+    )
+    .replace('let x = -0.8;', 'console.log("vertex", i);\n  let x = -0.8;');
+  await typeSource(page, source);
+  // Each line names the tier that ran it and the line of its call (surface §66).
+  const [atCall] = linesWith(source, 'console.log("at"');
+  const [vertexCall] = linesWith(source, 'console.log("vertex"');
+  const placesOf = (report, block) =>
+    (report.places[block] ?? []).map(([tier, where]) => `${tier} ${where}`);
   await settleResult(page);
   await openTab(page, 'console');
   const hint = (await page.textContent('[data-console]')).trim();
@@ -1192,6 +1233,14 @@ async function checkPixelConsole(page, problems) {
     );
   if (!/vertex stage|버텍스 단계/.test(onGpu.text))
     problems.push('the WebGPU report does not say why a vertex entry records nothing');
+  if (JSON.stringify(placesOf(onGpu, 'pixel')) !== JSON.stringify([`GPU ${atCall}`]))
+    problems.push(
+      `the pixel's line from WebGPU should say GPU and ${atCall}: ${JSON.stringify(onGpu.places.pixel)}`,
+    );
+  if (placesOf(onGpu, 'vertex').some((place) => place !== `CPU ${vertexCall}`))
+    problems.push(
+      `the vertex entry's lines should say CPU and ${vertexCall}: ${JSON.stringify(onGpu.places.vertex)}`,
+    );
   if (!/\(\d+, \d+\)/.test(note)) problems.push(`the pixel note names no pixel: "${note}"`);
 
   // The same pixel on WebGL2, whose GLSL records nothing: the CPU oracle's lines, the same ones.
@@ -1203,6 +1252,10 @@ async function checkPixelConsole(page, problems) {
   if (pixelOf(onGl) !== pixelOf(onGpu) || pixelOf(onGl) === '')
     problems.push(
       `the same pixel logged differently on WebGPU and on the CPU oracle: ${JSON.stringify(onGpu.blocks.pixel)} and ${JSON.stringify(onGl.blocks.pixel)}`,
+    );
+  if (JSON.stringify(placesOf(onGl, 'pixel')) !== JSON.stringify([`CPU ${atCall}`]))
+    problems.push(
+      `the pixel's line from the CPU oracle should say CPU and ${atCall}: ${JSON.stringify(onGl.places.pixel)}`,
     );
   if (JSON.stringify(vertexBodies(onGl)) !== JSON.stringify(vertexBodies(onGpu)))
     problems.push(`the vertex entry's lines differ between the two reports`);
@@ -1276,6 +1329,15 @@ export function main(@location(0) uv: vec2, @builtin("position") p: vec4): vec4 
     problems.push(
       `the recorded frame's lines are not the grid's, row by row: ${JSON.stringify(got.slice(0, 4))} for ${JSON.stringify(shown.slice(0, 4))}`,
     );
+  // The file has no vertex entry, so the page compiles it with the prelude's lines in it; the
+  // line a call names is still the editor's.
+  const [gridCall] = linesWith(grid(40), 'console.log("grid"');
+  const misplaced = (report, tier) =>
+    (report.places.frame ?? []).filter(([t, where]) => t !== tier || where !== gridCall);
+  if (misplaced(sparse, 'GPU').length > 0)
+    problems.push(
+      `the recorded frame's lines should say GPU and ${gridCall}: ${JSON.stringify(misplaced(sparse, 'GPU').slice(0, 2))}`,
+    );
 
   await typeSource(page, grid(1));
   await settleResult(page);
@@ -1313,6 +1375,10 @@ export function main(@location(0) uv: vec2, @builtin("position") p: vec4): vec4 
   )
     problems.push(
       `the CPU oracle's ${cw} x ${ch} frame should list ${cpuExpected.length} grid lines row by row, and listed ${onCpu.lines}: ${JSON.stringify((onCpu.blocks.frame ?? []).slice(0, 4))}`,
+    );
+  if (misplaced(onCpu, 'CPU').length > 0)
+    problems.push(
+      `the CPU oracle's frame lines should say CPU and ${gridCall}: ${JSON.stringify(misplaced(onCpu, 'CPU').slice(0, 2))}`,
     );
   await page.selectOption('[data-engine]', 'auto');
   await settleResult(page);

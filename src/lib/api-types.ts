@@ -124,4 +124,7 @@ export interface ApiEntry {
   readonly seeAlso: readonly ApiLink[];
   /** The declaration's file (relative to the compiler root) and 1-based line, for the permalink. */
   readonly source: { readonly file: string; readonly line: number };
+  /** The specifiers a host imports it from, `typeshade` or a subpath such as
+   *  `typeshade/runtime`: the first is the page's import line. */
+  readonly modules: readonly string[];
 }
