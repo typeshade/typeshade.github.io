@@ -1004,7 +1004,8 @@ export const ko: Copy = {
       noStill: '미리보기 없음',
       files: '파일',
       newFile: '새 파일',
-      download: '폴더로 내려받기',
+      download: '프로젝트로 내려받기',
+      downloadRefused: '이 프로그램은 아직 프로젝트로 내려받을 수 없습니다: {why}.',
       openInVsCode: 'VS Code에서 열기',
       openInVsCodeTitle: 'VS Code에서 열기 (TypeShade 확장이 필요합니다)',
       openInVsCodeHint:
@@ -1815,7 +1816,7 @@ export const ko: Copy = {
       '조건이 하나라도 빠지면 확장이 경고를 한 번 보여 줍니다. 웹 빌드는 Chromium에서 웹용 VS Code 1.110과 1.139.1로 시험했고 다른 브라우저는 써 보지 않았습니다. vscode.dev에서는 배포된 확장을 직접 확인했습니다. 페이지와 TypeScript 서버가 교차 출처 격리 상태이고, 진단과 호버가 나타납니다. github.dev는 확인하지 않았고, 자동 완성, 시그니처 도움말, 참조, 이름 바꾸기에는 브라우저 시험이 없습니다.',
     roundH: 'Playground 연동',
     roundP1:
-      '[Playground](playground)의 폴더로 내려받기 버튼은 작업 영역을 폴더째 담은 zip 파일로 내려받습니다. 폴더에는 파일, 메인 파일과 패스를 적은 `typeshade.json`, 이 확장을 권장하는 설정이 들어 있습니다. 바로 옆의 VS Code에서 열기 버튼은 작업 영역을 확장에 넘기고, 확장은 폴더를 물은 뒤 파일을 쓰고 그 폴더를 엽니다.',
+      '[Playground](playground)의 프로젝트로 내려받기 버튼은 작업 영역을 그 자체로 도는 프로젝트로 내려받습니다. `src/` 아래의 셰이더 파일, Playground가 준 값으로 프로그램 런타임을 써서 그 셰이더를 그리는 `src/main.ts`, 그리고 `package.json`이 들어 있습니다. `npm install`과 `npm run dev`로 브라우저에서 실행하고, `npm run check`로 편집기와 같은 검사를 합니다. 바로 옆의 VS Code에서 열기 버튼은 작업 영역을 확장에 넘기고, 확장은 폴더를 물은 뒤 파일을 쓰고 그 폴더를 엽니다.',
     roundP2:
       '반대 방향에서는 `TypeShade: Open in Playground`가 활성 파일과 그 파일이 가져오는 파일, 패스를 Playground에서 엽니다. `TypeShade: Open Playground Link`는 Playground 링크가 담은 작업 영역을 폴더에 쓰고 엽니다. 두 명령 모두 데스크톱 버전이 필요합니다.',
     agentsH: '코딩 에이전트',

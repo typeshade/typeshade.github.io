@@ -42,6 +42,13 @@ import {
   type VertexBufferSpec,
 } from '../lib/shader-bindings.ts';
 import type { UniformBlockLayout } from '../lib/shader-runtime.ts';
+import type {
+  DataValue,
+  FillValue,
+  ProgramFill,
+  SamplerFill,
+  TextureFill,
+} from '../lib/project-export.ts';
 
 /** The words the panel prints. Read off the Playground's element like the rest of its copy. */
 export interface BindingsCopy {
@@ -733,6 +740,179 @@ export class BindingsModel {
   vertexBuffer(): VertexBufferSpec | null | undefined {
     if (this.vertexInputs.length === 0) return undefined;
     return triangleVertices(this.vertexInputs);
+  }
+
+  // ── what a downloaded project binds ────────────────────────────────────────────────────
+
+  /**
+   * What src/main.ts binds for this module in a downloaded project (src/lib/project-export.ts):
+   * each uniform binding's value in the program runtime's host shape, the page's reserved
+   * fields as the live values main.ts computes each frame; each texture's picture; each
+   * sampler; the overrides the reader moved; and the vertices a vertex entry's inputs read.
+   *
+   * @returns the program's bindings and the dropped pictures it names, by their path under
+   *   `public/`; or why the project cannot carry a binding the page fills.
+   */
+  projectFill():
+    | {
+        readonly program: Omit<ProgramFill, 'file'>;
+        readonly images: ReadonlyMap<string, ImageData>;
+      }
+    | { readonly why: string } {
+    const why = (name: string, what: string): { why: string } => ({
+      why: `${name}: ${what}`,
+    });
+    if (this.unfillable.length > 0) return why(this.unfillable[0]!, 'no value the page can fill');
+    if (this.storage.length > 0 || this.storageTextures.length > 0)
+      return why((this.storage[0]?.binding ?? this.storageTextures[0]!).name, 'a storage binding');
+    const uniforms: Record<string, FillValue> = {};
+    for (const block of this.uniforms) {
+      if (block.bare) {
+        const field = block.fields[0]!;
+        uniforms[block.binding.name] = hostValue(
+          field.shape,
+          this.values.get(this.fieldKey(block, field)) ?? [],
+        );
+        continue;
+      }
+      const value: Record<string, unknown> = {};
+      for (const field of block.fields) {
+        const leaf: FillValue = isReserved(field.name, field.type)
+          ? field.name === 'mouse'
+            ? { live: 'mouse', components: componentCount(field.shape) }
+            : { live: field.name as 'time' | 'resolution' | 'frame' | 'timeDelta' }
+          : hostValue(field.shape, this.values.get(this.fieldKey(block, field)) ?? []);
+        setPath(value, field.path, leaf);
+      }
+      uniforms[block.binding.name] = value as FillValue;
+    }
+    const textures: Record<string, TextureFill> = {};
+    const images = new Map<string, ImageData>();
+    for (const t of this.textures) {
+      const dim = (t.textureDim ?? '2d') as TextureDim;
+      if (t.textureDepth) return why(t.name, 'a depth texture');
+      if (dim === '2d-ms') return why(t.name, 'a multisampled texture');
+      if (dim === '1d') return why(t.name, 'a 1d texture');
+      if (this.passes.has(t.name) && dim === '2d') {
+        textures[t.name] = { kind: 'pass', pass: t.name };
+        continue;
+      }
+      if (t.textureElem === 'u32' || t.textureElem === 'i32')
+        return why(t.name, 'an integer texture');
+      const choice = this.textureChoice(t);
+      if (choice.source === 'image' && choice.image) {
+        const file = `${t.name}.png`;
+        images.set(file, choice.image);
+        textures[t.name] = { kind: 'image', file };
+        continue;
+      }
+      const { width, height, layers } = textureSize(dim);
+      textures[t.name] = {
+        kind: 'generated',
+        source: choice.source === 'image' ? 'checker' : choice.source,
+        width,
+        height,
+        layers,
+        solid: [...choice.solid],
+        ...(dim === '2d' ? {} : { view: dim }),
+      };
+    }
+    const samplers: Record<string, SamplerFill> = {};
+    for (const s of this.samplers) {
+      if (s.samplerComparison) return why(s.name, 'a comparison sampler');
+      const choice = this.samplerChoice(s);
+      samplers[s.name] = {
+        filter: choice.filter,
+        address:
+          choice.address === 'clamp-to-edge'
+            ? 'clamp'
+            : choice.address === 'mirror-repeat'
+              ? 'mirror'
+              : 'repeat',
+      };
+    }
+    const constants: Record<string, number> = {};
+    for (const o of this.reflection?.overrides ?? []) {
+      const value = this.overrideValues.get(`${o.name}|${o.type}`) ?? Number(o.default);
+      if (value !== Number(o.default)) constants[o.name] = value;
+    }
+    const vertices = this.vertexBuffer();
+    if (vertices === null) return why('vertex', 'an input no float buffer holds');
+    return {
+      program: {
+        uniforms,
+        textures,
+        samplers,
+        constants,
+        ...(vertices ? { vertices: [...vertices.data] } : {}),
+      },
+      images,
+    };
+  }
+
+  /**
+   * What src/main.ts dispatches for a module whose only entry is `@compute`, in a downloaded
+   * project: every uniform and storage binding's value as the Playground hands the CPU oracle
+   * (a storage array of scalars with no size as a typed array, which the program runtime binds
+   * as it is), the storage buffers the entry writes, and each storage texture's format and size.
+   *
+   * @returns the dispatch's values, or why the project cannot carry a binding the page fills.
+   */
+  projectCompute():
+    | {
+        readonly values: Record<string, DataValue>;
+        readonly written: readonly string[];
+        readonly storageTextures: Record<
+          string,
+          { readonly format: string; readonly width: number; readonly height: number }
+        >;
+      }
+    | { readonly why: string } {
+    if (this.unfillable.length > 0)
+      return { why: `${this.unfillable[0]}: no value the page can fill` };
+    const read = this.textures[0] ?? this.samplers[0];
+    if (read) return { why: `${read.name}: a texture or a sampler a dispatch reads` };
+    const all = this.cpuBindings(0, 0, 0, [0, 0]);
+    const values: Record<string, DataValue> = {};
+    for (const block of this.uniforms)
+      values[block.binding.name] = all[block.binding.name] as DataValue;
+    for (const b of this.storage) {
+      const value = all[b.binding.name];
+      const element =
+        b.elem.kind === 'scalar'
+          ? b.elem.scalar
+          : b.elem.kind === 'atomic'
+            ? b.elem.elem
+            : undefined;
+      const typed =
+        element === 'f32'
+          ? 'Float32Array'
+          : element === 'u32'
+            ? 'Uint32Array'
+            : element === 'i32'
+              ? 'Int32Array'
+              : undefined;
+      values[b.binding.name] =
+        b.runtimeSized && typed && Array.isArray(value)
+          ? { $typed: typed, values: value as number[] }
+          : (value as DataValue);
+    }
+    const storageTextures: Record<string, { format: string; width: number; height: number }> = {};
+    for (const t of this.storageTextures) {
+      const spec = this.storageTextureSpec(t);
+      storageTextures[t.name] = { format: spec.format, width: spec.width, height: spec.height };
+    }
+    return { values, written: this.writableStorage(), storageTextures };
+  }
+
+  /** The value the main module's first uniform block gives the field `name`, in the program
+   *  runtime's host shape, for a pass that declares a field of the same name (compiler change
+   *  0026: a pass reads the page's reserved fields and the main file's of its name). */
+  projectValue(name: string): FillValue | undefined {
+    const block = this.uniforms[0];
+    const field = block?.fields.find((f) => f.name === name);
+    if (!block || !field || block.bare) return undefined;
+    return hostValue(field.shape, this.values.get(this.fieldKey(block, field)) ?? []);
   }
 
   /** The same three vertices, per input, in the oracle's shape: a number or an array. */
@@ -1700,3 +1880,39 @@ function slotsHaveAtomic(t: ShaderType, structs: ReadonlyMap<string, StructDecl>
 
 const fmt = (n: number): string =>
   Number.isInteger(n) ? String(n) : Number.isFinite(n) ? n.toPrecision(4) : String(n);
+
+/** A field's numbers, as the panel holds them, in the program runtime's host shape (Rule
+ *  8.21): a scalar a number or a boolean, a vector an array of its components, a matrix its
+ *  flat column-major numbers, and an array of scalars or vectors an array of its elements. */
+export function hostValue(shape: FieldShape, raw: readonly number[]): FillValue {
+  const scalar = (v: number | undefined): number | boolean =>
+    shape.scalar === 'bool' ? (v ?? 0) !== 0 : (v ?? 0);
+  const count = componentCount(shape);
+  const numbers = Array.from({ length: count }, (_, i) => scalar(raw[i]));
+  if (shape.array)
+    return shape.rows === 1
+      ? numbers
+      : Array.from({ length: shape.columns }, (_, i) =>
+          numbers.slice(i * shape.rows, (i + 1) * shape.rows),
+        );
+  return count === 1 ? numbers[0]! : numbers;
+}
+
+/** Sets `value` at `path` inside `target`, making the structs and arrays on the way: a name
+ *  steps into an object, an index into an array. */
+function setPath(
+  target: Record<string, unknown>,
+  path: readonly (string | number)[],
+  value: FillValue,
+): void {
+  let at: Record<string | number, unknown> = target;
+  path.forEach((step, i) => {
+    if (i === path.length - 1) {
+      at[step] = value;
+      return;
+    }
+    const next = path[i + 1];
+    at[step] ??= typeof next === 'number' ? [] : {};
+    at = at[step] as Record<string | number, unknown>;
+  });
+}
