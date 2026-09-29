@@ -89,6 +89,8 @@
 //      separable-blur draws;
 //      the link carries the graph, and the WGSL tab shows a pass's own module on its tab;
 //      Download writes the workspace, pass graph and edits included, as a zip of a folder
+//      Open in VS Code hands the browser a vscode://typeshade.vscode-typeshade/open uri whose
+//      link is the page's own URL, the code, files and passes of the workspace with it
 //  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
 //      editor with a tab for each file it imports, an edit to the imported file changes the
 //      emitted WGSL, a new file is a tab the main file can import, the link carries the
@@ -3256,6 +3258,40 @@ async function checkMultipass(browser, origin) {
           `the folder download is not the workspace: ${download.suggestedFilename()}, ${zip.length} bytes, typeshade.json ${JSON.stringify(parsed)}`,
         );
       report.push(`folder ${zip.length} bytes`);
+      // Open in VS Code: the anchor's click is caught before it navigates, so the page stays.
+      // There is no Worker here, so the link the uri carries is the page's own URL.
+      await page.evaluate(() => {
+        window.__vscodeOpened = [];
+        HTMLAnchorElement.prototype.click = function () {
+          window.__vscodeOpened.push(this.href);
+        };
+      });
+      await page.click('[data-open-vscode]');
+      await page
+        .waitForFunction(() => window.__vscodeOpened.length > 0, undefined, { timeout: 10_000 })
+        .catch(() => {});
+      const opened = await page.evaluate(() => window.__vscodeOpened);
+      const prefix = 'vscode://typeshade.vscode-typeshade/open?link=';
+      const uri = opened[0] ?? '';
+      const carried = uri.startsWith(prefix) ? decodeURIComponent(uri.slice(prefix.length)) : '';
+      const fragmentOf = (href) => new URLSearchParams(href.split('#')[1] ?? '');
+      const want = fragmentOf(page.url());
+      const got = fragmentOf(carried);
+      if (
+        opened.length !== 1 ||
+        !uri.startsWith(prefix) ||
+        !carried.startsWith(`${origin}${ROUTES[0]}#`) ||
+        !want.get('code') ||
+        !want.get('files') ||
+        !want.get('passes') ||
+        ['code', 'files', 'passes'].some((key) => got.get(key) !== want.get(key))
+      )
+        problems.push(
+          `Open in VS Code did not hand over the workspace's link: ${JSON.stringify(opened).slice(0, 200)}`,
+        );
+      if (new URL(page.url()).pathname !== ROUTES[0])
+        problems.push(`Open in VS Code left the page: ${page.url().slice(0, 80)}`);
+      report.push('vscode uri carries the link');
     }
     for (const message of errorsOf(opened)) problems.push(`the page threw: ${message}`);
   } finally {

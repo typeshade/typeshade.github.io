@@ -1004,6 +1004,7 @@ export const ko: Copy = {
       files: '파일',
       newFile: '새 파일',
       download: '폴더로 내려받기',
+      openInVsCode: 'VS Code에서 열기',
       newFileName: '파일 이름',
       badName:
         '파일 이름은 .shade.ts로 끝나야 하고 영문자, 숫자, 점, 하이픈, 밑줄, 슬래시만 쓸 수 있습니다.',

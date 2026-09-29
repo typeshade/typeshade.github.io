@@ -257,6 +257,7 @@ interface PlaygroundCopy {
     readonly files: string;
     readonly newFile: string;
     readonly download: string;
+    readonly openInVsCode: string;
     readonly newFileName: string;
     readonly badName: string;
     readonly takenName: string;
@@ -4077,6 +4078,20 @@ export function wave(x: f32, t: f32): f32 {
       anchor.download = `${openedExample || fileName.replace(/\.shade\.ts$/, '')}.zip`;
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+  // Open in VS Code: the extension's uri handler takes the same link Share copies and opens
+  // the workspace it names (vscode-typeshade, docs/playground-bridge.md). An anchor click
+  // hands the uri to the browser, which asks the reader before it launches the editor, and
+  // the page stays where it is.
+  const openInVsCodeButton = root.querySelector('[data-open-vscode]');
+  if (openInVsCodeButton instanceof HTMLButtonElement)
+    openInVsCodeButton.addEventListener('click', () => {
+      if (!model) return;
+      void shareLink().then((link) => {
+        const anchor = document.createElement('a');
+        anchor.href = `vscode://typeshade.vscode-typeshade/open?link=${encodeURIComponent(link)}`;
+        anchor.click();
+      });
     });
 
   // ── The gallery ────────────────────────────────────────────────────────────────────────
