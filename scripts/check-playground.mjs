@@ -90,7 +90,8 @@
 //      the link carries the graph, and the WGSL tab shows a pass's own module on its tab;
 //      Download writes the workspace, pass graph and edits included, as a zip of a folder
 //      Open in VS Code hands the browser a vscode://typeshade.vscode-typeshade/open uri whose
-//      link is the page's own URL, the code, files and passes of the workspace with it
+//      link is the page's own URL, the code, files and passes of the workspace with it,
+//      read the way VS Code and the extension read it (the query decoded once, then split)
 //  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
 //      editor with a tab for each file it imports, an edit to the imported file changes the
 //      emitted WGSL, a new file is a tab the main file can import, the link carries the
@@ -3273,7 +3274,13 @@ async function checkMultipass(browser, origin) {
       const opened = await page.evaluate(() => window.__vscodeOpened);
       const prefix = 'vscode://typeshade.vscode-typeshade/open?link=';
       const uri = opened[0] ?? '';
-      const carried = uri.startsWith(prefix) ? decodeURIComponent(uri.slice(prefix.length)) : '';
+      // The receiver, as VS Code and the extension read it: Uri.parse percent-decodes the
+      // query once, then the handler splits it with URLSearchParams and takes `link`. A link
+      // encoded once loses everything after its first `&` here.
+      const carried = uri.startsWith(prefix)
+        ? (new URLSearchParams(decodeURIComponent(uri.slice(uri.indexOf('?') + 1))).get('link') ??
+          '')
+        : '';
       const fragmentOf = (href) => new URLSearchParams(href.split('#')[1] ?? '');
       const want = fragmentOf(page.url());
       const got = fragmentOf(carried);

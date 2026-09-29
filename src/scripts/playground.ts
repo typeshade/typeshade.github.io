@@ -4082,14 +4082,16 @@ export function wave(x: f32, t: f32): f32 {
   // Open in VS Code: the extension's uri handler takes the same link Share copies and opens
   // the workspace it names (vscode-typeshade, docs/playground-bridge.md). An anchor click
   // hands the uri to the browser, which asks the reader before it launches the editor, and
-  // the page stays where it is.
+  // the page stays where it is. The link is encoded twice: VS Code decodes the uri's query
+  // once before the handler reads it, and the page's own URL carries `&` and `+` that a
+  // single encoding would leave the handler to split on.
   const openInVsCodeButton = root.querySelector('[data-open-vscode]');
   if (openInVsCodeButton instanceof HTMLButtonElement)
     openInVsCodeButton.addEventListener('click', () => {
       if (!model) return;
       void shareLink().then((link) => {
         const anchor = document.createElement('a');
-        anchor.href = `vscode://typeshade.vscode-typeshade/open?link=${encodeURIComponent(link)}`;
+        anchor.href = `vscode://typeshade.vscode-typeshade/open?link=${encodeURIComponent(encodeURIComponent(link))}`;
         anchor.click();
       });
     });
