@@ -647,7 +647,7 @@ tokens through the CSS variables its stylesheet reads.
 The header is the one every library site has: the name on the left; Use TypeShade, Playground,
 Language, API and Examples; then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 groups (Documentation, Project, Languages) across the shell, then the licence, the copyright
-and the commit the page was built from. Documentation carries 19 links and runs them down two
+and the commit the page was built from. Documentation carries 20 links and runs them down two
 columns 32px apart, and the three groups spread to the shell's two edges: 120px between one
 group and the next at a 768 viewport and 396px from 1440 up in English, 148px and 424px in
 Korean, with 64px as the floor. The space that grows is the space between groups, so the wider

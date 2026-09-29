@@ -1765,7 +1765,7 @@ export const en = {
       'The editor-neutral layer behind the Playground: TypeScript and TypeShade diagnostics, completions, hover, rename and compiled output from one document API.',
     h1: 'Language service',
     intro:
-      "The language service is the layer between the compiler's front end and an editor. It takes text and positions and returns data, and it touches no DOM or Node API. The Playground reads its diagnostics, completions and hover from it today, through the Monaco editor, and a language server for VS Code and other editors will read the same layer later, so the two cannot drift apart.",
+      "The language service is the layer between the compiler's front end and an editor. It takes text and positions and returns data, and it touches no DOM or Node API. The Playground reads its diagnostics, completions and hover from it today, through the Monaco editor, and the [VS Code extension](editor) reads them through a TypeScript server plugin, so the two cannot drift apart. A language server for other editors is not published yet.",
     layersH: 'Layers',
     layersP: `The front end parses a \`"use typeshade"\` file, checks its types, structs and bindings, and reports diagnostics with source positions. The language service sits on top of the front end and of the TypeScript language service, which runs over an ambient declaration of the TypeShade globals, and answers requests about documents it holds by \`uri\`. Adapters sit above it and do nothing semantic: the Playground's Monaco adapter converts coordinates and owns the editor's markers, and an LSP server would carry the same answers over JSON-RPC. A judgement about TypeShade belongs in the service; an adapter converts.`,
     requestsH: 'Requests',
@@ -1862,7 +1862,7 @@ export const en = {
       'When a condition is missing, the extension shows a warning once. The web build was tested in Chromium on VS Code for the Web 1.110 and 1.139.1, and no other browser was tried. The tests do not check whether vscode.dev itself is cross-origin isolated, and completion, signature help, references and rename have no browser test.',
     roundH: 'Playground round trip',
     roundP1:
-      "The [Playground](playground)'s Download as a folder button saves the workspace as a folder: the files, a `typeshade.json` that names the main file and the passes, and a recommendation for this extension. Open in VS Code, the button beside it, hands the workspace to the extension, which asks for a folder, writes the files there and opens it.",
+      "The [Playground](playground)'s Download as a folder button downloads a zip of the workspace as a folder: the files, a `typeshade.json` that names the main file and the passes, and a recommendation for this extension. Open in VS Code, the button beside it, hands the workspace to the extension, which asks for a folder, writes the files there and opens it.",
     roundP2:
       'In the other direction, `TypeShade: Open in Playground` opens the active file, the files it imports and its passes in the Playground. `TypeShade: Open Playground Link` writes the workspace that a Playground link carries to a folder and opens it. Both need the desktop version.',
     agentsH: 'Coding agents',
