@@ -3267,11 +3267,26 @@ async function checkMultipass(browser, origin) {
           window.__vscodeOpened.push(this.href);
         };
       });
+      const hintState = () =>
+        page.evaluate(() => {
+          const line = document.querySelector('[data-vscode-hint]');
+          return line
+            ? { hidden: line.hidden, href: line.querySelector('a')?.getAttribute('href') ?? '' }
+            : null;
+        });
+      const hintBefore = await hintState();
       await page.click('[data-open-vscode]');
       await page
         .waitForFunction(() => window.__vscodeOpened.length > 0, undefined, { timeout: 10_000 })
         .catch(() => {});
       const opened = await page.evaluate(() => window.__vscodeOpened);
+      // No editor answers a vscode: address silently, so the click opens a line that links to
+      // the page on installing the extension, and the line takes no room before the click.
+      const hintAfter = await hintState();
+      if (!hintBefore?.hidden || hintAfter?.hidden !== false || hintAfter.href !== '/guide/editor/')
+        problems.push(
+          `the install hint under the file bar: before ${JSON.stringify(hintBefore)}, after ${JSON.stringify(hintAfter)}`,
+        );
       const prefix = 'vscode://typeshade.vscode-typeshade/open?link=';
       const uri = opened[0] ?? '';
       // The receiver, as VS Code and the extension read it: Uri.parse percent-decodes the

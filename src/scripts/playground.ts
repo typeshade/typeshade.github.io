@@ -4085,7 +4085,12 @@ export function wave(x: f32, t: f32): f32 {
   // the page stays where it is. The link is encoded twice: VS Code decodes the uri's query
   // once before the handler reads it, and the page's own URL carries `&` and `+` that a
   // single encoding would leave the handler to split on.
+  // The browser says nothing when no editor answers the address, so the click also opens a
+  // line under the file bar that links to the page on installing the extension. It closes
+  // itself, and it takes no room until the reader has clicked.
   const openInVsCodeButton = root.querySelector('[data-open-vscode]');
+  const openInVsCodeHint = root.querySelector('[data-vscode-hint]');
+  let hintTimer = 0;
   if (openInVsCodeButton instanceof HTMLButtonElement)
     openInVsCodeButton.addEventListener('click', () => {
       if (!model) return;
@@ -4093,6 +4098,12 @@ export function wave(x: f32, t: f32): f32 {
         const anchor = document.createElement('a');
         anchor.href = `vscode://typeshade.vscode-typeshade/open?link=${encodeURIComponent(encodeURIComponent(link))}`;
         anchor.click();
+        if (!(openInVsCodeHint instanceof HTMLElement)) return;
+        openInVsCodeHint.hidden = false;
+        window.clearTimeout(hintTimer);
+        hintTimer = window.setTimeout(() => {
+          openInVsCodeHint.hidden = true;
+        }, 20_000);
       });
     });
 

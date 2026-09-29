@@ -68,6 +68,10 @@ const table = [
     dest: links.playground,
     note: 'the browser editor: a shader, its diagnostics and its emitted shader text side by side',
   },
+  {
+    dest: links.editor,
+    note: 'the VS Code extension: how to install it, what it gives a shader file on the desktop and in VS Code for the Web, and the round trip with the Playground',
+  },
   { dest: links.guide, note: 'the language guide and its topics' },
   {
     dest: links.languageTypes,

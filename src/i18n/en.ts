@@ -138,6 +138,7 @@ export const en = {
       concepts: 'TypeScript & WebGPU',
       languageService: 'Language service',
       playground: 'Playground',
+      editor: 'Editor support',
       /** The sidebar's own group headings (src/lib/links.ts sidebar()). */
       sidebarGroups: {
         getStarted: 'Get started',
@@ -1008,6 +1009,13 @@ export const en = {
       download: 'Download as a folder',
       // The extension's uri handler opens the workspace's link (vscode-typeshade, docs/playground-bridge.md).
       openInVsCode: 'Open in VS Code',
+      // The button's tooltip: a browser cannot tell whether the extension is installed, so the
+      // hint says what the button needs.
+      openInVsCodeTitle: 'Open in VS Code (needs the TypeShade extension)',
+      // The line that opens under the file bar after a click, since the browser says nothing
+      // when no editor answers the vscode: address. It links to /guide/editor/.
+      openInVsCodeHint:
+        'If VS Code did not open, the TypeShade extension may be missing. [How to install it](editor).',
       newFileName: 'File name',
       badName:
         'A file name ends in .shade.ts and uses letters, digits, dots, hyphens, underscores and slashes.',
@@ -1262,6 +1270,8 @@ export const en = {
         { linkKey: 'languageStages', label: 'Shader stages: compute, vertex and fragment' },
       ]),
       nextLearnAllLink: 'Read the full Language Guide',
+      nextEditorP:
+        'The [VS Code extension](editor) shows diagnostics and the WGSL a file compiles to while you type.',
     },
     title: 'Use TypeShade: install and write your first shader',
     description:
@@ -1814,6 +1824,55 @@ export const en = {
     furtherH: 'Further reading',
     furtherP:
       "The [Playground](playground) is the service at work in a browser. The [design document](languageServiceDesign) in the compiler's repository, at the pinned commit, records the conventions, the adapter contracts and the order of work.",
+  },
+
+  // The editor page at /guide/editor/: how to install the VS Code extension and what it gives
+  // a `"use typeshade"` file. Every claim is one the extension's own README makes, including
+  // what its web tests did and did not cover (vscode-typeshade, packages/vscode-typeshade).
+  editor: {
+    title: 'Editor support: TypeShade in VS Code',
+    description:
+      'Install the TypeShade extension for VS Code, and see what it gives a "use typeshade" file on the desktop and in VS Code for the Web.',
+    h1: 'Editor support',
+    intro:
+      'TypeShade has an extension for VS Code. In a file that starts with `"use typeshade"` it shows the compiler\'s diagnostics, hover and completion, and it previews the WGSL and GLSL the file compiles to.',
+    installH: 'Install',
+    installP:
+      'Install `typeshade.vscode-typeshade` from the [Visual Studio Marketplace](extensionMarketplace), or from [Open VSX](extensionOpenVsx) in an editor that installs from there. From a terminal, one line does it:',
+    installLabel: 'Install from the command line',
+    installP2:
+      'The desktop needs VS Code 1.90 or newer. The extension turns its TypeScript server plugin on for the TypeScript version the workspace uses, so a repository that pins its own `typescript` gets the plugin too.',
+    desktopH: 'In VS Code',
+    desktopP:
+      'Open a file that starts with `"use typeshade"`. The extension answers for it the way the compiler does.',
+    desktopItems: [
+      "Diagnostics, hover, completion, signature help, go to definition, references and rename come from the TypeShade language service, through a TypeScript server plugin. TypeScript's own false errors on a shader file go away. Every other TypeScript file is left as it is.",
+      '`TypeShade: Show WGSL`, `TypeShade: Show GLSL` and `TypeShade: Show Reflection` open a preview beside the editor. It follows the active file and recompiles as you type.',
+      '`TypeShade: Show Canvas` draws the shader in the preview with WebGPU. It needs a VS Code webview that has a WebGPU adapter, and says so where there is none.',
+      '`TypeShade: Run Entry on CPU` runs a function of the file on the CPU with the arguments you type.',
+    ],
+    webH: 'VS Code for the Web',
+    webP: 'On vscode.dev and other VS Code for the Web pages, a shader file gets diagnostics, hover and imports between shader files, through the same plugin. Every command above needs the desktop version. On the web each one shows a message that says so and does nothing else.',
+    webConditionsP: 'Two conditions apply.',
+    webConditions: [
+      "VS Code for the Web 1.110 or newer. An older one does not load the plugin, so TypeScript's own false errors stay on a shader file.",
+      'A page that is cross-origin isolated. Without it the TypeScript server runs no semantic checks in the browser, so neither TypeShade nor TypeScript reports an error. A VS Code for the Web you host yourself needs the `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` headers.',
+    ],
+    webTestedP:
+      'When a condition is missing, the extension shows a warning once. The web build was tested in Chromium on VS Code for the Web 1.110 and 1.139.1, and no other browser was tried. The tests do not check whether vscode.dev itself is cross-origin isolated, and completion, signature help, references and rename have no browser test.',
+    roundH: 'Playground round trip',
+    roundP1:
+      "The [Playground](playground)'s Download as a folder button saves the workspace as a folder: the files, a `typeshade.json` that names the main file and the passes, and a recommendation for this extension. Open in VS Code, the button beside it, hands the workspace to the extension, which asks for a folder, writes the files there and opens it.",
+    roundP2:
+      'In the other direction, `TypeShade: Open in Playground` opens the active file, the files it imports and its passes in the Playground. `TypeShade: Open Playground Link` writes the workspace that a Playground link carries to a folder and opens it. Both need the desktop version.',
+    agentsH: 'Coding agents',
+    agentsP:
+      '[`@typeshade/mcp`](mcpPackage) is a Model Context Protocol server on npm. It gives a coding agent the diagnostics the editor shows, the WGSL and GLSL the compiler emits, types and navigation, and a run of a shader function on the CPU. Claude Code, Codex, Cursor, VS Code agent mode and Gemini CLI can start it. In Claude Code, one plugin installs the server together with a skill that teaches the language:',
+    agentsLabel: 'Install the Claude Code plugin',
+    agentsP2:
+      'The other clients run `npx -y @typeshade/mcp`, and [the package README](mcpReadme) has the settings for each.',
+    sourceP:
+      'The extension and the server are developed in [typeshade/vscode-typeshade](extensionSource).',
   },
 
   examples: {

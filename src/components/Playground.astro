@@ -366,10 +366,11 @@ const runtimeCopy = {
         </div>
         <button type="button" class="file-add" data-new-file aria-label={w.newFile} title={w.newFile}>+</button>
         <button type="button" class="file-add" data-download aria-label={w.download} title={w.download}><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M7 2h2v6.6l2.3-2.3 1.4 1.4L8 12.4 3.3 7.7l1.4-1.4L7 8.6zM2 13h12v2H2z"/></svg></button>
-        <button type="button" class="file-add" data-open-vscode aria-label={w.openInVsCode} title={w.openInVsCode}><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M9 2h5v5h-2V5.4L7.7 9.7 6.3 8.3 10.6 4H9zM2 4h5v2H4v6h6V9h2v5H2z"/></svg></button>
+        <button type="button" class="file-add" data-open-vscode aria-label={w.openInVsCode} title={w.openInVsCodeTitle}><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M9 2h5v5h-2V5.4L7.7 9.7 6.3 8.3 10.6 4H9zM2 4h5v2H4v6h6V9h2v5H2z"/></svg></button>
         <kbd>TS</kbd>
       </div>
       <p data-file-error role="alert" hidden></p>
+      <p data-vscode-hint role="status" hidden><Rich text={w.openInVsCodeHint} locale={locale} /></p>
       <div class="editor-host" data-editor aria-label={t.editor}></div>
       <div class="diagnostics">
         <div class="diagnostics-title"><span>{t.diagnostics}</span><span data-status>{t.idle}</span></div>
@@ -552,6 +553,7 @@ const runtimeCopy = {
   .file-add { flex: none; inline-size: 24px; block-size: 24px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 0; background: var(--color-ground); color: var(--color-text-2); font: 400 1rem/1 var(--font-sans); cursor: pointer; }
   .file-add svg { inline-size: 14px; block-size: 14px; fill: currentColor; vertical-align: middle; }
   .file-add:hover { color: var(--color-text-1); background: var(--color-surface-1); }
+  [data-vscode-hint] { margin: 0; padding: 6px 12px; color: var(--color-text-2); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }
   [data-file-error] { margin: 0; padding: 6px 12px; color: var(--color-diag); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }
 
   /* The transport under the frame: the clock held or run, back to zero, and the frame on the
