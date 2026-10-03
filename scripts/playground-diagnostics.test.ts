@@ -121,7 +121,7 @@ test('native worker failure releases every pending query and reports its cause',
   expect(await client.request('analysis', entry, 2, {})).toBeUndefined();
 });
 
-test('worker analysis surfaces imported errors and repairs rather than returning blank output', async () => {
+test('worker analysis surfaces imported errors and recovers after a dependency repair', async () => {
   let receive: (event: { data: any }) => void = () => {};
   const replies: any[] = [];
   const previous = globalThis.self;
