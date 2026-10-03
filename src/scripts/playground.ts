@@ -59,6 +59,7 @@ import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
+import { diagnosticsForDocument } from './playground-diagnostics.ts';
 import { decodeSource, encodeSource } from './source-link.ts';
 import { workspaceFolder, zipStored } from './workspace-folder.ts';
 import { provideProgram } from './report-context.ts';
@@ -748,6 +749,7 @@ const emitGlsl = (
 /** A row of the diagnostics list: what to say and where it points. A row about a line of the
  *  prelude points nowhere, since the editor does not hold that line. */
 interface DiagnosticRow {
+  readonly uri: string;
   readonly message: string;
   /** The compiler's code: `TS8022` and the like from TypeShade, a number from TypeScript. */
   readonly code: string;
@@ -789,9 +791,14 @@ function mount(root: HTMLElement): void {
    *  repaints from it without asking the worker again. */
   let lastAnalysis: Analysis | undefined;
   let analysedVersion = -1;
-  const serviceFailed = (): void => {
+  const serviceFailed = (message?: string): void => {
     if (status instanceof HTMLElement) status.textContent = copy.serviceFailed;
     root.classList.add('has-errors');
+    root.classList.remove('has-output');
+    output.textContent = '';
+    diagnosticsPane.textContent = message
+      ? `${copy.serviceFailed}: ${message}`
+      : copy.serviceFailed;
   };
   /** The language worker, opened as early as the page runs so it boots while Monaco is still
    *  loading from the CDN; the two arrive in either order and the first analysis waits for
@@ -803,11 +810,10 @@ function mount(root: HTMLElement): void {
       const worker = new Worker(new URL('./playground-language-worker.ts', import.meta.url), {
         type: 'module',
       });
-      worker.addEventListener('error', () => serviceFailed());
       return createLanguageClient(
         worker,
         (asked) => asked === version,
-        () => serviceFailed(),
+        (message) => serviceFailed(message),
       );
     } catch {
       return undefined;
@@ -3095,12 +3101,13 @@ function mount(root: HTMLElement): void {
   /** The compiler writes its diagnostics in English. The one the Playground itself causes, a
    *  file with no directive, is the page's own sentence, so it reads in the page's language. */
   const toRow = (diagnostic: TypeshadeDiagnostic): DiagnosticRow => ({
+    uri: diagnostic.uri,
     message: diagnostic.code === 'TS8001' ? copy.directive : diagnostic.message,
     code: String(diagnostic.code ?? ''),
     severity: diagnostic.severity,
     source: diagnostic.source,
     start: diagnostic.range.start,
-    located: !inPrelude(diagnostic.range.start.line),
+    located: diagnostic.uri !== documentUri || !inPrelude(diagnostic.range.start.line),
   });
 
   const paintDiagnostics = (rows: readonly DiagnosticRow[]): void => {
@@ -3112,7 +3119,17 @@ function mount(root: HTMLElement): void {
     for (const row of rows) {
       const button = el('button') as HTMLButtonElement;
       button.type = 'button';
-      if (row.located) button.append(el('span', 'at', toDisplayPosition(row.start)));
+      const main = row.uri === documentUri;
+      if (row.located)
+        button.append(
+          el(
+            'span',
+            'at',
+            main
+              ? toDisplayPosition(row.start)
+              : `${decodeURI(new URL(row.uri, documentUri).pathname).replace(/^\//, '')}:${row.start.line + 1}:${row.start.character + 1}`,
+          ),
+        );
       button.append(
         el(
           'span',
@@ -3121,7 +3138,17 @@ function mount(root: HTMLElement): void {
         ),
       );
       button.append(el('span', row.severity === 'error' ? 'error' : undefined, ` ${row.message}`));
-      if (row.located) button.addEventListener('click', () => goTo(row.start));
+      if (row.located && pathOfUri(row.uri) !== undefined)
+        button.addEventListener('click', () => {
+          showFile(pathOfUri(row.uri)!);
+          if (main) goTo(row.start);
+          else {
+            const position = { lineNumber: row.start.line + 1, column: row.start.character + 1 };
+            editor.setPosition(position);
+            editor.revealPositionInCenter(position);
+            editor.focus();
+          }
+        });
       else button.disabled = true;
       const item = el('li');
       item.append(button);
@@ -3146,6 +3173,7 @@ function mount(root: HTMLElement): void {
     // The compiler stays quiet about a file with no directive, so the Playground says it.
     if (!analysis.hasDirective && rows.length === 0) {
       rows.push({
+        uri: documentUri,
         message: copy.directive,
         code: 'TS8001',
         severity: 'error',
@@ -3162,7 +3190,7 @@ function mount(root: HTMLElement): void {
     monacoApi.editor.setModelMarkers(
       model,
       'typeshade',
-      found
+      diagnosticsForDocument(found, documentUri)
         .filter((diagnostic) => !inPrelude(diagnostic.range.start.line))
         .map((diagnostic) => ({
           ...toMonacoRange(diagnostic.range),
@@ -3200,10 +3228,11 @@ function mount(root: HTMLElement): void {
         // declare, or leaves out one it does.
         reflection = reflect(compiled.module, { fp64Flavor: choice.fp64Flavor });
         entries = (reflection.entries ?? []) as readonly ReflectedEntry[];
-      } catch {
+      } catch (error) {
         compiled = undefined;
         reflection = undefined;
         entries = [];
+        serviceFailed(error instanceof Error ? error.message : String(error));
       }
     }
 
@@ -3220,8 +3249,15 @@ function mount(root: HTMLElement): void {
       : undefined;
     const glsl = glslOrWhy && 'vertex' in glslOrWhy ? glslOrWhy : undefined;
     glslFailure = glslOrWhy && 'failed' in glslOrWhy ? glslOrWhy.failed : '';
+    let wgsl: string | undefined;
+    try {
+      wgsl = compiled ? emitWgsl(compiled.module, choice) : undefined;
+    } catch (error) {
+      compiled = undefined;
+      serviceFailed(error instanceof Error ? error.message : String(error));
+    }
     emitted = {
-      wgsl: compiled ? emitWgsl(compiled.module, choice) : undefined,
+      wgsl,
       glslVertex: glsl?.vertex,
       glslFragment: glsl?.fragment,
     };
@@ -3272,23 +3308,30 @@ function mount(root: HTMLElement): void {
     }
     const asked = version;
     status.textContent = analysedVersion < 0 ? copy.starting : copy.idle;
-    void client.request('analysis', documentUri, asked, {}).then(async (analysis) => {
-      if (!analysis || asked !== version) return;
-      // Each pass is a program of its own (compiler change 0026), compiled beside the main
-      // file at the same version, so the canvas draws one consistent set.
-      const passes = await Promise.all(
-        passGraph.map(async (p) => {
-          const result = await client.request('analysis', uriOf(p.path), asked, {});
-          return [p.name, result?.module as ModuleDecl | undefined] as const;
-        }),
-      );
-      if (asked !== version) return;
-      passModules = new Map(passes);
-      lastAnalysis = analysis;
-      analysedVersion = asked;
-      paintAnalysis(analysis);
-      paintFileMarkers();
-    });
+    void client
+      .request('analysis', documentUri, asked, {})
+      .then(async (analysis) => {
+        if (!analysis || asked !== version) return;
+        // Each pass is a program of its own (compiler change 0026), compiled beside the main
+        // file at the same version, so the canvas draws one consistent set.
+        const passes = await Promise.all(
+          passGraph.map(async (p) => {
+            const result = await client.request('analysis', uriOf(p.path), asked, {});
+            if (!result && asked === version) throw new Error(copy.serviceFailed);
+            return [p.name, result?.module as ModuleDecl | undefined] as const;
+          }),
+        );
+        if (asked !== version) return;
+        passModules = new Map(passes);
+        lastAnalysis = analysis;
+        analysedVersion = asked;
+        paintAnalysis(analysis);
+        paintFileMarkers();
+      })
+      .catch((error: unknown) => {
+        if (asked === version)
+          serviceFailed(error instanceof Error ? error.message : String(error));
+      });
   };
 
   /** Writes the workspace into the link: the main file as `code`, and the files beside it as
@@ -3887,32 +3930,38 @@ function mount(root: HTMLElement): void {
     if (!client || !monacoApi) return;
     const asked = version;
     for (const [path, file] of extras) {
-      void client.request('analysis', uriOf(path), asked, {}).then((analysis) => {
-        if (!analysis || asked !== version || extras.get(path) !== file) return;
-        const found = analysis.diagnostics;
-        file.markers = found.filter((diagnostic) => diagnostic.severity === 'error').length;
-        monacoApi.editor.setModelMarkers(
-          file.model,
-          'typeshade',
-          found.map((diagnostic) => ({
-            startLineNumber: diagnostic.range.start.line + 1,
-            startColumn: diagnostic.range.start.character + 1,
-            endLineNumber: diagnostic.range.end.line + 1,
-            endColumn: Math.max(
-              diagnostic.range.end.character + 1,
-              diagnostic.range.start.line === diagnostic.range.end.line
-                ? diagnostic.range.start.character + 2
-                : 1,
-            ),
-            message: diagnostic.message,
-            source:
-              diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
-            code: String(diagnostic.code),
-            severity: markerSeverity(monacoApi, diagnostic.severity),
-          })),
-        );
-        paintTabs();
-      });
+      void client
+        .request('analysis', uriOf(path), asked, {})
+        .then((analysis) => {
+          if (!analysis || asked !== version || extras.get(path) !== file) return;
+          const found = diagnosticsForDocument(analysis.diagnostics, uriOf(path));
+          file.markers = found.filter((diagnostic) => diagnostic.severity === 'error').length;
+          monacoApi.editor.setModelMarkers(
+            file.model,
+            'typeshade',
+            found.map((diagnostic) => ({
+              startLineNumber: diagnostic.range.start.line + 1,
+              startColumn: diagnostic.range.start.character + 1,
+              endLineNumber: diagnostic.range.end.line + 1,
+              endColumn: Math.max(
+                diagnostic.range.end.character + 1,
+                diagnostic.range.start.line === diagnostic.range.end.line
+                  ? diagnostic.range.start.character + 2
+                  : 1,
+              ),
+              message: diagnostic.message,
+              source:
+                diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
+              code: String(diagnostic.code),
+              severity: markerSeverity(monacoApi, diagnostic.severity),
+            })),
+          );
+          paintTabs();
+        })
+        .catch((error: unknown) => {
+          if (asked === version)
+            serviceFailed(error instanceof Error ? error.message : String(error));
+        });
     }
   };
 

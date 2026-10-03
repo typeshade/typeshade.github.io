@@ -71,6 +71,8 @@ jobs:
           retention-days: 3
       # The translations are typed against the English copy; a missing string fails here.
       - run: bun run check:types
+      - name: Playground diagnostic regressions
+        run: bun test scripts/playground-diagnostics.test.ts
       - run: bun run qa:seo
       # The Worker answers first on the prefixes wrangler.jsonc lists; none may shadow a page.
       - run: bun run qa:worker-routes
