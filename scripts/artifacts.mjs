@@ -45,6 +45,7 @@ export const STILL_EXAMPLES = [
  *  draw already does. A list for the same reason as the one above: plain Node reads this
  *  file before the build. */
 export const SHADE_STILL_EXAMPLES = [
+  'capsule-corp-namek-class',
   'array-literal-ramp',
   'bare-position',
   'bitfield-bands',

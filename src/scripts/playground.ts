@@ -1,3 +1,4 @@
+import { packModule } from '../../vendor/shader-dsl/src/index.ts';
 // The Playground's browser half. Astro puts this module through Vite, so it can import the
 // compiler and the language service from the vendored checkout. The component's own
 // `define:vars` script is emitted inline as a classic script, which has no import at all, so
@@ -8,11 +9,7 @@
 // do: the page's own chunk is Monaco's glue, the emitters, reflection and the CPU oracle, and
 // the compiler lives in the language worker alone. The raster worker imports `core/oracle.ts`
 // this way for the same reason.
-import {
-  emitModule,
-  emitModuleAt,
-  wgslBackend,
-} from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import { emitModule, wgslBackend } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
 import { hostFeaturesFor } from '../../vendor/shader-dsl/src/core/backend.ts';
 import {
   emitGlslStages,
@@ -22,7 +19,7 @@ import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
 import type { Fp64Flavor } from '../../vendor/shader-dsl/src/core/passes/fp64-lower.ts';
 import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
-import { decodeConsole, type ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
+import { type ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
 import type { ConsoleTier } from '../../vendor/shader-dsl/src/core/console-print.ts';
 import {
   consoleBuffer,
@@ -59,6 +56,7 @@ import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
+import { diagnosticsForDocument } from './playground-diagnostics.ts';
 import { decodeSource, encodeSource } from './source-link.ts';
 import { workspaceFolder, zipStored } from './workspace-folder.ts';
 import { provideProgram } from './report-context.ts';
@@ -717,10 +715,16 @@ const sharedEmitOptions = (choice: EmitChoice): EmitOptions => {
 /** WGSL at the chosen level. `emitModuleAt` takes a level and no other options, and
  *  `emitModule` takes the options at O2, so O0 and O1 reach the compiler with the level
  *  alone. The note under the options bar says so where a reader can see it. */
+const programManifest = (module: ModuleDecl, choice: EmitChoice, console = false) =>
+  packModule(module, {
+    console,
+    emit:
+      choice.level === 'O2'
+        ? { ...sharedEmitOptions(choice), level: choice.level }
+        : { level: choice.level },
+  });
 const emitWgsl = (module: Parameters<typeof emitModule>[0], choice: EmitChoice): string =>
-  choice.level === 'O2'
-    ? emitModule(module, sharedEmitOptions(choice))
-    : emitModuleAt(module, choice.level);
+  programManifest(module, choice).wgsl;
 
 /** Both GLSL stages. The GLSL backend fixes its own optimizer at a fixpoint, so it takes the
  *  options and no level. */
@@ -748,6 +752,7 @@ const emitGlsl = (
 /** A row of the diagnostics list: what to say and where it points. A row about a line of the
  *  prelude points nowhere, since the editor does not hold that line. */
 interface DiagnosticRow {
+  readonly uri: string;
   readonly message: string;
   /** The compiler's code: `TS8022` and the like from TypeShade, a number from TypeScript. */
   readonly code: string;
@@ -789,9 +794,14 @@ function mount(root: HTMLElement): void {
    *  repaints from it without asking the worker again. */
   let lastAnalysis: Analysis | undefined;
   let analysedVersion = -1;
-  const serviceFailed = (): void => {
+  const serviceFailed = (message?: string): void => {
     if (status instanceof HTMLElement) status.textContent = copy.serviceFailed;
     root.classList.add('has-errors');
+    root.classList.remove('has-output');
+    output.textContent = '';
+    diagnosticsPane.textContent = message
+      ? `${copy.serviceFailed}: ${message}`
+      : copy.serviceFailed;
   };
   /** The language worker, opened as early as the page runs so it boots while Monaco is still
    *  loading from the CDN; the two arrive in either order and the first analysis waits for
@@ -803,11 +813,10 @@ function mount(root: HTMLElement): void {
       const worker = new Worker(new URL('./playground-language-worker.ts', import.meta.url), {
         type: 'module',
       });
-      worker.addEventListener('error', () => serviceFailed());
       return createLanguageClient(
         worker,
         (asked) => asked === version,
-        () => serviceFailed(),
+        (message) => serviceFailed(message),
       );
     } catch {
       return undefined;
@@ -1471,6 +1480,7 @@ function mount(root: HTMLElement): void {
         id: 'playground',
         title: fileName,
         wgsl: emitted.wgsl,
+        manifest: programManifest(compiled.module, currentChoice()),
         // A module the GLSL backend cannot express still runs on WebGPU; the WebGL2 half is
         // what it loses, and the note says which backend drew when neither is left.
         vertex: emitted.glslVertex ?? '',
@@ -1566,6 +1576,7 @@ function mount(root: HTMLElement): void {
         name,
         title: name,
         wgsl: emitWgsl(module, choice),
+        manifest: programManifest(module, choice),
         vertex: 'failed' in glsl ? '' : glsl.vertex,
         fragment: 'failed' in glsl ? '' : glsl.fragment,
         layout: {
@@ -2015,19 +2026,15 @@ function mount(root: HTMLElement): void {
         height: target.height,
       };
     const captured = await shader.captureConsole({
-      wgsl: made.wgsl,
-      group: log.group,
-      binding: log.binding,
-      textures: made.guards,
+      manifest: programManifest(compiled!.module, currentChoice(), true),
       words,
       ...(scissor ? { scissor } : {}),
     });
     if (!captured) throw new Error('the canvas has stopped drawing');
-    const decoded = decodeConsole(captured.words, log);
     return {
       result: made.result,
-      events: decoded.events,
-      dropped: decoded.dropped,
+      events: captured.events,
+      dropped: captured.dropped,
       width: captured.width,
       height: captured.height,
     };
@@ -2357,38 +2364,19 @@ function mount(root: HTMLElement): void {
         }
         ranOn = 'cpu';
       } else {
-        const recorded = logs ? consoleBuffer(compiled.module) : undefined;
-        const log = recorded?.log;
         const result = await runComputeOnGpu({
-          wgsl: log && recorded ? emitWgsl(recorded.module, currentChoice()) : emitted.wgsl,
+          manifest: programManifest(compiled.module, currentChoice(), logs),
           entry: entry.name,
           workgroups: [groups, 1, 1],
-          resources: log
-            ? [
-                ...bindings.resources(true),
-                {
-                  kind: 'storage-buffer',
-                  name: '_console',
-                  group: log.group,
-                  binding: log.binding,
-                  readOnly: false,
-                  bytes: new Uint8Array(8 + 4 * CONSOLE_WORDS),
-                },
-              ]
-            : bindings.resources(true),
+          resources: bindings.resources(true),
           constants: bindings.constants(),
           features: gpuFeatures(),
+          console: logs,
+          consoleBytes: 8 + 4 * CONSOLE_WORDS,
         });
         ms = result.ms;
-        const words = result.buffers.get('_console');
-        if (log && words) {
-          const decoded = decodeConsole(
-            new Uint32Array(words.buffer, words.byteOffset, words.byteLength / 4),
-            log,
-          );
-          lines.push(...decoded.events);
-          dropped = decoded.dropped;
-        }
+        lines.push(...result.consoleEvents);
+        dropped = result.dropped;
         for (const name of bindings.writableStorage()) {
           const bytes = result.buffers.get(name);
           if (!bytes) continue;
@@ -3095,12 +3083,13 @@ function mount(root: HTMLElement): void {
   /** The compiler writes its diagnostics in English. The one the Playground itself causes, a
    *  file with no directive, is the page's own sentence, so it reads in the page's language. */
   const toRow = (diagnostic: TypeshadeDiagnostic): DiagnosticRow => ({
+    uri: diagnostic.uri,
     message: diagnostic.code === 'TS8001' ? copy.directive : diagnostic.message,
     code: String(diagnostic.code ?? ''),
     severity: diagnostic.severity,
     source: diagnostic.source,
     start: diagnostic.range.start,
-    located: !inPrelude(diagnostic.range.start.line),
+    located: diagnostic.uri !== documentUri || !inPrelude(diagnostic.range.start.line),
   });
 
   const paintDiagnostics = (rows: readonly DiagnosticRow[]): void => {
@@ -3112,7 +3101,17 @@ function mount(root: HTMLElement): void {
     for (const row of rows) {
       const button = el('button') as HTMLButtonElement;
       button.type = 'button';
-      if (row.located) button.append(el('span', 'at', toDisplayPosition(row.start)));
+      const main = row.uri === documentUri;
+      if (row.located)
+        button.append(
+          el(
+            'span',
+            'at',
+            main
+              ? toDisplayPosition(row.start)
+              : `${decodeURI(new URL(row.uri, documentUri).pathname).replace(/^\//, '')}:${row.start.line + 1}:${row.start.character + 1}`,
+          ),
+        );
       button.append(
         el(
           'span',
@@ -3121,7 +3120,17 @@ function mount(root: HTMLElement): void {
         ),
       );
       button.append(el('span', row.severity === 'error' ? 'error' : undefined, ` ${row.message}`));
-      if (row.located) button.addEventListener('click', () => goTo(row.start));
+      if (row.located && pathOfUri(row.uri) !== undefined)
+        button.addEventListener('click', () => {
+          showFile(pathOfUri(row.uri)!);
+          if (main) goTo(row.start);
+          else {
+            const position = { lineNumber: row.start.line + 1, column: row.start.character + 1 };
+            editor.setPosition(position);
+            editor.revealPositionInCenter(position);
+            editor.focus();
+          }
+        });
       else button.disabled = true;
       const item = el('li');
       item.append(button);
@@ -3146,6 +3155,7 @@ function mount(root: HTMLElement): void {
     // The compiler stays quiet about a file with no directive, so the Playground says it.
     if (!analysis.hasDirective && rows.length === 0) {
       rows.push({
+        uri: documentUri,
         message: copy.directive,
         code: 'TS8001',
         severity: 'error',
@@ -3162,7 +3172,7 @@ function mount(root: HTMLElement): void {
     monacoApi.editor.setModelMarkers(
       model,
       'typeshade',
-      found
+      diagnosticsForDocument(found, documentUri)
         .filter((diagnostic) => !inPrelude(diagnostic.range.start.line))
         .map((diagnostic) => ({
           ...toMonacoRange(diagnostic.range),
@@ -3200,10 +3210,11 @@ function mount(root: HTMLElement): void {
         // declare, or leaves out one it does.
         reflection = reflect(compiled.module, { fp64Flavor: choice.fp64Flavor });
         entries = (reflection.entries ?? []) as readonly ReflectedEntry[];
-      } catch {
+      } catch (error) {
         compiled = undefined;
         reflection = undefined;
         entries = [];
+        serviceFailed(error instanceof Error ? error.message : String(error));
       }
     }
 
@@ -3220,8 +3231,15 @@ function mount(root: HTMLElement): void {
       : undefined;
     const glsl = glslOrWhy && 'vertex' in glslOrWhy ? glslOrWhy : undefined;
     glslFailure = glslOrWhy && 'failed' in glslOrWhy ? glslOrWhy.failed : '';
+    let wgsl: string | undefined;
+    try {
+      wgsl = compiled ? emitWgsl(compiled.module, choice) : undefined;
+    } catch (error) {
+      compiled = undefined;
+      serviceFailed(error instanceof Error ? error.message : String(error));
+    }
     emitted = {
-      wgsl: compiled ? emitWgsl(compiled.module, choice) : undefined,
+      wgsl,
       glslVertex: glsl?.vertex,
       glslFragment: glsl?.fragment,
     };
@@ -3272,23 +3290,30 @@ function mount(root: HTMLElement): void {
     }
     const asked = version;
     status.textContent = analysedVersion < 0 ? copy.starting : copy.idle;
-    void client.request('analysis', documentUri, asked, {}).then(async (analysis) => {
-      if (!analysis || asked !== version) return;
-      // Each pass is a program of its own (compiler change 0026), compiled beside the main
-      // file at the same version, so the canvas draws one consistent set.
-      const passes = await Promise.all(
-        passGraph.map(async (p) => {
-          const result = await client.request('analysis', uriOf(p.path), asked, {});
-          return [p.name, result?.module as ModuleDecl | undefined] as const;
-        }),
-      );
-      if (asked !== version) return;
-      passModules = new Map(passes);
-      lastAnalysis = analysis;
-      analysedVersion = asked;
-      paintAnalysis(analysis);
-      paintFileMarkers();
-    });
+    void client
+      .request('analysis', documentUri, asked, {})
+      .then(async (analysis) => {
+        if (!analysis || asked !== version) return;
+        // Each pass is a program of its own (compiler change 0026), compiled beside the main
+        // file at the same version, so the canvas draws one consistent set.
+        const passes = await Promise.all(
+          passGraph.map(async (p) => {
+            const result = await client.request('analysis', uriOf(p.path), asked, {});
+            if (!result && asked === version) throw new Error(copy.serviceFailed);
+            return [p.name, result?.module as ModuleDecl | undefined] as const;
+          }),
+        );
+        if (asked !== version) return;
+        passModules = new Map(passes);
+        lastAnalysis = analysis;
+        analysedVersion = asked;
+        paintAnalysis(analysis);
+        paintFileMarkers();
+      })
+      .catch((error: unknown) => {
+        if (asked === version)
+          serviceFailed(error instanceof Error ? error.message : String(error));
+      });
   };
 
   /** Writes the workspace into the link: the main file as `code`, and the files beside it as
@@ -3887,32 +3912,38 @@ function mount(root: HTMLElement): void {
     if (!client || !monacoApi) return;
     const asked = version;
     for (const [path, file] of extras) {
-      void client.request('analysis', uriOf(path), asked, {}).then((analysis) => {
-        if (!analysis || asked !== version || extras.get(path) !== file) return;
-        const found = analysis.diagnostics;
-        file.markers = found.filter((diagnostic) => diagnostic.severity === 'error').length;
-        monacoApi.editor.setModelMarkers(
-          file.model,
-          'typeshade',
-          found.map((diagnostic) => ({
-            startLineNumber: diagnostic.range.start.line + 1,
-            startColumn: diagnostic.range.start.character + 1,
-            endLineNumber: diagnostic.range.end.line + 1,
-            endColumn: Math.max(
-              diagnostic.range.end.character + 1,
-              diagnostic.range.start.line === diagnostic.range.end.line
-                ? diagnostic.range.start.character + 2
-                : 1,
-            ),
-            message: diagnostic.message,
-            source:
-              diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
-            code: String(diagnostic.code),
-            severity: markerSeverity(monacoApi, diagnostic.severity),
-          })),
-        );
-        paintTabs();
-      });
+      void client
+        .request('analysis', uriOf(path), asked, {})
+        .then((analysis) => {
+          if (!analysis || asked !== version || extras.get(path) !== file) return;
+          const found = diagnosticsForDocument(analysis.diagnostics, uriOf(path));
+          file.markers = found.filter((diagnostic) => diagnostic.severity === 'error').length;
+          monacoApi.editor.setModelMarkers(
+            file.model,
+            'typeshade',
+            found.map((diagnostic) => ({
+              startLineNumber: diagnostic.range.start.line + 1,
+              startColumn: diagnostic.range.start.character + 1,
+              endLineNumber: diagnostic.range.end.line + 1,
+              endColumn: Math.max(
+                diagnostic.range.end.character + 1,
+                diagnostic.range.start.line === diagnostic.range.end.line
+                  ? diagnostic.range.start.character + 2
+                  : 1,
+              ),
+              message: diagnostic.message,
+              source:
+                diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
+              code: String(diagnostic.code),
+              severity: markerSeverity(monacoApi, diagnostic.severity),
+            })),
+          );
+          paintTabs();
+        })
+        .catch((error: unknown) => {
+          if (asked === version)
+            serviceFailed(error instanceof Error ? error.message : String(error));
+        });
     }
   };
 

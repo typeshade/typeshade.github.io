@@ -1,8 +1,8 @@
 ---
 id: emitting-and-reflection
-source: 7a2b430f5f3d733d57a30f6d122e43dac97ef79794cf2dff7afb9ef0be963b24
-sourceLine: 1212
-rules: 3.4 cBJ4sIX0HcejBNG6fEyGL7SGg-P7dy-fGrNcKHqGCKo=, 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=
+source: 0355386172867fa3bb585a6db41b7ce5c06e756ccee2e2c0046b711e5b27361e
+sourceLine: 1216
+rules: 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=
 ---
 
 이 페이지를 읽고 나면 모듈을 WGSL로, GLSL 스테이지 둘로, 또는 호스트가 자기 프로그램에
@@ -167,9 +167,13 @@ reach.fns // the call-graph closure from those entries, the entries included
 리플렉션을 보고 할당하면 `'module'`, 파이프라인을 소유한 호스트가 직접 선언하고 호스트 쪽
 레이아웃이 기준이 되면 `'host'`입니다. 어느 쪽이든 목록에서 빠지는 바인딩은 없습니다.
 호스트가 직접 소유한 바인딩이라도 그 자리를 알아야 하기 때문입니다. `resourceKind`는 무엇을
-만들어야 하는지 나타냅니다. 텍스처 항목에는 `textureDim`과 `textureElem`도 들어 있는데, 뷰와
-샘플 타입을 정할 때 필요한 두 값으로, 작성하는 쪽 설명은
-[레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에 있습니다. `stages`는 어떤
+만들어야 하는지 나타냅니다. 텍스처 항목에는 뷰에 필요한 두 값인 `textureDim`과
+`textureElem`도 들어 있으며, 작성하는 쪽 설명은
+[레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에 있습니다. 바인드 그룹
+레이아웃에 넣는 단어는 `sampleType`입니다. 깊이 텍스처는 `'depth'`, 정수 텍스처는 `'uint'`
+또는 `'sint'`입니다. `f32` 텍스처에 샘플러를 주는 호출이 있으면 `'float'`이고, 프로그램이
+텍셀을 읽거나 크기나 개수만 확인하면 `'unfilterable-float'`입니다. `r32float`처럼 32비트
+실수 텍스처에는 후자가 필요합니다. `stages`는 어떤
 스테이지가 그 바인딩을 쓰는지 나타냅니다. WebGPU에서는 바인드 그룹 레이아웃 항목에 넣을
 가시성 마스크가 되고, WebGL2에서는 호스트가 유니폼 블록 바인딩 포인트와 텍스처 유닛을
 스테이지별로 배정할 때 쓰는 정보가 됩니다.

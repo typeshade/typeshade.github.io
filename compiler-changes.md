@@ -83,3 +83,27 @@ id first, then the pull request that did the work.
   conversion to an integer: the Korean guide's values-and-mutation section says a float converts
   the same way on every target, through `_f2i` and `_f2u` on GLSL (Rule 11.12); no page shows
   GLSL's spelling of an integer operator, handled in #124.
+- 0031: value parameters can be reassigned without changing the caller's value: the functions
+  copy and a compiled parameter reassignment row (en and ko), and the TS8018 trigger now
+  demonstrates a write to a temporary component, handled in #132.
+- 0032: legal TypeScript variable and parameter names are escaped for a shader backend: the
+  functions scope guidance (en and ko) follows surface section 62, while the TS8068 struct-field
+  trigger keeps the remaining interface naming restriction, handled in #132.
+- 0035: fieldless classes can be constructed and have methods: the class boundary copy and a
+  compiled method-only class row (en and ko) explain the empty host object and internal GPU
+  storage footprint. The TS8010 missing-field and TS8035 static-block examples still describe
+  their remaining refusals, handled in #132.
+- 0036: a direct declared nongeneric function argument can determine an integer-written local's
+  scalar type: the integer-literal mapping row and its en/ko guidance describe integer demand,
+  conflicting demands and the unchanged f32 default. Playground diagnostic regressions cover
+  inference and disagreement, handled in #132.
+- 0025: the WebGPU render and compute runners load compiled manifests into the public program
+  runtime and bind resources by name, while the site keeps its WebGL2 path. Build-time,
+  edited live and Playground payloads carry their manifests. Frame and pixel console captures
+  use the runtime sink and keep source events; the API reference includes `typeshade/emit`
+  and `repack` beside the runtime pages and concept guidance introduced in #125, handled in #132.
+- 0028: render overrides use `RenderState.constants` and compute overrides use the pipeline's
+  `constants`; console captures read dropped-call counts from `Frame.submit()`. Playground
+  manifests are packed under the reader's emit options. English and Korean program-loading
+  guidance explains overrides, console counts and the optional load-time emitter; focused
+  regressions and browser probes check the migrated execution, handled in #132.

@@ -212,6 +212,7 @@ export const SHADE_GROUPS = [
   {
     key: 'classes',
     ids: [
+      'capsule-corp-namek-class',
       'ray-class',
       'orbit-inout',
       'particle-step',

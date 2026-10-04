@@ -1672,6 +1672,10 @@ export const en = {
         "A host that draws its own frames, an engine or a renderer, loads each compiled program into the program runtime, `typeshade/runtime`, and runs it there. A program travels as its manifest, one object that holds the shader code, the bindings and the entry points. `packModule(compile(source).module)` returns it, a module's host import gives it as its default export, and it is plain JSON a build can write to disk.",
       loadOwnsP:
         "The runtime then does most of what the table above gives the application. It uses the application's `GPUDevice` when `createRuntime({ device })` names one, and never destroys it, or requests a device with the features the programs need. It builds every pipeline and bind group from the layouts in the manifest, packs each binding from the value a draw or a dispatch passes by name, and makes the buffers, textures and samplers. The application writes what the compiler cannot know: each pipeline's targets, depth and topology, and when a frame is drawn. A `GPUBuffer`, `GPUTexture` or `GPUSampler` of its own binds as it is, and the frame's `encoder` and a pass's `raw` encoder take its own commands.",
+      loadOptionsP:
+        "Set a program's overrides by name through `RenderState.constants` for a draw or the `constants` option of `Program.compute()` for a dispatch. `Frame.submit()` returns the console's line and dropped-call counts for each recorded entry. A host with a console sink reads those counts to report calls that did not fit in the recording buffer.",
+      loadEmitP:
+        'A host that enables console recording after the build can pass `repack` from `typeshade/emit` as `createRuntime({ emit: repack })`. Build the manifest with `packModule(module, { ir: true })` so it carries the portable IR. The load-time emitter uses the emit options stored in the manifest and carries no TypeScript front end.',
       loadNote:
         'The program runtime runs on WebGPU only. A host that draws on WebGL2 compiles the module, or imports it and calls its entry points.',
       reflectionH: 'Reflection',
@@ -2165,7 +2169,7 @@ export const en = {
         boundary: '4. Where TypeScript classes stop',
         boundaryItems: [
           'An entry point is a top-level function, not a method.',
-          'A class with no fields is not a struct, so write its functions as functions.',
+          'A class with no instance fields can be constructed and can have methods, accessors and static members. Its host value is `{}`. Reflection includes the internal GPU storage footprint: 4 bytes in std430 and 16 bytes in std140, with no authored field added.',
           'A getter and a setter each lower to a function of their own, and a class has one constructor, as in TypeScript.',
           '`new` builds a value inside a function body, and a module constant takes an object literal.',
           'Prefer a type alias when no field needs a decorator.',
@@ -2201,7 +2205,7 @@ export const en = {
           'Here <code>value</code> is the input parameter, <code>f32</code> is the GPU type of both the input and result, and <code>return</code> produces the value for the caller.',
         params: '2. Parameters and return types',
         paramsP:
-          'A parameter is an input to the function and the return type describes the shape of its result. Types are part of compilation: they tell the compiler which values and operations are valid.',
+          'A parameter is an input to the function and the return type describes the shape of its result. Reassigning a value parameter changes a local copy for that invocation and leaves the caller’s value unchanged. This applies to helpers, methods and stage inputs. Types tell the compiler which values and operations are valid.',
         paramsTable: [
           ['Part', 'Role'],
           ['`a`, `b`', 'GPU input values.'],
@@ -2244,7 +2248,7 @@ export const en = {
           'The vertex function has two different inputs: `vid` is a GPU builtin and `vin` is a user-defined struct. The fragment function makes its builtin input, `pid`, explicit as well, so the signature documents the stage interface.',
         scope: '9. Functions and scope',
         scopeP:
-          'Local variables belong to the current function invocation. Keep them conceptually separate from resources and builtin inputs supplied by the shader interface.',
+          'Local variables belong to the current function invocation. A variable or parameter may use a legal TypeScript name such as `target`; the shader writer escapes names its backend reserves. Resource names, entry names and struct field names retain their interface naming rules.',
         scopeNote:
           '`factor` is a local value scoped to the function. Resources such as `camera` and `pixels` belong to the host-facing shader interface, while builtin parameters are inputs supplied by the GPU stage.',
         boundary: '10. Where TypeScript functions stop',
@@ -2516,6 +2520,10 @@ export const en = {
             name: 'Top-level function',
             p: 'A module function of the same name, parameters and return type.',
           },
+          mutableParameter: {
+            name: 'Parameter reassignment',
+            p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged.',
+          },
           localFunction: {
             name: 'Local function',
             p: 'A function of the module, named after the function that declares it.',
@@ -2551,6 +2559,10 @@ export const en = {
           constructorNew: {
             name: '`constructor` and `new`',
             p: '`new` is a call of `Ray_new`, which builds the struct and hands it back.',
+          },
+          fieldlessClass: {
+            name: 'Class without fields',
+            p: 'Construction and method calls work with no instance fields. The host value is `{}`; the GPU receives an internal storage member that is absent from the source value.',
           },
           method: {
             name: 'Method',
@@ -2682,7 +2694,7 @@ export const en = {
           booleanType: { name: '`boolean`', p: 'The shader spelling is `bool`.' },
           integerLiteral: {
             name: 'Integer literal',
-            p: 'The literal takes the type its position declares, and folds in it.',
+            p: 'An integer-written local initializer can take the `i32` or `u32` required by a direct call to a declared nongeneric function. Conflicting declared argument types produce `TS8003`; use an annotation or cast to settle the type. With no integer demand, an unannotated local remains `f32`. Float-written initializers, module constants and loop induction variables keep their existing rules.',
           },
           increment: {
             name: 'Increment and decrement',

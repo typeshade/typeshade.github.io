@@ -21,6 +21,7 @@ import {
   type TypeshadeLanguageService,
 } from '../../vendor/shader-dsl/src/language-service/index.ts';
 import type { Analysis, LanguageReply, LanguageRequest } from './playground-language.ts';
+import { mergeCompileDiagnostics } from './playground-diagnostics.ts';
 
 let service: TypeshadeLanguageService | undefined;
 /** The text of every open document, since the service keeps its own copy and does not hand
@@ -49,9 +50,10 @@ function analyse(languageService: TypeshadeLanguageService, uri: string): Analys
   const text = texts.get(uri);
   if (text === undefined) return { diagnostics, hasDirective };
   const result = compile(text, { fileName: uri, readDocument });
+  const merged = mergeCompileDiagnostics(diagnostics, result.diagnostics);
   if (result.diagnostics.some((diagnostic) => diagnostic.category === 'error'))
-    return { diagnostics, hasDirective };
-  return { diagnostics, hasDirective, module: result.module };
+    return { diagnostics: merged, hasDirective };
+  return { diagnostics: merged, hasDirective, module: result.module };
 }
 
 self.addEventListener('message', (event: MessageEvent<LanguageRequest>) => {

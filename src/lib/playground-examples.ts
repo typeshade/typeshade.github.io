@@ -83,6 +83,7 @@ export const playgroundExampleIds = [
   'generic-class',
   'tuple-and-brand',
   'class-syntax',
+  'capsule-corp-namek-class',
   'rng-method',
   'class-builder',
   'class-parts',
