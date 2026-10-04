@@ -83,3 +83,17 @@ id first, then the pull request that did the work.
   conversion to an integer: the Korean guide's values-and-mutation section says a float converts
   the same way on every target, through `_f2i` and `_f2u` on GLSL (Rule 11.12); no page shows
   GLSL's spelling of an integer operator, handled in #124.
+- 0031: value parameters can be reassigned without changing the caller's value: the functions
+  copy and a compiled parameter reassignment row (en and ko), and the TS8018 trigger now
+  demonstrates a write to a temporary component, handled in #132.
+- 0032: legal TypeScript variable and parameter names are escaped for a shader backend: the
+  functions scope guidance (en and ko) follows surface section 62, while the TS8068 struct-field
+  trigger keeps the remaining interface naming restriction, handled in #132.
+- 0035: fieldless classes can be constructed and have methods: the class boundary copy and a
+  compiled method-only class row (en and ko) explain the empty host object and internal GPU
+  storage footprint. The TS8010 missing-field and TS8035 static-block examples still describe
+  their remaining refusals, handled in #132.
+- 0036: a direct declared nongeneric function argument can determine an integer-written local's
+  scalar type: the integer-literal mapping row and its en/ko guidance describe integer demand,
+  conflicting demands and the unchanged f32 default. Playground diagnostic regressions cover
+  inference and disagreement, handled in #132.

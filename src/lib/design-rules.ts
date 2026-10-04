@@ -641,6 +641,26 @@ const EXPLAINERS: readonly {
   readonly rules: readonly string[];
 }[] = [
   {
+    page: '/guide/language/types/',
+    source: 'language.topics.types.boundaryItems in src/i18n',
+    rules: ['8.9', '8.21'],
+  },
+  {
+    page: '/guide/language/from-typescript/classes/',
+    source: 'the fieldlessClass row in src/lib/typescript-lowering.ts and its copy in src/i18n',
+    rules: ['8.9', '8.21'],
+  },
+  {
+    page: '/guide/language/functions/',
+    source: 'language.topics.functions.paramsP and scopeP in src/i18n',
+    rules: ['3.2', '3.3', '3.4', '8.8'],
+  },
+  {
+    page: '/guide/language/from-typescript/expressions/',
+    source: 'the integerLiteral row in src/lib/typescript-lowering.ts and its copy in src/i18n',
+    rules: ['5.1'],
+  },
+  {
     page: '/guide/language/from-wgsl/types/',
     source:
       'src/lib/target-mapping.ts, MATRICES: the two-row shapes are declared outside a uniform',
@@ -656,7 +676,7 @@ const EXPLAINERS: readonly {
     page: '/guide/language/from-typescript/functions/',
     source:
       'the localFunction, closure and recursion rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
-    rules: ['8.4', '8.17'],
+    rules: ['8.4', '8.8', '8.17'],
   },
   {
     page: '/guide/language/from-typescript/control-flow/',
@@ -671,23 +691,24 @@ const EXPLAINERS: readonly {
   },
 ];
 
-/** The fingerprint each rule's explaining pages were last read against, at 22120e7. */
+/** The rule versions the explaining pages were last read against. */
 const READ_AGAINST: Readonly<Record<string, string>> = {
   '1.2': 't6OvP1FlcnvK4mIZKbcPULikBSKQ5LJ59oSe_GWWSio=',
   '2.1': 'JKQKf6lgUiCKC3Gzz3E1NGu_InxSbrY2f6lV6mkU1J8=',
   '2.2': 'X0g_aM9dhyo0h4x4klnU_hRQiKqok1jFPsVAbMRIgag=',
   '2.3': 'r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=',
   '3.1': 'US52ORocEX4MP8jxev-M_GTs0RerZfC5J1QncEFIvss=',
-  '3.2': 'Gq18kjX-tqU2Jm0TLYNBuit4Rdx4nqciyh1xaXNbSCU=',
-  '3.3': 'km920wkBuPaz0OXge_Xv96_s_n_Tgb6knaVrEvkmyWs=',
-  '3.4': 'cBJ4sIX0HcejBNG6fEyGL7SGg-P7dy-fGrNcKHqGCKo=',
+  '3.2': 'N7a05QZUSi2jL3_tFnFwNNgpHksJhYNISGt05vMAa9o=',
+  '3.3': 'AyEz-WF5u6SQDezYBlzBMCvULzVzrt7ZC_mT8SBVcuM=',
+  '3.4': 'qTsvqHCf4ZNlv5OA0ks54fZEJ2-O_jR3l_uT-MjDSqw=',
   '3.9': '3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=',
   '4.1': 'LP3By33VWErDu7PrWT7ra-cVYi9Bt0Ct4IekEwkzgq0=',
   '4.2': 'MpVj8dEE3vyccKw-6hZlbejYh8Eot8TKjXivzSjJ4KI=',
   '4.6': 'RwdafG75jJiCMgm6Du1X3zVcPigfJdPEwfy6iWlDksU=',
   '4.8': 'ZaXqxS6SImuhTEXg74x7e6A4X5QWcoGarvtV45ZRA4I=',
-  '5.3': 'hFwCFgSFl0kVWlfIaGi0HmVC5sDvhYDjrRIwV6MTN8s=',
-  '5.4': 'm3S6sXPWnOesd6uNnbfRhXzKLaOo3-EVWbteiqqZtB8=',
+  '5.1': 'KGH7R2quVB6wfVAwwDpN7YzUTTB2Mr3v1wLdaL4tLcU=',
+  '5.3': 'AlhLu-cJSNgGl-ltXEFlhL7eWs5_USuUdEImJEf0Eb4=',
+  '5.4': 'RphTFmChXNrzoLVIpKED02ndV41w4BSuuRjq3nTUtVM=',
   '6.1': 'bQNdly5Y0zf8TGTekfGvQL67oPOQ8W0hMfIplhb_N2o=',
   '6.2': 'X1TddP_Ob7b4QaR9Qbuoo1UgPCngNA5JdtbbWwd_lOc=',
   '6.3': 'pemg9yKGahUemSQAl6etOjgglWVpRbuBu_W4Sz92xGY=',
@@ -697,8 +718,8 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '6.8': 'ACzJof4XG1J3td1gWZabFg6SznMgvkW7eareHD7el_Q=',
   '6.9': 'qi0W6dDsL08MCwIYGCDtMbTulbALP34qs5vuFsoiS0s=',
   '6.10': 'OLairZeuEbOS4mRu6Mk4jEY7nzisA7VAnKXhkjTxYs4=',
-  '7.1': 'UFX5x6t2_pm0hKz-JXQbn3GhNx0yKdrlpgmNPEZowog=',
-  '7.2': 'hcZZVUBWM6MYljeqQEMADAV28hvp0cOLU8-wy6vOvWs=',
+  '7.1': 'AFJzu81K-Vqw_MC2Gc-m4fnJAG7BARdj8l_YuG5C368=',
+  '7.2': 'pq7MMgjLqR7CGDzqned3wJ5GdhWpKgILRKKHF4tanvA=',
   '7.3': 'dg4uzav_rg6XoVu7GPWJl1-ldfIExMJUCzfIWZ_t6i0=',
   '7.4': 'Emky1db0T6Mhf0H1_VyxRD8Ub8JLKEB_0DqK59uhD-M=',
   '7.5': '4308LIgSysAnlue51NfkW0VyNcY9-VTAPwyWJ1UyQN4=',
@@ -711,8 +732,8 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '8.5': 'eAmMhCcS0QclyFTr3MIjXhcluzKxvIyjwnsDuKbNuTU=',
   '8.6': 'qW_RUaBjL-O-OIZTeHrwOCT5o9siV0waqA7BNLo7WfU=',
   '8.7': 'FYpP5pg4_Ct5BfBIVI4VaTEc8VskMuT5JgT4arrvVCg=',
-  '8.8': 'P6fpj_bywzy4Bq7fc4mbXbB2YqZUns1nGSpusCsnG3I=',
-  '8.9': 'GkvGbmg6Fl6m5-mubtUtp82JK3JPoMRexhxxmd1F6EY=',
+  '8.8': 'eUleePWPUoP-Vd2uNi_ZLVlR3YfM1RxSAXJDocgnlew=',
+  '8.9': '65iaTLzy5-ZMlwzG2u35SBKA9qI46Q5HFG7SAR3-vuE=',
   '8.10': 'BLxxuQWIUO2sGAoDGiDJ1Z0SrYoHaCYva2sQshZ1nKI=',
   '8.11': 'R-96aWYlY8u8_m8xXTT-vAbk-BkIB-YjKVzMyW9NKdw=',
   '8.12': 'RdysJL6wG5oIuDDW_XRt1WEtzUwAxtGNOiVfTch2_Mk=',
@@ -720,9 +741,10 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '8.14': 'SP-Fa9DtpBru_e2Zuh3x8ZUFrqweaTrNrJs-c8RHbE0=',
   '8.15': '0FrSw2QS2IA5gidXWeBTDqS3K7OeMxTUm2tRcR7ZSo0=',
   '8.16': '4o-oQhesBW9n9XwG1L78TuLDzJ4ugP2K2qE8LS2K06E=',
-  '8.17': 'bmgiPFsEG2Yblp2DIpYIO5VBhGkKFOOZm3PGAYCW__U=',
+  '8.17': 'tKMYGjcmLpd389K1ZWtVphgcKc9uta7ZyhrjWXzoWaI=',
   '8.18': 'Y8IT_8FTtqB3t_T4_Rg8dC6G8BTY7BuEbQUHM1MNMRw=',
   '8.19': 'C4CCOJUbq6DPSVzJtfwTX_uFWxk4Rc_-ISBYsfrtxKk=',
+  '8.21': '4TlbIJAUwx63QAu3i_l36-zZHIiIW3jIeYWRdant5A0=',
   '8.22': 'CSipAu_lP4nuQbNgkYGyi9q-TIQ0sDBvNaUJxFl4U1s=',
   '8.23': '5X2lEcDkoSD2N8ZiiXRKk3_AVJlejFcaPJl4X4n611U=',
   '9.2': 'UjdAYZRLzP-1L7XryMHNvYUQDbMNmFmw-YnvSbJL2LU=',

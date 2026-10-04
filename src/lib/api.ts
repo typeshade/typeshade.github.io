@@ -167,6 +167,7 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/compiler/ts/directive.ts': 'authoring',
   'src/compiler/ts/pack.ts': 'reflection-api',
   'src/core/manifest-types.ts': 'reflection-api',
+  'src/core/manifest.ts': 'reflection-api',
   'src/core/ir/span.ts': 'ir',
   'src/core/debug/dispatch.ts': 'cpu-oracle',
   'src/core/console.ts': 'console',
