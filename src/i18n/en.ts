@@ -586,8 +586,6 @@ export const en = {
         LOOP_INDUCTION:
           'A `for` loop whose counter is not one `let` of type `i32` or `u32`, or whose update is not a constant step.',
         BREAK_OUTSIDE: 'A `break` with no loop or `switch` around it.',
-        STRUCT_FIELD:
-          "A struct literal or an entry's IO that does not match its declaration: a field missing, a field the struct does not have, or a `@location` that does not line up.",
         TOP_LEVEL:
           'Something at the top level of the file the compiler cannot declare: a bare statement, or a module-level declaration of a shape it refuses.',
         BACKEND:
@@ -2170,6 +2168,7 @@ export const en = {
         boundaryItems: [
           'An entry point is a top-level function, not a method.',
           'A class with no instance fields can be constructed and can have methods, accessors and static members. Its host value is `{}`. Reflection includes the internal GPU storage footprint: 4 bytes in std430 and 16 bytes in std140, with no authored field added.',
+          'A derived value can be used where its base class is declared when the compiler proves that the base view is read-only and preserves dispatch. Overrides, receiver writes and observable alias mutation require a concrete type or remain unsupported.',
           'A getter and a setter each lower to a function of their own, and a class has one constructor, as in TypeScript.',
           '`new` builds a value inside a function body, and a module constant takes an object literal.',
           'Prefer a type alias when no field needs a decorator.',
@@ -2248,7 +2247,7 @@ export const en = {
           'The vertex function has two different inputs: `vid` is a GPU builtin and `vin` is a user-defined struct. The fragment function makes its builtin input, `pid`, explicit as well, so the signature documents the stage interface.',
         scope: '9. Functions and scope',
         scopeP:
-          'Local variables belong to the current function invocation. A variable or parameter may use a legal TypeScript name such as `target`; the shader writer escapes names its backend reserves. Resource names, entry names and struct field names retain their interface naming rules.',
+          'Local variables belong to the current function invocation. Parameters and body locals may shadow module values; a closure resolves the nearest declaration. Duplicate declarations in the same scope remain errors. A variable or parameter may use a legal TypeScript name such as `target`; the shader writer escapes names its backend reserves. Resource names, entry names and struct field names retain their interface naming rules.',
         scopeNote:
           '`factor` is a local value scoped to the function. Resources such as `camera` and `pixels` belong to the host-facing shader interface, while builtin parameters are inputs supplied by the GPU stage.',
         boundary: '10. Where TypeScript functions stop',
@@ -2524,6 +2523,10 @@ export const en = {
             name: 'Parameter reassignment',
             p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged.',
           },
+          lexicalShadow: {
+            name: 'Shadowing a module value',
+            p: 'A parameter or body local can use the name of a module value. Closures resolve the nearest declaration; duplicates in the same scope remain errors.',
+          },
           localFunction: {
             name: 'Local function',
             p: 'A function of the module, named after the function that declares it.',
@@ -2579,6 +2582,10 @@ export const en = {
           extendsSuper: {
             name: '`extends` and `super`',
             p: "The base's fields come first, an inherited method is lowered again, and `super` is a function of its own. [shape-inheritance](shadeShapeInheritance)",
+          },
+          baseValue: {
+            name: 'Derived value in a base position',
+            p: 'The compiler builds the base representation once when it proves read-only access and equivalent method dispatch. Overrides, receiver writes and observable alias mutation remain outside that proof.',
           },
           abstractRow: {
             name: '`abstract` class',
@@ -2694,7 +2701,7 @@ export const en = {
           booleanType: { name: '`boolean`', p: 'The shader spelling is `bool`.' },
           integerLiteral: {
             name: 'Integer literal',
-            p: 'An integer-written local initializer can take the `i32` or `u32` required by a direct call to a declared nongeneric function. Conflicting declared argument types produce `TS8003`; use an annotation or cast to settle the type. With no integer demand, an unannotated local remains `f32`. Float-written initializers, module constants and loop induction variables keep their existing rules.',
+            p: 'An integer-written local initializer can take the `i32` or `u32` required by a declared nongeneric function, a constructor or a method argument. Explicitly typed initialization and simple assignment can establish the same demand in either direction when the type is known independently of the local. Conflicting concrete types produce `TS8003`; use an annotation or cast to settle the type. With no integer demand, an unannotated local remains `f32`. Float-written initializers, module constants and loop induction variables keep their existing rules.',
           },
           increment: {
             name: 'Increment and decrement',
