@@ -3,7 +3,7 @@
 // gzipped) stays out of a page until a reader edits something. Every instance on a page
 // awaits the same import, so the chunk is fetched once however many canvases are on it.
 
-import { compile, reflect } from '../../vendor/shader-dsl/src/index.ts';
+import { compile, reflect, packModule } from '../../vendor/shader-dsl/src/index.ts';
 import {
   composeSource,
   controlsFor,
@@ -122,6 +122,7 @@ export function compileLive(
     id,
     title,
     wgsl: result.wgsl,
+    manifest: packModule(result.module),
     vertex: result.glsl.vertex,
     fragment: result.glsl.fragment,
     layout,

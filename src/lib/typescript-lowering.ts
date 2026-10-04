@@ -251,6 +251,11 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
   ],
   functions: [
     {
+      id: 'mutableParameter',
+      ts: 'export function brighter(value: f32): f32 {\n  value += 0.25;\n  return value;\n}',
+      pick: ['brighter'],
+    },
+    {
       id: 'topFunction',
       ts: 'export function lum(c: vec3): f32 {\n  return dot(c, vec3(0.2126, 0.7152, 0.0722))\n}',
       pick: ['lum'],
@@ -301,6 +306,11 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     },
   ],
   classes: [
+    {
+      id: 'fieldlessClass',
+      ts: 'class Counter {\n  next(value: f32): f32 { return value + 1.; }\n}\nexport function next(value: f32): f32 {\n  return new Counter().next(value);\n}',
+      pick: ['Counter', 'Counter_new', 'Counter_next', 'next'],
+    },
     {
       id: 'constructorNew',
       ts: 'class Ray {\n  origin: vec3\n  dir: vec3\n  constructor(origin: vec3, dir: vec3) {\n    this.origin = origin\n    this.dir = dir\n  }\n}',
@@ -516,8 +526,8 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     },
     {
       id: 'integerLiteral',
-      ts: 'export function counts(): u32 {\n  const n: u32 = 7\n  return n * 3\n}',
-      pick: ['counts'],
+      ts: 'function offset(value: i32): i32 { return value; }\nexport function counts(): i32 {\n  const n = -1;\n  return offset(n);\n}',
+      pick: ['offset', 'counts'],
     },
     {
       id: 'increment',

@@ -429,17 +429,17 @@ export const facts = {
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
-  commit: 'ec953ae',
+  commit: '4dda5269',
   examples: 36,
-  shadeExamples: 91,
+  shadeExamples: 92,
   bothTargets: 35,
   testFiles: 302,
-  goldenGlslPairs: 104,
+  goldenGlslPairs: 105,
   builtins: 163,
   portableBuiltins: 44,
   glslAbsentBuiltins: 43,
   mathAliasBuiltins: 27,
-  constructRows: 65,
+  constructRows: 67,
   wgslBuiltinIds: 16,
   glslCapabilities: 4,
   languageEntries: 309,
@@ -458,9 +458,9 @@ const pinned = {
   rulesPending: 1,
   rulesReview: 5,
   rulesSurfaceSections: 38,
-  rulesAdded: 1,
+  rulesAdded: 0,
   rulesRemoved: 0,
-  rulesChanged: 3,
+  rulesChanged: 15,
 };
 const drift: string[] = [];
 if (facts.examples !== pinned.examples)

@@ -38,10 +38,12 @@ const TO = PACKAGE_NAME;
  *  by. The barrel comes first, so an export another entry point shares with it is one page,
  *  whose import line is the barrel's and which names the other specifiers too. The program
  *  runtime is its own entry point (compiler change 0025): an application that loads compiled
- *  programs imports it and none of the compiler. */
+ *  programs imports it and none of the compiler. The optional load-time emitter is a separate
+ *  entry point, typeshade/emit, which reads portable IR without the TypeScript front end. */
 const ENTRY_POINTS: readonly { readonly file: string; readonly specifier: string }[] = [
   { file: BARREL, specifier: PACKAGE_NAME },
   { file: 'src/runtime.ts', specifier: `${PACKAGE_NAME}/runtime` },
+  { file: 'src/emit.ts', specifier: `${PACKAGE_NAME}/emit` },
 ];
 // The one name from the pre-release scope that stays, because it is what the pinned compiler
 // reads at runtime. scripts/check-seo.mjs exempts it too.
@@ -167,6 +169,7 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/compiler/ts/directive.ts': 'authoring',
   'src/compiler/ts/pack.ts': 'reflection-api',
   'src/core/manifest-types.ts': 'reflection-api',
+  'src/core/manifest.ts': 'reflection-api',
   'src/core/ir/span.ts': 'ir',
   'src/core/debug/dispatch.ts': 'cpu-oracle',
   'src/core/console.ts': 'console',
@@ -186,6 +189,7 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/core/backends/wgsl.ts': 'emit',
   'src/core/backends/glsl.ts': 'emit',
   'src/core/emit.ts': 'emit',
+  'src/emit.ts': 'emit',
   'src/core/fragment.ts': 'emit',
   'src/core/passes/match-lower.ts': 'emit',
   'src/core/passes/opt/optimize.ts': 'emit',

@@ -988,7 +988,7 @@ export function main(@location(0) uv: vec2): vec4 {
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  uv = uv * 2.
+  vec2(uv).x = 1.
   return vec4(uv, 0., 1.)
 }
 `,
@@ -997,7 +997,7 @@ export function main(@location(0) uv: vec2): vec4 {
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
   let st = uv
-  st = st * 2.
+  st.x = 1.
   return vec4(st, 0., 1.)
 }
 `,

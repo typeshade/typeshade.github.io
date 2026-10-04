@@ -1632,6 +1632,10 @@ export const ko: Copy = {
         '엔진이나 렌더러처럼 프레임을 직접 그리는 호스트는 컴파일된 프로그램을 프로그램 런타임 `typeshade/runtime`에 불러와 실행합니다. 프로그램은 매니페스트라는 객체 하나로 전달되며, 여기에 셰이더 코드와 바인딩, 진입점이 모두 들어 있습니다. `packModule(compile(source).module)`이 이 객체를 돌려주고, 호스트에서 모듈을 가져오면 기본 내보내기로 받습니다. 평범한 JSON이어서 빌드가 디스크에 그대로 쓸 수도 있습니다.',
       loadOwnsP:
         '이때 위 표에서 애플리케이션이 하던 일은 대부분 런타임이 맡습니다. `createRuntime({ device })`에 애플리케이션의 `GPUDevice`를 넘기면 그 디바이스를 쓰되 파괴하지는 않고, 넘기지 않으면 프로그램에 필요한 기능을 갖춘 디바이스를 직접 요청합니다. 파이프라인과 바인드 그룹은 매니페스트에 적힌 레이아웃대로 만듭니다. 그리기나 디스패치가 이름으로 넘긴 값으로 바인딩을 채우고, 버퍼와 텍스처, 샘플러도 런타임이 만듭니다. 애플리케이션은 컴파일러가 알 수 없는 것을 정합니다. 파이프라인별 타깃과 깊이, 토폴로지, 그리고 프레임을 언제 그릴지가 여기에 속합니다. 애플리케이션이 직접 만든 `GPUBuffer`, `GPUTexture`, `GPUSampler`는 그대로 바인딩되고, 프레임의 `encoder`와 패스의 `raw` 인코더에는 애플리케이션 자신의 명령을 기록할 수 있습니다.',
+      loadOptionsP:
+        '프로그램의 override 값은 이름으로 지정합니다. 그릴 때는 `RenderState.constants`, 디스패치할 때는 `Program.compute()`의 `constants` 옵션으로 넘깁니다. `Frame.submit()`은 기록한 진입점마다 콘솔 줄 수와 버퍼 공간이 부족해 기록하지 못한 호출 수를 돌려줍니다. 콘솔 sink를 쓰는 호스트는 이 수치로 누락된 호출을 알릴 수 있습니다.',
+      loadEmitP:
+        '빌드 뒤에 콘솔 기록을 켜는 호스트는 `typeshade/emit`의 `repack`을 `createRuntime({ emit: repack })`으로 넘길 수 있습니다. 이때 매니페스트는 `packModule(module, { ir: true })`로 만들어 이식 가능한 IR을 담아야 합니다. 로드 시점 이미터는 매니페스트에 저장된 emit 옵션을 쓰며, TypeScript 프런트엔드를 포함하지 않습니다.',
       loadNote:
         '프로그램 런타임은 WebGPU에서만 동작합니다. WebGL2에서 그리는 호스트는 모듈을 컴파일하거나, 모듈을 가져와 진입점을 부릅니다.',
       reflectionH: '리플렉션',
@@ -1966,6 +1970,7 @@ export const ko: Copy = {
         'bit-bump': '내장 함수 한 바퀴',
         'bool-select': '불 벡터',
         'ray-class': '클래스 메서드',
+        'capsule-corp-namek-class': '나메크의 캡슐 코퍼레이션 우주선',
         'orbit-inout': '자기 객체를 바꾸는 메서드',
         'particle-step': '객체를 바꾸는 메서드들',
         'shape-inheritance': '상속',
@@ -2079,6 +2084,8 @@ export const ko: Copy = {
         'bool-select': '벡터 둘을 비교하면 결과는 불 벡터입니다.',
         'ray-class':
           '생성자와 메서드 하나, 정적 함수 하나를 둔 `class Ray`, 그리고 `hit(ray)` 메서드가 광선을 따라간 거리를 돌려주는 `class Sphere`입니다.',
+        'capsule-corp-namek-class':
+          '드래곤볼 Z의 캡슐 코퍼레이션 우주선을 나메크에 놓은 장면입니다. 우주선, 착륙 장치, 나무, 지형, 글자, 재질, 셀 셰이딩과 카메라를 공유 SDF 장면을 중심으로 TypeShade 클래스로 구성합니다.',
         'orbit-inout':
           '`class Body`의 `step`, `turn`, `advance`가 `this`에 값을 넣으므로, 각 메서드는 자기 객체를 참조로 받습니다.',
         'particle-step':
@@ -2342,7 +2349,7 @@ export const ko: Copy = {
         boundary: '4. TypeScript의 class와 다른 점',
         boundaryItems: [
           '진입점은 최상위 함수이고 메서드가 아닙니다.',
-          '필드가 없는 class는 struct가 아니므로 그 함수들은 함수로 씁니다.',
+          '인스턴스 필드가 없는 class도 생성할 수 있으며 메서드, 접근자와 static 멤버를 가질 수 있습니다. 호스트에서는 `{}` 값입니다. 리플렉션은 소스에 필드를 추가하지 않고 GPU 내부 표현의 크기를 반영합니다. std430에서는 4바이트, std140에서는 16바이트입니다.',
           'getter와 setter는 각각 제 함수로 내려가고, 생성자는 TypeScript처럼 클래스마다 하나입니다.',
           '`new`는 함수 본문 안에서 값을 만들고, 모듈 상수는 객체 리터럴로 씁니다.',
           '데코레이터가 필요한 필드가 없다면 type alias가 더 명확합니다.',
@@ -2378,7 +2385,7 @@ export const ko: Copy = {
           '여기서 <code>value</code>는 입력 parameter이고 <code>f32</code>는 입력과 결과의 GPU 타입입니다. <code>return</code>은 함수가 계산한 값을 호출자에게 돌려줍니다.',
         params: '2. Parameter와 return type',
         paramsP:
-          'parameter는 함수가 읽는 입력이고 return type은 계산 결과의 GPU value shape를 설명합니다. 타입은 단순한 문서가 아니라 컴파일러가 표현식의 유효성을 판단하는 정보입니다.',
+          'parameter는 함수가 읽는 입력이고 return type은 계산 결과의 GPU value shape를 설명합니다. 값 매개변수를 다시 대입하면 해당 호출의 지역 복사본이 바뀌고 호출자의 값은 유지됩니다. helper, 메서드와 stage 입력에 모두 적용됩니다. 타입은 컴파일러가 표현식의 유효성을 판단하는 정보입니다.',
         paramsTable: [
           ['부분', '역할'],
           ['`a`, `b`', 'GPU 입력 값입니다.'],
@@ -2421,7 +2428,7 @@ export const ko: Copy = {
           'vertex의 `vid`와 `vin`은 서로 다른 입력입니다. 하나는 GPU builtin이고 다른 하나는 사용자 정의 struct 입력입니다. fragment의 `pid` 역시 signature에 명시되어 있으므로 함수만 읽어도 필요한 입력을 알 수 있습니다.',
         scope: '9. 함수와 scope',
         scopeP:
-          '함수 안의 local variable은 호출마다 계산되는 값입니다. resource나 stage builtin처럼 함수 바깥에서 제공되는 값과 local 값을 구분해서 읽어야 합니다.',
+          '지역 변수는 함수 호출마다 생깁니다. 변수와 매개변수는 `target`처럼 TypeScript에서 유효한 이름을 쓸 수 있으며, 셰이더 작성기가 백엔드의 예약 이름을 바꿔 출력합니다. 리소스, 진입점과 구조체 필드는 기존 인터페이스 이름 규칙을 따릅니다.',
         scopeNote:
           '`factor`는 함수 안에서만 존재하는 local value입니다. 반대로 `camera`나 `pixels` 같은 resource는 host와 연결된 shader interface이며, builtin parameter는 GPU stage가 제공하는 입력입니다.',
         boundary: '10. TypeScript 함수와의 차이',
@@ -2684,6 +2691,10 @@ export const ko: Copy = {
             name: '최상위 함수',
             p: '이름과 매개변수와 반환 타입이 같은 모듈 함수가 됩니다.',
           },
+          mutableParameter: {
+            name: '매개변수 재대입',
+            p: '입력값을 지역 복사본에 담습니다. 다시 대입해도 호출자의 값은 바뀌지 않습니다.',
+          },
           localFunction: {
             name: '지역 함수',
             p: '모듈의 함수가 됩니다. 이름은 이를 선언한 함수에서 따옵니다.',
@@ -2719,6 +2730,10 @@ export const ko: Copy = {
           constructorNew: {
             name: '`constructor`와 `new`',
             p: '`new`는 `Ray_new` 호출입니다. 구조체를 지어 돌려줍니다.',
+          },
+          fieldlessClass: {
+            name: '필드 없는 클래스',
+            p: '인스턴스 필드 없이도 생성하고 메서드를 호출할 수 있습니다. 호스트 값은 `{}`이며, GPU에는 소스 값에 없는 내부 저장 멤버를 둡니다.',
           },
           method: {
             name: '메서드',
@@ -2850,7 +2865,7 @@ export const ko: Copy = {
           booleanType: { name: '`boolean`', p: '셰이더 표기는 `bool`입니다.' },
           integerLiteral: {
             name: '정수 리터럴',
-            p: '리터럴은 그 자리가 밝힌 타입을 따르고, 그 타입으로 접힙니다.',
+            p: '정수로 적은 지역 초기값은 선언된 비제네릭 함수를 직접 호출하는 인자 자리에서 요구하는 `i32` 또는 `u32`를 따를 수 있습니다. 서로 다른 선언 타입이 요구되면 `TS8003`을 보고하므로 타입 표기나 캐스트로 정합니다. 정수 타입을 요구하는 사용처가 없으면 타입 표기 없는 지역 변수는 `f32`입니다. 실수로 적은 초기값, 모듈 상수와 루프 유도 변수는 기존 규칙을 따릅니다.',
           },
           increment: { name: '증감 연산자', p: '값이 한 걸음 옮겨 간 결과를 대입합니다.' },
           f64Scalar: {

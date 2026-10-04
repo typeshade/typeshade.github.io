@@ -465,8 +465,9 @@ cards takes the column. A third measure needs a reason.
   check's held clock wins over it. A picture dropped on the canvas binds to the module's first
   2D texture, which the line under the transport names. A picker beside the tabs chooses what draws it: the GPU in the
   runtime's own order, WebGPU alone, WebGL2 alone, or the CPU oracle's rasteriser. The GPU
-  half goes through `src/lib/shader-runtime.ts`, the runtime every figure on the site draws
-  through. A backend the browser lacks, or a WebGPU feature the module needs and the GPU does
+  half goes through `src/lib/shader-runtime.ts`, the adapter every figure on the site draws
+  through. Its WebGPU path loads a compiled manifest into `typeshade/runtime`; the site keeps
+  its WebGL2 path. A backend the browser lacks, or a WebGPU feature the module needs and the GPU does
   not offer, is said by name on the canvas, and the pick joins the share link. The GPU is
   handed one frame at a time, and a program too heavy for it draws at fewer pixels, down to
   an eighth of the box's side, so the page keeps its own frames. The rasteriser runs the
@@ -478,9 +479,9 @@ cards takes the column. A third measure needs a reason.
   sampler its filter and address mode; a storage buffer a fill pattern and a length; an
   override its value. A module whose only entry is `@compute` is dispatched, and the canvas
   plots what it wrote while the panel lists it under its buffer. Its `console` calls fill the
-  Console tab: on the CPU from the oracle's sink, on WebGPU from the console buffer the
-  compiler adds when the page compiles it with `console: 'gpu'`, decoded after the dispatch,
-  so the two engines show the same lines. A line says where it ran the way a host's printed
+  Console tab: on the CPU from the oracle's sink, on WebGPU from the program runtime's
+  sink over the recorded manifest. `Frame.submit()` supplies the dropped-call count so the
+  tab reports calls that did not fit in the recording buffer. A line says where it ran the way a host's printed
   console line does (compiler surface §66): the tier that ran it as a tag, GPU in the accent's
   wash or CPU in a neutral one, the file and line of the call as the editor numbers them, then
   the invocation that made it. A tab switch shows a panel
@@ -749,7 +750,7 @@ Putting one on a page:
   card with the file name as an active tab in a 56px head bar, the code pane and the canvas
   side by side from 48rem, and the controls under both.
 - The build compiles the sample (`src/lib/live-shader-emit.ts`) and inlines the WGSL, both
-  GLSL ES 3.00 stages, the reflected layout and the controls. A sample the compiler reports
+  GLSL ES 3.00 stages, the compiled program manifest, the reflected layout and the controls. A sample the compiler reports
   an error on fails the build.
 
 Five uniform field names are reserved and filled by the runtime every frame, so they get no
@@ -822,7 +823,7 @@ disagree about what a uniform field means.
 What the page carries and when:
 
 - The compiler is not in a page's initial JavaScript. The block ships the highlighted source
-  through Expressive Code, the emitted output under a disclosure, and about 10 KB gzipped of
+  through Expressive Code, the emitted output under a disclosure, and the program runtime's
   script. The compiler (about a megabyte gzipped, the same chunk the Playground loads) is
   imported on the reader's first edit and shared by every example on the page.
 - The editor is a transparent `<textarea>` over the block Expressive Code rendered, and an

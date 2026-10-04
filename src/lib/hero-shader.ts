@@ -5,7 +5,12 @@
 
 import { examples } from '../../vendor/shader-dsl/examples/index.ts';
 import { shadeExampleList, shadeFileModule, shadeModule } from './shade-examples.ts';
-import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts';
+import {
+  emitModule,
+  emitGlslModule,
+  reflect,
+  packModule,
+} from '../../vendor/shader-dsl/src/index.ts';
 import type { Control as MirrorControl } from '../../vendor/shader-dsl/examples/_shared.ts';
 import type { Control, ShaderData, ShaderLayout, ShaderPassData } from './shader-runtime.ts';
 import type { ResourceSpec } from './shader-bindings.ts';
@@ -240,6 +245,7 @@ export function heroShader(id: string): ShaderData {
       name: p.name,
       title: p.name,
       wgsl: emitModule(module),
+      manifest: packModule(module),
       vertex: emitGlslModule(module, 'vertex'),
       fragment: emitGlslModule(module, 'fragment'),
       layout: layoutOf(`${id}.${p.name}`, module, passNames),
@@ -251,6 +257,7 @@ export function heroShader(id: string): ShaderData {
     id: ex.id,
     title: ex.title,
     wgsl: emitModule(ex.module),
+    manifest: packModule(ex.module),
     vertex: emitGlslModule(ex.module, 'vertex'),
     fragment: emitGlslModule(ex.module, 'fragment'),
     layout: layoutOf(id, ex.module, passNames),
