@@ -107,3 +107,14 @@ id first, then the pull request that did the work.
   manifests are packed under the reader's emit options. English and Korean program-loading
   guidance explains overrides, console counts and the optional load-time emitter; focused
   regressions and browser probes check the migrated execution, handled in #132.
+- 0037: integer-written locals take concrete declared demands from constructors, methods,
+  typed initializers and simple assignments. The compiled mapping and English/Korean numeric
+  guidance explain the contexts and unchanged conflict/default policy. Compiler/editor tests
+  check constructor and method calls, assignment and hover agreement.
+- 0038: a derived material may supply a proved read-only, dispatch-equivalent base view.
+  The compiled class mapping and English/Korean class guidance explain accepted views and
+  remaining override, receiver-write and alias-mutation limits. Compiler/editor fixtures
+  accept the material view and retain the unsafe-override diagnostic.
+- 0039: parameters and body locals may shadow module values while closures resolve the
+  nearest declaration. The compiled function mapping and English/Korean scope guidance explain
+  lexical shadowing and same-scope duplicate errors; focused fixtures check both behaviors.

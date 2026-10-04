@@ -77,3 +77,52 @@ test('TS8018 still rejects assignment to a temporary component', () => {
   expect(result.diagnostics.some((d) => d.code === 'TS8018')).toBe(true);
   expect(result.wgsl).toBeUndefined();
 });
+
+test('constructor, method and field assignment demands agree in compiler and editor', () => {
+  const body =
+    'class Hit { constructor(public index: i32) {} offset(value: i32): i32 { return this.index + value; } }\nexport function answer(): i32 { let value = -1; const hit = new Hit(value); value = hit.index; return hit.offset(value); }';
+  const result = checked(body);
+  expect(result.eval('answer')).toBe(-2);
+  const source = `"use typeshade";\n${body}`;
+  const service = createTypeshadeLanguageService();
+  service.openDocument('file:///index.shade.ts', source);
+  expect(
+    service.getHover(
+      'file:///index.shade.ts',
+      service.positionAt('file:///index.shade.ts', source.indexOf('let value') + 4),
+    )?.contents,
+  ).toContain('value: i32');
+});
+
+test('a proven read-only derived value can supply the base representation', () => {
+  const result = checked(
+    'class Material { color: f32 = 0.5; response(): f32 { return this.color; } }\nclass LeafMaterial extends Material { thickness: f32 = 1.0; }\nfunction response(material: Material): f32 { return material.response(); }\nexport function answer(): f32 { const material = new LeafMaterial(); return response(material); }',
+  );
+  expect(result.eval('answer')).toBe(0.5);
+});
+
+test('a derived override keeps the unsupported base-dispatch diagnostic', () => {
+  const source =
+    '"use typeshade";\nclass Material { response(): f32 { return 0.5; } }\nclass LeafMaterial extends Material { response(): f32 { return 1.0; } }\nfunction response(material: Material): f32 { return material.response(); }\nexport function answer(): f32 { return response(new LeafMaterial()); }';
+  const result = compile(source);
+  const service = createTypeshadeLanguageService();
+  service.openDocument('file:///override.shade.ts', source);
+  expect(result.diagnostics.some((d) => d.code === 'TS8003')).toBe(true);
+  expect(service.getDiagnostics('file:///override.shade.ts').some((d) => d.code === 'TS8003')).toBe(
+    true,
+  );
+  expect(result.wgsl).toBeUndefined();
+});
+
+test('function parameters, locals and closures shadow module values', () => {
+  const result = checked(
+    'const gain: f32 = 0.25;\nfunction scale(gain: f32): f32 { return gain * 2.0; }\nexport function answer(): f32 { const gain: f32 = 1.0; const read = (): f32 => gain; return scale(gain) + read(); }',
+  );
+  expect(result.eval('answer')).toBe(3);
+});
+
+test('a local that repeats a parameter remains a duplicate declaration', () => {
+  const source =
+    '"use typeshade";\nexport function answer(gain: f32): f32 { const gain: f32 = 1.0; return gain; }';
+  expect(compile(source).diagnostics.some((d) => d.code === 'TS8023')).toBe(true);
+});

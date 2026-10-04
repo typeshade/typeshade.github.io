@@ -647,7 +647,8 @@ const EXPLAINERS: readonly {
   },
   {
     page: '/guide/language/from-typescript/classes/',
-    source: 'the fieldlessClass row in src/lib/typescript-lowering.ts and its copy in src/i18n',
+    source:
+      'the fieldlessClass and baseValue rows in src/lib/typescript-lowering.ts and their copy in src/i18n',
     rules: ['8.9', '8.21'],
   },
   {
@@ -675,8 +676,8 @@ const EXPLAINERS: readonly {
   {
     page: '/guide/language/from-typescript/functions/',
     source:
-      'the localFunction, closure and recursion rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
-    rules: ['8.4', '8.8', '8.17'],
+      'the lexicalShadow, localFunction, closure and recursion rows of src/lib/typescript-lowering.ts and their lines in src/i18n',
+    rules: ['3.2', '8.4', '8.8', '8.17'],
   },
   {
     page: '/guide/language/from-typescript/control-flow/',
@@ -703,7 +704,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '2.2': 'X0g_aM9dhyo0h4x4klnU_hRQiKqok1jFPsVAbMRIgag=',
   '2.3': 'r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=',
   '3.1': 'US52ORocEX4MP8jxev-M_GTs0RerZfC5J1QncEFIvss=',
-  '3.2': 'N7a05QZUSi2jL3_tFnFwNNgpHksJhYNISGt05vMAa9o=',
+  '3.2': 'JFATNExhOGxrJtpJazlKyv2A28S2IqTbosKlo02tzow=',
   '3.3': 'AyEz-WF5u6SQDezYBlzBMCvULzVzrt7ZC_mT8SBVcuM=',
   '3.4': 'qTsvqHCf4ZNlv5OA0ks54fZEJ2-O_jR3l_uT-MjDSqw=',
   '3.9': '3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=',
@@ -711,7 +712,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '4.2': 'MpVj8dEE3vyccKw-6hZlbejYh8Eot8TKjXivzSjJ4KI=',
   '4.6': 'RwdafG75jJiCMgm6Du1X3zVcPigfJdPEwfy6iWlDksU=',
   '4.8': 'ZaXqxS6SImuhTEXg74x7e6A4X5QWcoGarvtV45ZRA4I=',
-  '5.1': 'KGH7R2quVB6wfVAwwDpN7YzUTTB2Mr3v1wLdaL4tLcU=',
+  '5.1': 'SkLe2O5eC70w0MTm0Km7qQn5ZVeqL5Dnur-Ta3Ue1CI=',
   '5.3': 'AlhLu-cJSNgGl-ltXEFlhL7eWs5_USuUdEImJEf0Eb4=',
   '5.4': 'RphTFmChXNrzoLVIpKED02ndV41w4BSuuRjq3nTUtVM=',
   '6.1': 'bQNdly5Y0zf8TGTekfGvQL67oPOQ8W0hMfIplhb_N2o=',
@@ -738,7 +739,7 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '8.6': 'qW_RUaBjL-O-OIZTeHrwOCT5o9siV0waqA7BNLo7WfU=',
   '8.7': 'FYpP5pg4_Ct5BfBIVI4VaTEc8VskMuT5JgT4arrvVCg=',
   '8.8': 'eUleePWPUoP-Vd2uNi_ZLVlR3YfM1RxSAXJDocgnlew=',
-  '8.9': '65iaTLzy5-ZMlwzG2u35SBKA9qI46Q5HFG7SAR3-vuE=',
+  '8.9': 'i3rKqqglyH6ycILo1NnRX1pgWrom7FVlUuiDKjEwPxA=',
   '8.10': 'BLxxuQWIUO2sGAoDGiDJ1Z0SrYoHaCYva2sQshZ1nKI=',
   '8.11': 'R-96aWYlY8u8_m8xXTT-vAbk-BkIB-YjKVzMyW9NKdw=',
   '8.12': 'RdysJL6wG5oIuDDW_XRt1WEtzUwAxtGNOiVfTch2_Mk=',

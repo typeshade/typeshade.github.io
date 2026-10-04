@@ -251,6 +251,11 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
   ],
   functions: [
     {
+      id: 'lexicalShadow',
+      ts: 'const gain: f32 = 0.25;\nfunction scale(gain: f32): f32 { return gain * 2.; }\nexport function answer(): f32 {\n  const gain: f32 = 1.;\n  return scale(gain);\n}',
+      pick: ['scale', 'answer'],
+    },
+    {
       id: 'mutableParameter',
       ts: 'export function brighter(value: f32): f32 {\n  value += 0.25;\n  return value;\n}',
       pick: ['brighter'],
@@ -306,6 +311,11 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     },
   ],
   classes: [
+    {
+      id: 'baseValue',
+      ts: 'class Material {\n  color: f32 = 0.5;\n  response(): f32 { return this.color; }\n}\nclass LeafMaterial extends Material {\n  thickness: f32 = 1.;\n}\nfunction response(material: Material): f32 {\n  return material.response();\n}\nexport function leafResponse(): f32 {\n  const material = new LeafMaterial();\n  return response(material);\n}',
+      pick: ['Material', 'LeafMaterial', 'response', 'leafResponse'],
+    },
     {
       id: 'fieldlessClass',
       ts: 'class Counter {\n  next(value: f32): f32 { return value + 1.; }\n}\nexport function next(value: f32): f32 {\n  return new Counter().next(value);\n}',
@@ -526,8 +536,8 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     },
     {
       id: 'integerLiteral',
-      ts: 'function offset(value: i32): i32 { return value; }\nexport function counts(): i32 {\n  const n = -1;\n  return offset(n);\n}',
-      pick: ['offset', 'counts'],
+      ts: 'class Hit {\n  constructor(public index: i32) {}\n  offset(value: i32): i32 { return this.index + value; }\n}\nexport function counts(): i32 {\n  let n = -1;\n  const hit = new Hit(n);\n  n = hit.index;\n  return hit.offset(n);\n}',
+      pick: ['Hit_new', 'Hit_offset', 'counts'],
     },
     {
       id: 'increment',
