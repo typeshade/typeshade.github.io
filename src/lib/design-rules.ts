@@ -689,6 +689,11 @@ const EXPLAINERS: readonly {
     source: 'concepts.cpuAndGpu in src/i18n: callsP, callsRule, loopsP and loopsRule',
     rules: ['7.5', '8.4'],
   },
+  {
+    page: '/guide/concepts/webgpu-and-webgl2/',
+    source: 'concepts.webgpuAndWebgl2 load paragraphs in src/i18n and ConceptsWebgpuPage',
+    rules: ['11.10', '11.11'],
+  },
 ];
 
 /** The rule versions the explaining pages were last read against. */
@@ -751,6 +756,8 @@ const READ_AGAINST: Readonly<Record<string, string>> = {
   '10.1': 'd8TWuezE06vSk0zrFfeQ9pKxFXYk_P4q_IC94Ny_CF8=',
   '11.5': 'K5GJo9hNFgdx3uz9sYCSGUVhUfFmjaxdcr223qtGFgE=',
   '11.9': 'abpvFP8_FeG5Irb_u9A74_sdrqDUWxKV-5gR39Azldg=',
+  '11.10': 'A8cQ9uIfeswAUsUT534lRPjCm1TzyiVsgifyHJiQsgU=',
+  '11.11': '9_HYjOEeRTVHGQ7YpzGQtlqtNysNZib56a_bIrq86BQ=',
   '12.3': '8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=',
   '12.4': 'BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=',
   '12.6': 'mtagVARmVcrr7MFUlSWwsp__ZpD9GjxUFaerAkPz5WI=',

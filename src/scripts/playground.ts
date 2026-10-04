@@ -1,3 +1,4 @@
+import { packModule } from '../../vendor/shader-dsl/src/index.ts';
 // The Playground's browser half. Astro puts this module through Vite, so it can import the
 // compiler and the language service from the vendored checkout. The component's own
 // `define:vars` script is emitted inline as a classic script, which has no import at all, so
@@ -8,11 +9,7 @@
 // do: the page's own chunk is Monaco's glue, the emitters, reflection and the CPU oracle, and
 // the compiler lives in the language worker alone. The raster worker imports `core/oracle.ts`
 // this way for the same reason.
-import {
-  emitModule,
-  emitModuleAt,
-  wgslBackend,
-} from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
+import { emitModule, wgslBackend } from '../../vendor/shader-dsl/src/core/backends/wgsl.ts';
 import { hostFeaturesFor } from '../../vendor/shader-dsl/src/core/backend.ts';
 import {
   emitGlslStages,
@@ -22,7 +19,7 @@ import type { EmitOptions } from '../../vendor/shader-dsl/src/core/emit.ts';
 import type { ModuleDecl } from '../../vendor/shader-dsl/src/core/ir/nodes.ts';
 import type { Fp64Flavor } from '../../vendor/shader-dsl/src/core/passes/fp64-lower.ts';
 import { compileModule } from '../../vendor/shader-dsl/src/core/oracle.ts';
-import { decodeConsole, type ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
+import { type ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
 import type { ConsoleTier } from '../../vendor/shader-dsl/src/core/console-print.ts';
 import {
   consoleBuffer,
@@ -718,10 +715,16 @@ const sharedEmitOptions = (choice: EmitChoice): EmitOptions => {
 /** WGSL at the chosen level. `emitModuleAt` takes a level and no other options, and
  *  `emitModule` takes the options at O2, so O0 and O1 reach the compiler with the level
  *  alone. The note under the options bar says so where a reader can see it. */
+const programManifest = (module: ModuleDecl, choice: EmitChoice, console = false) =>
+  packModule(module, {
+    console,
+    emit:
+      choice.level === 'O2'
+        ? { ...sharedEmitOptions(choice), level: choice.level }
+        : { level: choice.level },
+  });
 const emitWgsl = (module: Parameters<typeof emitModule>[0], choice: EmitChoice): string =>
-  choice.level === 'O2'
-    ? emitModule(module, sharedEmitOptions(choice))
-    : emitModuleAt(module, choice.level);
+  programManifest(module, choice).wgsl;
 
 /** Both GLSL stages. The GLSL backend fixes its own optimizer at a fixpoint, so it takes the
  *  options and no level. */
@@ -1477,6 +1480,7 @@ function mount(root: HTMLElement): void {
         id: 'playground',
         title: fileName,
         wgsl: emitted.wgsl,
+        manifest: programManifest(compiled.module, currentChoice()),
         // A module the GLSL backend cannot express still runs on WebGPU; the WebGL2 half is
         // what it loses, and the note says which backend drew when neither is left.
         vertex: emitted.glslVertex ?? '',
@@ -1572,6 +1576,7 @@ function mount(root: HTMLElement): void {
         name,
         title: name,
         wgsl: emitWgsl(module, choice),
+        manifest: programManifest(module, choice),
         vertex: 'failed' in glsl ? '' : glsl.vertex,
         fragment: 'failed' in glsl ? '' : glsl.fragment,
         layout: {
@@ -2021,19 +2026,15 @@ function mount(root: HTMLElement): void {
         height: target.height,
       };
     const captured = await shader.captureConsole({
-      wgsl: made.wgsl,
-      group: log.group,
-      binding: log.binding,
-      textures: made.guards,
+      manifest: programManifest(compiled!.module, currentChoice(), true),
       words,
       ...(scissor ? { scissor } : {}),
     });
     if (!captured) throw new Error('the canvas has stopped drawing');
-    const decoded = decodeConsole(captured.words, log);
     return {
       result: made.result,
-      events: decoded.events,
-      dropped: decoded.dropped,
+      events: captured.events,
+      dropped: captured.dropped,
       width: captured.width,
       height: captured.height,
     };
@@ -2363,38 +2364,19 @@ function mount(root: HTMLElement): void {
         }
         ranOn = 'cpu';
       } else {
-        const recorded = logs ? consoleBuffer(compiled.module) : undefined;
-        const log = recorded?.log;
         const result = await runComputeOnGpu({
-          wgsl: log && recorded ? emitWgsl(recorded.module, currentChoice()) : emitted.wgsl,
+          manifest: programManifest(compiled.module, currentChoice(), logs),
           entry: entry.name,
           workgroups: [groups, 1, 1],
-          resources: log
-            ? [
-                ...bindings.resources(true),
-                {
-                  kind: 'storage-buffer',
-                  name: '_console',
-                  group: log.group,
-                  binding: log.binding,
-                  readOnly: false,
-                  bytes: new Uint8Array(8 + 4 * CONSOLE_WORDS),
-                },
-              ]
-            : bindings.resources(true),
+          resources: bindings.resources(true),
           constants: bindings.constants(),
           features: gpuFeatures(),
+          console: logs,
+          consoleBytes: 8 + 4 * CONSOLE_WORDS,
         });
         ms = result.ms;
-        const words = result.buffers.get('_console');
-        if (log && words) {
-          const decoded = decodeConsole(
-            new Uint32Array(words.buffer, words.byteOffset, words.byteLength / 4),
-            log,
-          );
-          lines.push(...decoded.events);
-          dropped = decoded.dropped;
-        }
+        lines.push(...result.consoleEvents);
+        dropped = result.dropped;
         for (const name of bindings.writableStorage()) {
           const bytes = result.buffers.get(name);
           if (!bytes) continue;

@@ -57,11 +57,12 @@ drawing the same pass.
 
 ## Capabilities and Constraints
 
-- 85 examples in the compiler repository: 36 graph-API examples (cartographic passes,
-  ShaderToy-style screen-space effects, fp64 demos, one compute kernel) and 49
-  `"use typeshade"` source files. The site's `ShaderCanvas` component can emit any registered
+- The compiler registers graph-API examples (cartographic passes, screen-space effects,
+  fp64 demos and compute kernels) and `"use typeshade"` source files. The site's
+  `ShaderCanvas` component can emit any registered
   example at build time and run it live on WebGPU or WebGL2 with a build-time still underneath.
-  Today the site renders 6 stills; the rest are available.
+  `scripts/artifacts.mjs` lists the examples with captured stills; `src/lib/examples.ts`
+  derives the example counts from the pinned registries.
 - Live examples on guide pages (`LiveShader`) let the reader edit a shader in place, with
   sliders bound to its uniforms.
 - Emitted targets: WGSL, GLSL ES 3.00. No other targets. An application that hands the emitted

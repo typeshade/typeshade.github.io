@@ -39,6 +39,8 @@ const headings = [c.ownsH, c.importH, c.loadH, c.reflectionH, c.runtimeH, c.webg
     <p><Rich text={c.loadP} locale={locale} /></p>
     <TypeShadeCode code={`import { createRuntime } from 'typeshade/runtime'\nimport scene from './scene.shade.ts' // the manifest\n\nconst rt = await createRuntime({ device })\nconst format = navigator.gpu.getPreferredCanvasFormat()\ncontext.configure({ device, format })\nconst draw = await rt.load(scene).render({ targets: [format] })\n\nconst frame = rt.frame()\nframe.pass({ color: [context] }, (pass) => {\n  pass.draw(draw, { u: { time } }, { count: 3 })\n})\nawait frame.submit()`} />
     <p><Rich text={c.loadOwnsP} locale={locale} /></p>
+    <p><Rich text={c.loadOptionsP} locale={locale} /></p>
+    <p><Rich text={c.loadEmitP} locale={locale} /></p>
     <p>{c.loadNote}</p>
   </section>
 

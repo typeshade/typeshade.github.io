@@ -97,3 +97,13 @@ id first, then the pull request that did the work.
   scalar type: the integer-literal mapping row and its en/ko guidance describe integer demand,
   conflicting demands and the unchanged f32 default. Playground diagnostic regressions cover
   inference and disagreement, handled in #132.
+- 0025: the WebGPU render and compute runners load compiled manifests into the public program
+  runtime and bind resources by name, while the site keeps its WebGL2 path. Build-time,
+  edited live and Playground payloads carry their manifests. Frame and pixel console captures
+  use the runtime sink and keep source events; the API reference includes `typeshade/emit`
+  and `repack` beside the runtime pages and concept guidance introduced in #125, handled in #132.
+- 0028: render overrides use `RenderState.constants` and compute overrides use the pipeline's
+  `constants`; console captures read dropped-call counts from `Frame.submit()`. Playground
+  manifests are packed under the reader's emit options. English and Korean program-loading
+  guidance explains overrides, console counts and the optional load-time emitter; focused
+  regressions and browser probes check the migrated execution, handled in #132.

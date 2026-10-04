@@ -1672,6 +1672,10 @@ export const en = {
         "A host that draws its own frames, an engine or a renderer, loads each compiled program into the program runtime, `typeshade/runtime`, and runs it there. A program travels as its manifest, one object that holds the shader code, the bindings and the entry points. `packModule(compile(source).module)` returns it, a module's host import gives it as its default export, and it is plain JSON a build can write to disk.",
       loadOwnsP:
         "The runtime then does most of what the table above gives the application. It uses the application's `GPUDevice` when `createRuntime({ device })` names one, and never destroys it, or requests a device with the features the programs need. It builds every pipeline and bind group from the layouts in the manifest, packs each binding from the value a draw or a dispatch passes by name, and makes the buffers, textures and samplers. The application writes what the compiler cannot know: each pipeline's targets, depth and topology, and when a frame is drawn. A `GPUBuffer`, `GPUTexture` or `GPUSampler` of its own binds as it is, and the frame's `encoder` and a pass's `raw` encoder take its own commands.",
+      loadOptionsP:
+        "Set a program's overrides by name through `RenderState.constants` for a draw or the `constants` option of `Program.compute()` for a dispatch. `Frame.submit()` returns the console's line and dropped-call counts for each recorded entry. A host with a console sink reads those counts to report calls that did not fit in the recording buffer.",
+      loadEmitP:
+        'A host that enables console recording after the build can pass `repack` from `typeshade/emit` as `createRuntime({ emit: repack })`. Build the manifest with `packModule(module, { ir: true })` so it carries the portable IR. The load-time emitter uses the emit options stored in the manifest and carries no TypeScript front end.',
       loadNote:
         'The program runtime runs on WebGPU only. A host that draws on WebGL2 compiles the module, or imports it and calls its entry points.',
       reflectionH: 'Reflection',

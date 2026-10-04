@@ -8,7 +8,7 @@
 // the same contract (src/lib/live-shader-contract.ts), so the first frame a reader sees and
 // the frame after their first keystroke come from one set of rules.
 
-import { compile, reflect } from '../../vendor/shader-dsl/src/index.ts';
+import { compile, reflect, packModule } from '../../vendor/shader-dsl/src/index.ts';
 import {
   composeSource,
   controlsFor,
@@ -132,6 +132,7 @@ export function liveShader(
     id,
     title,
     wgsl: result.wgsl,
+    manifest: packModule(result.module),
     vertex,
     fragment,
     layout,
