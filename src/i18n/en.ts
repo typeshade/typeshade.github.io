@@ -1061,6 +1061,7 @@ export const en = {
     releases: 'Releases',
     npm: 'npm package',
     newIssue: 'Report a problem',
+    radiance: 'Radiance',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
