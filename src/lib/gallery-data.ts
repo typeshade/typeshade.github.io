@@ -1,17 +1,13 @@
 // The gallery's contract, shared by the site's Worker (worker/index.ts), which takes a
 // submission, the gallery's Worker (worker/gallery.ts), which serves gallery.typeshade.dev,
-// and the pages the build writes for it (src/components/pages/GalleryPage.astro and
-// GalleryEntryPage.astro). docs/cloudflare.md describes the whole.
+// and the page the build writes for it (src/components/pages/GalleryPage.astro). docs/cloudflare.md describes the whole.
 
-/** Where the gallery answers. Its pages are built under GALLERY_ROUTE on the site and served
+/** Where the gallery answers. Its page is built at GALLERY_ROUTE on the site and served
  *  here by worker/gallery.ts, which writes each link to the address it answers at. */
 export const GALLERY_ORIGIN = 'https://gallery.typeshade.dev';
 
 /** The built list page, which worker/gallery.ts fills in with the approved entries. */
 export const GALLERY_ROUTE = '/gallery/';
-/** The built page one entry gets, filled in with that entry. An entry's id is a share id of
- *  eight characters or more, so it never meets this route's last segment. */
-export const GALLERY_ENTRY_ROUTE = '/gallery/entry/';
 
 /** The still a submission carries: the canvas, cropped to fill this box. */
 export const GALLERY_STILL_WIDTH = 640;
