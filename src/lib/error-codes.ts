@@ -98,6 +98,7 @@ const GROUP_OF: Readonly<Record<string, ErrorGroup>> = {
   DUPLICATE_SYMBOL: 'types',
   CONST_ASSIGN: 'types',
   ASSIGN_TARGET: 'types',
+  UNASSIGNED_READ: 'types',
   INDEX_OOB: 'types',
   STRUCT_FIELD: 'types',
   INT_LITERAL_DEPRECATION: 'types',
@@ -1676,6 +1677,32 @@ export function wave(p: vec2): f32 {
 }
 `,
     },
+  },
+  TS8075: {
+    trigger: `"use typeshade"
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  let g: f32
+  if (uv.x > 0.5) {
+    g = 1.
+  }
+  return vec4(g, g, g, 1.)
+}
+`,
+    fix: `"use typeshade"
+
+@fragment
+export function main(@location(0) uv: vec2): vec4 {
+  let g: f32
+  if (uv.x > 0.5) {
+    g = 1.
+  } else {
+    g = 0.25
+  }
+  return vec4(g, g, g, 1.)
+}
+`,
   },
   TS8099: {
     trigger: `"use typeshade"

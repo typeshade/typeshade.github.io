@@ -1978,7 +1978,7 @@ export const ko: Copy = {
         'pick-composite': '구조체와 배열을 고르는 조건식',
         cutout: '컷아웃 (소스 언어)',
         'default-args': '매개변수 기본값',
-        'reference-parameters': '참조 매개변수',
+        'reference-parameters': '되돌려 쓰는 매개변수: @inout과 @out',
         'bit-bump': '내장 함수 한 바퀴',
         'bool-select': '불 벡터',
         'ray-class': '클래스 메서드',
@@ -2091,7 +2091,8 @@ export const ko: Copy = {
         cutout:
           '프래그먼트 진입점이 부르는 헬퍼 안에서 `discard`를 씁니다. `fwidth`가 테두리를 부드럽게 하고, `saturate`, `exp2`, `**`가 감쇠 곡선을 만듭니다.',
         'default-args': '매개변수에 기본값을 둔 헬퍼 셋입니다. 호출마다 생략하는 인자가 다릅니다.',
-        'reference-parameters': '호출한 쪽의 변수를 바꾸는 함수들입니다.',
+        'reference-parameters':
+          '호출한 쪽의 변수를 바꾸는 함수들입니다. 아직 값이 없는 지역 변수에 결과를 쓰는 함수도 있습니다.',
         'bit-bump':
           '`reflect`, `refract`, `faceForward`가 범프에 빛을 주고, `transpose`와 `determinant`가 호스트 행렬을 읽으며, 비트 내장 함수(`firstLeadingBit`, `reverseBits`, `countOneBits`, `extractBits`, `insertBits`)가 화면에 띠를 만듭니다. 띠가 시작하는 자리는 `fwidthCoarse`가 표시합니다.',
         'bool-select': '벡터 둘을 비교하면 결과는 불 벡터입니다.',
@@ -2358,7 +2359,7 @@ export const ko: Copy = {
           'TypeShade의 class는 GPU struct이면서 그 곁에 쓴 함수들입니다. 필드는 호스트가 채우는 바이트입니다. 생성자와 메서드와 static 함수는 각각 평범한 함수로 내려가서, `new Ray(o, d)`는 `Ray_new`를 부르고 `r.at(t)`는 `Ray_at(r, t)`를 부릅니다. 그 사이에 살아 있는 객체는 없습니다.',
         attrs: '3. 필드 decorator는 레이아웃을 설명',
         attrsP:
-          '필드에는 파이프라인의 자리에 연결하는 `@location`과 `@builtin`을 붙이고, 스테이지 사이를 오가는 값이나 출력의 성질을 정하는 `@interpolate`, `@invariant`, `@blend_src`도 붙일 수 있습니다. `@align`은 읽고 나서 거부하며 `@size`, `@offset`, `@ignore`는 컴파일러가 아는 어트리뷰트가 아닙니다. 받아들이는 전체 집합은 `@vertex`, `@fragment`, `@compute`, `@builtin`, `@location`, `@interpolate`, `@invariant`, `@blend_src`, `@diagnostic`입니다.',
+          '필드에는 파이프라인의 자리에 연결하는 `@location`과 `@builtin`을 붙이고, 스테이지 사이를 오가는 값이나 출력의 성질을 정하는 `@interpolate`, `@invariant`, `@blend_src`도 붙일 수 있습니다. `@align`은 읽고 나서 거부하며 `@size`, `@offset`, `@ignore`는 컴파일러가 아는 어트리뷰트가 아닙니다. 받아들이는 전체 집합은 `@vertex`, `@fragment`, `@compute`, `@builtin`, `@location`, `@interpolate`, `@invariant`, `@blend_src`, `@diagnostic`이고, 함수의 매개변수에는 `@inout`과 `@out`을 붙입니다.',
         boundary: '4. TypeScript의 class와 다른 점',
         boundaryItems: [
           '진입점은 최상위 함수이고 메서드가 아닙니다.',
@@ -2407,7 +2408,7 @@ export const ko: Copy = {
           ['`: vec4`', '호출자에게 반환할 GPU 값의 shape입니다.'],
         ],
         paramsRefP:
-          '`Ref<T>`로 선언한 매개변수는 호출자의 변수 자체입니다. 호출은 그 변수를 `ref(x)`로 넘기고, 매개변수나 그 필드, 성분, 요소에 대입하면 호출자의 변수에 값이 들어갑니다. 함수가 둘 중 하나라도 쓴다면, 호출 하나가 같은 변수를 이런 매개변수 둘에 넘길 수는 없습니다(`TS8074`). 구조체, 배열 요소, 행렬의 열을 같은 방식으로 넘기는 모습은 [참조 매개변수](shadeReferenceParameters) 예제에 있습니다.',
+          '`@inout`으로 선언한 매개변수는 호출자의 변수 자체입니다. 호출은 그 변수를 아무 표시 없이 넘기고, 매개변수나 그 필드, 성분, 요소에 대입하면 호출자의 변수에 값이 들어갑니다. `@out`으로 선언한 매개변수는 값 없이 시작합니다. 함수는 이 매개변수를 읽기 전에 쓰고, 모든 경로에서 씁니다(`TS8075`). 그래서 호출자는 아직 값이 없는 `let`을 넘길 수 있습니다. 함수가 둘 중 하나라도 쓴다면, 호출 하나가 같은 변수를 이런 매개변수 둘에 넘길 수는 없습니다(`TS8074`). 한정자는 파일 최상위나 네임스페이스에 선언한 함수에만 붙고, 메서드와 진입점과 지역 함수는 값을 받습니다(`TS8073`). 다만 한정자가 붙은 함수 안의 지역 함수는 바깥의 다른 변수처럼 그 매개변수를 읽고 씁니다. 구조체, 배열 요소, 행렬의 열을 같은 방식으로 넘기는 모습은 [되돌려 쓰는 매개변수](shadeReferenceParameters) 예제에 있습니다.',
         helper: '3. Helper function',
         helperP:
           'stage decorator가 없는 top-level function은 다른 shader 함수에서 호출할 수 있는 helper입니다. 반복되는 계산을 이름 있는 함수로 분리하면 shader를 읽고 검증하기 쉬워집니다.',
@@ -2672,7 +2673,11 @@ export const ko: Copy = {
           },
           letNoInit: {
             name: '지역 `let`',
-            p: '변경 가능한 지역 변수입니다. 타입은 표기가 정하고, WGSL은 영으로 채워 둡니다. [bitfield-bands](shadeBitfieldBands)',
+            p: '변경 가능한 지역 변수입니다. 타입은 표기가 정하고, 모든 타깃이 영에서 시작합니다. [bitfield-bands](shadeBitfieldBands)',
+          },
+          unassignedRead: {
+            name: '대입 전 읽기',
+            p: '대입하지 않은 경로에서 지역 변수를 읽으면 `TS8075`로 거부합니다. TypeScript가 TS2454로 보고하는 규칙과 같습니다. 편집기도 TS2454 대신 `TS8075`를 보여 줍니다.',
           },
           moduleLet: {
             name: '모듈 `let`',
@@ -2709,15 +2714,19 @@ export const ko: Copy = {
           },
           mutableParameter: {
             name: '매개변수 재대입',
-            p: '입력값을 지역 복사본에 담습니다. 다시 대입해도 호출자의 값은 바뀌지 않으며, 호출자의 값을 바꾸려면 매개변수를 `Ref<T>`로 선언합니다.',
+            p: '입력값을 지역 복사본에 담습니다. 다시 대입해도 호출자의 값은 바뀌지 않으며, 호출자의 값을 바꾸려면 매개변수를 `@inout`으로 선언합니다.',
           },
           referenceParameter: {
-            name: '참조 매개변수',
-            p: `\`Ref<T>\`로 선언한 매개변수는 호출자의 변수 자체이고, 호출은 그 변수를 \`ref(x)\`로 넘깁니다. \`this\`에 값을 넣는 메서드처럼 WGSL은 포인터를, ${glsl}은 \`inout\` 매개변수를 씁니다. [reference-parameters](shadeReferenceParameters)`,
+            name: '`@inout` 매개변수',
+            p: `\`@inout\`으로 선언한 매개변수는 호출자의 변수 자체이고, 호출은 그 변수를 아무 표시 없이 넘깁니다. \`this\`에 값을 넣는 메서드처럼 WGSL은 포인터를, ${glsl}은 \`inout\` 매개변수를 씁니다. [reference-parameters](shadeReferenceParameters)`,
+          },
+          outParameter: {
+            name: '`@out` 매개변수',
+            p: '함수는 이 매개변수를 읽기 전에 쓰고, 모든 경로에서 씁니다. 그래서 인자로 아직 값이 없는 `let`을 넘길 수 있습니다. 두 타깃 모두 `@inout`과 같은 방식으로 하향 변환합니다.',
           },
           referenceAlias: {
             name: '한 변수를 가리키는 참조 둘',
-            p: `호출 하나가 값을 쓰는 \`Ref<T>\` 매개변수 둘에 같은 변수를 넘길 수 없습니다. WGSL은 이런 포인터 별칭을 거부하고, ${glsl}은 두 값을 정해지지 않은 순서로 되돌려 씁니다.`,
+            p: `호출 하나가 값을 쓰는 \`@inout\`이나 \`@out\` 매개변수 둘에 같은 변수를 넘길 수 없습니다. WGSL은 이런 포인터 별칭을 거부하고, ${glsl}은 두 값을 정해지지 않은 순서로 되돌려 씁니다.`,
           },
           lexicalShadow: {
             name: '모듈 값과 같은 이름',
@@ -3031,7 +3040,7 @@ export const ko: Copy = {
           'statements.let':
             'WGSL의 `let`은 그대로 있는 값이고, TypeScript에서 그 뜻을 말하는 것이 `const`입니다.',
           'statements.var':
-            'WGSL의 `var`는 바뀌는 지역 변수입니다. 초기값 없는 `let b: f32`가 그것을 선언하고 값은 나중 대입에 맡깁니다. 첫 대입 전에 읽으면 WGSL은 영으로 채운 값을 주고 GLSL은 정해지지 않은 값을 주므로, 읽기 전에 대입하십시오(규칙 7.6).',
+            'WGSL의 `var`는 바뀌는 지역 변수입니다. 초기값 없는 `let b: f32`가 그것을 선언하고 값은 나중 대입에 맡깁니다. 대입하지 않은 경로에서 읽으면 거부되며(`TS8075`, 규칙 7.6), 모든 타깃이 이 지역 변수를 영에서 시작합니다.',
           'statements.for':
             '`for`는 횟수가 세어지는 형태여야 합니다. 정수 유도 변수와 상수 증감이 있고, 종료 조건은 본문이 쓰지 않는 경계와 변수를 비교합니다. 시작값과 경계는 런타임 값이어도 되고, 반복 횟수에 상한이 없습니다. 증감에는 `+=`, `-=`, `*=`, `/=`를 쓸 수 있습니다.',
           'statements.while':

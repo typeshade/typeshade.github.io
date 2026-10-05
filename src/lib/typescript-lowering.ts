@@ -201,6 +201,11 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
       pick: ['band'],
     },
     {
+      id: 'unassignedRead',
+      ts: 'export function band(x: f32): f32 {\n  let w: f32\n  if (x > 0.) {\n    w = x * 2.\n  }\n  return w\n}',
+      refused: true,
+    },
+    {
       id: 'moduleLet',
       ts: 'let seed: u32 = 7',
       after: 'export function next(): u32 {\n  seed = seed * 1664525\n  return seed\n}',
@@ -262,13 +267,19 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     },
     {
       id: 'referenceParameter',
-      ts: 'function swap(a: Ref<f32>, b: Ref<f32>): void {\n  const t = a\n  a = b\n  b = t\n}\nexport function order(x: f32, y: f32): f32 {\n  let lo = x\n  let hi = y\n  if (lo > hi) {\n    swap(ref(lo), ref(hi))\n  }\n  return hi - lo\n}',
+      ts: 'function swap(@inout a: f32, @inout b: f32): void {\n  const t = a\n  a = b\n  b = t\n}\nexport function order(x: f32, y: f32): f32 {\n  let lo = x\n  let hi = y\n  if (lo > hi) {\n    swap(lo, hi)\n  }\n  return hi - lo\n}',
       pick: ['swap', 'order'],
     },
     {
+      id: 'outParameter',
+      ts: 'function add(a: f32, b: f32, @out c: f32): void {\n  c = a + b\n}\nexport function sum(x: f32, y: f32): f32 {\n  let s: f32\n  add(x, y, s)\n  return s\n}',
+      pick: ['add', 'sum'],
+    },
+    {
       id: 'referenceAlias',
-      before: 'function swap(a: Ref<f32>, b: Ref<f32>): void {\n  const t = a\n  a = b\n  b = t\n}',
-      ts: 'export function twice(x: f32): f32 {\n  let v = x\n  swap(ref(v), ref(v))\n  return v\n}',
+      before:
+        'function swap(@inout a: f32, @inout b: f32): void {\n  const t = a\n  a = b\n  b = t\n}',
+      ts: 'export function twice(x: f32): f32 {\n  let v = x\n  swap(v, v)\n  return v\n}',
       refused: true,
     },
     {

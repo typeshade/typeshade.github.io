@@ -617,7 +617,7 @@ export const en = {
       kindCounts: {
         test: `${facts.rulesTest} rules: a test, a gate script or a CI workflow names the rule.`,
         code: `${facts.rulesCode} rules: only the implementation carries the rule, and no test checks it yet.`,
-        pending: `${facts.rulesPending} rule: listed as not yet enforced, in Appendix B of the design document.`,
+        pending: `${facts.rulesPending} rules: listed as not yet enforced, in Appendix B of the design document.`,
         review: `${facts.rulesReview} rules: held by review, and no file checks them.`,
       },
       // The chapters of the design document, as its headings name them. The build holds this
@@ -2179,7 +2179,7 @@ export const en = {
           'A TypeShade class is a GPU struct and the functions written with it. The fields are the bytes the host writes. A constructor, a method and a static function each lower to a plain function, so `new Ray(o, d)` calls `Ray_new` and `r.at(t)` calls `Ray_at(r, t)`. Nothing keeps an object alive between them.',
         attrs: '3. Field decorators describe layout',
         attrsP:
-          'A field takes `@location` and `@builtin`, which bind it to the pipeline, and `@interpolate`, `@invariant` and `@blend_src`, which qualify a varying or an output. `@align` is read and refused, and `@size`, `@offset` and `@ignore` are not attributes the compiler knows. The whole set it accepts is `@vertex`, `@fragment`, `@compute`, `@builtin`, `@location`, `@interpolate`, `@invariant`, `@blend_src` and `@diagnostic`.',
+          'A field takes `@location` and `@builtin`, which bind it to the pipeline, and `@interpolate`, `@invariant` and `@blend_src`, which qualify a varying or an output. `@align` is read and refused, and `@size`, `@offset` and `@ignore` are not attributes the compiler knows. The whole set it accepts is `@vertex`, `@fragment`, `@compute`, `@builtin`, `@location`, `@interpolate`, `@invariant`, `@blend_src`, `@diagnostic`, and `@inout` and `@out` on a parameter of a function.',
         boundary: '4. Where TypeScript classes stop',
         boundaryItems: [
           'An entry point is a top-level function, not a method.',
@@ -2228,7 +2228,7 @@ export const en = {
           ['`: vec4`', 'The GPU value shape returned to the caller.'],
         ],
         paramsRefP:
-          "A parameter declared `Ref<T>` is the caller's variable itself. The call passes the variable as `ref(x)`, and an assignment to the parameter, or to a field, a component or an element of it, writes that variable. One call may not hand one variable to two such parameters when the function writes either (`TS8074`). [Reference parameters](shadeReferenceParameters) shows a struct, an array element and a matrix column passed the same way.",
+          "A parameter declared `@inout` is the caller's variable itself. The call passes the variable with no mark, and an assignment to the parameter, or to a field, a component or an element of it, writes that variable. A parameter declared `@out` starts with no value: the function writes it before it reads it, and on every path (`TS8075`), so the caller may pass a `let` that has no value yet. One call may not hand one variable to two such parameters when the function writes either (`TS8074`). Only a function declared at the top of the file or in a namespace takes a qualifier; a method, an entry and a local function take values (`TS8073`). A local function inside such a function still reads and writes the parameter, as it does any variable around it. [Parameters that write back](shadeReferenceParameters) shows a struct, an array element and a matrix column passed the same way.",
         helper: '3. Helper functions',
         helperP:
           'A top-level function without a stage decorator is a helper. Helpers let you name repeated calculations and keep shader entries focused on pipeline inputs, resources and outputs.',
@@ -2499,7 +2499,11 @@ export const en = {
           },
           letNoInit: {
             name: 'Local `let`',
-            p: 'A mutable local. The annotation carries the type, and WGSL gives it a zero. [bitfield-bands](shadeBitfieldBands)',
+            p: 'A mutable local. The annotation carries the type, and every target starts it at zero. [bitfield-bands](shadeBitfieldBands)',
+          },
+          unassignedRead: {
+            name: 'Read before assignment',
+            p: 'A read of a local on a path that has not assigned it is refused with `TS8075`, by the rule TypeScript reports as TS2454. The editor shows `TS8075` in its place.',
           },
           moduleLet: {
             name: 'Module `let`',
@@ -2539,15 +2543,19 @@ export const en = {
           },
           mutableParameter: {
             name: 'Parameter reassignment',
-            p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged; a parameter declared `Ref<T>` changes it.',
+            p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged; a parameter declared `@inout` changes it.',
           },
           referenceParameter: {
-            name: 'Reference parameter',
-            p: `A parameter declared \`Ref<T>\` is the caller's variable, and the call passes it as \`ref(x)\`. WGSL takes a pointer and ${glsl} an \`inout\` parameter, the way a method that writes \`this\` does. [reference-parameters](shadeReferenceParameters)`,
+            name: '`@inout` parameter',
+            p: `A parameter declared \`@inout\` is the caller's variable, and the call passes the variable with no mark. WGSL takes a pointer and ${glsl} an \`inout\` parameter, the way a method that writes \`this\` does. [reference-parameters](shadeReferenceParameters)`,
+          },
+          outParameter: {
+            name: '`@out` parameter',
+            p: 'The function writes the parameter before it reads it and on every path, so the argument may be a `let` with no value yet. Both targets lower it as they lower `@inout`.',
           },
           referenceAlias: {
             name: 'Two references to one variable',
-            p: `One call may not hand one variable to two \`Ref<T>\` parameters it writes. WGSL refuses the aliased pointers, and ${glsl} would copy the two back in no fixed order.`,
+            p: `One call may not hand one variable to two \`@inout\` or \`@out\` parameters it writes. WGSL refuses the aliased pointers, and ${glsl} would copy the two back in no fixed order.`,
           },
           lexicalShadow: {
             name: 'Shadowing a module value',
@@ -2867,7 +2875,7 @@ export const en = {
           'statements.let':
             'A WGSL `let` is a value that stays as it was, which is what `const` says in TypeScript.',
           'statements.var':
-            'A WGSL `var` is a local that changes. `let b: f32` with no initializer declares one and leaves the value for a later assignment; WGSL zeroes it and GLSL leaves it undefined, so assign before you read (Rule 7.6).',
+            'A WGSL `var` is a local that changes. `let b: f32` with no initializer declares one and leaves the value for a later assignment. A read on a path that has not assigned it is refused (`TS8075`, Rule 7.6), and every target starts the local at zero.',
           'statements.for':
             'A `for` is counted: an integer induction variable, a constant step, and an exit that compares it to a bound the body does not write. The start and the bound may be runtime values, and no trip count is too many. The step may be `+=`, `-=`, `*=` or `/=`.',
           'statements.while':
