@@ -1005,6 +1005,13 @@ export const ko: Copy = {
       blankTitle: '빈 파일',
       blankNote: '`time`, `resolution`, `mouse`를 읽는 프래그먼트 셰이더입니다.',
       noStill: '미리보기 없음',
+      stillKinds: {
+        'no-glsl': 'WGSL 전용',
+        control: '호스트 컨트롤',
+        texture: '텍스처 필요',
+        uniform: '호스트 데이터',
+        'vertex-buffer': '버텍스 버퍼',
+      },
       files: '파일',
       newFile: '새 파일',
       download: '폴더로 내려받기',

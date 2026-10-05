@@ -10,7 +10,7 @@ import {
 import { twinUniformDefaults } from '../lib/hero-shader.ts';
 import { exampleSourceHref } from '../lib/example-pages.ts';
 import { shadeExampleList, SHADE_GROUPS } from '../lib/shade-examples.ts';
-import { SHADE_STILL_EXAMPLES } from '../../scripts/artifacts.mjs';
+import { NO_STILL_REASONS, SHADE_STILL_EXAMPLES } from '../../scripts/artifacts.mjs';
 import { GALLERY_AUTHOR_MAX, GALLERY_TITLE_MAX } from '../lib/example-data.ts';
 
 interface Props {
@@ -253,7 +253,7 @@ const runtimeCopy = {
               <li>
                 <a class="gallery-tile" href={`#example=${tile.id}`} data-open-example={tile.id}>
                   <span class="tile-cover">
-                    {tile.still ? <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" /> : <span class="tile-none">{w.noStill}</span>}
+                    {tile.still ? <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" /> : <span class="tile-none">{w.stillKinds[NO_STILL_REASONS[tile.id as keyof typeof NO_STILL_REASONS] as keyof typeof w.stillKinds] ?? w.noStill}</span>}
                   </span>
                   <span class="tile-title">{tile.title}</span>
                   <span class="tile-note"><Rich text={tile.description} locale={locale} inert /></span>

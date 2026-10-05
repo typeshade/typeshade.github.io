@@ -32,9 +32,18 @@ function toRuntimeControl(id: string, field: string, c: MirrorControl): Control 
       return { kind: 'toggle', value: c.value };
     case 'logmag1d':
       return { kind: 'logmag1d', magField: c.magField, base: c.base, offset: c.offset };
+    case 'pan2d':
+      return { kind: 'pan2d', value: [c.value[0], c.value[1]] };
+    case 'logmag2d':
+      return {
+        kind: 'logmag2d',
+        magField: c.magField,
+        base: [c.base[0], c.base[1]],
+        offset: [c.offset[0], c.offset[1]],
+      };
     default:
       throw new Error(
-        `[hero-shader] example '${id}' field '${field}' uses control kind '${c.kind}', ` +
+        `[hero-shader] example '${id}' field '${field}' uses control kind '${(c as { kind: string }).kind}', ` +
           `which src/lib/shader-runtime.ts has no packer for. Add the case there first`,
       );
   }
@@ -46,6 +55,37 @@ const RESERVED: Readonly<Record<string, MirrorControl>> = {
   time: { kind: 'time' },
   resolution: { kind: 'resolution' },
   mouse: { kind: 'mouse' },
+};
+
+const IDENTITY4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+/** An f64 as its two f32 words, the way the host packs one (splitF64 in shader-runtime.ts). */
+const f64Words = (x: number): number[] => [Math.fround(x), Math.fround(x - Math.fround(x))];
+
+/** The value of each uniform field the three runtime names and a source twin's controls leave
+ *  uncovered, for the `.shade.ts` files that declare their own. Each value is written the way
+ *  the field's std140 slot holds it: a matrix by column, a `mat3` column padded to four words,
+ *  an array element padded to sixteen bytes where the type is under that. They are the frame
+ *  the example's own comments describe, so the still and the gallery tile show the picture the
+ *  file is about. */
+const SHADE_FIELD_VALUES: Readonly<Record<string, Readonly<Record<string, readonly number[]>>>> = {
+  'hello-uniform-struct': { tint: [0.2, 0.6, 1, 1], gain: [1] },
+  'bit-bump': { m: IDENTITY4 },
+  'normal-matrix': {
+    model: [1.5, 0, 0, 0, 0, 0.75, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    tint: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+  },
+  'fp64-lane-stripes': { origin: f64Words(4_000_000.0625), span: [0.5] },
+  'integer-math': { origin: [32, 32], span: [64, 64] },
+  'uniform-array': {
+    count: [4],
+    weights: [0.4, 0, 0, 0, 0.3, 0, 0, 0, 0.2, 0, 0, 0, 0.1, 0, 0, 0],
+    stops: [0.9, 0.3, 0.1, 1, 0.1, 0.4, 0.9, 1],
+  },
+  'loops-over-data': { steps: [16], depth: [4] },
+  'path-tracer': { frame: [0], camPos: [0, 0.5, 1] },
+  // `frame` is an f32 here, which the runtime does not own (its own are integers), so it holds
+  // the first frame's seed.
+  'rt-renderer-class': { frame: [0] },
 };
 
 /** How a `.shade.ts` example's uniform fields are filled. The registration has no `controls`
@@ -67,7 +107,11 @@ function shadeControls(
       (field.name === 'frame' || field.name === 'timeDelta')
     )
       continue;
-    const control = twin?.controls?.[field.name] ?? RESERVED[field.name];
+    const own = SHADE_FIELD_VALUES[id]?.[field.name];
+    const control =
+      twin?.controls?.[field.name] ??
+      RESERVED[field.name] ??
+      (own ? ({ kind: 'const', value: own } as const) : undefined);
     if (!control) {
       throw new Error(
         `[hero-shader] '${id}' declares the uniform field '${field.name}', which the page has no value for; ` +

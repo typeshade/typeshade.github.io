@@ -1007,6 +1007,15 @@ export const en = {
       blankTitle: 'Blank file',
       blankNote: 'A fragment shader that reads `time`, `resolution` and `mouse`.',
       noStill: 'No preview',
+      // What a tile with nothing to draw says instead, keyed by the reason in NO_STILL_REASONS
+      // (scripts/artifacts.mjs). The tile names what the example is, not what is missing.
+      stillKinds: {
+        'no-glsl': 'WGSL only',
+        control: 'Host controls',
+        texture: 'Needs textures',
+        uniform: 'Host data',
+        'vertex-buffer': 'Vertex buffer',
+      },
       files: 'Files',
       newFile: 'New file',
       // The workspace as a folder VS Code opens (src/scripts/workspace-folder.ts).
