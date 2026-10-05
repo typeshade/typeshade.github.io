@@ -834,6 +834,11 @@ export const ko: Copy = {
     engineGpu: 'GPU',
     engineCpu: 'CPU 오라클',
     gpuIdle: '버텍스 진입점과 프래그먼트 진입점이 있는 모듈을 컴파일하면 그려집니다.',
+    wait: {
+      loading: '프로그램을 불러오는 중…',
+      compiling: '컴파일하는 중…',
+      drawing: '첫 프레임을 그리는 중…',
+    },
     gpuWebgpu: 'WebGPU에서 실행 중입니다.',
     gpuWebgl2: 'WebGL2에서 실행 중입니다.',
     gpuNone:

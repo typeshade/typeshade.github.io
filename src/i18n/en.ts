@@ -810,6 +810,12 @@ export const en = {
     engineGpu: 'GPU',
     engineCpu: 'CPU oracle',
     gpuIdle: 'Compile a module with a vertex entry and a fragment entry to see it drawn.',
+    // Over the canvas until the program's first frame is up: what the page is doing meanwhile.
+    wait: {
+      loading: 'Loading the program…',
+      compiling: 'Compiling…',
+      drawing: 'Drawing the first frame…',
+    },
     gpuWebgpu: 'Running on WebGPU.',
     gpuWebgl2: 'Running on WebGL2.',
     gpuNone:

@@ -438,6 +438,11 @@ const runtimeCopy = {
             {still && <img src={still} alt="" loading="eager" decoding="async" />}
             <canvas data-gpu-canvas data-backend="none" role="img" aria-label={t.canvas}></canvas>
             <canvas data-canvas width="192" height="144" aria-label={t.canvas} data-cpu-only hidden></canvas>
+            {/* What the page is doing until the program's first frame is up: loading it,
+                compiling it, drawing it. The stylesheet takes it away once a GPU canvas draws or
+                the CPU canvas shows; the script takes it away on a failure, which the note under
+                the frame then explains. */}
+            <div class="frame-wait" data-frame-wait role="status" data-compiling={t.wait.compiling} data-drawing={t.wait.drawing}><span class="frame-wait-spin" aria-hidden="true"></span><span data-frame-wait-text>{t.wait.loading}</span></div>
           </div>
           {/* The transport: the shader clock the canvas draws at, held or run from zero, and
               the frame on the whole screen. */}
@@ -710,6 +715,11 @@ const runtimeCopy = {
      has a frame up, and for good once they have edited it, since from then on it shows
      something else. */
   .gpu-frame:has(> canvas[data-gpu-canvas]:not([data-backend='none'])) > img, .gpu-frame[data-drawn] > img { display: none; }
+  .frame-wait { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgb(0 0 0 / 0.62); color: #fff; font: 500 .75rem/1.4 var(--font-sans); white-space: nowrap; pointer-events: none; }
+  .frame-wait[hidden], .gpu-frame:has(> canvas[data-gpu-canvas]:not([data-backend='none'])) > .frame-wait, .gpu-frame:has(> canvas[data-canvas]:not([hidden])) > .frame-wait { display: none; }
+  .frame-wait-spin { width: 12px; height: 12px; border: 2px solid rgb(255 255 255 / 0.35); border-top-color: #fff; border-radius: 50%; animation: frame-wait-spin .8s linear infinite; }
+  @keyframes frame-wait-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .frame-wait-spin { animation: none; } }
 
   /* The bindings panel: one block per binding, its slot and name on a line, and the
      controls under it. Built after the page loads, so its contents are addressed globally
