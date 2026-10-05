@@ -34,9 +34,8 @@ export const links = {
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
   editor: { label: 'Editor support', href: '/guide/editor/' },
-  // The gallery's pages, built here and served at gallery.typeshade.dev (src/lib/gallery-data.ts).
+  // The gallery's page, built here and served at gallery.typeshade.dev (src/lib/gallery-data.ts).
   gallery: { label: 'Gallery', href: '/gallery/' },
-  galleryEntry: { label: 'Gallery entry', href: '/gallery/entry/' },
   concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
   conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
   conceptsPipeline: { label: 'The pipeline', href: '/guide/concepts/the-pipeline/' },

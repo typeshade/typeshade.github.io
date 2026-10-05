@@ -130,26 +130,26 @@ bunx wrangler d1 execute typeshade --remote --command "SELECT id, text_en, href,
 `worker/gallery.ts`). It serves the same `dist/` and binds the same bucket and database, and it
 runs before the assets on every request:
 
-| Path                          | Served by                                                                   |
-| ----------------------------- | --------------------------------------------------------------------------- |
-| `/`, `/ko/`                   | the approved entries, each card opening it in the Playground; `?sort=`      |
-| `/<id>/`, `/ko/<id>/`         | one approved entry: its still, its line, its source, Open in the Playground |
-| `/stills/<id>.webp`           | an approved entry's still, from R2 (`gallery/<id>`)                         |
-| `/review/`                    | the maintainer's queue, behind Cloudflare Access (below)                    |
-| `/sitemap.xml`, `/robots.txt` | the gallery's own                                                           |
-| a file of the build's         | the static asset, as the site serves it (the CSS, the scripts, the fonts)   |
-| anything else                 | a redirect to the same path on `typeshade.dev`                              |
+| Path                          | Served by                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| `/`, `/ko/`                   | the approved entries, each card opening it in the Playground; `?sort=`    |
+| `/<id>/`, `/ko/<id>/`         | an entry's old page: a redirect to `typeshade.dev/s/<id>/`, where it runs |
+| `/stills/<id>.webp`           | an approved entry's still, from R2 (`gallery/<id>`)                       |
+| `/review/`                    | the maintainer's queue, behind Cloudflare Access (below)                  |
+| `/sitemap.xml`, `/robots.txt` | the gallery's own                                                         |
+| a file of the build's         | the static asset, as the site serves it (the CSS, the scripts, the fonts) |
+| anything else                 | a redirect to the same path on `typeshade.dev`                            |
 
-The pages are built as templates on the site, `/gallery/` and `/gallery/entry/` in both
-languages (`GalleryPage.astro`, `GalleryEntryPage.astro`), with `noindex` and out of the
-sitemap and the search index. The site's Worker redirects those routes, and the gallery's old
-address `/playground/gallery/`, to `gallery.typeshade.dev`. The gallery's Worker fills a
-template in with `HTMLRewriter` and writes every link to the address it answers at: a gallery
-route becomes the gallery's own path, and every other link on the page goes to
-`typeshade.dev`. An entry's id is its share's. A card on the list opens the entry in the
-Playground through its short link, `typeshade.dev/s/<id>/`, where it runs; the entry's page
-(`/<id>/`) is what a link to the entry shows, with Open in the Playground to the same short
-link. The views an entry shows are the times it was opened there. The
+The list is built as a template on the site, `/gallery/` in both languages
+(`GalleryPage.astro`), with `noindex` and out of the sitemap and the search index. The site's
+Worker redirects that route, and the gallery's old address `/playground/gallery/`, to
+`gallery.typeshade.dev`. The gallery's Worker fills the template in with `HTMLRewriter` and
+writes every link to the address it answers at: the gallery's route becomes its own path, and
+every other link on the page goes to `typeshade.dev`. An entry's id is its share's. A card opens
+the entry in the Playground through its short link, `typeshade.dev/s/<id>/`, where it runs.
+There is no page per entry: an entry once had one, which only repeated the card and sent the
+reader on to the Playground, and its address now redirects there. The views an entry shows are
+the times it was opened through the short link. The
 notice on the gallery's pages comes from the site (`/data/notice/` redirects there, with CORS);
 the issue dialog takes no reports on the gallery's host and links to GitHub's own form.
 

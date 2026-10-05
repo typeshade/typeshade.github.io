@@ -3238,18 +3238,6 @@ export const ko: Copy = {
     by: '{name} 작성',
     views: '조회 {count}회',
     viewOne: '조회 1회',
-    entryTitle: '{title}, TypeShade 갤러리',
-    entryDescription:
-      '{title}: TypeShade Playground에서 작성해 갤러리에 제출한 셰이더입니다. Playground에서 열어 바로 고칠 수 있습니다.',
-    entryStandIn: '갤러리 작품',
-    back: '전체 작품',
-    open: 'Playground에서 열기',
-    copyLink: '링크 복사',
-    copied: '복사됨',
-    sourceH: '소스',
-    moreFiles:
-      '이 프로그램에는 이 파일 말고도 파일이 더 있습니다. Playground에서 열면 모두 볼 수 있습니다.',
-    noStill: '이 작품에는 함께 제출된 화면이 없습니다.',
   },
 
   issue: {

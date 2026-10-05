@@ -4,7 +4,7 @@
 //
 // /, /ko/              the approved entries, newest first or, with ?sort=popular, most opened
 //                      first: the built template /gallery/ filled in
-// /<id>/, /ko/<id>/    one approved entry: the built template /gallery/entry/ filled in
+// /<id>/, /ko/<id>/    an entry's old page: a redirect to the entry in the Playground
 // /stills/<id>.<ext>   an approved entry's still, from R2 (galleryStillPath)
 // /review/             the maintainer's queue, behind Cloudflare Access (worker/gallery-review.ts)
 // /sitemap.xml, /robots.txt
@@ -15,7 +15,6 @@
 // `rehost`: a link to the gallery's routes becomes a link here, and every other link on the page
 // goes to the site.
 import {
-  GALLERY_ENTRY_ROUTE,
   GALLERY_ORIGIN,
   GALLERY_ROUTE,
   GALLERY_SORTS,
@@ -26,7 +25,6 @@ import {
   galleryStillPath,
   type GallerySort,
 } from '../src/lib/gallery-data.ts';
-import { decodeSource } from '../src/scripts/source-link.ts';
 import { findEntry, listEntries, type GalleryRow } from './gallery-store.ts';
 import { review, type ReviewEnv } from './gallery-review.ts';
 
@@ -37,8 +35,9 @@ export interface Env extends ReviewEnv {
 }
 
 const SITE = 'https://typeshade.dev';
-/** An entry's id is its share's (worker/index.ts, SHARE_ID). */
-const ENTRY = /^(\/ko)?\/([A-Za-z0-9_-]{8,43})\/$/;
+/** An entry's id is its share's (worker/index.ts, SHARE_ID). An entry had a page of its own
+ *  here; a card now opens the entry in the Playground, and the old address goes there too. */
+const ENTRY = /^(\/ko)?\/([A-Za-z0-9_-]{8,43})\/?$/;
 const LIST = /^(\/ko)?\/$/;
 /** Entries the list shows. */
 const LIST_MAX = 120;
@@ -65,38 +64,33 @@ const readCopy = (e: Element): CardCopy => {
   }
 };
 
-/** A string of the site's, rewritten for the gallery's address: the built routes of the list
- *  and of an entry become the gallery's own, at `entry` for the entry's. */
-function rehostText(text: string, entry: string): string {
+/** A string of the site's, rewritten for the gallery's address: the built route of the list
+ *  becomes the gallery's own. */
+function rehostText(text: string): string {
   return text
-    .split(`${SITE}/ko${GALLERY_ENTRY_ROUTE}`)
-    .join(`${GALLERY_ORIGIN}/ko/${entry}`)
-    .split(`${SITE}${GALLERY_ENTRY_ROUTE}`)
-    .join(`${GALLERY_ORIGIN}/${entry}`)
     .split(`${SITE}/ko${GALLERY_ROUTE}`)
     .join(`${GALLERY_ORIGIN}/ko/`)
     .split(`${SITE}${GALLERY_ROUTE}`)
     .join(`${GALLERY_ORIGIN}/`);
 }
 
-/** A link on a built page: a gallery route becomes the gallery's own path (on whatever host
- *  serves it, so a preview stays on the preview), and every other path the site's address. */
-function rehostHref(href: string, entry: string): string {
-  if (!href.startsWith('/') || href.startsWith('//')) return rehostText(href, entry);
-  const match = /^(\/ko)?\/gallery\/(entry\/)?(.*)$/.exec(href);
+/** A link on a built page: the gallery's route becomes the gallery's own path (on whatever
+ *  host serves it, so a preview stays on the preview), and every other path the site's. */
+function rehostHref(href: string): string {
+  if (!href.startsWith('/') || href.startsWith('//')) return rehostText(href);
+  const match = /^(\/ko)?\/gallery\/(.*)$/.exec(href);
   if (!match) return `${SITE}${href}`;
-  return `${match[1] ?? ''}/${match[2] ? entry : ''}${match[3]}`;
+  return `${match[1] ?? ''}/${match[2]}`;
 }
 
-/** The rewriter every page this Worker serves goes through. `entry` is the entry's path
- *  segment (`<id>/`), or '' on the list; `more` rewrites the JSON-LD block further. */
-function rehost(entry: string, more: (ld: string) => string = (ld) => ld): HTMLRewriter {
+/** The rewriter every page this Worker serves goes through. */
+function rehost(): HTMLRewriter {
   let ld = '';
   return (
     new HTMLRewriter()
       .on('a[href]', {
         element(e) {
-          e.setAttribute('href', rehostHref(e.getAttribute('href')!, entry));
+          e.setAttribute('href', rehostHref(e.getAttribute('href')!));
         },
       })
       .on('link[rel="sitemap"]', {
@@ -106,16 +100,16 @@ function rehost(entry: string, more: (ld: string) => string = (ld) => ld): HTMLR
       })
       .on('link[rel="canonical"], link[rel="alternate"]', {
         element(e) {
-          e.setAttribute('href', rehostText(e.getAttribute('href')!, entry));
+          e.setAttribute('href', rehostText(e.getAttribute('href')!));
         },
       })
       .on('meta[content]', {
         element(e) {
-          e.setAttribute('content', rehostText(e.getAttribute('content')!, entry));
+          e.setAttribute('content', rehostText(e.getAttribute('content')!));
         },
       })
-      // The templates keep themselves out of the index on typeshade.dev; served here they are
-      // the gallery's pages.
+      // The template keeps itself out of the index on typeshade.dev; served here it is the
+      // gallery's page.
       .on('meta[name="robots"]', {
         element(e) {
           e.remove();
@@ -126,7 +120,7 @@ function rehost(entry: string, more: (ld: string) => string = (ld) => ld): HTMLR
           ld += chunk.text;
           chunk.remove();
           if (!chunk.lastInTextNode) return;
-          chunk.after(more(rehostText(ld, entry)), { html: true });
+          chunk.after(rehostText(ld), { html: true });
           ld = '';
         },
       })
@@ -163,22 +157,22 @@ function metaSpans(row: GalleryRow, copy: CardCopy, locale: string): string {
 
 /** The panel that stands in for a still an entry was sent without: two colours from its id,
  *  so each entry keeps its own. */
-function stillStandIn(row: GalleryRow, label = ''): string {
+function stillStandIn(row: GalleryRow): string {
   let hash = 0;
   for (const c of row.id) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
   const a = hash % 360;
   const b = (a + 40 + ((hash >>> 9) % 80)) % 360;
-  return `<span class="gallery-still gallery-still-none" style="background:linear-gradient(135deg,hsl(${a} 55% 42%),hsl(${b} 60% 22%))">${escapeHtml(label)}</span>`;
+  return `<span class="gallery-still gallery-still-none" style="background:linear-gradient(135deg,hsl(${a} 55% 42%),hsl(${b} 60% 22%))"></span>`;
 }
 
-function stillImage(row: GalleryRow, alt: string, eager: boolean): string {
-  return `<img class="gallery-still" src="${galleryStillPath('/stills', row.id, row.still ?? '')}" alt="${escapeHtml(alt)}" width="${GALLERY_STILL_WIDTH}" height="${GALLERY_STILL_HEIGHT}" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
+function stillImage(row: GalleryRow, eager: boolean): string {
+  return `<img class="gallery-still" src="${galleryStillPath('/stills', row.id, row.still ?? '')}" alt="" width="${GALLERY_STILL_WIDTH}" height="${GALLERY_STILL_HEIGHT}" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
 }
 
 /** One entry's card. It opens the entry in the Playground, where it runs, through its short
- *  link; the entry's own page (/<id>/) is what a shared link to the gallery shows. */
+ *  link. */
 function card(row: GalleryRow, copy: CardCopy, locale: string, i: number): string {
-  const still = row.still ? stillImage(row, '', i < 8) : stillStandIn(row);
+  const still = row.still ? stillImage(row, i < 8) : stillStandIn(row);
   return `<li><a class="gallery-card" href="${SITE}/s/${row.id}/">${still}<span class="gallery-card-body"><h2>${escapeHtml(row.title)}</h2><p class="gallery-meta">${metaSpans(row, copy, locale)}</p></span></a></li>`;
 }
 
@@ -203,7 +197,7 @@ async function listPage(env: Env, url: URL, prefix: string): Promise<Response> {
   const page = await template(env, url, `${prefix}${GALLERY_ROUTE}`);
   if (!page) return notFound(env, url);
   const rows = await listEntries(env.DB, sort, LIST_MAX);
-  const filled = rehost('')
+  const filled = rehost()
     .on('[data-gallery-sort]', {
       element(e) {
         if (e.getAttribute('data-gallery-sort') === sort) e.setAttribute('aria-current', 'page');
@@ -228,113 +222,9 @@ async function listPage(env: Env, url: URL, prefix: string): Promise<Response> {
   return new Response(filled.body, { status: 200, headers: pageHeaders(page) });
 }
 
-/** The main file a share opens, and whether the program has files beside it. */
-async function sourceOf(fragment: string): Promise<{ code?: string; more: boolean }> {
-  const params = new URLSearchParams(fragment);
-  const code = params.get('code');
-  return { code: code ? await decodeSource(code) : undefined, more: params.has('files') };
-}
-
-async function entryPage(env: Env, url: URL, prefix: string, id: string): Promise<Response> {
-  const row = await findEntry(env.DB, id);
-  if (!row) return notFound(env, url);
-  const page = await template(env, url, `${prefix}${GALLERY_ENTRY_ROUTE}`);
-  if (!page) return notFound(env, url);
-  const { code, more } = await sourceOf(row.fragment);
-  const title = escapeHtml(row.title);
-  // An attribute's source text keeps its references, and setAttribute escapes only the quote.
-  const inAttribute = (text: string): string =>
-    text.split('{title}').join(row.title.replace(/&/g, '&amp;'));
-  const still = row.still
-    ? `${GALLERY_ORIGIN}${galleryStillPath('/stills', row.id, row.still)}`
-    : undefined;
-  // The entry's title goes into the JSON-LD block as a JSON string.
-  const inJson = JSON.stringify(row.title).slice(1, -1).replace(/</g, '\\u003c');
-  let pageTitle = '';
-  const filled = rehost(`${id}/`, (ld) => ld.split('{title}').join(inJson))
-    .on('title', {
-      text(chunk) {
-        pageTitle += chunk.text;
-        chunk.remove();
-        // The template's text is source text already; only the title is escaped into it.
-        if (chunk.lastInTextNode)
-          chunk.after(pageTitle.split('{title}').join(title), { html: true });
-      },
-    })
-    .on(
-      'meta[name="description"], meta[property="og:title"], meta[name="twitter:title"], meta[property="og:description"], meta[name="twitter:description"]',
-      {
-        element(e) {
-          e.setAttribute('content', inAttribute(e.getAttribute('content') ?? ''));
-        },
-      },
-    )
-    // The entry's still is the picture a link to it shows, where it has one.
-    .on('meta[property^="og:image"], meta[name^="twitter:image"]', {
-      element(e) {
-        if (!still) return;
-        const name = e.getAttribute('property') ?? e.getAttribute('name') ?? '';
-        const value: Record<string, string> = {
-          'og:image': still,
-          'twitter:image': still,
-          'og:image:alt': row.title.replace(/&/g, '&amp;'),
-          'twitter:image:alt': row.title.replace(/&/g, '&amp;'),
-          'og:image:type': row.still ?? '',
-          'og:image:width': String(GALLERY_STILL_WIDTH),
-          'og:image:height': String(GALLERY_STILL_HEIGHT),
-        };
-        if (name in value) e.setAttribute('content', value[name]!);
-      },
-    })
-    .on('[data-entry="still"]', {
-      element(e) {
-        const none = decodeAttribute(e.getAttribute('data-none'));
-        e.removeAttribute('data-none');
-        e.setInnerContent(row.still ? stillImage(row, row.title, true) : stillStandIn(row, none), {
-          html: true,
-        });
-      },
-    })
-    .on('[data-entry="title"]', {
-      element(e) {
-        e.setInnerContent(title, { html: true });
-      },
-    })
-    .on('[data-entry="meta"]', {
-      element(e) {
-        const copy = readCopy(e);
-        const locale = e.getAttribute('data-locale') ?? 'en';
-        e.removeAttribute('data-copy');
-        e.setInnerContent(metaSpans(row, copy, locale), { html: true });
-      },
-    })
-    .on('[data-entry="open"]', {
-      element(e) {
-        e.setAttribute('href', `${SITE}/s/${row.id}/`);
-      },
-    })
-    .on('[data-entry="source"]', {
-      element(e) {
-        if (code === undefined) e.remove();
-      },
-    })
-    .on('[data-entry="more-files"]', {
-      element(e) {
-        if (!more) e.remove();
-      },
-    })
-    .on('[data-entry="code"]', {
-      element(e) {
-        e.setInnerContent(escapeHtml(code ?? ''), { html: true });
-      },
-    })
-    .transform(page);
-  return new Response(filled.body, { status: 200, headers: pageHeaders(page) });
-}
-
 async function notFound(env: Env, url: URL): Promise<Response> {
   const page = await env.ASSETS.fetch(new Request(new URL('/404.html', url)));
-  const body = page.ok ? rehost('').transform(page).body : 'Not found';
+  const body = page.ok ? rehost().transform(page).body : 'Not found';
   return new Response(body, {
     status: 404,
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' },
@@ -356,12 +246,8 @@ async function still(env: Env, id: string): Promise<Response> {
   });
 }
 
-async function sitemap(env: Env): Promise<Response> {
-  const rows = await listEntries(env.DB, 'recent', 1000);
-  const pages = ['', ...rows.map((row) => `${row.id}/`)];
-  const urls = pages.flatMap((page) =>
-    ['', 'ko/'].map((prefix) => `<url><loc>${GALLERY_ORIGIN}/${prefix}${page}</loc></url>`),
-  );
+function sitemap(): Response {
+  const urls = ['', 'ko/'].map((prefix) => `<url><loc>${GALLERY_ORIGIN}/${prefix}</loc></url>`);
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join('')}</urlset>\n`,
     {
@@ -384,15 +270,18 @@ export default {
       return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
     const list = LIST.exec(path);
     if (list) return listPage(env, url, list[1] ?? '');
-    const entry = ENTRY.exec(path);
-    if (entry) return entryPage(env, url, entry[1] ?? '', entry[2]!);
-    if (/^(\/ko)?\/[A-Za-z0-9_-]{8,43}$/.test(path) || path === '/ko')
-      return Response.redirect(`${url.origin}${path}/${url.search}`, 308);
+    const entry = ENTRY.exec(path)?.[2];
+    if (entry)
+      return new Response(null, {
+        status: 301,
+        headers: { location: `${SITE}/s/${entry}/`, 'cache-control': 'public, max-age=3600' },
+      });
+    if (path === '/ko') return Response.redirect(`${url.origin}/ko/`, 308);
     const stillId = galleryStillId('/stills', path);
     if (stillId) return still(env, stillId);
     if (path === '/robots.txt')
       return new Response(ROBOTS, { headers: { 'content-type': 'text/plain; charset=utf-8' } });
-    if (path === '/sitemap.xml') return sitemap(env);
+    if (path === '/sitemap.xml') return sitemap();
     // The issue dialog asks whether reports are taken here, and they are not: its links go to
     // GitHub's own form. The site's Worker takes them only from typeshade.dev.
     if (path === '/data/issues/')

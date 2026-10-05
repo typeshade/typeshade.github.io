@@ -3057,9 +3057,9 @@ export const en = {
   },
 
   // The gallery (gallery.typeshade.dev, worker/gallery.ts): the files people sent in with the
-  // Playground's Submit, once the maintainer approves them. The build writes the list page and
-  // one entry's page as templates, and the gallery's Worker fills them in from the database.
-  // `{title}` in an entry's words is the entry's own title, which the Worker writes in.
+  // Playground's Submit, once the maintainer approves them. The build writes the list page as a
+  // template, and the gallery's Worker fills it in from the database. A card opens its entry
+  // in the Playground.
   gallery: {
     title: 'Shader gallery, TypeShade',
     description:
@@ -3076,17 +3076,6 @@ export const en = {
     by: 'by {name}',
     views: '{count} views',
     viewOne: '1 view',
-    entryTitle: '{title}, TypeShade gallery',
-    entryDescription:
-      '{title} is a shader someone wrote in the TypeShade Playground and sent to the gallery. It opens in the Playground, ready to change.',
-    entryStandIn: 'Gallery entry',
-    back: 'All entries',
-    open: 'Open in the Playground',
-    copyLink: 'Copy link',
-    copied: 'Copied',
-    sourceH: 'Source',
-    moreFiles: 'The program has more files than this one. The Playground opens all of them.',
-    noStill: 'No still was sent with this entry.',
   },
 
   // The dialog every Report a problem link opens (src/components/IssueDialog.astro): a reader
