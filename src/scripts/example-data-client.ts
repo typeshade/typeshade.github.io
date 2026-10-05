@@ -60,6 +60,14 @@ export async function shortLink(path: string, fragment: string): Promise<string 
   }
 }
 
+/** The fragment a short link stores (/data/shares/<id>/), which the Playground opens for
+ *  `#share=<id>`. Undefined where there is no Worker or no such share. */
+export async function fetchShare(id: string): Promise<string | undefined> {
+  if (!/^[A-Za-z0-9_-]{8,43}$/.test(id)) return undefined;
+  const share = await get<{ fragment?: unknown }>(`/data/shares/${id}/`);
+  return typeof share?.fragment === 'string' ? share.fragment : undefined;
+}
+
 /** What became of a gallery submission: queued (or already queued), refused for the day, or
  *  not sent at all (no Worker, a refusal, the network). */
 export type SubmitOutcome = 'sent' | 'already' | 'limit' | 'failed';

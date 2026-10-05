@@ -477,7 +477,7 @@ const runtimeCopy = {
       var root = document.currentScript && document.currentScript.previousElementSibling;
       if (!root || !root.hasAttribute('data-playground')) return;
       var hash = location.hash.replace(/^#/, '');
-      root.setAttribute('data-view', /(^|&)(example|code|blank)(=|&|$)/.test(hash) ? 'editor' : 'gallery');
+      root.setAttribute('data-view', /(^|&)(example|code|blank|share)(=|&|$)/.test(hash) ? 'editor' : 'gallery');
     })();
   </script>
 )}
