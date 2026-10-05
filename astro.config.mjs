@@ -81,6 +81,11 @@ export default defineConfig({
           // The template worker/index.ts fills in for an example newer than the build.
           '/guide/examples/runtime-example',
           '/ko/guide/examples/runtime-example',
+          // The gallery's templates, which worker/gallery.ts serves at gallery.typeshade.dev.
+          '/gallery',
+          '/gallery/entry',
+          '/ko/gallery',
+          '/ko/gallery/entry',
         ].includes(new URL(page).pathname.replace(/\/$/, '')) &&
         // /guide/authoring/ and its sections only redirect to /guide/internals/.
         !/^\/(ko\/)?guide\/authoring\//.test(new URL(page).pathname),

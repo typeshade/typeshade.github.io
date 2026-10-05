@@ -156,7 +156,8 @@ jobs:
       - run: node scripts/check-playground.mjs --merge parts/playground-part-*.json
 
   # typeshade.dev on Cloudflare Workers (docs/cloudflare.md): dist/ as static assets and the
-  # Worker in worker/index.ts, which serves the example data in R2. A manual dispatch on
+  # Worker in worker/index.ts, which serves the example data in R2; then gallery.typeshade.dev,
+  # the same dist/ under worker/gallery.ts. A manual dispatch on
   # another branch (pin-compiler.yml sends one for the pull request it opens, which starts no
   # pull_request run) builds and checks the same way and publishes nothing. Without the
   # Cloudflare secret (a fork's pull request has none) both jobs say so and pass.
@@ -189,6 +190,9 @@ jobs:
           fi
           bunx wrangler d1 migrations apply typeshade --remote
           bunx wrangler deploy
+          # gallery.typeshade.dev: the same dist/ under the gallery's Worker, after the site's
+          # deploy has applied the migrations it reads (wrangler.gallery.jsonc).
+          bunx wrangler deploy -c wrangler.gallery.jsonc
 
   # A pull request's own copy of the site, uploaded as a Worker version that serves no traffic
   # and answers at a preview URL of its own, so a reviewer opens the change running on
@@ -223,3 +227,12 @@ jobs:
             | tee upload.log
           url=$(grep -o 'https://[^ ]*workers.dev' upload.log | tail -1)
           echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
+          # The gallery's Worker, which takes a version only once its first deploy from main
+          # has created it; until then this says so and the job passes.
+          if bunx wrangler versions upload -c wrangler.gallery.jsonc --preview-alias "pr-$PR" \
+            --message "pull request #$PR" | tee gallery.log; then
+            url=$(grep -o 'https://[^ ]*workers.dev' gallery.log | tail -1)
+            echo "Gallery preview: $url" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::notice::The gallery's Worker took no preview version; it exists once main deploys it."
+          fi
