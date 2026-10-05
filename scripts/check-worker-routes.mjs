@@ -3,14 +3,20 @@
 // through or to shadow. The Worker's data once lived under /api/, where the build writes the
 // API reference, and every English reference page answered a JSON 404 on typeshade.dev. So
 // each prefix is held to dist/: a prefix the Worker owns has no page under it, and a prefix
-// whose pages the Worker passes through (the example pages, worker/index.ts) is named here.
+// whose pages the Worker passes through (the example pages, worker/index.ts) or redirects (the
+// gallery's templates, which gallery.typeshade.dev serves) is named here.
 //
 // Usage: node scripts/check-worker-routes.mjs [dist-dir]
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const dist = process.argv[2] ?? 'dist';
-const PASS_THROUGH = new Set(['/guide/examples/*', '/ko/guide/examples/*']);
+const PASS_THROUGH = new Set([
+  '/guide/examples/*',
+  '/ko/guide/examples/*',
+  '/gallery*',
+  '/ko/gallery*',
+]);
 
 const config = readFileSync('wrangler.jsonc', 'utf8');
 const list = /"run_worker_first":\s*\[([^\]]*)\]/.exec(config)?.[1] ?? '';

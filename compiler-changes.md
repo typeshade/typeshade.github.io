@@ -118,3 +118,9 @@ id first, then the pull request that did the work.
 - 0039: parameters and body locals may shadow module values while closures resolve the
   nearest declaration. The compiled function mapping and English/Korean scope guidance explain
   lexical shadowing and same-scope duplicate errors; focused fixtures check both behaviors.
+- 0040: a parameter declared `Ref<T>` names the caller's variable, passed as `ref(x)`: the
+  functions guide's parameters section and its sample, the reference-parameter and alias
+  cards on the TypeScript mapping page with the WGSL they emit and the `TS8074` refusal, the
+  parameter-reassignment card, the Korean translation of the authoring guide's new section,
+  the glossary row, `ref` in the language reference, and the reference-parameters example in
+  the gallery, the Playground picker, the stills and the Korean blurbs.

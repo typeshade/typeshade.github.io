@@ -261,6 +261,17 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
       pick: ['brighter'],
     },
     {
+      id: 'referenceParameter',
+      ts: 'function swap(a: Ref<f32>, b: Ref<f32>): void {\n  const t = a\n  a = b\n  b = t\n}\nexport function order(x: f32, y: f32): f32 {\n  let lo = x\n  let hi = y\n  if (lo > hi) {\n    swap(ref(lo), ref(hi))\n  }\n  return hi - lo\n}',
+      pick: ['swap', 'order'],
+    },
+    {
+      id: 'referenceAlias',
+      before: 'function swap(a: Ref<f32>, b: Ref<f32>): void {\n  const t = a\n  a = b\n  b = t\n}',
+      ts: 'export function twice(x: f32): f32 {\n  let v = x\n  swap(ref(v), ref(v))\n  return v\n}',
+      refused: true,
+    },
+    {
       id: 'topFunction',
       ts: 'export function lum(c: vec3): f32 {\n  return dot(c, vec3(0.2126, 0.7152, 0.0722))\n}',
       pick: ['lum'],

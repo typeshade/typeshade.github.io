@@ -2220,6 +2220,8 @@ export const en = {
           ['`amount: f32`', 'A scalar input whose type participates in expression checking.'],
           ['`: vec4`', 'The GPU value shape returned to the caller.'],
         ],
+        paramsRefP:
+          "A parameter declared `Ref<T>` is the caller's variable itself. The call passes the variable as `ref(x)`, and an assignment to the parameter, or to a field, a component or an element of it, writes that variable. One call may not hand one variable to two such parameters when the function writes either (`TS8074`). [Reference parameters](shadeReferenceParameters) shows a struct, an array element and a matrix column passed the same way.",
         helper: '3. Helper functions',
         helperP:
           'A top-level function without a stage decorator is a helper. Helpers let you name repeated calculations and keep shader entries focused on pipeline inputs, resources and outputs.',
@@ -2530,7 +2532,15 @@ export const en = {
           },
           mutableParameter: {
             name: 'Parameter reassignment',
-            p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged.',
+            p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged; a parameter declared `Ref<T>` changes it.',
+          },
+          referenceParameter: {
+            name: 'Reference parameter',
+            p: `A parameter declared \`Ref<T>\` is the caller's variable, and the call passes it as \`ref(x)\`. WGSL takes a pointer and ${glsl} an \`inout\` parameter, the way a method that writes \`this\` does. [reference-parameters](shadeReferenceParameters)`,
+          },
+          referenceAlias: {
+            name: 'Two references to one variable',
+            p: `One call may not hand one variable to two \`Ref<T>\` parameters it writes. WGSL refuses the aliased pointers, and ${glsl} would copy the two back in no fixed order.`,
           },
           lexicalShadow: {
             name: 'Shadowing a module value',
@@ -3055,10 +3065,12 @@ export const en = {
     },
   },
 
-  // The Playground's gallery (/playground/gallery/): the files people sent in with Submit,
-  // listed once the maintainer approves them. The list is read from the Worker at runtime.
+  // The gallery (gallery.typeshade.dev, worker/gallery.ts): the files people sent in with the
+  // Playground's Submit, once the maintainer approves them. The build writes the list page as a
+  // template, and the gallery's Worker fills it in from the database. A card opens its entry
+  // in the Playground.
   gallery: {
-    title: 'Playground gallery, TypeShade',
+    title: 'Shader gallery, TypeShade',
     description:
       'Shaders people wrote in the TypeShade Playground and sent in. Each one opens in the Playground, ready to change.',
     h1: 'Gallery',
@@ -3066,13 +3078,13 @@ export const en = {
       'Shaders people wrote in the Playground and sent in. Each one opens in the Playground, where you can change it.',
     howTo:
       'To add yours, write it in the [Playground](playground) and choose Submit. The maintainer reviews each submission before it appears.',
-    loading: 'Loading the gallery…',
     empty: 'Nothing has been approved yet.',
-    unavailable: 'The gallery could not be loaded.',
+    sortLabel: 'Order',
+    sortRecent: 'Newest',
+    sortPopular: 'Most viewed',
     by: 'by {name}',
     views: '{count} views',
     viewOne: '1 view',
-    open: 'Open in the Playground',
   },
 
   // The dialog every Report a problem link opens (src/components/IssueDialog.astro): a reader

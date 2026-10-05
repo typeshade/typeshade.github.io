@@ -34,7 +34,8 @@ export const links = {
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
   editor: { label: 'Editor support', href: '/guide/editor/' },
-  playgroundGallery: { label: 'Gallery', href: '/playground/gallery/' },
+  // The gallery's page, built here and served at gallery.typeshade.dev (src/lib/gallery-data.ts).
+  gallery: { label: 'Gallery', href: '/gallery/' },
   concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
   conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
   conceptsPipeline: { label: 'The pipeline', href: '/guide/concepts/the-pipeline/' },
@@ -199,6 +200,7 @@ export const links = {
   shadeBitfieldBands: shade('bitfield-bands'),
   shadeRayClass: shade('ray-class'),
   shadeDefaultArgs: shade('default-args'),
+  shadeReferenceParameters: shade('reference-parameters'),
   shadeAtomicHistogram: shade('atomic-histogram'),
   shadeOrbitInout: shade('orbit-inout'),
   shadeClassSyntax: shade('class-syntax'),

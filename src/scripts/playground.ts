@@ -63,10 +63,16 @@ import { provideProgram } from './report-context.ts';
 import {
   fetchExample,
   fetchIndex,
+  fetchShare,
   pageLocale,
   shortLink,
   submitToGallery,
 } from './example-data-client.ts';
+import {
+  GALLERY_STILL_BYTES,
+  GALLERY_STILL_HEIGHT,
+  GALLERY_STILL_WIDTH,
+} from '../lib/gallery-data.ts';
 // The runtime every figure on the site draws through. It imports nothing from the compiler:
 // the WGSL, both GLSL stages and the std140 offsets arrive as plain data, which is exactly
 // what this page already holds after a compile.
@@ -145,7 +151,7 @@ interface PlaygroundCopy {
   readonly copied: string;
   readonly share: string;
   readonly shared: string;
-  /** Submit's dialog (/playground/gallery/). */
+  /** Submit's dialog, which sends the file to the gallery (gallery.typeshade.dev). */
   readonly submit: {
     readonly cancel: string;
     readonly close: string;
@@ -665,10 +671,12 @@ function defineTypeshadeThemes(monaco: any): void {
 }
 
 // ── The source in the URL ──────────────────────────────────────────────────────────────────
-// A shared link carries the whole file in its fragment, so the page opens it with no service
-// to hand the source back. The encoding is src/scripts/source-link.ts, which a live example's
-// link to the Playground writes too. Share copies a short link (/s/<id>) to that URL where the
-// Worker stores it (worker/index.ts), and the URL itself where it does not.
+// A link can carry the whole file in its fragment (`code=`), so the page opens it with no
+// service to hand the source back. The encoding is src/scripts/source-link.ts, which a live
+// example's link to the Playground writes too. Share stores that fragment with the Worker and
+// copies a short link (/s/<id>, worker/index.ts), which opens the page at `#share=<id>`: the
+// page fetches the fragment by its id, so the address stays short whatever the file's size.
+// Where there is no Worker, Share copies the long link.
 
 const hashParams = (): URLSearchParams =>
   new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -1691,6 +1699,46 @@ function mount(root: HTMLElement): void {
       next.passFormat === 'rgba8' ? `${backendNote(picked)} ${w.passesRgba8}` : backendNote(picked),
     );
     syncRecordFrame();
+  };
+
+  /** The frame on the canvas as Submit sends it to the gallery, as base64: drawn once more and
+   *  copied in the same task, while a WebGPU or WebGL2 canvas still holds it, then cropped to
+   *  fill the gallery's still. Undefined where nothing has drawn, and a submission goes in
+   *  without one. */
+  const captureStill = async (): Promise<string | undefined> => {
+    const gpu = gpuCanvasNow();
+    let source: HTMLCanvasElement | undefined;
+    if (gpu && !gpu.hidden && mounted && mounted.backend !== 'none') {
+      mounted.redraw();
+      source = gpu;
+    } else if (canvas instanceof HTMLCanvasElement && !canvas.hidden) source = canvas;
+    if (!source || source.width === 0 || source.height === 0) return undefined;
+    const out = document.createElement('canvas');
+    out.width = GALLERY_STILL_WIDTH;
+    out.height = GALLERY_STILL_HEIGHT;
+    const context = out.getContext('2d');
+    if (!context) return undefined;
+    const scale = Math.max(out.width / source.width, out.height / source.height);
+    const width = source.width * scale;
+    const height = source.height * scale;
+    // The CPU canvas is a few pixels a side, drawn pixelated on the page, and stays so here.
+    context.imageSmoothingEnabled = source !== canvas;
+    try {
+      context.drawImage(source, (out.width - width) / 2, (out.height - height) / 2, width, height);
+    } catch {
+      return undefined;
+    }
+    const encode = (type: string, quality: number): Promise<Blob | null> =>
+      new Promise((resolve) => out.toBlob(resolve, type, quality));
+    // WebP where the browser writes it, and JPEG where it does not (Safari answers PNG).
+    let blob = await encode('image/webp', 0.82);
+    if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', 0.85);
+    if (!blob || blob.size > GALLERY_STILL_BYTES) return undefined;
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000)
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(binary);
   };
 
   // ── A compute entry, dispatched ───────────────────────────────────────────────────────
@@ -3343,7 +3391,11 @@ function mount(root: HTMLElement): void {
   const shareLink = async (): Promise<string> => {
     await publishSource();
     const { pathname, hash, href } = window.location;
-    return (await shortLink(pathname, hash.replace(/^#/, ''))) ?? href;
+    const link = await shortLink(pathname, hash.replace(/^#/, ''));
+    // The address bar follows the short link, so a reload or a copy of it stays short too.
+    const id = link && /\/s\/([A-Za-z0-9_-]+)\/?$/.exec(link)?.[1];
+    if (id) writeHash('share', id);
+    return link ?? href;
   };
 
   share.addEventListener('click', () => {
@@ -3363,8 +3415,8 @@ function mount(root: HTMLElement): void {
     void written.then(() => flash(share, copy.shared, copy.share)).catch(() => {});
   });
 
-  // Submit: the file goes to the gallery as a share with a title, and waits there for the
-  // maintainer's approval (worker/index.ts). The dialog stays open to say what happened.
+  // Submit: the file goes to the gallery as a share with a title and a still of the canvas, and
+  // waits there for the maintainer's approval (worker/index.ts). The dialog stays open to say what happened.
   const submitButton = root.querySelector('[data-submit]');
   const submitDialog = root.querySelector('[data-submit-dialog]');
   const submitForm = root.querySelector('[data-submit-form]');
@@ -3399,13 +3451,14 @@ function mount(root: HTMLElement): void {
       submitSend.disabled = true;
       say(copy.submit.sending);
       void publishSource()
-        .then(() =>
+        .then(async () =>
           submitToGallery({
             path: window.location.pathname,
             fragment: window.location.hash.replace(/^#/, ''),
             title,
             author: String(fields.get('author') ?? '').trim(),
             locale: pageLocale(),
+            still: await captureStill().catch(() => undefined),
           }),
         )
         .then((outcome) => {
@@ -3623,7 +3676,13 @@ function mount(root: HTMLElement): void {
     graph?: { name: string; path: string }[];
   }> => {
     await addReleaseExamples();
-    const params = hashParams();
+    let params = hashParams();
+    // A short link's id: the fragment it stands for is the Worker's to hand back.
+    const shared = params.get('share');
+    if (shared) {
+      const fragment = await fetchShare(shared);
+      if (fragment) params = new URLSearchParams(fragment);
+    }
     // The options come off the fragment before the first render, so the panes are painted
     // once, under the settings the link carried.
     const level = params.get('opt');
@@ -4168,7 +4227,7 @@ export function wave(x: f32, t: f32): f32 {
     if (view === 'editor') editor?.layout();
   };
   const hashOpensEditor = (): boolean =>
-    /(^|&)(example|code|blank)(=|&|$)/.test(window.location.hash.replace(/^#/, ''));
+    /(^|&)(example|code|blank|share)(=|&|$)/.test(window.location.hash.replace(/^#/, ''));
   const pushHash = (hash: string): void => {
     const url = new URL(window.location.href);
     url.hash = hash;

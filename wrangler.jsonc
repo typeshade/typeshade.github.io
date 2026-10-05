@@ -22,7 +22,18 @@
     // redirects to it, the way GitHub Pages served the site.
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/data/*", "/s/*", "/guide/examples/*", "/ko/guide/examples/*"],
+    // The gallery's routes on the site only redirect to gallery.typeshade.dev, which the
+    // gallery's own Worker serves (wrangler.gallery.jsonc).
+    "run_worker_first": [
+      "/data/*",
+      "/s/*",
+      "/guide/examples/*",
+      "/ko/guide/examples/*",
+      "/gallery*",
+      "/ko/gallery*",
+      "/playground/gallery*",
+      "/ko/playground/gallery*",
+    ],
   },
   "r2_buckets": [{ "binding": "DATA", "bucket_name": "typeshade-data" }],
   "d1_databases": [
