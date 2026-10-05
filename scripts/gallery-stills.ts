@@ -99,6 +99,17 @@ try {
     } catch (error) {
       failed.push(id);
       console.error(`[gallery-stills] ${id}: ${error instanceof Error ? error.message : error}`);
+      // What the page showed instead, for the run's artifact: the title (a challenge page names
+      // itself there), the Playground's status and canvas lines, and a screenshot.
+      const seen = await tab
+        .evaluate(() => ({
+          title: document.title,
+          status: document.querySelector('[data-status]')?.textContent?.trim() ?? '',
+          canvas: document.querySelector('[data-gpu-note]')?.textContent?.trim() ?? '',
+        }))
+        .catch(() => null);
+      if (seen) console.error(`[gallery-stills] ${id} showed ${JSON.stringify(seen)}`);
+      await tab.screenshot({ path: path.join(out, `${id}-failed.png`) }).catch(() => {});
     } finally {
       await tab.close();
     }
