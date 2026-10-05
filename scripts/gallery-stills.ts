@@ -1,17 +1,21 @@
 // Stills for the gallery's approved entries that have none: the entries sent in before the
 // Playground captured one, and any whose capture failed (docs/cloudflare.md, The gallery). Each
-// entry's share is opened on typeshade.dev in a headless browser, at its page and fragment and
-// not through its short link, so the capture counts no view. The canvas is photographed once a
+// entry's share is opened in a headless browser on the built site in dist/, served here, at its
+// page and fragment. typeshade.dev itself answers a headless browser on a CI runner with
+// Cloudflare's challenge page, and a share's fragment carries the whole program, so the build
+// draws it as the site does, and no view is counted. The canvas is photographed once a
 // backend draws, cropped to the gallery's still, encoded as WebP with sharp, then put in R2 and
 // recorded in D1. A row that gained a still meanwhile is left as it is.
 //
-// Run: bun scripts/gallery-stills.ts [--dry-run]
+// Run: bun run build, then bun scripts/gallery-stills.ts [--dry-run]
+// GALLERY_SITE=<origin> opens the shares there instead of on dist/.
 // It reaches the remote bucket and database through wrangler, so it needs CLOUDFLARE_API_TOKEN
 // (gallery-setup.yml runs it). --dry-run captures into gallery-stills/ and uploads nothing.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import { launchChromium } from './playwright.mjs';
+import { serveDist } from './serve-dist.mjs';
 import {
   GALLERY_STILL_BYTES,
   GALLERY_STILL_HEIGHT,
@@ -20,7 +24,7 @@ import {
 } from '../src/lib/gallery-data.ts';
 import { BUCKET, DATABASE } from '../src/lib/example-data.ts';
 
-const SITE = process.env.GALLERY_SITE ?? 'https://typeshade.dev';
+const dist = path.resolve('dist');
 const dryRun = process.argv.includes('--dry-run');
 const out = path.resolve('gallery-stills');
 /** How long a program has to put a frame up on a software GPU. */
@@ -49,6 +53,12 @@ console.log(`[gallery-stills] ${missing.length} approved entries have no still`)
 if (missing.length === 0) process.exit(0);
 
 mkdirSync(out, { recursive: true });
+if (!process.env.GALLERY_SITE && !existsSync(path.join(dist, 'playground', 'index.html')))
+  throw new Error(`[gallery-stills] ${dist} has no Playground; run the build first.`);
+const server = process.env.GALLERY_SITE
+  ? undefined
+  : await serveDist(dist, Number(process.env.GALLERY_STILLS_PORT ?? 4474));
+const SITE = process.env.GALLERY_SITE ?? server!.url;
 const browser = await launchChromium();
 const failed: string[] = [];
 try {
@@ -116,6 +126,7 @@ try {
   }
 } finally {
   await browser.close();
+  server?.close();
 }
 if (failed.length > 0) {
   console.error(`[gallery-stills] no still for ${failed.join(', ')}`);
