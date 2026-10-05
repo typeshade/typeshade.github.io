@@ -123,4 +123,23 @@ id first, then the pull request that did the work.
   cards on the TypeScript mapping page with the WGSL they emit and the `TS8074` refusal, the
   parameter-reassignment card, the Korean translation of the authoring guide's new section,
   the glossary row, `ref` in the language reference, and the reference-parameters example in
-  the gallery, the Playground picker, the stills and the Korean blurbs.
+  the gallery, the Playground picker, the stills and the Korean blurbs. The third amendment
+  replaces that spelling with the parameter decorators `@inout` and `@out` and an unmarked
+  argument: the functions guide's parameters section and its sample (`swap`, `add` with `@out`
+  into a `let` with no value) and a local function that reads and writes a qualified parameter
+  around it, in both locales; the `@inout` card, a new `@out` card and the
+  alias card on the TypeScript mapping page; the parameter-reassignment card; the set of
+  attributes on the types page; the Korean translation of the authoring guide's section,
+  translated again from the pinned AUTHORING.md; the glossary rows (되돌려 쓰는 매개변수,
+  한정자, 참조); `ref` gone from the language reference, where `inout` and `out` join the
+  attributes; and the example's Korean title and blurb. The example's still is kept: the program
+  computes the same colours as before. The fourth amendment removes `@in`: no page offers it, and
+  the Korean authoring guide says, as the English does, that there is none. The Playground's
+  hover is the language service's and needs no site change; the compiler delivers no inlay hint,
+  so the Playground shows none. Handled in #145.
+- 0043: a read of a local before it is assigned on every path is refused as `TS8075`, and GLSL
+  ES 3.00 starts a local with no initializer at zero: the local `let` card on the TypeScript
+  mapping page and the `var` note on the WGSL mapping page, which said WGSL zeroes the value
+  and GLSL leaves it undefined, in both locales; a refused read-before-assignment card on the
+  TypeScript mapping page; and the `TS8075` page in the error-code reference, with a trigger
+  and a fix compiled at the pin, handled in #145.

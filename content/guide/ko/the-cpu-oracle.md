@@ -1,8 +1,8 @@
 ---
 id: the-cpu-oracle
-source: 13c71781947c5a0f4568b2e2450feccbdd14ee1342fa8deb88f6422008c21870
+source: ff8adead9f0cf6592670149d0d2047d8aa0519c40b1b773973223dc0a9b02725
 sourceLine: 1395
-rules: 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 8.22 CSipAu_lP4nuQbNgkYGyi9q-TIQ0sDBvNaUJxFl4U1s=, 8.25 cf6-27ysIr7a4tUeb9_le98g3Rkt8kcYqfktXZg6emE=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
+rules: 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 8.22 CSipAu_lP4nuQbNgkYGyi9q-TIQ0sDBvNaUJxFl4U1s=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -298,9 +298,11 @@ const { wgsl, diagnostics } = compile(read('src/clouds.shade.ts')!, {
 ### 호출한 쪽의 변수를 바꾸는 함수
 
 매개변수는 호출이 넘긴 값의 복사본이므로, 매개변수에 값을 써도 호출한 쪽은 그대로입니다.
-호출한 쪽의 변수를 바꾸려면 매개변수를 `Ref<T>`로 선언하고, 변수를 `ref(x)`로 넘깁니다. 함수
-안에서 이 매개변수는 호출한 쪽의 변수 자체입니다. 읽을 수도 있고 대입할 수도 있으며, 필드에는
-메서드가 `this`의 필드에 닿는 방식 그대로 닿습니다.
+호출한 쪽의 변수를 바꾸려면 매개변수를 GLSL의 한정자인 `@inout`으로 선언하고, 변수를 그대로
+넘깁니다. 함수 안에서 이 매개변수는 호출한 쪽의 변수 자체입니다. 읽을 수도 있고 대입할 수도
+있으며, 필드에는 메서드가 `this`의 필드에 닿는 방식 그대로 닿습니다. 함수가 쓰기만 하는
+매개변수는 `@out`으로 선언합니다. 이 매개변수는 값 없이 시작하므로, 읽기 전에 먼저 쓰고 모든
+경로에서 씁니다.
 
 ```ts
 "use typeshade";
@@ -310,31 +312,40 @@ class Ray {
   dir: vec3;
 }
 
-function swap(a: Ref<f32>, b: Ref<f32>): void {
+function swap(@inout a: f32, @inout b: f32): void {
   const t = a;
   a = b;
   b = t;
 }
 
-function advance(r: Ref<Ray>, t: f32): void {
+function add(a: f32, b: f32, @out c: f32): void {
+  c = a + b;
+}
+
+function advance(@inout r: Ray, t: f32): void {
   r.origin = r.origin + r.dir * t;
 }
 
 export function demo(): f32 {
   let x: f32 = 1.;
   let y: f32 = 2.;
-  swap(ref(x), ref(y)); // x is 2. and y is 1.
+  swap(x, y); // x is 2. and y is 1.
+  let s: f32;
+  add(x, y, s); // s is 3.
   let r = new Ray();
   r.dir = vec3(1., 0., 0.);
-  advance(ref(r), 3.); // r.origin.x is 3.
-  return x + r.origin.x;
+  advance(r, 3.); // r.origin.x is 3.
+  return x + s + r.origin.x;
 }
 ```
 
 WGSL은 포인터를 받아 `swap(&x, &y)`로 부르고 본문에서 `*a = *b`처럼 쓰며, GLSL ES 3.00은 `inout`
 매개변수를 받습니다. CPU 오라클은 값을 복사해 들여왔다가 함수가 끝나면 원래 자리에 다시 저장합니다.
-`ref(...)`에는 `let`, 모듈 변수, `read_write` 스토리지 바인딩의 요소, 그리고 이들의 필드나 요소를
-넘길 수 있습니다. 값, 리터럴, 벡터의 성분을 넘기면 `TS8073`으로 거부됩니다. 함수가 값을 쓰는 변수
-하나를 호출 하나가 두 번 참조로 넘기는 `swap(ref(x), ref(x))`는 `TS8074`가 됩니다. 참조를 받는
-것은 파일이나 네임스페이스에 선언한 함수뿐이고, 메서드와 진입점, 지역 함수는 값을 받습니다. 모든
-규칙과 거부되는 경우는 `docs/use-typeshade-surface.md` §70에 있습니다.
+인자로는 `let`, 모듈 변수, `read_write` 스토리지 바인딩의 요소, 그리고 이들의 필드나 요소를 넘길 수
+있습니다. 값, 리터럴, 벡터의 성분을 넘기면 `TS8073`으로 거부됩니다. 함수가 값을 쓰는 변수 하나를
+호출 하나가 두 번 참조로 넘기는 `swap(x, x)`는 `TS8074`가 됩니다. 대입하기 전에 변수를 읽거나
+`@out` 매개변수를 쓰기 전에 읽으면 `TS8075`가 됩니다. 한정자는 파일이나 네임스페이스에 선언한
+함수에만 붙일 수 있고, 메서드와 진입점, 지역 함수는 값을 받습니다. 다만 한정자가 붙은 함수 안의
+지역 함수는 바깥의 다른 변수처럼 그 매개변수를 읽고 쓸 수 있습니다. `@in`은 없습니다. 한정자를 붙이지 않은
+매개변수가 곧 GLSL의 `in`입니다. 모든 규칙과 거부되는 경우는 `docs/use-typeshade-surface.md`
+§70에 있습니다.
