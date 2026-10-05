@@ -155,3 +155,7 @@ id first, then the pull request that did the work.
   Korean guide's `layouts-and-resources` section is translated again for the changed Storage
   buffers paragraph (and for the `"use typeshade"` uniform and storage blocks of typeshade#481),
   handled in the same pull request.
+- 0047: `array<T, N>()` is the zero value of a fixed-size array: the language reference's `array`
+  entry reads the new hover sentence from `FUNCTION_DOCS`, and the `packing-bitcast` example page
+  reads the new line from the example, with no change of their own, handled in the pull request
+  that pins the compiler at 596c805.
