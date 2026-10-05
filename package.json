@@ -26,6 +26,7 @@
     "qa:worker-routes": "node scripts/check-worker-routes.mjs dist",
     "qa:openseo": "bun scripts/openseo-audit.mts dist",
     "check:playground": "node scripts/check-playground.mjs",
+    "check:projects": "node scripts/check-projects.mjs",
     "check:live": "node scripts/check-live.mjs"
   },
   "dependencies": {

@@ -53,12 +53,20 @@ import {
   sampleShape,
 } from '../lib/live-shader-contract.ts';
 import { runComputeOnGpu } from '../lib/compute-runner.ts';
-import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
+import { BindingsModel, hostValue, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
 import { diagnosticsForDocument } from './playground-diagnostics.ts';
 import { decodeSource, encodeSource } from './source-link.ts';
-import { workspaceFolder, zipStored } from './workspace-folder.ts';
+import { zipStored } from './workspace-folder.ts';
+import {
+  projectFiles,
+  type FillValue,
+  type ProgramFill,
+  type TextureFill,
+} from '../lib/project-export.ts';
+// The Playground's pictures, carried into a downloaded project as src/textures.ts.
+import texturesModule from '../lib/texture-sources.ts?raw';
 import { provideProgram } from './report-context.ts';
 import {
   fetchExample,
@@ -81,7 +89,7 @@ import {
   type ShaderData,
   type ShaderPassData,
 } from '../lib/shader-runtime.ts';
-import type { ResourceSpec } from '../lib/shader-bindings.ts';
+import { fieldShape, type ResourceSpec } from '../lib/shader-bindings.ts';
 import {
   cornersOf,
   drawTile,
@@ -260,6 +268,7 @@ interface PlaygroundCopy {
     readonly files: string;
     readonly newFile: string;
     readonly download: string;
+    readonly downloadRefused: string;
     readonly openInVsCode: string;
     readonly newFileName: string;
     readonly badName: string;
@@ -450,6 +459,21 @@ function compose(source: string): {
     at: head.split('\n').length - 1,
     lines: inserted.split('\n').length - 1,
   };
+}
+
+/** The main file as a downloaded project carries it: the program the canvas draws, so a file
+ *  whose only entry is `@fragment` takes the prelude in with it, under a line that says where
+ *  it came from. The project has no Playground to put it in front. */
+function projectSource(source: string): string {
+  const composed = compose(source);
+  const directive = DIRECTIVE_LINE.exec(source);
+  if (composed.lines === 0 || !directive) return source;
+  const head = source.slice(0, directive[0].length);
+  return (
+    `${head}\n// The vertex half the Playground draws a file with only a fragment entry behind: one\n` +
+    `// triangle over the canvas, which hands the fragment \`uv\`, 0 to 1 from the bottom left.\n` +
+    `${FRAGMENT_PRELUDE}\n${source.slice(directive[0].length).replace(/^(?:[\t ]*\r?\n)+/, '')}`
+  );
 }
 
 /** How many lines the prelude took, and the line it went in at. Zero while the reader's file
@@ -4138,23 +4162,121 @@ export function wave(x: f32, t: f32): f32 {
   };
   if (newFileButton instanceof HTMLButtonElement)
     newFileButton.addEventListener('click', askFileName);
-  // Download: the workspace as a zip of a folder VS Code opens, the files as the tabs hold them
-  // and the pass graph in typeshade.json (src/scripts/workspace-folder.ts).
+  // Download: the workspace as a project of its own, which npm installs, checks, builds and runs
+  // (src/lib/project-export.ts): the files as the tabs hold them under src/, and src/main.ts
+  // drawing the passes and the main file with the values the canvas draws them with.
+  /** A pass's bindings in a downloaded project, as the canvas draws the pass (passPayload): a
+   *  texture named like a pass reads its output, a sampler reads it linearly clamped to the
+   *  edge, and a uniform field is the page's reserved one or the main file's of the same name,
+   *  and zero otherwise. */
+  const passFill = (
+    p: { readonly name: string; readonly path: string },
+    passNames: readonly string[],
+  ): ProgramFill | { readonly why: string } => {
+    const module = passModules.get(p.name);
+    if (!module) return { why: w.passFailed.replace('{name}', p.name) };
+    const r = reflect(module, { fp64Flavor: currentChoice().fp64Flavor });
+    const uniforms: Record<string, FillValue> = {};
+    const textures: Record<string, TextureFill> = {};
+    const samplers: Record<string, { filter: 'linear'; address: 'clamp' }> = {};
+    for (const group of r.bindGroups)
+      for (const e of group.entries) {
+        if (e.name === '_fp64') continue;
+        if (e.resourceKind === 'texture' && passNames.includes(e.name))
+          textures[e.name] = { kind: 'pass', pass: e.name };
+        else if (e.resourceKind === 'sampler')
+          samplers[e.name] = { filter: 'linear', address: 'clamp' };
+        else if (e.resourceKind === 'uniform-buffer') {
+          const block = r.uniforms.find((u) => u.name === e.structName);
+          const value: Record<string, FillValue> = {};
+          for (const f of block?.fields ?? []) {
+            const shape = fieldShape(f.type);
+            if (!shape) return { why: `${p.name}: ${e.name}.${f.name}` };
+            value[f.name] = isReserved(f.name, f.type)
+              ? f.name === 'mouse'
+                ? { live: 'mouse', components: shape.rows }
+                : { live: f.name as 'time' | 'resolution' | 'frame' | 'timeDelta' }
+              : (bindings.projectValue(f.name) ?? hostValue(shape, []));
+          }
+          uniforms[e.name] = value;
+        } else return { why: `${p.name}: ${e.name}` };
+      }
+    return { file: p.path, pass: p.name, uniforms, textures, samplers, constants: {} };
+  };
+  /** A picture the reader dropped, as the PNG a project carries in public/. */
+  const pngOf = async (image: ImageData): Promise<Uint8Array> => {
+    const canvas = new OffscreenCanvas(image.width, image.height);
+    canvas.getContext('2d')?.putImageData(image, 0, 0);
+    return new Uint8Array(await (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer());
+  };
+  /** The project the workspace is, or why a binding keeps it from being one. */
+  const projectOf = async (): Promise<
+    | { readonly name: string; readonly files: Record<string, string | Uint8Array> }
+    | { readonly why: string }
+  > => {
+    if (!model) return { why: '' };
+    const name = (openedExample || 'typeshade-program').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+    const extrasNow = workspaceFiles();
+    const mainFile = extrasNow[`${name}.shade.ts`] === undefined ? `${name}.shade.ts` : fileName;
+    const files = { ...extrasNow, [mainFile]: projectSource(model.getValue()) };
+    // A module whose only entry is `@compute` is dispatched once, the way the canvas runs it:
+    // over as many workgroups as the invocations the panel asks for need.
+    const entries = reflection?.entries ?? [];
+    const computeEntry = entries.find((e) => e.stage === 'compute');
+    if (computeEntry && !entries.some((e) => e.stage === 'fragment')) {
+      const dispatch = bindings.projectCompute();
+      if ('why' in dispatch) return dispatch;
+      const size = (computeEntry as { workgroupSize?: number }).workgroupSize ?? 64;
+      const program: ProgramFill = {
+        file: mainFile,
+        uniforms: {},
+        textures: {},
+        samplers: {},
+        constants: {},
+        compute: {
+          entry: computeEntry.name,
+          workgroups: Math.max(1, Math.ceil(bindings.invocations() / size)),
+          ...dispatch,
+        },
+      };
+      return { name, files: projectFiles({ name, files, programs: [program], texturesModule }) };
+    }
+    if (!entries.some((e) => e.stage === 'fragment'))
+      return { why: `${mainFile}: no fragment or compute entry to run` };
+    const main = bindings.projectFill();
+    if ('why' in main) return main;
+    const passNames = passGraph.map((p) => p.name);
+    const programs: ProgramFill[] = [];
+    for (const p of passGraph) {
+      const pass = passFill(p, passNames);
+      if ('why' in pass) return pass;
+      programs.push(pass);
+    }
+    programs.push({ file: mainFile, ...main.program });
+    const images: Record<string, Uint8Array> = {};
+    for (const [file, image] of main.images) images[file] = await pngOf(image);
+    return {
+      name,
+      files: projectFiles({ name, files, programs, images, texturesModule }),
+    };
+  };
   const downloadButton = root.querySelector('[data-download]');
   if (downloadButton instanceof HTMLButtonElement)
     downloadButton.addEventListener('click', () => {
-      if (!model) return;
-      const folder = workspaceFolder(
-        { path: fileName, text: model.getValue() },
-        workspaceFiles(),
-        passGraph,
-      );
-      const url = URL.createObjectURL(new Blob([zipStored(folder)], { type: 'application/zip' }));
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `${openedExample || fileName.replace(/\.shade\.ts$/, '')}.zip`;
-      anchor.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      void projectOf().then((project) => {
+        if ('why' in project) {
+          if (project.why) sayFileError(w.downloadRefused.replace('{why}', project.why));
+          return;
+        }
+        const url = URL.createObjectURL(
+          new Blob([zipStored(project.files, project.name)], { type: 'application/zip' }),
+        );
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${project.name}.zip`;
+        anchor.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
     });
   // Open in VS Code: the extension's uri handler takes the same link Share copies and opens
   // the workspace it names (vscode-typeshade, docs/playground-bridge.md). An anchor click

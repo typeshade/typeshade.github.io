@@ -1003,8 +1003,10 @@ export const en = {
       noStill: 'No preview',
       files: 'Files',
       newFile: 'New file',
-      // The workspace as a folder VS Code opens (src/scripts/workspace-folder.ts).
-      download: 'Download as a folder',
+      // The workspace as a project npm installs and runs (src/lib/project-export.ts).
+      download: 'Download as a project',
+      // A binding the project cannot carry yet: its name, then what it is.
+      downloadRefused: 'This program cannot be downloaded as a project yet: {why}.',
       // The extension's uri handler opens the workspace's link (vscode-typeshade, docs/playground-bridge.md).
       openInVsCode: 'Open in VS Code',
       // The button's tooltip: a browser cannot tell whether the extension is installed, so the
@@ -1864,7 +1866,7 @@ export const en = {
       'When a condition is missing, the extension shows a warning once. The web build was tested in Chromium on VS Code for the Web 1.110 and 1.139.1, and no other browser was tried. On vscode.dev itself the published extension was checked by hand: the page and the TypeScript servers are cross-origin isolated, and the diagnostics and hover arrive. github.dev was not checked, and completion, signature help, references and rename have no browser test.',
     roundH: 'Playground round trip',
     roundP1:
-      "The [Playground](playground)'s Download as a folder button downloads a zip of the workspace as a folder: the files, a `typeshade.json` that names the main file and the passes, and a recommendation for this extension. Open in VS Code, the button beside it, hands the workspace to the extension, which asks for a folder, writes the files there and opens it.",
+      "The [Playground](playground)'s Download as a project button downloads the workspace as a project of its own: the shader files under `src/`, a `src/main.ts` that draws them with the program runtime and the values the Playground gave them, and a `package.json`. `npm install` and `npm run dev` run it in the browser, and `npm run check` checks it the way the editor does. Open in VS Code, the button beside it, hands the workspace to the extension, which asks for a folder, writes the files there and opens it.",
     roundP2:
       'In the other direction, `TypeShade: Open in Playground` opens the active file, the files it imports and its passes in the Playground. `TypeShade: Open Playground Link` writes the workspace that a Playground link carries to a folder and opens it. Both need the desktop version.',
     agentsH: 'Coding agents',
