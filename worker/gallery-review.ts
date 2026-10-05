@@ -9,7 +9,7 @@
 // request that did not come through Access, or a Worker with no Access configured, gets
 // nothing. Readers who submit need no account: only this page has a sign-in.
 import { GALLERY_TITLE_MAX } from '../src/lib/example-data.ts';
-import { galleryStillKey } from '../src/lib/gallery-data.ts';
+import { galleryStillId, galleryStillKey, galleryStillPath } from '../src/lib/gallery-data.ts';
 import { decodeSource } from '../src/scripts/source-link.ts';
 
 export interface ReviewEnv {
@@ -146,7 +146,7 @@ async function card(row: Row): Promise<string> {
   const packed = params.get('code');
   const code = packed ? await decodeSource(packed) : undefined;
   const still = row.thumbnail
-    ? `<img src="/review/stills/${row.share_id}" alt="" width="320" height="180" loading="lazy">`
+    ? `<img src="${galleryStillPath('/review/stills', row.share_id, row.thumbnail)}" alt="" width="320" height="180" loading="lazy">`
     : '<div class="none">no still</div>';
   const when = (row.reviewed_at ?? row.created_at).slice(0, 16).replace('T', ' ');
   const action = (decision: string, label: string, primary = false): string =>
@@ -278,8 +278,8 @@ export async function review(request: Request, url: URL, env: ReviewEnv): Promis
   if (path === '/review') return Response.redirect(`${url.origin}/review/`, 308);
   if (path === '/review/' && request.method === 'GET')
     return page(env, who, (url.searchParams.get('done') ?? '').slice(0, 200));
-  const stillId = /^\/review\/stills\/([^/]+)$/.exec(path)?.[1];
-  if (stillId && ID.test(stillId) && request.method === 'GET') return reviewStill(env, stillId);
+  const stillId = galleryStillId('/review/stills', path);
+  if (stillId && request.method === 'GET') return reviewStill(env, stillId);
   const id = /^\/review\/([^/]+)\/$/.exec(path)?.[1];
   if (id && ID.test(id) && request.method === 'POST') return decide(request, url, env, id);
   return new Response('Not found', { status: 404, headers: noStore });
