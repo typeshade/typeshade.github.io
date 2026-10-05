@@ -429,13 +429,13 @@ export const facts = {
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
-  commit: '3f6f46b0',
+  commit: 'fd39ba3b',
   examples: 36,
   shadeExamples: 93,
   bothTargets: 35,
   testFiles: 302,
   goldenGlslPairs: 106,
-  builtins: 163,
+  builtins: 169,
   portableBuiltins: 44,
   glslAbsentBuiltins: 43,
   mathAliasBuiltins: 27,
