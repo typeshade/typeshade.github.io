@@ -47,7 +47,7 @@ The site follows the shapes readers already know, and nothing else:
   sentence for every category (`docs.api.categories`, keyed by the extractor's slug).
 - **Footer**: vuejs.org. A site map in three groups spread across the shell, Documentation's
   links down two columns 32px apart, then the licence, the copyright and the commit the page
-  was built from.
+  was built from. Project closes with the products built on TypeShade, one link each by name.
 - **Search**: Pagefind, the way VitePress sites carry a search box. `bun run build` writes the
   index into `dist/pagefind/` after Astro, so search works on the built site and not on `astro
   dev`. The `data-pagefind-body` and `data-pagefind-ignore` attributes in `Base.astro` and
