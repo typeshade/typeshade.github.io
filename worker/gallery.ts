@@ -175,9 +175,11 @@ function stillImage(row: GalleryRow, alt: string, eager: boolean): string {
   return `<img class="gallery-still" src="${galleryStillPath('/stills', row.id, row.still ?? '')}" alt="${escapeHtml(alt)}" width="${GALLERY_STILL_WIDTH}" height="${GALLERY_STILL_HEIGHT}" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
 }
 
-function card(row: GalleryRow, copy: CardCopy, locale: string, prefix: string, i: number): string {
+/** One entry's card. It opens the entry in the Playground, where it runs, through its short
+ *  link; the entry's own page (/<id>/) is what a shared link to the gallery shows. */
+function card(row: GalleryRow, copy: CardCopy, locale: string, i: number): string {
   const still = row.still ? stillImage(row, '', i < 8) : stillStandIn(row);
-  return `<li><a class="gallery-card" href="${prefix}/${row.id}/">${still}<span class="gallery-card-body"><h2>${escapeHtml(row.title)}</h2><p class="gallery-meta">${metaSpans(row, copy, locale)}</p></span></a></li>`;
+  return `<li><a class="gallery-card" href="${SITE}/s/${row.id}/">${still}<span class="gallery-card-body"><h2>${escapeHtml(row.title)}</h2><p class="gallery-meta">${metaSpans(row, copy, locale)}</p></span></a></li>`;
 }
 
 const pageHeaders = (from: Response): Headers => {
@@ -217,7 +219,7 @@ async function listPage(env: Env, url: URL, prefix: string): Promise<Response> {
         const copy = readCopy(e);
         const locale = e.getAttribute('data-locale') ?? 'en';
         e.removeAttribute('data-copy');
-        e.setInnerContent(rows.map((row, i) => card(row, copy, locale, prefix, i)).join(''), {
+        e.setInnerContent(rows.map((row, i) => card(row, copy, locale, i)).join(''), {
           html: true,
         });
       },

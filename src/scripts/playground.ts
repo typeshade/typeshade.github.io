@@ -63,6 +63,7 @@ import { provideProgram } from './report-context.ts';
 import {
   fetchExample,
   fetchIndex,
+  fetchShare,
   pageLocale,
   shortLink,
   submitToGallery,
@@ -670,10 +671,12 @@ function defineTypeshadeThemes(monaco: any): void {
 }
 
 // ── The source in the URL ──────────────────────────────────────────────────────────────────
-// A shared link carries the whole file in its fragment, so the page opens it with no service
-// to hand the source back. The encoding is src/scripts/source-link.ts, which a live example's
-// link to the Playground writes too. Share copies a short link (/s/<id>) to that URL where the
-// Worker stores it (worker/index.ts), and the URL itself where it does not.
+// A link can carry the whole file in its fragment (`code=`), so the page opens it with no
+// service to hand the source back. The encoding is src/scripts/source-link.ts, which a live
+// example's link to the Playground writes too. Share stores that fragment with the Worker and
+// copies a short link (/s/<id>, worker/index.ts), which opens the page at `#share=<id>`: the
+// page fetches the fragment by its id, so the address stays short whatever the file's size.
+// Where there is no Worker, Share copies the long link.
 
 const hashParams = (): URLSearchParams =>
   new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -3388,7 +3391,11 @@ function mount(root: HTMLElement): void {
   const shareLink = async (): Promise<string> => {
     await publishSource();
     const { pathname, hash, href } = window.location;
-    return (await shortLink(pathname, hash.replace(/^#/, ''))) ?? href;
+    const link = await shortLink(pathname, hash.replace(/^#/, ''));
+    // The address bar follows the short link, so a reload or a copy of it stays short too.
+    const id = link && /\/s\/([A-Za-z0-9_-]+)\/?$/.exec(link)?.[1];
+    if (id) writeHash('share', id);
+    return link ?? href;
   };
 
   share.addEventListener('click', () => {
@@ -3669,7 +3676,13 @@ function mount(root: HTMLElement): void {
     graph?: { name: string; path: string }[];
   }> => {
     await addReleaseExamples();
-    const params = hashParams();
+    let params = hashParams();
+    // A short link's id: the fragment it stands for is the Worker's to hand back.
+    const shared = params.get('share');
+    if (shared) {
+      const fragment = await fetchShare(shared);
+      if (fragment) params = new URLSearchParams(fragment);
+    }
     // The options come off the fragment before the first render, so the panes are painted
     // once, under the settings the link carried.
     const level = params.get('opt');
@@ -4214,7 +4227,7 @@ export function wave(x: f32, t: f32): f32 {
     if (view === 'editor') editor?.layout();
   };
   const hashOpensEditor = (): boolean =>
-    /(^|&)(example|code|blank)(=|&|$)/.test(window.location.hash.replace(/^#/, ''));
+    /(^|&)(example|code|blank|share)(=|&|$)/.test(window.location.hash.replace(/^#/, ''));
   const pushHash = (hash: string): void => {
     const url = new URL(window.location.href);
     url.hash = hash;

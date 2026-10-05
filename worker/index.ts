@@ -8,14 +8,15 @@
 // /data/releases/         the releases the database records, newest first
 // /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
 //                         its short link
-// /data/shares/<id>/      one short link's page, its views and when it was made and last opened
+// /data/shares/<id>/      one short link's page and fragment, its views and when it was made and
+//                         last opened; the Playground opens #share=<id> from it
 // /data/notice/           the notice over every page, or null (worker/migrations/0005)
 // /data/gallery/          GET: the approved gallery entries; POST: sends a share in, pending,
 //                         with a still of its canvas (worker/gallery.ts serves the gallery)
 // /data/issues/           GET: whether the issue dialog takes reports here; POST: opens one as
 //                         an issue on GitHub for a reader with no account there (worker/github.ts)
 // /data/issue-images/<n>  an image an issue shows, which the dialog sent with it
-// /s/<id>/                the short link: a redirect to the page with its fragment, counted
+// /s/<id>/                the short link: a redirect to the page with #share=<id>, counted
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
 // /ko/guide/examples/...  the current release has, the prebuilt template page filled in with
 //                         it, so an example merged upstream has a page before the next build
@@ -137,12 +138,13 @@ async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext):
   }
   if (parts[1] === 'shares' && parts.length === 3 && SHARE_ID.test(parts[2]!)) {
     const row = await env.DB.prepare(
-      `SELECT id, path, views, created_at, last_opened_at FROM shares WHERE id = ?`,
+      `SELECT id, path, fragment, views, created_at, last_opened_at FROM shares WHERE id = ?`,
     )
       .bind(parts[2])
       .first<{
         id: string;
         path: string;
+        fragment: string;
         views: number;
         created_at: string;
         last_opened_at: string | null;
@@ -152,6 +154,8 @@ async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext):
       JSON.stringify({
         id: row.id,
         path: row.path,
+        // What the Playground opens: its short link carries only the id (openShare).
+        fragment: row.fragment,
         views: row.views,
         createdAt: row.created_at,
         lastOpenedAt: row.last_opened_at,
@@ -424,7 +428,9 @@ async function openShare(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
   // Not cached, so every open reaches the Worker and is counted.
   return new Response(null, {
     status: 302,
-    headers: { location: `${url.origin}${row.path}#${row.fragment}`, ...noStore },
+    // The id alone, which the page resolves through /data/shares/<id>/. The file itself once rode
+    // in this address, and a large one made a redirect of tens of kilobytes that did not open.
+    headers: { location: `${url.origin}${row.path}#share=${id}`, ...noStore },
   });
 }
 

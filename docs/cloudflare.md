@@ -31,7 +31,7 @@ same data (The gallery, below).
 | `/data/issues/` (GET)                        | the Worker: whether the issue dialog takes reports here               |
 | `/data/issues/` (POST)                       | the Worker: opens the dialog's issue on GitHub, answers its number    |
 | `/data/issue-images/<name>`                  | the Worker: an image an issue shows, from R2                          |
-| `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored      |
+| `/s/<id>/`                                   | the Worker: a redirect to the share's page at `#share=<id>`           |
 | `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
 | `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
 
@@ -71,6 +71,10 @@ same data (The gallery, below).
   example's page, in either language, and a fragment that starts `code=`, of 64 KB at most;
   anything else, or no Worker, and Share copies the long link, which carries the whole file and
   opens with no service at all.
+- **A short link opens by its id.** `/s/<id>/` redirects to the share's page at `#share=<id>`,
+  and the Playground fetches the stored fragment from `/data/shares/<id>/` before it opens. The
+  file never rides in the redirect: a large one once made a `Location` of 20 KB that did not
+  open. After Share, the address bar holds `#share=<id>` too.
 - **A short link's views.** Each open of `/s/<id>/` adds one to the share's `views` and sets
   `last_opened_at`, after the redirect is sent; the redirect is `no-store`, so a browser that
   opens it again is counted again. `/data/shares/<id>/` answers the count. A cron
@@ -128,7 +132,7 @@ runs before the assets on every request:
 
 | Path                          | Served by                                                                   |
 | ----------------------------- | --------------------------------------------------------------------------- |
-| `/`, `/ko/`                   | the approved entries, newest first; `?sort=popular`, most opened first      |
+| `/`, `/ko/`                   | the approved entries, each card opening it in the Playground; `?sort=`      |
 | `/<id>/`, `/ko/<id>/`         | one approved entry: its still, its line, its source, Open in the Playground |
 | `/stills/<id>.webp`           | an approved entry's still, from R2 (`gallery/<id>`)                         |
 | `/review/`                    | the maintainer's queue, behind Cloudflare Access (below)                    |
@@ -142,8 +146,10 @@ sitemap and the search index. The site's Worker redirects those routes, and the 
 address `/playground/gallery/`, to `gallery.typeshade.dev`. The gallery's Worker fills a
 template in with `HTMLRewriter` and writes every link to the address it answers at: a gallery
 route becomes the gallery's own path, and every other link on the page goes to
-`typeshade.dev`. An entry's id is its share's, and Open in the Playground is its short link,
-`typeshade.dev/s/<id>/`, so the views an entry shows are the times it was opened there. The
+`typeshade.dev`. An entry's id is its share's. A card on the list opens the entry in the
+Playground through its short link, `typeshade.dev/s/<id>/`, where it runs; the entry's page
+(`/<id>/`) is what a link to the entry shows, with Open in the Playground to the same short
+link. The views an entry shows are the times it was opened there. The
 notice on the gallery's pages comes from the site (`/data/notice/` redirects there, with CORS);
 the issue dialog takes no reports on the gallery's host and links to GitHub's own form.
 
