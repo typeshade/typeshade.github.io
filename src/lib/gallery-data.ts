@@ -25,3 +25,23 @@ export type GallerySort = (typeof GALLERY_SORTS)[number];
 
 /** Where an entry's still is kept in the DATA bucket. */
 export const galleryStillKey = (id: string): string => `gallery/${id}`;
+
+/** The file extension a still's address carries for its type. typeshade.dev's zone redirects a
+ *  path with no extension to the same path with a trailing slash before any Worker runs, so a
+ *  still answers at `/stills/<id>.<extension>`. */
+const STILL_EXTENSIONS: Readonly<Record<string, string>> = {
+  'image/webp': 'webp',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+};
+
+/** Where an entry's still answers, under `prefix` (`/stills` on the gallery, `/review/stills`
+ *  on the review page). */
+export const galleryStillPath = (prefix: string, id: string, type: string): string =>
+  `${prefix}/${id}.${STILL_EXTENSIONS[type] ?? 'webp'}`;
+
+/** The still's id in a path galleryStillPath wrote under `prefix`, or undefined. */
+export function galleryStillId(prefix: string, path: string): string | undefined {
+  if (!path.startsWith(`${prefix}/`)) return undefined;
+  return /^([A-Za-z0-9_-]{8,43})\.(?:webp|jpg|png)$/.exec(path.slice(prefix.length + 1))?.[1];
+}

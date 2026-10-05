@@ -5,7 +5,7 @@
 // /, /ko/              the approved entries, newest first or, with ?sort=popular, most opened
 //                      first: the built template /gallery/ filled in
 // /<id>/, /ko/<id>/    one approved entry: the built template /gallery/entry/ filled in
-// /stills/<id>         an approved entry's still, from R2
+// /stills/<id>.<ext>   an approved entry's still, from R2 (galleryStillPath)
 // /review/             the maintainer's queue, behind Cloudflare Access (worker/gallery-review.ts)
 // /sitemap.xml, /robots.txt
 // a file (a name with a dot, /_astro/...): the build's, as the site serves it
@@ -21,7 +21,9 @@ import {
   GALLERY_SORTS,
   GALLERY_STILL_HEIGHT,
   GALLERY_STILL_WIDTH,
+  galleryStillId,
   galleryStillKey,
+  galleryStillPath,
   type GallerySort,
 } from '../src/lib/gallery-data.ts';
 import { decodeSource } from '../src/scripts/source-link.ts';
@@ -38,7 +40,6 @@ const SITE = 'https://typeshade.dev';
 /** An entry's id is its share's (worker/index.ts, SHARE_ID). */
 const ENTRY = /^(\/ko)?\/([A-Za-z0-9_-]{8,43})\/$/;
 const LIST = /^(\/ko)?\/$/;
-const STILL = /^\/stills\/([A-Za-z0-9_-]{8,43})$/;
 /** Entries the list shows. */
 const LIST_MAX = 120;
 
@@ -171,7 +172,7 @@ function stillStandIn(row: GalleryRow, label = ''): string {
 }
 
 function stillImage(row: GalleryRow, alt: string, eager: boolean): string {
-  return `<img class="gallery-still" src="/stills/${row.id}" alt="${escapeHtml(alt)}" width="${GALLERY_STILL_WIDTH}" height="${GALLERY_STILL_HEIGHT}" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
+  return `<img class="gallery-still" src="${galleryStillPath('/stills', row.id, row.still ?? '')}" alt="${escapeHtml(alt)}" width="${GALLERY_STILL_WIDTH}" height="${GALLERY_STILL_HEIGHT}" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
 }
 
 function card(row: GalleryRow, copy: CardCopy, locale: string, prefix: string, i: number): string {
@@ -242,7 +243,9 @@ async function entryPage(env: Env, url: URL, prefix: string, id: string): Promis
   // An attribute's source text keeps its references, and setAttribute escapes only the quote.
   const inAttribute = (text: string): string =>
     text.split('{title}').join(row.title.replace(/&/g, '&amp;'));
-  const still = row.still ? `${GALLERY_ORIGIN}/stills/${row.id}` : undefined;
+  const still = row.still
+    ? `${GALLERY_ORIGIN}${galleryStillPath('/stills', row.id, row.still)}`
+    : undefined;
   // The entry's title goes into the JSON-LD block as a JSON string.
   const inJson = JSON.stringify(row.title).slice(1, -1).replace(/</g, '\\u003c');
   let pageTitle = '';
@@ -383,7 +386,7 @@ export default {
     if (entry) return entryPage(env, url, entry[1] ?? '', entry[2]!);
     if (/^(\/ko)?\/[A-Za-z0-9_-]{8,43}$/.test(path) || path === '/ko')
       return Response.redirect(`${url.origin}${path}/${url.search}`, 308);
-    const stillId = STILL.exec(path)?.[1];
+    const stillId = galleryStillId('/stills', path);
     if (stillId) return still(env, stillId);
     if (path === '/robots.txt')
       return new Response(ROBOTS, { headers: { 'content-type': 'text/plain; charset=utf-8' } });

@@ -130,7 +130,7 @@ runs before the assets on every request:
 | ----------------------------- | --------------------------------------------------------------------------- |
 | `/`, `/ko/`                   | the approved entries, newest first; `?sort=popular`, most opened first      |
 | `/<id>/`, `/ko/<id>/`         | one approved entry: its still, its line, its source, Open in the Playground |
-| `/stills/<id>`                | an approved entry's still, from R2 (`gallery/<id>`)                         |
+| `/stills/<id>.webp`           | an approved entry's still, from R2 (`gallery/<id>`)                         |
 | `/review/`                    | the maintainer's queue, behind Cloudflare Access (below)                    |
 | `/sitemap.xml`, `/robots.txt` | the gallery's own                                                           |
 | a file of the build's         | the static asset, as the site serves it (the CSS, the scripts, the fonts)   |

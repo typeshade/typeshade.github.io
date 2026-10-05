@@ -32,7 +32,12 @@ import {
   type ExampleRecord,
   type ReleaseIndex,
 } from '../src/lib/example-data.ts';
-import { GALLERY_ORIGIN, GALLERY_STILL_BYTES, galleryStillKey } from '../src/lib/gallery-data.ts';
+import {
+  GALLERY_ORIGIN,
+  GALLERY_STILL_BYTES,
+  galleryStillKey,
+  galleryStillPath,
+} from '../src/lib/gallery-data.ts';
 import {
   ISSUE_FILE_NAME,
   ISSUE_FILES_MAX,
@@ -390,7 +395,9 @@ async function listGallery(env: Env): Promise<Response> {
       approvedAt: row.approvedAt,
       url: `/s/${row.id}/`,
       page: `${GALLERY_ORIGIN}/${row.id}/`,
-      still: row.still ? `${GALLERY_ORIGIN}/stills/${row.id}` : null,
+      still: row.still
+        ? `${GALLERY_ORIGIN}${galleryStillPath('/stills', row.id, row.still)}`
+        : null,
     })),
   });
 }
