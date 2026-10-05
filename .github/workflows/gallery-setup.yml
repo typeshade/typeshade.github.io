@@ -39,8 +39,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          # vendor/shader-dsl is the compiler the build reads.
+          # vendor/shader-dsl is the compiler the build reads, and the build reads the pin's
+          # history too (src/lib/rule-history.ts), as deploy.yml's site job does.
           submodules: true
+          fetch-depth: 0
           persist-credentials: false
       - uses: oven-sh/setup-bun@v2
         with:
