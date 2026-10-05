@@ -575,7 +575,12 @@ async function checkEnginesAgree(page, problems, ids) {
         ground: getComputedStyle(frame).backgroundColor,
       };
     });
-    const shot = await photographCanvas(page);
+    // A photograph that times out names the example it was of, which the error alone does not.
+    const shot = await photographCanvas(page).catch((error) => {
+      throw new Error(`photographing '${id}' for the engine comparison: ${error.message}`, {
+        cause: error,
+      });
+    });
     const { data, info } = await sharp(shot)
       .raw()
       .ensureAlpha()
