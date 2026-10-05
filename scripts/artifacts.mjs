@@ -73,6 +73,7 @@ export const SHADE_STILL_EXAMPLES = [
   'plasma-twin',
   'private-state',
   'ray-class',
+  'reference-parameters',
   'shape-inheritance',
   'starfield-twin',
   'tunnel-twin',

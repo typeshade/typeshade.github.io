@@ -46,7 +46,10 @@ export type Control =
   | { readonly kind: 'resolution' } // drawing-buffer size in px → vec2<f32>
   // Pointer state as vec4 [x, y, down, used]. The page has no pointer input, so it packs
   // [0,0,0,0], and `used = 0` is exactly the flag the examples read to render their canonical
-  // autopilot framing (the one thumbnails and render gates see).
+  // autopilot framing (the one thumbnails and render gates see). A `.shade.ts` example's
+  // `mouse` is a vec2 under src/lib/live-shader-contract.ts instead, 0 to 1 over the canvas,
+  // and gets the (0.5, 0.5) an untouched Playground canvas holds, so a still shows the frame
+  // the Playground opens on.
   | { readonly kind: 'mouse' }
   // The frame count since the clock started, and the seconds since the frame before, the
   // fields a pass that reads its own frame before (compiler change 0026) seeds and steps by.
@@ -376,7 +379,7 @@ function createFrameState(
     return 0;
   };
 
-  const valueFor = (name: string, seconds: number): readonly number[] | null => {
+  const valueFor = (name: string, type: string, seconds: number): readonly number[] | null => {
     const c = controls[name];
     if (!c) return null; // declared but uncontrolled → leave the zeros already in the buffer
     switch (c.kind) {
@@ -385,7 +388,7 @@ function createFrameState(
       case 'resolution':
         return [canvas.width, canvas.height];
       case 'mouse':
-        return [0, 0, 0, 0];
+        return type === 'vec2<f32>' ? [0.5, 0.5] : [0, 0, 0, 0];
       case 'frame':
         return [clock().frame];
       case 'timeDelta':
@@ -426,7 +429,8 @@ function createFrameState(
       const now = clock();
       if (buf) {
         for (const f of layout.fields) {
-          const v = override?.(f.name, seconds, undefined, now) ?? valueFor(f.name, seconds);
+          const v =
+            override?.(f.name, seconds, undefined, now) ?? valueFor(f.name, f.type, seconds);
           if (v) write(f, v);
         }
       }

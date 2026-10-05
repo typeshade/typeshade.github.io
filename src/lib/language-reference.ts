@@ -145,6 +145,9 @@ const FAMILY_OF: Readonly<Record<string, LanguageFamily>> = {
   fill: 'resources',
   uniform: 'resources',
   storage: 'resources',
+  // `ref(place)` passes a place to a `Ref<T>` parameter (compiler change 0040). It names memory
+  // the call writes back to, as a binding does, so it sits beside them.
+  ref: 'resources',
 };
 
 // The tables whose bare `number` is the GPU scalar slot. An attribute's `number` is a

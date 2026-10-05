@@ -63,6 +63,7 @@ export const playgroundExampleIds = [
   'pick-composite',
   'cutout',
   'default-args',
+  'reference-parameters',
   'bit-bump',
   'bool-select',
   'integer-math',
