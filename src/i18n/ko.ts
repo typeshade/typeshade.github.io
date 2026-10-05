@@ -3211,7 +3211,7 @@ export const ko: Copy = {
   },
 
   gallery: {
-    title: 'Playground 갤러리, TypeShade',
+    title: '셰이더 갤러리, TypeShade',
     description:
       'TypeShade Playground에서 작성해 제출한 셰이더를 모았습니다. 하나씩 Playground에서 열어 고칠 수 있습니다.',
     h1: '갤러리',
@@ -3219,13 +3219,25 @@ export const ko: Copy = {
       'Playground에서 작성해 제출한 셰이더입니다. 하나씩 Playground에서 열고 고쳐 볼 수 있습니다.',
     howTo:
       '직접 올리려면 [Playground](playground)에서 작성한 뒤 제출을 누르십시오. 관리자가 검토한 뒤에 공개됩니다.',
-    loading: '갤러리를 불러오는 중…',
     empty: '아직 승인된 작품이 없습니다.',
-    unavailable: '갤러리를 불러오지 못했습니다.',
+    sortLabel: '정렬',
+    sortRecent: '최신순',
+    sortPopular: '조회순',
     by: '{name} 작성',
     views: '조회 {count}회',
     viewOne: '조회 1회',
+    entryTitle: '{title}, TypeShade 갤러리',
+    entryDescription:
+      '{title}: TypeShade Playground에서 작성해 갤러리에 제출한 셰이더입니다. Playground에서 열어 바로 고칠 수 있습니다.',
+    entryStandIn: '갤러리 작품',
+    back: '전체 작품',
     open: 'Playground에서 열기',
+    copyLink: '링크 복사',
+    copied: '복사됨',
+    sourceH: '소스',
+    moreFiles:
+      '이 프로그램에는 이 파일 말고도 파일이 더 있습니다. Playground에서 열면 모두 볼 수 있습니다.',
+    noStill: '이 작품에는 함께 제출된 화면이 없습니다.',
   },
 
   issue: {

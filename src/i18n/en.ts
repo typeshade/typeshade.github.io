@@ -3046,10 +3046,12 @@ export const en = {
     },
   },
 
-  // The Playground's gallery (/playground/gallery/): the files people sent in with Submit,
-  // listed once the maintainer approves them. The list is read from the Worker at runtime.
+  // The gallery (gallery.typeshade.dev, worker/gallery.ts): the files people sent in with the
+  // Playground's Submit, once the maintainer approves them. The build writes the list page and
+  // one entry's page as templates, and the gallery's Worker fills them in from the database.
+  // `{title}` in an entry's words is the entry's own title, which the Worker writes in.
   gallery: {
-    title: 'Playground gallery, TypeShade',
+    title: 'Shader gallery, TypeShade',
     description:
       'Shaders people wrote in the TypeShade Playground and sent in. Each one opens in the Playground, ready to change.',
     h1: 'Gallery',
@@ -3057,13 +3059,24 @@ export const en = {
       'Shaders people wrote in the Playground and sent in. Each one opens in the Playground, where you can change it.',
     howTo:
       'To add yours, write it in the [Playground](playground) and choose Submit. The maintainer reviews each submission before it appears.',
-    loading: 'Loading the gallery…',
     empty: 'Nothing has been approved yet.',
-    unavailable: 'The gallery could not be loaded.',
+    sortLabel: 'Order',
+    sortRecent: 'Newest',
+    sortPopular: 'Most viewed',
     by: 'by {name}',
     views: '{count} views',
     viewOne: '1 view',
+    entryTitle: '{title}, TypeShade gallery',
+    entryDescription:
+      '{title} is a shader someone wrote in the TypeShade Playground and sent to the gallery. It opens in the Playground, ready to change.',
+    entryStandIn: 'Gallery entry',
+    back: 'All entries',
     open: 'Open in the Playground',
+    copyLink: 'Copy link',
+    copied: 'Copied',
+    sourceH: 'Source',
+    moreFiles: 'The program has more files than this one. The Playground opens all of them.',
+    noStill: 'No still was sent with this entry.',
   },
 
   // The dialog every Report a problem link opens (src/components/IssueDialog.astro): a reader

@@ -11,7 +11,9 @@ The site is two things with two clocks:
 
 A Cloudflare Worker serves both from one origin, so an example merged upstream is on the site
 within the hour, before the pin bump and the build that make it a built page. It also opens the
-issues a reader files from the site with no GitHub account (Issues, below).
+issues a reader files from the site with no GitHub account (Issues, below). A second Worker
+serves the gallery at its own address, `gallery.typeshade.dev`, from the same build and the
+same data (The gallery, below).
 
 ## What serves what
 
@@ -24,6 +26,7 @@ issues a reader files from the site with no GitHub account (Issues, below).
 | `/data/shares/` (POST)                       | the Worker: stores a Playground link in D1, answers its short link    |
 | `/data/shares/<id>/`                         | the Worker: a share's page, views, and when it was made and opened    |
 | `/data/gallery/`                             | the Worker: GET the approved entries; POST sends a share in, pending  |
+| `/gallery/`, `/playground/gallery/`, `/ko/…` | the Worker: a redirect to `gallery.typeshade.dev`                     |
 | `/data/notice/`                              | the Worker: the notice over every page, or null                       |
 | `/data/issues/` (GET)                        | the Worker: whether the issue dialog takes reports here               |
 | `/data/issues/` (POST)                       | the Worker: opens the dialog's issue on GitHub, answers its number    |
@@ -80,11 +83,10 @@ issues a reader files from the site with no GitHub account (Issues, below).
     --command "SELECT id, path, views, last_opened_at FROM shares ORDER BY views DESC LIMIT 20"
   ```
 
-- **The gallery** (`/playground/gallery/`). Submit, beside Share in the Playground, asks for a
-  title and, if the reader wants, a name, stores the file as a share and posts it to
-  `/data/gallery/`, where it waits as `pending`. The page lists the approved entries, the last
-  approved first, each a card whose link is the share's short link. A title is at most 60
-  characters and a name 40 (`GALLERY_TITLE_MAX` and `GALLERY_AUTHOR_MAX` in
+- **The gallery** (`gallery.typeshade.dev`, below). Submit, beside Share in the Playground,
+  asks for a title and, if the reader wants, a name, stores the file as a share and posts it to
+  `/data/gallery/` with a still of the canvas, where it waits as `pending`. A title is at most
+  60 characters and a name 40 (`GALLERY_TITLE_MAX` and `GALLERY_AUTHOR_MAX` in
   `src/lib/example-data.ts`); one address sends at most five in a day, counted by a hash of the
   address, which is never stored itself. A share sent to the gallery is never expired by the
   cron.
@@ -118,27 +120,94 @@ bunx wrangler d1 execute typeshade --remote --command "UPDATE notices SET active
 bunx wrangler d1 execute typeshade --remote --command "SELECT id, text_en, href, starts_at, ends_at, active FROM notices ORDER BY id DESC"
 ```
 
+## The gallery
+
+`gallery.typeshade.dev` is a Worker of its own, `typeshade-gallery` (`wrangler.gallery.jsonc`,
+`worker/gallery.ts`). It serves the same `dist/` and binds the same bucket and database, and it
+runs before the assets on every request:
+
+| Path                          | Served by                                                                   |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `/`, `/ko/`                   | the approved entries, newest first; `?sort=popular`, most opened first      |
+| `/<id>/`, `/ko/<id>/`         | one approved entry: its still, its line, its source, Open in the Playground |
+| `/stills/<id>`                | an approved entry's still, from R2 (`gallery/<id>`)                         |
+| `/review/`                    | the maintainer's queue, behind Cloudflare Access (below)                    |
+| `/sitemap.xml`, `/robots.txt` | the gallery's own                                                           |
+| a file of the build's         | the static asset, as the site serves it (the CSS, the scripts, the fonts)   |
+| anything else                 | a redirect to the same path on `typeshade.dev`                              |
+
+The pages are built as templates on the site, `/gallery/` and `/gallery/entry/` in both
+languages (`GalleryPage.astro`, `GalleryEntryPage.astro`), with `noindex` and out of the
+sitemap and the search index. The site's Worker redirects those routes, and the gallery's old
+address `/playground/gallery/`, to `gallery.typeshade.dev`. The gallery's Worker fills a
+template in with `HTMLRewriter` and writes every link to the address it answers at: a gallery
+route becomes the gallery's own path, and every other link on the page goes to
+`typeshade.dev`. An entry's id is its share's, and Open in the Playground is its short link,
+`typeshade.dev/s/<id>/`, so the views an entry shows are the times it was opened there. The
+notice on the gallery's pages comes from the site (`/data/notice/` redirects there, with CORS);
+the issue dialog takes no reports on the gallery's host and links to GitHub's own form.
+
+The still is the Playground's canvas, drawn once more and copied in the same task, cropped to
+640 by 360 and sent as WebP (JPEG where the browser writes no WebP) of at most 256 KB
+(`src/lib/gallery-data.ts`). The site's Worker keeps it under `gallery/<id>` in the bucket and
+its type in `submissions.thumbnail` (`worker/migrations/0007_gallery_pages.sql`), only while
+the submission is pending and has none, so nothing changes what an approved entry shows. An
+entry with no still, as the ones sent in before this, shows a panel in two colours from its id.
+`gallery-setup.yml` (Actions > gallery-setup > Run workflow, task `stills`) gives every
+approved entry without one a still: `scripts/gallery-stills.ts` opens each share on
+`typeshade.dev` in Chromium, at its page and fragment so no view is counted, photographs the
+canvas and puts it in R2.
+
+Deploying the gallery is the second step of `deploy.yml`'s `cloudflare` job
+(`wrangler deploy -c wrangler.gallery.jsonc`). Its route makes `gallery.typeshade.dev` the
+Worker's custom domain, which creates the DNS record and the certificate on the first deploy;
+the API token's Workers Routes edit and DNS edit on the zone cover it.
+
 ## Reviewing the gallery
 
-Nothing appears in the gallery until it is approved. The queue, oldest first, with the link
-that opens each one:
+Nothing appears in the gallery until it is approved. `gallery.typeshade.dev/review/` lists
+the submissions waiting, oldest first, each with its still, its source, the name and the
+language it was sent in and a link that opens it in the Playground, then the approved and the
+rejected, newest first. Approve and Reject set the status and `reviewed_at`; the title field
+beside them corrects the title in the same step. Take down sets an approved entry back to
+`rejected`. A decision shows on the gallery within a minute (its pages carry a minute of edge
+cache).
+
+The people who submit need no account. The page alone has a sign-in, and it is Cloudflare
+Access's: Access stands in front of `/review/`, and the Worker checks the token Access adds to
+each request (`Cf-Access-Jwt-Assertion`) against the team's keys and the application's
+audience. Without both (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`) the page answers 403 to everyone.
+`gallery-setup.yml` with task `access` and the reviewer's address sets it up
+(`scripts/setup-gallery-access.ts`, which is safe to run again): the Zero Trust organization,
+One-time PIN as the login method, a self-hosted application on `gallery.typeshade.dev/review`,
+a policy that lets in that address alone, and the two values on `typeshade-gallery`. The
+address is masked in the run's log and stored nowhere in the repository. It needs
+`CLOUDFLARE_API_TOKEN` to carry Access: Organizations, Identity Providers, and Groups edit and
+Access: Apps and Policies edit. Without them, the same by hand:
+
+1. Cloudflare dashboard > Zero Trust > Access > Applications > Add an application >
+   Self-hosted. Domain `gallery.typeshade.dev`, path `review`. A policy that allows the
+   owner's email address, and One-time PIN (or GitHub) as the login method. Free for up to 50
+   people.
+2. Keep the application's Application Audience (AUD) tag and the team domain
+   (`<team>.cloudflareaccess.com`, Zero Trust > Settings > Custom Pages).
+3. After the gallery's Worker has been deployed once, from a checkout, after
+   `bunx wrangler login`, in PowerShell:
+
+   ```powershell
+   ./scripts/setup-gallery-review.ps1
+   ```
+
+   It asks for the two values and puts them on `typeshade-gallery`.
+
+The queue can still be read and changed by hand:
 
 ```bash
 bunx wrangler d1 execute typeshade --remote --command \
   "SELECT share_id, title, author, created_at FROM submissions WHERE status = 'pending' ORDER BY created_at"
-```
-
-Open `https://typeshade.dev/s/<share_id>/` to read the file, then approve it or turn it down:
-
-```bash
 bunx wrangler d1 execute typeshade --remote --command \
   "UPDATE submissions SET status = 'approved', reviewed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE share_id = '<share_id>'"
-bunx wrangler d1 execute typeshade --remote --command \
-  "UPDATE submissions SET status = 'rejected', reviewed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE share_id = '<share_id>'"
 ```
-
-Setting an approved entry back to `rejected` takes it off the page within a minute (the list
-carries a minute of edge cache). A title can be corrected the same way, with `SET title = ...`.
 
 ## Issues
 
@@ -301,6 +370,10 @@ bun run build
 bunx wrangler d1 migrations apply typeshade --local
 bunx wrangler dev          # http://localhost:8787, with a local D1 and R2
 ```
+
+The gallery runs beside it with `bunx wrangler dev -c wrangler.gallery.jsonc --port 8788`, on
+the same local database. `REVIEW_LOCAL=1` in `.dev.vars` opens `/review/` there with no
+Access.
 
 `wrangler dev` starts with an empty local bucket and database; put a release in them with
 `wrangler r2 object put --local` and `wrangler d1 execute --local`, or run it with `--remote`

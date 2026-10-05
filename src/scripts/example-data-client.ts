@@ -64,14 +64,16 @@ export async function shortLink(path: string, fragment: string): Promise<string 
  *  not sent at all (no Worker, a refusal, the network). */
 export type SubmitOutcome = 'sent' | 'already' | 'limit' | 'failed';
 
-/** Sends the page at `path` with `fragment` to the gallery under `title`, where it waits for
- *  the maintainer's approval (worker/index.ts). */
+/** Sends the page at `path` with `fragment` to the gallery under `title`, with the still of its
+ *  canvas in base64 where the Playground took one, and it waits there for the maintainer's
+ *  approval (worker/index.ts). */
 export async function submitToGallery(entry: {
   readonly path: string;
   readonly fragment: string;
   readonly title: string;
   readonly author: string;
   readonly locale: DataLocale;
+  readonly still?: string;
 }): Promise<SubmitOutcome> {
   try {
     const res = await fetch('/data/gallery/', {
@@ -86,22 +88,6 @@ export async function submitToGallery(entry: {
     return 'failed';
   }
 }
-
-/** One approved entry in the gallery. */
-export interface GalleryEntry {
-  readonly id: string;
-  readonly title: string;
-  readonly author: string;
-  readonly path: string;
-  readonly views: number;
-  readonly approvedAt: string | null;
-  /** The short link, /s/<id>/. */
-  readonly url: string;
-}
-
-/** The gallery's approved entries, the most recently approved first. */
-export const fetchGallery = async (): Promise<readonly GalleryEntry[] | undefined> =>
-  (await get<{ entries: readonly GalleryEntry[] }>('/data/gallery/'))?.entries;
 
 /** The notice over every page (worker/migrations/0005_notices.sql). */
 export interface SiteNotice {

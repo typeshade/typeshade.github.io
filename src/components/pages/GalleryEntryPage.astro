@@ -1,0 +1,77 @@
+---
+// One gallery entry, served at gallery.typeshade.dev/<id>/ (docs/cloudflare.md). The build
+// writes this page as a template with stand-in words; worker/gallery.ts writes the entry in: its
+// title where `{title}` stands, its still, its line, its source, and the short link Open in the
+// Playground follows. The template is no page of its own and keeps itself out of the index.
+import Base from '../../layouts/Base.astro';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { links } from '../../lib/links.ts';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = copyFor(locale).gallery;
+const words = { by: t.by, views: t.views, viewOne: t.viewOne };
+---
+
+<Base locale={locale} path={links.galleryEntry.href} title={t.entryTitle} description={t.entryDescription} noindex>
+  <main class="entry-page">
+    <p class="entry-back"><a href={localePath(locale, links.gallery.href)}>{t.back}</a></p>
+    <div class="entry-layout">
+      <div class="entry-still" data-entry="still" data-none={t.noStill}></div>
+      <div class="entry-info">
+        <h1 data-entry="title">{t.entryStandIn}</h1>
+        <p class="entry-meta" data-entry="meta" data-copy={JSON.stringify(words)} data-locale={locale}></p>
+        <div class="entry-actions">
+          <a class="button button-primary" data-entry="open" href={localePath(locale, links.playground.href)}>{t.open}</a>
+          <button type="button" class="button" data-entry-copy data-done={t.copied}>{t.copyLink}</button>
+        </div>
+      </div>
+    </div>
+    <section class="entry-source" data-entry="source" aria-labelledby="entry-source">
+      <h2 id="entry-source">{t.sourceH}</h2>
+      <p data-entry="more-files">{t.moreFiles}</p>
+      <pre><code data-entry="code"></code></pre>
+    </section>
+  </main>
+</Base>
+
+<script>
+  // Copy link: the address the page answers at, which is the entry's own.
+  const button = document.querySelector<HTMLButtonElement>('[data-entry-copy]');
+  button?.addEventListener('click', () => {
+    const back = button.textContent ?? '';
+    void navigator.clipboard
+      .writeText(window.location.href.split('#')[0] ?? '')
+      .then(() => {
+        button.textContent = button.dataset.done ?? back;
+        window.setTimeout(() => (button.textContent = back), 1400);
+      })
+      .catch(() => {});
+  });
+</script>
+
+<style>
+  .entry-page { max-inline-size: var(--container); margin-inline: auto; padding: 24px var(--gutter-x) 64px; }
+  .entry-back { margin: 0 0 16px; font-size: .875rem; }
+  .entry-back a { color: var(--color-accent); text-decoration: none; }
+  .entry-back a::before { content: '\2190\00a0'; }
+  .entry-back a:hover { text-decoration: underline; }
+  .entry-layout { display: grid; gap: 20px 32px; }
+  /* The still is the Worker's markup: an image, or the panel that stands in for one. */
+  .entry-still { overflow: hidden; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-surface-2); }
+  .entry-still :global(img), .entry-still :global(.gallery-still-none) { display: block; aspect-ratio: 16 / 9; inline-size: 100%; object-fit: cover; }
+  .entry-still :global(.gallery-still-none) { display: grid; place-items: center; color: rgb(255 255 255 / 0.85); font-size: .8125rem; }
+  h1 { margin: 0 0 8px; font-size: 1.5rem; line-height: 1.25; overflow-wrap: anywhere; }
+  .entry-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0 0 20px; color: var(--color-text-3); font-size: .8125rem; line-height: 1.5; }
+  .entry-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .entry-source { margin-top: 40px; }
+  .entry-source h2 { margin: 0 0 8px; font-size: 1.125rem; line-height: 1.35; }
+  .entry-source p { margin: 0 0 8px; color: var(--color-text-2); font-size: .875rem; }
+  .entry-source pre { max-block-size: 36rem; margin: 0; overflow: auto; padding: 14px 16px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); background: var(--color-surface-1); font: 400 .8125rem/1.6 var(--font-mono); tab-size: 2; }
+  @media (min-width: 64rem) {
+    .entry-page { padding-block-start: 32px; }
+    .entry-layout { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
+  }
+</style>
