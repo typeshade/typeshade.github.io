@@ -788,6 +788,18 @@ function mount(root: HTMLElement): void {
     return;
   }
 
+  // The line over the canvas until the program's first frame is up (Playground.astro): the
+  // stylesheet takes it away once a canvas draws, and `waitFor(null)` on a failure, which the
+  // note under the frame explains.
+  const frameWait = root.querySelector('[data-frame-wait]');
+  const frameWaitText = root.querySelector('[data-frame-wait-text]');
+  const waitFor = (step: 'compiling' | 'drawing' | null): void => {
+    if (!(frameWait instanceof HTMLElement)) return;
+    frameWait.hidden = step === null;
+    const text = step ? frameWait.dataset[step] : undefined;
+    if (text && frameWaitText instanceof HTMLElement) frameWaitText.textContent = text;
+  };
+
   const sample = root.dataset.sample ?? '';
   const copy = JSON.parse(root.dataset.copy ?? '{}') as PlaygroundCopy;
   const fileName = copy.fileName || 'hello.shade.ts';
@@ -803,6 +815,7 @@ function mount(root: HTMLElement): void {
   let lastAnalysis: Analysis | undefined;
   let analysedVersion = -1;
   const serviceFailed = (message?: string): void => {
+    waitFor(null);
     if (status instanceof HTMLElement) status.textContent = copy.serviceFailed;
     root.classList.add('has-errors');
     root.classList.remove('has-output');
@@ -1633,6 +1646,7 @@ function mount(root: HTMLElement): void {
       const node = gpuCanvasNow();
       if (node) node.dataset.backend = 'none';
       sayGpu(payload.why);
+      waitFor(null);
       return;
     }
     const signature = `${payload.data.wgsl}\n${payload.data.vertex}\n${payload.data.fragment}\n${resourceGeneration}\n${JSON.stringify(payload.data.constants)}\n${(payload.data.passes ?? []).map((p) => `${p.name}\n${p.wgsl}\n${p.fragment}`).join('\n')}`;
@@ -1695,6 +1709,8 @@ function mount(root: HTMLElement): void {
     // A paused clock holds the new mount's frame too.
     next.holdFrames(clockHeld !== null);
     if (next.backend !== 'none') retireStill();
+    // No backend drew: the note under the frame says why.
+    else waitFor(null);
     sayGpu(
       next.passFormat === 'rgba8' ? `${backendNote(picked)} ${w.passesRgba8}` : backendNote(picked),
     );
@@ -2482,8 +2498,11 @@ function mount(root: HTMLElement): void {
     const mine = ++lastResult;
     if (frame instanceof HTMLElement) delete frame.dataset.settled;
     if (!isComputeModule()) showPixelHint();
-    if (isComputeModule()) await runCompute();
-    else if (engineIsCpu()) {
+    if (isComputeModule()) {
+      await runCompute();
+      // A dispatch plots what it wrote, or says why it could not, under the frame.
+      waitFor(null);
+    } else if (engineIsCpu()) {
       resultRun += 1;
       stopMount();
       if (moduleDrawable && canvasFits) drawOnCpu();
@@ -3235,8 +3254,10 @@ function mount(root: HTMLElement): void {
     if (rows.some((row) => row.severity === 'error')) {
       status.textContent = copy.errors;
       root.classList.add('has-errors');
+      waitFor(null);
     } else {
       status.textContent = copy.ready;
+      waitFor('drawing');
     }
 
     // Reflection and the panes read the module the worker lowered. The worker sends none for
@@ -3338,6 +3359,7 @@ function mount(root: HTMLElement): void {
     }
     const asked = version;
     status.textContent = analysedVersion < 0 ? copy.starting : copy.idle;
+    if (analysedVersion < 0) waitFor('compiling');
     void client
       .request('analysis', documentUri, asked, {})
       .then(async (analysis) => {
@@ -4711,6 +4733,7 @@ export function wave(x: f32, t: f32): f32 {
     .catch((error) => {
       status.textContent = copy.errors;
       root.classList.add('has-errors');
+      waitFor(null);
       // The reader gets the sentence; the console keeps the cause.
       diagnosticsPane.textContent = copy.unavailable;
       console.error('[playground]', error);
