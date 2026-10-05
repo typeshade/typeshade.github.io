@@ -4,7 +4,7 @@ name: gallery-setup
 # gallery), run by hand on main (Actions > gallery-setup > Run workflow):
 #
 # - stills: a still for every approved entry that has none (scripts/gallery-stills.ts), captured
-#   from typeshade.dev in Chromium and put in R2.
+#   in Chromium from the site built on the runner and put in R2.
 # - access: Cloudflare Access in front of the review page, letting in the reviewer's address
 #   alone, and its two values on the gallery's Worker (scripts/setup-gallery-access.ts). The
 #   address is read from the event and masked before any step prints it; it is not stored in the
@@ -39,12 +39,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          # vendor/shader-dsl is the compiler the build reads.
+          submodules: true
           persist-credentials: false
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
+      # The shares are opened on this build, served on the runner: typeshade.dev answers a
+      # headless browser here with Cloudflare's challenge page.
+      - run: bun run build
       - run: bun scripts/gallery-stills.ts
       # What was put up, for a look before or after.
       - uses: actions/upload-artifact@v4

@@ -154,9 +154,10 @@ its type in `submissions.thumbnail` (`worker/migrations/0007_gallery_pages.sql`)
 the submission is pending and has none, so nothing changes what an approved entry shows. An
 entry with no still, as the ones sent in before this, shows a panel in two colours from its id.
 `gallery-setup.yml` (Actions > gallery-setup > Run workflow, task `stills`) gives every
-approved entry without one a still: `scripts/gallery-stills.ts` opens each share on
-`typeshade.dev` in Chromium, at its page and fragment so no view is counted, photographs the
-canvas and puts it in R2.
+approved entry without one a still. The job builds the site, and `scripts/gallery-stills.ts`
+opens each share on that build in Chromium, at its page and fragment, photographs the canvas
+and puts it in R2. It does not open `typeshade.dev`: Cloudflare answers a headless browser on a
+CI runner with its challenge page ("Just a moment..."). No view is counted.
 
 Deploying the gallery is the second step of `deploy.yml`'s `cloudflare` job
 (`wrangler deploy -c wrangler.gallery.jsonc`). Its route makes `gallery.typeshade.dev` the
