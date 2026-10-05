@@ -1,6 +1,6 @@
 ---
 id: layouts-and-resources
-source: c5028c6c3af5612c787546afdbebc7ee7901529afafc4131724cc55a354dcb0d
+source: 8ffd69303d1e80c5fbed28402800286ac9a271a11a93f7b8a7edb3759842a0b7
 sourceLine: 997
 ---
 
@@ -104,6 +104,32 @@ const mode = resource('mode', u32T, { group: 0, binding: 1 })
 `resource`는 텍스처와 샘플러도 선언합니다. [텍스처와 샘플러](#textures-and-samplers) 절을
 참고하십시오.
 
+`"use typeshade"` 파일에서는 유니폼을 초기화 식 없는 `declare const`로 선언합니다. 타입은
+`uniform<T>`이고, `T`에는 구조체, 스칼라, 벡터가 올 수 있습니다. 구조체의 필드는 이름으로
+읽습니다.
+
+```ts
+"use typeshade";
+
+interface Camera {
+  view: vec4;
+  fov: f32;
+}
+
+declare const camera: uniform<Camera>;
+declare const mode: uniform<u32>;
+
+export function zoom(): f32 {
+  return mode == 0 ? camera.fov : camera.fov * 0.5;
+}
+```
+
+유니폼은 읽기 전용이라 `uniform<T>`에는 접근 모드가 없습니다. `camera.fov`에 대입하면
+에디터에서도, 컴파일할 때도 오류가 납니다. 슬롯은 파일 안에서 선언이 놓인 순서로 정해집니다.
+`declare const`마다 그룹 0의 다음 바인딩을 차지하고, 호스트는 `reflect()`로 그 번호를
+읽습니다. 모든 형태와 각 거부 사유는 표면 레퍼런스 `docs/use-typeshade-surface.md` §1에
+있습니다.
+
 ### 일반 구조체
 
 `structDecl`은 스테이지 경계를 넘지 않는 구조체를 선언합니다. 스토리지 버퍼의 요소
@@ -145,12 +171,38 @@ const featIds = storageBuffer('feat_ids', u32T, { group: 0, binding: 10, access:
 featIds.at(i) // → Node<'u32'>
 ```
 
+`"use typeshade"` 파일에서는 스토리지 버퍼를 초기화 식 없는 `declare const`로 선언합니다.
+접근 모드는 두 번째 타입 인자입니다. `storage<T>`는 `read` 바인딩이고,
+`storage<T, "read_write">`는 쓸 수 있는 바인딩입니다. 배열은 여느 배열처럼 인덱스로
+읽습니다.
+
+```ts
+"use typeshade";
+
+declare const src: storage<array<f32>>;
+declare const dst: storage<array<f32>, "read_write">;
+
+@compute([64, 1, 1])
+export function twice(@builtin("global_invocation_id") gid: vec3u): void {
+  dst[gid.x] = src[gid.x] * 2.0;
+}
+```
+
+두 선언은 소스 순서대로 그룹 0의 바인딩 0과 1에 `var<storage, read> src: array<f32>;`와
+`var<storage, read_write> dst: array<f32>;`를 생성합니다. `src`에 쓰면 에디터에서도,
+컴파일할 때도 오류가 납니다. 요소는 구조체, 스칼라, 벡터 어느 것이든 되므로
+`storage<array<vec4>>`는 요소마다 `vec4` 하나를 담습니다.
+
 GLSL ES 3.00에는 스토리지 버퍼 객체가 없으므로, 생성 시점에 읽기 바인딩을 데이터 텍스처
 조회로 하향 변환(lowering)하고 셰이더 소스는 작성한 그대로 둡니다. GLSL 타깃에서는 그
 데이터 텍스처를 호스트가 직접 만들어야 하고, 내부 포맷은 하향 변환이 선언하는 샘플러와
-맞춰야 합니다. 실수 배열에는 R32F를, `array<u32>`에는 R32UI를, `array<i32>`에는 R32I를
-씁니다. 짝이 맞는지 런타임에 검사해 주는 것은 없으므로, 요소 타입은 따로 기록해 두지 말고
-`reflect()`에서 읽습니다.
+맞춰야 합니다. 실수 배열에는 R32F를, `array<u32>`와 `array<vecN<u32>>`에는 R32UI를,
+`array<i32>`와 `array<vecN<i32>>`에는 R32I를 씁니다. 벡터 요소는 std430 레인을 그대로
+차지하므로 `vec4u` 하나는 텍셀 네 개입니다. 구조체 요소는 필드가 모두 실수이면 R32F를,
+`u32`나 `i32` 필드가 있으면 R32UI를 씁니다. 이때는 std430 바이트를 `Uint32Array`로 올리고,
+셰이더는 실수 필드를 `uintBitsToFloat`로 되읽습니다. 짝이 맞는지 런타임에 검사해 주는 것은
+없습니다. 그러니 포맷을 따로 기록해 두지 말고, `reflect()`가 바인딩마다 알려 주는
+`glslDataTexture`(`'r32f'`, `'r32ui'`, `'r32i'`)로 텍스처를 만듭니다.
 
 이 하향 변환은 gather(읽기만 하는 접근)만 지원하므로, GLSL 타깃에서
 `'read_write'` 바인딩을 쓰면 빌드 시점 오류가 됩니다. 모듈이 WGSL 전용이 아니라면 `'read'`를 씁니다. GLSL도 타깃으로 삼는

@@ -143,3 +143,15 @@ id first, then the pull request that did the work.
   and GLSL leaves it undefined, in both locales; a refused read-before-assignment card on the
   TypeScript mapping page; and the `TS8075` page in the error-code reference, with a trigger
   and a fix compiled at the pin, handled in #145.
+- 0044: `bitcast` takes a vector, one neutral id per width (`bitcastVec2U32` to
+  `bitcastVec4F32`): `src/lib/builtin-table.ts` gives each a category (`casts`) and an arity of 1;
+  the builtins page, the language reference's `bitcast` entry and the packing-bitcast example
+  read the rest from the pin, handled in the pull request that pins the compiler at fd39ba3.
+- 0045: a NaN or subnormal `f32` word has no portable `bitcast`: the reference page for
+  `bitcast` reads the new sentence from the compiler's JSDoc, with no change here, handled in
+  the same pull request.
+- 0046: a GLSL storage struct array with an integer field is an R32UI data texture, and
+  `BindEntry` gains `glslDataTexture`: the API reference reads the field from its JSDoc; the
+  Korean guide's `layouts-and-resources` section is translated again for the changed Storage
+  buffers paragraph (and for the `"use typeshade"` uniform and storage blocks of typeshade#481),
+  handled in the same pull request.
