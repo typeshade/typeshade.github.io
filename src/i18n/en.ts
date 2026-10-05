@@ -2211,6 +2211,8 @@ export const en = {
           ['`amount: f32`', 'A scalar input whose type participates in expression checking.'],
           ['`: vec4`', 'The GPU value shape returned to the caller.'],
         ],
+        paramsRefP:
+          "A parameter declared `Ref<T>` is the caller's variable itself. The call passes the variable as `ref(x)`, and an assignment to the parameter, or to a field, a component or an element of it, writes that variable. One call may not hand one variable to two such parameters when the function writes either (`TS8074`). [Reference parameters](shadeReferenceParameters) shows a struct, an array element and a matrix column passed the same way.",
         helper: '3. Helper functions',
         helperP:
           'A top-level function without a stage decorator is a helper. Helpers let you name repeated calculations and keep shader entries focused on pipeline inputs, resources and outputs.',
@@ -2521,7 +2523,15 @@ export const en = {
           },
           mutableParameter: {
             name: 'Parameter reassignment',
-            p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged.',
+            p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged; a parameter declared `Ref<T>` changes it.',
+          },
+          referenceParameter: {
+            name: 'Reference parameter',
+            p: `A parameter declared \`Ref<T>\` is the caller's variable, and the call passes it as \`ref(x)\`. WGSL takes a pointer and ${glsl} an \`inout\` parameter, the way a method that writes \`this\` does. [reference-parameters](shadeReferenceParameters)`,
+          },
+          referenceAlias: {
+            name: 'Two references to one variable',
+            p: `One call may not hand one variable to two \`Ref<T>\` parameters it writes. WGSL refuses the aliased pointers, and ${glsl} would copy the two back in no fixed order.`,
           },
           lexicalShadow: {
             name: 'Shadowing a module value',

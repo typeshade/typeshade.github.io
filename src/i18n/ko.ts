@@ -1965,6 +1965,7 @@ export const ko: Copy = {
         'pick-composite': '구조체와 배열을 고르는 조건식',
         cutout: '컷아웃 (소스 언어)',
         'default-args': '매개변수 기본값',
+        'reference-parameters': '참조 매개변수',
         'bit-bump': '내장 함수 한 바퀴',
         'bool-select': '불 벡터',
         'ray-class': '클래스 메서드',
@@ -2077,6 +2078,7 @@ export const ko: Copy = {
         cutout:
           '프래그먼트 진입점이 부르는 헬퍼 안에서 `discard`를 씁니다. `fwidth`가 테두리를 부드럽게 하고, `saturate`, `exp2`, `**`가 감쇠 곡선을 만듭니다.',
         'default-args': '매개변수에 기본값을 둔 헬퍼 셋입니다. 호출마다 생략하는 인자가 다릅니다.',
+        'reference-parameters': '호출한 쪽의 변수를 바꾸는 함수들입니다.',
         'bit-bump':
           '`reflect`, `refract`, `faceForward`가 범프에 빛을 주고, `transpose`와 `determinant`가 호스트 행렬을 읽으며, 비트 내장 함수(`firstLeadingBit`, `reverseBits`, `countOneBits`, `extractBits`, `insertBits`)가 화면에 띠를 만듭니다. 띠가 시작하는 자리는 `fwidthCoarse`가 표시합니다.',
         'bool-select': '벡터 둘을 비교하면 결과는 불 벡터입니다.',
@@ -2391,6 +2393,8 @@ export const ko: Copy = {
           ['`amount: f32`', '스칼라 입력이며 컴파일러가 연산 타입을 확인합니다.'],
           ['`: vec4`', '호출자에게 반환할 GPU 값의 shape입니다.'],
         ],
+        paramsRefP:
+          '`Ref<T>`로 선언한 매개변수는 호출자의 변수 자체입니다. 호출은 그 변수를 `ref(x)`로 넘기고, 매개변수나 그 필드, 성분, 요소에 대입하면 호출자의 변수에 값이 들어갑니다. 함수가 둘 중 하나라도 쓴다면, 호출 하나가 같은 변수를 이런 매개변수 둘에 넘길 수는 없습니다(`TS8074`). 구조체, 배열 요소, 행렬의 열을 같은 방식으로 넘기는 모습은 [참조 매개변수](shadeReferenceParameters) 예제에 있습니다.',
         helper: '3. Helper function',
         helperP:
           'stage decorator가 없는 top-level function은 다른 shader 함수에서 호출할 수 있는 helper입니다. 반복되는 계산을 이름 있는 함수로 분리하면 shader를 읽고 검증하기 쉬워집니다.',
@@ -2692,7 +2696,15 @@ export const ko: Copy = {
           },
           mutableParameter: {
             name: '매개변수 재대입',
-            p: '입력값을 지역 복사본에 담습니다. 다시 대입해도 호출자의 값은 바뀌지 않습니다.',
+            p: '입력값을 지역 복사본에 담습니다. 다시 대입해도 호출자의 값은 바뀌지 않으며, 호출자의 값을 바꾸려면 매개변수를 `Ref<T>`로 선언합니다.',
+          },
+          referenceParameter: {
+            name: '참조 매개변수',
+            p: `\`Ref<T>\`로 선언한 매개변수는 호출자의 변수 자체이고, 호출은 그 변수를 \`ref(x)\`로 넘깁니다. \`this\`에 값을 넣는 메서드처럼 WGSL은 포인터를, ${glsl}은 \`inout\` 매개변수를 씁니다. [reference-parameters](shadeReferenceParameters)`,
+          },
+          referenceAlias: {
+            name: '한 변수를 가리키는 참조 둘',
+            p: `호출 하나가 값을 쓰는 \`Ref<T>\` 매개변수 둘에 같은 변수를 넘길 수 없습니다. WGSL은 이런 포인터 별칭을 거부하고, ${glsl}은 두 값을 정해지지 않은 순서로 되돌려 씁니다.`,
           },
           lexicalShadow: {
             name: '모듈 값과 같은 이름',

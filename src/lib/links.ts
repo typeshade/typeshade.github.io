@@ -201,6 +201,7 @@ export const links = {
   shadeBitfieldBands: shade('bitfield-bands'),
   shadeRayClass: shade('ray-class'),
   shadeDefaultArgs: shade('default-args'),
+  shadeReferenceParameters: shade('reference-parameters'),
   shadeAtomicHistogram: shade('atomic-histogram'),
   shadeOrbitInout: shade('orbit-inout'),
   shadeClassSyntax: shade('class-syntax'),

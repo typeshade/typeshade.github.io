@@ -196,6 +196,7 @@ export const SHADE_GROUPS = [
       'pick-composite',
       'cutout',
       'default-args',
+      'reference-parameters',
       'bit-bump',
       'bool-select',
       'integer-math',
