@@ -8,7 +8,7 @@
 // /data/releases/         the releases the database records, newest first
 // /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
 //                         its short link
-// /data/shares/<id>/      one short link's page, its views and when it was made and last opened
+// /data/shares/<id>/      one short link's page and fragment, its views and when it was made and last opened
 // /data/notice/           the notice over every page, or null (worker/migrations/0005)
 // /data/gallery/          GET: the approved gallery entries; POST: sends a share in, pending
 // /data/issues/           GET: whether the issue dialog takes reports here; POST: opens one as
@@ -127,12 +127,13 @@ async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext):
   }
   if (parts[1] === 'shares' && parts.length === 3 && SHARE_ID.test(parts[2]!)) {
     const row = await env.DB.prepare(
-      `SELECT id, path, views, created_at, last_opened_at FROM shares WHERE id = ?`,
+      `SELECT id, path, fragment, views, created_at, last_opened_at FROM shares WHERE id = ?`,
     )
       .bind(parts[2])
       .first<{
         id: string;
         path: string;
+        fragment: string;
         views: number;
         created_at: string;
         last_opened_at: string | null;
@@ -142,6 +143,9 @@ async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext):
       JSON.stringify({
         id: row.id,
         path: row.path,
+        // What the gallery draws a card's preview from (src/scripts/gallery.ts). The short link
+        // already hands the same fragment to whoever opens it.
+        fragment: row.fragment,
         views: row.views,
         createdAt: row.created_at,
         lastOpenedAt: row.last_opened_at,

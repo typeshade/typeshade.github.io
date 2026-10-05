@@ -63,6 +63,15 @@ export type Control =
       readonly magField: string;
       readonly base: number;
       readonly offset: number;
+    }
+  // The two-component forms of the same two: a drag-to-pan center held at its default, and a
+  // log sweep, each packed as the hi and lo planes of a vec2<f64> (see splitF64Pair).
+  | { readonly kind: 'pan2d'; readonly value: readonly [number, number] }
+  | {
+      readonly kind: 'logmag2d';
+      readonly magField: string;
+      readonly base: readonly [number, number];
+      readonly offset: readonly [number, number];
     };
 
 /** One std140 field of the module's uniform block, as `reflect()` recovered it. */
@@ -306,6 +315,13 @@ declare global {
 const fr = Math.fround;
 /** A JS double as the two f32 the emulated-double lowering expects: hi + lo. */
 const splitF64 = (x: number): [number, number] => [fr(x), fr(x - fr(x))];
+/** A vec2<f64> as the compiler's DF64Vec2 lays it out: the hi plane (x, y), then the lo plane. */
+const splitF64Pair = (x: number, y: number): [number, number, number, number] => [
+  fr(x),
+  fr(y),
+  fr(x - fr(x)),
+  fr(y - fr(y)),
+];
 
 interface FrameState {
   /** Packed std140 bytes for the current frame; null when the module binds no block. */
@@ -338,11 +354,11 @@ function writer(
   const uints = new Uint32Array(buf.buffer);
   return (field, v) => {
     const base = field.offset / 4;
-    if (field.type === 'i32' || field.type === 'bool') {
+    if (/\b(i32|bool)\b/.test(field.type)) {
       for (let k = 0; k < v.length; k++) ints[base + k] = Math.round(v[k] ?? 0);
       return;
     }
-    if (field.type === 'u32') {
+    if (/\bu32\b/.test(field.type)) {
       for (let k = 0; k < v.length; k++) uints[base + k] = Math.max(0, Math.round(v[k] ?? 0));
       return;
     }
@@ -398,6 +414,12 @@ function createFrameState(
         return [c.value ? 1 : 0];
       case 'logmag1d':
         return splitF64(c.base * Math.pow(10, sliderValue(c.magField)) + c.offset);
+      case 'pan2d':
+        return splitF64Pair(c.value[0], c.value[1]);
+      case 'logmag2d': {
+        const scale = Math.pow(10, sliderValue(c.magField));
+        return splitF64Pair(c.base[0] * scale + c.offset[0], c.base[1] * scale + c.offset[1]);
+      }
     }
   };
 

@@ -103,6 +103,19 @@ export interface GalleryEntry {
 export const fetchGallery = async (): Promise<readonly GalleryEntry[] | undefined> =>
   (await get<{ entries: readonly GalleryEntry[] }>('/data/gallery/'))?.entries;
 
+/** One short link's page and the fragment it opens, which carries the program. */
+export interface ShareRecord {
+  readonly id: string;
+  readonly path: string;
+  readonly fragment: string;
+}
+
+/** What a short link opens, for a gallery card to draw its preview from. */
+export const fetchShare = (id: string): Promise<ShareRecord | undefined> =>
+  /^[A-Za-z0-9_-]+$/.test(id)
+    ? get<ShareRecord>(`/data/shares/${id}/`)
+    : Promise.resolve(undefined);
+
 /** The notice over every page (worker/migrations/0005_notices.sql). */
 export interface SiteNotice {
   readonly id: number;

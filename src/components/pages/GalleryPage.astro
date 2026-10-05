@@ -58,6 +58,8 @@ const words = {
   .gallery-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
   .gallery-list :global(li) { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--color-line-1); border-radius: var(--radius-md); padding: 14px 16px; background: var(--color-ground); }
   .gallery-list :global(li:hover) { border-color: var(--color-line-2); }
+  .gallery-list :global(.gallery-thumb) { display: block; aspect-ratio: 4 / 3; margin: -14px -16px 4px; overflow: hidden; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--color-surface-2); }
+  .gallery-list :global(.gallery-thumb canvas) { display: block; inline-size: 100%; block-size: 100%; }
   .gallery-list :global(h2) { margin: 0; font-size: 1rem; line-height: 1.35; overflow-wrap: anywhere; }
   .gallery-list :global(h2 a) { color: var(--color-text-1); text-decoration: none; }
   .gallery-list :global(h2 a:hover) { color: var(--color-accent); }

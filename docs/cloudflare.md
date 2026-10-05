@@ -15,22 +15,22 @@ issues a reader files from the site with no GitHub account (Issues, below).
 
 ## What serves what
 
-| Path                                         | Served by                                                             |
-| -------------------------------------------- | --------------------------------------------------------------------- |
-| everything in `dist/`                        | Workers static assets; the Worker never runs                          |
-| `/data/examples/`                            | the Worker: the current release's index (`ReleaseIndex`)              |
-| `/data/examples/<id>/`                       | the Worker: one example with its file and its emitted text            |
-| `/data/releases/`                            | the Worker: the releases D1 records, newest first                     |
-| `/data/shares/` (POST)                       | the Worker: stores a Playground link in D1, answers its short link    |
-| `/data/shares/<id>/`                         | the Worker: a share's page, views, and when it was made and opened    |
-| `/data/gallery/`                             | the Worker: GET the approved entries; POST sends a share in, pending  |
-| `/data/notice/`                              | the Worker: the notice over every page, or null                       |
-| `/data/issues/` (GET)                        | the Worker: whether the issue dialog takes reports here               |
-| `/data/issues/` (POST)                       | the Worker: opens the dialog's issue on GitHub, answers its number    |
-| `/data/issue-images/<name>`                  | the Worker: an image an issue shows, from R2                          |
-| `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored      |
-| `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                   |
-| `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below) |
+| Path                                         | Served by                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| everything in `dist/`                        | Workers static assets; the Worker never runs                                    |
+| `/data/examples/`                            | the Worker: the current release's index (`ReleaseIndex`)                        |
+| `/data/examples/<id>/`                       | the Worker: one example with its file and its emitted text                      |
+| `/data/releases/`                            | the Worker: the releases D1 records, newest first                               |
+| `/data/shares/` (POST)                       | the Worker: stores a Playground link in D1, answers its short link              |
+| `/data/shares/<id>/`                         | the Worker: a share's page and fragment, views, and when it was made and opened |
+| `/data/gallery/`                             | the Worker: GET the approved entries; POST sends a share in, pending            |
+| `/data/notice/`                              | the Worker: the notice over every page, or null                                 |
+| `/data/issues/` (GET)                        | the Worker: whether the issue dialog takes reports here                         |
+| `/data/issues/` (POST)                       | the Worker: opens the dialog's issue on GitHub, answers its number              |
+| `/data/issue-images/<name>`                  | the Worker: an image an issue shows, from R2                                    |
+| `/s/<id>/`                                   | the Worker: a redirect to the page and fragment the share stored                |
+| `/guide/examples/<id>/`, `/ko/...` built     | the static page, through the Worker                                             |
+| `/guide/examples/<id>/`, `/ko/...` not built | the Worker: the template page, filled in from the release (see below)           |
 
 `wrangler.jsonc` binds three things to the Worker (`worker/index.ts`):
 
