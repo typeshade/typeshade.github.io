@@ -153,8 +153,10 @@ The still is the Playground's canvas, drawn once more and copied in the same tas
 its type in `submissions.thumbnail` (`worker/migrations/0007_gallery_pages.sql`), only while
 the submission is pending and has none, so nothing changes what an approved entry shows. An
 entry with no still, as the ones sent in before this, shows a panel in two colours from its id.
-To give one a still, set it back to `pending`, open its short link, choose Submit with the same
-title, and approve it again.
+`gallery-setup.yml` (Actions > gallery-setup > Run workflow, task `stills`) gives every
+approved entry without one a still: `scripts/gallery-stills.ts` opens each share on
+`typeshade.dev` in Chromium, at its page and fragment so no view is counted, photographs the
+canvas and puts it in R2.
 
 Deploying the gallery is the second step of `deploy.yml`'s `cloudflare` job
 (`wrangler deploy -c wrangler.gallery.jsonc`). Its route makes `gallery.typeshade.dev` the
@@ -175,7 +177,13 @@ The people who submit need no account. The page alone has a sign-in, and it is C
 Access's: Access stands in front of `/review/`, and the Worker checks the token Access adds to
 each request (`Cf-Access-Jwt-Assertion`) against the team's keys and the application's
 audience. Without both (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`) the page answers 403 to everyone.
-Setting it up is the owner's (Access is an account setting):
+`gallery-setup.yml` with task `access` and the reviewer's address sets it up
+(`scripts/setup-gallery-access.ts`, which is safe to run again): the Zero Trust organization,
+One-time PIN as the login method, a self-hosted application on `gallery.typeshade.dev/review`,
+a policy that lets in that address alone, and the two values on `typeshade-gallery`. The
+address is masked in the run's log and stored nowhere in the repository. It needs
+`CLOUDFLARE_API_TOKEN` to carry Access: Organizations, Identity Providers, and Groups edit and
+Access: Apps and Policies edit. Without them, the same by hand:
 
 1. Cloudflare dashboard > Zero Trust > Access > Applications > Add an application >
    Self-hosted. Domain `gallery.typeshade.dev`, path `review`. A policy that allows the
