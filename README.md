@@ -84,6 +84,8 @@ In a Claude Code session, `scripts/commit-gate.mjs` runs the checks that read on
 
 On a pull request, CI also checks what a compiler bump owes the site. The check runs `scripts/downstream-impact.ts` from the pinned compiler. It fails while a page, a component or a script still names an export or a file that the new pin removes. It also fails while a compiler change proposal that the new pin implements names this site and `compiler-changes.md` does not record its id. It also fails while a compiler `LINT.ThenChange(//typeshade.github.io/…)` target has not changed with its block. The site's own `LINT.IfChange` pairs are checked by the compiler's `scripts/ifchange.ts`. The compiler's `AGENTS.md` describes the convention.
 
+A pull request that changes only documents (`.md` files outside `content/`, `src/` and `public/`) runs the build and the checks above, which read documents, and skips the browser checks and the preview, which open `dist/` and read none. The `change scope` job in `deploy.yml` decides from the diff, and the required check, `build`, passes on the build alone. A push to `main` runs everything.
+
 ## Status
 
 TypeShade is pre-release. The public authoring model on `main` is file-level `"use typeshade"`; package and compiler details may change while the language surface matures.
