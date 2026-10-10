@@ -1,5 +1,7 @@
-// Browser-only MNIST IDX loader. The public Cloud Storage JSON API supports CORS.
-// The full gzip IDX payloads are transferred once; samples are retained in memory only.
+// Browser-only MNIST download; parsing/shape checks share the compiler's IDX oracle.
+// Compressed official files are integrity-checked before decompression.
+import { MNIST_GZIP_SHA256, parseIdx } from '../../vendor/shader-dsl/journeys/mnist/idx.mjs';
+
 export interface MnistData {
   pixels: Float32Array;
   labels: Uint32Array;
@@ -11,21 +13,26 @@ const names = {
   test: ['t10k-images-idx3-ubyte.gz', 't10k-labels-idx1-ubyte.gz'],
 } as const;
 
-async function inflate(name: string, signal: AbortSignal): Promise<ArrayBuffer> {
-  if (typeof DecompressionStream === 'undefined') {
-    throw new Error('This browser does not support gzip DecompressionStream.');
-  }
+async function inflate(name: string, signal: AbortSignal): Promise<Uint8Array> {
+  if (typeof DecompressionStream === 'undefined' || !crypto.subtle)
+    throw new Error('This browser requires secure context and gzip DecompressionStream');
   const url = bucket + encodeURIComponent('mnist/' + name) + '?alt=media';
   const response = await fetch(url, { signal });
   if (!response.ok) throw new Error('MNIST download failed (' + response.status + '): ' + name);
   const compressed = await response.arrayBuffer();
+  const expected = MNIST_GZIP_SHA256[name as keyof typeof MNIST_GZIP_SHA256];
+  if (!expected) throw new Error('Unrecognized MNIST file: ' + name);
+  const digest = await crypto.subtle.digest('SHA-256', compressed);
+  const actual = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('');
+  if (actual !== expected) throw new Error('Official MNIST integrity mismatch: ' + name);
   const header = new Uint8Array(compressed);
-  if (header[0] !== 0x1f || header[1] !== 0x8b) {
-    throw new Error('MNIST data is not a gzip stream: ' + name);
-  }
-  return new Response(
+  if (header[0] !== 0x1f || header[1] !== 0x8b)
+    throw new Error('MNIST data is not gzip: ' + name);
+  const data = await new Response(
     new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip')),
   ).arrayBuffer();
+  if (signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+  return new Uint8Array(data);
 }
 
 export async function fetchMnist(
@@ -33,36 +40,12 @@ export async function fetchMnist(
   limit: number,
   signal: AbortSignal,
 ): Promise<MnistData> {
+  if (!Number.isInteger(limit) || limit < 1)
+    throw new RangeError('Invalid MNIST sample limit');
   const [imageName, labelName] = names[split];
-  const [imageBytes, labelBytes] = await Promise.all([
+  const [images, labels] = await Promise.all([
     inflate(imageName, signal),
     inflate(labelName, signal),
   ]);
-  const iv = new DataView(imageBytes);
-  const lv = new DataView(labelBytes);
-  if (
-    imageBytes.byteLength < 16 ||
-    labelBytes.byteLength < 8 ||
-    iv.getUint32(0) !== 2051 ||
-    lv.getUint32(0) !== 2049
-  )
-    throw new Error('Invalid MNIST IDX header');
-  const rows = iv.getUint32(4);
-  if (
-    rows !== lv.getUint32(4) ||
-    iv.getUint32(8) !== 28 ||
-    iv.getUint32(12) !== 28 ||
-    imageBytes.byteLength !== 16 + rows * 784 ||
-    labelBytes.byteLength !== 8 + rows ||
-    limit < 1 ||
-    limit > rows
-  )
-    throw new Error('Invalid MNIST IDX dimensions or payload');
-  const input = new Uint8Array(imageBytes, 16, limit * 784);
-  const sourceLabels = new Uint8Array(labelBytes, 8, limit);
-  if (sourceLabels.some((v) => v > 9)) throw new Error('Invalid MNIST label');
-  return {
-    pixels: Float32Array.from(input, (value) => value / 255),
-    labels: Uint32Array.from(sourceLabels),
-  };
+  return parseIdx(images, labels, limit);
 }
