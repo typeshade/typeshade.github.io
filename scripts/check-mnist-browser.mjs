@@ -92,6 +92,21 @@ try {
       });
     });
     await page.goto(server.url + '/guide/mnist/');
+    // The exact TypeShade source must be accessible on the lab itself.
+    const sourcePanel = page.locator('[data-mnist-source]');
+    if ((await sourcePanel.count()) !== 1)
+      throw new Error('MNIST lab does not display the TypeShade source panel');
+    await sourcePanel.locator('summary').click();
+    const displayedSource = await sourcePanel.locator('pre').innerText();
+    for (const part of ['"use typeshade"', 'export function forward', 'export function objective',
+      'export function backward', 'export function update', 'export function predict']) {
+      if (!displayedSource.includes(part))
+        throw new Error('MNIST source panel is missing real compute code: ' + part);
+    }
+    const sourceHref = await sourcePanel.locator('a[href*="softmax.shade.ts"]').getAttribute('href');
+    if (!sourceHref?.includes('/blob/'))
+      throw new Error('MNIST source panel lacks a pinned GitHub source link');
+    await sourcePanel.locator('summary').click();
     await page.locator('[data-tier]').selectOption(tier);
     await page.locator('[data-count]').selectOption('128');
     await page.locator('[data-epochs]').selectOption('1');
