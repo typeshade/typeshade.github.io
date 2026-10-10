@@ -162,6 +162,20 @@ try {
       { timeout: 30_000 },
     );
     console.log('[mnist] REAL MNIST ' + tier + ': ' + status + '; ' + rows[0] + '; ' + prediction);
+    if (tier === 'webgpu') {
+      // Verify CORS from the visitor's browser. Routing official gzip bytes in
+      // the deterministic test must not conceal a blocked production download.
+      await page.unroute('**/storage/v1/b/cvdf-datasets/o/**');
+      const corsOkay = await page.evaluate(async () => {
+        const url =
+          'https://storage.googleapis.com/storage/v1/b/cvdf-datasets/o/' +
+          'mnist%2Ft10k-labels-idx1-ubyte.gz?alt=media';
+        const response = await fetch(url, { mode: 'cors' });
+        const data = await response.arrayBuffer();
+        return response.ok && data.byteLength > 100;
+      });
+      if (!corsOkay) throw new Error('Official MNIST endpoint did not pass browser CORS check');
+    }
     await page.close();
   }
 } finally {
