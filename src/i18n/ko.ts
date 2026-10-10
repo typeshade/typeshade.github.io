@@ -861,7 +861,7 @@ export const ko: Copy = {
     gpuNeedsBindings:
       '바인딩 패널에 {names}에 넣을 값이 없어서 이 모듈은 여기서 실행할 수 없습니다.',
     computeNeedsWebgpu:
-      '컴퓨트 진입점은 WebGPU나 CPU 오라클에서 실행됩니다. GLSL ES 3.00에는 컴퓨트 단계가 없습니다.',
+      '이 Playground는 컴퓨트를 WebGPU나 CPU 오라클에서 실행합니다. TypeShade 프로그램 런타임은 WebGL2 컴퓨트 변환도 지원합니다.',
     computeRan:
       '{entry}을(를) {backend}에서 호출 {invocations}회로 실행했고 {ms} ms 걸렸습니다. 캔버스는 이 진입점이 쓴 값을 그래프로 보여 줍니다.',
     consoleTab: '콘솔',
@@ -1194,7 +1194,7 @@ export const ko: Copy = {
         [
           'await scale({ k, xs, ys }, 4)',
           '호스트 파일이 모듈을 가져와 부릅니다',
-          '호스트 파일은 `typeshade/vite` 플러그인으로 `.shade.ts`를 가져와 그 파일이 내보내는 것을 부릅니다. 헬퍼는 CPU에서 실행되고, `@compute` 진입점은 WebGPU에서 디스패치되며, 전체 화면 `@fragment` 진입점은 `fs(canvas, bindings)`로 캔버스에 그립니다. 바인딩 객체의 타입은 모듈에서 나오므로, 호출이 빠뜨린 바인딩은 호스트 코드의 그 줄에서 타입 오류가 됩니다.',
+          '호스트 파일은 `typeshade/vite` 플러그인으로 `.shade.ts`를 가져와 그 파일이 내보내는 것을 부릅니다. 헬퍼는 CPU에서 실행되고, `@compute` 진입점은 지원하는 환경에서 WebGPU 또는 WebGL2로 실행됩니다. 전체 화면 `@fragment` 진입점은 `fs(canvas, bindings)`로 캔버스에 그립니다. 바인딩 객체의 타입은 모듈에서 나오므로, 호출이 빠뜨린 바인딩은 호스트 코드의 그 줄에서 타입 오류가 됩니다.',
         ],
       ],
     },
@@ -1241,7 +1241,7 @@ export const ko: Copy = {
       hostP2:
         'TypeShade가 담당하는 것은 언어 의미와 셰이더 코드 생성입니다. device, pipeline, bind group, buffer, texture, command encoder 같은 GPU 런타임 객체의 생성과 수명 관리는 호스트가 담당합니다.',
       importH: '파일 가져오기',
-      importP: `${facts.nextVersion}이 npm에 나오면 쓸 수 있는 방법입니다. 호스트 파일이 \`.shade.ts\`를 가져와 그 파일이 내보내는 것을 부르면, 호출에 필요한 디바이스와 파이프라인은 TypeShade의 런타임이 만듭니다. 헬퍼는 CPU에서 실행됩니다. \`@compute\` 진입점은 \`await entry(bindings, workgroups)\`로 부릅니다. WebGPU에서 디스패치하고, 진입점이 쓴 값을 다시 읽어 옵니다. 전체 화면 \`@fragment\` 진입점은 \`entry(canvas, bindings)\`로 캔버스에 그리는데, WebGPU가 먼저이고 다음이 WebGL2, 마지막이 CPU입니다.`,
+      importP: `${facts.nextVersion}이 npm에 나오면 쓸 수 있는 방법입니다. 호스트 파일이 \`.shade.ts\`를 가져와 그 파일이 내보내는 것을 부르면, 호출에 필요한 디바이스와 파이프라인은 TypeShade의 런타임이 만듭니다. 헬퍼는 CPU에서 실행됩니다. \`@compute\` 진입점은 \`await entry(bindings, workgroups)\`로 부릅니다. 지원하는 환경에서는 WebGPU나 WebGL2로 실행하고, 진입점이 쓴 값을 다시 읽어 옵니다. 전체 화면 \`@fragment\` 진입점은 \`entry(canvas, bindings)\`로 캔버스에 그리는데, WebGPU가 먼저이고 다음이 WebGL2, 마지막이 CPU입니다.`,
       setupP:
         '`npm install typeshade` 다음에 할 설정은 Vite 플러그인, 호스트 `tsconfig.json`의 두 줄, 그리고 `prepare`에 넣는 `tshc sync`입니다. 이 명령은 `tsc`가 셰이더 파일 대신 읽는 호스트 뷰를 만듭니다. 뷰는 생성되는 파일이므로 `.gitignore`에 `*.shade.typeshade.ts`를 넣어 저장소에서 뺍니다.',
       viteLabel: 'Vite 플러그인, vite.config.ts',
@@ -1648,7 +1648,7 @@ export const ko: Copy = {
       loadEmitP:
         '빌드 뒤에 콘솔 기록을 켜는 호스트는 `typeshade/emit`의 `repack`을 `createRuntime({ emit: repack })`으로 넘길 수 있습니다. 이때 매니페스트는 `packModule(module, { ir: true })`로 만들어 이식 가능한 IR을 담아야 합니다. 로드 시점 이미터는 매니페스트에 저장된 emit 옵션을 쓰며, TypeScript 프런트엔드를 포함하지 않습니다.',
       loadNote:
-        '프로그램 런타임은 WebGPU에서만 동작합니다. WebGL2에서 그리는 호스트는 모듈을 컴파일하거나, 모듈을 가져와 진입점을 부릅니다.',
+        '프로그램 런타임은 WebGPU와 WebGL2를 지원합니다. WebGL2에서는 프래그먼트를 그리며, 지원하는 컴퓨트 진입점은 생성된 GLSL ES 3.00 패스로 실행합니다.',
       reflectionH: '리플렉션',
       reflectionP: `\`reflect()\`는 컴파일된 모듈을 읽어 그 바인딩을 돌려줍니다. 셰이더가 선언한 그룹과 번호, 주소 공간, 셰이더에 필요한 접근 권한이 들어 있고, 유니폼 구조체라면 ${facts.layoutStandards.join('과 ')} 레이아웃에 따른 필드별 오프셋과 크기도 함께 있습니다. 호스트는 그 목록으로 바인드 그룹 레이아웃 항목을 만들고, 그 오프셋대로 유니폼 버퍼를 채웁니다. 셰이더를 컴파일할 때 쓰인 수치를 호스트가 그대로 쓰므로 양쪽이 어긋나지 않습니다.`,
       reflectionNote:
@@ -1659,7 +1659,7 @@ export const ko: Copy = {
       webgl2P: '같은 소스가 WebGL2용으로도 컴파일되고, 호스트 쪽 모습은 달라집니다.',
       webgl2Items: [
         '바인드 그룹이 없습니다. 유니폼 블록은 링크된 프로그램의 바인딩 지점에 묶이고 샘플러는 유니폼 위치로 설정하므로, 호스트는 같은 리플렉션을 다른 모양으로 씁니다.',
-        `컴퓨트 스테이지가 없습니다. \`@compute\` 진입점이 있는 모듈은 WGSL을 생성하고 ${glsl} 생성은 거부합니다.`,
+        `WebGL2에는 네이티브 컴퓨트 스테이지가 없습니다. TypeShade는 지원하는 \`@compute\` 진입점을 ${glsl} 패스로 변환합니다. 변환할 수 없는 진입점은 매니페스트에 이유를 남깁니다.`,
         `정밀도는 소스의 몫입니다. 생성된 ${glsl} 프로그램은 선언들 위에 기본 정밀도를 적어 두며, WGSL에는 그럴 필요가 없습니다.`,
         'GPU 기능은 호스트가 컨텍스트에 확장을 요청해서 켭니다. 지시문이 있는 확장이라면 생성된 소스도 그 확장을 선언합니다. 컴파일러가 이 두 몫을 어떻게 나누는지는 [컴파일러 내부](internals)가 설명합니다.',
       ],
@@ -1699,7 +1699,7 @@ export const ko: Copy = {
         [
           '[셰이더 스테이지](languageStages)',
           '`@compute` 진입점은 워크그룹 크기를 담은 컴퓨트 셰이더를 생성합니다.',
-          '이 타깃에는 컴퓨트 스테이지가 없어서, 컴퓨트를 선언한 모듈은 WGSL만 생성합니다.',
+          'WebGL2에는 네이티브 컴퓨트 스테이지가 없습니다. 지원하는 진입점은 GLSL ES 3.00 패스로 변환해 실행합니다.',
         ],
         [
           '[정밀도](languageGpuTypes)',
