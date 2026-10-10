@@ -159,3 +159,9 @@ id first, then the pull request that did the work.
   entry reads the new hover sentence from `FUNCTION_DOCS`, and the `packing-bitcast` example page
   reads the new line from the example, with no change of their own, handled in the pull request
   that pins the compiler at 596c805.
+- 0054: the program runtime executes supported `@compute` entries on WebGL2 through
+  GLSL ES 3.00 passes, transform feedback and data textures. The WebGPU and WebGL2 concept
+  page, target comparison, quick start, first-page host row and Playground's compute-only
+  note now distinguish native compute from lowered compute. Existing render stills remain
+  keyed to their renderable examples; the pinned compiler carries the emitted WGSL and GLSL
+  golden files. The WebGL2 compute runner and its numeric checks remain in the compiler.
