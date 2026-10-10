@@ -3174,7 +3174,7 @@ export const en = {
       'This reproducible experiment trains a softmax classifier on handwritten digits. TypeShade executes the model computation; the host loads data and schedules batches.',
     browserH: 'Execution boundary:',
     browserNote:
-      'This page documents measured runs and reproducible commands. It is not a live browser training demo.',
+      'The live lab trains a small real-data subset in your browser. The full-dataset results below are from separate reproducible experiments.',
     modelH: 'The training pipeline',
     modelP:
       'The model has 784 input features and 10 output classes. Its computation is split into five TypeShade compute entries.',
@@ -3212,7 +3212,7 @@ export const en = {
       'WebGL2 uses generated GLSL ES 3.00 passes, not native compute shaders.',
       'The WebGL2 CI validates numeric stages and a small real-data training subset; full-dataset WebGL2 accuracy and speed remain unverified.',
       'The published full-dataset WebGPU result used software rendering. No physical GPU speedup is claimed.',
-      'The site shows reproducible evidence and commands; it does not execute the training model in a visitor’s browser.',
+      'The live lab executes TypeShade kernels in the visitor’s browser on a selected subset; full-dataset results were recorded separately.',
     ],
     sourceH: 'Source and verification',
     sourceP: 'The source and results are bound to the compiler commit used to build this site.',
