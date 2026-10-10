@@ -3169,8 +3169,7 @@ export const en = {
       'The real WebGL2 test executed every pass, checked against an independent numeric reference and completed subset training. Evidence:',
     validationRun: 'MNIST WebGL2 validation workflow',
     runH: 'Reproduce the experiment',
-    runP:
-      'From the compiler repository root with Node 24 and Bun, install dependencies and run the strict WebGL2 tests:',
+    runP: 'From the compiler repository root with Node 24 and Bun, install dependencies and run the strict WebGL2 tests:',
     fullP: 'For the full dataset using the WebGPU backend after downloading the dataset:',
     runtimeNote:
       'The commands use the local Chromium runner and download MNIST data on demand. Performance depends on the actual adapter and host environment.',
