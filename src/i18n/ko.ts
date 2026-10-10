@@ -3290,6 +3290,10 @@ export const ko: Copy = {
       title: '브라우저에서 MNIST 직접 학습',
       description:
         '실제 TypeShade Compute 프로그램으로 학습하고, 테스트 숫자를 확인한 뒤 직접 그린 숫자를 분류합니다.',
+      sourceToggle: '실행 중인 TypeShade 원본 코드 보기',
+      sourceDescription:
+        '위 MNIST 모델을 WebGPU/WebGL2용으로 컴파일한 실제 softmax.shade.ts 원본입니다. 학습과 추론에 사용되는 여섯 개의 Compute 함수를 모두 볼 수 있습니다.',
+      sourceGitHub: 'GitHub에서 이 소스 버전 열기',
       backend: '백엔드',
       auto: '자동 (WebGPU, 이후 WebGL2)',
       webgpu: 'WebGPU',
