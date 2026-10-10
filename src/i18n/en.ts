@@ -3155,7 +3155,7 @@ export const en = {
       loss: 'Loss',
       canvas: 'Draw a digit',
       drawNote:
-        'Draw a white digit in the square after training. The same TypeShade forward kernel predicts it.',
+        'Draw a white digit in the square after training. TypeShade forward and predict kernels classify it.',
       clear: 'Clear',
       sample: 'Next test digit',
       drawFirst: 'Draw a digit before predicting.',
@@ -3181,13 +3181,14 @@ export const en = {
       'The live lab trains a small real-data subset in your browser. The full-dataset results below are from separate reproducible experiments.',
     modelH: 'The training pipeline',
     modelP:
-      'The model has 784 input features and 10 output classes. Its computation is split into five TypeShade compute entries.',
+      'The model has 784 input features and 10 output classes. Training and inference use six TypeShade compute entries.',
     kernels: [
       'forward computes the class logits.',
       'objective evaluates stable softmax and cross-entropy.',
       'reduce aggregates gradients across a batch.',
       'backward computes weight and bias gradients.',
       'update applies stochastic gradient descent.',
+      'predict produces ten normalised probabilities and the winning class in TypeShade.'
     ],
     resultsH: 'Validated results',
     resultsP:
