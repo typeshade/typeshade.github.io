@@ -183,7 +183,8 @@ const table = [
   },
   {
     dest: links.mnist,
-    note: 'the reproducible MNIST classification training journey, including TypeShade compute stages, CPU and software WebGPU full-data results, strict WebGL2 subset validation, and links to the measured source',
+    note:
+      'the reproducible MNIST classification training journey, including TypeShade compute stages, CPU and software WebGPU full-data results, strict WebGL2 subset validation, and links to the measured source',
   },
   {
     dest: links.reference,
