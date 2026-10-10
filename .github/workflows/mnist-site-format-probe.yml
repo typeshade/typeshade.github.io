@@ -1,0 +1,22 @@
+name: MNIST site formatting probe
+on:
+  pull_request:
+    paths:
+      - 'src/i18n/en.ts'
+      - 'src/i18n/ko.ts'
+      - '.github/workflows/mnist-site-format-probe.yml'
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Print exact Prettier diff
+        run: |
+          bunx prettier --write src/i18n/en.ts src/i18n/ko.ts
+          git diff -- src/i18n/en.ts src/i18n/ko.ts
