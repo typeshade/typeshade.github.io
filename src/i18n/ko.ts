@@ -1395,7 +1395,8 @@ export const ko: Copy = {
       'TypeShade의 CI가 푸시마다 실행하는 것: f64 CPU 오라클, Tint와 실제 WebGL2 컨텍스트에서 실행되는 컴파일 게이트, 출력마다의 골든 파일.',
     h1: '검증 방식',
     ciH: '푸시마다 하는 검사',
-    intro: '저장소의 CI는 푸시와 풀 리퀘스트마다 [CI 워크플로](ciGates)에서 다음을 실행합니다.',
+    intro:
+      '저장소의 CI는 푸시와 풀 리퀘스트마다 [CI 워크플로](ciGates)에서 다음을 실행합니다.',
     items: [
       `같은 모듈을 f64 산술로 실행되는 CPU 함수로도 컴파일합니다. 이것이 기준값을 내는 오라클입니다. 기본 모드에서는 동등 비교만 먼저 f32로 반올림해 GPU와 맞추고, 연산마다 반올림하는 f32 모드는 따로 켭니다. 테스트는 이 함수를 알려진 답과 맞춰 보고, 생성된 JavaScript라는 두 번째 CPU 백엔드와도 맞춰 봅니다. 둘은 비트 단위로 같아야 합니다. 오라클은 드라이버의 반올림에 대해서는 아무것도 말해 주지 않습니다. 이 저장소에서는 GPU 출력을 오라클과 맞춰 보지 않습니다. WGSL은 결과를 정해 두었는데 ${glsl}은 정하지 않은 곳에서는 오라클이 WGSL을 따릅니다(규칙 11.5). [src/core/oracle.ts](oracle)`,
       `컴파일 게이트는 등록된 예제를 전부 출력합니다. WGSL은 헤드리스 Chromium 안의 Tint에 넘기고, 렌더링 가능한 예제의 ${glsl} 두 단계는 실제 WebGL2 컨텍스트에서 컴파일하고 링크합니다. 컴파일될 수 없는 셰이더도 각 컴파일러에 하나씩 넘깁니다. 어느 쪽이든 그것을 받아들이면 게이트는 실패하고, 예제에 대한 판정은 무효가 됩니다. [scripts/compile-gate.ts](compileGate)`,
@@ -3287,15 +3288,19 @@ export const ko: Copy = {
 
   mnist: {
     title: 'TypeShade MNIST 학습',
-    description: 'TypeShade Compute로 손글씨 숫자를 학습하고 CPU, WebGPU, WebGL2 실행 결과를 확인하는 재현 실험입니다.',
+    description:
+      'TypeShade Compute로 손글씨 숫자를 학습하고 CPU, WebGPU, WebGL2 실행 결과를 확인하는 재현 실험입니다.',
     h1: 'TypeShade Compute로 MNIST 학습',
-    short: '실제 MNIST 데이터에서 순전파, 손실, 기울기와 SGD 업데이트를 TypeShade로 계산한 실험입니다.',
+    short:
+      '실제 MNIST 데이터에서 순전파, 손실, 기울기와 SGD 업데이트를 TypeShade로 계산한 실험입니다.',
     open: 'MNIST 학습 실험 살펴보기',
     intro: '손글씨 숫자를 분류하는 소프트맥스 모델을 학습합니다. 모델 계산은 TypeShade가 맡고, 호스트는 데이터를 읽어 배치를 제어합니다.',
     browserH: '실행 범위:',
-    browserNote: '이 페이지에는 측정 결과와 재현 명령어가 있습니다. 브라우저에서 학습을 직접 실행하는 데모는 아닙니다.',
+    browserNote:
+      '이 페이지에는 측정 결과와 재현 명령어가 있습니다. 브라우저에서 학습을 직접 실행하는 데모는 아닙니다.',
     modelH: '학습 파이프라인',
-    modelP: '입력 특성은 784개, 출력 클래스는 10개입니다. 계산은 TypeShade Compute 진입점 다섯 개로 나뉩니다.',
+    modelP:
+      '입력 특성은 784개, 출력 클래스는 10개입니다. 계산은 TypeShade Compute 진입점 다섯 개로 나뉩니다.',
     kernels: [
       'forward는 클래스별 로짓을 계산합니다.',
       'objective는 안정적인 소프트맥스와 교차 엔트로피를 계산합니다.',
@@ -3304,7 +3309,8 @@ export const ko: Copy = {
       'update는 확률적 경사 하강법으로 매개변수를 갱신합니다.',
     ],
     resultsH: '검증된 결과',
-    resultsP: '전체 데이터 결과는 저장소에 기록된 수치입니다. WebGL2 검증은 더 작은 데이터셋으로 별도 진행했습니다.',
+    resultsP:
+      '전체 데이터 결과는 저장소에 기록된 수치입니다. WebGL2 검증은 더 작은 데이터셋으로 별도 진행했습니다.',
     backend: '실행 백엔드',
     data: '학습 / 평가, 에폭',
     accuracy: '평가 정확도',
@@ -3314,13 +3320,16 @@ export const ko: Copy = {
     epochs: '에폭',
     webgl2Dataset: '1,024 train / 1,000 test subset',
     notEstablished: '전체 데이터 결과 미검증',
-    softwareNote: 'WebGPU 측정에는 소프트웨어 렌더러 Google SwiftShader를 사용했습니다. 물리 GPU 가속 성능을 입증한 결과가 아닙니다.',
-    webgl2Note: 'WebGL2 테스트는 모든 패스를 실제 실행해 독립 수치 기준과 대조하고 일부 실제 데이터도 학습했습니다. 근거:',
+    softwareNote:
+      'WebGPU 측정에는 소프트웨어 렌더러 Google SwiftShader를 사용했습니다. 물리 GPU 가속 성능을 입증한 결과가 아닙니다.',
+    webgl2Note:
+      'WebGL2 테스트는 모든 패스를 실제 실행해 독립 수치 기준과 대조하고 일부 실제 데이터도 학습했습니다. 근거:',
     validationRun: 'MNIST WebGL2 검증 워크플로',
     runH: '실험 재현하기',
     runP: '컴파일러 저장소 루트에서 Node 24와 Bun을 준비하고 의존성을 설치한 뒤 WebGL2 테스트를 실행합니다.',
     fullP: '데이터를 다운로드한 뒤 WebGPU 백엔드로 전체 학습을 실행하는 명령어:',
-    runtimeNote: '이 명령어는 로컬 Chromium을 사용하며 필요할 때 MNIST 데이터를 다운로드합니다. 성능은 어댑터와 호스트 환경에 따라 달라집니다.',
+    runtimeNote:
+      '이 명령어는 로컬 Chromium을 사용하며 필요할 때 MNIST 데이터를 다운로드합니다. 성능은 어댑터와 호스트 환경에 따라 달라집니다.',
     limitsH: '검증 범위와 한계',
     limits: [
       'WebGL2는 네이티브 컴퓨트 셰이더가 아니라 생성된 GLSL ES 3.00 패스를 사용합니다.',
