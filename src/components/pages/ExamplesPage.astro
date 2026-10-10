@@ -29,6 +29,7 @@ const deepZoom: CanvasText = {
 };
 const order = ['cartographic', 'generic', 'compute'] as const;
 const headings = [
+  { depth: 2, slug: 'mnist', text: t.mnist.title },
   ...order.map((c) => ({ depth: 2, slug: slugify(c), text: e.categories[c] })),
   { depth: 2, slug: slugify(e.shade.h), text: e.shade.h },
   ...SHADE_GROUPS.map((g) => ({ depth: 3, slug: slugify(g.key), text: e.shade.groups[g.key] })),
@@ -98,6 +99,12 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
           </li>
         ))}
       </ol>
+    </section>
+
+    <section class="mbs-8 rounded-md border border-line-1 bg-(--color-elevated) p-5">
+      <h2 id="mnist" class="mbs-0">{t.mnist.title}</h2>
+      <p class="mbs-3 text-text-2">{t.mnist.short}</p>
+      <a href={localePath(locale, links.mnist.href)}>{t.mnist.open} →</a>
     </section>
 
     <p class="text-ui text-text-2">{e.tableCaption}</p>
