@@ -3293,7 +3293,7 @@ export const ko: Copy = {
       codePreviewTitle: '실제로 실행되는 TypeShade 코드: 순전파',
       codePreviewExplanation:
         '아래 forward는 28×28 픽셀을 열 개 숫자의 점수로 변환하는 실제 Compute 함수입니다. 학습과 추론이 이 코드를 함께 사용합니다.',
-      codeWalkthroughLink: '전체 학습 과정과 코드 해설 7단계 보기 ↓',
+      codeWalkthroughLink: '전체 학습 과정과 코드 해설 7단계 보기',
       sourceToggle: '실행 중인 TypeShade 원본 코드 보기',
       sourceDescription:
         '위 MNIST 모델을 WebGPU/WebGL2용으로 컴파일한 실제 softmax.shade.ts 원본입니다. 학습과 추론에 사용되는 여섯 개의 Compute 함수를 모두 볼 수 있습니다.',
@@ -3366,21 +3366,21 @@ export const ko: Copy = {
           purpose:
             'forward는 각 이미지의 784개 픽셀과 10개 클래스 가중치를 곱해 더하고 편향을 더해 로짓(logit)을 만듭니다.',
           explanation:
-            'gid.x는 처리할 이미지의 행 번호입니다. 각 클래스 c에 대해 z = bias[c] + Σ pixels[p]×weights[p×10+c]를 계산합니다. @compute([64])는 작업 그룹의 호출 크기이며 이미지 수가 작업 그룹 크기와 반드시 같다는 뜻은 아닙니다. 마지막 배치의 범위를 검사합니다.',
+            'gid.x는 처리할 이미지의 행 번호입니다. 각 클래스 c에 대해 z = bias[c] + sum pixels[p]×weights[p×10+c]를 계산합니다. @compute([64])는 작업 그룹의 호출 크기이며 이미지 수가 작업 그룹 크기와 반드시 같다는 뜻은 아닙니다. 마지막 배치의 범위를 검사합니다.',
         },
         {
           title: '손실과 오차 신호: 왜 학습이 필요한지 계산',
           purpose:
             'objective는 로짓의 최대값을 먼저 빼는 안정적 소프트맥스를 사용해 정답 클래스의 교차 엔트로피 손실을 계산합니다.',
           explanation:
-            '오차 신호 delta는 (예측 확률 − 정답 원-핫 값) / 배치 크기입니다. 이 식이 다음 backward에서 각 가중치가 어느 방향으로 변해야 하는지 알려 줍니다. 여기서 exp와 log도 TypeShade 커널 안에서 계산됩니다.',
+            '오차 신호 delta는 (예측 확률 - 정답 원-핫 값) / 배치 크기입니다. 이 식이 다음 backward에서 각 가중치가 어느 방향으로 변해야 하는지 알려 줍니다. 여기서 exp와 log도 TypeShade 커널 안에서 계산됩니다.',
         },
         {
           title: '역전파: 모든 가중치의 기울기를 합산',
           purpose:
             'backward는 현재 배치의 픽셀과 delta를 사용해 7,840개 가중치 및 10개 편향의 기울기를 계산합니다.',
           explanation:
-            '각 가중치의 gradW[p×10+c] = Σ pixels[row,p]×delta[row,c]입니다. gradB는 해당 클래스의 delta 합계입니다. 이 구현은 자동 미분이 아니라 TypeShade에 직접 작성한 명시적 기울기 계산입니다.',
+            '각 가중치의 gradW[p×10+c] = sum pixels[row,p]×delta[row,c]입니다. gradB는 해당 클래스의 delta 합계입니다. 이 구현은 자동 미분이 아니라 TypeShade에 직접 작성한 명시적 기울기 계산입니다.',
         },
         {
           title: 'SGD: GPU 버퍼의 모델을 직접 갱신',
