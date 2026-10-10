@@ -94,6 +94,7 @@ export const links = {
   },
   checks: { label: 'Verification', href: '/guide/checks/' },
   examples: { label: 'Examples', href: '/guide/examples/' },
+  mnist: { label: 'MNIST training', href: '/guide/mnist/' },
   api: { label: 'Compiler API reference', href: '/api/' },
   reference: { label: 'Language reference', href: '/reference/' },
   referenceFunctions: { label: 'Functions', href: '/reference/functions/' },
@@ -336,6 +337,7 @@ export function docsPages(locale: Locale): readonly Destination[] {
     docsPage(locale, 'conceptsWebgpu'),
     docsPage(locale, 'conceptsWgsl'),
     docsPage(locale, 'examples'),
+    docsPage(locale, 'mnist'),
     docsPage(locale, 'reference'),
     docsPage(locale, 'internals'),
     docsPage(locale, 'languageService'),
@@ -360,6 +362,7 @@ type DocsPageKey =
   | 'conceptsWebgpu'
   | 'conceptsWgsl'
   | 'examples'
+  | 'mnist'
   | 'reference'
   | 'internals'
   | 'languageService'
@@ -384,6 +387,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     conceptsWebgpu: d.labels.conceptPages.webgpuAndWebgl2,
     conceptsWgsl: d.labels.conceptPages.wgslAndGlsl,
     examples: d.examples,
+    mnist: copyFor(locale).mnist.title,
     reference: d.labels.languageReference,
     internals: d.labels.internals,
     languageService: d.labels.languageService,
@@ -528,7 +532,7 @@ export function sidebar(
         page('conceptsWgsl'),
       ],
     },
-    { title: labels.examples, items: [page('examples')] },
+    { title: labels.examples, items: [page('examples'), page('mnist')] },
     { title: labels.reference, items: reference },
     { title: labels.project, items: [page('checks')] },
   ];
