@@ -3136,7 +3136,7 @@ export const en = {
       codePreviewTitle: 'TypeShade code running this lab: forward pass',
       codePreviewExplanation:
         'This real compute function transforms 28×28 pixels into ten digit scores. Both training and prediction use the same forward stage.',
-      codeWalkthroughLink: 'Explore the seven explained code stages below ↓',
+      codeWalkthroughLink: 'Explore the seven (7) explained code stages below ↓',
       sourceToggle: 'View the TypeShade code running this model',
       sourceDescription:
         'This is the exact softmax.shade.ts file compiled into the WebGPU/WebGL2 model above. All six compute entries are shown, including training and prediction.',
@@ -3189,7 +3189,7 @@ export const en = {
       'The live lab trains a small real-data subset in your browser. The full-dataset results below are from separate reproducible experiments.',
     walkthrough: {
       intro:
-        'These are excerpts from the exact TypeShade source compiled for the browser lab. This model is softmax regression: it receives 28×28 pixels (784 inputs) and produces scores for digits 0 through 9. It is neither a CNN nor a pretrained model.',
+        'These are excerpts from the exact TypeShade source compiled for the browser lab. This model is softmax regression: it receives 28×28 pixels (784 inputs) and produces 10 scores for digits 0 through 9. It is neither a CNN nor a pretrained model.',
       flowTitle: 'MNIST execution paths',
       trainFlow: 'Training:',
       testFlow: 'Evaluation:',
@@ -3207,7 +3207,7 @@ export const en = {
         {
           title: 'Forward pass: turn pixels into class scores',
           purpose:
-            'forward multiplies 784 pixel values by class-specific weights, sums them and adds biases, producing ten logits per image.',
+            'forward multiplies 784 pixel values by class-specific weights, sums them and adds biases, producing 10 logits per image.',
           explanation:
             'gid.x identifies the image row. For class c, it computes z = bias[c] + Σ pixels[p]×weights[p×10+c]. @compute([64]) specifies the workgroup size, with an explicit guard for short batches.',
         },
@@ -3221,7 +3221,7 @@ export const en = {
         {
           title: 'Backward pass: accumulate weight gradients',
           purpose:
-            'backward computes gradients for 7,840 weights and ten biases using the batch pixels and delta values.',
+            'backward computes gradients for 7,840 weights and 10 biases using the batch pixels and delta values.',
           explanation:
             'Each gradW[p×10+c] is Σ pixels[row,p]×delta[row,c], while each gradB is a class-wise delta sum. This implementation uses explicitly authored gradients, not automatic differentiation.',
         },
@@ -3240,9 +3240,9 @@ export const en = {
             'stats[0] is mean loss and stats[1] is the correct count. This is a metric reduction, not weight-gradient reduction. The host reads this small output to compute evaluation totals.',
         },
         {
-          title: 'Prediction: calculate probabilities and digit on GPU',
+          title: 'Prediction: calculate digit 0–9 probabilities on GPU',
           purpose:
-            'predict normalizes ten forward logits and picks the highest-scoring digit without needing labels.',
+            'predict normalizes 10 forward logits and picks the highest-scoring digit without needing labels.',
           explanation:
             'The compute entry writes probabilities[c] and predicted[0]. Browser JavaScript only renders those GPU results; it does not run a second Math.exp softmax implementation.',
         },
@@ -3255,7 +3255,7 @@ export const en = {
         'setBatch writes pixels and labels to GPU input buffers. The session dispatches forward → objective → backward → update in order, retaining the same GPU-resident weights for subsequent batches.',
       hostPredictTitle: 'Actual code for classifying a drawn digit',
       hostPredictExplanation:
-        'forward → predict computes probabilities and the top class on the GPU. Only ten floats and one class index are read back. Training and prediction share a serialized queue to avoid races over mutable buffers.',
+        'forward → predict computes probabilities and the top class on the GPU. Only 10 floats and one class index are read back. Training and prediction share a serialized queue to avoid races over mutable buffers.',
       boundary:
         'Execution boundary: TypeShade owns the model math (forward, softmax, loss, gradients, SGD and inference). JavaScript handles downloads, batch scheduling, canvas input, UI updates and aggregating metrics. WebGL2 uses TypeShade-generated GLSL ES 3.00 passes, not native compute.',
     },
