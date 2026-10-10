@@ -7,6 +7,7 @@ import { compile, packModule } from '../../vendor/shader-dsl/src/index.ts';
 import { copyFor, type Locale } from '../i18n/index.ts';
 import TypeShadeCode from './TypeShadeCode.astro';
 import { facts } from '../lib/examples.ts';
+import { mnistEpochs } from '../lib/mnist-settings.ts';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
@@ -59,20 +60,36 @@ const sourceUrl = 'https://github.com/typeshade/typeshade/blob/' + facts.pinnedC
       </select>
     </label>
     <label>{words.epochs}
-      <select data-epochs>
-        <option value="1">1</option>
-        <option value="3" selected>3</option>
-        <option value="5">5</option>
-      </select>
+      <input type="number" data-epochs min={mnistEpochs.min} max={mnistEpochs.max} step="1" value={mnistEpochs.default} required aria-describedby="mnist-epochs-help mnist-epochs-error" aria-invalid="false" />
     </label>
   </div>
+  <p id="mnist-epochs-help" class="mnist-note">{words.epochsHelp}</p>
+  <p id="mnist-epochs-error" data-epochs-error role="alert" class="text-diagnostic" hidden></p>
+  <p class="mnist-note">{words.resourceNote}</p>
   <div class="mnist-actions">
     <button class="button button-primary" type="button" data-start>{words.start}</button>
     <button class="button" type="button" data-cancel disabled>{words.cancel}</button>
   </div>
   <p class="mnist-note">{words.dataNote}</p>
   <p role="status" aria-live="polite" class="mnist-status" data-status>{words.idle}</p>
-  <progress class="mnist-progress" max="768" value="0" data-progress aria-label={words.resultHeading}></progress>
+  <progress class="mnist-progress" max="768" value="0" data-progress aria-label={words.trainingProgress}></progress>
+  <p class="mnist-note">{words.progressNote}</p>
+  <div class="mbs-6" data-learning>
+    <h4>{words.learningTitle}</h4>
+    <p class="mnist-note">{words.learningExplanation}</p>
+    <p class="mnist-note" data-learning-phase aria-live="polite">{words.idle}</p>
+    <p class="mnist-note" data-training-batch></p>
+    <p class="mnist-note" data-evaluation-batch></p>
+    <p class="mnist-note">{words.metricsExplanation}</p>
+    <figure class="m-0 mbs-4">
+      <figcaption class="text-ui">{words.lossCurve}</figcaption>
+      <svg data-loss-chart role="img" aria-label={words.lossCurve} viewBox="0 0 400 140" class="w-full h-auto"><title>{words.lossCurve}</title></svg>
+    </figure>
+    <figure class="m-0 mbs-4">
+      <figcaption class="text-ui">{words.accuracyCurve}</figcaption>
+      <svg data-accuracy-chart role="img" aria-label={words.accuracyCurve} viewBox="0 0 400 140" class="w-full h-auto"><title>{words.accuracyCurve}</title></svg>
+    </figure>
+  </div>
   <div class="mnist-panels">
     <div class="mnist-canvas-panel">
       <h4>{words.canvas}</h4>
@@ -122,7 +139,7 @@ const sourceUrl = 'https://github.com/typeshade/typeshade/blob/' + facts.pinnedC
   .mnist-source :global(pre) { max-height: 32rem; overflow: auto; }
   .mnist-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin-block: 20px; }
   .mnist-fields label { display: flex; flex-direction: column; gap: 6px; font-size: .85rem; font-weight: 600; }
-  .mnist-fields select { inline-size: 100%; min-block-size: 40px; padding: 7px 9px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-ground); color: var(--color-text-1); }
+  .mnist-fields select, .mnist-fields input { inline-size: 100%; min-block-size: 40px; padding: 7px 9px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); background: var(--color-ground); color: var(--color-text-1); }
   .mnist-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 12px; }
   .mnist-actions button:disabled { opacity: .5; cursor: not-allowed; }
   .mnist-note { font-size: .85rem; line-height: 1.6; color: var(--color-text-2); }
