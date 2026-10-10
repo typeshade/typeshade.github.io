@@ -98,8 +98,14 @@ try {
       throw new Error('MNIST lab does not display the TypeShade source panel');
     await sourcePanel.locator('summary').click();
     const displayedSource = await sourcePanel.locator('pre').innerText();
-    for (const part of ['"use typeshade"', 'export function forward', 'export function objective',
-      'export function backward', 'export function update', 'export function predict']) {
+    for (const part of [
+      '"use typeshade"',
+      'export function forward',
+      'export function objective',
+      'export function backward',
+      'export function update',
+      'export function predict',
+    ]) {
       if (!displayedSource.includes(part))
         throw new Error('MNIST source panel is missing real compute code: ' + part);
     }
