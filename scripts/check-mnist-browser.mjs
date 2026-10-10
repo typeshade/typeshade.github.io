@@ -173,7 +173,8 @@ try {
       await page.mouse.move(x, square.y + square.height * 0.8, { steps: 8 });
       await page.mouse.up();
       await page.waitForFunction(
-        () => (document.querySelector('[data-guess]')?.textContent ?? '').startsWith('Prediction:') &&
+        () =>
+          (document.querySelector('[data-guess]')?.textContent ?? '').startsWith('Prediction:') &&
           document.querySelectorAll('[data-probabilities] > li').length === 10,
         undefined,
         { timeout: 30_000 },
@@ -190,7 +191,10 @@ try {
       );
       await page.locator('[data-cancel]').click();
       await page.waitForFunction(
-        () => (document.querySelector('[data-status]')?.textContent ?? '').startsWith('Training cancelled'),
+        () =>
+          (document.querySelector('[data-status]')?.textContent ?? '').startsWith(
+            'Training cancelled',
+          ),
         undefined,
         { timeout: 60_000 },
       );
