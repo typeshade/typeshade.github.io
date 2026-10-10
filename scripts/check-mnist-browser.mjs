@@ -22,7 +22,8 @@ function fixture(split, image) {
     for (let row = 0; row < count; row++) {
       const label = row % 10;
       for (let i = 0; i < 784; i++) {
-        const x = i % 28, y = Math.floor(i / 28);
+        const x = i % 28,
+          y = Math.floor(i / 28);
         bytes[16 + row * 784 + i] = Math.abs(x - (label * 2 + 4)) < 2 && y > 5 && y < 22 ? 255 : 0;
       }
     }
@@ -53,18 +54,26 @@ try {
         await route.abort();
         return;
       }
-      await route.fulfill({ status: 200, body: bytes, contentType: 'application/octet-stream',
-        headers: { 'access-control-allow-origin': '*' } });
+      await route.fulfill({
+        status: 200,
+        body: bytes,
+        contentType: 'application/octet-stream',
+        headers: { 'access-control-allow-origin': '*' },
+      });
     });
     await page.goto(server.url + '/guide/mnist/');
     await page.locator('[data-tier]').selectOption(tier);
     await page.locator('[data-count]').selectOption('128');
     await page.locator('[data-epochs]').selectOption('1');
     await page.locator('[data-start]').click();
-    await page.waitForFunction((name) => {
-      const status = document.querySelector('[data-status]')?.textContent ?? '';
-      return status.startsWith('Training finished') || status.startsWith('Unable to run MNIST');
-    }, undefined, { timeout: 360_000 });
+    await page.waitForFunction(
+      (name) => {
+        const status = document.querySelector('[data-status]')?.textContent ?? '';
+        return status.startsWith('Training finished') || status.startsWith('Unable to run MNIST');
+      },
+      undefined,
+      { timeout: 360_000 },
+    );
     const status = await page.locator('[data-status]').innerText();
     if (!status.startsWith('Training finished') || !status.includes(tier)) {
       throw new Error(tier + ' did not train through the requested TypeShade backend: ' + status);
@@ -73,10 +82,14 @@ try {
     if (rows.length !== 1 || !rows[0].includes('Test accuracy') || !rows[0].includes('Loss'))
       throw new Error(tier + ' produced no measured test metrics: ' + rows.join(' | '));
     await page.locator('[data-sample]').click();
-    await page.waitForFunction(() => document.querySelectorAll('[data-probabilities] > li').length === 10);
+    await page.waitForFunction(
+      () => document.querySelectorAll('[data-probabilities] > li').length === 10,
+    );
     const prediction = await page.locator('[data-guess]').innerText();
     if (!prediction.startsWith('Prediction:') || errors.length > 0)
-      throw new Error(tier + ' inference failed: ' + prediction + ', errors: ' + errors.join(' / '));
+      throw new Error(
+        tier + ' inference failed: ' + prediction + ', errors: ' + errors.join(' / '),
+      );
     console.log('[mnist] ' + tier + ': ' + status + '; ' + rows[0] + '; ' + prediction);
     await page.close();
   }
