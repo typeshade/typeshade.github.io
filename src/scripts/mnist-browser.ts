@@ -60,7 +60,7 @@ export function mountMnist(root: HTMLElement): void {
   let busy = false;
   let drawing = false;
   let predictionSequence = 0;
-  let processedPixels = new Float32Array(inputs);
+  let processedPixels: Float32Array = new Float32Array(inputs);
 
   const setStatus = (message: string) => {
     status.textContent = message;
