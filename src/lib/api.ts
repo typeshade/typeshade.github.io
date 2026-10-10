@@ -185,6 +185,7 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/core/passes/rename-varrefs.ts': 'ir',
   // Forward-mode derivative of a module function, returned as a new module (compiler #194).
   'src/core/passes/grad.ts': 'ir',
+  'src/core/passes/grad-check.ts': 'ir',
   'src/core/sot.ts': 'layout',
   'src/core/backends/wgsl.ts': 'emit',
   'src/core/backends/glsl.ts': 'emit',

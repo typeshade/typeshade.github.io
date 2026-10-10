@@ -837,7 +837,7 @@ export const en = {
     gpuNeedsBindings:
       'The bindings panel has no value for {names}, so this module cannot run here.',
     computeNeedsWebgpu:
-      'A compute entry runs on WebGPU or on the CPU oracle. GLSL ES 3.00 has no compute stage.',
+      'This Playground runs compute on WebGPU or the CPU oracle. The TypeShade program runtime also supports WebGL2 compute lowering.',
     computeRan:
       'Ran {entry} over {invocations} invocations on {backend} in {ms} ms. The canvas plots what it wrote.',
     // The Console tab: the lines a compute run's console calls delivered, from the CPU oracle's
@@ -1217,7 +1217,7 @@ export const en = {
         [
           'await scale({ k, xs, ys }, 4)',
           'A host file imports the module and calls it',
-          "Through the `typeshade/vite` plugin, a host file imports a `.shade.ts` and calls what it exports. A helper runs on the CPU, a `@compute` entry dispatches on WebGPU, and a full-screen `@fragment` entry draws into a canvas as `fs(canvas, bindings)`. The bindings object is typed from the module, so a binding the call leaves out is a type error on the host's line.",
+          "Through the `typeshade/vite` plugin, a host file imports a `.shade.ts` and calls what it exports. A helper runs on the CPU, a `@compute` entry runs on WebGPU or the WebGL2 compute tier where supported, and a full-screen `@fragment` entry draws into a canvas as `fs(canvas, bindings)`. The bindings object is typed from the module, so a binding the call leaves out is a type error on the host's line.",
         ],
       ],
     },
@@ -1264,7 +1264,7 @@ export const en = {
       hostP2:
         'TypeShade owns the language semantics and shader emission. The host owns runtime objects and their lifetimes, including the device, pipeline, bind groups, buffers, textures and command encoders.',
       importH: 'Importing the file',
-      importP: `This way arrives with ${facts.nextVersion} on npm. A host file imports a \`.shade.ts\` and calls what it exports, and TypeShade's runtime creates the device and the pipelines those calls need. A helper runs on the CPU. A \`@compute\` entry is \`await entry(bindings, workgroups)\`: it dispatches on WebGPU and reads back what it wrote. A full-screen \`@fragment\` entry draws into a canvas as \`entry(canvas, bindings)\`, on WebGPU, then WebGL2, then the CPU.`,
+      importP: `This way arrives with ${facts.nextVersion} on npm. A host file imports a \`.shade.ts\` and calls what it exports, and TypeShade's runtime creates the device and the pipelines those calls need. A helper runs on the CPU. A \`@compute\` entry is \`await entry(bindings, workgroups)\`: it runs on WebGPU or WebGL2 where supported and reads back what it wrote. A full-screen \`@fragment\` entry draws into a canvas as \`entry(canvas, bindings)\`, on WebGPU, then WebGL2, then the CPU.`,
       setupP:
         'After `npm install typeshade`, the setup is the Vite plugin, two lines of the host `tsconfig.json`, and `tshc sync` in `prepare`, which writes the host view `tsc` reads in place of each shader file. The views are generated files, and `*.shade.typeshade.ts` in `.gitignore` keeps them out of the repository.',
       viteLabel: 'The Vite plugin, vite.config.ts',
@@ -1691,7 +1691,7 @@ export const en = {
       loadEmitP:
         'A host that enables console recording after the build can pass `repack` from `typeshade/emit` as `createRuntime({ emit: repack })`. Build the manifest with `packModule(module, { ir: true })` so it carries the portable IR. The load-time emitter uses the emit options stored in the manifest and carries no TypeScript front end.',
       loadNote:
-        'The program runtime runs on WebGPU only. A host that draws on WebGL2 compiles the module, or imports it and calls its entry points.',
+        'The program runtime accepts WebGPU and WebGL2. The WebGL2 tier draws fragments and runs supported compute entries through generated GLSL ES 3.00 passes.',
       reflectionH: 'Reflection',
       reflectionP: `\`reflect()\` reads a compiled module and returns its bindings: the group and index the shader declared, the address space, the access the shader needs, and for a uniform struct the fields with their offsets and sizes under the ${facts.layoutStandards.join(' and ')} layouts. A host builds its bind group layout entries out of that list and packs its uniform buffer from those offsets. The numbers the shader was compiled with are the numbers the host writes, so the two sides stay in step.`,
       reflectionNote:
@@ -1702,7 +1702,7 @@ export const en = {
       webgl2P: 'The same source compiles for WebGL2, and the host side of it looks different.',
       webgl2Items: [
         'There are no bind groups. A uniform block is bound to a binding point on the linked program and a sampler is set through its uniform location, so a host uses the same reflection in a different shape.',
-        `There is no compute stage. A module with a \`@compute\` entry emits WGSL and refuses to emit ${facts.glslTarget}.`,
+        `WebGL2 has no native compute stage. TypeShade lowers supported \`@compute\` entries into ${facts.glslTarget} passes using the WebGL2 runtime. The manifest names entries that cannot be lowered.`,
         `Precision belongs to the source. Every emitted ${facts.glslTarget} program declares its default precision above its declarations, which WGSL has no need of.`,
         'A GPU feature is turned on by the host, which asks the context for the extension, and where the extension has a directive the emitted source declares it as well. [Compiler internals](internals) describes how the compiler splits those halves.',
       ],
@@ -1740,7 +1740,7 @@ export const en = {
         [
           '[Compute stages](languageStages)',
           'A `@compute` entry emits a compute shader carrying its workgroup size.',
-          'The target has no compute stage, so a module that declares one emits WGSL alone.',
+          'WebGL2 has no native compute stage. TypeShade runs supported compute entries through generated GLSL ES 3.00 passes.',
         ],
         [
           '[Precision](languageGpuTypes)',

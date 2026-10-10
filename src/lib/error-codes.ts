@@ -917,6 +917,7 @@ export function main(@location(0) uv: vec2): vec4 {
     trigger: `"use typeshade"
 
 declare const data: storage<array<f32>, "read_write">
+declare const k: uniform<f32>
 
 @compute([64])
 export function double(@builtin("global_invocation_id") id: vec3u): void {
@@ -925,7 +926,7 @@ export function double(@builtin("global_invocation_id") id: vec3u): void {
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(uv, 0., 1.)
+  return vec4(uv, k, 1.)
 }
 `,
     fix: `"use typeshade"

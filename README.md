@@ -18,7 +18,7 @@ export function fragment(uv: vec2): vec4 {
 }
 ```
 
-The compiler lowers the source to an intermediate representation and emits shader source for the host. The current targets are WGSL for WebGPU and GLSL ES 3.00 for WebGL2. **There is no TypeShade runtime.**
+The compiler lowers the source to an intermediate representation and emits shader source for the host. The current targets are WGSL for WebGPU and GLSL ES 3.00 for WebGL2. The compiled program can run through `typeshade/runtime` on WebGPU and WebGL2. Supported `@compute` entries also run on the WebGL2 tier through GLSL ES 3.00 passes.
 
 ## Why TypeShade?
 
