@@ -3312,7 +3312,7 @@ export const ko: Copy = {
       loss: '손실',
       canvas: '숫자 그리기',
       drawNote:
-        '학습 후 검은 사각형에 흰색 숫자를 그려 보세요. 같은 TypeShade 순전파 커널로 예측합니다.',
+        '학습 후 검은 사각형에 흰색 숫자를 그려 보세요. TypeShade 순전파와 예측 커널로 계산합니다.',
       clear: '지우기',
       sample: '다음 테스트 숫자',
       drawFirst: '먼저 숫자를 그려 주세요.',
@@ -3338,13 +3338,14 @@ export const ko: Copy = {
       '실습 도구는 실제 MNIST 데이터 일부를 브라우저에서 학습합니다. 아래 전체 데이터 수치는 별도로 진행한 재현 실험 결과입니다.',
     modelH: '학습 파이프라인',
     modelP:
-      '입력 특성은 784개, 출력 클래스는 10개입니다. 계산은 TypeShade Compute 진입점 다섯 개로 나뉩니다.',
+      '입력 특성은 784개, 출력 클래스는 10개입니다. 학습과 추론은 TypeShade Compute 진입점 여섯 개로 계산합니다.',
     kernels: [
       'forward는 클래스별 로짓을 계산합니다.',
       'objective는 안정적인 소프트맥스와 교차 엔트로피를 계산합니다.',
       'reduce는 배치의 기울기를 합산합니다.',
       'backward는 가중치와 편향의 기울기를 계산합니다.',
       'update는 확률적 경사 하강법으로 매개변수를 갱신합니다.',
+      'predict는 TypeShade에서 숫자별 확률과 최종 클래스를 계산합니다.'
     ],
     resultsH: '검증된 결과',
     resultsP:
