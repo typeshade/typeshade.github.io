@@ -150,7 +150,16 @@ export function createLanguageClient(
   onFailure: (message: string) => void,
 ): LanguageClient {
   let nextId = 1;
+  let failed = false;
   const pending = new Map<number, (value: ResultByKind[QueryKind] | undefined) => void>();
+  const failPending = (message: string): void => {
+    failed = true;
+    onFailure(message);
+    for (const resolve of pending.values()) resolve(undefined);
+    pending.clear();
+  };
+  worker.addEventListener('error', (event) => failPending(event.message));
+  worker.addEventListener('messageerror', () => failPending('DataCloneError'));
 
   worker.addEventListener('message', (event: MessageEvent<LanguageReply>) => {
     const reply = event.data;
@@ -180,11 +189,16 @@ export function createLanguageClient(
       worker.postMessage({ kind: 'close', uri } satisfies CloseRequest);
     },
     request(kind, uri, version, extra) {
+      if (failed) return Promise.resolve(undefined);
       const id = nextId;
       nextId += 1;
       return new Promise((resolve) => {
         pending.set(id, resolve as (value: ResultByKind[QueryKind] | undefined) => void);
-        worker.postMessage({ ...extra, kind, id, uri, version } as QueryRequest);
+        try {
+          worker.postMessage({ ...extra, kind, id, uri, version } as QueryRequest);
+        } catch (error) {
+          failPending(error instanceof Error ? error.message : String(error));
+        }
       });
     },
     dispose() {

@@ -201,6 +201,11 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
       pick: ['band'],
     },
     {
+      id: 'unassignedRead',
+      ts: 'export function band(x: f32): f32 {\n  let w: f32\n  if (x > 0.) {\n    w = x * 2.\n  }\n  return w\n}',
+      refused: true,
+    },
+    {
       id: 'moduleLet',
       ts: 'let seed: u32 = 7',
       after: 'export function next(): u32 {\n  seed = seed * 1664525\n  return seed\n}',
@@ -250,6 +255,33 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     },
   ],
   functions: [
+    {
+      id: 'lexicalShadow',
+      ts: 'const gain: f32 = 0.25;\nfunction scale(gain: f32): f32 { return gain * 2.; }\nexport function answer(): f32 {\n  const gain: f32 = 1.;\n  return scale(gain);\n}',
+      pick: ['scale', 'answer'],
+    },
+    {
+      id: 'mutableParameter',
+      ts: 'export function brighter(value: f32): f32 {\n  value += 0.25;\n  return value;\n}',
+      pick: ['brighter'],
+    },
+    {
+      id: 'referenceParameter',
+      ts: 'function swap(@inout a: f32, @inout b: f32): void {\n  const t = a\n  a = b\n  b = t\n}\nexport function order(x: f32, y: f32): f32 {\n  let lo = x\n  let hi = y\n  if (lo > hi) {\n    swap(lo, hi)\n  }\n  return hi - lo\n}',
+      pick: ['swap', 'order'],
+    },
+    {
+      id: 'outParameter',
+      ts: 'function add(a: f32, b: f32, @out c: f32): void {\n  c = a + b\n}\nexport function sum(x: f32, y: f32): f32 {\n  let s: f32\n  add(x, y, s)\n  return s\n}',
+      pick: ['add', 'sum'],
+    },
+    {
+      id: 'referenceAlias',
+      before:
+        'function swap(@inout a: f32, @inout b: f32): void {\n  const t = a\n  a = b\n  b = t\n}',
+      ts: 'export function twice(x: f32): f32 {\n  let v = x\n  swap(v, v)\n  return v\n}',
+      refused: true,
+    },
     {
       id: 'topFunction',
       ts: 'export function lum(c: vec3): f32 {\n  return dot(c, vec3(0.2126, 0.7152, 0.0722))\n}',
@@ -301,6 +333,16 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     },
   ],
   classes: [
+    {
+      id: 'baseValue',
+      ts: 'class Material {\n  color: f32 = 0.5;\n  response(): f32 { return this.color; }\n}\nclass LeafMaterial extends Material {\n  thickness: f32 = 1.;\n}\nfunction response(material: Material): f32 {\n  return material.response();\n}\nexport function leafResponse(): f32 {\n  const material = new LeafMaterial();\n  return response(material);\n}',
+      pick: ['Material', 'LeafMaterial', 'response', 'leafResponse'],
+    },
+    {
+      id: 'fieldlessClass',
+      ts: 'class Counter {\n  next(value: f32): f32 { return value + 1.; }\n}\nexport function next(value: f32): f32 {\n  return new Counter().next(value);\n}',
+      pick: ['Counter', 'Counter_new', 'Counter_next', 'next'],
+    },
     {
       id: 'constructorNew',
       ts: 'class Ray {\n  origin: vec3\n  dir: vec3\n  constructor(origin: vec3, dir: vec3) {\n    this.origin = origin\n    this.dir = dir\n  }\n}',
@@ -516,8 +558,8 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
     },
     {
       id: 'integerLiteral',
-      ts: 'export function counts(): u32 {\n  const n: u32 = 7\n  return n * 3\n}',
-      pick: ['counts'],
+      ts: 'class Hit {\n  constructor(public index: i32) {}\n  offset(value: i32): i32 { return this.index + value; }\n}\nexport function counts(): i32 {\n  let n = -1;\n  const hit = new Hit(n);\n  n = hit.index;\n  return hit.offset(n);\n}',
+      pick: ['Hit_new', 'Hit_offset', 'counts'],
     },
     {
       id: 'increment',

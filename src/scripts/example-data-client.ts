@@ -60,18 +60,28 @@ export async function shortLink(path: string, fragment: string): Promise<string 
   }
 }
 
+/** The fragment a short link stores (/data/shares/<id>/), which the Playground opens for
+ *  `#share=<id>`. Undefined where there is no Worker or no such share. */
+export async function fetchShare(id: string): Promise<string | undefined> {
+  if (!/^[A-Za-z0-9_-]{8,43}$/.test(id)) return undefined;
+  const share = await get<{ fragment?: unknown }>(`/data/shares/${id}/`);
+  return typeof share?.fragment === 'string' ? share.fragment : undefined;
+}
+
 /** What became of a gallery submission: queued (or already queued), refused for the day, or
  *  not sent at all (no Worker, a refusal, the network). */
 export type SubmitOutcome = 'sent' | 'already' | 'limit' | 'failed';
 
-/** Sends the page at `path` with `fragment` to the gallery under `title`, where it waits for
- *  the maintainer's approval (worker/index.ts). */
+/** Sends the page at `path` with `fragment` to the gallery under `title`, with the still of its
+ *  canvas in base64 where the Playground took one, and it waits there for the maintainer's
+ *  approval (worker/index.ts). */
 export async function submitToGallery(entry: {
   readonly path: string;
   readonly fragment: string;
   readonly title: string;
   readonly author: string;
   readonly locale: DataLocale;
+  readonly still?: string;
 }): Promise<SubmitOutcome> {
   try {
     const res = await fetch('/data/gallery/', {
@@ -86,22 +96,6 @@ export async function submitToGallery(entry: {
     return 'failed';
   }
 }
-
-/** One approved entry in the gallery. */
-export interface GalleryEntry {
-  readonly id: string;
-  readonly title: string;
-  readonly author: string;
-  readonly path: string;
-  readonly views: number;
-  readonly approvedAt: string | null;
-  /** The short link, /s/<id>/. */
-  readonly url: string;
-}
-
-/** The gallery's approved entries, the most recently approved first. */
-export const fetchGallery = async (): Promise<readonly GalleryEntry[] | undefined> =>
-  (await get<{ entries: readonly GalleryEntry[] }>('/data/gallery/'))?.entries;
 
 /** The notice over every page (worker/migrations/0005_notices.sql). */
 export interface SiteNotice {

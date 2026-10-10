@@ -83,3 +83,79 @@ id first, then the pull request that did the work.
   conversion to an integer: the Korean guide's values-and-mutation section says a float converts
   the same way on every target, through `_f2i` and `_f2u` on GLSL (Rule 11.12); no page shows
   GLSL's spelling of an integer operator, handled in #124.
+- 0031: value parameters can be reassigned without changing the caller's value: the functions
+  copy and a compiled parameter reassignment row (en and ko), and the TS8018 trigger now
+  demonstrates a write to a temporary component, handled in #132.
+- 0032: legal TypeScript variable and parameter names are escaped for a shader backend: the
+  functions scope guidance (en and ko) follows surface section 62, while the TS8068 struct-field
+  trigger keeps the remaining interface naming restriction, handled in #132.
+- 0035: fieldless classes can be constructed and have methods: the class boundary copy and a
+  compiled method-only class row (en and ko) explain the empty host object and internal GPU
+  storage footprint. The TS8010 missing-field and TS8035 static-block examples still describe
+  their remaining refusals, handled in #132.
+- 0036: a direct declared nongeneric function argument can determine an integer-written local's
+  scalar type: the integer-literal mapping row and its en/ko guidance describe integer demand,
+  conflicting demands and the unchanged f32 default. Playground diagnostic regressions cover
+  inference and disagreement, handled in #132.
+- 0025: the WebGPU render and compute runners load compiled manifests into the public program
+  runtime and bind resources by name, while the site keeps its WebGL2 path. Build-time,
+  edited live and Playground payloads carry their manifests. Frame and pixel console captures
+  use the runtime sink and keep source events; the API reference includes `typeshade/emit`
+  and `repack` beside the runtime pages and concept guidance introduced in #125, handled in #132.
+- 0028: render overrides use `RenderState.constants` and compute overrides use the pipeline's
+  `constants`; console captures read dropped-call counts from `Frame.submit()`. Playground
+  manifests are packed under the reader's emit options. English and Korean program-loading
+  guidance explains overrides, console counts and the optional load-time emitter; focused
+  regressions and browser probes check the migrated execution, handled in #132.
+- 0037: integer-written locals take concrete declared demands from constructors, methods,
+  typed initializers and simple assignments. The compiled mapping and English/Korean numeric
+  guidance explain the contexts and unchanged conflict/default policy. Compiler/editor tests
+  check constructor and method calls, assignment and hover agreement.
+- 0038: a derived material may supply a proved read-only, dispatch-equivalent base view.
+  The compiled class mapping and English/Korean class guidance explain accepted views and
+  remaining override, receiver-write and alias-mutation limits. Compiler/editor fixtures
+  accept the material view and retain the unsafe-override diagnostic.
+- 0039: parameters and body locals may shadow module values while closures resolve the
+  nearest declaration. The compiled function mapping and English/Korean scope guidance explain
+  lexical shadowing and same-scope duplicate errors; focused fixtures check both behaviors.
+- 0040: a parameter declared `Ref<T>` names the caller's variable, passed as `ref(x)`: the
+  functions guide's parameters section and its sample, the reference-parameter and alias
+  cards on the TypeScript mapping page with the WGSL they emit and the `TS8074` refusal, the
+  parameter-reassignment card, the Korean translation of the authoring guide's new section,
+  the glossary row, `ref` in the language reference, and the reference-parameters example in
+  the gallery, the Playground picker, the stills and the Korean blurbs. The third amendment
+  replaces that spelling with the parameter decorators `@inout` and `@out` and an unmarked
+  argument: the functions guide's parameters section and its sample (`swap`, `add` with `@out`
+  into a `let` with no value) and a local function that reads and writes a qualified parameter
+  around it, in both locales; the `@inout` card, a new `@out` card and the
+  alias card on the TypeScript mapping page; the parameter-reassignment card; the set of
+  attributes on the types page; the Korean translation of the authoring guide's section,
+  translated again from the pinned AUTHORING.md; the glossary rows (되돌려 쓰는 매개변수,
+  한정자, 참조); `ref` gone from the language reference, where `inout` and `out` join the
+  attributes; and the example's Korean title and blurb. The example's still is kept: the program
+  computes the same colours as before. The fourth amendment removes `@in`: no page offers it, and
+  the Korean authoring guide says, as the English does, that there is none. The Playground's
+  hover is the language service's and needs no site change; the compiler delivers no inlay hint,
+  so the Playground shows none. Handled in #145.
+- 0043: a read of a local before it is assigned on every path is refused as `TS8075`, and GLSL
+  ES 3.00 starts a local with no initializer at zero: the local `let` card on the TypeScript
+  mapping page and the `var` note on the WGSL mapping page, which said WGSL zeroes the value
+  and GLSL leaves it undefined, in both locales; a refused read-before-assignment card on the
+  TypeScript mapping page; and the `TS8075` page in the error-code reference, with a trigger
+  and a fix compiled at the pin, handled in #145.
+- 0044: `bitcast` takes a vector, one neutral id per width (`bitcastVec2U32` to
+  `bitcastVec4F32`): `src/lib/builtin-table.ts` gives each a category (`casts`) and an arity of 1;
+  the builtins page, the language reference's `bitcast` entry and the packing-bitcast example
+  read the rest from the pin, handled in the pull request that pins the compiler at fd39ba3.
+- 0045: a NaN or subnormal `f32` word has no portable `bitcast`: the reference page for
+  `bitcast` reads the new sentence from the compiler's JSDoc, with no change here, handled in
+  the same pull request.
+- 0046: a GLSL storage struct array with an integer field is an R32UI data texture, and
+  `BindEntry` gains `glslDataTexture`: the API reference reads the field from its JSDoc; the
+  Korean guide's `layouts-and-resources` section is translated again for the changed Storage
+  buffers paragraph (and for the `"use typeshade"` uniform and storage blocks of typeshade#481),
+  handled in the same pull request.
+- 0047: `array<T, N>()` is the zero value of a fixed-size array: the language reference's `array`
+  entry reads the new hover sentence from `FUNCTION_DOCS`, and the `packing-bitcast` example page
+  reads the new line from the example, with no change of their own, handled in the pull request
+  that pins the compiler at 596c805.

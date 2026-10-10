@@ -34,7 +34,8 @@ export const links = {
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
   editor: { label: 'Editor support', href: '/guide/editor/' },
-  playgroundGallery: { label: 'Gallery', href: '/playground/gallery/' },
+  // The gallery's page, built here and served at gallery.typeshade.dev (src/lib/gallery-data.ts).
+  gallery: { label: 'Gallery', href: '/gallery/' },
   concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
   conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
   conceptsPipeline: { label: 'The pipeline', href: '/guide/concepts/the-pipeline/' },
@@ -129,6 +130,9 @@ export const links = {
     href: 'https://github.com/typeshade/vscode-typeshade/blob/main/packages/mcp-server/README.md',
   },
   llms: { label: 'llms.txt', href: '/llms.txt' },
+  // Products built on TypeShade, each in a repository of its own and served at its own host.
+  // The footer's Project group closes with them, one link each under the product's name.
+  radiance: { label: 'Radiance', href: 'https://radiance.typeshade.dev/' },
   commit: { label: facts.pinnedCommit, href: `${mirror}/tree/${facts.pinnedCommit}` },
   releases: { label: 'Watch releases', href: `${mirror}/releases` },
   license: { label: facts.licenseName, href: at('LICENSE') },
@@ -199,6 +203,7 @@ export const links = {
   shadeBitfieldBands: shade('bitfield-bands'),
   shadeRayClass: shade('ray-class'),
   shadeDefaultArgs: shade('default-args'),
+  shadeReferenceParameters: shade('reference-parameters'),
   shadeAtomicHistogram: shade('atomic-histogram'),
   shadeOrbitInout: shade('orbit-inout'),
   shadeClassSyntax: shade('class-syntax'),

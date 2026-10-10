@@ -31,6 +31,8 @@ const headings = [
   <p>{content.paramsP}</p>
   <TypeShadeCode code={`function mix(a: vec4, b: vec4, amount: f32): vec4 {\n  return a + (b - a) * amount\n}`} />
   <ConceptDoc locale={locale} rows={content.paramsTable.slice(1)} columns={content.paramsTable[0]} />
+  <p><Rich text={content.paramsRefP} locale={locale} /></p>
+  <TypeShadeCode code={`function swap(@inout a: f32, @inout b: f32): void {\n  const t = a\n  a = b\n  b = t\n}\n\nfunction add(a: f32, b: f32, @out c: f32): void {\n  c = a + b\n}\n\nfunction spread(x: f32, y: f32): f32 {\n  let lo = x\n  let hi = y\n  if (lo > hi) {\n    swap(lo, hi)\n  }\n  let s: f32\n  add(hi, -lo, s)\n  return s\n}`} />
 
   <h2 id="helper">{content.helper}</h2>
   <p>{content.helperP}</p>

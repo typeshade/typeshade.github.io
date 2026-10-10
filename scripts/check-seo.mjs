@@ -41,9 +41,12 @@ for (const file of pages) {
   const fail = (what) => problems.push(`${rel}: ${what}`);
   // The root 404 the host serves, and the Korean one it sends a /ko/ path on to.
   const isNotFound = rel === '404.html' || rel.endsWith('/404/index.html');
-  // The example page template the Worker fills in (worker/index.ts) is noindex until it is.
+  // The example page template the Worker fills in (worker/index.ts), and the gallery's two that
+  // worker/gallery.ts fills in at gallery.typeshade.dev, are noindex until they are.
   const isPreview =
-    html.includes('class="api-preview"') || /(^|\/)guide\/examples\/runtime-example\//.test(rel);
+    html.includes('class="api-preview"') ||
+    /(^|\/)guide\/examples\/runtime-example\//.test(rel) ||
+    /^(ko\/)?gallery\//.test(rel);
 
   const title = decode(one(html, /<title>([^<]*)<\/title>/) ?? '');
   const description = decode(one(html, /name="description" content="([^"]*)"/) ?? '');

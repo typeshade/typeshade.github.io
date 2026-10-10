@@ -1,9 +1,18 @@
 // Dependency-free WebGPU / WebGL2 runner for one emitted example: a single pass of three
 // vertices, from `vertex_index` or from a vertex buffer the host hands it.
 //
-// This file imports nothing from the compiler. The WGSL, the GLSL ES 3.00 stages, the
+// This file imports the compiler-free program runtime. The WGSL, the GLSL ES 3.00 stages, the
 // std140 field offsets and the entry-point names are emitted at build time by
 // hero-shader.ts and arrive here as plain data.
+
+import { type Pack } from '../../vendor/shader-dsl/src/runtime.ts';
+import type { ConsoleEvent } from '../../vendor/shader-dsl/src/core/console.ts';
+import {
+  uniformBindings,
+  reachedBindings,
+  renderProgram,
+  captureRenderFrame,
+} from './render-runtime.ts';
 
 import type {
   ResourceSpec,
@@ -37,7 +46,10 @@ export type Control =
   | { readonly kind: 'resolution' } // drawing-buffer size in px → vec2<f32>
   // Pointer state as vec4 [x, y, down, used]. The page has no pointer input, so it packs
   // [0,0,0,0], and `used = 0` is exactly the flag the examples read to render their canonical
-  // autopilot framing (the one thumbnails and render gates see).
+  // autopilot framing (the one thumbnails and render gates see). A `.shade.ts` example's
+  // `mouse` is a vec2 under src/lib/live-shader-contract.ts instead, 0 to 1 over the canvas,
+  // and gets the (0.5, 0.5) an untouched Playground canvas holds, so a still shows the frame
+  // the Playground opens on.
   | { readonly kind: 'mouse' }
   // The frame count since the clock started, and the seconds since the frame before, the
   // fields a pass that reads its own frame before (compiler change 0026) seeds and steps by.
@@ -54,6 +66,15 @@ export type Control =
       readonly magField: string;
       readonly base: number;
       readonly offset: number;
+    }
+  // The two-component forms of the same two: a drag-to-pan center held at its default, and a
+  // log sweep, each packed as the hi and lo planes of a vec2<f64> (see splitF64Pair).
+  | { readonly kind: 'pan2d'; readonly value: readonly [number, number] }
+  | {
+      readonly kind: 'logmag2d';
+      readonly magField: string;
+      readonly base: readonly [number, number];
+      readonly offset: readonly [number, number];
     };
 
 /** One std140 field of the module's uniform block, as `reflect()` recovered it. */
@@ -118,6 +139,7 @@ export interface ShaderData {
   readonly title: string;
   /** One WGSL module carrying both entry points. */
   readonly wgsl: string;
+  readonly manifest: Pack;
   readonly vertex: string; // GLSL ES 3.00, vertex stage
   readonly fragment: string; // GLSL ES 3.00, fragment stage
   readonly layout: ShaderLayout;
@@ -224,28 +246,14 @@ export interface MountOptions {
 /** A frame drawn once more with its console calls recorded, the compiler's `console: 'gpu'`.
  *  The recorded program arrives as data, like every other program this file runs. */
 export interface ConsoleCapture {
-  /** The module the compiler rewrote to record its console calls, as WGSL. It binds all that
-   *  the program on the canvas binds, and one storage buffer more. */
-  readonly wgsl: string;
-  /** Where that storage buffer binds. */
-  readonly group: number;
-  readonly binding: number;
-  /** The recorded module's fp64 guards. The console buffer takes the slot a guard had, and
-   *  the guard moves one past it. */
-  readonly textures: readonly { readonly name: string; readonly binding: number }[];
-  /** Room for this many words of entries after the buffer's two counters. */
+  readonly manifest: Pack;
   readonly words: number;
-  /** The pixels to draw, `[x, y, width, height]` in the drawing buffer. Unset, the whole
-   *  frame. */
   readonly scissor?: readonly [number, number, number, number];
 }
 
-/** What a capture read back. */
 export interface CapturedConsole {
-  /** The console buffer as `u32` words: the cursor, the dropped count, then the entries, which
-   *  is what the compiler's `decodeConsole` reads. */
-  readonly words: Uint32Array;
-  /** The drawing buffer the frame was drawn at: the pixels the entries name are its pixels. */
+  readonly events: readonly ConsoleEvent[];
+  readonly dropped: number;
   readonly width: number;
   readonly height: number;
 }
@@ -310,6 +318,13 @@ declare global {
 const fr = Math.fround;
 /** A JS double as the two f32 the emulated-double lowering expects: hi + lo. */
 const splitF64 = (x: number): [number, number] => [fr(x), fr(x - fr(x))];
+/** A vec2<f64> as the compiler's DF64Vec2 lays it out: the hi plane (x, y), then the lo plane. */
+const splitF64Pair = (x: number, y: number): [number, number, number, number] => [
+  fr(x),
+  fr(y),
+  fr(x - fr(x)),
+  fr(y - fr(y)),
+];
 
 interface FrameState {
   /** Packed std140 bytes for the current frame; null when the module binds no block. */
@@ -342,11 +357,11 @@ function writer(
   const uints = new Uint32Array(buf.buffer);
   return (field, v) => {
     const base = field.offset / 4;
-    if (field.type === 'i32' || field.type === 'bool') {
+    if (/\b(i32|bool)\b/.test(field.type)) {
       for (let k = 0; k < v.length; k++) ints[base + k] = Math.round(v[k] ?? 0);
       return;
     }
-    if (field.type === 'u32') {
+    if (/\bu32\b/.test(field.type)) {
       for (let k = 0; k < v.length; k++) uints[base + k] = Math.max(0, Math.round(v[k] ?? 0));
       return;
     }
@@ -380,7 +395,7 @@ function createFrameState(
     return 0;
   };
 
-  const valueFor = (name: string, seconds: number): readonly number[] | null => {
+  const valueFor = (name: string, type: string, seconds: number): readonly number[] | null => {
     const c = controls[name];
     if (!c) return null; // declared but uncontrolled → leave the zeros already in the buffer
     switch (c.kind) {
@@ -389,7 +404,7 @@ function createFrameState(
       case 'resolution':
         return [canvas.width, canvas.height];
       case 'mouse':
-        return [0, 0, 0, 0];
+        return type === 'vec2<f32>' ? [0.5, 0.5] : [0, 0, 0, 0];
       case 'frame':
         return [clock().frame];
       case 'timeDelta':
@@ -402,6 +417,12 @@ function createFrameState(
         return [c.value ? 1 : 0];
       case 'logmag1d':
         return splitF64(c.base * Math.pow(10, sliderValue(c.magField)) + c.offset);
+      case 'pan2d':
+        return splitF64Pair(c.value[0], c.value[1]);
+      case 'logmag2d': {
+        const scale = Math.pow(10, sliderValue(c.magField));
+        return splitF64Pair(c.base[0] * scale + c.offset[0], c.base[1] * scale + c.offset[1]);
+      }
     }
   };
 
@@ -430,7 +451,8 @@ function createFrameState(
       const now = clock();
       if (buf) {
         for (const f of layout.fields) {
-          const v = override?.(f.name, seconds, undefined, now) ?? valueFor(f.name, seconds);
+          const v =
+            override?.(f.name, seconds, undefined, now) ?? valueFor(f.name, f.type, seconds);
           if (v) write(f, v);
         }
       }
@@ -471,12 +493,6 @@ interface Pass {
   reset?(): void;
   /** The format the passes draw into, or '' for a program drawn in one. */
   readonly passFormat?: string;
-}
-
-/** A render pipeline and the bind group layouts it was built over. */
-interface BuiltPipeline {
-  readonly pipeline: GPURenderPipeline;
-  readonly groupLayouts: Map<number, GPUBindGroupLayout>;
 }
 
 // One WebGPU device for the whole page. A guide page mounts several canvases and a live
@@ -1181,441 +1197,120 @@ async function createWebGpuPass(
   state: FrameState,
   io: GpuPassIo = {},
 ): Promise<Pass> {
-  const device = await sharedDevice(data.features ?? []);
+  const device = await sharedDevice(data.manifest.features);
   if (!device) throw new Error('no WebGPU device');
-  // The canvas's context is taken only once the pipeline and its resources are built. A
-  // canvas holds one kind of context for life, so a WebGPU context taken for a program that
-  // then fails to build would leave WebGL2 nothing to draw on.
   const format = io.target?.format ?? navigator.gpu.getPreferredCanvasFormat();
-
-  // The bind group layout is written from the module's own reflection instead of asked of
-  // the pipeline. `layout: 'auto'` reports only the bindings the shader reads, so an edit
-  // that stops reading the uniform block takes binding 0 out of the layout, every
-  // setBindGroup after it is invalid, and the canvas freezes on the old frame while the
-  // device reports errors nothing here can catch.
-  const visibility = GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT;
-  const resources = data.layout.resources ?? [];
-  /** One list of layout entries per bind group. The uniform block and the fp64 guards sit in
-   *  the block's group; a resource the reader bound sits in the group it was declared in.
-   *  `extra` is the console buffer a capture binds. */
-  const layoutFor = (
-    guards: readonly { readonly binding: number }[],
-    extra?: { readonly group: number; readonly entry: GPUBindGroupLayoutEntry },
-  ): Map<number, GPUBindGroupLayoutEntry[]> => {
-    const layoutEntries = new Map<number, GPUBindGroupLayoutEntry[]>();
-    const entriesOf = (group: number): GPUBindGroupLayoutEntry[] => {
-      let list = layoutEntries.get(group);
-      if (!list) layoutEntries.set(group, (list = []));
-      return list;
-    };
-    if (state.byteLength > 0) {
-      entriesOf(data.layout.group).push({
-        binding: data.layout.binding,
-        visibility,
-        buffer: { type: 'uniform' },
-      });
-    }
-    for (const block of state.more) {
-      entriesOf(block.layout.group).push({
-        binding: block.layout.binding,
-        visibility,
-        buffer: { type: 'uniform' },
-      });
-    }
-    for (const t of guards) {
-      entriesOf(data.layout.group).push({
-        binding: t.binding,
-        visibility,
-        texture: { sampleType: 'float' },
-      });
-    }
-    for (const r of resources) entriesOf(r.group).push(gpuLayoutEntry(r, visibility));
-    if (extra) entriesOf(extra.group).push(extra.entry);
-    return layoutEntries;
+  const renderState = {
+    vertex: data.layout.vertexEntry,
+    fragment: data.layout.fragmentEntry,
+    targets: [format],
+    constants: data.constants,
   };
-
-  const constants =
-    data.constants && Object.keys(data.constants).length > 0 ? { ...data.constants } : undefined;
-  /** A pipeline for `code` over `layout`, both entries of the program on the canvas. */
-  const buildPipeline = async (
-    code: string,
-    layout: Map<number, GPUBindGroupLayoutEntry[]>,
-    what: string,
-  ): Promise<BuiltPipeline> => {
-    let pipeline: GPURenderPipeline | null = null;
-    const groupLayouts = new Map<number, GPUBindGroupLayout>();
-    let failure: unknown = null;
-    device.pushErrorScope('validation');
-    try {
-      const shaderModule = device.createShaderModule({ code });
-      const err = (await shaderModule.getCompilationInfo()).messages.find(
-        (m) => m.type === 'error',
-      );
-      if (err) throw new Error(`WGSL: ${err.message}`);
-      for (const [group, list] of layout)
-        groupLayouts.set(group, device.createBindGroupLayout({ entries: list }));
-      const empty = device.createBindGroupLayout({ entries: [] });
-      const top = Math.max(-1, ...groupLayouts.keys());
-      const bindGroupLayouts = Array.from(
-        { length: top + 1 },
-        (_, i) => groupLayouts.get(i) ?? empty,
-      );
-      pipeline = device.createRenderPipeline({
-        layout: groupLayouts.size > 0 ? device.createPipelineLayout({ bindGroupLayouts }) : 'auto',
-        vertex: {
-          module: shaderModule,
-          entryPoint: data.layout.vertexEntry,
-          ...(constants ? { constants } : {}),
-          ...(data.layout.vertexBuffer
-            ? {
-                buffers: [
-                  {
-                    arrayStride: data.layout.vertexBuffer.stride,
-                    attributes: data.layout.vertexBuffer.attributes.map((a) => ({
-                      shaderLocation: a.location,
-                      offset: a.offset,
-                      format: (a.components === 1
-                        ? 'float32'
-                        : `float32x${a.components}`) as GPUVertexFormat,
-                    })),
-                  },
-                ],
-              }
-            : {}),
-        },
-        fragment: {
-          module: shaderModule,
-          entryPoint: data.layout.fragmentEntry,
-          targets: [{ format }],
-          ...(constants ? { constants } : {}),
-        },
-        primitive: { topology: 'triangle-list' },
-      });
-    } catch (error) {
-      failure = error;
-    }
-    // The scope belongs to a device every canvas on the page shares, so it is popped on every
-    // path out of here; an unbalanced stack hands one canvas another one's error. The thrown
-    // reason wins over the scoped one, because it is the one that says what went wrong.
-    const scoped = await device.popErrorScope();
-    if (failure) throw failure;
-    if (scoped) throw new Error(`${what}: ${scoped.message}`);
-    if (!pipeline) throw new Error(`${what}: not built`);
-    return { pipeline, groupLayouts };
-  };
-  const { pipeline: built, groupLayouts } = await buildPipeline(
-    data.wgsl,
-    layoutFor(data.layout.textures),
-    'WebGPU pipeline',
+  const { runtime, pipeline } = await renderProgram(
+    device,
+    data.manifest,
+    renderState.vertex,
+    renderState.fragment,
+    format,
+    data.constants,
   );
-
-  /** What fills each binding but the fp64 guards: the uniform blocks and the reader's
-   *  resources. A capture binds these same objects, so it draws from the buffers and textures
-   *  the canvas draws from. */
-  const fills: { group: number; binding: number; resource: GPUBindingResource }[] = [];
-  const uniBuf =
-    state.byteLength > 0
-      ? device.createBuffer({
-          size: state.byteLength,
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        })
-      : null;
-  if (uniBuf)
-    fills.push({
-      group: data.layout.group,
-      binding: data.layout.binding,
-      resource: { buffer: uniBuf },
-    });
-  const moreBufs = state.more.map((block) => {
-    const buffer = device.createBuffer({
-      size: block.data.byteLength,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    fills.push({
-      group: block.layout.group,
-      binding: block.layout.binding,
-      resource: { buffer },
-    });
-    return { buffer, data: block.data };
-  });
-  // One white texel stands behind every guard: they all read the same value.
-  let guardTexture: GPUTexture | null = null;
-  const guardView = (): GPUTextureView => {
-    if (!guardTexture) {
-      guardTexture = device.createTexture({
-        size: [1, 1],
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-      });
-      device.queue.writeTexture({ texture: guardTexture }, WHITE_TEXEL, {}, [1, 1]);
-    }
-    return guardTexture.createView();
-  };
-  if (data.layout.textures.length > 0) guardView();
-  // The reader's resources, created and filled inside a scope of their own: a texture the
-  // device refuses is a reason to print, and the pass is not built on it.
+  const resources: Record<string, unknown> = {};
   const owned: { destroy(): void }[] = [];
-  device.pushErrorScope('validation');
-  let resourceFailure: unknown = null;
-  /** The bindings that read a pass's output: bound to this frame's texture on every draw. */
-  const passFills: { group: number; binding: number; name: string }[] = [];
+  const passTextures: { name: string; pass: string }[] = [];
   try {
-    for (const r of resources) {
+    for (const r of data.layout.resources ?? []) {
       if (r.kind === 'texture' && r.pass !== undefined) {
-        passFills.push({ group: r.group, binding: r.binding, name: r.pass });
+        passTextures.push({ name: r.name, pass: r.pass });
         continue;
       }
       const made = await gpuResource(device, r);
       if (made.owned) owned.push(made.owned);
-      fills.push({ group: r.group, binding: r.binding, resource: made.resource });
+      resources[r.name] = 'buffer' in made.resource ? made.resource.buffer : made.resource;
     }
   } catch (error) {
-    resourceFailure = error;
-  }
-  const resourceScoped = await device.popErrorScope();
-  const freeAll = (): void => {
     for (const o of owned) o.destroy();
-    uniBuf?.destroy();
-    for (const m of moreBufs) m.buffer.destroy();
-    guardTexture?.destroy();
-  };
-  if (resourceFailure || resourceScoped) {
-    freeAll();
-    throw resourceFailure ?? new Error(`WebGPU resources: ${resourceScoped!.message}`);
+    runtime.destroy();
+    throw error;
   }
-  let vertexBuffer: GPUBuffer | null = null;
-  if (data.layout.vertexBuffer) {
-    vertexBuffer = device.createBuffer({
-      size: data.layout.vertexBuffer.data.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
-    device.queue.writeBuffer(vertexBuffer, 0, data.layout.vertexBuffer.data);
-  }
-  /** The bind groups `layouts` asks for: every fill, the white texel at each guard, and
-   *  `extra`, the console buffer of a capture. */
-  const bindGroupsFor = (
-    layouts: Map<number, GPUBindGroupLayout>,
-    guards: readonly { readonly binding: number }[],
-    extra?: { readonly group: number; readonly binding: number; readonly buffer: GPUBuffer },
-  ): [number, GPUBindGroup][] => {
-    const groupEntries = new Map<number, GPUBindGroupEntry[]>();
-    const entryList = (group: number): GPUBindGroupEntry[] => {
-      let list = groupEntries.get(group);
-      if (!list) groupEntries.set(group, (list = []));
-      return list;
-    };
-    for (const f of fills) entryList(f.group).push({ binding: f.binding, resource: f.resource });
-    for (const f of passFills) {
-      const view = io.readPass?.(f.name);
-      if (!view) throw new Error(`no output for the pass '${f.name}'`);
-      entryList(f.group).push({ binding: f.binding, resource: view });
-    }
-    for (const t of guards)
-      entryList(data.layout.group).push({ binding: t.binding, resource: guardView() });
-    if (extra)
-      entryList(extra.group).push({ binding: extra.binding, resource: { buffer: extra.buffer } });
-    const groups: [number, GPUBindGroup][] = [];
-    for (const [group, list] of groupEntries) {
-      const layout = layouts.get(group);
-      if (layout && list.length > 0)
-        groups.push([group, device.createBindGroup({ layout, entries: list })]);
-    }
-    return groups;
-  };
-  const bindGroups = bindGroupsFor(groupLayouts, data.layout.textures);
-  /** The groups a draw binds: the ones built above, or, for a pass that reads another's output,
-   *  groups built again over this frame's textures, which change every frame. */
-  const groupsNow = (): [number, GPUBindGroup][] =>
-    passFills.length > 0 ? bindGroupsFor(groupLayouts, data.layout.textures) : bindGroups;
-  /** The one draw both the canvas and a capture make: three vertices. */
-  const encode = (
-    pass: GPURenderPassEncoder,
-    pipeline: GPURenderPipeline,
-    groups: readonly [number, GPUBindGroup][],
-  ): void => {
-    pass.setPipeline(pipeline);
-    for (const [group, bindGroup] of groups) pass.setBindGroup(group, bindGroup);
-    if (vertexBuffer) pass.setVertexBuffer(0, vertexBuffer);
-    pass.draw(3);
-  };
-  // A pass that draws into a texture takes no context: the canvas is the last pass's.
   const ctx = io.target ? null : canvas.getContext('webgpu');
   if (!io.target && !ctx) {
-    freeAll();
-    vertexBuffer?.destroy();
+    for (const o of owned) o.destroy();
+    runtime.destroy();
     throw new Error('no WebGPU canvas context');
   }
-  // premultiplied + a transparent clear, for the same reason WebGL2 asks for alpha:true.
-  // Configuring a canvas that is already configured for this device is a no-op, so a swap
-  // costs nothing here.
   ctx?.configure({ device, format, alphaMode: 'premultiplied' });
   const targetView = (): GPUTextureView =>
     io.target ? io.target.view() : ctx!.getCurrentTexture().createView();
-
+  const geometry = { count: 3, vertices: data.layout.vertexBuffer?.data };
+  const bindingsNow = (manifest: Pack): Record<string, unknown> => {
+    const values = { ...resources, ...uniformBindings(manifest, data.layout, state) };
+    for (const t of passTextures) {
+      const view = io.readPass?.(t.pass);
+      if (!view) throw new Error(`no output for the pass '${t.pass}'`);
+      values[t.name] = view;
+    }
+    return reachedBindings(manifest, renderState.vertex, renderState.fragment, values);
+  };
   let disposed = false;
   let inFlight = false;
   let frameMs = 0;
-
-  /** The pipeline a capture draws with, built on the first capture and kept for the next one
-   *  while the recorded program is the same. */
-  let recording: { readonly key: string; readonly made: Promise<BuiltPipeline> } | null = null;
-  const captureConsole = async (capture: ConsoleCapture): Promise<CapturedConsole> => {
-    if (disposed) throw new Error('the program on the canvas has been replaced');
-    // The frame on the canvas, taken now: the loop may draw another while the pipeline
-    // below builds, and the capture is of the frame the reader was looking at.
-    const width = canvas.width;
-    const height = canvas.height;
-    const uniforms = state.data ? state.data.slice() : null;
-    const moreUniforms = moreBufs.map((m) => m.data.slice());
-    const key = `${capture.group}/${capture.binding}/${capture.textures.map((t) => t.binding).join(',')}\n${capture.wgsl}`;
-    if (recording === null || recording.key !== key) {
-      // A writable buffer is the fragment stage's alone: WebGPU gives the vertex stage none.
-      const layout = layoutFor(capture.textures, {
-        group: capture.group,
-        entry: {
-          binding: capture.binding,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: 'storage' },
-        },
-      });
-      recording = {
-        key,
-        made: serialize(() => buildPipeline(capture.wgsl, layout, 'WebGPU console capture')),
-      };
-    }
-    const mine = recording;
-    let program: BuiltPipeline;
-    try {
-      program = await mine.made;
-    } catch (error) {
-      // A program that failed to build is built again next time, not remembered as failed.
-      if (recording === mine) recording = null;
-      throw error;
-    }
-    // The two counters, then the entries. A runtime-sized array binds one element at least.
-    const size = 8 + 4 * Math.max(1, Math.floor(capture.words));
-    // Submitted inside the queue builds use, since the error scope is the device's own stack.
-    const sent = await serialize(async () => {
-      if (disposed) throw new Error('the program on the canvas has been replaced');
-      device.pushErrorScope('validation');
-      const logged = device.createBuffer({
-        size,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-      });
-      const readback = device.createBuffer({
-        size,
-        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-      });
-      const target = device.createTexture({
-        size: [width, height],
-        format,
-        usage: GPUTextureUsage.RENDER_ATTACHMENT,
-      });
-      let failure: unknown = null;
-      try {
-        const groups = bindGroupsFor(program.groupLayouts, capture.textures, {
-          group: capture.group,
-          binding: capture.binding,
-          buffer: logged,
-        });
-        // The uniforms of the frame the capture is of. The loop writes its own before each
-        // frame it draws, so the canvas is not moved by these.
-        if (uniBuf && uniforms) device.queue.writeBuffer(uniBuf, 0, uniforms);
-        moreUniforms.forEach((d, i) => device.queue.writeBuffer(moreBufs[i]!.buffer, 0, d));
-        const encoder = device.createCommandEncoder();
-        const pass = encoder.beginRenderPass({
-          colorAttachments: [
-            {
-              view: target.createView(),
-              clearValue: { r: 0, g: 0, b: 0, a: 0 },
-              loadOp: 'clear',
-              storeOp: 'discard',
-            },
-          ],
-        });
-        if (capture.scissor) {
-          // A rectangle past the attachment is a validation error, so it is cut to the frame.
-          const [sx, sy, sw, sh] = capture.scissor;
-          const x = Math.min(width, Math.max(0, Math.floor(sx)));
-          const y = Math.min(height, Math.max(0, Math.floor(sy)));
-          pass.setScissorRect(
-            x,
-            y,
-            Math.max(0, Math.min(width - x, Math.floor(sw))),
-            Math.max(0, Math.min(height - y, Math.floor(sh))),
-          );
-        }
-        encode(pass, program.pipeline, groups);
-        pass.end();
-        encoder.copyBufferToBuffer(logged, 0, readback, 0, size);
-        device.queue.submit([encoder.finish()]);
-      } catch (error) {
-        failure = error;
-      }
-      const scoped = await device.popErrorScope();
-      return { failure, scoped, logged, readback, target };
-    });
-    try {
-      if (sent.failure) throw sent.failure;
-      if (sent.scoped) throw new Error(`WebGPU console capture: ${sent.scoped.message}`);
-      await sent.readback.mapAsync(GPUMapMode.READ);
-      const words = new Uint32Array(sent.readback.getMappedRange().slice(0));
-      sent.readback.unmap();
-      return { words, width, height };
-    } finally {
-      sent.logged.destroy();
-      sent.readback.destroy();
-      sent.target.destroy();
-    }
-  };
-
+  let lost: (() => void) | undefined;
+  let failed: unknown;
   return {
-    busy: () => inFlight,
-    lastFrameMs: () => frameMs,
-    draw(): void {
-      if (disposed) return;
-      if (uniBuf && state.data) device.queue.writeBuffer(uniBuf, 0, state.data);
-      for (const m of moreBufs) device.queue.writeBuffer(m.buffer, 0, m.data);
-      const encoder = device.createCommandEncoder();
-      const pass = encoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: targetView(),
-            clearValue: { r: 0, g: 0, b: 0, a: 0 },
-            loadOp: 'clear',
-            storeOp: 'store',
-          },
-        ],
-      });
-      encode(pass, built, groupsNow());
-      pass.end();
-      device.queue.submit([encoder.finish()]);
-      inFlight = true;
-      const submitted = performance.now();
-      void device.queue.onSubmittedWorkDone().then(() => {
-        inFlight = false;
-        frameMs = performance.now() - submitted;
-      });
+    busy() {
+      if (failed) throw failed;
+      return inFlight;
     },
-    dispose(release: boolean): void {
+    lastFrameMs: () => frameMs,
+    draw() {
+      if (disposed) return;
+      const frame = runtime.frame();
+      frame.pass({ color: [targetView()] }, (pass) =>
+        pass.draw(pipeline, bindingsNow(data.manifest), geometry),
+      );
+      const started = performance.now();
+      inFlight = true;
+      void frame.submit().then(
+        () => {
+          inFlight = false;
+          frameMs = performance.now() - started;
+        },
+        (error: unknown) => {
+          inFlight = false;
+          failed = error;
+          lost?.();
+        },
+      );
+    },
+    async captureConsole(capture) {
+      if (disposed) throw new Error('the program on the canvas has been replaced');
+      const values = bindingsNow(capture.manifest);
+      const width = canvas.width;
+      const height = canvas.height;
+      return captureRenderFrame(
+        device,
+        capture.manifest,
+        renderState,
+        values,
+        geometry,
+        width,
+        height,
+        capture.words,
+        capture.scissor,
+      );
+    },
+    dispose(release) {
       disposed = true;
-      recording = null;
-      uniBuf?.destroy();
-      for (const m of moreBufs) m.buffer.destroy();
-      guardTexture?.destroy();
       for (const o of owned) o.destroy();
-      vertexBuffer?.destroy();
-      // `unconfigure()` is what clears the canvas to transparent. A swap keeps the canvas
-      // configured, so the frame this pass drew stays up until the new pass draws. The device
-      // is shared by every mount on the page and outlives all of them.
+      runtime.destroy();
       if (release) ctx?.unconfigure();
     },
-    onLost(handler): void {
+    onLost(handler) {
+      lost = handler;
       void device.lost.then(() => {
         if (!disposed) handler();
       });
     },
-    captureConsole,
   };
 }
 
@@ -1715,8 +1410,8 @@ export async function mountShader(
     let drop: () => void;
     if (backend === 'webgpu') {
       const device = await sharedDevice([
-        ...(d.features ?? []),
-        ...passes.flatMap((p) => p.features ?? []),
+        ...d.manifest.features,
+        ...passes.flatMap((p) => p.manifest.features),
       ]);
       if (!device) throw new Error('no WebGPU device');
       const format: GPUTextureFormat = 'rgba16float';

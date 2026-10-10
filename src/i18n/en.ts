@@ -586,8 +586,6 @@ export const en = {
         LOOP_INDUCTION:
           'A `for` loop whose counter is not one `let` of type `i32` or `u32`, or whose update is not a constant step.',
         BREAK_OUTSIDE: 'A `break` with no loop or `switch` around it.',
-        STRUCT_FIELD:
-          "A struct literal or an entry's IO that does not match its declaration: a field missing, a field the struct does not have, or a `@location` that does not line up.",
         TOP_LEVEL:
           'Something at the top level of the file the compiler cannot declare: a bare statement, or a module-level declaration of a shape it refuses.',
         BACKEND:
@@ -619,7 +617,7 @@ export const en = {
       kindCounts: {
         test: `${facts.rulesTest} rules: a test, a gate script or a CI workflow names the rule.`,
         code: `${facts.rulesCode} rules: only the implementation carries the rule, and no test checks it yet.`,
-        pending: `${facts.rulesPending} rule: listed as not yet enforced, in Appendix B of the design document.`,
+        pending: `${facts.rulesPending} rules: listed as not yet enforced, in Appendix B of the design document.`,
         review: `${facts.rulesReview} rules: held by review, and no file checks them.`,
       },
       // The chapters of the design document, as its headings name them. The build holds this
@@ -812,6 +810,12 @@ export const en = {
     engineGpu: 'GPU',
     engineCpu: 'CPU oracle',
     gpuIdle: 'Compile a module with a vertex entry and a fragment entry to see it drawn.',
+    // Over the canvas until the program's first frame is up: what the page is doing meanwhile.
+    wait: {
+      loading: 'Loading the program…',
+      compiling: 'Compiling…',
+      drawing: 'Drawing the first frame…',
+    },
     gpuWebgpu: 'Running on WebGPU.',
     gpuWebgl2: 'Running on WebGL2.',
     gpuNone:
@@ -1003,6 +1007,15 @@ export const en = {
       blankTitle: 'Blank file',
       blankNote: 'A fragment shader that reads `time`, `resolution` and `mouse`.',
       noStill: 'No preview',
+      // What a tile with nothing to draw says instead, keyed by the reason in NO_STILL_REASONS
+      // (scripts/artifacts.mjs). The tile names what the example is, not what is missing.
+      stillKinds: {
+        'no-glsl': 'WGSL only',
+        control: 'Host controls',
+        texture: 'Needs textures',
+        uniform: 'Host data',
+        'vertex-buffer': 'Vertex buffer',
+      },
       files: 'Files',
       newFile: 'New file',
       // The workspace as a folder VS Code opens (src/scripts/workspace-folder.ts).
@@ -1048,6 +1061,7 @@ export const en = {
     releases: 'Releases',
     npm: 'npm package',
     newIssue: 'Report a problem',
+    radiance: 'Radiance',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
@@ -1672,6 +1686,10 @@ export const en = {
         "A host that draws its own frames, an engine or a renderer, loads each compiled program into the program runtime, `typeshade/runtime`, and runs it there. A program travels as its manifest, one object that holds the shader code, the bindings and the entry points. `packModule(compile(source).module)` returns it, a module's host import gives it as its default export, and it is plain JSON a build can write to disk.",
       loadOwnsP:
         "The runtime then does most of what the table above gives the application. It uses the application's `GPUDevice` when `createRuntime({ device })` names one, and never destroys it, or requests a device with the features the programs need. It builds every pipeline and bind group from the layouts in the manifest, packs each binding from the value a draw or a dispatch passes by name, and makes the buffers, textures and samplers. The application writes what the compiler cannot know: each pipeline's targets, depth and topology, and when a frame is drawn. A `GPUBuffer`, `GPUTexture` or `GPUSampler` of its own binds as it is, and the frame's `encoder` and a pass's `raw` encoder take its own commands.",
+      loadOptionsP:
+        "Set a program's overrides by name through `RenderState.constants` for a draw or the `constants` option of `Program.compute()` for a dispatch. `Frame.submit()` returns the console's line and dropped-call counts for each recorded entry. A host with a console sink reads those counts to report calls that did not fit in the recording buffer.",
+      loadEmitP:
+        'A host that enables console recording after the build can pass `repack` from `typeshade/emit` as `createRuntime({ emit: repack })`. Build the manifest with `packModule(module, { ir: true })` so it carries the portable IR. The load-time emitter uses the emit options stored in the manifest and carries no TypeScript front end.',
       loadNote:
         'The program runtime runs on WebGPU only. A host that draws on WebGL2 compiles the module, or imports it and calls its entry points.',
       reflectionH: 'Reflection',
@@ -2161,11 +2179,12 @@ export const en = {
           'A TypeShade class is a GPU struct and the functions written with it. The fields are the bytes the host writes. A constructor, a method and a static function each lower to a plain function, so `new Ray(o, d)` calls `Ray_new` and `r.at(t)` calls `Ray_at(r, t)`. Nothing keeps an object alive between them.',
         attrs: '3. Field decorators describe layout',
         attrsP:
-          'A field takes `@location` and `@builtin`, which bind it to the pipeline, and `@interpolate`, `@invariant` and `@blend_src`, which qualify a varying or an output. `@align` is read and refused, and `@size`, `@offset` and `@ignore` are not attributes the compiler knows. The whole set it accepts is `@vertex`, `@fragment`, `@compute`, `@builtin`, `@location`, `@interpolate`, `@invariant`, `@blend_src` and `@diagnostic`.',
+          'A field takes `@location` and `@builtin`, which bind it to the pipeline, and `@interpolate`, `@invariant` and `@blend_src`, which qualify a varying or an output. `@align` is read and refused, and `@size`, `@offset` and `@ignore` are not attributes the compiler knows. The whole set it accepts is `@vertex`, `@fragment`, `@compute`, `@builtin`, `@location`, `@interpolate`, `@invariant`, `@blend_src`, `@diagnostic`, and `@inout` and `@out` on a parameter of a function.',
         boundary: '4. Where TypeScript classes stop',
         boundaryItems: [
           'An entry point is a top-level function, not a method.',
-          'A class with no fields is not a struct, so write its functions as functions.',
+          'A class with no instance fields can be constructed and can have methods, accessors and static members. Its host value is `{}`. Reflection includes the internal GPU storage footprint: 4 bytes in std430 and 16 bytes in std140, with no authored field added.',
+          'A derived value can be used where its base class is declared when the compiler proves that the base view is read-only and preserves dispatch. Overrides, receiver writes and observable alias mutation require a concrete type or remain unsupported.',
           'A getter and a setter each lower to a function of their own, and a class has one constructor, as in TypeScript.',
           '`new` builds a value inside a function body, and a module constant takes an object literal.',
           'Prefer a type alias when no field needs a decorator.',
@@ -2201,13 +2220,15 @@ export const en = {
           'Here <code>value</code> is the input parameter, <code>f32</code> is the GPU type of both the input and result, and <code>return</code> produces the value for the caller.',
         params: '2. Parameters and return types',
         paramsP:
-          'A parameter is an input to the function and the return type describes the shape of its result. Types are part of compilation: they tell the compiler which values and operations are valid.',
+          'A parameter is an input to the function and the return type describes the shape of its result. Reassigning a value parameter changes a local copy for that invocation and leaves the caller’s value unchanged. This applies to helpers, methods and stage inputs. Types tell the compiler which values and operations are valid.',
         paramsTable: [
           ['Part', 'Role'],
           ['`a`, `b`', 'GPU input values.'],
           ['`amount: f32`', 'A scalar input whose type participates in expression checking.'],
           ['`: vec4`', 'The GPU value shape returned to the caller.'],
         ],
+        paramsRefP:
+          "A parameter declared `@inout` is the caller's variable itself. The call passes the variable with no mark, and an assignment to the parameter, or to a field, a component or an element of it, writes that variable. A parameter declared `@out` starts with no value: the function writes it before it reads it, and on every path (`TS8075`), so the caller may pass a `let` that has no value yet. One call may not hand one variable to two such parameters when the function writes either (`TS8074`). Only a function declared at the top of the file or in a namespace takes a qualifier; a method, an entry and a local function take values (`TS8073`). A local function inside such a function still reads and writes the parameter, as it does any variable around it. [Parameters that write back](shadeReferenceParameters) shows a struct, an array element and a matrix column passed the same way.",
         helper: '3. Helper functions',
         helperP:
           'A top-level function without a stage decorator is a helper. Helpers let you name repeated calculations and keep shader entries focused on pipeline inputs, resources and outputs.',
@@ -2244,7 +2265,7 @@ export const en = {
           'The vertex function has two different inputs: `vid` is a GPU builtin and `vin` is a user-defined struct. The fragment function makes its builtin input, `pid`, explicit as well, so the signature documents the stage interface.',
         scope: '9. Functions and scope',
         scopeP:
-          'Local variables belong to the current function invocation. Keep them conceptually separate from resources and builtin inputs supplied by the shader interface.',
+          'Local variables belong to the current function invocation. Parameters and body locals may shadow module values; a closure resolves the nearest declaration. Duplicate declarations in the same scope remain errors. A variable or parameter may use a legal TypeScript name such as `target`; the shader writer escapes names its backend reserves. Resource names, entry names and struct field names retain their interface naming rules.',
         scopeNote:
           '`factor` is a local value scoped to the function. Resources such as `camera` and `pixels` belong to the host-facing shader interface, while builtin parameters are inputs supplied by the GPU stage.',
         boundary: '10. Where TypeScript functions stop',
@@ -2478,7 +2499,11 @@ export const en = {
           },
           letNoInit: {
             name: 'Local `let`',
-            p: 'A mutable local. The annotation carries the type, and WGSL gives it a zero. [bitfield-bands](shadeBitfieldBands)',
+            p: 'A mutable local. The annotation carries the type, and every target starts it at zero. [bitfield-bands](shadeBitfieldBands)',
+          },
+          unassignedRead: {
+            name: 'Read before assignment',
+            p: 'A read of a local on a path that has not assigned it is refused with `TS8075`, by the rule TypeScript reports as TS2454. The editor shows `TS8075` in its place.',
           },
           moduleLet: {
             name: 'Module `let`',
@@ -2516,6 +2541,26 @@ export const en = {
             name: 'Top-level function',
             p: 'A module function of the same name, parameters and return type.',
           },
+          mutableParameter: {
+            name: 'Parameter reassignment',
+            p: 'A local copy receives the input value. Reassigning it leaves the caller’s value unchanged; a parameter declared `@inout` changes it.',
+          },
+          referenceParameter: {
+            name: '`@inout` parameter',
+            p: `A parameter declared \`@inout\` is the caller's variable, and the call passes the variable with no mark. WGSL takes a pointer and ${glsl} an \`inout\` parameter, the way a method that writes \`this\` does. [reference-parameters](shadeReferenceParameters)`,
+          },
+          outParameter: {
+            name: '`@out` parameter',
+            p: 'The function writes the parameter before it reads it and on every path, so the argument may be a `let` with no value yet. Both targets lower it as they lower `@inout`.',
+          },
+          referenceAlias: {
+            name: 'Two references to one variable',
+            p: `One call may not hand one variable to two \`@inout\` or \`@out\` parameters it writes. WGSL refuses the aliased pointers, and ${glsl} would copy the two back in no fixed order.`,
+          },
+          lexicalShadow: {
+            name: 'Shadowing a module value',
+            p: 'A parameter or body local can use the name of a module value. Closures resolve the nearest declaration; duplicates in the same scope remain errors.',
+          },
           localFunction: {
             name: 'Local function',
             p: 'A function of the module, named after the function that declares it.',
@@ -2552,6 +2597,10 @@ export const en = {
             name: '`constructor` and `new`',
             p: '`new` is a call of `Ray_new`, which builds the struct and hands it back.',
           },
+          fieldlessClass: {
+            name: 'Class without fields',
+            p: 'Construction and method calls work with no instance fields. The host value is `{}`; the GPU receives an internal storage member that is absent from the source value.',
+          },
           method: {
             name: 'Method',
             p: 'A function whose first parameter is the struct, and `this` reads as that parameter.',
@@ -2567,6 +2616,10 @@ export const en = {
           extendsSuper: {
             name: '`extends` and `super`',
             p: "The base's fields come first, an inherited method is lowered again, and `super` is a function of its own. [shape-inheritance](shadeShapeInheritance)",
+          },
+          baseValue: {
+            name: 'Derived value in a base position',
+            p: 'The compiler builds the base representation once when it proves read-only access and equivalent method dispatch. Overrides, receiver writes and observable alias mutation remain outside that proof.',
           },
           abstractRow: {
             name: '`abstract` class',
@@ -2682,7 +2735,7 @@ export const en = {
           booleanType: { name: '`boolean`', p: 'The shader spelling is `bool`.' },
           integerLiteral: {
             name: 'Integer literal',
-            p: 'The literal takes the type its position declares, and folds in it.',
+            p: 'An integer-written local initializer can take the `i32` or `u32` required by a declared nongeneric function, a constructor or a method argument. Explicitly typed initialization and simple assignment can establish the same demand in either direction when the type is known independently of the local. Conflicting concrete types produce `TS8003`; use an annotation or cast to settle the type. With no integer demand, an unannotated local remains `f32`. Float-written initializers, module constants and loop induction variables keep their existing rules.',
           },
           increment: {
             name: 'Increment and decrement',
@@ -2822,7 +2875,7 @@ export const en = {
           'statements.let':
             'A WGSL `let` is a value that stays as it was, which is what `const` says in TypeScript.',
           'statements.var':
-            'A WGSL `var` is a local that changes. `let b: f32` with no initializer declares one and leaves the value for a later assignment; WGSL zeroes it and GLSL leaves it undefined, so assign before you read (Rule 7.6).',
+            'A WGSL `var` is a local that changes. `let b: f32` with no initializer declares one and leaves the value for a later assignment. A read on a path that has not assigned it is refused (`TS8075`, Rule 7.6), and every target starts the local at zero.',
           'statements.for':
             'A `for` is counted: an integer induction variable, a constant step, and an exit that compares it to a bound the body does not write. The start and the bound may be runtime values, and no trip count is too many. The step may be `+=`, `-=`, `*=` or `/=`.',
           'statements.while':
@@ -3027,10 +3080,12 @@ export const en = {
     },
   },
 
-  // The Playground's gallery (/playground/gallery/): the files people sent in with Submit,
-  // listed once the maintainer approves them. The list is read from the Worker at runtime.
+  // The gallery (gallery.typeshade.dev, worker/gallery.ts): the files people sent in with the
+  // Playground's Submit, once the maintainer approves them. The build writes the list page as a
+  // template, and the gallery's Worker fills it in from the database. A card opens its entry
+  // in the Playground.
   gallery: {
-    title: 'Playground gallery, TypeShade',
+    title: 'Shader gallery, TypeShade',
     description:
       'Shaders people wrote in the TypeShade Playground and sent in. Each one opens in the Playground, ready to change.',
     h1: 'Gallery',
@@ -3038,13 +3093,13 @@ export const en = {
       'Shaders people wrote in the Playground and sent in. Each one opens in the Playground, where you can change it.',
     howTo:
       'To add yours, write it in the [Playground](playground) and choose Submit. The maintainer reviews each submission before it appears.',
-    loading: 'Loading the gallery…',
     empty: 'Nothing has been approved yet.',
-    unavailable: 'The gallery could not be loaded.',
+    sortLabel: 'Order',
+    sortRecent: 'Newest',
+    sortPopular: 'Most viewed',
     by: 'by {name}',
     views: '{count} views',
     viewOne: '1 view',
-    open: 'Open in the Playground',
   },
 
   // The dialog every Report a problem link opens (src/components/IssueDialog.astro): a reader

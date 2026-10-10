@@ -196,6 +196,7 @@ export const SHADE_GROUPS = [
       'pick-composite',
       'cutout',
       'default-args',
+      'reference-parameters',
       'bit-bump',
       'bool-select',
       'integer-math',
@@ -212,6 +213,7 @@ export const SHADE_GROUPS = [
   {
     key: 'classes',
     ids: [
+      'capsule-corp-namek-class',
       'ray-class',
       'orbit-inout',
       'particle-step',

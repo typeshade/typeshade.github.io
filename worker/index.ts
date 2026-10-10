@@ -8,16 +8,20 @@
 // /data/releases/         the releases the database records, newest first
 // /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
 //                         its short link
-// /data/shares/<id>/      one short link's page, its views and when it was made and last opened
+// /data/shares/<id>/      one short link's page and fragment, its views and when it was made and
+//                         last opened; the Playground opens #share=<id> from it
 // /data/notice/           the notice over every page, or null (worker/migrations/0005)
-// /data/gallery/          GET: the approved gallery entries; POST: sends a share in, pending
+// /data/gallery/          GET: the approved gallery entries; POST: sends a share in, pending,
+//                         with a still of its canvas (worker/gallery.ts serves the gallery)
 // /data/issues/           GET: whether the issue dialog takes reports here; POST: opens one as
 //                         an issue on GitHub for a reader with no account there (worker/github.ts)
 // /data/issue-images/<n>  an image an issue shows, which the dialog sent with it
-// /s/<id>/                the short link: a redirect to the page with its fragment, counted
+// /s/<id>/                the short link: a redirect to the page with #share=<id>, counted
 // /guide/examples/<id>/   the built page where the build has one; otherwise, for an example
 // /ko/guide/examples/...  the current release has, the prebuilt template page filled in with
 //                         it, so an example merged upstream has a page before the next build
+// /gallery/, /playground/gallery/, and their Korean twins: a redirect to the gallery's own
+//                         address, gallery.typeshade.dev, which worker/gallery.ts serves
 //
 // A daily cron (wrangler.jsonc) deletes the shares nobody has opened for SHARE_TTL_DAYS.
 import {
@@ -29,6 +33,12 @@ import {
   type ExampleRecord,
   type ReleaseIndex,
 } from '../src/lib/example-data.ts';
+import {
+  GALLERY_ORIGIN,
+  GALLERY_STILL_BYTES,
+  galleryStillKey,
+  galleryStillPath,
+} from '../src/lib/gallery-data.ts';
 import {
   ISSUE_FILE_NAME,
   ISSUE_FILES_MAX,
@@ -49,6 +59,7 @@ import {
   type IssueStatus,
 } from '../src/lib/issue-data.ts';
 import { hasCredential, openIssue, type GitHubEnv } from './github.ts';
+import { listEntries } from './gallery-store.ts';
 
 export interface Env extends GitHubEnv {
   readonly ASSETS: Fetcher;
@@ -127,12 +138,13 @@ async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext):
   }
   if (parts[1] === 'shares' && parts.length === 3 && SHARE_ID.test(parts[2]!)) {
     const row = await env.DB.prepare(
-      `SELECT id, path, views, created_at, last_opened_at FROM shares WHERE id = ?`,
+      `SELECT id, path, fragment, views, created_at, last_opened_at FROM shares WHERE id = ?`,
     )
       .bind(parts[2])
       .first<{
         id: string;
         path: string;
+        fragment: string;
         views: number;
         created_at: string;
         last_opened_at: string | null;
@@ -142,6 +154,8 @@ async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext):
       JSON.stringify({
         id: row.id,
         path: row.path,
+        // What the Playground opens: its short link carries only the id (openShare).
+        fragment: row.fragment,
         views: row.views,
         createdAt: row.created_at,
         lastOpenedAt: row.last_opened_at,
@@ -182,11 +196,15 @@ async function shareId(target: string, length: number): Promise<string> {
 
 /** A request body read as JSON, or the response that refuses it: a request from another site,
  *  one larger than a share can be, or one that is not JSON. */
-async function readBody(request: Request, url: URL): Promise<Record<string, unknown> | Response> {
+async function readBody(
+  request: Request,
+  url: URL,
+  max = SHARE_MAX + 1024,
+): Promise<Record<string, unknown> | Response> {
   const origin = request.headers.get('origin');
   if (origin && origin !== url.origin) return json({ error: 'another site' }, 403);
   const body = await request.text();
-  if (body.length > SHARE_MAX + 1024) return json({ error: 'too large' }, 413);
+  if (body.length > max) return json({ error: 'too large' }, 413);
   try {
     const value: unknown = JSON.parse(body);
     if (value && typeof value === 'object') return value as Record<string, unknown>;
@@ -255,10 +273,32 @@ function readLine(value: unknown, max: number): string | undefined {
   return [...line].length <= max ? line : undefined;
 }
 
-/** POST /data/gallery/ with `{ path, fragment, title, author, locale }`: stores the share and
- *  queues it for the gallery as `pending`. The maintainer approves it (docs/cloudflare.md). */
+/** A submission's still: base64 of a WebP, PNG or JPEG, known by its first bytes, of at most
+ *  GALLERY_STILL_BYTES. Undefined for anything else, which the submission goes in without. */
+function readStill(value: unknown): { bytes: Uint8Array; type: string } | undefined {
+  if (typeof value !== 'string' || value.length > Math.ceil(GALLERY_STILL_BYTES / 3) * 4)
+    return undefined;
+  let bytes: Uint8Array;
+  try {
+    const binary = atob(value);
+    bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  } catch {
+    return undefined;
+  }
+  const kind = IMAGE_KINDS.find(
+    (k) => k.ext !== 'gif' && k.magic.every(([at, byte]) => bytes[at] === byte),
+  );
+  return kind && bytes.length > 0 ? { bytes, type: kind.type } : undefined;
+}
+
+/** POST /data/gallery/ with `{ path, fragment, title, author, locale, still? }`: stores the
+ *  share and queues it for the gallery as `pending`, with the still of its canvas where the
+ *  Playground took one. The maintainer approves it (docs/cloudflare.md). A still is kept only
+ *  for a submission that is still pending and has none, so nothing changes what an approved
+ *  entry shows. */
 async function submitToGallery(request: Request, url: URL, env: Env): Promise<Response> {
-  const body = await readBody(request, url);
+  const body = await readBody(request, url, SHARE_MAX + GALLERY_STILL_BYTES * 2);
   if (body instanceof Response) return body;
   const share = readShare(body);
   if (share instanceof Response) return share;
@@ -285,6 +325,26 @@ async function submitToGallery(request: Request, url: URL, env: Env): Promise<Re
   )
     .bind(id, title, author, locale, sender, new Date().toISOString())
     .run();
+  const still = readStill(body.still);
+  if (still) {
+    // The row is claimed before the object is written, so two senders of the same file
+    // cannot both write a still.
+    const { meta: claimed } = await env.DB.prepare(
+      `UPDATE submissions SET thumbnail = ?
+       WHERE share_id = ? AND status = 'pending' AND thumbnail IS NULL`,
+    )
+      .bind(still.type, id)
+      .run();
+    if (claimed.changes > 0) {
+      const stored = await env.DATA.put(galleryStillKey(id), still.bytes, {
+        httpMetadata: { contentType: still.type },
+      }).catch(() => null);
+      if (!stored)
+        await env.DB.prepare(`UPDATE submissions SET thumbnail = NULL WHERE share_id = ?`)
+          .bind(id)
+          .run();
+    }
+  }
   if (meta.changes > 0) return privateJson({ id, status: 'pending' }, 201);
   const row = await env.DB.prepare(`SELECT status FROM submissions WHERE share_id = ?`)
     .bind(id)
@@ -325,32 +385,23 @@ async function currentNotice(url: URL, env: Env, ctx: ExecutionContext): Promise
   return response;
 }
 
-/** GET /data/gallery/: the approved submissions, the most recently approved first. */
+/** GET /data/gallery/: the approved submissions, the most recently approved first. Each names
+ *  its page on the gallery and its still there, when it has one. */
 async function listGallery(env: Env): Promise<Response> {
-  const { results } = await env.DB.prepare(
-    `SELECT s.share_id AS id, s.title, s.author, h.path, h.views, s.reviewed_at
-     FROM submissions s JOIN shares h ON h.id = s.share_id
-     WHERE s.status = 'approved'
-     ORDER BY s.reviewed_at DESC LIMIT ?`,
-  )
-    .bind(GALLERY_LIST_MAX)
-    .all<{
-      id: string;
-      title: string;
-      author: string;
-      path: string;
-      views: number;
-      reviewed_at: string | null;
-    }>();
+  const rows = await listEntries(env.DB, 'recent', GALLERY_LIST_MAX);
   return json({
-    entries: results.map((row) => ({
+    entries: rows.map((row) => ({
       id: row.id,
       title: row.title,
       author: row.author,
       path: row.path,
       views: row.views,
-      approvedAt: row.reviewed_at,
+      approvedAt: row.approvedAt,
       url: `/s/${row.id}/`,
+      page: `${GALLERY_ORIGIN}/${row.id}/`,
+      still: row.still
+        ? `${GALLERY_ORIGIN}${galleryStillPath('/stills', row.id, row.still)}`
+        : null,
     })),
   });
 }
@@ -377,7 +428,9 @@ async function openShare(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
   // Not cached, so every open reaches the Worker and is counted.
   return new Response(null, {
     status: 302,
-    headers: { location: `${url.origin}${row.path}#${row.fragment}`, ...noStore },
+    // The id alone, which the page resolves through /data/shares/<id>/. The file itself once rode
+    // in this address, and a large one made a redirect of tens of kilobytes that did not open.
+    headers: { location: `${url.origin}${row.path}#share=${id}`, ...noStore },
   });
 }
 
@@ -983,12 +1036,30 @@ async function examplePage(request: Request, url: URL, env: Env): Promise<Respon
   return new Response(page.body, { status: 200, headers });
 }
 
+/** The gallery's routes on the site: its old page under the Playground, and the pages the build
+ *  writes for worker/gallery.ts to fill in, which are no pages of the site's own. */
+const GALLERY_PATH = /^(\/ko)?\/(?:playground\/)?gallery(?:\/|$)/;
+
+/** The gallery's list, in the language the path asked for. Permanent, so a bookmark or a link
+ *  elsewhere moves with it. */
+function galleryRedirect(prefix: string, url: URL): Response {
+  return new Response(null, {
+    status: 301,
+    headers: {
+      location: `${GALLERY_ORIGIN}${prefix}/${url.search}`,
+      'cache-control': 'public, max-age=3600',
+    },
+  });
+}
+
 export default {
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/data/')) return api(request, url, env, ctx);
     if (url.pathname.startsWith('/s/')) return openShare(url, env, ctx);
     if (/^(\/ko)?\/guide\/examples\//.test(url.pathname)) return examplePage(request, url, env);
+    const gallery = GALLERY_PATH.exec(url.pathname);
+    if (gallery) return galleryRedirect(gallery[1] ?? '', url);
     return env.ASSETS.fetch(request);
   },
   async scheduled(_controller, env, ctx): Promise<void> {

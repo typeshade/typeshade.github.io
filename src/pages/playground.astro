@@ -3,6 +3,7 @@ import Playground from '../components/Playground.astro';
 import Base from '../layouts/Base.astro';
 import { copyFor, localePath, type Locale } from '../i18n/index.ts';
 import { links } from '../lib/links.ts';
+import { GALLERY_ORIGIN } from '../lib/gallery-data.ts';
 import { githubNewIssue } from '../lib/issue-data.ts';
 
 const locale = 'en' as Locale;
@@ -22,7 +23,7 @@ const t = copyFor(locale);
       <p class="playground-links">
         <a href={localePath(locale, links.quickStart.href)}>{t.docs.quickStart}</a>
         <a href={localePath(locale, links.guide.href)}>{t.docs.authoringGuide}</a>
-        <a href={localePath(locale, links.playgroundGallery.href)}>{t.playground.galleryLink}</a>
+        <a href={new URL(localePath(locale, '/'), GALLERY_ORIGIN).href}>{t.playground.galleryLink}</a>
         <a href={githubNewIssue('compiler')} data-report="compiler">{t.docs.reportIssue}</a>
       </p>
     </header>

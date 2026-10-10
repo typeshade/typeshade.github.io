@@ -283,19 +283,23 @@ async function photographCanvas(page) {
   return page.screenshot({ clip: box, timeout: 15_000 });
 }
 
-async function sampleCanvas(page) {
-  // A change of backend or a dispatch puts a new canvas element in the frame, so the one
-  // measured can leave the page mid-photograph; it is measured and photographed again.
-  let shot;
+/** photographCanvas, tried again up to three more times. A change of backend or a dispatch
+ *  puts a new canvas element in the frame, so the one measured can leave the page
+ *  mid-photograph; and a program that takes longer than the timeout a frame on a software
+ *  GPU (capsule-corp-namek-class) can hold the page's compositor past one attempt. */
+async function photographCanvasSteady(page) {
   for (let attempt = 0; ; attempt += 1) {
     try {
-      shot = await photographCanvas(page);
-      break;
+      return await photographCanvas(page);
     } catch (error) {
       if (attempt >= 3) throw error;
       await page.waitForTimeout(300);
     }
   }
+}
+
+async function sampleCanvas(page) {
+  const shot = await photographCanvasSteady(page);
   const meta = await sharp(shot).metadata();
   const pad = Math.round(Math.min(meta.width, meta.height) * 0.08);
   const { data } = await sharp(shot)
@@ -575,7 +579,12 @@ async function checkEnginesAgree(page, problems, ids) {
         ground: getComputedStyle(frame).backgroundColor,
       };
     });
-    const shot = await photographCanvas(page);
+    // A photograph that times out names the example it was of, which the error alone does not.
+    const shot = await photographCanvasSteady(page).catch((error) => {
+      throw new Error(`photographing '${id}' for the engine comparison: ${error.message}`, {
+        cause: error,
+      });
+    });
     const { data, info } = await sharp(shot)
       .raw()
       .ensureAlpha()
