@@ -163,6 +163,54 @@ try {
     );
     console.log('[mnist] REAL MNIST ' + tier + ': ' + status + '; ' + rows[0] + '; ' + prediction);
     if (tier === 'webgpu') {
+      // Verify the drawing path submits fresh pixels to the GPU inference stage.
+      await page.locator('[data-clear]').click();
+      const square = await page.locator('[data-draw]').boundingBox();
+      if (!square) throw new Error('MNIST drawing canvas has no bounding box');
+      const x = square.x + square.width * 0.5;
+      await page.mouse.move(x, square.y + square.height * 0.2);
+      await page.mouse.down();
+      await page.mouse.move(x, square.y + square.height * 0.8, { steps: 8 });
+      await page.mouse.up();
+      await page.waitForFunction(
+        () => (document.querySelector('[data-guess]')?.textContent ?? '').startsWith('Prediction:') &&
+          document.querySelectorAll('[data-probabilities] > li').length === 10,
+        undefined,
+        { timeout: 30_000 },
+      );
+
+      // Cancel during training, release the old session, then retrain from seed.
+      await page.locator('[data-count]').selectOption('1024');
+      await page.locator('[data-epochs]').selectOption('5');
+      await page.locator('[data-start]').click();
+      await page.waitForFunction(
+        () => (document.querySelector('[data-status]')?.textContent ?? '').startsWith('Training:'),
+        undefined,
+        { timeout: 60_000 },
+      );
+      await page.locator('[data-cancel]').click();
+      await page.waitForFunction(
+        () => (document.querySelector('[data-status]')?.textContent ?? '').startsWith('Training cancelled'),
+        undefined,
+        { timeout: 60_000 },
+      );
+      await page.locator('[data-count]').selectOption('128');
+      await page.locator('[data-epochs]').selectOption('1');
+      await page.locator('[data-start]').click();
+      await page.waitForFunction(
+        () => {
+          const status = document.querySelector('[data-status]')?.textContent ?? '';
+          return status.startsWith('Training finished') || status.startsWith('Unable to run MNIST');
+        },
+        undefined,
+        { timeout: 120_000 },
+      );
+      const restarted = await page.locator('[data-status]').innerText();
+      if (!restarted.startsWith('Training finished'))
+        throw new Error('MNIST restart failed: ' + restarted);
+      console.log('[mnist] drawing and cancel/restart validated on WebGPU');
+    }
+    if (tier === 'webgpu') {
       // Verify CORS from the visitor's browser. Routing official gzip bytes in
       // the deterministic test must not conceal a blocked production download.
       await page.unroute('**/storage/v1/b/cvdf-datasets/o/**');
