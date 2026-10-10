@@ -1,6 +1,6 @@
 ---
 // Compiler work happens once at the site build, and only the JSON Pack crosses to
-// the browser. The browser downloads TypeShade's small runtime on user interaction.
+// the browser. The client uses the compiler repository's shared browser session.
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { compile, packModule } from '../../vendor/shader-dsl/src/index.ts';

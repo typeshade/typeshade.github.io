@@ -3,7 +3,7 @@
 // prediction logits are produced exclusively by the packed TypeShade program.
 import type { Pack } from '../../vendor/shader-dsl/src/core/manifest-types.ts';
 import { fetchMnist, type MnistData } from './mnist-dataset.ts';
-import { openMnistEngine, type MnistEngine } from './mnist-engine.ts';
+import { openMnistSession, type MnistSession } from '../../vendor/shader-dsl/journeys/mnist/browser-session.ts';
 import type { Copy } from '../i18n/index.ts';
 
 type Words = Copy['mnist']['demo'];
@@ -22,14 +22,6 @@ function createPixels(image: Uint8ClampedArray): Float32Array {
   const pixels = new Float32Array(inputs);
   for (let i = 0; i < inputs; i++) pixels[i] = image[i * 4] / 255;
   return pixels;
-}
-
-function softmax(logits: Float32Array): number[] {
-  const values = Array.from(logits.subarray(0, 10));
-  const max = Math.max(...values);
-  const exps = values.map((x) => Math.exp(x - max));
-  const total = exps.reduce((sum, x) => sum + x, 0);
-  return exps.map((x) => x / total);
 }
 
 export function mountMnist(root: HTMLElement): void {
@@ -53,7 +45,7 @@ export function mountMnist(root: HTMLElement): void {
   const canvas = required<HTMLCanvasElement>(root, '[data-draw]');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) throw new Error('MNIST drawing canvas unavailable');
-  let engine: MnistEngine | undefined;
+  let engine: MnistSession | undefined;
   let signalController: AbortController | undefined;
   let testing: MnistData | undefined;
   let currentSample = -1;
@@ -139,7 +131,7 @@ export function mountMnist(root: HTMLElement): void {
     );
     return createPixels(smallContext.getImageData(0, 0, size, size).data);
   };
-  const showBars = (values: number[]) => {
+  const showBars = (values: Float32Array) => {
     probabilities.replaceChildren();
     for (let i = 0; i < 10; i++) {
       const row = document.createElement('li');
@@ -165,15 +157,11 @@ export function mountMnist(root: HTMLElement): void {
       return;
     }
     try {
-      engine.setBatch(pixels, new Uint32Array([0]));
-      await engine.dispatch('forward', 1, 0);
-      const logits = (await engine.read('logits')) as Float32Array;
+      const { probabilities, predicted } = await engine.predict(pixels);
       if (current !== predictionSequence) return;
-      const values = softmax(logits);
-      const answer = values.indexOf(Math.max(...values));
       guess.textContent =
-        words.prediction + ' ' + answer + ' (' + (values[answer] * 100).toFixed(1) + '%)';
-      showBars(values);
+        words.prediction + ' ' + predicted + ' (' + (probabilities[predicted] * 100).toFixed(1) + '%)';
+      showBars(probabilities);
     } catch (error) {
       setStatus(words.error + ': ' + String(error));
     }
@@ -243,16 +231,12 @@ export function mountMnist(root: HTMLElement): void {
     for (let offset = 0; offset < data.labels.length; offset += batchSize) {
       checkAbort(signal);
       const count = Math.min(batchSize, data.labels.length - offset);
-      engine.setBatch(
+      const stats = await engine.evaluateBatch(
         data.pixels.subarray(offset * inputs, (offset + count) * inputs),
         data.labels.subarray(offset, offset + count),
       );
-      await engine.dispatch('forward', count, 0);
-      await engine.dispatch('objective', count, 0);
-      await engine.dispatch('reduce', count, 0);
-      const stats = (await engine.read('stats')) as Float32Array;
-      loss += stats[0] * count;
-      correct += stats[1];
+      loss += stats.loss * count;
+      correct += stats.correct;
     }
     return { loss: loss / data.labels.length, accuracy: correct / data.labels.length };
   };
@@ -262,7 +246,7 @@ export function mountMnist(root: HTMLElement): void {
     busy = true;
     buttons();
     predictionSequence++;
-    engine?.destroy();
+    if (engine) await engine.destroy();
     engine = undefined;
     testing = undefined;
     signalController?.abort();
@@ -288,7 +272,7 @@ export function mountMnist(root: HTMLElement): void {
       let lastError: unknown;
       for (const choice of choices) {
         try {
-          engine = await openMnistEngine(pack, batchSize, choice);
+          engine = await openMnistSession(pack, { tier: choice, batchSize });
           break;
         } catch (error) {
           lastError = error;
@@ -301,14 +285,11 @@ export function mountMnist(root: HTMLElement): void {
         for (let offset = 0; offset < samples; offset += batchSize) {
           checkAbort(signal);
           const count = Math.min(batchSize, samples - offset);
-          engine.setBatch(
+          await engine.trainBatch(
             trainData.pixels.subarray(offset * inputs, (offset + count) * inputs),
             trainData.labels.subarray(offset, offset + count),
+            0.1,
           );
-          await engine.dispatch('forward', count, 0.1);
-          await engine.dispatch('objective', count, 0.1);
-          await engine.dispatch('backward', count, 0.1);
-          await engine.dispatch('update', count, 0.1);
           progress.value = (epoch - 1) * samples + offset + count;
           if (offset % (batchSize * 4) === 0) {
             setStatus(
@@ -349,7 +330,7 @@ export function mountMnist(root: HTMLElement): void {
       buttons();
       sample.click();
     } catch (error) {
-      engine?.destroy();
+      if (engine) void engine.destroy();
       engine = undefined;
       testing = undefined;
       setStatus(signal.aborted ? words.cancelled : words.error + ': ' + String(error));
@@ -362,7 +343,7 @@ export function mountMnist(root: HTMLElement): void {
     'pagehide',
     () => {
       signalController?.abort();
-      engine?.destroy();
+      if (engine) void engine.destroy();
     },
     { once: true },
   );
