@@ -18,12 +18,24 @@ if (errors.length > 0 || !compiled.module) {
   throw new Error('[mnist-browser] TypeShade shader compilation failed: ' + errors.map((d) => d.message).join('; '));
 }
 const packJson = JSON.stringify(packModule(compiled.module)).replace(/</g, '\\u003c');
+const forwardStart = source.indexOf('@compute([64])\nexport function forward(');
+const forwardEnd = source.indexOf('@compute([64])\nexport function objective(', forwardStart);
+if (forwardStart < 0 || forwardEnd < 0)
+  throw new Error('[mnist-lab] Forward stage no longer matches the visible code');
+const forwardExample = source.slice(forwardStart, forwardEnd).trim();
+
 const sourceUrl = 'https://github.com/typeshade/typeshade/blob/' + facts.pinnedCommit + '/journeys/mnist/softmax.shade.ts';
 ---
 
 <section class="mnist-app" data-mnist-trainer data-copy={JSON.stringify(words)} aria-labelledby="mnist-lab-title">
   <h3 id="mnist-lab-title">{words.title}</h3>
   <p>{words.description}</p>
+  <div class="mnist-code-preview" data-mnist-code-preview>
+    <h4>{words.codePreviewTitle}</h4>
+    <p class="mnist-note">{words.codePreviewExplanation}</p>
+    <TypeShadeCode lang="ts" code={forwardExample} title="softmax.shade.ts — forward" />
+    <p class="mnist-note"><a href="#model">{words.codeWalkthroughLink}</a></p>
+  </div>
   <details class="mnist-source" data-mnist-source>
     <summary>{words.sourceToggle}</summary>
     <p class="mnist-note">{words.sourceDescription}</p>
@@ -100,6 +112,10 @@ const sourceUrl = 'https://github.com/typeshade/typeshade/blob/' + facts.pinnedC
   .mnist-app h3 { font-size: 1.25rem; margin-block: 0 10px; }
   .mnist-app h4 { font-size: 1rem; margin-block: 0 12px; }
   .mnist-app > p { margin-block: 10px; }
+  .mnist-code-preview { margin-block: 18px 24px; }
+  .mnist-code-preview h4 { margin: 0 0 6px; }
+  .mnist-code-preview :global(pre) { max-width: 100%; overflow-x: auto; }
+  .mnist-code-preview :global(.expressive-code) { margin-block: 12px; }
   .mnist-source { margin-block: 18px; padding: 12px 16px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); }
   .mnist-source summary { cursor: pointer; font-weight: 700; }
   .mnist-source[open] summary { margin-bottom: 12px; }
