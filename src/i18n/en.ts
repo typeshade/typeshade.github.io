@@ -3136,7 +3136,7 @@ export const en = {
       codePreviewTitle: 'TypeShade code running this lab: forward pass',
       codePreviewExplanation:
         'This real compute function transforms 28×28 pixels into ten digit scores. Both training and prediction use the same forward stage.',
-      codeWalkthroughLink: 'Explore the seven (7) explained code stages below ↓',
+      codeWalkthroughLink: 'Explore the seven (7) explained code stages below',
       sourceToggle: 'View the TypeShade code running this model',
       sourceDescription:
         'This is the exact softmax.shade.ts file compiled into the WebGPU/WebGL2 model above. All six compute entries are shown, including training and prediction.',
@@ -3209,21 +3209,21 @@ export const en = {
           purpose:
             'forward multiplies 784 pixel values by class-specific weights, sums them and adds biases, producing 10 logits per image.',
           explanation:
-            'gid.x identifies the image row. For class c, it computes z = bias[c] + Σ pixels[p]×weights[p×10+c]. @compute([64]) specifies the workgroup size, with an explicit guard for short batches.',
+            'gid.x identifies the image row. For class c, it computes z = bias[c] + sum pixels[p]×weights[p×10+c]. @compute([64]) specifies the workgroup size, with an explicit guard for short batches.',
         },
         {
           title: 'Loss and error signal: measure the prediction',
           purpose:
             'objective uses stable softmax and cross-entropy, subtracting the maximum logit before exponentiation.',
           explanation:
-            'The delta value is (predicted probability − one-hot label) / batch size. backward uses this error signal to determine each weight gradient. Both exp and log execute in the TypeShade compute program.',
+            'The delta value is (predicted probability - one-hot label) / batch size. backward uses this error signal to determine each weight gradient. Both exp and log execute in the TypeShade compute program.',
         },
         {
           title: 'Backward pass: accumulate weight gradients',
           purpose:
             'backward computes gradients for 7,840 weights and 10 biases using the batch pixels and delta values.',
           explanation:
-            'Each gradW[p×10+c] is Σ pixels[row,p]×delta[row,c], while each gradB is a class-wise delta sum. This implementation uses explicitly authored gradients, not automatic differentiation.',
+            'Each gradW[p×10+c] is sum pixels[row,p]×delta[row,c], while each gradB is a class-wise delta sum. This implementation uses explicitly authored gradients, not automatic differentiation.',
         },
         {
           title: 'SGD: update the GPU-resident model',
