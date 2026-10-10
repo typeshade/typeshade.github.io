@@ -3345,7 +3345,7 @@ export const ko: Copy = {
       'reduce는 배치의 기울기를 합산합니다.',
       'backward는 가중치와 편향의 기울기를 계산합니다.',
       'update는 확률적 경사 하강법으로 매개변수를 갱신합니다.',
-      'predict는 TypeShade에서 숫자별 확률과 최종 클래스를 계산합니다.'
+      'predict는 TypeShade에서 숫자별 확률과 최종 클래스를 계산합니다.',
     ],
     resultsH: '검증된 결과',
     resultsP:
