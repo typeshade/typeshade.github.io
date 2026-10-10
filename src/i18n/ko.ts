@@ -3415,7 +3415,7 @@ export const ko: Copy = {
     kernels: [
       'forward는 클래스별 로짓을 계산합니다.',
       'objective는 안정적인 소프트맥스와 교차 엔트로피를 계산합니다.',
-      'reduce는 배치의 기울기를 합산합니다.',
+      'reduce는 배치의 평균 손실과 정답 개수를 계산합니다.',
       'backward는 가중치와 편향의 기울기를 계산합니다.',
       'update는 확률적 경사 하강법으로 매개변수를 갱신합니다.',
       'predict는 TypeShade에서 숫자별 확률과 최종 클래스를 계산합니다.',
