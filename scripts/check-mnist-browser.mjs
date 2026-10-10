@@ -48,7 +48,8 @@ try {
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.route('**/storage/v1/b/cvdf-datasets/o/**', async (route) => {
-      const name = decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
+      const objectPath = decodeURIComponent(new URL(route.request().url()).pathname);
+      const name = objectPath.split('/').at(-1);
       const bytes = paths.get(name);
       if (!bytes) {
         await route.abort();
