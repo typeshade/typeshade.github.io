@@ -3258,7 +3258,7 @@ export const en = {
     kernels: [
       'forward computes the class logits.',
       'objective evaluates stable softmax and cross-entropy.',
-      'reduce aggregates gradients across a batch.',
+      'reduce summarizes mean loss and correct predictions for a batch.',
       'backward computes weight and bias gradients.',
       'update applies stochastic gradient descent.',
       'predict produces ten normalised probabilities and the winning class in TypeShade.',
