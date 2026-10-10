@@ -6,6 +6,7 @@ import type { Copy } from './index.ts';
 import { exampleFile, facts, hero, quickStartFile } from '../lib/examples.ts';
 import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import { typedError } from '../lib/typed-error.ts';
+import { mnistEpochs, mnistTestSamples } from '../lib/mnist-settings.ts';
 
 const glsl = facts.glslTarget;
 const err = typedError();
@@ -3304,6 +3305,23 @@ export const ko: Copy = {
       webgl2: 'WebGL2',
       samples: '학습 이미지',
       epochs: '에폭',
+      epochsHelp: `${mnistEpochs.min}에서 ${mnistEpochs.max}까지 정수를 입력하세요. 에폭마다 선택한 학습 이미지 전체를 한 번씩 처리합니다.`,
+      epochsError: `${mnistEpochs.min}에서 ${mnistEpochs.max}까지 정수를 입력하세요.`,
+      resourceNote:
+        '에폭을 늘리면 GPU 연산이 반복되어 실행 시간, 전력 소모와 발열이 늘어납니다. 실행 시간은 백엔드와 이미지 수에 따라 달라집니다. 에폭이 많아도 평가 정확도가 좋아진다는 보장은 없습니다. 중단은 현재 배치가 끝난 뒤 처리됩니다.',
+      learningTitle: '학습 과정 보기',
+      learningExplanation:
+        '학습 배치마다 숫자 점수를 예측하고 손실과 기울기를 계산해 가중치를 갱신합니다. 에폭이 끝나면 가중치를 바꾸지 않고 갱신된 모델을 평가합니다.',
+      metricsExplanation: `그래프는 에폭마다 같은 테스트 이미지 ${mnistTestSamples}개로 측정한 결과입니다. 손실이 낮을수록 예측 오차가 작고, 정확도는 정답을 맞힌 비율입니다. 이 일부 이미지가 MNIST 테스트 전체를 대표하지는 않습니다.`,
+      trainingProgress: '학습 이미지 처리 진행률',
+      progressNote:
+        '막대는 전체 에폭의 학습 이미지 처리 수를 표시합니다. 평가는 에폭마다 별도로 진행합니다.',
+      lossCurve: '에폭별 평가 교차 엔트로피 손실',
+      accuracyCurve: '에폭별 평가 정확도',
+      evaluating: '평가 중',
+      batch: '완료 배치',
+      chartEmpty: '첫 평가가 끝나면 결과가 표시됩니다.',
+      stopping: '현재 작업과 자원 정리를 기다리며 중단하는 중',
       start: '데이터 받아 학습',
       cancel: '중단',
       dataNote:

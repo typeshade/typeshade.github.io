@@ -8,6 +8,7 @@ import { guideSections } from '../lib/guide.ts';
 import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import type { LinkKey } from '../lib/links.ts';
 import { typedError } from '../lib/typed-error.ts';
+import { mnistEpochs, mnistTestSamples } from '../lib/mnist-settings.ts';
 
 const glsl = facts.glslTarget;
 const err = typedError();
@@ -3147,6 +3148,23 @@ export const en = {
       webgl2: 'WebGL2',
       samples: 'Training images',
       epochs: 'Epochs',
+      epochsHelp: `Enter a whole number from ${mnistEpochs.min} to ${mnistEpochs.max}. One epoch passes through all selected training images.`,
+      epochsError: `Enter a whole number from ${mnistEpochs.min} to ${mnistEpochs.max}.`,
+      resourceNote:
+        'More epochs repeat GPU work and increase runtime, power use and device heat. Runtime depends on your backend and image count. Higher epochs do not guarantee better test accuracy. Cancel stops after the current batch.',
+      learningTitle: 'Watch the model learn',
+      learningExplanation:
+        'Each training batch predicts digit scores, calculates loss and gradients, then updates weights. After each epoch, evaluation measures the updated model without changing weights.',
+      metricsExplanation: `The curves show measured results on the same ${mnistTestSamples} test images after each epoch. Lower loss means less prediction error; accuracy counts correct classifications. This subset does not represent the full MNIST test set.`,
+      trainingProgress: 'Training images processed',
+      progressNote:
+        'The bar counts training images across all epochs. Evaluation runs separately after each epoch.',
+      lossCurve: 'Test cross-entropy loss by epoch',
+      accuracyCurve: 'Test accuracy by epoch',
+      evaluating: 'Evaluating',
+      batch: 'Completed batches',
+      chartEmpty: 'Results appear after the first completed evaluation.',
+      stopping: 'Cancelling: waiting for the current operation and cleanup',
       start: 'Download and train',
       cancel: 'Cancel',
       dataNote:

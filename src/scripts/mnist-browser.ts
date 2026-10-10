@@ -8,6 +8,7 @@ import {
   type MnistSession,
 } from '../../vendor/shader-dsl/journeys/mnist/browser-session.ts';
 import type { Copy } from '../i18n/index.ts';
+import { mnistTestSamples, validMnistEpochs } from '../lib/mnist-settings.ts';
 
 type Words = Copy['mnist']['demo'];
 type Tier = 'webgpu' | 'webgl2';
@@ -27,6 +28,35 @@ function createPixels(image: Uint8ClampedArray): Float32Array {
   return pixels;
 }
 
+// A hidden tab can suspend animation frames. The timer keeps batch scheduling
+// moving, and abort releases either wait without waiting for the tab to return.
+function yieldToBrowser(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException('Cancelled', 'AbortError'));
+      return;
+    }
+    let frame = 0;
+    let timer = 0;
+    const cleanup = () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      signal.removeEventListener('abort', abort);
+    };
+    const resume = () => {
+      cleanup();
+      resolve();
+    };
+    const abort = () => {
+      cleanup();
+      reject(new DOMException('Cancelled', 'AbortError'));
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    frame = requestAnimationFrame(resume);
+    timer = window.setTimeout(resume, 50);
+  });
+}
+
 export function mountMnist(root: HTMLElement): void {
   const packElement = required<HTMLScriptElement>(root, '[data-pack]');
   const pack = JSON.parse(packElement.textContent || 'null') as Pack;
@@ -38,7 +68,14 @@ export function mountMnist(root: HTMLElement): void {
   const sample = required<HTMLButtonElement>(root, '[data-sample]');
   const backend = required<HTMLSelectElement>(root, '[data-tier]');
   const countSelect = required<HTMLSelectElement>(root, '[data-count]');
-  const epochsSelect = required<HTMLSelectElement>(root, '[data-epochs]');
+  const epochsInput = required<HTMLInputElement>(root, '[data-epochs]');
+  const epochsError = required<HTMLElement>(root, '[data-epochs-error]');
+  const learningPhase = required<HTMLElement>(root, '[data-learning-phase]');
+  const trainingBatch = required<HTMLElement>(root, '[data-training-batch]');
+  const evaluationBatch = required<HTMLElement>(root, '[data-evaluation-batch]');
+  const lossChart = required<SVGSVGElement>(root, '[data-loss-chart]');
+  const accuracyChart = required<SVGSVGElement>(root, '[data-accuracy-chart]');
+  const history: { epoch: number; loss: number; accuracy: number }[] = [];
   const status = required<HTMLElement>(root, '[data-status]');
   const progress = required<HTMLProgressElement>(root, '[data-progress]');
   const results = required<HTMLElement>(root, '[data-results]');
@@ -67,8 +104,108 @@ export function mountMnist(root: HTMLElement): void {
     clear.disabled = busy;
     backend.disabled = busy;
     countSelect.disabled = busy;
-    epochsSelect.disabled = busy;
+    epochsInput.disabled = busy;
   };
+  const svgNode = (tag: string, attributes: Record<string, string>, text?: string) => {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const renderCurves = () => {
+    for (const [chart, metric, title] of [
+      [lossChart, 'loss', words.lossCurve],
+      [accuracyChart, 'accuracy', words.accuracyCurve],
+    ] as const) {
+      chart.replaceChildren(svgNode('title', {}, title));
+      chart.append(svgNode('desc', {}, words.metricsExplanation));
+      if (!history.length) {
+        chart.append(
+          svgNode(
+            'text',
+            { x: '12', y: '70', fill: 'currentColor', 'font-size': '12' },
+            words.chartEmpty,
+          ),
+        );
+        continue;
+      }
+      const ceiling =
+        metric === 'accuracy' ? 1 : Math.max(1, ...history.map((point) => point.loss));
+      const lastEpoch = Math.max(2, history[history.length - 1].epoch);
+      const x = (epoch: number) => 48 + ((epoch - 1) / (lastEpoch - 1)) * 336;
+      const y = (value: number) => 108 - (value / ceiling) * 90;
+      chart.append(
+        svgNode('path', {
+          d: 'M48 18 V108 H384',
+          fill: 'none',
+          stroke: 'currentColor',
+          opacity: '.4',
+        }),
+      );
+      chart.append(
+        svgNode(
+          'text',
+          { x: '2', y: '24', fill: 'currentColor', 'font-size': '12' },
+          metric === 'accuracy' ? '100%' : ceiling.toFixed(2),
+        ),
+      );
+      chart.append(
+        svgNode('text', { x: '24', y: '110', fill: 'currentColor', 'font-size': '12' }, '0'),
+      );
+      chart.append(
+        svgNode(
+          'text',
+          { x: '48', y: '130', fill: 'currentColor', 'font-size': '12' },
+          words.epoch + ' 1',
+        ),
+      );
+      chart.append(
+        svgNode(
+          'text',
+          { x: '384', y: '130', fill: 'currentColor', 'font-size': '12', 'text-anchor': 'end' },
+          words.epoch + ' ' + lastEpoch,
+        ),
+      );
+      chart.append(
+        svgNode('polyline', {
+          points: history.map((point) => x(point.epoch) + ',' + y(point[metric])).join(' '),
+          fill: 'none',
+          stroke: 'var(--color-accent)',
+          'stroke-width': '2',
+        }),
+      );
+      for (const point of history) {
+        const dot = svgNode('circle', {
+          cx: String(x(point.epoch)),
+          cy: String(y(point[metric])),
+          r: '3',
+          fill: 'var(--color-accent)',
+          'data-epoch': String(point.epoch),
+          'data-value': String(point[metric]),
+        });
+        dot.append(
+          svgNode(
+            'title',
+            {},
+            words.epoch +
+              ' ' +
+              point.epoch +
+              ': ' +
+              (metric === 'accuracy'
+                ? (point.accuracy * 100).toFixed(1) + '%'
+                : point.loss.toFixed(3)),
+          ),
+        );
+        chart.append(dot);
+      }
+    }
+  };
+  epochsInput.addEventListener('input', () => {
+    epochsInput.setAttribute('aria-invalid', 'false');
+    epochsError.hidden = true;
+    epochsError.textContent = '';
+  });
+  renderCurves();
   const resetCanvas = () => {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -171,6 +308,7 @@ export function mountMnist(root: HTMLElement): void {
         '%)';
       showBars(probabilities);
     } catch (error) {
+      if (current !== predictionSequence) return;
       setStatus(words.error + ': ' + String(error));
     }
   };
@@ -243,42 +381,74 @@ export function mountMnist(root: HTMLElement): void {
         data.pixels.subarray(offset * inputs, (offset + count) * inputs),
         data.labels.subarray(offset, offset + count),
       );
+      checkAbort(signal);
+      evaluationBatch.textContent =
+        words.evaluating +
+        ': ' +
+        words.batch +
+        ' ' +
+        Math.ceil((offset + count) / batchSize) +
+        '/' +
+        Math.ceil(data.labels.length / batchSize);
+      await yieldToBrowser(signal);
+      checkAbort(signal);
       loss += stats.loss * count;
       correct += stats.correct;
     }
     return { loss: loss / data.labels.length, accuracy: correct / data.labels.length };
   };
-  cancel.addEventListener('click', () => signalController?.abort());
+  cancel.addEventListener('click', () => {
+    signalController?.abort();
+    cancel.disabled = true;
+    setStatus(words.stopping);
+    learningPhase.textContent = words.stopping;
+  });
   start.addEventListener('click', async () => {
     if (busy) return;
+    const epochs = validMnistEpochs(epochsInput.value);
+    if (epochs === undefined || epochsInput.validity.badInput) {
+      epochsError.textContent = words.epochsError;
+      epochsError.hidden = false;
+      epochsInput.setAttribute('aria-invalid', 'true');
+      epochsInput.focus();
+      return;
+    }
+    const samples = Number(countSelect.value);
+    const requested = backend.value;
     busy = true;
     buttons();
     predictionSequence++;
-    if (engine) await engine.destroy();
-    engine = undefined;
-    testing = undefined;
-    signalController?.abort();
+    drawing = false;
     signalController = new AbortController();
     const signal = signalController.signal;
-    const samples = Number(countSelect.value);
-    const epochs = Number(epochsSelect.value);
-    progress.value = 0;
-    progress.max = samples * epochs;
-    results.replaceChildren();
-    groundTruth.textContent = '';
-    guess.textContent = '';
-    probabilities.replaceChildren();
     const started = performance.now();
+    let succeeded = false;
     try {
+      const previous = engine;
+      engine = undefined;
+      testing = undefined;
+      if (previous) await previous.destroy();
+      checkAbort(signal);
+      progress.value = 0;
+      progress.max = samples * epochs;
+      results.replaceChildren();
+      history.length = 0;
+      renderCurves();
+      trainingBatch.textContent = '';
+      evaluationBatch.textContent = '';
+      resetCanvas();
       setStatus(words.downloading);
+      learningPhase.textContent = words.downloading;
       const trainData = await fetchMnist('train', samples, signal);
-      const testData = await fetchMnist('test', 64, signal);
+      checkAbort(signal);
+      const testData = await fetchMnist('test', mnistTestSamples, signal);
       checkAbort(signal);
       setStatus(words.compiling);
-      const requested = backend.value;
+      learningPhase.textContent = words.compiling;
       const choices: Tier[] = requested === 'auto' ? ['webgpu', 'webgl2'] : [requested as Tier];
       let lastError: unknown;
       for (const choice of choices) {
+        checkAbort(signal);
         try {
           engine = await openMnistSession(pack, { tier: choice, batchSize });
           break;
@@ -286,10 +456,14 @@ export function mountMnist(root: HTMLElement): void {
           lastError = error;
         }
       }
+      checkAbort(signal);
       if (!engine) throw lastError ?? new Error('No TypeShade GPU backend available');
       testing = testData;
-      setStatus(words.running + ': ' + engine.tier + ' / ' + engine.renderer);
       for (let epoch = 1; epoch <= epochs; epoch++) {
+        learningPhase.textContent = words.running + ': ' + words.epoch + ' ' + epoch + '/' + epochs;
+        evaluationBatch.textContent = '';
+        trainingBatch.textContent =
+          words.running + ': ' + words.batch + ' 0/' + Math.ceil(samples / batchSize);
         for (let offset = 0; offset < samples; offset += batchSize) {
           checkAbort(signal);
           const count = Math.min(batchSize, samples - offset);
@@ -299,14 +473,34 @@ export function mountMnist(root: HTMLElement): void {
             0.1,
           );
           progress.value = (epoch - 1) * samples + offset + count;
-          if (offset % (batchSize * 4) === 0) {
-            setStatus(
-              words.running + ': ' + engine.tier + ', ' + words.epoch + ' ' + epoch + '/' + epochs,
-            );
-            await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-          }
+          trainingBatch.textContent =
+            words.running +
+            ': ' +
+            words.batch +
+            ' ' +
+            Math.ceil((offset + count) / batchSize) +
+            '/' +
+            Math.ceil(samples / batchSize);
+          checkAbort(signal);
+          setStatus(
+            words.running + ': ' + engine.tier + ', ' + words.epoch + ' ' + epoch + '/' + epochs,
+          );
+          await yieldToBrowser(signal);
         }
+        checkAbort(signal);
+        learningPhase.textContent =
+          words.evaluating + ': ' + words.epoch + ' ' + epoch + '/' + epochs;
+        setStatus(learningPhase.textContent);
+        evaluationBatch.textContent =
+          words.evaluating +
+          ': ' +
+          words.batch +
+          ' 0/' +
+          Math.ceil(testData.labels.length / batchSize);
         const metrics = await evaluate(testData, signal);
+        checkAbort(signal);
+        history.push({ epoch, ...metrics });
+        renderCurves();
         const entry = document.createElement('li');
         entry.textContent =
           words.epoch +
@@ -333,19 +527,32 @@ export function mountMnist(root: HTMLElement): void {
           ((performance.now() - started) / 1000).toFixed(1) +
           's',
       );
+      learningPhase.textContent =
+        words.completed + ': ' + words.epoch + ' ' + epochs + '/' + epochs;
       currentSample = -1;
-      busy = false;
-      buttons();
-      sample.click();
+      succeeded = true;
     } catch (error) {
-      if (engine) void engine.destroy();
+      // Keep controls locked until queued GPU work and destruction finish.
+      const failed = engine;
       engine = undefined;
       testing = undefined;
-      setStatus(signal.aborted ? words.cancelled : words.error + ': ' + String(error));
+      let cleanupError: unknown;
+      try {
+        if (failed) await failed.destroy();
+      } catch (failure) {
+        cleanupError = failure;
+      }
+      const message = signal.aborted ? words.cancelled : words.error + ': ' + String(error);
+      setStatus(
+        cleanupError ? message + '. ' + words.error + ': ' + String(cleanupError) : message,
+      );
+      learningPhase.textContent = signal.aborted ? words.cancelled : words.error;
     } finally {
+      signalController = undefined;
       busy = false;
       buttons();
     }
+    if (succeeded) sample.click();
   });
   addEventListener(
     'pagehide',
