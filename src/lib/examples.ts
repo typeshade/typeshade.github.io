@@ -457,10 +457,10 @@ const pinned = {
   rulesCode: 2,
   rulesPending: 0,
   rulesReview: 5,
-  rulesSurfaceSections: 40,
+  rulesSurfaceSections: 42,
   rulesAdded: 0,
   rulesRemoved: 0,
-  rulesChanged: 0,
+  rulesChanged: 11,
 };
 const drift: string[] = [];
 if (facts.examples !== pinned.examples)
