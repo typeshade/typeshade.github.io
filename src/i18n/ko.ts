@@ -3285,7 +3285,6 @@ export const ko: Copy = {
     },
   },
 
-
   mnist: {
     title: 'TypeShade MNIST 학습',
     description: 'TypeShade Compute로 손글씨 숫자를 학습하고 CPU, WebGPU, WebGL2 실행 결과를 확인하는 재현 실험입니다.',
