@@ -114,7 +114,9 @@ export async function openMnistEngine(
       const descriptor = pack.entries.find((item) => item.name === entry);
       if (!descriptor) throw new Error('TypeShade manifest lacks ' + entry);
       const reached: Record<string, unknown> = {};
-      for (const binding of descriptor.bindings ?? []) reached[binding.name] = provided[binding.name];
+      for (const binding of descriptor.bindings ?? []) {
+        reached[binding.name] = provided[binding.name];
+      }
       const pipeline = pipelines[entry];
       if (!pipeline) throw new Error('TypeShade pipeline is missing: ' + entry);
       const frame = rt.frame();
