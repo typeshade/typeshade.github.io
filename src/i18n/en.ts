@@ -3128,18 +3128,22 @@ export const en = {
     },
   },
 
-
   mnist: {
     title: 'MNIST training with TypeShade',
-    description: 'Reproduce handwritten digit classification training through TypeShade compute on the CPU, WebGPU and lowered WebGL2.',
+    description:
+      'Reproduce handwritten digit classification training through TypeShade compute on the CPU, WebGPU and lowered WebGL2.',
     h1: 'Train MNIST with TypeShade compute',
-    short: 'A real-data softmax regression journey with forward, loss, gradients and SGD computed by TypeShade.',
+    short:
+      'A real-data softmax regression journey with forward, loss, gradients and SGD computed by TypeShade.',
     open: 'Explore the MNIST training journey',
-    intro: 'This reproducible experiment trains a softmax classifier on handwritten digits. TypeShade executes the model computation; the host loads data and schedules batches.',
+    intro:
+      'This reproducible experiment trains a softmax classifier on handwritten digits. TypeShade executes the model computation; the host loads data and schedules batches.',
     browserH: 'Execution boundary:',
-    browserNote: 'This page documents measured runs and reproducible commands. It is not a live browser training demo.',
+    browserNote:
+      'This page documents measured runs and reproducible commands. It is not a live browser training demo.',
     modelH: 'The training pipeline',
-    modelP: 'The model has 784 input features and 10 output classes. Its computation is split into five TypeShade compute entries.',
+    modelP:
+      'The model has 784 input features and 10 output classes. Its computation is split into five TypeShade compute entries.',
     kernels: [
       'forward computes the class logits.',
       'objective evaluates stable softmax and cross-entropy.',
@@ -3148,7 +3152,8 @@ export const en = {
       'update applies stochastic gradient descent.',
     ],
     resultsH: 'Validated results',
-    resultsP: 'The full-data rows come from the committed result record. The WebGL2 validation is a separate, smaller execution gate.',
+    resultsP:
+      'The full-data rows come from the committed result record. The WebGL2 validation is a separate, smaller execution gate.',
     backend: 'Execution backend',
     data: 'Train / test, epochs',
     accuracy: 'Test accuracy',
@@ -3158,13 +3163,17 @@ export const en = {
     epochs: 'epochs',
     webgl2Dataset: '1,024 train / 1,000 test subset',
     notEstablished: 'Full-data result not established',
-    softwareNote: 'The measured WebGPU adapter was Google SwiftShader, a software renderer; these results do not demonstrate physical GPU acceleration.',
-    webgl2Note: 'The real WebGL2 test executed every pass, checked against an independent numeric reference and completed subset training. Evidence:',
+    softwareNote:
+      'The measured WebGPU adapter was Google SwiftShader, a software renderer; these results do not demonstrate physical GPU acceleration.',
+    webgl2Note:
+      'The real WebGL2 test executed every pass, checked against an independent numeric reference and completed subset training. Evidence:',
     validationRun: 'MNIST WebGL2 validation workflow',
     runH: 'Reproduce the experiment',
-    runP: 'From the compiler repository root with Node 24 and Bun, install dependencies and run the strict WebGL2 tests:',
+    runP:
+      'From the compiler repository root with Node 24 and Bun, install dependencies and run the strict WebGL2 tests:',
     fullP: 'For the full dataset using the WebGPU backend after downloading the dataset:',
-    runtimeNote: 'The commands use the local Chromium runner and download MNIST data on demand. Performance depends on the actual adapter and host environment.',
+    runtimeNote:
+      'The commands use the local Chromium runner and download MNIST data on demand. Performance depends on the actual adapter and host environment.',
     limitsH: 'What this does and does not verify',
     limits: [
       'WebGL2 uses generated GLSL ES 3.00 passes, not native compute shaders.',
