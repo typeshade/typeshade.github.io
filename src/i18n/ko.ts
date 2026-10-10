@@ -3356,43 +3356,50 @@ export const ko: Copy = {
       steps: [
         {
           title: 'TypeScript에서 GPU 데이터를 선언하기',
-          purpose: '"use typeshade"로 시작한 파일에서 픽셀, 정답, 가중치, 편향, 기울기와 결과 버퍼를 선언합니다. batch는 현재 미니배치 크기와 학습률을 전달합니다.',
+          purpose:
+            '"use typeshade"로 시작한 파일에서 픽셀, 정답, 가중치, 편향, 기울기와 결과 버퍼를 선언합니다. batch는 현재 미니배치 크기와 학습률을 전달합니다.',
           explanation:
             '픽셀 한 장은 784개의 f32이며 가중치는 784×10=7,840개입니다. storage 버퍼의 가중치와 편향은 학습 중 GPU에 상주하고 다음 배치에서도 재사용됩니다. stableProbability는 큰 로짓에도 안정적인 소프트맥스 값을 계산하는 공통 함수입니다.',
         },
         {
           title: '순전파: 픽셀을 클래스 점수로 바꾸기',
-          purpose: 'forward는 각 이미지의 784개 픽셀과 10개 클래스 가중치를 곱해 더하고 편향을 더해 로짓(logit)을 만듭니다.',
+          purpose:
+            'forward는 각 이미지의 784개 픽셀과 10개 클래스 가중치를 곱해 더하고 편향을 더해 로짓(logit)을 만듭니다.',
           explanation:
             'gid.x는 처리할 이미지의 행 번호입니다. 각 클래스 c에 대해 z = bias[c] + Σ pixels[p]×weights[p×10+c]를 계산합니다. @compute([64])는 작업 그룹의 호출 크기이며 64개 이미지를 무조건 처리한다는 뜻은 아닙니다. 마지막 배치의 범위를 검사합니다.',
         },
         {
           title: '손실과 오차 신호: 왜 학습이 필요한지 계산',
-          purpose: 'objective는 로짓의 최대값을 먼저 빼는 안정적 소프트맥스를 사용해 정답 클래스의 교차 엔트로피 손실을 계산합니다.',
+          purpose:
+            'objective는 로짓의 최대값을 먼저 빼는 안정적 소프트맥스를 사용해 정답 클래스의 교차 엔트로피 손실을 계산합니다.',
           explanation:
             '오차 신호 delta는 (예측 확률 − 정답 원-핫 값) / 배치 크기입니다. 이 식이 다음 backward에서 각 가중치가 어느 방향으로 변해야 하는지 알려 줍니다. 여기서 exp와 log도 TypeShade 커널 안에서 계산됩니다.',
         },
         {
           title: '역전파: 모든 가중치의 기울기를 합산',
-          purpose: 'backward는 현재 배치의 픽셀과 delta를 사용해 7,840개 가중치 및 10개 편향의 기울기를 계산합니다.',
+          purpose:
+            'backward는 현재 배치의 픽셀과 delta를 사용해 7,840개 가중치 및 10개 편향의 기울기를 계산합니다.',
           explanation:
             '각 가중치의 gradW[p×10+c] = Σ pixels[row,p]×delta[row,c]입니다. gradB는 해당 클래스의 delta 합계입니다. 이 구현은 자동 미분이 아니라 TypeShade에 직접 작성한 명시적 기울기 계산입니다.',
         },
         {
           title: 'SGD: GPU 버퍼의 모델을 직접 갱신',
-          purpose: 'update는 계산된 기울기에 학습률을 곱해 기존 가중치와 편향에서 빼는 SGD 단계를 실행합니다.',
+          purpose:
+            'update는 계산된 기울기에 학습률을 곱해 기존 가중치와 편향에서 빼는 SGD 단계를 실행합니다.',
           explanation:
             'weights[k] -= batch.rate × gradW[k]가 핵심입니다. 결과를 매 배치 JavaScript로 읽어 모델을 갱신하지 않습니다. 가중치는 GPU storage에 남고 다음 forward가 갱신된 값을 읽습니다.',
         },
         {
           title: '평가: 평균 손실과 맞힌 개수 집계',
-          purpose: 'reduce는 각 이미지의 손실과 가장 높은 로짓을 확인해 배치의 평균 손실 및 정답 수를 계산합니다.',
+          purpose:
+            'reduce는 각 이미지의 손실과 가장 높은 로짓을 확인해 배치의 평균 손실 및 정답 수를 계산합니다.',
           explanation:
             'stats[0]은 배치 평균 손실, stats[1]은 맞힌 개수입니다. 이 커널이 합산하는 것은 가중치 기울기가 아니라 평가 지표입니다. 호스트는 작은 stats 배열만 읽어 전체 평가 결과를 합산합니다.',
         },
         {
           title: '추론: 0~9 확률과 최종 숫자를 GPU에서 결정',
-          purpose: 'predict는 forward가 기록한 10개 로짓을 정규화해 확률 분포를 만들고 가장 큰 값을 가진 숫자를 선택합니다.',
+          purpose:
+            'predict는 forward가 기록한 10개 로짓을 정규화해 확률 분포를 만들고 가장 큰 값을 가진 숫자를 선택합니다.',
           explanation:
             '확률은 probabilities[c]에, 예측 숫자는 predicted[0]에 기록됩니다. 브라우저 JavaScript는 이 값을 읽어 막대그래프를 표시할 뿐, Math.exp로 소프트맥스를 다시 계산하지 않습니다. 정답 라벨도 추론에는 필요하지 않습니다.',
         },

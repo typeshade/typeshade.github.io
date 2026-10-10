@@ -3199,43 +3199,50 @@ export const en = {
       steps: [
         {
           title: 'Declare GPU resources in TypeScript',
-          purpose: 'A "use typeshade" file declares pixels, labels, weights, biases, gradients, and output buffers. The batch uniform carries the current mini-batch size and learning rate.',
+          purpose:
+            'A "use typeshade" file declares pixels, labels, weights, biases, gradients, and output buffers. The batch uniform carries the current mini-batch size and learning rate.',
           explanation:
             'An image contains 784 f32 pixels; 10 classes require 784×10 = 7,840 weights. Weights and biases remain GPU-resident and are reused by the next batch. stableProbability is a shared helper for numerically stable softmax.',
         },
         {
           title: 'Forward pass: turn pixels into class scores',
-          purpose: 'forward multiplies 784 pixel values by class-specific weights, sums them and adds biases, producing ten logits per image.',
+          purpose:
+            'forward multiplies 784 pixel values by class-specific weights, sums them and adds biases, producing ten logits per image.',
           explanation:
             'gid.x identifies the image row. For class c, it computes z = bias[c] + Σ pixels[p]×weights[p×10+c]. @compute([64]) specifies the workgroup size, with an explicit guard for short batches.',
         },
         {
           title: 'Loss and error signal: measure the prediction',
-          purpose: 'objective uses stable softmax and cross-entropy, subtracting the maximum logit before exponentiation.',
+          purpose:
+            'objective uses stable softmax and cross-entropy, subtracting the maximum logit before exponentiation.',
           explanation:
             'The delta value is (predicted probability − one-hot label) / batch size. backward uses this error signal to determine each weight gradient. Both exp and log execute in the TypeShade compute program.',
         },
         {
           title: 'Backward pass: accumulate weight gradients',
-          purpose: 'backward computes gradients for 7,840 weights and ten biases using the batch pixels and delta values.',
+          purpose:
+            'backward computes gradients for 7,840 weights and ten biases using the batch pixels and delta values.',
           explanation:
             'Each gradW[p×10+c] is Σ pixels[row,p]×delta[row,c], while each gradB is a class-wise delta sum. This implementation uses explicitly authored gradients, not automatic differentiation.',
         },
         {
           title: 'SGD: update the GPU-resident model',
-          purpose: 'update multiplies each gradient by the learning rate and subtracts it from the corresponding weight or bias.',
+          purpose:
+            'update multiplies each gradient by the learning rate and subtracts it from the corresponding weight or bias.',
           explanation:
             'weights[k] -= batch.rate × gradW[k] is the key step. JavaScript does not read the model back and update it for every batch. The next forward pass observes the GPU-resident updated values.',
         },
         {
           title: 'Evaluation: aggregate loss and correct answers',
-          purpose: 'reduce calculates mean cross-entropy and the number of correctly classified examples in a batch.',
+          purpose:
+            'reduce calculates mean cross-entropy and the number of correctly classified examples in a batch.',
           explanation:
             'stats[0] is mean loss and stats[1] is the correct count. This is a metric reduction, not weight-gradient reduction. The host reads this small output to compute evaluation totals.',
         },
         {
           title: 'Prediction: calculate probabilities and digit on GPU',
-          purpose: 'predict normalizes ten forward logits and picks the highest-scoring digit without needing labels.',
+          purpose:
+            'predict normalizes ten forward logits and picks the highest-scoring digit without needing labels.',
           explanation:
             'The compute entry writes probabilities[c] and predicted[0]. Browser JavaScript only renders those GPU results; it does not run a second Math.exp softmax implementation.',
         },

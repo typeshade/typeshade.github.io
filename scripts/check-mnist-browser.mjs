@@ -99,16 +99,32 @@ try {
     const walkthrough = page.locator('[data-mnist-walkthrough]');
     if ((await walkthrough.count()) !== 1)
       throw new Error('MNIST step-by-step explanation is missing');
-    for (const name of ['setup', 'forward', 'objective', 'backward', 'update', 'reduce', 'predict']) {
+    for (const name of [
+      'setup',
+      'forward',
+      'objective',
+      'backward',
+      'update',
+      'reduce',
+      'predict',
+    ]) {
       const step = walkthrough.locator('[data-mnist-code-step="' + name + '"]');
-      if ((await step.count()) !== 1 || !(await step.locator('pre').innerText()).includes(name === 'setup' ? '"use typeshade"' : 'export function ' + name))
+      if (
+        (await step.count()) !== 1 ||
+        !(await step.locator('pre').innerText()).includes(
+          name === 'setup' ? '"use typeshade"' : 'export function ' + name,
+        )
+      )
         throw new Error('MNIST guided code stage missing: ' + name);
       if (!(await step.locator('p').count()))
         throw new Error('MNIST guided code stage lacks explanation: ' + name);
     }
     const hostExcerpt = await walkthrough.innerText();
-    if (!hostExcerpt.includes('trainBatch') || !hostExcerpt.includes('predict') ||
-        !hostExcerpt.includes('setBatch'))
+    if (
+      !hostExcerpt.includes('trainBatch') ||
+      !hostExcerpt.includes('predict') ||
+      !hostExcerpt.includes('setBatch')
+    )
       throw new Error('MNIST guided walkthrough lacks real host execution code');
     // The exact TypeShade source must be accessible on the lab itself.
     const sourcePanel = page.locator('[data-mnist-source]');
@@ -127,7 +143,9 @@ try {
       if (!displayedSource.includes(part))
         throw new Error('MNIST source panel is missing real compute code: ' + part);
     }
-    const sourceHref = await sourcePanel.locator('a[href*="softmax.shade.ts"]').getAttribute('href');
+    const sourceHref = await sourcePanel
+      .locator('a[href*="softmax.shade.ts"]')
+      .getAttribute('href');
     if (!sourceHref?.includes('/blob/'))
       throw new Error('MNIST source panel lacks a pinned GitHub source link');
     await sourcePanel.locator('summary').click();
