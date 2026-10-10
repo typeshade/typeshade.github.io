@@ -3,7 +3,11 @@
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { parseIdx } from '../vendor/shader-dsl/journeys/mnist/idx.mjs';
-import { referenceTrain, reference, referencePredict } from '../vendor/shader-dsl/journeys/mnist/reference.mjs';
+import {
+  referenceTrain,
+  reference,
+  referencePredict,
+} from '../vendor/shader-dsl/journeys/mnist/reference.mjs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -108,11 +112,20 @@ try {
     if (rows.length !== 1 || !rows[0].includes('Test accuracy') || !rows[0].includes('Loss'))
       throw new Error(tier + ' produced no measured test metrics: ' + rows.join(' | '));
     const report = /Test accuracy ([0-9.]+)%, Loss ([0-9.]+)/.exec(rows[0]);
-    if (!report ||
-        Math.abs(Number(report[1]) / 100 - expectedAccuracy) > 0.0025 ||
-        Math.abs(Number(report[2]) - expectedLoss) > 0.015)
-      throw new Error(tier + ' diverged from independent MNIST f64 reference: ' +
-        rows[0] + ', expected accuracy=' + expectedAccuracy + ', loss=' + expectedLoss);
+    if (
+      !report ||
+      Math.abs(Number(report[1]) / 100 - expectedAccuracy) > 0.0025 ||
+      Math.abs(Number(report[2]) - expectedLoss) > 0.015
+    )
+      throw new Error(
+        tier +
+          ' diverged from independent MNIST f64 reference: ' +
+          rows[0] +
+          ', expected accuracy=' +
+          expectedAccuracy +
+          ', loss=' +
+          expectedLoss,
+      );
     await page.locator('[data-sample]').click();
     await page.waitForFunction(
       () => document.querySelectorAll('[data-probabilities] > li').length === 10,
@@ -139,8 +152,11 @@ try {
       ({ predicted, probability }) => {
         const text = document.querySelector('[data-guess]')?.textContent ?? '';
         const match = /Prediction: ([0-9]+) \(([0-9.]+)%\)/.exec(text);
-        return match && Number(match[1]) === predicted &&
-          Math.abs(Number(match[2]) / 100 - probability) < 0.002;
+        return (
+          match &&
+          Number(match[1]) === predicted &&
+          Math.abs(Number(match[2]) / 100 - probability) < 0.002
+        );
       },
       { predicted: expected.predicted, probability: expected.probabilities[expected.predicted] },
       { timeout: 30_000 },
