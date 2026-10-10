@@ -1,6 +1,9 @@
 // Browser integration regression for the MNIST lab, using *official SHA-256 verified* IDX
 // bytes delivered locally to Chromium. All TypeShade WebGPU/WebGL2 math is real.
 import { createHash } from 'node:crypto';
+import { gunzipSync } from 'node:zlib';
+import { parseIdx } from '../vendor/shader-dsl/journeys/mnist/idx.mjs';
+import { referenceTrain, reference, referencePredict } from '../vendor/shader-dsl/journeys/mnist/reference.mjs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +41,28 @@ for (const [name, expected] of Object.entries(officialSha256)) {
   if (digest !== expected) throw new Error('Official MNIST checksum mismatch: ' + name);
   paths.set(name, data);
 }
+
+// Independent double-precision oracle uses the exact same official samples/seed.
+const training = parseIdx(
+  gunzipSync(paths.get('train-images-idx3-ubyte.gz')),
+  gunzipSync(paths.get('train-labels-idx1-ubyte.gz')),
+  128,
+);
+const testing = parseIdx(
+  gunzipSync(paths.get('t10k-images-idx3-ubyte.gz')),
+  gunzipSync(paths.get('t10k-labels-idx1-ubyte.gz')),
+  64,
+);
+const expectedModel = referenceTrain(training, { epochs: 1, batchSize: 16, rate: 0.1, seed: 123 });
+let expectedLoss = 0;
+let expectedCorrect = 0;
+for (let at = 0; at < testing.labels.length; at += 16) {
+  const metrics = reference(testing, expectedModel, at, Math.min(16, testing.labels.length - at));
+  expectedLoss += metrics.stats[0] * Math.min(16, testing.labels.length - at);
+  expectedCorrect += metrics.stats[1];
+}
+expectedLoss /= testing.labels.length;
+const expectedAccuracy = expectedCorrect / testing.labels.length;
 
 const server = await serveDist(dist, port);
 let browser;
@@ -82,6 +107,12 @@ try {
     const rows = await page.locator('[data-results] > li').allInnerTexts();
     if (rows.length !== 1 || !rows[0].includes('Test accuracy') || !rows[0].includes('Loss'))
       throw new Error(tier + ' produced no measured test metrics: ' + rows.join(' | '));
+    const report = /Test accuracy ([0-9.]+)%, Loss ([0-9.]+)/.exec(rows[0]);
+    if (!report ||
+        Math.abs(Number(report[1]) / 100 - expectedAccuracy) > 0.0025 ||
+        Math.abs(Number(report[2]) - expectedLoss) > 0.015)
+      throw new Error(tier + ' diverged from independent MNIST f64 reference: ' +
+        rows[0] + ', expected accuracy=' + expectedAccuracy + ', loss=' + expectedLoss);
     await page.locator('[data-sample]').click();
     await page.waitForFunction(
       () => document.querySelectorAll('[data-probabilities] > li').length === 10,
@@ -100,6 +131,19 @@ try {
     await page.locator('[data-sample]').click();
     await page.waitForFunction(
       () => document.querySelectorAll('[data-probabilities] > li').length === 10,
+    );
+    // The UI issues two predictions quickly. Only the final image may be shown.
+    const finalIndex = 3;
+    const expected = referencePredict(reference(testing, expectedModel, finalIndex, 1).logits);
+    await page.waitForFunction(
+      ({ predicted, probability }) => {
+        const text = document.querySelector('[data-guess]')?.textContent ?? '';
+        const match = /Prediction: ([0-9]+) \(([0-9.]+)%\)/.exec(text);
+        return match && Number(match[1]) === predicted &&
+          Math.abs(Number(match[2]) / 100 - probability) < 0.002;
+      },
+      { predicted: expected.predicted, probability: expected.probabilities[expected.predicted] },
+      { timeout: 30_000 },
     );
     console.log('[mnist] REAL MNIST ' + tier + ': ' + status + '; ' + rows[0] + '; ' + prediction);
     await page.close();
