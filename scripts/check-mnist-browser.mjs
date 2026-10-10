@@ -11,7 +11,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
 const port = 39000 + Math.floor(Math.random() * 1000);
 
-// Always exercise the actual official dataset, rather than synthetic samples.
+// Always exercise the original official MNIST dataset with known SHA-256 hashes.
 // The browser itself verifies the same checksums a second time before parsing IDX.
 const officialSha256 = {
   'train-images-idx3-ubyte.gz': '440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609',
