@@ -14,17 +14,26 @@ const port = 39000 + Math.floor(Math.random() * 1000);
 // Always exercise the actual official dataset, rather than synthetic samples.
 // The browser itself verifies the same checksums a second time before parsing IDX.
 const officialSha256 = {
-  "train-images-idx3-ubyte.gz": "440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609",
-  "train-labels-idx1-ubyte.gz": "3552534a0a558bbed6aed32b30c495cca23d567ec52cac8be1a0730e8010255c",
-  "t10k-images-idx3-ubyte.gz": "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6",
-  "t10k-labels-idx1-ubyte.gz": "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6"
+  'train-images-idx3-ubyte.gz': '440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609',
+  'train-labels-idx1-ubyte.gz': '3552534a0a558bbed6aed32b30c495cca23d567ec52cac8be1a0730e8010255c',
+  't10k-images-idx3-ubyte.gz': '8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6',
+  't10k-labels-idx1-ubyte.gz': 'f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6',
 };
 const paths = new Map();
 for (const [name, expected] of Object.entries(officialSha256)) {
-  const data = execFileSync('curl', [
-    '--fail', '--silent', '--show-error', '--location', '--retry', '2',
-    'https://storage.googleapis.com/cvdf-datasets/mnist/' + name,
-  ], { maxBuffer: 32 * 1024 * 1024 });
+  const data = execFileSync(
+    'curl',
+    [
+      '--fail',
+      '--silent',
+      '--show-error',
+      '--location',
+      '--retry',
+      '2',
+      'https://storage.googleapis.com/cvdf-datasets/mnist/' + name,
+    ],
+    { maxBuffer: 32 * 1024 * 1024 },
+  );
   const digest = createHash('sha256').update(data).digest('hex');
   if (digest !== expected) throw new Error('Official MNIST checksum mismatch: ' + name);
   paths.set(name, data);
@@ -82,9 +91,9 @@ try {
       throw new Error(
         tier + ' inference failed: ' + prediction + ', errors: ' + errors.join(' / '),
       );
-    const probabilitySum = await page.locator('[data-probabilities] meter').evaluateAll(
-      (elements) => elements.reduce((sum, el) => sum + el.value, 0),
-    );
+    const probabilitySum = await page
+      .locator('[data-probabilities] meter')
+      .evaluateAll((elements) => elements.reduce((sum, el) => sum + el.value, 0));
     if (Math.abs(probabilitySum - 1) > 0.0002)
       throw new Error(tier + ' probability sum mismatch: ' + probabilitySum);
     await page.locator('[data-sample]').click();

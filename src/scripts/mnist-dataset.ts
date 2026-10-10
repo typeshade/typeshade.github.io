@@ -23,11 +23,12 @@ async function inflate(name: string, signal: AbortSignal): Promise<Uint8Array> {
   const expected = MNIST_GZIP_SHA256[name as keyof typeof MNIST_GZIP_SHA256];
   if (!expected) throw new Error('Unrecognized MNIST file: ' + name);
   const digest = await crypto.subtle.digest('SHA-256', compressed);
-  const actual = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('');
+  const actual = Array.from(new Uint8Array(digest), (value) =>
+    value.toString(16).padStart(2, '0'),
+  ).join('');
   if (actual !== expected) throw new Error('Official MNIST integrity mismatch: ' + name);
   const header = new Uint8Array(compressed);
-  if (header[0] !== 0x1f || header[1] !== 0x8b)
-    throw new Error('MNIST data is not gzip: ' + name);
+  if (header[0] !== 0x1f || header[1] !== 0x8b) throw new Error('MNIST data is not gzip: ' + name);
   const data = await new Response(
     new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip')),
   ).arrayBuffer();
@@ -40,8 +41,7 @@ export async function fetchMnist(
   limit: number,
   signal: AbortSignal,
 ): Promise<MnistData> {
-  if (!Number.isInteger(limit) || limit < 1)
-    throw new RangeError('Invalid MNIST sample limit');
+  if (!Number.isInteger(limit) || limit < 1) throw new RangeError('Invalid MNIST sample limit');
   const [imageName, labelName] = names[split];
   const [images, labels] = await Promise.all([
     inflate(imageName, signal),
