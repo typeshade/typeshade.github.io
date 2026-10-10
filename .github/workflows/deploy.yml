@@ -157,6 +157,10 @@ jobs:
       # recompiles and a moved control reaches the frame. See scripts/check-live.mjs.
       - run: bun run check:live
         if: matrix.part == 2
+      # The MNIST lab must train and infer with real TypeShade GPU passes.
+      - run: bun run check:mnist
+        if: matrix.part == 1
+        timeout-minutes: 15
       # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
       - run: bun run qa:links
         if: matrix.part == 4
