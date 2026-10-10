@@ -3133,6 +3133,10 @@ export const en = {
       title: 'Try MNIST in your browser',
       description:
         'Train the actual TypeShade compute program, try test digits, then draw your own digit to classify.',
+      codePreviewTitle: 'TypeShade code running this lab: forward pass',
+      codePreviewExplanation:
+        'This real compute function transforms 28×28 pixels into ten digit scores. Both training and prediction use the same forward stage.',
+      codeWalkthroughLink: 'Explore the seven explained code stages below ↓',
       sourceToggle: 'View the TypeShade code running this model',
       sourceDescription:
         'This is the exact softmax.shade.ts file compiled into the WebGPU/WebGL2 model above. All six compute entries are shown, including training and prediction.',
