@@ -3133,6 +3133,10 @@ export const en = {
       title: 'Try MNIST in your browser',
       description:
         'Train the actual TypeShade compute program, try test digits, then draw your own digit to classify.',
+      sourceToggle: 'View the TypeShade code running this model',
+      sourceDescription:
+        'This is the exact softmax.shade.ts file compiled into the WebGPU/WebGL2 model above. All six compute entries are shown, including training and prediction.',
+      sourceGitHub: 'Open this exact source revision on GitHub',
       backend: 'Backend',
       auto: 'Auto (WebGPU, then WebGL2)',
       webgpu: 'WebGPU',
