@@ -1,0 +1,21 @@
+name: Temporary MNIST integration formatting
+on:
+  pull_request:
+    paths:
+      - 'src/scripts/mnist-browser.ts'
+      - '.github/workflows/mnist-reformat.yml'
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: |
+          bunx prettier --write src/scripts/mnist-browser.ts
+          echo MNIST_SOURCE_BEGIN
+          base64 -w76 src/scripts/mnist-browser.ts
+          echo ""
+          echo MNIST_SOURCE_END
