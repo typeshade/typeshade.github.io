@@ -3188,7 +3188,7 @@ export const en = {
       'reduce aggregates gradients across a batch.',
       'backward computes weight and bias gradients.',
       'update applies stochastic gradient descent.',
-      'predict produces ten normalised probabilities and the winning class in TypeShade.'
+      'predict produces ten normalised probabilities and the winning class in TypeShade.',
     ],
     resultsH: 'Validated results',
     resultsP:
