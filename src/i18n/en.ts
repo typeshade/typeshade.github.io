@@ -3133,6 +3133,14 @@ export const en = {
       title: 'Try MNIST in your browser',
       description:
         'Train the actual TypeShade compute program, try test digits, then draw your own digit to classify.',
+      codePreviewTitle: 'TypeShade code running this lab: forward pass',
+      codePreviewExplanation:
+        'This real compute function transforms 28×28 pixels into ten digit scores. Both training and prediction use the same forward stage.',
+      codeWalkthroughLink: 'Explore the seven (7) explained code stages below',
+      sourceToggle: 'View the TypeShade code running this model',
+      sourceDescription:
+        'This is the exact softmax.shade.ts file compiled into the WebGPU/WebGL2 model above. All six compute entries are shown, including training and prediction.',
+      sourceGitHub: 'Open this exact source revision on GitHub',
       backend: 'Backend',
       auto: 'Auto (WebGPU, then WebGL2)',
       webgpu: 'WebGPU',
@@ -3179,13 +3187,85 @@ export const en = {
     browserH: 'Execution boundary:',
     browserNote:
       'The live lab trains a small real-data subset in your browser. The full-dataset results below are from separate reproducible experiments.',
+    walkthrough: {
+      intro:
+        'These are excerpts from the exact TypeShade source compiled for the browser lab. This model is softmax regression: it receives 28×28 pixels (784 inputs) and produces 10 scores for digits 0 through 9. It is neither a CNN nor a pretrained model.',
+      flowTitle: 'MNIST execution paths',
+      trainFlow: 'Training:',
+      testFlow: 'Evaluation:',
+      predictFlow: 'Handwritten inference:',
+      readGuide:
+        'Read what each stage computes and why, then inspect the real source directly underneath. Every code sample is extracted at build time from the compiled softmax.shade.ts file.',
+      steps: [
+        {
+          title: 'Declare GPU resources in TypeScript',
+          purpose:
+            'A "use typeshade" file declares pixels, labels, weights, biases, gradients, and output buffers. The batch uniform carries the current mini-batch size and learning rate.',
+          explanation:
+            'An image contains 784 f32 pixels; 10 classes require 784×10 = 7,840 weights. Weights and biases remain GPU-resident and are reused by the next batch. stableProbability is a shared helper for numerically stable softmax.',
+        },
+        {
+          title: 'Forward pass: turn pixels into class scores',
+          purpose:
+            'forward multiplies 784 pixel values by class-specific weights, sums them and adds biases, producing 10 logits per image.',
+          explanation:
+            'gid.x identifies the image row. For class c, it computes z = bias[c] + sum pixels[p]×weights[p×10+c]. @compute([64]) specifies the workgroup size, with an explicit guard for short batches.',
+        },
+        {
+          title: 'Loss and error signal: measure the prediction',
+          purpose:
+            'objective uses stable softmax and cross-entropy, subtracting the maximum logit before exponentiation.',
+          explanation:
+            'The delta value is (predicted probability - one-hot label) / batch size. backward uses this error signal to determine each weight gradient. Both exp and log execute in the TypeShade compute program.',
+        },
+        {
+          title: 'Backward pass: accumulate weight gradients',
+          purpose:
+            'backward computes gradients for 7,840 weights and 10 biases using the batch pixels and delta values.',
+          explanation:
+            'Each gradW[p×10+c] is sum pixels[row,p]×delta[row,c], while each gradB is a class-wise delta sum. This implementation uses explicitly authored gradients, not automatic differentiation.',
+        },
+        {
+          title: 'SGD: update the GPU-resident model',
+          purpose:
+            'update multiplies each gradient by the learning rate and subtracts it from the corresponding weight or bias.',
+          explanation:
+            'weights[k] -= batch.rate × gradW[k] is the key step. JavaScript does not read the model back and update it for every batch. The next forward pass observes the GPU-resident updated values.',
+        },
+        {
+          title: 'Evaluation: aggregate loss and correct answers',
+          purpose:
+            'reduce calculates mean cross-entropy and the number of correctly classified examples in a batch.',
+          explanation:
+            'stats[0] is mean loss and stats[1] is the correct count. This is a metric reduction, not weight-gradient reduction. The host reads this small output to compute evaluation totals.',
+        },
+        {
+          title: 'Prediction: calculate digit 0–9 probabilities on GPU',
+          purpose:
+            'predict normalizes 10 forward logits and picks the highest-scoring digit without needing labels.',
+          explanation:
+            'The compute entry writes probabilities[c] and predicted[0]. Browser JavaScript only renders those GPU results; it does not run a second Math.exp softmax implementation.',
+        },
+      ],
+      hostTitle: 'How does the browser connect these TypeShade kernels?',
+      hostIntro:
+        'The JavaScript host downloads official IDX files, normalizes pixels to 0–1, and dispatches the TypeShade compute stages. The methods below come directly from the shared browser session, not from illustrative pseudocode.',
+      hostTrainTitle: 'Actual code for one training batch',
+      hostTrainExplanation:
+        'setBatch writes pixels and labels to GPU input buffers. The session dispatches forward → objective → backward → update in order, retaining the same GPU-resident weights for subsequent batches.',
+      hostPredictTitle: 'Actual code for classifying a drawn digit',
+      hostPredictExplanation:
+        'forward → predict computes probabilities and the top class on the GPU. Only 10 floats and one class index are read back. Training and prediction share a serialized queue to avoid races over mutable buffers.',
+      boundary:
+        'Execution boundary: TypeShade owns the model math (forward, softmax, loss, gradients, SGD and inference). JavaScript handles downloads, batch scheduling, canvas input, UI updates and aggregating metrics. WebGL2 uses TypeShade-generated GLSL ES 3.00 passes, not native compute.',
+    },
     modelH: 'The training pipeline',
     modelP:
       'The model has 784 input features and 10 output classes. Training and inference use six TypeShade compute entries.',
     kernels: [
       'forward computes the class logits.',
       'objective evaluates stable softmax and cross-entropy.',
-      'reduce aggregates gradients across a batch.',
+      'reduce summarizes mean loss and correct predictions for a batch.',
       'backward computes weight and bias gradients.',
       'update applies stochastic gradient descent.',
       'predict produces ten normalised probabilities and the winning class in TypeShade.',

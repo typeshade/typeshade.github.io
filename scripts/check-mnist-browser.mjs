@@ -92,6 +92,63 @@ try {
       });
     });
     await page.goto(server.url + '/guide/mnist/');
+    // The lab teaches the authored TypeShade program, including host dispatches.
+    const preview = await page.locator('[data-mnist-code-preview] pre').innerText();
+    if (!preview.includes('export function forward') || !preview.includes('weights[p * 10 + c]'))
+      throw new Error('MNIST live lab does not explain the real forward kernel');
+    const walkthrough = page.locator('[data-mnist-walkthrough]');
+    if ((await walkthrough.count()) !== 1)
+      throw new Error('MNIST step-by-step explanation is missing');
+    for (const name of [
+      'setup',
+      'forward',
+      'objective',
+      'backward',
+      'update',
+      'reduce',
+      'predict',
+    ]) {
+      const step = walkthrough.locator('[data-mnist-code-step="' + name + '"]');
+      if (
+        (await step.count()) !== 1 ||
+        !(await step.locator('pre').innerText()).includes(
+          name === 'setup' ? '"use typeshade"' : 'export function ' + name,
+        )
+      )
+        throw new Error('MNIST guided code stage missing: ' + name);
+      if (!(await step.locator('p').count()))
+        throw new Error('MNIST guided code stage lacks explanation: ' + name);
+    }
+    const hostExcerpt = await walkthrough.innerText();
+    if (
+      !hostExcerpt.includes('trainBatch') ||
+      !hostExcerpt.includes('predict') ||
+      !hostExcerpt.includes('setBatch')
+    )
+      throw new Error('MNIST guided walkthrough lacks real host execution code');
+    // The exact TypeShade source must be accessible on the lab itself.
+    const sourcePanel = page.locator('[data-mnist-source]');
+    if ((await sourcePanel.count()) !== 1)
+      throw new Error('MNIST lab does not display the TypeShade source panel');
+    await sourcePanel.locator('summary').click();
+    const displayedSource = await sourcePanel.locator('pre').innerText();
+    for (const part of [
+      '"use typeshade"',
+      'export function forward',
+      'export function objective',
+      'export function backward',
+      'export function update',
+      'export function predict',
+    ]) {
+      if (!displayedSource.includes(part))
+        throw new Error('MNIST source panel is missing real compute code: ' + part);
+    }
+    const sourceHref = await sourcePanel
+      .locator('a[href*="softmax.shade.ts"]')
+      .getAttribute('href');
+    if (!sourceHref?.includes('/blob/'))
+      throw new Error('MNIST source panel lacks a pinned GitHub source link');
+    await sourcePanel.locator('summary').click();
     await page.locator('[data-tier]').selectOption(tier);
     await page.locator('[data-count]').selectOption('128');
     await page.locator('[data-epochs]').selectOption('1');
