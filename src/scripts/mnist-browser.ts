@@ -3,7 +3,10 @@
 // prediction logits are produced exclusively by the packed TypeShade program.
 import type { Pack } from '../../vendor/shader-dsl/src/core/manifest-types.ts';
 import { fetchMnist, type MnistData } from './mnist-dataset.ts';
-import { openMnistSession, type MnistSession } from '../../vendor/shader-dsl/journeys/mnist/browser-session.ts';
+import {
+  openMnistSession,
+  type MnistSession,
+} from '../../vendor/shader-dsl/journeys/mnist/browser-session.ts';
 import type { Copy } from '../i18n/index.ts';
 
 type Words = Copy['mnist']['demo'];
@@ -160,7 +163,12 @@ export function mountMnist(root: HTMLElement): void {
       const { probabilities, predicted } = await engine.predict(pixels);
       if (current !== predictionSequence) return;
       guess.textContent =
-        words.prediction + ' ' + predicted + ' (' + (probabilities[predicted] * 100).toFixed(1) + '%)';
+        words.prediction +
+        ' ' +
+        predicted +
+        ' (' +
+        (probabilities[predicted] * 100).toFixed(1) +
+        '%)';
       showBars(probabilities);
     } catch (error) {
       setStatus(words.error + ': ' + String(error));
