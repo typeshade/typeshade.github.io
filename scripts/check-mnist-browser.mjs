@@ -1,7 +1,7 @@
-// Browser integration regression for the MNIST lab. The IDX responses are small deterministic
-// fixtures delivered by Playwright; the TypeShade WebGPU/WebGL2 compute dispatches are real.
-// No dependency on the public dataset host or backend CPU training during this smoke test.
-import { gzipSync } from 'node:zlib';
+// Browser integration regression for the MNIST lab, using *official SHA-256 verified* IDX
+// bytes delivered locally to Chromium. All TypeShade WebGPU/WebGL2 math is real.
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './playwright.mjs';
@@ -11,34 +11,25 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
 const port = 39000 + Math.floor(Math.random() * 1000);
 
-function fixture(split, image) {
-  const count = split === 'train' ? 256 : 64;
-  const bytes = Buffer.alloc((image ? 16 : 8) + count * (image ? 784 : 1));
-  bytes.writeUInt32BE(image ? 2051 : 2049, 0);
-  bytes.writeUInt32BE(count, 4);
-  if (image) {
-    bytes.writeUInt32BE(28, 8);
-    bytes.writeUInt32BE(28, 12);
-    for (let row = 0; row < count; row++) {
-      const label = row % 10;
-      for (let i = 0; i < 784; i++) {
-        const x = i % 28,
-          y = Math.floor(i / 28);
-        bytes[16 + row * 784 + i] = Math.abs(x - (label * 2 + 4)) < 2 && y > 5 && y < 22 ? 255 : 0;
-      }
-    }
-  } else {
-    for (let row = 0; row < count; row++) bytes[8 + row] = row % 10;
-  }
-  return gzipSync(bytes);
+// Always exercise the actual official dataset, rather than synthetic samples.
+// The browser itself verifies the same checksums a second time before parsing IDX.
+const officialSha256 = {
+  "train-images-idx3-ubyte.gz": "440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609",
+  "train-labels-idx1-ubyte.gz": "3552534a0a558bbed6aed32b30c495cca23d567ec52cac8be1a0730e8010255c",
+  "t10k-images-idx3-ubyte.gz": "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6",
+  "t10k-labels-idx1-ubyte.gz": "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6"
+};
+const paths = new Map();
+for (const [name, expected] of Object.entries(officialSha256)) {
+  const data = execFileSync('curl', [
+    '--fail', '--silent', '--show-error', '--location', '--retry', '2',
+    'https://storage.googleapis.com/cvdf-datasets/mnist/' + name,
+  ], { maxBuffer: 32 * 1024 * 1024 });
+  const digest = createHash('sha256').update(data).digest('hex');
+  if (digest !== expected) throw new Error('Official MNIST checksum mismatch: ' + name);
+  paths.set(name, data);
 }
 
-const paths = new Map([
-  ['train-images-idx3-ubyte.gz', fixture('train', true)],
-  ['train-labels-idx1-ubyte.gz', fixture('train', false)],
-  ['t10k-images-idx3-ubyte.gz', fixture('test', true)],
-  ['t10k-labels-idx1-ubyte.gz', fixture('test', false)],
-]);
 const server = await serveDist(dist, port);
 let browser;
 try {
@@ -91,7 +82,17 @@ try {
       throw new Error(
         tier + ' inference failed: ' + prediction + ', errors: ' + errors.join(' / '),
       );
-    console.log('[mnist] ' + tier + ': ' + status + '; ' + rows[0] + '; ' + prediction);
+    const probabilitySum = await page.locator('[data-probabilities] meter').evaluateAll(
+      (elements) => elements.reduce((sum, el) => sum + el.value, 0),
+    );
+    if (Math.abs(probabilitySum - 1) > 0.0002)
+      throw new Error(tier + ' probability sum mismatch: ' + probabilitySum);
+    await page.locator('[data-sample]').click();
+    await page.locator('[data-sample]').click();
+    await page.waitForFunction(
+      () => document.querySelectorAll('[data-probabilities] > li').length === 10,
+    );
+    console.log('[mnist] REAL MNIST ' + tier + ': ' + status + '; ' + rows[0] + '; ' + prediction);
     await page.close();
   }
 } finally {
