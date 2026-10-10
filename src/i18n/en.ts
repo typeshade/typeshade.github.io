@@ -3129,6 +3129,44 @@ export const en = {
   },
 
   mnist: {
+    demo: {
+      title: 'Try MNIST in your browser',
+      description:
+        'Train the actual TypeShade compute program, try test digits, then draw your own digit to classify.',
+      backend: 'Backend',
+      auto: 'Auto (WebGPU, then WebGL2)',
+      webgpu: 'WebGPU',
+      webgl2: 'WebGL2',
+      samples: 'Training images',
+      epochs: 'Epochs',
+      start: 'Download and train',
+      cancel: 'Cancel',
+      dataNote:
+        'On start, the browser downloads approximately 12 MB of official MNIST gzip files. They are processed locally. No images or drawings are sent to TypeShade servers.',
+      idle: 'Choose a backend and start training.',
+      downloading: 'Downloading and validating official MNIST data',
+      compiling: 'Creating TypeShade compute pipelines',
+      running: 'Training',
+      completed: 'Training finished',
+      cancelled: 'Training cancelled',
+      error: 'Unable to run MNIST',
+      epoch: 'Epoch',
+      testAccuracy: 'Test accuracy',
+      loss: 'Loss',
+      canvas: 'Draw a digit',
+      drawNote:
+        'Draw a white digit in the square after training. TypeShade forward and predict kernels classify it.',
+      clear: 'Clear',
+      sample: 'Next test digit',
+      drawFirst: 'Draw a digit before predicting.',
+      drawPrompt: 'Draw a digit or select a test image.',
+      prediction: 'Prediction:',
+      actualLabel: 'MNIST label:',
+      distribution: 'Scores for digits 0 to 9',
+      resultHeading: 'Training progress',
+      computeNote:
+        'The host loads images and controls the batches. Training and inference logits run through the selected TypeShade WebGPU or WebGL2 backend. WebGL2 uses lowered GLSL ES 3.00 passes.',
+    },
     title: 'MNIST training with TypeShade',
     description:
       'Reproduce handwritten digit classification training through TypeShade compute on the CPU, WebGPU and lowered WebGL2.',
@@ -3140,16 +3178,17 @@ export const en = {
       'This reproducible experiment trains a softmax classifier on handwritten digits. TypeShade executes the model computation; the host loads data and schedules batches.',
     browserH: 'Execution boundary:',
     browserNote:
-      'This page documents measured runs and reproducible commands. It is not a live browser training demo.',
+      'The live lab trains a small real-data subset in your browser. The full-dataset results below are from separate reproducible experiments.',
     modelH: 'The training pipeline',
     modelP:
-      'The model has 784 input features and 10 output classes. Its computation is split into five TypeShade compute entries.',
+      'The model has 784 input features and 10 output classes. Training and inference use six TypeShade compute entries.',
     kernels: [
       'forward computes the class logits.',
       'objective evaluates stable softmax and cross-entropy.',
       'reduce aggregates gradients across a batch.',
       'backward computes weight and bias gradients.',
       'update applies stochastic gradient descent.',
+      'predict produces ten normalised probabilities and the winning class in TypeShade.',
     ],
     resultsH: 'Validated results',
     resultsP:
@@ -3178,7 +3217,7 @@ export const en = {
       'WebGL2 uses generated GLSL ES 3.00 passes, not native compute shaders.',
       'The WebGL2 CI validates numeric stages and a small real-data training subset; full-dataset WebGL2 accuracy and speed remain unverified.',
       'The published full-dataset WebGPU result used software rendering. No physical GPU speedup is claimed.',
-      'The site shows reproducible evidence and commands; it does not execute the training model in a visitor’s browser.',
+      'The live lab executes TypeShade kernels in the visitor’s browser on a selected subset; full-dataset results were recorded separately.',
     ],
     sourceH: 'Source and verification',
     sourceP: 'The source and results are bound to the compiler commit used to build this site.',

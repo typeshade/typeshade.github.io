@@ -26,7 +26,8 @@
     "qa:worker-routes": "node scripts/check-worker-routes.mjs dist",
     "qa:openseo": "bun scripts/openseo-audit.mts dist",
     "check:playground": "node scripts/check-playground.mjs",
-    "check:live": "node scripts/check-live.mjs"
+    "check:live": "node scripts/check-live.mjs",
+    "check:mnist": "node scripts/check-mnist-browser.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

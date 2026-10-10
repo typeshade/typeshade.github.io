@@ -3286,6 +3286,44 @@ export const ko: Copy = {
   },
 
   mnist: {
+    demo: {
+      title: '브라우저에서 MNIST 직접 학습',
+      description:
+        '실제 TypeShade Compute 프로그램으로 학습하고, 테스트 숫자를 확인한 뒤 직접 그린 숫자를 분류합니다.',
+      backend: '백엔드',
+      auto: '자동 (WebGPU, 이후 WebGL2)',
+      webgpu: 'WebGPU',
+      webgl2: 'WebGL2',
+      samples: '학습 이미지',
+      epochs: '에폭',
+      start: '데이터 받아 학습',
+      cancel: '중단',
+      dataNote:
+        '시작하면 공식 MNIST gzip 파일 약 12 MB를 다운로드합니다. 데이터는 브라우저 안에서 처리하며 이미지나 그림을 TypeShade 서버에 보내지 않습니다.',
+      idle: '백엔드를 고르고 학습을 시작하세요.',
+      downloading: '공식 MNIST 데이터를 다운로드하고 검사하는 중',
+      compiling: 'TypeShade Compute 파이프라인 생성 중',
+      running: '학습 중',
+      completed: '학습 완료',
+      cancelled: '학습 중단',
+      error: 'MNIST 실행 오류',
+      epoch: '에폭',
+      testAccuracy: '평가 정확도',
+      loss: '손실',
+      canvas: '숫자 그리기',
+      drawNote:
+        '학습 후 검은 사각형에 흰색 숫자를 그려 보세요. TypeShade 순전파와 예측 커널로 계산합니다.',
+      clear: '지우기',
+      sample: '다음 테스트 숫자',
+      drawFirst: '먼저 숫자를 그려 주세요.',
+      drawPrompt: '숫자를 그리거나 테스트 이미지를 고르세요.',
+      prediction: '예측:',
+      actualLabel: 'MNIST 정답:',
+      distribution: '숫자 0에서 9까지의 점수',
+      resultHeading: '학습 진행 상황',
+      computeNote:
+        '호스트는 이미지를 읽고 배치를 제어합니다. 학습과 추론 로짓은 선택한 TypeShade WebGPU 또는 WebGL2 백엔드에서 계산합니다. WebGL2는 GLSL ES 3.00 패스를 사용합니다.',
+    },
     title: 'TypeShade MNIST 학습',
     description:
       'TypeShade Compute로 손글씨 숫자를 학습하고 CPU, WebGPU, WebGL2 실행 결과를 확인하는 재현 실험입니다.',
@@ -3297,16 +3335,17 @@ export const ko: Copy = {
       '손글씨 숫자를 분류하는 소프트맥스 모델을 학습합니다. 모델 계산은 TypeShade가 맡고, 호스트는 데이터를 읽어 배치를 제어합니다.',
     browserH: '실행 범위:',
     browserNote:
-      '이 페이지에는 측정 결과와 재현 명령어가 있습니다. 브라우저에서 학습을 직접 실행하는 데모는 아닙니다.',
+      '실습 도구는 실제 MNIST 데이터 일부를 브라우저에서 학습합니다. 아래 전체 데이터 수치는 별도로 진행한 재현 실험 결과입니다.',
     modelH: '학습 파이프라인',
     modelP:
-      '입력 특성은 784개, 출력 클래스는 10개입니다. 계산은 TypeShade Compute 진입점 다섯 개로 나뉩니다.',
+      '입력 특성은 784개, 출력 클래스는 10개입니다. 학습과 추론은 TypeShade Compute 진입점 여섯 개로 계산합니다.',
     kernels: [
       'forward는 클래스별 로짓을 계산합니다.',
       'objective는 안정적인 소프트맥스와 교차 엔트로피를 계산합니다.',
       'reduce는 배치의 기울기를 합산합니다.',
       'backward는 가중치와 편향의 기울기를 계산합니다.',
       'update는 확률적 경사 하강법으로 매개변수를 갱신합니다.',
+      'predict는 TypeShade에서 숫자별 확률과 최종 클래스를 계산합니다.',
     ],
     resultsH: '검증된 결과',
     resultsP:
@@ -3335,7 +3374,7 @@ export const ko: Copy = {
       'WebGL2는 네이티브 컴퓨트 셰이더가 아니라 생성된 GLSL ES 3.00 패스를 사용합니다.',
       'WebGL2 CI는 수치 계산과 실제 데이터 일부를 검증했습니다. 전체 데이터 정확도와 속도는 아직 검증하지 않았습니다.',
       '공개된 전체 WebGPU 학습 결과는 소프트웨어 렌더링으로 측정했습니다. 물리 GPU 가속 성능은 주장하지 않습니다.',
-      '사이트에는 재현 자료와 명령어를 게시합니다. 방문자의 브라우저에서 학습 모델을 실행하지는 않습니다.',
+      '실습 도구는 선택한 데이터 일부로 브라우저에서 TypeShade 계산을 실행합니다. 전체 데이터 실험 결과는 별도 기록입니다.',
     ],
     sourceH: '소스와 검증 기록',
     sourceP: '소스와 결과는 사이트 빌드에 사용한 컴파일러 커밋을 가리킵니다.',

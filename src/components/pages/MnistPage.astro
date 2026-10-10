@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import Docs from '../../layouts/Docs.astro';
 import TypeShadeCode from '../TypeShadeCode.astro';
+import MnistTrainer from '../MnistTrainer.astro';
 import { copyFor, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
 import { facts } from '../../lib/examples.ts';
@@ -38,6 +39,7 @@ const commands = [
 ].join('\n');
 const fullCommand = 'node --experimental-strip-types journeys/mnist/run.ts --tier webgpu';
 const headings = [
+  { depth: 2, slug: 'lab', text: c.demo.title },
   { depth: 2, slug: 'model', text: c.modelH },
   { depth: 2, slug: 'results', text: c.resultsH },
   { depth: 2, slug: 'run', text: c.runH },
@@ -50,6 +52,11 @@ const headings = [
   <h1>{c.h1}</h1>
   <p>{c.intro}</p>
   <p><strong>{c.browserH}</strong> {c.browserNote}</p>
+
+  <section>
+    <h2 id="lab">{c.demo.title}</h2>
+    <MnistTrainer locale={locale} />
+  </section>
 
   <section>
     <h2 id="model">{c.modelH}</h2>
