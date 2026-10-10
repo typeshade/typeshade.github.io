@@ -45,7 +45,8 @@ export async function fetchMnist(
     labelBytes.byteLength < 8 ||
     iv.getUint32(0) !== 2051 ||
     lv.getUint32(0) !== 2049
-  ) throw new Error('Invalid MNIST IDX header');
+  )
+    throw new Error('Invalid MNIST IDX header');
   const rows = iv.getUint32(4);
   if (
     rows !== lv.getUint32(4) ||
@@ -55,7 +56,8 @@ export async function fetchMnist(
     labelBytes.byteLength !== 8 + rows ||
     limit < 1 ||
     limit > rows
-  ) throw new Error('Invalid MNIST IDX dimensions or payload');
+  )
+    throw new Error('Invalid MNIST IDX dimensions or payload');
   const input = new Uint8Array(imageBytes, 16, limit * 784);
   const sourceLabels = new Uint8Array(labelBytes, 8, limit);
   if (sourceLabels.some((v) => v > 9)) throw new Error('Invalid MNIST label');

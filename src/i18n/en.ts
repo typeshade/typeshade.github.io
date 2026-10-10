@@ -3131,7 +3131,8 @@ export const en = {
   mnist: {
     demo: {
       title: 'Try MNIST in your browser',
-      description: 'Train the actual TypeShade compute program, try test digits, then draw your own digit to classify.',
+      description:
+        'Train the actual TypeShade compute program, try test digits, then draw your own digit to classify.',
       backend: 'Backend',
       auto: 'Auto (WebGPU, then WebGL2)',
       webgpu: 'WebGPU',
@@ -3140,7 +3141,8 @@ export const en = {
       epochs: 'Epochs',
       start: 'Download and train',
       cancel: 'Cancel',
-      dataNote: 'On start, the browser downloads approximately 12 MB of official MNIST gzip files. They are processed locally. No images or drawings are sent to TypeShade servers.',
+      dataNote:
+        'On start, the browser downloads approximately 12 MB of official MNIST gzip files. They are processed locally. No images or drawings are sent to TypeShade servers.',
       idle: 'Choose a backend and start training.',
       downloading: 'Downloading and validating official MNIST data',
       compiling: 'Creating TypeShade compute pipelines',
@@ -3152,7 +3154,8 @@ export const en = {
       testAccuracy: 'Test accuracy',
       loss: 'Loss',
       canvas: 'Draw a digit',
-      drawNote: 'Draw a white digit in the square after training. The same TypeShade forward kernel predicts it.',
+      drawNote:
+        'Draw a white digit in the square after training. The same TypeShade forward kernel predicts it.',
       clear: 'Clear',
       sample: 'Next test digit',
       drawFirst: 'Draw a digit before predicting.',
@@ -3161,7 +3164,8 @@ export const en = {
       actualLabel: 'MNIST label:',
       distribution: 'Scores for digits 0 to 9',
       resultHeading: 'Training progress',
-      computeNote: 'The host loads images and controls the batches. Training and inference logits run through the selected TypeShade WebGPU or WebGL2 backend. WebGL2 uses lowered GLSL ES 3.00 passes.',
+      computeNote:
+        'The host loads images and controls the batches. Training and inference logits run through the selected TypeShade WebGPU or WebGL2 backend. WebGL2 uses lowered GLSL ES 3.00 passes.',
     },
     title: 'MNIST training with TypeShade',
     description:

@@ -3288,7 +3288,8 @@ export const ko: Copy = {
   mnist: {
     demo: {
       title: '브라우저에서 MNIST 직접 학습',
-      description: '실제 TypeShade Compute 프로그램으로 학습하고, 테스트 숫자를 확인한 뒤 직접 그린 숫자를 분류합니다.',
+      description:
+        '실제 TypeShade Compute 프로그램으로 학습하고, 테스트 숫자를 확인한 뒤 직접 그린 숫자를 분류합니다.',
       backend: '백엔드',
       auto: '자동 (WebGPU, 이후 WebGL2)',
       webgpu: 'WebGPU',
@@ -3297,7 +3298,8 @@ export const ko: Copy = {
       epochs: '에폭',
       start: '데이터 받아 학습',
       cancel: '중단',
-      dataNote: '시작하면 공식 MNIST gzip 파일 약 12 MB를 다운로드합니다. 데이터는 브라우저 안에서 처리하며 이미지나 그림을 TypeShade 서버에 보내지 않습니다.',
+      dataNote:
+        '시작하면 공식 MNIST gzip 파일 약 12 MB를 다운로드합니다. 데이터는 브라우저 안에서 처리하며 이미지나 그림을 TypeShade 서버에 보내지 않습니다.',
       idle: '백엔드를 고르고 학습을 시작하세요.',
       downloading: '공식 MNIST 데이터를 다운로드하고 검사하는 중',
       compiling: 'TypeShade Compute 파이프라인 생성 중',
@@ -3309,7 +3311,8 @@ export const ko: Copy = {
       testAccuracy: '평가 정확도',
       loss: '손실',
       canvas: '숫자 그리기',
-      drawNote: '학습 후 검은 사각형에 흰색 숫자를 그려 보세요. 같은 TypeShade 순전파 커널로 예측합니다.',
+      drawNote:
+        '학습 후 검은 사각형에 흰색 숫자를 그려 보세요. 같은 TypeShade 순전파 커널로 예측합니다.',
       clear: '지우기',
       sample: '다음 테스트 숫자',
       drawFirst: '먼저 숫자를 그려 주세요.',
@@ -3318,7 +3321,8 @@ export const ko: Copy = {
       actualLabel: 'MNIST 정답:',
       distribution: '숫자 0에서 9까지의 점수',
       resultHeading: '학습 진행 상황',
-      computeNote: '호스트는 이미지를 읽고 배치를 제어합니다. 학습과 추론 로짓은 선택한 TypeShade WebGPU 또는 WebGL2 백엔드에서 계산합니다. WebGL2는 GLSL ES 3.00 패스를 사용합니다.',
+      computeNote:
+        '호스트는 이미지를 읽고 배치를 제어합니다. 학습과 추론 로짓은 선택한 TypeShade WebGPU 또는 WebGL2 백엔드에서 계산합니다. WebGL2는 GLSL ES 3.00 패스를 사용합니다.',
     },
     title: 'TypeShade MNIST 학습',
     description:
@@ -3369,7 +3373,7 @@ export const ko: Copy = {
       'WebGL2는 네이티브 컴퓨트 셰이더가 아니라 생성된 GLSL ES 3.00 패스를 사용합니다.',
       'WebGL2 CI는 수치 계산과 실제 데이터 일부를 검증했습니다. 전체 데이터 정확도와 속도는 아직 검증하지 않았습니다.',
       '공개된 전체 WebGPU 학습 결과는 소프트웨어 렌더링으로 측정했습니다. 물리 GPU 가속 성능은 주장하지 않습니다.',
-      '실습 도구는 선택한 데이터 일부로 브라우저에서 TypeShade 계산을 실행합니다. 전체 데이터 실험 결과는 별도 기록입니다.'
+      '실습 도구는 선택한 데이터 일부로 브라우저에서 TypeShade 계산을 실행합니다. 전체 데이터 실험 결과는 별도 기록입니다.',
     ],
     sourceH: '소스와 검증 기록',
     sourceP: '소스와 결과는 사이트 빌드에 사용한 컴파일러 커밋을 가리킵니다.',

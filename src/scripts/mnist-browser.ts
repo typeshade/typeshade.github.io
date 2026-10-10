@@ -62,7 +62,9 @@ export function mountMnist(root: HTMLElement): void {
   let predictionSequence = 0;
   let processedPixels = new Float32Array(inputs);
 
-  const setStatus = (message: string) => { status.textContent = message; };
+  const setStatus = (message: string) => {
+    status.textContent = message;
+  };
   const buttons = () => {
     start.disabled = busy;
     cancel.disabled = !busy;
@@ -103,7 +105,10 @@ export function mountMnist(root: HTMLElement): void {
     // Fit the written mark into a 20px box; MNIST digits are approximately
     // size-normalized inside their 28x28 frames.
     const source = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    let left = canvas.width, top = canvas.height, right = -1, bottom = -1;
+    let left = canvas.width,
+      top = canvas.height,
+      right = -1,
+      bottom = -1;
     for (let y = 0; y < canvas.height; y++) {
       for (let x = 0; x < canvas.width; x++) {
         if (source.data[(y * canvas.width + x) * 4] < 30) continue;
@@ -114,15 +119,23 @@ export function mountMnist(root: HTMLElement): void {
       }
     }
     if (right < left) return new Float32Array(inputs);
-    const width = right - left + 1, height = bottom - top + 1;
+    const width = right - left + 1,
+      height = bottom - top + 1;
     const factor = 20 / Math.max(width, height);
     const fittedWidth = Math.max(1, Math.round(width * factor));
     const fittedHeight = Math.max(1, Math.round(height * factor));
     smallContext.fillStyle = '#000';
     smallContext.fillRect(0, 0, size, size);
     smallContext.drawImage(
-      canvas, left, top, width, height,
-      (size - fittedWidth) / 2, (size - fittedHeight) / 2, fittedWidth, fittedHeight,
+      canvas,
+      left,
+      top,
+      width,
+      height,
+      (size - fittedWidth) / 2,
+      (size - fittedHeight) / 2,
+      fittedWidth,
+      fittedHeight,
     );
     return createPixels(smallContext.getImageData(0, 0, size, size).data);
   };
@@ -154,11 +167,12 @@ export function mountMnist(root: HTMLElement): void {
     try {
       engine.setBatch(pixels, new Uint32Array([0]));
       await engine.dispatch('forward', 1, 0);
-      const logits = await engine.read('logits') as Float32Array;
+      const logits = (await engine.read('logits')) as Float32Array;
       if (current !== predictionSequence) return;
       const values = softmax(logits);
       const answer = values.indexOf(Math.max(...values));
-      guess.textContent = words.prediction + ' ' + answer + ' (' + (values[answer] * 100).toFixed(1) + '%)';
+      guess.textContent =
+        words.prediction + ' ' + answer + ' (' + (values[answer] * 100).toFixed(1) + '%)';
       showBars(values);
     } catch (error) {
       setStatus(words.error + ': ' + String(error));
@@ -224,7 +238,8 @@ export function mountMnist(root: HTMLElement): void {
   };
   const evaluate = async (data: MnistData, signal: AbortSignal) => {
     if (!engine) throw new Error('Missing MNIST backend');
-    let loss = 0, correct = 0;
+    let loss = 0,
+      correct = 0;
     for (let offset = 0; offset < data.labels.length; offset += batchSize) {
       checkAbort(signal);
       const count = Math.min(batchSize, data.labels.length - offset);
@@ -235,7 +250,7 @@ export function mountMnist(root: HTMLElement): void {
       await engine.dispatch('forward', count, 0);
       await engine.dispatch('objective', count, 0);
       await engine.dispatch('reduce', count, 0);
-      const stats = await engine.read('stats') as Float32Array;
+      const stats = (await engine.read('stats')) as Float32Array;
       loss += stats[0] * count;
       correct += stats[1];
     }
@@ -296,19 +311,39 @@ export function mountMnist(root: HTMLElement): void {
           await engine.dispatch('update', count, 0.1);
           progress.value = (epoch - 1) * samples + offset + count;
           if (offset % (batchSize * 4) === 0) {
-            setStatus(words.running + ': ' + engine.tier + ', ' + words.epoch + ' ' + epoch + '/' + epochs);
+            setStatus(
+              words.running + ': ' + engine.tier + ', ' + words.epoch + ' ' + epoch + '/' + epochs,
+            );
             await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
           }
         }
         const metrics = await evaluate(testData, signal);
         const entry = document.createElement('li');
-        entry.textContent = words.epoch + ' ' + epoch + '/' + epochs + ': ' +
-          words.testAccuracy + ' ' + (metrics.accuracy * 100).toFixed(1) +
-          '%, ' + words.loss + ' ' + metrics.loss.toFixed(3);
+        entry.textContent =
+          words.epoch +
+          ' ' +
+          epoch +
+          '/' +
+          epochs +
+          ': ' +
+          words.testAccuracy +
+          ' ' +
+          (metrics.accuracy * 100).toFixed(1) +
+          '%, ' +
+          words.loss +
+          ' ' +
+          metrics.loss.toFixed(3);
         results.append(entry);
       }
       checkAbort(signal);
-      setStatus(words.completed + ': ' + engine.tier + ', ' + ((performance.now() - started) / 1000).toFixed(1) + 's');
+      setStatus(
+        words.completed +
+          ': ' +
+          engine.tier +
+          ', ' +
+          ((performance.now() - started) / 1000).toFixed(1) +
+          's',
+      );
       currentSample = -1;
       busy = false;
       buttons();
@@ -323,8 +358,12 @@ export function mountMnist(root: HTMLElement): void {
       buttons();
     }
   });
-  addEventListener('pagehide', () => {
-    signalController?.abort();
-    engine?.destroy();
-  }, { once: true });
+  addEventListener(
+    'pagehide',
+    () => {
+      signalController?.abort();
+      engine?.destroy();
+    },
+    { once: true },
+  );
 }

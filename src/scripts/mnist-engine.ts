@@ -29,7 +29,11 @@ function initialWeights(): Float32Array {
   return weights;
 }
 
-export async function openMnistEngine(pack: Pack, capacity: number, tier: Tier): Promise<MnistEngine> {
+export async function openMnistEngine(
+  pack: Pack,
+  capacity: number,
+  tier: Tier,
+): Promise<MnistEngine> {
   if (tier === 'webgl2') {
     for (const name of entries) {
       const program = pack.gl?.computes?.[name];
@@ -56,7 +60,9 @@ export async function openMnistEngine(pack: Pack, capacity: number, tier: Tier):
     gradB: new Float32Array(10),
   };
   const buffers: Record<string, Resident<ArrayValue>> = {};
-  const pipelines: Partial<Record<Entry, Awaited<ReturnType<ReturnType<typeof rt.load>['compute']>>>> = {};
+  const pipelines: Partial<
+    Record<Entry, Awaited<ReturnType<ReturnType<typeof rt.load>['compute']>>>
+  > = {};
   try {
     const program = rt.load(pack);
     for (const [name, value] of Object.entries(host)) buffers[name] = resident(value);
@@ -66,21 +72,26 @@ export async function openMnistEngine(pack: Pack, capacity: number, tier: Tier):
     rt.destroy();
     throw error;
   }
-  const renderer = tier === 'webgpu'
-    ? ((rt.device as GPUDevice).adapterInfo?.description ||
-       (rt.device as GPUDevice).adapterInfo?.vendor || 'WebGPU adapter')
-    : (() => {
-        const gl = rt.device as WebGL2RenderingContext;
-        const ext = gl.getExtension('WEBGL_debug_renderer_info');
-        return String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
-      })();
+  const renderer =
+    tier === 'webgpu'
+      ? (rt.device as GPUDevice).adapterInfo?.description ||
+        (rt.device as GPUDevice).adapterInfo?.vendor ||
+        'WebGPU adapter'
+      : (() => {
+          const gl = rt.device as WebGL2RenderingContext;
+          const ext = gl.getExtension('WEBGL_debug_renderer_info');
+          return String(
+            ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+          );
+        })();
   let disposed = false;
   return {
     tier,
     renderer,
     setBatch(pixels, labels) {
       if (disposed) throw new Error('MNIST backend was released');
-      if (pixels.length > capacity * 784 || labels.length > capacity) throw new Error('Oversized MNIST batch');
+      if (pixels.length > capacity * 784 || labels.length > capacity)
+        throw new Error('Oversized MNIST batch');
       host.pixels.fill(0);
       host.pixels.set(pixels);
       host.labels.fill(0);
@@ -90,8 +101,12 @@ export async function openMnistEngine(pack: Pack, capacity: number, tier: Tier):
     },
     async dispatch(entry, count, rate) {
       if (disposed) throw new Error('MNIST backend was released');
-      const workgroups = entry === 'reduce' ? 1 : entry === 'backward' || entry === 'update'
-        ? Math.ceil(7840 / 64) : Math.ceil(count / 64);
+      const workgroups =
+        entry === 'reduce'
+          ? 1
+          : entry === 'backward' || entry === 'update'
+            ? Math.ceil(7840 / 64)
+            : Math.ceil(count / 64);
       const provided: Record<string, unknown> = {
         ...buffers,
         batch: { count, offset: 0, rate },
