@@ -100,6 +100,7 @@ export const playgroundExampleIds = [
   'compute-sync',
   'compute-reduction-twin',
   'workgroup-tile-2d',
+  'workgroup-override',
   'loop-kernel',
   'loop-reduction',
   'loop-struct-array',

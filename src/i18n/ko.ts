@@ -1645,7 +1645,7 @@ export const ko: Copy = {
       loadOwnsP:
         '이때 위 표에서 애플리케이션이 하던 일은 대부분 런타임이 맡습니다. `createRuntime({ device })`에 애플리케이션의 `GPUDevice`를 넘기면 그 디바이스를 쓰되 파괴하지는 않고, 넘기지 않으면 프로그램에 필요한 기능을 갖춘 디바이스를 직접 요청합니다. 파이프라인과 바인드 그룹은 매니페스트에 적힌 레이아웃대로 만듭니다. 그리기나 디스패치가 이름으로 넘긴 값으로 바인딩을 채우고, 버퍼와 텍스처, 샘플러도 런타임이 만듭니다. 애플리케이션은 컴파일러가 알 수 없는 것을 정합니다. 파이프라인별 타깃과 깊이, 토폴로지, 그리고 프레임을 언제 그릴지가 여기에 속합니다. 애플리케이션이 직접 만든 `GPUBuffer`, `GPUTexture`, `GPUSampler`는 그대로 바인딩되고, 프레임의 `encoder`와 패스의 `raw` 인코더에는 애플리케이션 자신의 명령을 기록할 수 있습니다.',
       loadOptionsP:
-        '프로그램의 override 값은 이름으로 지정합니다. 그릴 때는 `RenderState.constants`, 디스패치할 때는 `Program.compute()`의 `constants` 옵션으로 넘깁니다. `Frame.submit()`은 기록한 진입점마다 콘솔 줄 수와 버퍼 공간이 부족해 기록하지 못한 호출 수를 돌려줍니다. 콘솔 sink를 쓰는 호스트는 이 수치로 누락된 호출을 알릴 수 있습니다.',
+        '프로그램의 override 값은 이름으로 지정합니다. 그릴 때는 `RenderState.constants`, 디스패치할 때는 `Program.compute()`의 `constants` 옵션으로 넘깁니다. 컴퓨트 파이프라인은 진입점의 기본값과 선택한 값으로 `workgroupShape`를 결정하므로 디스패치 수를 계산하기 전에 이 값을 읽습니다. 런타임은 선택한 모양이 현재 WebGPU 디바이스의 한도 안에 있는지 확인합니다. `Frame.submit()`은 기록한 진입점마다 콘솔 줄 수와 버퍼 공간이 부족해 기록하지 못한 호출 수를 돌려줍니다. 콘솔 sink를 쓰는 호스트는 이 수치로 누락된 호출을 알릴 수 있습니다.',
       loadEmitP:
         '빌드 뒤에 콘솔 기록을 켜는 호스트는 `typeshade/emit`의 `repack`을 `createRuntime({ emit: repack })`으로 넘길 수 있습니다. 이때 매니페스트는 `packModule(module, { ir: true })`로 만들어 이식 가능한 IR을 담아야 합니다. 로드 시점 이미터는 매니페스트에 저장된 emit 옵션을 쓰며, TypeScript 프런트엔드를 포함하지 않습니다.',
       loadNote:
@@ -2007,6 +2007,7 @@ export const ko: Copy = {
         'loops-over-data': '데이터를 도는 루프',
         'path-tracer': '경로 추적기',
         'workgroup-tile-2d': '이차원 워크그룹',
+        'workgroup-override': '입력 크기에 맞춘 워크그룹',
         'loop-kernel': '커널로 도는 루프',
         'loop-reduction': '루프 안의 리덕션',
         'loop-struct-array': '구조체 배열을 도는 루프',
@@ -2155,6 +2156,8 @@ export const ko: Copy = {
         'gpu-console':
           '컴퓨트 커널 안에서 `console.log("i =", gid.x, p)`를 부릅니다. 문자열 리터럴은 라벨이 되고, 크기가 정해진 값은 무엇이든 인자로 넘길 수 있습니다.',
         'compute-reduction-twin': '`compute-reduction.ts`를 소스 언어로 다시 쓴 예제입니다.',
+        'workgroup-override':
+          '`override<u32>` 하나가 컴퓨트 진입점의 워크그룹 크기와 공유 스크래치 배열의 바깥쪽 길이를 정합니다.',
         'hillshade-twin': '`hillshade.ts`를 소스 언어로 다시 쓴 예제입니다.',
         'plasma-twin': '`shadertoy-plasma.ts`를 소스 언어로 다시 쓴 예제입니다.',
         'julia-twin': '`julia.ts`를 소스 언어로 다시 쓴 예제입니다.',
@@ -2554,7 +2557,10 @@ export const ko: Copy = {
         slots: '4. binding 순서와 호스트 계약',
         slotsP:
           'resource slot은 파일의 declare 순서와 연결됩니다. 실제 binding 번호를 코드에 흩뿌리기보다 컴파일러와 호스트의 reflection 결과를 계약으로 사용하는 방향이 기본입니다.',
-        invalid: '5. 자주 하는 실수',
+        workgroup: '5. 워크그룹 메모리',
+        workgroupP:
+          '`workgroup<T>` 값은 한 워크그룹의 인보케이션들이 함께 씁니다. 내부 배열의 길이는 `@compute`와 같은 override로 정할 수 있습니다. 호스트는 파이프라인을 만들 때 그 값을 선택합니다.',
+        invalid: '6. 자주 하는 실수',
         invalidItems: [
           '`declare const x: f32`처럼 `uniform<T>`나 `storage<T>` 없이 선언하지 않습니다.',
           'resource를 `let`으로 선언하지 않습니다. 컴파일러는 `declare let x: storage<T>`를 거부하고, 대신 쓸 `declare const` 줄을 알려 줍니다.',
@@ -2575,7 +2581,9 @@ export const ko: Copy = {
           'TypeScript에서 `export function`은 모듈의 공개 함수입니다. TypeShade에서는 여기에 stage decorator를 더하면 pipeline entry point라는 GPU 의미가 생깁니다. decorator가 없는 함수는 재사용 가능한 helper로 남습니다.',
         compute: '2. Compute',
         computeP:
-          '`@compute`는 workgroup 크기를 함께 표현합니다. `global_invocation_id` 같은 compute builtin은 암시적 전역 변수가 아니라 명시적인 함수 parameter로 받습니다.',
+          'compute 진입점의 `@compute` 차원에는 `override<u32>` 이름을 쓸 수 있습니다. 숫자로 적던 차원도 계속 쓸 수 있습니다. `global_invocation_id` 같은 builtin은 명시적인 매개변수로 받습니다.',
+        computeHostP:
+          '일반 TypeScript에서 입력 모양에 따라 크기를 고른 뒤 `program.compute()`의 이름 있는 상수로 넘깁니다. 디스패치 수는 `pipeline.workgroupShape`에서 계산합니다.',
         graphics: '3. Vertex와 fragment',
         graphicsP:
           '`@vertex`와 `@fragment`는 그래픽스 pipeline의 entry point를 표현합니다. 입력과 출력은 TypeShade value type과 명시적인 builtin parameter로 선언합니다.',
@@ -3003,7 +3011,9 @@ export const ko: Copy = {
           '`@group`이나 `@binding`은 적지 않습니다. 슬롯 번호는 파일 안 `declare`의 등장 순서이고, 위의 WGSL이 그 결과입니다. 텍스처와 샘플러도 같은 방식으로 다음 슬롯을 가져갑니다.',
         stagesH: '진입점과 속성',
         stagesP:
-          '스테이지 속성은 export한 함수에 붙이는 데코레이터입니다. 셋 중 아무것도 붙지 않은 함수는 헬퍼입니다. `@compute`가 받는 값은 워크그룹 크기 하나뿐이고 목록으로 적습니다. 컴파일러는 첫 번째 숫자만 나르며, y나 z가 1이 아닌 형태는 거부합니다.',
+          '스테이지 속성은 export한 함수에 붙이는 데코레이터입니다. 셋 중 아무것도 붙지 않은 함수는 헬퍼입니다. `@compute` 차원은 숫자나 이름 있는 override로 적습니다. 숫자로 적던 방식도 계속 쓸 수 있습니다.',
+        stagesOverrideP:
+          'WGSL에서는 모듈 수준 `override`로 값을 선언하고 `@workgroup_size`에서 이름을 씁니다. TypeShade에서는 같은 override로 workgroup 배열의 바깥쪽 길이도 정할 수 있습니다.',
         returnsP:
           '버텍스 진입점은 반드시 위치를 만들어 내야 합니다. 반환 타입이 `vec4`이면 그 자체가 position builtin을 답니다. 구조체를 반환하면 위치는 필드 하나가 나르고, 프로그램이 원하는 만큼 `@location` varying을 덧붙입니다. position 필드가 없는 구조체 반환, `void` 반환, `vec4`가 아닌 단일 타입은 각각 거부되며 어떤 필드나 타입을 적어야 하는지 함께 알려 줍니다.',
         builtinValuesH: 'builtin 값',

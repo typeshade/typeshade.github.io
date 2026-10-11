@@ -1688,7 +1688,7 @@ export const en = {
       loadOwnsP:
         "The runtime then does most of what the table above gives the application. It uses the application's `GPUDevice` when `createRuntime({ device })` names one, and never destroys it, or requests a device with the features the programs need. It builds every pipeline and bind group from the layouts in the manifest, packs each binding from the value a draw or a dispatch passes by name, and makes the buffers, textures and samplers. The application writes what the compiler cannot know: each pipeline's targets, depth and topology, and when a frame is drawn. A `GPUBuffer`, `GPUTexture` or `GPUSampler` of its own binds as it is, and the frame's `encoder` and a pass's `raw` encoder take its own commands.",
       loadOptionsP:
-        "Set a program's overrides by name through `RenderState.constants` for a draw or the `constants` option of `Program.compute()` for a dispatch. `Frame.submit()` returns the console's line and dropped-call counts for each recorded entry. A host with a console sink reads those counts to report calls that did not fit in the recording buffer.",
+        "Set a program's overrides by name through `RenderState.constants` for a draw or the `constants` option of `Program.compute()` for a dispatch. The compute pipeline resolves `workgroupShape` from the entry's defaults and selected values; read it before calculating dispatch counts. The runtime checks the selected shape against the active WebGPU device's limits. `Frame.submit()` returns the console's line and dropped-call counts for each recorded entry. A host with a console sink reads those counts to report calls that did not fit in the recording buffer.",
       loadEmitP:
         'A host that enables console recording after the build can pass `repack` from `typeshade/emit` as `createRuntime({ emit: repack })`. Build the manifest with `packModule(module, { ir: true })` so it carries the portable IR. The load-time emitter uses the emit options stored in the manifest and carries no TypeScript front end.',
       loadNote:
@@ -2375,7 +2375,10 @@ export const en = {
         slots: '4. Resource slots are a host contract',
         slotsP:
           'Resource slots follow declaration order in the file. Keep binding details as part of the compiler/host reflection contract instead of scattering binding numbers through shader code.',
-        invalid: '5. Common mistakes',
+        workgroup: '5. Workgroup memory',
+        workgroupP:
+          'A `workgroup<T>` value is shared by invocations in one group. Its outer array length can use the same override as `@compute`. The host chooses that value when it creates the pipeline.',
+        invalid: '6. Common mistakes',
         invalidItems: [
           'Do not declare `declare const x: f32`; a resource needs a space such as `uniform<T>` or `storage<T>`.',
           'Do not declare a resource with `let`. The compiler refuses `declare let x: storage<T>` and names the `declare const` line to write instead.',
@@ -2396,7 +2399,9 @@ export const en = {
           'In TypeScript, `export function` makes a function part of a module’s public surface. In TypeShade, adding a stage decorator gives that function the GPU meaning of a pipeline entry point. An undecorated function remains a reusable helper.',
         compute: '2. Compute',
         computeP:
-          '`@compute` carries the workgroup size. A compute builtin such as `global_invocation_id` is an explicit function parameter, not an injected global.',
+          'A compute entry can name an `override<u32>` in its `@compute` dimensions. Numeric dimensions remain valid. Builtins such as `global_invocation_id` are explicit parameters.',
+        computeHostP:
+          'Choose a size in ordinary TypeScript, then pass it as a named constant to `program.compute()`. Read `pipeline.workgroupShape` to calculate dispatch counts.',
         graphics: '3. Vertex and fragment',
         graphicsP:
           '`@vertex` and `@fragment` describe graphics-pipeline entry points. Inputs, outputs and builtins are expressed explicitly in the function signature.',
@@ -2837,7 +2842,9 @@ export const en = {
           'There is no `@group` or `@binding` to write. The slot index is the source order of the `declare` in the file, and the WGSL above shows what that came out as. A texture or a sampler takes the next slot the same way.',
         stagesH: 'Entry points and attributes',
         stagesP:
-          'A stage attribute is a decorator on an exported function. A function with none of them is a helper. Workgroup size is the only payload on `@compute`, written as a list; the compiler carries the first number and refuses a shape whose y or z is anything but 1.',
+          'A stage attribute is a decorator on an exported function. A function with none of them is a helper. `@compute` takes dimensions as a list of numbers or named overrides, and numeric dimensions remain valid.',
+        stagesOverrideP:
+          'WGSL declares the value with a module-level `override`, and `@workgroup_size` can use its name. TypeShade can use the same override for the outer length of a workgroup array.',
         returnsP:
           'A vertex entry has to produce a position. A return typed `vec4` carries the position builtin on its own, and a struct return carries it in a field and adds as many `@location` varyings as the program wants. A struct return with no position field, a `void` return and a bare type that is not a `vec4` are each refused, naming the field or the type to write.',
         builtinValuesH: 'Builtin values',

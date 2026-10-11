@@ -2,7 +2,7 @@
 id: capabilities-extensions
 source: ba14bcf854244061af71291f9f9d45ecb90872abbaa35245e3c8a79c746a7541
 sourceLine: 1891
-rules: 8.7 FYpP5pg4_Ct5BfBIVI4VaTEc8VskMuT5JgT4arrvVCg=
+rules: 8.7 6nXwFhkduvfWc5DgkjOLkznHD8X0n6kYTNs5_bU7BjI=
 ---
 
 이 절을 읽고 나면 모듈에 필요한 GPU 기능을 선언하고, 그 기능이 타깃마다 어떤 비용이

@@ -248,6 +248,7 @@ export const SHADE_GROUPS = [
       'compute-sync',
       'compute-reduction-twin',
       'workgroup-tile-2d',
+      'workgroup-override',
     ],
   },
   {
