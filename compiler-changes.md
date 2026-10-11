@@ -177,4 +177,4 @@ id first, then the pull request that did the work.
   TypeScript selects values through `program.compute(..., { constants })` and reads the
   resolved `workgroupShape`. The new compiler example appears in the compute gallery and
   Playground picker. Pinned at compiler commit `b0e489b3a3991278973916933a991e807e00318d`;
-  handled in the current site pull request.
+  handled in #154.
