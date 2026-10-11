@@ -12,7 +12,7 @@ interface Props { locale: Locale }
 const { locale } = Astro.props;
 const content = copyFor(locale).language.topics.resources;
 const headings = [
-  ['mapping', content.mapping], ['decl', content.decl], ['access', content.access], ['slots', content.slots], ['invalid', content.invalid],
+  ['mapping', content.mapping], ['decl', content.decl], ['access', content.access], ['slots', content.slots], ['workgroup', content.workgroup], ['invalid', content.invalid],
 ].map(([slug, text]) => ({ depth: 2, slug, text: text.replace(/`/g, '') }));
 ---
 
@@ -24,6 +24,8 @@ const headings = [
   <h2 id="access">{content.access}</h2><p><Rich text={content.accessP} locale={locale} /></p>
   <table><thead><tr><th>Declaration</th><th>Space</th><th>Access</th></tr></thead><tbody><tr><td data-label="Declaration"><code>declare const x: uniform&lt;T&gt;</code></td><td data-label="Space">uniform</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare const x: storage&lt;T&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read</td></tr><tr><td data-label="Declaration"><code>declare const x: storage&lt;T, "read_write"&gt;</code></td><td data-label="Space">storage</td><td data-label="Access">read_write</td></tr></tbody></table>
   <h2 id="slots">{content.slots}</h2><p>{content.slotsP}</p>
+  <h2 id="workgroup">{content.workgroup}</h2><p><Rich text={content.workgroupP} locale={locale} /></p>
+  <TypeShadeCode code={`const WG_SIZE: override<u32> = 64;\nlet tile: workgroup<array<f32, WG_SIZE>>;`} />
   <h2 id="invalid">{content.invalid}</h2><ul>{content.invalidItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <p><a href={localePath(locale, links.languageStages.href)}>{content.next}</a></p>
 </Docs>

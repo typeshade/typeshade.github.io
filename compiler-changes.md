@@ -172,3 +172,9 @@ id first, then the pull request that did the work.
 - 0053: the runtime's `Geometry` accepts resident vertex and index data without repeated
   uploads. The API reference reads its definition and JSDoc from the pinned compiler.
   The site's existing examples do not use that resource form. Reviewed in #130.
+- 0057: named `override<u32>` values can set `@compute` dimensions and a workgroup array's
+  outer length. The shader stages, resources and WGSL mapping pages show the syntax; host
+  TypeScript selects values through `program.compute(..., { constants })` and reads the
+  resolved `workgroupShape`. The new compiler example appears in the compute gallery and
+  Playground picker. Pinned at compiler commit `b0e489b3a3991278973916933a991e807e00318d`;
+  handled in #154.

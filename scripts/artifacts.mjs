@@ -153,6 +153,7 @@ export const NO_STILL_REASONS = {
   'gpu-console': 'no-glsl',
   'workgroup-scratch': 'no-glsl',
   'workgroup-reduce': 'no-glsl',
+  'workgroup-override': 'no-glsl',
   'shadow-compare': 'texture',
   'cube-env': 'texture',
   'cube-array-gather': 'no-glsl',
