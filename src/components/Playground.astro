@@ -12,6 +12,7 @@ import { exampleSourceHref } from '../lib/example-pages.ts';
 import { shadeExampleList, SHADE_GROUPS } from '../lib/shade-examples.ts';
 import { NO_STILL_REASONS, SHADE_STILL_EXAMPLES } from '../../scripts/artifacts.mjs';
 import { GALLERY_AUTHOR_MAX, GALLERY_TITLE_MAX } from '../lib/example-data.ts';
+import { hostExamples } from '../../vendor/shader-dsl/examples/hosts/index.ts';
 
 interface Props {
   locale: Locale;
@@ -34,7 +35,18 @@ const t = copyFor(locale).playground;
 // filesystem, so the browser half never imports it. The words are the gallery's, under
 // `examples.shade`, so the picker and the tile on /guide/examples/ cannot disagree.
 const shade = copyFor(locale).examples.shade;
-const all = playgroundExamples().map((example) => ({
+interface Entry {
+  id: string;
+  source: string;
+  imports: readonly string[];
+  passes?: readonly { readonly name: string; readonly file: string }[];
+  title: string;
+  description: string;
+  defaults: ReturnType<typeof twinUniformDefaults>;
+  /** A host example's host.ts. */
+  host?: string;
+}
+const all: Entry[] = playgroundExamples().map((example) => ({
   id: example.id,
   source: example.source,
   imports: example.imports,
@@ -45,6 +57,21 @@ const all = playgroundExamples().map((example) => ({
   // still shows. The panel starts every other field from its own defaults.
   defaults: twinUniformDefaults(shadeExampleList.find((entry) => entry.id === example.id)?.twinOf),
 }));
+// The host examples (compiler change 0061) follow, each a module and the host.ts that runs it:
+// the editor opens the module as the main file and host.ts in the tab beside it. Their words
+// are the examples page's, under `examples.host`.
+const host = copyFor(locale).examples.host;
+all.push(
+  ...hostExamples.map((example) => ({
+    id: example.id,
+    source: example.shadeSource,
+    imports: [],
+    host: example.hostSource,
+    title: host.titles[example.id]!,
+    description: host.descriptions[example.id]!,
+    defaults: twinUniformDefaults(undefined),
+  })),
+);
 if (seed && !all.some((example) => example.id === seed)) {
   throw new Error(`[playground] no .shade.ts example '${seed}' to seed the editor with`);
 }
@@ -96,7 +123,15 @@ const galleryGroups = seeded
       tiles: examples
         .filter((example) => (group.ids as readonly string[]).includes(example.id))
         .map((example) => ({ ...example, still: shadeStills.has(example.id) })),
-    })).filter((group) => group.tiles.length > 0);
+    }))
+      .concat([
+        {
+          key: 'host',
+          heading: host.h,
+          tiles: examples.filter((example) => example.host !== undefined).map((example) => ({ ...example, still: false })),
+        },
+      ])
+      .filter((group) => group.tiles.length > 0);
 // The file the Blank tile opens. Code is not copy, so it lives here beside the sample: the
 // three fields the runtime fills and one fragment entry that reads all of them.
 const blank = `"use typeshade"
@@ -255,7 +290,7 @@ const runtimeCopy = {
               <li>
                 <a class="gallery-tile" href={`#example=${tile.id}`} data-open-example={tile.id}>
                   <span class="tile-cover">
-                    {tile.still ? <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" /> : <span class="tile-none">{w.stillKinds[NO_STILL_REASONS[tile.id as keyof typeof NO_STILL_REASONS] as keyof typeof w.stillKinds] ?? w.noStill}</span>}
+                    {tile.host !== undefined ? <span class="tile-none">{w.hostTile}</span> : tile.still ? <img src={`/stills/${tile.id}.webp`} alt="" loading="lazy" decoding="async" /> : <span class="tile-none">{w.stillKinds[NO_STILL_REASONS[tile.id as keyof typeof NO_STILL_REASONS] as keyof typeof w.stillKinds] ?? w.noStill}</span>}
                   </span>
                   <span class="tile-title">{tile.title}</span>
                   <span class="tile-note"><Rich text={tile.description} locale={locale} inert /></span>
@@ -275,7 +310,12 @@ const runtimeCopy = {
           <button type="button" class="gallery-button" data-open-gallery>{w.openGallery}</button>
           <label for="playground-example">{t.exampleLabel}</label>
           <select id="playground-example" data-example>
-            {examples.map((example) => <option value={example.id}>{example.title}</option>)}
+            {examples.filter((example) => example.host === undefined).map((example) => <option value={example.id}>{example.title}</option>)}
+            {examples.some((example) => example.host !== undefined) && (
+              <optgroup label={host.h}>
+                {examples.filter((example) => example.host !== undefined).map((example) => <option value={example.id}>{example.title}</option>)}
+              </optgroup>
+            )}
           </select>
         </div>
       )}
@@ -366,6 +406,8 @@ const runtimeCopy = {
         <div class="file-tabs" role="group" aria-label={w.files} data-file-tabs>
           <button type="button" class="file-tab" aria-current="true" data-file-tab={fileName || 'main'}>{fileName || t.editor}</button>
         </div>
+        {/* Runs host.ts in a sandboxed frame over the canvas, and stops it (src/scripts/playground-host-run.ts). */}
+        <button type="button" class="file-run" data-run-host aria-pressed="false" aria-label={w.runHost} title={w.runHostTitle}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" data-icon-run><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16l13-8z" /></svg><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" data-icon-stop hidden><rect x="6" y="6" width="12" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" /></svg><span data-run-host-label>{w.runHost}</span></button>
         <button type="button" class="file-add" data-new-file aria-label={w.newFile} title={w.newFile}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M12 11v6M9 14h6" /></svg></button>
         <button type="button" class="file-add" data-download aria-label={w.download} title={w.download}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg></button>
         <button type="button" class="file-add" data-open-vscode aria-label={w.openInVsCode} title={w.openInVsCodeTitle}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" /></svg></button>
@@ -460,6 +502,8 @@ const runtimeCopy = {
           {/* Which pixel the reader clicked in a module that logs, and how many lines it gave
               the Console tab. */}
           <p data-pixel-note hidden></p>
+          {/* While host.ts runs in its frame over the canvas. */}
+          <p data-host-note hidden>{w.hostNote}</p>
           <p data-canvas-note data-cpu-only hidden>{t.canvasIdle}</p>
           {/* Every binding and override the module declares, each with what the reader
               supplies it with. Built by src/scripts/playground-bindings.ts after a compile. */}
@@ -536,7 +580,7 @@ const runtimeCopy = {
 
   /* The file tabs sit where the pane's title was, the way an editor's open files do. The add
      button closes the row; a row with more tabs than room scrolls sideways inside itself. */
-  .pane-title.file-bar { padding-block: 6px; gap: 6px; }
+  .pane-title.file-bar { padding-block: 6px; gap: 6px; container: file-bar / inline-size; }
   .file-bar kbd { flex: none; }
   .file-tabs { display: flex; flex: 1 1 auto; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
   .file-tabs::-webkit-scrollbar { display: none; }
@@ -562,6 +606,21 @@ const runtimeCopy = {
   .file-add { flex: none; display: inline-grid; place-items: center; inline-size: 24px; block-size: 24px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 0; background: var(--color-ground); color: var(--color-text-2); cursor: pointer; }
   /* The header's icons (SiteHeader.astro): 24-unit strokes of 2, round ends, 16px, currentColor. */
   .file-add svg { inline-size: 16px; block-size: 16px; }
+  /* Run host.ts: the 24px face of the buttons beside it, with its word, since a bare triangle
+     reads as the transport's play. */
+  .file-run { flex: none; display: inline-flex; align-items: center; gap: 4px; block-size: 24px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 0 8px 0 6px; background: var(--color-ground); color: var(--color-text-2); font: 500 .75rem/1 var(--font-sans); white-space: nowrap; cursor: pointer; }
+  .file-run svg { inline-size: 14px; block-size: 14px; }
+  .file-run:hover { color: var(--color-text-1); background: var(--color-surface-1); }
+  .file-run:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+  .file-run[aria-pressed='true'] { border-color: var(--color-accent); color: var(--color-accent); }
+  /* A narrow bar keeps its room for the tabs: the button is its icon alone, the 24px box of
+     the three beside it, and the aria-label names it. 32rem leaves the tabs about 280px with
+     the word, the width two tabs of an example's names take. */
+  @container file-bar (max-width: 32rem) {
+    .file-run { justify-content: center; inline-size: 24px; padding: 0; }
+    .file-run svg { inline-size: 16px; block-size: 16px; }
+    .file-run [data-run-host-label] { display: none; }
+  }
   .file-add:hover { color: var(--color-text-1); background: var(--color-surface-1); }
   [data-vscode-hint] { margin: 0; padding: 6px 12px; color: var(--color-text-2); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }
   [data-file-error] { margin: 0; padding: 6px 12px; color: var(--color-diag); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }
@@ -705,7 +764,7 @@ const runtimeCopy = {
   /* The canvas panel takes the room the row has and holds the canvas at the top of it, so
      the box the picture is drawn in is the same size behind every tab. */
   .canvas-host { display: flex; flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 8px; padding: 14px 16px 12px; background: var(--color-ground); }
-  .canvas-host [data-canvas-note], .canvas-host [data-gpu-note], .canvas-host [data-pixel-note] { align-self: center; margin: 0; min-height: 1.3em; max-width: 60ch; color: var(--color-text-2); font: 400 .6875rem/1.45 var(--font-mono); text-align: center; }
+  .canvas-host [data-canvas-note], .canvas-host [data-gpu-note], .canvas-host [data-pixel-note], .canvas-host [data-host-note] { align-self: center; margin: 0; min-height: 1.3em; max-width: 60ch; color: var(--color-text-2); font: 400 .6875rem/1.45 var(--font-mono); text-align: center; }
   .canvas-host [hidden] { display: none; }
   /* The picture takes the width of its column at 4:3, the way a Shadertoy pane does, and
      every engine draws into the same box. The runtime matches a GPU canvas's drawing buffer
@@ -713,6 +772,8 @@ const runtimeCopy = {
   .gpu-frame { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid var(--color-line-1); border-radius: var(--radius-sm); background: var(--color-surface-2); }
   .gpu-frame > canvas, .gpu-frame > img { position: absolute; inset: 0; width: 100%; height: 100%; }
   .gpu-frame > img { object-fit: cover; }
+  /* host.ts's sandboxed frame, over the canvas while it runs. */
+  .gpu-frame > :global(iframe[data-host-frame]) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .gpu-frame[data-logs='1'] > canvas { cursor: crosshair; }
   .gpu-frame > canvas[data-gpu-canvas][data-backend='none'] { opacity: 0; }
   .gpu-frame > canvas[data-canvas] { image-rendering: pixelated; }

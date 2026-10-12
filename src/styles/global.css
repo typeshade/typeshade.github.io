@@ -212,6 +212,21 @@
 }
 
 /* Fonts. Latin subsets only, self-hosted. */
+/* Formulas (src/lib/math.mjs): STIX Two Math 2.12, OFL 1.1 (public/fonts/LICENSE-STIX-Two.txt),
+   the whole face with its MATH table, so a formula draws the same on every system. A browser
+   fetches it only for a page that shows a formula. */
+@font-face {
+  font-family: 'STIX Two Math';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/stix-two-math-regular-2.12.woff2') format('woff2');
+}
+
+math {
+  font-family: 'STIX Two Math', math;
+}
+
 @font-face {
   font-family: 'IBM Plex Sans Variable';
   font-style: normal;

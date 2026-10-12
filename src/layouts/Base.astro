@@ -1,5 +1,8 @@
 ---
 // The frame every page shares: head metadata, hreflang alternates, header and footer.
+// The spacing Temml's MathML is written against (src/lib/math.mjs). It comes first, so the
+// math face global.css names wins over the system faces this file lists.
+import 'temml/dist/Temml-Local.css';
 import '../styles/global.css';
 import SiteNotice from '../components/SiteNotice.astro';
 import SiteHeader from '../components/SiteHeader.astro';

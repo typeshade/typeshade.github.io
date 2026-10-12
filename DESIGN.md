@@ -251,6 +251,21 @@ other class, and says where it belongs.
 identifiers, diagnostics, the header's version, the layout table and a uniform's own field name.
 A word that names something the compiler reads is set in the mono face wherever it appears.
 
+**Formulas.** A formula is written in LaTeX and set in STIX Two Math (2.12, OFL 1.1, from CTAN's
+stix2-otf, `public/fonts/stix-two-math-regular-2.12.woff2`). It is the one face outside the two
+families: a formula is not prose and not code. The build turns the LaTeX into MathML
+(`src/lib/math.mjs`, Temml), so the page carries no script for it, and a browser fetches the face
+only for a page that shows a formula.
+
+- In Markdown: `$x^y$` in a sentence, and `$$` on the lines above and below a formula of its own.
+- In copy, through `<Rich>`: `$x^y$`. A dollar sign that is not a formula is written `\$`.
+- In a component: `<Formula tex="x^y" />` sets a formula on its own line; `inline` keeps it in the
+  sentence.
+- A formula is not copy: it reads the same in every language, so the Korean copy carries the
+  same LaTeX.
+- Write the formula a reader would write on paper. An identifier the compiler reads stays in
+  `code`, not in a formula: `pow(x, y)` is code, $x^y$ is mathematics.
+
 ## Colour
 
 - Light by default; dark follows `prefers-color-scheme`, or the switch in the header, which
@@ -506,6 +521,28 @@ cards takes the column. A third measure needs a reason.
   the main file as `code` and, when the files beside it are other than the example's own, all
   of them as `files`. A line under the emit options, beside the note on the fullscreen
   triangle, names each file the example imports, linked to it at the pinned commit.
+- **host.ts** (compiler change 0062). The tab after the main file holds `host.ts`, the
+  TypeScript an application writes around the module. It keeps its name: no rename, no close.
+  The language worker checks it with a TypeScript service of its own, against the DOM, the
+  declarations of `typeshade/runtime`, `typeshade/runtime/internal` and `typeshade/fuse`, and
+  the host view `hostFace()` writes for each `.shade.ts` file it imports. Those declarations
+  are one JSON asset (`scripts/playground-host-types.mjs`) fetched the first time host.ts is
+  shown, so a reader who never opens it never downloads them. Hover and completion answer in
+  it, and its diagnostics are markers on its model and red on its tab. A host example opens
+  with its own `host.ts`. Any other file gets a starter written from its host face the first
+  time host.ts is shown, run or downloaded (`src/scripts/playground-host-default.ts`): a
+  full-screen `@fragment` entry drawn in `animate(canvas)`, else a `@compute` entry dispatched
+  once in `run()`, else `run()` opening the program runtime and listing the program's entries.
+  Run host.ts, the button after the tabs, is the only way it runs: never on a keystroke and
+  never from a link. In a file bar under 32rem it is its icon alone, a 24px box like the three
+  beside it, so the tabs keep their room. The worker turns it and each module it imports into CommonJS, and the
+  page puts an `<iframe sandbox="allow-scripts">` over the canvas that loads the runtime bundle
+  (`src/scripts/playground-host-frame.ts`) and runs them. The frame calls `animate(canvas)`
+  when host.ts exports it, else `run()`, with the inputs `examples/hosts/_drive.ts` gives a
+  host example and the canvas for any other. Its console lines, its errors and what `run()`
+  returned fill the Console tab with the line of host.ts each came from, and a line under the
+  transport says the frame is up. A second click, another example or the gallery removes the
+  frame. The examples picker and the gallery hold the host examples in a group of their own.
 - **Passes** (compiler change 0026). A file beside the main one can be drawn as a pass: the
   Pass toggle on its tab turns it on, and the toggle then names the pass, the file's stem as
   an identifier. Passes draw in tab order before the main file, each into a texture the size of
@@ -525,16 +562,19 @@ cards takes the column. A third measure needs a reason.
   extension (vscode-typeshade `docs/playground-bridge.md`), so it changes only on purpose. Its
   fragment is URL search parameters. One names what the editor holds: `example`, an example
   as it ships, `blank`, or `code`, the main file, which `files`, a JSON object of the other
-  files by path, `passes`, `name:path` pairs in draw order, and `name`, the main file's name,
-  go with. `name` is written only when it is not the name the link opens under without it:
-  the example's whose text `code` is, else `main.shade.ts`. The emit options and
+  files by path, `passes`, `name:path` pairs in draw order, `name`, the main file's name, and
+  `host`, host.ts, go with. `name` is written only when it is not the name the link opens
+  under without it: the example's whose text `code` is, else `main.shade.ts`. `host` is
+  written only when host.ts is other than the one the link opens with without it, and a link
+  with no `host` opens as it did before host.ts existed. The emit options and
   the backend pick follow (`opt`, `parens`, `minify`, `numbers`, `obfuscate`, `fp64`,
   `precision`, `backend`), each only when it is not the default. `code` and `files` are
   `encodeSource` (`src/scripts/source-link.ts`): a `z` then the UTF-8 bytes `deflate-raw`
   compressed in base64url, or a `u` then the bytes uncompressed where the browser has no
   `CompressionStream`. Share stores the fragment with the Worker behind `/s/<id>`, which
   redirects to the Playground with it. The download button beside + writes the same workspace
-  as a zip of a folder VS Code opens: the files at their paths with the main file at the root,
+  as a zip of a folder VS Code opens: the files at their paths with the main file and host.ts
+  at the root,
   `typeshade.json` naming the main file and the passes in the `{ name, file }` shape of the
   `@example` block, a `tsconfig.json` over `**/*.shade.ts`, and `.vscode/extensions.json`
   recommending the extension (`src/scripts/workspace-folder.ts`). It is stored without
@@ -922,6 +962,8 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 
 - `scripts/check-style.mjs`: the voice rules above, over `src/`, `scripts/` and the two Markdown
   files, and that a selector in `global.css` names only a shared class (Styling).
+- `src/lib/math.mjs`: a formula Temml cannot read stops the build, with the formula in the
+  message (Type, Formulas).
 - `src/lib/examples.ts`: every number, and that the pinned compiler still matches the copy.
 - `src/pages/llms.txt.ts`: every numeral in `/llms.txt` exists in `facts`.
 - `scripts/artifacts.mjs`: og.png, the icons and the stills match their committed hashes.

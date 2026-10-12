@@ -5,6 +5,8 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import expressiveCode from 'astro-expressive-code';
+import remarkMath from 'remark-math';
+import rehypeMath from './src/lib/rehype-math.mjs';
 import remarkApiLinks from './src/lib/remark-api-links.mjs';
 import remarkDocTables from './src/lib/remark-doc-tables.mjs';
 import remarkErrorLinks from './src/lib/remark-error-links.mjs';
@@ -15,6 +17,7 @@ import { verifyArtifacts } from './scripts/artifacts.mjs';
 import { retiredExampleRedirects } from './src/lib/retired-examples.mjs';
 import { retiredGuideRedirects } from './src/lib/retired-guide-sections.mjs';
 import { verifyKoreanFonts } from './scripts/fonts.mjs';
+import { playgroundHostTypes } from './scripts/playground-host-types.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const retiredPaths = new Set([
@@ -166,7 +169,23 @@ export default defineConfig({
       remarkApiLinks,
       remarkErrorLinks,
       remarkRuleLinks,
+      // Formulas in LaTeX, `$…$` and `$$…$$`, rendered to MathML by rehypeMath (src/lib/math.mjs).
+      remarkMath,
     ],
+    rehypePlugins: [rehypeMath],
   },
-  vite: { plugins: [tailwindcss()] },
+  // The declarations the Playground's host.ts is type-checked against, one asset the language
+  // worker fetches when host.ts is first opened (scripts/playground-host-types.mjs).
+  // A worker script is one IIFE file. The Playground's host frame loads the runtime as such a
+  // script (src/scripts/playground-host-run.ts), and the runtime loads its WebGL2 half with a
+  // dynamic import, inlined here, since the frame cannot load a chunk split off the script.
+  // One TypeScript in the language worker: the compiler's and the one host.ts is checked with
+  // (src/scripts/playground-host-service.ts). A checkout with the compiler's own dependencies
+  // installed would otherwise bundle a second copy from vendor/shader-dsl/node_modules; CI
+  // installs none there, so this is the copy CI builds with.
+  vite: {
+    plugins: [tailwindcss(), playgroundHostTypes(root)],
+    resolve: { dedupe: ['typescript'] },
+    worker: { rollupOptions: { output: { inlineDynamicImports: true } } },
+  },
 });

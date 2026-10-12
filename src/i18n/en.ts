@@ -358,8 +358,19 @@ export const en = {
         // suffix that stays inside the 60 characters check-seo.mjs allows. Measured over
         // every name in the reference, the shortest of them `E` and the longest
         // `textureSampleCompareLevel`: the titles run from 45 to 60 characters.
-        title: (name: string, kind: string) => {
+        // A builtin function with a form on both targets names both targets and TypeShade as the
+        // three languages it is written in: the searches that reach these pages are "glsl pow"
+        // and "glsl atan2", so the title carries the target words.
+        title: (name: string, kind: string, targets = false) => {
           const suffixes = [
+            ...(targets
+              ? [
+                  ` in WGSL, GLSL and TypeShade: shader function reference`,
+                  ` in WGSL, GLSL and TypeShade: function reference`,
+                  ` in WGSL, GLSL and TypeShade: reference`,
+                  ` in WGSL, GLSL and TypeShade`,
+                ]
+              : []),
             `: ${kind} in the TypeShade language reference`,
             `: ${kind}, TypeShade language reference`,
             `: ${kind}, TypeShade reference`,
@@ -371,8 +382,16 @@ export const en = {
           );
         },
         // 'attribute' is the one kind that starts with a vowel, so the article follows the word.
-        description: (name: string, kind: string, summary: string) =>
-          `${name}, ${/^[aeiou]/i.test(kind) ? 'an' : 'a'} ${kind} in the TypeShade language reference. ${summary}`,
+        // With both targets' forms, the description opens with them, as a search result shows it.
+        description: (
+          name: string,
+          kind: string,
+          summary: string,
+          targets?: { readonly wgsl: string; readonly glsl: string },
+        ) =>
+          targets
+            ? `${name} in TypeShade compiles to ${targets.wgsl} in WGSL and ${targets.glsl} in ${glsl}. ${summary}`
+            : `${name}, ${/^[aeiou]/i.test(kind) ? 'an' : 'a'} ${kind} in the TypeShade language reference. ${summary}`,
         kindNames: {
           type: 'Type',
           attribute: 'Attribute',
@@ -1061,6 +1080,21 @@ export const en = {
         'The pass {name} reads the texture {texture}, which is no pass output. A pass reads the output of a pass by its name.',
       passesRgba8:
         'This browser cannot draw WebGL2 into float textures, so each pass keeps 8 bits a channel and a value outside 0 to 1 is clamped.',
+      // host.ts, the TypeScript an application writes around the module (compiler change 0062).
+      // It runs on a click of the button in the file bar, in a sandboxed frame over the canvas.
+      runHost: 'Run host.ts',
+      stopHost: 'Stop host.ts',
+      runHostTitle: 'Run host.ts in a sandboxed frame over the canvas',
+      hostFrame: 'The canvas host.ts draws into',
+      hostNote:
+        'host.ts is running in a sandboxed frame over the canvas. Its console lines are in the Console tab.',
+      hostConsole:
+        'The lines host.ts printed, the newest last. It runs in a sandboxed frame over the canvas until you stop it.',
+      hostNone: 'host.ts exports neither animate nor run, so only its top level ran.',
+      hostUnloaded: 'The frame could not load the runtime, so host.ts did not run.',
+      hostStopped: 'host.ts stopped, and its frame is gone.',
+      // A host example's tile in the gallery: two files, and no still.
+      hostTile: 'Module and host.ts',
     },
   },
 

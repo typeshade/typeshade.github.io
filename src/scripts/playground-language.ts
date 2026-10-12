@@ -20,6 +20,11 @@ import type {
   TypeshadeSignatureHelp,
   TypeshadeTextEdit,
 } from '../../vendor/shader-dsl/src/language-service/index.ts';
+import type { HostBuild } from './playground-host-service.ts';
+
+/** The uri the page and the worker know host.ts by: a file at the workspace's root, beside the
+ *  main file, so `./<main>.shade.ts` in it names the main file. */
+export const HOST_URI = 'file:///host.ts';
 
 // ── Requests ───────────────────────────────────────────────────────────────────────────────
 // `update` carries the text and gets no reply: the service stores it and analyses nothing
@@ -76,7 +81,26 @@ export type QueryRequest =
       readonly position: TypeshadePosition;
       readonly newName: string;
     })
-  | (Asked & { readonly kind: 'semanticTokens' });
+  | (Asked & { readonly kind: 'semanticTokens' })
+  // host.ts (playground-host-service.ts), which is plain TypeScript and no document of the
+  // service: each request carries its text, and `types` is the URL of the declarations it is
+  // checked against. `hostStarter` asks for the host.ts a module opens with when its example
+  // brings none, for the document `uri` names.
+  | (Asked & { readonly kind: 'hostDiagnostics'; readonly text: string; readonly types: string })
+  | (Asked & {
+      readonly kind: 'hostHover';
+      readonly text: string;
+      readonly types: string;
+      readonly position: TypeshadePosition;
+    })
+  | (Asked & {
+      readonly kind: 'hostCompletions';
+      readonly text: string;
+      readonly types: string;
+      readonly position: TypeshadePosition;
+    })
+  | (Asked & { readonly kind: 'hostBuild'; readonly text: string })
+  | (Asked & { readonly kind: 'hostStarter' });
 
 export type LanguageRequest = UpdateRequest | FilesRequest | CloseRequest | QueryRequest;
 
@@ -102,6 +126,11 @@ export interface ResultByKind {
     { readonly range: TypeshadeRange; readonly placeholder: string } | undefined;
   readonly rename: Readonly<Record<string, readonly TypeshadeTextEdit[]>>;
   readonly semanticTokens: readonly TypeshadeSemanticToken[];
+  readonly hostDiagnostics: readonly TypeshadeDiagnostic[];
+  readonly hostHover: TypeshadeHover | undefined;
+  readonly hostCompletions: readonly TypeshadeCompletionItem[];
+  readonly hostBuild: HostBuild;
+  readonly hostStarter: string;
 }
 
 export type QueryKind = QueryRequest['kind'];

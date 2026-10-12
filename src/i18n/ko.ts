@@ -431,8 +431,17 @@ export const ko: Copy = {
       entry: {
         // 영어와 같은 이유로 60자 안에서 들어가는 만큼만 꾸밈말을 붙입니다. 이름이 가장 짧은 `E`부터
         // 가장 긴 `textureSampleCompareLevel`까지 재어 보면 45자에서 60자 사이에 들어갑니다.
-        title: (name: string, kind: string) => {
+        // 영어와 같은 이유로, 두 대상에 형태가 있는 내장 함수는 제목에 WGSL, GLSL과 TypeShade를 넣습니다.
+        title: (name: string, kind: string, targets = false) => {
           const suffixes = [
+            ...(targets
+              ? [
+                  `: WGSL, GLSL과 TypeShade에서 쓰는 형태와 그 뜻, 셰이더 ${kind} 참조`,
+                  `: WGSL, GLSL과 TypeShade에서 쓰는 셰이더 ${kind}`,
+                  `: WGSL, GLSL과 TypeShade의 셰이더 ${kind}`,
+                  `: WGSL, GLSL과 TypeShade의 ${kind}`,
+                ]
+              : []),
             `: "use typeshade" 파일에서 쓰는 ${kind} 이름 하나, TypeShade 언어 참조`,
             `: TypeShade 언어 참조에 실린 ${kind} 이름과 그 시그니처`,
             `: TypeShade 언어 참조에 실린 ${kind} 이름`,
@@ -444,8 +453,15 @@ export const ko: Copy = {
               suffixes[suffixes.length - 1]!)
           );
         },
-        description: (name: string, kind: string, summary: string) =>
-          `${name}, TypeShade 언어 참조의 ${kind}입니다. ${summary}`,
+        description: (
+          name: string,
+          kind: string,
+          summary: string,
+          targets?: { readonly wgsl: string; readonly glsl: string },
+        ) =>
+          targets
+            ? `TypeShade에서 ${name} 호출은 WGSL에서 ${targets.wgsl}, ${glsl}에서 ${targets.glsl} 형태로 컴파일됩니다. ${summary}`
+            : `${name}, TypeShade 언어 참조의 ${kind}입니다. ${summary}`,
         kindNames: {
           type: '타입',
           attribute: '어트리뷰트',
@@ -1044,6 +1060,18 @@ export const ko: Copy = {
         '{name} 패스가 패스의 출력이 아닌 텍스처 {texture}를 읽습니다. 패스는 다른 패스의 출력을 그 이름으로 읽습니다.',
       passesRgba8:
         '이 브라우저는 WebGL2에서 float 텍스처에 그릴 수 없어서, 각 패스가 채널당 8비트만 담고 0에서 1을 벗어나는 값은 잘립니다.',
+      runHost: 'host.ts 실행',
+      stopHost: 'host.ts 중지',
+      runHostTitle: '캔버스 위 샌드박스 프레임에서 host.ts를 실행',
+      hostFrame: 'host.ts가 그리는 캔버스',
+      hostNote:
+        'host.ts가 캔버스 위 샌드박스 프레임에서 실행 중입니다. 콘솔 출력은 콘솔 탭에 있습니다.',
+      hostConsole:
+        'host.ts가 출력한 줄입니다. 새 줄이 아래에 붙습니다. 멈출 때까지 캔버스 위 샌드박스 프레임에서 실행됩니다.',
+      hostNone: 'host.ts가 animate도 run도 내보내지 않아서 최상위 코드만 실행했습니다.',
+      hostUnloaded: '프레임이 런타임을 불러오지 못해 host.ts를 실행하지 못했습니다.',
+      hostStopped: 'host.ts를 멈추고 프레임을 닫았습니다.',
+      hostTile: '모듈과 host.ts',
     },
   },
 
