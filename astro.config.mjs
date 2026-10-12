@@ -1,4 +1,5 @@
-import { copyFileSync, rmSync } from 'node:fs';
+import { copyFileSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
@@ -106,6 +107,41 @@ export default defineConfig({
       // reading a sitemap's lastmod once it proves inaccurate.
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
     }),
+    // Astro writes each redirect above as an HTML page with a refresh, noindex and a canonical
+    // link, which a crawler reports as a page it cannot index. dist/_redirects gives Workers
+    // static assets the same routes as permanent redirects (docs/cloudflare.md), read off the
+    // pages Astro wrote, so a route added any other way is covered too.
+    {
+      name: 'typeshade:permanent-redirects',
+      hooks: {
+        'astro:build:done': ({ dir }) => {
+          const out = fileURLToPath(dir);
+          const lines = [];
+          const walk = (d) => {
+            for (const e of readdirSync(d, { withFileTypes: true })) {
+              const p = path.join(d, e.name);
+              if (e.isDirectory()) walk(p);
+              else if (e.name === 'index.html') {
+                const m =
+                  /^<!doctype html><title>Redirecting to: ([^<]+)<\/title><meta http-equiv="refresh"/.exec(
+                    readFileSync(p, 'utf8').slice(0, 400),
+                  );
+                if (m)
+                  lines.push(
+                    `/${path.relative(out, path.dirname(p)).split(path.sep).join('/')}/ ${m[1]} 301`,
+                  );
+              }
+            }
+          };
+          walk(out);
+          lines.sort();
+          writeFileSync(
+            path.join(out, '_redirects'),
+            `# Written by astro.config.mjs from the redirect pages the build wrote.\n${lines.join('\n')}\n`,
+          );
+        },
+      },
+    },
     // Crawlers and people still ask for /sitemap.xml; serve the index there too.
     {
       name: 'typeshade:sitemap-alias',

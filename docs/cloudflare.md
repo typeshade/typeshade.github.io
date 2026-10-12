@@ -20,6 +20,7 @@ same data (The gallery, below).
 | Path                                         | Served by                                                             |
 | -------------------------------------------- | --------------------------------------------------------------------- |
 | everything in `dist/`                        | Workers static assets; the Worker never runs                          |
+| a retired route (`dist/_redirects`)          | Workers static assets: a 301 to the page that replaced it             |
 | `/data/examples/`                            | the Worker: the current release's index (`ReleaseIndex`)              |
 | `/data/examples/<id>/`                       | the Worker: one example with its file and its emitted text            |
 | `/data/releases/`                            | the Worker: the releases D1 records, newest first                     |
