@@ -5,6 +5,8 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import expressiveCode from 'astro-expressive-code';
+import remarkMath from 'remark-math';
+import rehypeMath from './src/lib/rehype-math.mjs';
 import remarkApiLinks from './src/lib/remark-api-links.mjs';
 import remarkDocTables from './src/lib/remark-doc-tables.mjs';
 import remarkErrorLinks from './src/lib/remark-error-links.mjs';
@@ -167,7 +169,10 @@ export default defineConfig({
       remarkApiLinks,
       remarkErrorLinks,
       remarkRuleLinks,
+      // Formulas in LaTeX, `$…$` and `$$…$$`, rendered to MathML by rehypeMath (src/lib/math.mjs).
+      remarkMath,
     ],
+    rehypePlugins: [rehypeMath],
   },
   // The declarations the Playground's host.ts is type-checked against, one asset the language
   // worker fetches when host.ts is first opened (scripts/playground-host-types.mjs).

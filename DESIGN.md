@@ -251,6 +251,21 @@ other class, and says where it belongs.
 identifiers, diagnostics, the header's version, the layout table and a uniform's own field name.
 A word that names something the compiler reads is set in the mono face wherever it appears.
 
+**Formulas.** A formula is written in LaTeX and set in STIX Two Math (2.12, OFL 1.1, from CTAN's
+stix2-otf, `public/fonts/stix-two-math-regular-2.12.woff2`). It is the one face outside the two
+families: a formula is not prose and not code. The build turns the LaTeX into MathML
+(`src/lib/math.mjs`, Temml), so the page carries no script for it, and a browser fetches the face
+only for a page that shows a formula.
+
+- In Markdown: `$x^y$` in a sentence, and `$$` on the lines above and below a formula of its own.
+- In copy, through `<Rich>`: `$x^y$`. A dollar sign that is not a formula is written `\$`.
+- In a component: `<Formula tex="x^y" />` sets a formula on its own line; `inline` keeps it in the
+  sentence.
+- A formula is not copy: it reads the same in every language, so the Korean copy carries the
+  same LaTeX.
+- Write the formula a reader would write on paper. An identifier the compiler reads stays in
+  `code`, not in a formula: `pow(x, y)` is code, $x^y$ is mathematics.
+
 ## Colour
 
 - Light by default; dark follows `prefers-color-scheme`, or the switch in the header, which
@@ -945,6 +960,8 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 
 - `scripts/check-style.mjs`: the voice rules above, over `src/`, `scripts/` and the two Markdown
   files, and that a selector in `global.css` names only a shared class (Styling).
+- `src/lib/math.mjs`: a formula Temml cannot read stops the build, with the formula in the
+  message (Type, Formulas).
 - `src/lib/examples.ts`: every number, and that the pinned compiler still matches the copy.
 - `src/pages/llms.txt.ts`: every numeral in `/llms.txt` exists in `facts`.
 - `scripts/artifacts.mjs`: og.png, the icons and the stills match their committed hashes.

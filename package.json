@@ -36,7 +36,9 @@
     "@tailwindcss/vite": "^4.3.2",
     "astro": "^6.4.8",
     "astro-expressive-code": "^0.44.0",
-    "tailwindcss": "^4.3.2"
+    "remark-math": "^6.0.0",
+    "tailwindcss": "^4.3.2",
+    "temml": "0.14.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260928.1",
