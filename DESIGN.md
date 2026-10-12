@@ -506,6 +506,27 @@ cards takes the column. A third measure needs a reason.
   the main file as `code` and, when the files beside it are other than the example's own, all
   of them as `files`. A line under the emit options, beside the note on the fullscreen
   triangle, names each file the example imports, linked to it at the pinned commit.
+- **host.ts** (compiler change 0062). The tab after the main file holds `host.ts`, the
+  TypeScript an application writes around the module. It keeps its name: no rename, no close.
+  The language worker checks it with a TypeScript service of its own, against the DOM, the
+  declarations of `typeshade/runtime`, `typeshade/runtime/internal` and `typeshade/fuse`, and
+  the host view `hostFace()` writes for each `.shade.ts` file it imports. Those declarations
+  are one JSON asset (`scripts/playground-host-types.mjs`) fetched the first time host.ts is
+  shown, so a reader who never opens it never downloads them. Hover and completion answer in
+  it, and its diagnostics are markers on its model and red on its tab. A host example opens
+  with its own `host.ts`. Any other file gets a starter written from its host face the first
+  time host.ts is shown, run or downloaded (`src/scripts/playground-host-default.ts`): a
+  full-screen `@fragment` entry drawn in `animate(canvas)`, else a `@compute` entry dispatched
+  once in `run()`, else `run()` opening the program runtime and listing the program's entries.
+  Run host.ts, the button after the tabs, is the only way it runs: never on a keystroke and
+  never from a link. The worker turns it and each module it imports into CommonJS, and the
+  page puts an `<iframe sandbox="allow-scripts">` over the canvas that loads the runtime bundle
+  (`src/scripts/playground-host-frame.ts`) and runs them. The frame calls `animate(canvas)`
+  when host.ts exports it, else `run()`, with the inputs `examples/hosts/_drive.ts` gives a
+  host example and the canvas for any other. Its console lines, its errors and what `run()`
+  returned fill the Console tab with the line of host.ts each came from, and a line under the
+  transport says the frame is up. A second click, another example or the gallery removes the
+  frame. The examples picker and the gallery hold the host examples in a group of their own.
 - **Passes** (compiler change 0026). A file beside the main one can be drawn as a pass: the
   Pass toggle on its tab turns it on, and the toggle then names the pass, the file's stem as
   an identifier. Passes draw in tab order before the main file, each into a texture the size of
@@ -525,16 +546,19 @@ cards takes the column. A third measure needs a reason.
   extension (vscode-typeshade `docs/playground-bridge.md`), so it changes only on purpose. Its
   fragment is URL search parameters. One names what the editor holds: `example`, an example
   as it ships, `blank`, or `code`, the main file, which `files`, a JSON object of the other
-  files by path, `passes`, `name:path` pairs in draw order, and `name`, the main file's name,
-  go with. `name` is written only when it is not the name the link opens under without it:
-  the example's whose text `code` is, else `main.shade.ts`. The emit options and
+  files by path, `passes`, `name:path` pairs in draw order, `name`, the main file's name, and
+  `host`, host.ts, go with. `name` is written only when it is not the name the link opens
+  under without it: the example's whose text `code` is, else `main.shade.ts`. `host` is
+  written only when host.ts is other than the one the link opens with without it, and a link
+  with no `host` opens as it did before host.ts existed. The emit options and
   the backend pick follow (`opt`, `parens`, `minify`, `numbers`, `obfuscate`, `fp64`,
   `precision`, `backend`), each only when it is not the default. `code` and `files` are
   `encodeSource` (`src/scripts/source-link.ts`): a `z` then the UTF-8 bytes `deflate-raw`
   compressed in base64url, or a `u` then the bytes uncompressed where the browser has no
   `CompressionStream`. Share stores the fragment with the Worker behind `/s/<id>`, which
   redirects to the Playground with it. The download button beside + writes the same workspace
-  as a zip of a folder VS Code opens: the files at their paths with the main file at the root,
+  as a zip of a folder VS Code opens: the files at their paths with the main file and host.ts
+  at the root,
   `typeshade.json` naming the main file and the passes in the `{ name, file }` shape of the
   `@example` block, a `tsconfig.json` over `**/*.shade.ts`, and `.vscode/extensions.json`
   recommending the extension (`src/scripts/workspace-folder.ts`). It is stored without

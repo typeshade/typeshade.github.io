@@ -97,6 +97,12 @@
 //      the name into a second tab; renaming a file the main one imports rewrites that import;
 //      an empty name is refused and Escape cancels; a `#code=` link written before files had
 //      names opens under its example's name, or main.shade.ts for code no example has
+//  53. host.ts (compiler change 0062): picking host-compute shows a host.ts tab holding that
+//      example's host; a type error typed into it comes back as a marker on its model; Run
+//      runs it in an iframe whose sandbox is exactly `allow-scripts`, and its console line
+//      reaches the Console tab with the line of host.ts it was written on, beside what `run()`
+//      returned; Stop removes the frame; and the link, which carries host.ts, opens with no
+//      frame until Run is clicked
 //  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
 //      editor with a tab for each file it imports, an edit to the imported file changes the
 //      emitted WGSL, a new file is a tab the main file can import, the link carries the
@@ -3548,6 +3554,184 @@ async function checkMultipass(browser, origin) {
   };
 }
 
+/** host.ts beside the main file, checked and run in a sandboxed frame (53 above). */
+async function checkHostTs(browser, origin) {
+  const problems = [];
+  let cdnFailures = [];
+  let mounted = true;
+  const pages = [];
+  const open = async (hash) => {
+    const opened = await openPage(browser);
+    pages.push(opened);
+    cdnFailures = opened.cdnFailures;
+    await opened.page.goto(`${origin}${ROUTES[0]}#${hash}`, { waitUntil: 'load' });
+    try {
+      await opened.page.waitForSelector('.monaco-editor', { timeout: EDITOR_TIMEOUT });
+    } catch {
+      mounted = false;
+    }
+    await opened.page.waitForTimeout(AFTER_EDIT);
+    return opened.page;
+  };
+  const HOST_MODEL = 'inmemory://playground/host.ts';
+  const hostText = (page) =>
+    page.evaluate(
+      (uri) => window.monaco.editor.getModel(window.monaco.Uri.parse(uri))?.getValue() ?? '',
+      HOST_MODEL,
+    );
+  const setHostText = (page, text) =>
+    page.evaluate(
+      ([uri, value]) => window.monaco.editor.getModel(window.monaco.Uri.parse(uri)).setValue(value),
+      [HOST_MODEL, text],
+    );
+  const hostErrors = (page) =>
+    page.evaluate(
+      (uri) =>
+        window.monaco.editor
+          .getModelMarkers({ resource: window.monaco.Uri.parse(uri) })
+          .filter((marker) => marker.severity === 8)
+          .map((marker) => `${marker.startLineNumber}: ${marker.message}`),
+      HOST_MODEL,
+    );
+  const frames = (page) =>
+    page.$$eval('iframe[data-host-frame]', (nodes) =>
+      nodes.map((node) => node.getAttribute('sandbox')),
+    );
+  try {
+    const page = await open('example=hello');
+    if (mounted) {
+      // Picking a host example opens its host.ts in the tab beside the module.
+      await pickExample(page, 'host-compute');
+      const tabs = await page.$$eval('[data-file-tab]', (nodes) =>
+        nodes.map((node) => node.getAttribute('data-file-tab')),
+      );
+      if (tabs[0] !== 'host-compute.shade.ts' || tabs[1] !== 'host.ts')
+        problems.push(`picking host-compute gave the tabs ${tabs.join(', ')}`);
+      await page.click('[data-file-tab="host.ts"]');
+      const host = await hostText(page);
+      if (
+        !host.includes("from './host-compute.shade.ts'") ||
+        !/export async function run/.test(host)
+      )
+        problems.push(
+          `the host.ts tab does not hold host-compute's host:\n    ${host.slice(0, 200)}`,
+        );
+      if ((await frames(page)).length > 0) problems.push('picking a host example ran its host.ts');
+
+      // A type error in host.ts comes back as a marker on its own model, checked against the
+      // host view of the module: `k` is a number to the host.
+      await setHostText(page, host.replace('{ k: 2.5, xs, ys }', "{ k: 'fast', xs, ys }"));
+      const marked = await page
+        .waitForFunction(
+          (uri) =>
+            window.monaco.editor
+              .getModelMarkers({ resource: window.monaco.Uri.parse(uri) })
+              .some((marker) => marker.severity === 8),
+          HOST_MODEL,
+          { timeout: 60_000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      const errors = await hostErrors(page);
+      if (!marked) problems.push('a type error in host.ts brought back no marker');
+      const clean = host.replace(
+        '  return ys;',
+        "  console.log('host says', ys[3]);\n  return ys;",
+      );
+      await setHostText(page, clean);
+      const cleared = await page
+        .waitForFunction(
+          (uri) =>
+            window.monaco.editor
+              .getModelMarkers({ resource: window.monaco.Uri.parse(uri) })
+              .every((marker) => marker.severity !== 8),
+          HOST_MODEL,
+          { timeout: 30_000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      if (!cleared)
+        problems.push(
+          `host-compute's host.ts with a console line reports: ${(await hostErrors(page)).join(' | ')}`,
+        );
+      const logLine = clean.split('\n').findIndex((line) => line.includes('host says')) + 1;
+
+      // Run: a frame sandboxed to scripts alone, whose console line reaches the Console tab.
+      await page.waitForTimeout(AFTER_EDIT);
+      await page.click('[data-run-host]');
+      await page.waitForSelector('iframe[data-host-frame]', { timeout: 30_000 }).catch(() => {});
+      const sandbox = await frames(page);
+      if (sandbox.length !== 1 || sandbox[0] !== 'allow-scripts')
+        problems.push(
+          `Run made ${sandbox.length} frame(s), sandboxed as ${sandbox.join(', ') || 'nothing'}`,
+        );
+      const lines = await page
+        .waitForFunction(
+          () => {
+            const rows = [...document.querySelectorAll('[data-console-block="host"] li')];
+            return rows.some((row) => row.textContent?.includes('host says')) &&
+              rows.some((row) => row.textContent?.includes('run()'))
+              ? rows.map((row) => row.textContent)
+              : false;
+          },
+          null,
+          { timeout: 60_000 },
+        )
+        .then((handle) => handle.jsonValue())
+        .catch(() => undefined);
+      const printed =
+        lines ??
+        (await page.$$eval('[data-console-block="host"] li', (rows) =>
+          rows.map((row) => row.textContent),
+        ));
+      const said = printed.find((row) => row?.includes('host says')) ?? '';
+      if (!said.includes(`host.ts:${logLine}`) || !said.includes('host says 7.5'))
+        problems.push(
+          `the host's console line did not arrive from host.ts:${logLine}: ${printed.join(' | ') || 'no lines'}`,
+        );
+      if (!printed.some((row) => /run\(\).*Float32Array\(256\) \[0, 2\.5, 5/.test(row ?? '')))
+        problems.push(`what run() returned was not shown: ${printed.join(' | ')}`);
+      const runUrl = page.url();
+      if (!/[#&]host=/.test(runUrl)) problems.push('the link does not carry the edited host.ts');
+
+      // Stop removes the frame.
+      await page.click('[data-run-host]');
+      if ((await frames(page)).length > 0) problems.push('Stop left the frame in place');
+
+      // The link opens host.ts as it was written, and runs nothing until Run.
+      const linked = await open(runUrl.split('#')[1]);
+      await linked.waitForTimeout(3_000);
+      const before = await frames(linked);
+      const blocks = await linked.$$eval('[data-console-block="host"]', (nodes) => nodes.length);
+      if (before.length > 0 || blocks > 0)
+        problems.push('opening a link ran its host.ts before Run was clicked');
+      if (!(await hostText(linked)).includes('host says'))
+        problems.push('the link did not bring its host.ts');
+      await linked.click('[data-run-host]');
+      const ran = await linked
+        // The Console tab is behind Result, so the line is attached and not visible.
+        .waitForSelector('[data-console-block="host"] li', { state: 'attached', timeout: 60_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (!ran) problems.push('Run on a linked host.ts printed nothing');
+      console.log(
+        `  host.ts tab: ${tabs.slice(0, 2).join(', ')}; type error marked: ${errors[0] ?? 'none'}; frame sandbox: ${sandbox.join(', ')}; console: ${printed.join(' | ').slice(0, 200)}; linked frames before Run: ${before.length}`,
+      );
+    }
+    for (const { pageErrors } of pages)
+      for (const message of pageErrors.filter((m) => !/ResizeObserver|Canceled/.test(m)))
+        problems.push(`the page threw: ${message}`);
+  } finally {
+    for (const { page } of pages) await page.close();
+  }
+  return {
+    route: `${ROUTES[0]} host.ts`,
+    problems,
+    cdnFailures,
+    cdnOnly: !mounted && cdnFailures.length > 0,
+  };
+}
+
 const server = await serveDist(dist, Number(process.env.PLAYGROUND_PORT ?? 4473));
 const browser = await launchChromium();
 const results = [];
@@ -3565,6 +3749,8 @@ try {
     results.push(await checkMultipass(browser, server.url));
     console.log('[playground] /playground/ file names');
     results.push(await checkNames(browser, server.url));
+    console.log('[playground] /playground/ host.ts');
+    results.push(await checkHostTs(browser, server.url));
     console.log('[playground] /playground/ with no WebGPU');
     const missing = [];
     await checkMissingWebGpu(browser, server.url, missing);

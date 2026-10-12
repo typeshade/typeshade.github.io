@@ -1042,6 +1042,18 @@ export const ko: Copy = {
         '{name} 패스가 패스의 출력이 아닌 텍스처 {texture}를 읽습니다. 패스는 다른 패스의 출력을 그 이름으로 읽습니다.',
       passesRgba8:
         '이 브라우저는 WebGL2에서 float 텍스처에 그릴 수 없어서, 각 패스가 채널당 8비트만 담고 0에서 1을 벗어나는 값은 잘립니다.',
+      runHost: 'host.ts 실행',
+      stopHost: 'host.ts 중지',
+      runHostTitle: '캔버스 위 샌드박스 프레임에서 host.ts를 실행',
+      hostFrame: 'host.ts가 그리는 캔버스',
+      hostNote:
+        'host.ts가 캔버스 위 샌드박스 프레임에서 실행 중입니다. 콘솔 출력은 콘솔 탭에 있습니다.',
+      hostConsole:
+        'host.ts가 출력한 줄입니다. 새 줄이 아래에 붙습니다. 멈출 때까지 캔버스 위 샌드박스 프레임에서 실행됩니다.',
+      hostNone: 'host.ts가 animate도 run도 내보내지 않아서 최상위 코드만 실행했습니다.',
+      hostUnloaded: '프레임이 런타임을 불러오지 못해 host.ts를 실행하지 못했습니다.',
+      hostStopped: 'host.ts를 멈추고 프레임을 닫았습니다.',
+      hostTile: '모듈과 host.ts',
     },
   },
 

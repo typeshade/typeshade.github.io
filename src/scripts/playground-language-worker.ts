@@ -22,6 +22,13 @@ import {
 } from '../../vendor/shader-dsl/src/language-service/index.ts';
 import type { Analysis, LanguageReply, LanguageRequest } from './playground-language.ts';
 import { mergeCompileDiagnostics } from './playground-diagnostics.ts';
+import {
+  hostBuild,
+  hostCompletions,
+  hostDiagnostics,
+  hostHover,
+  hostStarter,
+} from './playground-host-service.ts';
 
 let service: TypeshadeLanguageService | undefined;
 /** The text of every open document, since the service keeps its own copy and does not hand
@@ -81,7 +88,42 @@ self.addEventListener('message', (event: MessageEvent<LanguageRequest>) => {
     }
 
     const { id, uri, version } = request;
+    // host.ts's questions (playground-host-service.ts). Three of them wait for the declarations
+    // host.ts is checked against, so their answers come back when those have arrived; the
+    // worker meanwhile answers whatever comes next. A host.ts the worker cannot check answers
+    // with nothing, since a failure would read as the whole service failing.
+    const later = <T>(result: Promise<T>, fallback: T): void => {
+      void result
+        .catch((error: unknown) => {
+          console.error('[playground] host.ts', error);
+          return fallback;
+        })
+        .then((value) => reply({ id, version, ok: true, result: value as never }));
+    };
     switch (request.kind) {
+      case 'hostDiagnostics':
+        later(hostDiagnostics(request.text, request.types, readDocument), []);
+        return;
+      case 'hostHover':
+        later(hostHover(request.text, request.types, readDocument, request.position), undefined);
+        return;
+      case 'hostCompletions':
+        later(hostCompletions(request.text, request.types, readDocument, request.position), []);
+        return;
+      case 'hostBuild': {
+        const { text } = request;
+        later(
+          Promise.resolve().then(() => hostBuild(text, readDocument)),
+          { host: { code: '', lines: [] }, modules: {}, problems: [] },
+        );
+        return;
+      }
+      case 'hostStarter':
+        later(
+          Promise.resolve().then(() => hostStarter(uri, readDocument)),
+          '',
+        );
+        return;
       case 'analysis':
         reply({ id, version, ok: true, result: analyse(service, uri) });
         return;

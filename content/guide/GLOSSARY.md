@@ -160,6 +160,7 @@ JavaScript, GPU, CPU, IR, f32, f64, std140은 로마자 그대로 씁니다.
 | parameter that writes back (`@inout`, `@out`)       | 되돌려 쓰는 매개변수   | 호출한 쪽의 변수를 가리키는 매개변수. "the caller's variable"은 "호출한 쪽의 변수"로 옮깁니다. `@inout`과 `@out`은 코드 스팬 그대로 두고, 이름은 GLSL의 한정자에서 왔다고 처음 한 번 밝힙니다.                                                                                                                                                       |
 | qualifier (parameter)                               | 한정자                 | `@inout`, `@out`처럼 매개변수가 호출한 쪽의 변수를 어떻게 받는지 정하는 표시. GLSL 한국어 자료가 쓰는 말입니다.                                                                                                                                                                                                                                      |
 | reference (to a place)                              | 참조                   | 호출 하나 동안 호출한 쪽의 변수를 가리키는 것. 한정자가 붙은 매개변수가 받는 것이며, 포인터 값과 구분합니다.                                                                                                                                                                                                                                         |
+| sandbox (iframe)                                    | 샌드박스               | 페이지의 출처와 저장소에 닿지 못하게 격리한 프레임(`<iframe sandbox>`). Playground가 host.ts를 이 안에서 실행합니다. MDN 한국어가 쓰는 음차입니다.                                                                                                                                                                                                   |
 
 ## 로마자 그대로 쓰는 용어
 
