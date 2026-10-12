@@ -429,15 +429,15 @@ export const ko: Copy = {
       entry: {
         // 영어와 같은 이유로 60자 안에서 들어가는 만큼만 꾸밈말을 붙입니다. 이름이 가장 짧은 `E`부터
         // 가장 긴 `textureSampleCompareLevel`까지 재어 보면 45자에서 60자 사이에 들어갑니다.
-        // 영어와 같은 이유로, 두 대상에 형태가 있는 내장 함수는 제목에 WGSL과 GLSL을 넣습니다.
+        // 영어와 같은 이유로, 두 대상에 형태가 있는 내장 함수는 제목에 WGSL, GLSL과 TypeShade를 넣습니다.
         title: (name: string, kind: string, targets = false) => {
           const suffixes = [
             ...(targets
               ? [
-                  `: WGSL과 GLSL에서 쓰는 형태와 그 뜻, TypeShade 셰이더 언어 참조`,
-                  `: WGSL과 GLSL에서 쓰는 ${kind}, TypeShade 셰이더 언어 참조`,
-                  `: WGSL과 GLSL에서 쓰는 ${kind}, TypeShade 언어 참조`,
-                  `: WGSL과 GLSL의 ${kind}, TypeShade`,
+                  `: WGSL, GLSL과 TypeShade에서 쓰는 형태와 그 뜻, 셰이더 ${kind} 참조`,
+                  `: WGSL, GLSL과 TypeShade에서 쓰는 셰이더 ${kind}`,
+                  `: WGSL, GLSL과 TypeShade의 셰이더 ${kind}`,
+                  `: WGSL, GLSL과 TypeShade의 ${kind}`,
                 ]
               : []),
             `: "use typeshade" 파일에서 쓰는 ${kind} 이름 하나, TypeShade 언어 참조`,

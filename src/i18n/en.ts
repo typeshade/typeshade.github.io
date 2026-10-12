@@ -355,15 +355,17 @@ export const en = {
         // suffix that stays inside the 60 characters check-seo.mjs allows. Measured over
         // every name in the reference, the shortest of them `E` and the longest
         // `textureSampleCompareLevel`: the titles run from 45 to 60 characters.
-        // A builtin function with a form on both targets names them: the searches that reach
-        // these pages are "glsl pow" and "glsl atan2", so the title carries the target words.
+        // A builtin function with a form on both targets names both targets and TypeShade as the
+        // three languages it is written in: the searches that reach these pages are "glsl pow"
+        // and "glsl atan2", so the title carries the target words.
         title: (name: string, kind: string, targets = false) => {
           const suffixes = [
             ...(targets
               ? [
-                  ` in WGSL and GLSL, TypeShade shader reference`,
-                  ` in WGSL and GLSL, TypeShade reference`,
-                  ` in WGSL and GLSL, TypeShade`,
+                  ` in WGSL, GLSL and TypeShade: shader function reference`,
+                  ` in WGSL, GLSL and TypeShade: function reference`,
+                  ` in WGSL, GLSL and TypeShade: reference`,
+                  ` in WGSL, GLSL and TypeShade`,
                 ]
               : []),
             `: ${kind} in the TypeShade language reference`,
