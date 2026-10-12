@@ -1006,12 +1006,12 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   and option values in code spans, a table cell that is only code, and the words the
   glossary lists under "영어로 두는 낱말" (the ones Korean developers say in English, such
   as fail closed, gather and scatter), glossed once at first use. The check refuses the
-Korean substitutes the glossary names for them. The language reference's generated body stays
-English on every locale: the declarations, the compiler's sentences and its messages. A
-language reference note is translated, section by section (Reference notes). The API
-reference's JSDoc is translated the same way the guide is, one file per export under
-`content/api/<locale>/` that records the hash of the English it was made from; an export with
-no current file is shown in English under the note.
+  Korean substitutes the glossary names for them. The language reference's generated body stays
+  English on every locale: the declarations, the compiler's sentences and its messages. A
+  language reference note is translated, section by section (Reference notes). The API
+  reference's JSDoc is translated the same way the guide is, one file per export under
+  `content/api/<locale>/` that records the hash of the English it was made from; an export with
+  no current file is shown in English under the note.
 - Inline links in copy are written `[text](key)`, inline code in backticks; `Rich.astro`
   renders them. `key` is a record in `src/lib/links.ts` or a page name, which the locale
   prefixes.
