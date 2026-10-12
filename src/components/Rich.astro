@@ -75,7 +75,10 @@ for (const m of text.matchAll(re)) {
     parts.push(errorPage ? { kind: 'link', value: m[3], href: localePath(locale, errorPage), code: true, auto: true } : { kind: 'code', value: m[3] });
   } else {
     const key = m[2]!;
-    const href = key in PAGES ? localePath(locale, PAGES[key]!) : (links as Record<string, { href: string }>)[key]?.href;
+    // A record of src/lib/links.ts that names a page of this site keeps the reader's locale, as
+    // a PAGES key does; a file (/llms.txt) and an external URL are linked as written.
+    const raw = (links as Record<string, { href: string }>)[key]?.href;
+    const href = key in PAGES ? localePath(locale, PAGES[key]!) : raw?.startsWith('/') && raw.endsWith('/') ? localePath(locale, raw) : raw;
     if (!href) throw new Error(`[Rich] unknown link key '${key}' in: ${text.slice(0, 60)}`);
     // A link whose text is an identifier is written [`name()`](key) and keeps the code font.
     const label = m[1]!;
