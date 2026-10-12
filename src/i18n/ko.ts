@@ -429,8 +429,17 @@ export const ko: Copy = {
       entry: {
         // 영어와 같은 이유로 60자 안에서 들어가는 만큼만 꾸밈말을 붙입니다. 이름이 가장 짧은 `E`부터
         // 가장 긴 `textureSampleCompareLevel`까지 재어 보면 45자에서 60자 사이에 들어갑니다.
-        title: (name: string, kind: string) => {
+        // 영어와 같은 이유로, 두 대상에 형태가 있는 내장 함수는 제목에 WGSL과 GLSL을 넣습니다.
+        title: (name: string, kind: string, targets = false) => {
           const suffixes = [
+            ...(targets
+              ? [
+                  `: WGSL과 GLSL에서 쓰는 형태와 그 뜻, TypeShade 셰이더 언어 참조`,
+                  `: WGSL과 GLSL에서 쓰는 ${kind}, TypeShade 셰이더 언어 참조`,
+                  `: WGSL과 GLSL에서 쓰는 ${kind}, TypeShade 언어 참조`,
+                  `: WGSL과 GLSL의 ${kind}, TypeShade`,
+                ]
+              : []),
             `: "use typeshade" 파일에서 쓰는 ${kind} 이름 하나, TypeShade 언어 참조`,
             `: TypeShade 언어 참조에 실린 ${kind} 이름과 그 시그니처`,
             `: TypeShade 언어 참조에 실린 ${kind} 이름`,
@@ -442,8 +451,15 @@ export const ko: Copy = {
               suffixes[suffixes.length - 1]!)
           );
         },
-        description: (name: string, kind: string, summary: string) =>
-          `${name}, TypeShade 언어 참조의 ${kind}입니다. ${summary}`,
+        description: (
+          name: string,
+          kind: string,
+          summary: string,
+          targets?: { readonly wgsl: string; readonly glsl: string },
+        ) =>
+          targets
+            ? `TypeShade에서 ${name} 호출은 WGSL에서 ${targets.wgsl}, ${glsl}에서 ${targets.glsl} 형태로 컴파일됩니다. ${summary}`
+            : `${name}, TypeShade 언어 참조의 ${kind}입니다. ${summary}`,
         kindNames: {
           type: '타입',
           attribute: '어트리뷰트',
