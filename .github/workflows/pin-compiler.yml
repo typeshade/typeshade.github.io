@@ -96,6 +96,13 @@ jobs:
             stale=$(bun scripts/check-guide-translations.ts 2>&1 | sed -n 's/^  stale: \([^ ]*\) .*/- `\1`/p' || true)
             echo "${stale:-None.}"
             echo
+            echo "## API reference translations this leaves stale"
+            echo
+            echo "The build on this pull request fails until each one is translated again from the pinned JSDoc (\`bun scripts/check-api-translations.ts --source <slug>\`)."
+            echo
+            api_stale=$(bun scripts/check-api-translations.ts 2>&1 | sed -n 's/^  \(content\/api\/[^ ]*\) was translated from older English.*/- `\1`/p' || true)
+            echo "${api_stale:-None.}"
+            echo
             if [ -f vendor/shader-dsl/scripts/downstream-impact.ts ]; then
               echo
               impact=$(bun vendor/shader-dsl/scripts/downstream-impact.ts --repo typeshade.github.io \

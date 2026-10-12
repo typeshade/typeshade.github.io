@@ -1,0 +1,8 @@
+{
+  "slug": "sampler",
+  "source": "ba2517df3cd1e58200e4c26eeed45d6b9ae87cd13765f1288173fac066d9523e",
+  "texts": {
+    "summary": "런타임이 이름으로 바인딩하는 샘플러입니다.",
+    "description": "`sampler`는 `GPUSampler` 자체입니다."
+  }
+}

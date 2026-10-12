@@ -91,6 +91,13 @@ export interface ApiEntryHtml {
   readonly members: readonly string[];
 }
 
+/** One entry in another language: its summary and its markdown fields rendered to HTML, from a
+ *  current translation (src/lib/api-translations.ts). */
+export interface ApiTranslated {
+  readonly summary: string;
+  readonly html: ApiEntryHtml;
+}
+
 export interface ApiEntry {
   /** True for a fixture that only shows the template; such a page is noindex and out of the sitemap. */
   readonly preview?: boolean;

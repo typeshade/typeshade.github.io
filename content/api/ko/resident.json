@@ -1,0 +1,11 @@
+{
+  "slug": "resident",
+  "source": "740685ceaf38a0563a8a7ef6bdd6ecb346f337bc1789c9b8226b4df00cbf0aa0",
+  "texts": {
+    "summary": "호스트 값을 한 번 감싸서, 호출 사이에도 디바이스에 머물게 합니다: const dev = resident(new Float32Array(512 * 512)); render; const img = await dev.read().",
+    "description": "커널이나 진입점 호출은 값을 받는 자리에서 이 핸들도 받습니다. `typeshade/runtime`의 프로그램은 이 핸들을 바인딩으로 받습니다. 핸들은 `value`의 사본을 따로 가집니다.",
+    "parameters.value": "숫자, 튜플, `Float32Array`, `Int32Array`, `Uint32Array` 또는 `Float64Array`, 배열, 또는 구조체를 위한 객체입니다.",
+    "returns": "핸들입니다. `write`는 핸들의 내용을 바꾸고, `destroy`는 버퍼를 해제합니다.",
+    "exceptions.TypeError": "그 밖의 값에는 `TypeError`가 발생합니다."
+  }
+}

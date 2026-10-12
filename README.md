@@ -76,6 +76,7 @@ The production build verifies generated artifacts, documentation consistency, li
 - `check-i18n`: every string in the dictionaries, every locale URL through `localePath()`, no Hangul or locale literal outside `src/i18n/`, route parity between `src/pages` and `src/pages/ko`, one-line route files.
 - `check-guide`: the Korean guide translations against the pinned English.
 - `check-api`: the reference data from the compiler.
+- `check-api-translations`: the Korean API reference against the pinned JSDoc (`bun run check:api-ko`).
 - The artifact hashes, the Korean font coverage, then Astro and Pagefind.
 
 After the build: `bun run qa:seo`, `bun run qa:links` and `bun run qa:openseo` over `dist/`.

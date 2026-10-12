@@ -1,0 +1,8 @@
+{
+  "slug": "wgslvalidator",
+  "source": "03891be2f0d6a259b974fad1db422ab8ae05f844595f14459367bdebe58138ca",
+  "texts": {
+    "summary": "WGSL 모듈을 검증하는 데 필요한 GPUDevice의 일부입니다.",
+    "description": "실제 `GPUDevice`는 이 인터페이스를 그대로 만족합니다. 별도 변환 없이 넘기면 됩니다. 이 인터페이스를 구조적 타입으로 둔 이유는 [`GlLinker`](/api/gllinker/)와 같은 두 가지입니다. 패키지는 WebGPU 타입 정의 없이 빌드되며, 테스트는 레코더로 결과 집계를 구동할 수 있습니다. 실제 실행은 브라우저의 WGSL 컴파일러를 거칩니다."
+  }
+}
