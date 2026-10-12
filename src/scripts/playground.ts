@@ -265,6 +265,11 @@ interface PlaygroundCopy {
     readonly newFileName: string;
     readonly badName: string;
     readonly takenName: string;
+    readonly renameHint: string;
+    readonly renameLabel: string;
+    readonly emptyName: string;
+    readonly mainNameSlash: string;
+    readonly importsRenamed: string;
     readonly deleteFile: string;
     readonly confirmDelete: string;
     readonly play: string;
@@ -757,6 +762,17 @@ const emitGlsl = (
   }
 };
 
+/** The name of a file no example is behind: the Blank tile's, and a link's whose code is no
+ *  example's and that names no file. */
+const MAIN_FILE = 'main.shade.ts';
+/** The name the file of an example opens under: the example's own file in the compiler's
+ *  examples directory, whose stem is the id the picker and the link use. */
+const exampleFileName = (id: string | undefined): string => (id ? `${id}.shade.ts` : MAIN_FILE);
+/** The uri of the editor's model for the file the canvas runs. The worker knows that file by
+ *  `documentUri`, which follows its name; the model keeps this one, so a tab beside it can take
+ *  any name the main file once had. */
+const MAIN_MODEL_URI = 'inmemory://playground/main';
+
 /** A row of the diagnostics list: what to say and where it points. A row about a line of the
  *  prelude points nowhere, since the editor does not hold that line. */
 interface DiagnosticRow {
@@ -802,10 +818,27 @@ function mount(root: HTMLElement): void {
 
   const sample = root.dataset.sample ?? '';
   const copy = JSON.parse(root.dataset.copy ?? '{}') as PlaygroundCopy;
-  const fileName = copy.fileName || 'hello.shade.ts';
-  /** The uri the worker knows the document by. Any string does; this one is the same the
-   *  editor's model is created under, so a location the service hands back names it. */
-  const documentUri = `file:///${fileName}`;
+  /** The name of the file the canvas runs, as its tab shows it: the opened example's file, or
+   *  `main.shade.ts` for a file no example is behind, until the reader renames it. A runtime
+   *  page has its name written into the toolbar by the Worker, so it is read from there. */
+  const fileNameLabel = root.querySelector('[data-runtime="file-name"]');
+  let fileName =
+    copy.fileName ||
+    (/\.shade\.ts$/.test(fileNameLabel?.textContent?.trim() ?? '')
+      ? fileNameLabel!.textContent!.trim()
+      : MAIN_FILE);
+  /** The uri the worker knows the document by. It follows the name, so a location the service
+   *  hands back, an import from another tab and a diagnostic's file all name the file the tab
+   *  names. The editor's model keeps one uri of its own (`MAIN_MODEL_URI`), so a rename never
+   *  swaps the model under the editor. */
+  let documentUri = `file:///${fileName}`;
+  /** Gives the file the canvas runs a name, before the editor holds it: what the link or the
+   *  example asks for. `renameMain` is the step for a file the worker already holds. */
+  const nameMain = (name: string): void => {
+    fileName = name;
+    documentUri = `file:///${name}`;
+    if (fileNameLabel instanceof HTMLElement) fileNameLabel.textContent = name;
+  };
   /** The version the editor holds. Every change raises it; every reply names the version it
    *  answers for, and the client drops one for any other, so a slow answer to an old keystroke
    *  never paints over a fast answer to a new one. */
@@ -3398,7 +3431,12 @@ function mount(root: HTMLElement): void {
         : [];
     if (passGraph.length > 0)
       more.push(`passes=${passGraph.map((p) => `${p.name}:${p.path}`).join(',')}`);
-    writeHash('code', await encodeSource(model.getValue()), currentChoice(), more);
+    // The main file's name rides along where it is other than the one the link would open
+    // under without it, so a link written before files had names opens as it always did.
+    const text = model.getValue();
+    const unnamed = exampleFileName(examples.find((candidate) => candidate.source === text)?.id);
+    if (fileName !== unnamed) more.push(`name=${encodeURIComponent(fileName)}`);
+    writeHash('code', await encodeSource(text), currentChoice(), more);
   };
 
   const flash = (button: HTMLButtonElement, word: string, back: string): void => {
@@ -3527,6 +3565,7 @@ function mount(root: HTMLElement): void {
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
     showImportsNote(example.id);
     bindings.seed(example.defaults ?? {});
+    renameMain(exampleFileName(example.id));
     // The files it imports go in first, so the worker holds them when the new text asks.
     setFiles(filesFor(example.source, example), graphFor(example));
     model.setValue(example.source);
@@ -3541,6 +3580,11 @@ function mount(root: HTMLElement): void {
     examplePicker.addEventListener('change', () => showExample(examplePicker.value));
   }
 
+  /** Whether the link can stay the short `#example=` form: it names an example, carries no
+   *  code, and the main file still has that example's name. */
+  const exampleLink = (named: string | null): boolean =>
+    Boolean(named) && !hashParams().get('code') && fileName === exampleFileName(named!);
+
   const applyOptions = (): void => {
     levelNote.hidden = levelPicker.value === 'O2';
     numbersField.hidden = !minifyToggle.checked;
@@ -3548,7 +3592,7 @@ function mount(root: HTMLElement): void {
     // The bar is part of what a link shows, so changing it rewrites the fragment. An
     // untouched example keeps its short `#example=` form.
     const named = hashParams().get('example');
-    if (named && !hashParams().get('code')) writeHash('example', named, currentChoice());
+    if (exampleLink(named)) writeHash('example', named!, currentChoice());
     else void publishSource();
   };
   for (const control of [
@@ -3602,7 +3646,7 @@ function mount(root: HTMLElement): void {
       syncEngine();
       // The backend is part of what a link shows, the way the emit options are.
       const named = hashParams().get('example');
-      if (named && !hashParams().get('code')) writeHash('example', named, currentChoice());
+      if (exampleLink(named)) writeHash('example', named!, currentChoice());
       else void publishSource();
     });
   }
@@ -3726,20 +3770,34 @@ function mount(root: HTMLElement): void {
     const code = params.get('code');
     if (code) {
       const source = await decodeSource(code);
-      if (source !== undefined)
+      if (source !== undefined) {
+        const example = examples.find((candidate) => candidate.source === source);
+        // A link written before the main file had a name of its own names none: it opens
+        // under its example's name, or `main.shade.ts`.
+        const linkedName = params.get('name');
+        nameMain(
+          linkedName !== null && FILE_PATH.test(linkedName) && !linkedName.includes('/')
+            ? linkedName
+            : exampleFileName(example?.id),
+        );
         return {
           source,
-          example: examples.find((candidate) => candidate.source === source),
+          example,
           files: await linkedFiles(params.get('files')),
           graph: linkedGraph(params.get('passes')),
         };
+      }
     }
-    if (params.has('blank') && root.dataset.blank) return { source: root.dataset.blank };
+    if (params.has('blank') && root.dataset.blank) {
+      nameMain(MAIN_FILE);
+      return { source: root.dataset.blank };
+    }
     const named = params.get('example');
     const chosen =
       examples.find((candidate) => candidate.id === named) ??
       examples.find((candidate) => candidate.id === root.dataset.defaultExample) ??
       examples[0];
+    if (chosen) nameMain(exampleFileName(chosen.id));
     return { source: chosen?.source ?? sample, example: chosen };
   };
 
@@ -3894,7 +3952,7 @@ function mount(root: HTMLElement): void {
   const uriOf = (path: string): string => new URL(path, documentUri).toString();
   /** The path of a workspace file by its uri, '' for the one the canvas runs. */
   const pathOfUri = (uri: string): string | undefined => {
-    if (uri === documentUri) return '';
+    if (uri === documentUri || uri === MAIN_MODEL_URI || uri === model?.uri.toString()) return '';
     for (const path of extras.keys()) if (uriOf(path) === uri) return path;
     return undefined;
   };
@@ -3931,14 +3989,28 @@ function mount(root: HTMLElement): void {
 
   const paintTabs = (): void => {
     if (!(fileTabs instanceof HTMLElement)) return;
+    // A name being typed, for a new file or a rename, keeps the strip as it is until the
+    // field closes; an analysis arriving meanwhile repaints the markers on the next paint.
+    if (fileTabs.querySelector('input')) return;
     fileTabs.textContent = '';
     const pristine = pristineFiles();
     const tab = (path: string, label: string): HTMLButtonElement => {
       const button = el('button', 'file-tab', label) as HTMLButtonElement;
       button.type = 'button';
       button.dataset.fileTab = path || fileName;
+      button.title = w.renameHint;
       if (path === activeFile) button.setAttribute('aria-current', 'true');
-      button.addEventListener('click', () => showFile(path));
+      // A click on the tab already shown changes nothing, so the strip is not repainted
+      // under a double click that is about to rename it.
+      button.addEventListener('click', () => {
+        if (path !== activeFile) showFile(path);
+      });
+      button.addEventListener('keydown', (event) => {
+        if (event.key === 'F2' || (event.key === 'Enter' && path === activeFile)) {
+          event.preventDefault();
+          startRename(path);
+        }
+      });
       return button;
     };
     fileTabs.append(tab('', fileName));
@@ -4070,6 +4142,194 @@ function mount(root: HTMLElement): void {
     workspaceEdited();
   };
 
+  // ── Names ────────────────────────────────────────────────────────────────────────────
+  // The main file opens under its example's name and every tab can be renamed: a double
+  // click, or F2 (and Enter on the tab shown) from the keyboard, turns the tab into a field
+  // for the stem; the `.shade.ts` ending stays. An import of the renamed file in another tab
+  // is rewritten to the new name, and the line under the bar says which tabs changed.
+
+  /** Moves the file the canvas runs to a new name in the worker: the old document is closed
+   *  and the text sent again under the new uri, so every answer names the new file. */
+  const renameMain = (name: string): void => {
+    if (name === fileName) return;
+    const before = documentUri;
+    nameMain(name);
+    if (model && client) {
+      client.close(before);
+      syncDocument();
+    }
+    paintTabs();
+  };
+
+  /** A relative specifier from the file at `from` to the file at `to`, both workspace paths. */
+  const relativeSpecifier = (from: string, to: string): string => {
+    const dir = from.split('/').slice(0, -1);
+    const parts = to.split('/');
+    let common = 0;
+    while (common < dir.length && common < parts.length - 1 && dir[common] === parts[common])
+      common += 1;
+    const up = dir.length - common;
+    return `${up === 0 ? './' : '../'.repeat(up)}${parts.slice(common).join('/')}`;
+  };
+  /** `text`, the file at `importer`, with every relative import of `from` naming `to`. A
+   *  specifier keeps its form: one written without the `.shade.ts` ending is written without. */
+  const rewriteImports = (text: string, importer: string, from: string, to: string): string =>
+    text.replace(
+      /(\b(?:from|import)\s*)(["'])(\.{1,2}\/[^"'\n]*)\2/g,
+      (whole, lead: string, quote: string, specifier: string) => {
+        const resolved = decodeURI(new URL(specifier, `file:///${importer}`).pathname).slice(1);
+        const bare = !/\.ts$/.test(specifier);
+        if ((bare ? `${resolved}.shade.ts` : resolved) !== from) return whole;
+        const next = relativeSpecifier(importer, to);
+        return `${lead}${quote}${bare ? next.replace(/\.shade\.ts$/, '') : next}${quote}`;
+      },
+    );
+
+  /** Renames a workspace file ('' for the main one) to `next`, and rewrites the imports of it
+   *  in the other tabs. Returns the names of the tabs whose imports changed. */
+  const renameFile = (path: string, next: string): string[] => {
+    const before = path === '' ? fileName : path;
+    if (path === '') renameMain(next);
+    else {
+      const file = extras.get(path);
+      if (!file) return [];
+      const text = file.model.getValue() as string;
+      const order = [...extras.keys()];
+      file.listener.dispose();
+      file.model.dispose();
+      client?.close(uriOf(path));
+      extras.delete(path);
+      addFile(next, text);
+      // The tab keeps its place in the strip, and a pass keeps its name, since the main file's
+      // bindings read the pass by it.
+      const moved = new Map(extras);
+      extras.clear();
+      for (const key of order) {
+        const kept = moved.get(key === path ? next : key);
+        if (kept) extras.set(key === path ? next : key, kept);
+      }
+      passGraph = passGraph.map((p) => (p.path === path ? { ...p, path: next } : p));
+      if (activeFile === path) {
+        activeFile = next;
+        editor?.setModel(extras.get(next)?.model);
+      }
+    }
+    const touched: string[] = [];
+    const others: [string, any][] = [
+      ['', model],
+      ...[...extras].map(([key, file]): [string, any] => [key, file.model]),
+    ];
+    for (const [key, other] of others) {
+      if (key === (path === '' ? '' : next) || !other) continue;
+      const importer = key === '' ? fileName : key;
+      const text = other.getValue() as string;
+      const out = rewriteImports(text, importer, before, next);
+      if (out === text) continue;
+      other.pushEditOperations([], [{ range: other.getFullModelRange(), text: out }], () => null);
+      touched.push(importer);
+    }
+    workspaceEdited();
+    return touched;
+  };
+
+  /** Turns the tab of `path` ('' for the main file) into a field for its new name. */
+  function startRename(path: string): void {
+    if (!(fileTabs instanceof HTMLElement) || !editor) return;
+    if (fileTabs.querySelector('input')) return;
+    const current = path === '' ? fileName : path;
+    const button = [...fileTabs.querySelectorAll('[data-file-tab]')].find(
+      (node): node is HTMLElement =>
+        node instanceof HTMLElement && node.dataset.fileTab === current,
+    );
+    if (!button) return;
+    const field = el('span', 'file-rename');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = current.replace(/\.shade\.ts$/, '');
+    input.spellcheck = false;
+    input.autocomplete = 'off';
+    input.setAttribute('aria-label', w.renameLabel.replace('{file}', current));
+    input.dataset.renameFile = current;
+    field.append(input, el('span', 'file-suffix', '.shade.ts'));
+    button.replaceWith(field);
+    input.focus();
+    input.select();
+    let done = false;
+    const close = (focus: string): void => {
+      done = true;
+      field.remove();
+      paintTabs();
+      const tab = [...fileTabs.querySelectorAll('[data-file-tab]')].find(
+        (node): node is HTMLElement =>
+          node instanceof HTMLElement && node.dataset.fileTab === focus,
+      );
+      tab?.focus();
+    };
+    const finish = (commit: boolean): void => {
+      if (done) return;
+      if (!commit) {
+        sayFileError('');
+        close(current);
+        return;
+      }
+      const stem = input.value
+        .trim()
+        .replace(/^\.\//, '')
+        .replace(/\.shade\.ts$/, '');
+      const next = `${stem}.shade.ts`;
+      const why =
+        stem === ''
+          ? w.emptyName
+          : !FILE_PATH.test(next)
+            ? w.badName
+            : path === '' && next.includes('/')
+              ? w.mainNameSlash
+              : next !== current && (next === fileName || extras.has(next))
+                ? w.takenName
+                : '';
+      if (why) {
+        input.setAttribute('aria-invalid', 'true');
+        sayFileError(why);
+        input.focus();
+        return;
+      }
+      sayFileError('');
+      if (next === current) {
+        close(current);
+        return;
+      }
+      done = true;
+      field.remove();
+      const touched = renameFile(path, next);
+      close(next);
+      if (touched.length > 0)
+        sayFileError(
+          w.importsRenamed
+            .replace('{old}', current)
+            .replace('{new}', next)
+            .replace('{files}', touched.join(', ')),
+        );
+    };
+    input.addEventListener('keydown', (event) => {
+      event.stopPropagation();
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        finish(true);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        finish(false);
+      }
+    });
+    input.addEventListener('blur', () => finish(false));
+  }
+  if (fileTabs instanceof HTMLElement)
+    fileTabs.addEventListener('dblclick', (event) => {
+      const tab = (event.target as Element | null)?.closest('[data-file-tab]');
+      if (!(tab instanceof HTMLElement)) return;
+      const name = tab.dataset.fileTab ?? '';
+      startRename(name === fileName ? '' : name);
+    });
+
   /** Empties the workspace down to the main file and fills it with `files`. */
   const setFiles = (
     files: Readonly<Record<string, string>>,
@@ -4187,7 +4447,7 @@ export function wave(x: f32, t: f32): f32 {
       const url = URL.createObjectURL(new Blob([zipStored(folder)], { type: 'application/zip' }));
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `${openedExample || fileName.replace(/\.shade\.ts$/, '')}.zip`;
+      anchor.download = `${fileName.replace(/\.shade\.ts$/, '')}.zip`;
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
@@ -4237,6 +4497,7 @@ export function wave(x: f32, t: f32): f32 {
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = '';
     showImportsNote(undefined);
     bindings.seed({});
+    renameMain(MAIN_FILE);
     setFiles({});
     model.setValue(blankSource);
     window.clearTimeout(timer);
@@ -4354,7 +4615,7 @@ export function wave(x: f32, t: f32): f32 {
       model = monaco.editor.createModel(
         opening.source,
         'typescript',
-        monaco.Uri.parse(documentUri),
+        monaco.Uri.parse(MAIN_MODEL_URI),
       );
       editor = monaco.editor.create(editorHost, {
         model,
