@@ -1,7 +1,7 @@
 ---
 id: production-emit
-source: 5d694bc639ae79f31dbadd756871dbe2a46e1fc2ad65888c4a5a676d54c40c05
-sourceLine: 2391
+source: 43a73d0c628a8eac2b1128078cd4c7fa822d90fd7087b4426e75318a34952966
+sourceLine: 2662
 ---
 
 이 절을 읽고 나면 배포 시점 변환들을 생성 호출 하나에 조합할 수 있고, 바뀐 이름으로
@@ -12,6 +12,38 @@ sourceLine: 2391
 이 변환들은 `typeshade/emit-prod`라는 별도 서브패스에 있으므로, 이 경로를
 가져오지 않는 빌드에는 하나도 번들되지 않고, 일반 생성 호출이 내는 바이트도 달라지지
 않습니다.
+
+이 페이지의 예제가 읽는 모듈 `m`은 다음 소스에서 `compile()`이 돌려준 것입니다.
+
+```ts
+"use typeshade";
+
+interface Params {
+  tint: vec4;
+}
+
+declare const u: uniform<Params>;
+
+function noise(p: vec2): f32 {
+  const coordinate = floor(p * 4.);
+  return fract(sin(dot(coordinate, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+function terrainShade(uv: vec2): vec4 {
+  const h = noise(uv);
+  return vec4(h, h * 0.5, 0.25, 1.) * u.tint;
+}
+
+@vertex
+export function vs(@builtin("vertex_index") vi: u32): vec4 {
+  return vec4(f32(vi & 1) * 4. - 1., f32(vi >> 1) * 4. - 1., 0., 1.);
+}
+
+@fragment
+export function fs(@builtin("position") p: vec4): vec4 {
+  return terrainShade(p.xy * 0.01);
+}
+```
 
 ### 플러그인 묶음
 
@@ -41,7 +73,8 @@ const fs = emitGlslModule(m, 'fragment', { parens: 'minimal', plugins: obfuscate
 시프트 연산자의 괄호는 그대로 둡니다. WGSL은 이 연산자들을 괄호 없이 이어 쓸 때의
 우선순위를 정해 두지 않았기 때문입니다. 연산 순서를 다시 묶는 일은 없으므로
 `a + (b + c)`의 괄호는 그대로 남습니다. 기본값 `'full'`은 생성되는 모든 바이트를 그대로
-둡니다.
+둡니다. `packModule(m, { emit })`도 같은 옵션을 받으므로, 런타임이 불러오는 매니페스트에는
+배포용 텍스트가 담깁니다.
 
 ### 짧아진 이름
 
@@ -61,8 +94,8 @@ const fs = emitGlslModule(m, 'fragment', { parens: 'minimal', plugins: obfuscate
 const renames = new Map<string, string>()
 const wgsl = emitModule(m, { plugins: [mangle({ renames })] })
 
-renames.get('terrain_shade') // 'b'
-renames.get('noise.coordinate') // 'f'; a function-scoped key is `authoredFn.authoredName`
+renames.get('terrainShade') // 'b'
+renames.get('noise.coordinate') // 'd'; a function-scoped key is `authoredFn.authoredName`
 ```
 
 ### 더 작아진 텍스트
@@ -87,8 +120,8 @@ renames.get('noise.coordinate') // 'f'; a function-scoped key is `authoredFn.aut
 `prune()`은 GLSL 전방 선언 가운데 함수 정의가 이미 모든 호출 지점보다 앞에 와서 필요
 없어진 것만 지우고, 나머지는 모두 남겨 둡니다. WGSL에서는 아무 일도 하지 않습니다. GLSL
 백엔드는 호출 그래프상 꼭 필요한 자리에만 전방 선언을 생성하므로, 이 플러그인은
-백엔드가 쓰지 않은 GLSL을 다룰 때 씁니다. `raw` 본문이나 호스트가 끼워 넣는 모듈
-조각(module fragment)이 그런 경우입니다.
+백엔드가 쓰지 않은 GLSL을 다룰 때 씁니다. 호스트가 끼워 넣는 모듈 조각(module
+fragment)이 그런 예입니다.
 
 ```ts
 import { aliasTypes, minify, minifyShaderText, prune } from 'typeshade/emit-prod'
@@ -120,25 +153,25 @@ minifyShaderText(wgsl, { numbers: 'f32' }) // the same pass over a string you ho
 지점이 하나뿐인 헬퍼까지 인라인 대상에 넣습니다. 선언 하나와 호출 하나를 없애는
 것이라 복사되는 코드가 없기 때문입니다. `'all'`은 모든 헬퍼를 대상에 넣으며, 그 대가로
 생성되는 바이트가 5.1x에서 27.2x까지 늘어납니다. `maxGrowth`는 인라인하는 동안 모듈의
-연산 개수가 몇 배까지 늘어나도 되는지 상한을 정하고, `report`에는 검토한 헬퍼마다
+연산 개수가 몇 배까지 늘어나도 되는지 상한을 정하고, `report`에는 플래그가 붙은 헬퍼를 검토할 때마다
 어떤 결정을 내렸는지 하나씩 쌓입니다.
 
 ```ts
 import { inline, obfuscate, type InlineDecision } from 'typeshade/emit-prod'
 
 const decisions: InlineDecision[] = []
-const wgsl = emitModule(m, {
+const shipped = emitModule(m, {
   parens: 'minimal',
   plugins: [inline({ opaque: 'all', maxGrowth: 4, report: decisions }), ...obfuscate()],
 })
 
-decisions[0] // { fn, callSites, ops, growth, inlined, reason: 'inlined' | 'over-budget' | 'not-inlinable' }
+decisions // [{ fn, callSites, ops, growth, inlined, reason: 'inlined' | 'over-budget' | 'not-inlinable' }, …]
 ```
 
 ### 드라이버 로그 디코딩
 
 배포되는 텍스트는 일부러 읽기 어렵게 만든 것이라, 드라이버 오류도
-`no matching overload in 'b' for arg of type 'l'`처럼 나옵니다. `decodeShaderLog(log, renames)`는
+`no matching overload in 'b' for arg of type 'f'`처럼 나옵니다. `decodeShaderLog(log, renames)`는
 이 로그 속 이름을 작성 시점 이름으로 되돌립니다. 토큰 단위로 치환하므로 드라이버가 쓴
 설명 문구와 줄 번호, 소스 발췌는 그대로 남고, 긴 단어 안에 우연히 들어 있는 짧은
 이름을 잘못 바꾸는 일도 없습니다. 디코딩은 빌드 시점에 하는 일이므로, 디코더와 맵은
@@ -151,15 +184,18 @@ decisions[0] // { fn, callSites, ops, growth, inlined, reason: 'inlined' | 'over
 받을 수 있습니다.
 
 ```ts
-import { decodeShaderLog, invertRenames } from 'typeshade/emit-prod'
+import { decodeShaderLog, invertRenames, obfuscate } from 'typeshade/emit-prod'
 
-decodeShaderLog("no matching overload in 'b' for arg of type 'l'", renames)
-// "no matching overload in 'terrain_shade' for arg of type 'vec2<f32>'"
+const renames = new Map<string, string>()
+emitModule(m, { parens: 'minimal', plugins: obfuscate({ renames }) })
 
-decodeShaderLog('undeclared identifier f', renames)
-// 'undeclared identifier f⟨coordinate (in noise) | tint (in shade)⟩'
+decodeShaderLog("no matching overload in 'b' for arg of type 'f'", renames)
+// "no matching overload in 'terrainShade' for arg of type 'vec2<f32>'"
 
-invertRenames(renames).get('b') // { emitted: 'b', authored: ['terrain_shade'] }
+decodeShaderLog('undeclared identifier d', renames)
+// 'undeclared identifier d⟨coordinate (in noise) | h (in terrainShade)⟩'
+
+invertRenames(renames).get('b') // { emitted: 'b', authored: ['terrainShade'] }
 ```
 
 ### 절대 이름을 바꾸지 않는 대상
@@ -171,17 +207,16 @@ invertRenames(renames).get('b') // { emitted: 'b', authored: ['terrain_shade'] }
 호출이 반환 구조체의 필드 이름으로 같은 varying을 적습니다. 바인딩 이름은 `_fp64`
 가드까지 포함해 호스트가 이름으로 찾습니다. 바인딩 구조체 이름은 그대로 GLSL 유니폼
 블록의 태그가 됩니다. 구조체 필드 이름은 std140 레이아웃 정보를 담고 있고, GLSL에서는
-varying이 이 이름으로 두 스테이지를 연결합니다. `raw` 문(statement)을 담은 모듈은
-아예 통째로 이름을 바꾸지 않는데, 그 이유는
-[raw 문](/guide/authoring/raw-statements/)에서 설명합니다.
+varying이 이 이름으로 두 스테이지를 연결합니다. IR 빌더가 조립한 모듈에 raw 문(statement)이
+들어 있으면 모듈 전체의 이름을 바꾸지 않습니다([`docs/ir-builder.md`](docs/ir-builder.md)).
 
 ```ts
 const renames = new Map<string, string>()
 emitModule(m, { parens: 'minimal', plugins: obfuscate({ renames }) })
 
-renames.get('terrain_shade') // 'b', a helper function
-renames.get('vec2<f32>') // 'l', a type alias
-renames.has('U') // false; a binding name a host resolves
+renames.get('terrainShade') // 'b', a helper function
+renames.get('vec2<f32>') // 'f', a type alias
+renames.has('u') // false; a binding name a host resolves
 renames.has('fs') // false; an entry-point name a pipeline names
 ```
 
@@ -195,7 +230,9 @@ renames.has('fs') // false; an entry-point name a pipeline names
 
 ```ts
 import { isSemanticallyEqual, semanticDiff } from 'typeshade'
+import { inline, obfuscate } from 'typeshade/emit-prod'
 
+// devModule: the module you tested; prodModule: the one the production pipeline ships.
 const d = semanticDiff(devModule, prodModule, { transforms: [inline(), ...obfuscate()] })
 
 isSemanticallyEqual(d) // true when prod differs from dev only as the declared pipeline dictates

@@ -1,8 +1,8 @@
 ---
 id: the-cpu-oracle
-source: ff8adead9f0cf6592670149d0d2047d8aa0519c40b1b773973223dc0a9b02725
-sourceLine: 1395
-rules: 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 8.22 CSipAu_lP4nuQbNgkYGyi9q-TIQ0sDBvNaUJxFl4U1s=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
+source: 1750a3a50087afb7b53d8333bee8f7191767dcd1c8affd0bdf9b4f9a083c5b56
+sourceLine: 1384
+rules: 8.22 PygQu-2zpBpXxfy0iqGlCW9XaBG8ymvS5XCIROH8XT4=, 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -24,12 +24,17 @@ JavaScript 함수가 됩니다. 픽셀이 잘못 나왔을 때 GPU 실행 결과
 펼친 `number[]`이며, 구조체는 필드 이름을 키로 삼는 객체입니다.
 
 ```ts
-import { module, fn, vec2fT, dot, sqrt, compileModule } from 'typeshade'
+"use typeshade";
 
-const len = fn('len', { p: vec2fT }, ({ p }) => sqrt(dot(p, p)))
-const m = module({ funcs: [len] })
+export function len(p: vec2): f32 {
+  return sqrt(dot(p, p));
+}
+```
 
-const cpu = compileModule(m)
+```ts
+import { compile, compileModule } from 'typeshade'
+
+const cpu = compileModule(compile(source).module) // source: the file above, as text
 cpu.fns.len([3, 4]) // → 5
 ```
 
@@ -42,13 +47,16 @@ cpu.fns.len([3, 4]) // → 5
 하나뿐입니다. `eval`을 금지하는 호스트에서는 `new Function` 자체가 오류를 던지므로,
 이때는 `compileModule`을 쓰면 됩니다.
 
+`compile()`도 모듈 옆에 자체 `eval(name, args)`를 돌려주므로, 간단히 호출해 볼 때 씁니다. Vite
+플러그인을 쓰면 호스트 코드가 내보낸 헬퍼를 직접 부릅니다. 그 방법은
+[모듈의 헬퍼를 호스트 코드에서 부르기](#calling-a-modules-helpers-from-host-code)에 있습니다.
+
 ### 바인딩과 호출
 
 바인딩은 유니폼 블록, 스토리지 버퍼, 텍스처, 샘플러처럼 파이프라인이 공급하는
 리소스입니다. 오라클에는 이런 리소스를 담아 둘 GPU 메모리가 없으므로, 처음 호출하기 전에
-`setBinding(name, value)`로 값을 하나씩 직접 넣어 줍니다. 이름은 선언에 적은 이름을
-그대로 씁니다. 유니폼 구조체라면 `as`에 적은 이름이고, 스토리지 버퍼나 `resource`라면
-선언할 때 준 이름입니다. `reflect(m).bindGroups`는 하향 변환(lowering)이 끼워 넣은
+`setBinding(name, value)`로 값을 하나씩 직접 넣어 줍니다. 이름은 `declare const`에 적은
+이름을 그대로 씁니다. `reflect(m).bindGroups`는 하향 변환(lowering)이 끼워 넣은
 것까지 포함해, 호스트가 채워야 할 바인딩을 모두 나열합니다. 오라클은 실행하는 함수가
 실제로 읽는 바인딩만 요구합니다. 그래서 f64 연산이 있는 모듈이라도, 하향 변환이 끼워
 넣는 `_fp64` 가드 텍스처([fp64](/guide/authoring/fp64/) 참고)에는 값을 넣지 않아도
@@ -56,18 +64,26 @@ cpu.fns.len([3, 4]) // → 5
 `typeshade/cpu: unbound <name>` 오류를 던집니다.
 
 ```ts
-import { module, fn, uniformStruct, storageBuffer, f32T, u32T, compileModule } from 'typeshade'
+"use typeshade";
 
-const U = uniformStruct('U', { group: 0, binding: 0, as: 'u' }, { scale: f32T })
-const data = storageBuffer('data', f32T, { group: 0, binding: 1, access: 'read' })
+interface Params {
+  scale: f32;
+}
 
-const scale_at = fn('scale_at', { i: u32T }, ({ i }) => data.at(i).mul(U.field.scale))
-const m = module({ uses: [U, data], funcs: [scale_at] })
+declare const u: uniform<Params>;
+declare const data: storage<array<f32>>;
 
+export function scaleAt(i: u32): f32 {
+  return data[i] * u.scale;
+}
+```
+
+```ts
+const m = compile(source).module // source: the file above, as text
 const cpu = compileModule(m)
 cpu.setBinding('u', { scale: 2 }) // a uniform block: an object keyed by field name
 cpu.setBinding('data', [1, 2, 3]) // a buffer: one flat array
-cpu.fns.scale_at(2) // → 6
+cpu.fns.scaleAt(2) // → 6
 ```
 
 배열과 구조체는 참조로 들고 있으므로, `read_write` 스토리지 버퍼에 쓰면 넘긴 배열이 그
@@ -90,10 +106,15 @@ cpu.fns.scale_at(2) // → 6
 불일치를 가릴 만큼 넓은 허용 오차 대신 ulp 단위로 좁혀서 볼 수 있습니다.
 
 ```ts
-import { module, fn, f32T, compileModule } from 'typeshade'
+"use typeshade";
 
-const acc = fn('acc', { a: f32T, b: f32T }, ({ a, b }) => a.add(b))
-const m = module({ funcs: [acc] })
+export function acc(a: f32, b: f32): f32 {
+  return a + b;
+}
+```
+
+```ts
+const m = compile(source).module // source: the file above, as text
 
 compileModule(m).fns.acc(1, 2 ** -30) // → 1.0000000009313226
 compileModule(m, { precision: 'f32' }).fns.acc(1, 2 ** -30) // → 1
@@ -110,14 +131,14 @@ compileModule(m, { precision: 'f32' }).fns.acc(1, 2 ** -30) // → 1
 ```ts
 import { compileModuleJs } from 'typeshade'
 
-// m: the module from the bindings sample above.
+// m: the module of the bindings sample above.
 const cpu = compileModuleJs(m, { precision: 'f32' })
 cpu.setBinding('u', { scale: 2 })
 cpu.setBinding('data', Array.from(rows)) // rows: the input the GPU run was given
 
 // gpuOut: the Float32Array read back from that GPU run.
 for (let i = 0; i < gpuOut.length; i++) {
-  const expected = cpu.fns.scale_at(i) as number
+  const expected = cpu.fns.scaleAt(i) as number
   if (Math.abs(gpuOut[i] - expected) > 1e-6) {
     throw new Error(`row ${i}: GPU ${gpuOut[i]}, CPU ${expected}`)
   }
@@ -126,14 +147,13 @@ for (let i = 0; i < gpuOut.length; i++) {
 
 ### CPU에서 의미가 없는 호출
 
-호출이 닿으면 오류를 던지는 것이 세 가지 있습니다. `rawStmt`의 페이로드는 IR이 읽지
-않는 타깃 언어 텍스트이므로, 어떤 표기가 들어 있든 CPU에서는 계산할 수 없습니다. 어떤
-컴포저도 바꿔 넣지 않은 플레이스홀더는 태그를 담아 오류를 던지므로, 어디에 끼워 넣기가
-빠졌는지 태그로 찾을 수 있습니다. GPU 전용 내장 함수는 계산할 재료 자체가 없습니다.
-텍스처를 읽는 `textureSample`, `textureSampleLevel`, `textureLoad`와 그 배열·bias·grad·gather·깊이 비교
-변형, `textureStore`, 크기를 묻는 `textureDimensions`와 `textureNumLayers`, 미분을 구하는 `dpdx`,
-`dpdy`, `fwidth`와 그 coarse·fine 변형이 여기에 듭니다. 전체 목록은 `ORACLE_GPU_STUB_NAMES`라는 이름으로 내보내
-둡니다.
+호출이 닿으면 오류를 던지는 호출이 있습니다. GPU 전용 내장 함수는 계산할 재료 자체가 없습니다.
+텍스처를 읽는 `textureSample`, `textureSampleLevel`, `textureLoad`와 그 배열·bias·grad·gather·깊이
+비교 변형, `textureStore`, 크기를 묻는 `textureDimensions`와 `textureNumLayers`, 미분을 구하는
+`dpdx`, `dpdy`, `fwidth`와 그 coarse·fine 변형이 여기에 듭니다. 전체 목록은
+`ORACLE_GPU_STUB_NAMES`라는 이름으로 내보냅니다. IR 빌더로 조립한 모듈에는 raw 문(statement)이
+들어 있을 수도 있습니다. 이 문장은 오라클이 읽지 않는 타깃 언어 텍스트입니다
+([`docs/ir-builder.md`](docs/ir-builder.md)).
 
 `{ gpuStubs: true }`를 주고 컴파일하면 이런 내장 함수는 대신 쓸 값을 돌려줍니다. 텍스처
 읽기는 불투명한 검정이 되고, 미분은 영이 되며, `textureDimensions`는 1×1 크기가 되고,
@@ -145,24 +165,19 @@ for (let i = 0; i < gpuOut.length; i++) {
 먼저 읽기 때문입니다.
 
 ```ts
-import {
-  module,
-  fn,
-  resource,
-  texture2dfT,
-  samplerT,
-  vec2fT,
-  textureSample,
-  compileModule,
-} from 'typeshade'
+"use typeshade";
 
-const tex = resource('tex', texture2dfT, { group: 0, binding: 0 })
-const smp = resource('smp', samplerT, { group: 0, binding: 1 })
+declare const tex: texture_2d<f32>;
+declare const smp: sampler;
 
-const shade = fn('shade', { uv: vec2fT }, ({ uv }) => textureSample(tex.node, smp.node, uv), {
-  stage: 'fragment',
-})
-const cpu = compileModule(module({ uses: [tex, smp], funcs: [shade] }), { gpuStubs: true })
+@fragment
+export function shade(@location(0) uv: vec2): vec4 {
+  return textureSample(tex, smp, uv);
+}
+```
+
+```ts
+const cpu = compileModule(compile(source).module, { gpuStubs: true })
 
 cpu.setBinding('tex', 0) // the value is never read under a stub
 cpu.setBinding('smp', 0)
@@ -174,14 +189,22 @@ cpu.fns.shade([0.5, 0.5]) // → [0, 0, 0, 1]
 `grad(m, fn, param)`은 모듈의 함수 하나를 매개변수 하나에 대해 미분하고 `{ module, name }`을
 돌려줍니다. `module`은 새 함수가 하나 더해진 모듈입니다. 이 함수는 `fn`과 같은 인수를 받아
 그 지점의 `d fn / d param`을 돌려주며, 결과 타입은 `fn`의 결과 타입과 같습니다. 새 함수도
-평범한 IR이므로 오라클이 그대로 실행하고, 엔트리가 이 함수를 호출하면 WGSL과 GLSL 코드
+평범한 IR이므로 오라클이 그대로 실행하고, 진입점이 이 함수를 호출하면 WGSL과 GLSL 코드
 생성기가 함께 출력합니다.
 
 ```ts
-import { module, fn, f32T, sin, compileModule, grad } from 'typeshade'
+"use typeshade";
 
-const wave = fn('wave', { x: f32T, k: f32T }, ({ x, k }) => sin(k.mul(x)).mul(k))
-const d = grad(module({ funcs: [wave] }), 'wave', 'k')
+export function wave(x: f32, k: f32): f32 {
+  return sin(k * x) * k;
+}
+```
+
+```ts
+import { compile, compileModule, grad } from 'typeshade'
+
+const m = compile(source).module // source: the file above, as text
+const d = grad(m, 'wave', 'k')
 
 compileModule(d.module).fns[d.name](0.5, 2) // → cos(1) * 0.5 * 2 + sin(1) = 1.3817…
 ```
@@ -198,6 +221,39 @@ compileModule(d.module).fns[d.name](0.5, 2) // → cos(1) * 0.5 * 2 + sin(1) = 1
 매개변수가 그 구성 요소에 닿을 때만 일어납니다. 이 패스는 유도하지 않은 미분을 영으로
 채워 돌려주는 일이 없습니다. 생성된 함수는 오라클 위에서 중앙 유한 차분과 비교해 검사하며,
 직접 만든 함수도 같은 방법으로 검사하면 됩니다.
+
+`grad(m, fn, wrt, { mode: 'reverse' })`는 `wrt`에 적은 모든 이름에 대해 한 번에 미분합니다(변경
+제안 0056). 새 함수의 기본 이름은 `<fn>_vjp`입니다. 이 함수는 같은 인수 뒤에 결과 타입의 시드
+`dy`를 하나 더 받고, 이름마다 필드가 하나씩 있는 구조체를 돌려줍니다. 각 필드는 벡터-야코비안 곱
+`dy · d fn / d name`입니다. 호출 한 번으로 기울기 전체를 얻으므로, 손실 함수처럼 매개변수는 많고
+결과는 작을 때 이 모드를 씁니다. CPU에서 이 구조체는 객체이며, `d.adjoints`가 매개변수마다 그
+필드의 이름을 알려 줍니다.
+
+```ts
+const r = grad(m, 'wave', ['x', 'k'], { mode: 'reverse' })
+compileModule(r.module).fns[r.name](0.5, 2, 1) // → { x: …, k: … }
+```
+
+역방향 모드는 함수 본문을 앞으로 한 번 실행한 뒤 뒤로 훑습니다. 역방향 훑기가 읽을 값은 함수 자신의
+변수에 보관하므로 버퍼를 할당하지 않습니다. 순방향 모드와 같은 산술, 내장 함수, 분기, 호출을
+미분하며, 불연속 지점의 미분은 여전히 영입니다.
+
+반복은 함수 메모리 안의 체크포인트 일정에 따라 뒤로 훑습니다. 반복 횟수는 횟수가 정해진 `for`의
+머리에서 얻습니다. `while`이나 `break`가 있는 반복이라면 반복을 한 번 더 실행해 횟수를 세어
+얻습니다. 반복의 상태는 `ceil(N / C)`회마다 `C`개의 슬롯(`opts.checkpoints`, 기본값 32)에
+저장되고, 각 구간은 자기 슬롯에서 다시 실행됩니다. 반복이 `C²`회 이하이면 본문은 앞으로 세 번쯤,
+뒤로 한 번 실행됩니다. `C²`회를 넘으면 시간이 `N² / C`에 비례해 늘어납니다. `d.tapeBytes`는 이
+일정이 호출마다 차지하는 함수 메모리를 알려 줍니다. 반복을 다시 실행할 때 효과가 되풀이될 호출이나
+`discard`는 `SD0118`로 거부되고, 모듈 변수나 바인딩에 쓰는 것도 마찬가지로 거부됩니다.
+
+`opts.custom`은 함수에 작성자가 직접 쓴 수반(adjoint)을 줍니다. `{ custom: { g: 'g_adjoint' } }`를
+넘기면 `g`를 부를 때마다 `g_adjoint(g's arguments, dy)`에서 수반을 받습니다. 이 함수는 `g`의
+부동소수점 매개변수마다 필드가 하나씩 있는 구조체를 돌려줍니다. 앞에서 뒤로 합성할 때의 투과율처럼
+역으로 풀 수 있는 점화식에 이 옵션을 쓰십시오.
+
+`gradCheck(m, fn, { wrt, at, mode })`는 어느 모드의 미분이든 인수 목록 `at`에서 `f64` 오라클의 중앙
+차분과 비교하고 `{ ok, checked, worst }`를 돌려줍니다. `worst`는 두 값이 갈라지는 매개변수, 지점,
+성분을 알려 줍니다.
 
 ### 모듈의 헬퍼를 호스트 코드에서 부르기
 

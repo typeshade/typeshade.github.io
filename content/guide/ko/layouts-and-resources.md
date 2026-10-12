@@ -1,180 +1,140 @@
 ---
 id: layouts-and-resources
-source: 8ffd69303d1e80c5fbed28402800286ac9a271a11a93f7b8a7edb3759842a0b7
-sourceLine: 997
+source: 2fc5ad407711135171b2d63fadc3f304de0b1f77e246310162e02ec36e050e4b
+sourceLine: 928
+rules: 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=
 ---
 
-이 절을 읽고 나면 버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고, 그 선언
-하나에서 모든 필드를 읽어올 수 있습니다.
+이 페이지를 마치면 버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고, 그 선언 하나에서
+모든 필드를 읽을 수 있습니다.
 
-레이아웃은 셰이더와 그 셰이더에 값을 공급하는 파이프라인 사이의 약속입니다. 한 스테이지가
-다음 스테이지에 넘기는 필드, 드로우 콜이 바인딩하는 유니폼 블록, 각 슬롯에 오르는 버퍼와
-텍스처가 여기에 해당합니다. 각 헬퍼 함수는 레이아웃을 필드 맵이나 요소 타입으로 한 번
-받고, 그 레이아웃에 필요한 선언과 타입이 붙은 접근자를 함께 담은 핸들(handle)을
-돌려줍니다. 접근자가 선언과 같은 객체에서 나오므로, 필드 이름이나 필드 타입을 잘못 쓰면
-그 코드를 쓴 줄에서 바로 TypeScript 오류가 됩니다. 이 핸들들을 `module({ uses: [...] })`에
-넘기면 모듈이 각 핸들이 담고 있는 선언을 모두 모읍니다.
+레이아웃은 셰이더와, 셰이더에 데이터를 넣는 파이프라인 사이의 약속입니다. 한 스테이지가 다음
+스테이지에 넘기는 필드, 드로 호출이 바인딩하는 유니폼 블록, 슬롯마다 놓이는 버퍼와 텍스처가 모두
+레이아웃입니다. 각각은 파일 안의 선언 하나입니다. 구조체는 `class`, `interface`, `type` 별칭으로
+쓰고, 리소스는 무엇을 담는지 타입으로 밝힌 `declare const`로 씁니다. 모든 읽기가 선언된 필드를
+가리키므로, 필드 이름이나 필드 타입이 틀리면 그 필드를 읽는 줄에서 오류가 납니다.
 
 ### IO 구조체
 
-IO 구조체는 스테이지 경계를 넘어가는 필드 묶음입니다. 버텍스 스테이지가 반환하고,
-프래그먼트 스테이지가 매개변수로 받습니다. `ioStruct`는 이름과 필드 맵으로 IO 구조체를
-선언하며, 필드마다 스테이지 속성이 붙습니다. `builtin(name)`은 하드웨어가 직접
-공급하는 값을 선언하고, `'position'`이나 `'vertex_index'`처럼 WGSL 내장 식별자를 인자로
-받습니다. 이 인자의 타입은 닫힌 유니온이므로, WGSL에 없는 이름을 쓰면 `tsc` 오류가
-됩니다. `location(n, type)`은 번호가 있는 슬롯을 선언합니다. 보간 모드는 `'flat'`,
-`'linear'`, `'perspective'` 중 하나를 골라 붙일 수 있고, 생략해도 됩니다. 정수 필드에는 따로 지정하지 않아도
-`flat`이 붙습니다. WGSL이 정수 varying에는 이 모드를 요구하기 때문입니다. 두 타깃이 모두
-지원하는 모드는 `'flat'`과 `'perspective'`입니다. `'linear'`는 GLSL ES 3.00에 대응하는 형태가
-없으므로, 이를 쓰는 모듈은 그 타깃에서 fail closed 방식으로 실패합니다.
-
-```ts
-const VsOut = ioStruct('VsOut', {
-  pos: builtin('position', vec4fT),
-  uv: location(0, vec2fT),
-  vis: location(1, f32T),
-  view_w: location(2, f32T),
-})
-
-// A vertex fn returns the struct. `construct` builds the value in one expression,
-// so a missing or extra field is a TS error.
-const vs = fn(
-  'vs_main',
-  { xy: location(0, vec2fT), uv: location(1, vec2fT) },
-  (p) => {
-    const pos = vec4(p.xy, 0, 1)
-    return VsOut.construct({ pos, uv: p.uv, vis: f32(1), view_w: pos.w })
-  },
-  { stage: 'vertex' },
-)
-
-// Read fields off a parameter declared with the handle.
-const fs = fn(
-  'fs_main',
-  { input: VsOut },
-  (p) => {
-    If(p.input.vis.lt(0), () => {
-      Discard()
-    })
-    return vec4(p.input.uv, 0, 1)
-  },
-  { stage: 'fragment' },
-)
-```
-
-`VsOut.var('out')`은 핸들을 쓰는 세 번째 방법입니다. 이 구조체 타입의 가변 var를 선언하고
-대입할 수 있는 필드를 돌려주므로, 출력을 여러 문장에 걸쳐 채워 나갈 때 씁니다. 값을 일반
-노드로 들고 있을 때 그 필드를 읽으려면 `VsOut.of(node)`를 씁니다.
-
-### 유니폼 블록
-
-유니폼 블록은 호스트가 드로우 콜마다 한 번 채우고 모든 호출이 읽는 구조체입니다.
-`uniformStruct`는 구조체와 그 바인딩을 호출 한 번으로 함께 선언합니다. WGSL 타입 이름,
-슬롯(`group`, `binding`, 변수 이름을 정하는 `as`), 그리고 필드 맵을 순서대로 넘깁니다.
-필드는 `.field.<name>`으로 읽습니다. 읽은 값은 일반 노드이므로 컴포넌트 접근과 연산을
-바로 이어서 쓸 수 있습니다. 유니폼 필드는 WGSL에서 읽기 전용이고 핸들의 타입도 읽기
-전용이므로, 필드에 대입하면 `tsc` 오류가 됩니다.
-
-```ts
-const U = uniformStruct(
-  'Uniforms',
-  { group: 0, binding: 0, as: 'u' },
-  {
-    mvp: mat4x4fT,
-    proj_params: vec4fT,
-    raster_params: vec4fT,
-  },
-)
-
-const opacity = U.field.raster_params.x
-const m = U.field.mvp
-```
-
-`U.field`는 평범한 객체이므로, 본문 맨 위에서 한 번 구조 분해해 두고 그 뒤로는 이름으로
-필드를 읽으면 됩니다: `const { mvp, proj_params } = U.field`.
-
-유니폼이 스칼라나 벡터 하나뿐이라면 구조체로 감쌀 필요가 없습니다. `resource`는 이런 단일
-바인딩 값을 선언하고, 값을 읽는 `.node`와 `uses`에 넘길 `.binding`을 함께 돌려줍니다.
-
-```ts
-const mode = resource('mode', u32T, { group: 0, binding: 1 })
-// mode.node is a ReadonlyNode<'u32'> — `@group(0) @binding(1) var<uniform> mode: u32;`
-```
-
-`resource`는 텍스처와 샘플러도 선언합니다. [텍스처와 샘플러](#textures-and-samplers) 절을
-참고하십시오.
-
-`"use typeshade"` 파일에서는 유니폼을 초기화 식 없는 `declare const`로 선언합니다. 타입은
-`uniform<T>`이고, `T`에는 구조체, 스칼라, 벡터가 올 수 있습니다. 구조체의 필드는 이름으로
-읽습니다.
+IO 구조체는 스테이지 경계를 넘는 필드 묶음입니다. 버텍스 스테이지가 이 구조체를 돌려주고,
+프래그먼트 스테이지가 매개변수로 받습니다. 데코레이터는 클래스 필드에만 붙일 수 있으므로 IO
+구조체는 `class`로 쓰며, 모든 필드에 스테이지 속성을 붙입니다. `@builtin("id")`는 하드웨어가 주는
+값을 선언하며, `"position"`이나 `"vertex_index"` 같은 WGSL 내장 값 id를 받습니다. WGSL이 정의하지
+않은 id는 오류입니다. `@location(n)`은 번호 붙은 슬롯을 선언하며, `@interpolate("flat")`,
+`@interpolate("linear")`, `@interpolate("perspective")`를 함께 붙일 수 있습니다. 정수 필드는 따로
+적지 않아도 `flat`이 됩니다. 두 타깃 모두 정수 varying에 이를 요구하기 때문입니다. `"flat"`과
+`"perspective"`는 두 타깃이 모두 지원하는 모드입니다. `"linear"`는 GLSL ES 3.00에 대응하는 형태가
+없으므로, 이 모드를 쓰는 모듈에서는 GLSL이 나오지 않습니다.
 
 ```ts
 "use typeshade";
 
-interface Camera {
-  view: vec4;
-  fov: f32;
+class VsIn {
+  @location(0) xy: vec2;
+  @location(1) uv: vec2;
 }
 
-declare const camera: uniform<Camera>;
-declare const mode: uniform<u32>;
+class VsOut {
+  @builtin("position") pos: vec4;
+  @location(0) uv: vec2;
+  @location(1) vis: f32;
+  @location(2) id: u32; // an integer varying: flat on both targets
+}
 
-export function zoom(): f32 {
-  return mode == 0 ? camera.fov : camera.fov * 0.5;
+// A vertex entry returns the struct. The object literal takes the declared struct,
+// so a missing or extra field is an error.
+@vertex
+export function vsMain(v: VsIn, @builtin("instance_index") inst: u32): VsOut {
+  const pos = vec4(v.xy, 0., 1.);
+  return { pos: pos, uv: v.uv, vis: 1., id: inst };
+}
+
+// Read fields off a parameter declared with the struct.
+@fragment
+export function fsMain(input: VsOut): vec4 {
+  if (input.vis < 0.) {
+    discard;
+  }
+  return vec4(input.uv, f32(input.id), 1.);
 }
 ```
 
-유니폼은 읽기 전용이라 `uniform<T>`에는 접근 모드가 없습니다. `camera.fov`에 대입하면
-에디터에서도, 컴파일할 때도 오류가 납니다. 슬롯은 파일 안에서 선언이 놓인 순서로 정해집니다.
-`declare const`마다 그룹 0의 다음 바인딩을 차지하고, 호스트는 `reflect()`로 그 번호를
-읽습니다. 모든 형태와 각 거부 사유는 표면 레퍼런스 `docs/use-typeshade-surface.md` §1에
-있습니다.
+버텍스 진입점의 `@location` 입력은 버텍스 속성입니다. 따로 쓴 매개변수일 수도 있고, `VsIn` 같은
+구조체 매개변수의 필드일 수도 있습니다. `reflect()`는 이 입력의 버퍼 레이아웃을 알려 줍니다. 여러
+문장에 걸쳐 만드는 구조체 값은 구조체 타입의 `let`으로 선언하고 필드에 하나씩 대입합니다.
 
-### 일반 구조체
+### 유니폼 블록
 
-`structDecl`은 스테이지 경계를 넘지 않는 구조체를 선언합니다. 스토리지 버퍼의 요소
-타입이거나 다른 구조체 안에 중첩되는 구조체가 여기에 해당합니다. 필드는 스테이지 속성이
-없는 일반 타입이며, IO 구조체와 다른 점은 이것뿐입니다. 핸들의 모양은 같고,
-`.get(node, 'field')` 리더가 하나 더 있습니다. 짧은 식 하나에서 여러 필드를 꺼내는 호출
-지점에서는 이 위치 인자 방식이 편합니다.
+유니폼 블록은 호스트가 드로마다 한 번 채우고 모든 호출이 읽는 구조체입니다. 구조체를 선언한 뒤,
+초기화 식 없는 `declare const`로 바인딩을 선언합니다. 타입은 `uniform<T>`입니다. 필드는 이름으로
+읽습니다. 읽은 결과는 평범한 값이라서 성분 접근과 수학 연산을 바로 이어 쓸 수 있습니다. 유니폼은
+읽기 전용입니다. 필드에 대입하면 에디터에서도, 컴파일할 때도 오류가 납니다.
 
 ```ts
-export const ShapeSegment = structDecl('ShapeSegment', {
-  kind: u32T,
-  color_idx: u32T,
-  flags: u32T,
-  _pad: u32T,
-  p0: vec2fT,
-  p1: vec2fT,
-  p2: vec2fT,
-  p3: vec2fT,
-})
+"use typeshade";
+
+interface Uniforms {
+  mvp: mat4;
+  projParams: vec4;
+  rasterParams: vec4;
+}
+
+declare const u: uniform<Uniforms>;
+
+@vertex
+export function vs(@location(0) pos: vec3): vec4 {
+  const opacity = u.rasterParams.x;
+  return u.mvp * vec4(pos, opacity);
+}
 ```
+
+슬롯은 파일 안에서 선언이 놓인 자리로 정해집니다. `declare const`마다 그룹 0의 다음 바인딩을
+차지하고, `reflect()`가 이를 호스트에 알려 줍니다. 유니폼 버퍼는 읽기 전용이므로 `uniform<T>`는
+접근 모드를 받지 않습니다.
+
+WGSL에서는 유니폼에 스칼라나 벡터 하나만 담을 수도 있습니다(`declare const mode: uniform<u32>`).
+GLSL ES 3.00은 유니폼 바인딩을 std140 블록으로 표현합니다. 그래서 WebGL2를 타깃으로 하는 모듈은
+값을 구조체에 넣어야 합니다. 스칼라 유니폼이 있으면 `compile()`은 WGSL을 유지하고 GLSL 쪽은
+`TS8015` 경고로 보고합니다. 모든 형태와 거부되는 경우는 인터페이스 참조 문서
+`docs/use-typeshade-surface.md` §1에 있습니다.
+
+### 평범한 구조체
+
+스테이지 경계를 넘지 않는 구조체는 필드에 속성을 붙이지 않습니다. 스토리지 버퍼의 요소 타입이나
+다른 구조체 안에 든 구조체가 그렇습니다. `class`, `interface`, 객체 타입에 붙인 `type` 별칭 가운데
+무엇으로 써도 됩니다. 셋은 같은 구조체가 됩니다.
+
+```ts
+"use typeshade";
+
+class ShapeSegment {
+  kind: u32;
+  colorIdx: u32;
+  flags: u32;
+  pad: u32;
+  p0: vec2;
+  p1: vec2;
+  p2: vec2;
+  p3: vec2;
+}
+
+declare const segments: storage<array<ShapeSegment>>;
+
+export function segmentLength(i: u32): f32 {
+  const seg = segments[i];
+  return length(seg.p1 - seg.p0);
+}
+```
+
+`class`는 언제나 모듈에 들어갑니다. `type`이나 `interface`는 무언가가 쓸 때만 모듈에 들어갑니다.
+바인딩, 매개변수, 반환값, 지역 변수, 또는 쓰이는 다른 구조체의 필드가 그런 쓰임입니다. 아무도 쓰지
+않는 타입은 호스트 쪽 형태일 수 있으므로 그대로 둡니다.
 
 ### 스토리지 버퍼
 
-스토리지 버퍼는 바인딩된 `array<Element>`이며, 길이는 호스트가 바인딩하는 버퍼가
-정합니다. `storageBuffer`는 요소 타입만 받아서 스토리지 버퍼를 선언합니다. 요소는 구조체
-핸들이어도 되고 스칼라나 벡터 타입이어도 됩니다. 요소는 `.at(i)`로 접근합니다. 구조체
-요소라면 타입이 붙은 필드 프록시를, 스칼라나 벡터 요소라면 요소 노드 자체를 돌려줍니다.
-`access`는 쓸 수 있는지를 타입 수준에서 정합니다. `'read'`이면 필드가 읽기 전용이라
-대입하면 `tsc` 오류가 되고, `'read_write'`이면 대입할 수 있습니다.
-
-```ts
-const segmentsB = storageBuffer('segments', ShapeSegment, { group: 0, binding: 9, access: 'read' })
-
-const seg = segmentsB.at(i)
-seg.p0 // → Node<'vec2<f32>'>
-seg.kind // → Node<'u32'>
-
-const featIds = storageBuffer('feat_ids', u32T, { group: 0, binding: 10, access: 'read' })
-featIds.at(i) // → Node<'u32'>
-```
-
-`"use typeshade"` 파일에서는 스토리지 버퍼를 초기화 식 없는 `declare const`로 선언합니다.
-접근 모드는 두 번째 타입 인자입니다. `storage<T>`는 `read` 바인딩이고,
-`storage<T, "read_write">`는 쓸 수 있는 바인딩입니다. 배열은 여느 배열처럼 인덱스로
-읽습니다.
+스토리지 버퍼는 바인딩된 배열이며, 길이는 호스트가 바인딩하는 버퍼에서 정해집니다. 초기화 식 없는
+`declare const`로 선언합니다. 접근 모드는 두 번째 타입 인자입니다. `storage<T>`는 `read`
+바인딩이고, `storage<T, "read_write">`는 쓸 수 있는 바인딩입니다. 인덱싱은 다른 배열과 같습니다.
 
 ```ts
 "use typeshade";
@@ -189,85 +149,93 @@ export function twice(@builtin("global_invocation_id") gid: vec3u): void {
 ```
 
 두 선언은 소스 순서대로 그룹 0의 바인딩 0과 1에 `var<storage, read> src: array<f32>;`와
-`var<storage, read_write> dst: array<f32>;`를 생성합니다. `src`에 쓰면 에디터에서도,
-컴파일할 때도 오류가 납니다. 요소는 구조체, 스칼라, 벡터 어느 것이든 되므로
-`storage<array<vec4>>`는 요소마다 `vec4` 하나를 담습니다.
+`var<storage, read_write> dst: array<f32>;`를 생성합니다. `src`에 쓰면 에디터에서도, 컴파일할
+때도 오류가 납니다. 요소는 구조체, 스칼라, 벡터 가운데 무엇이든 됩니다. 그래서
+`storage<array<vec4>>`는 요소마다 `vec4` 하나를 담고, `src.length`는 바인딩된 버퍼의 요소
+개수입니다.
 
-GLSL ES 3.00에는 스토리지 버퍼 객체가 없으므로, 생성 시점에 읽기 바인딩을 데이터 텍스처
-조회로 하향 변환(lowering)하고 셰이더 소스는 작성한 그대로 둡니다. GLSL 타깃에서는 그
-데이터 텍스처를 호스트가 직접 만들어야 하고, 내부 포맷은 하향 변환이 선언하는 샘플러와
-맞춰야 합니다. 실수 배열에는 R32F를, `array<u32>`와 `array<vecN<u32>>`에는 R32UI를,
-`array<i32>`와 `array<vecN<i32>>`에는 R32I를 씁니다. 벡터 요소는 std430 레인을 그대로
-차지하므로 `vec4u` 하나는 텍셀 네 개입니다. 구조체 요소는 필드가 모두 실수이면 R32F를,
-`u32`나 `i32` 필드가 있으면 R32UI를 씁니다. 이때는 std430 바이트를 `Uint32Array`로 올리고,
-셰이더는 실수 필드를 `uintBitsToFloat`로 되읽습니다. 짝이 맞는지 런타임에 검사해 주는 것은
-없습니다. 그러니 포맷을 따로 기록해 두지 말고, `reflect()`가 바인딩마다 알려 주는
-`glslDataTexture`(`'r32f'`, `'r32ui'`, `'r32i'`)로 텍스처를 만듭니다.
+GLSL ES 3.00에는 스토리지 버퍼 객체가 없습니다. 그래서 읽기 바인딩은 생성할 때 데이터 텍스처
+읽기로 하향 변환되고, 셰이더 소스는 작성한 그대로 남습니다. GLSL 타깃에서는 호스트가 그 데이터
+텍스처를 할당하며, 내부 포맷은 하향 변환이 선언한 샘플러와 맞아야 합니다. float 배열은 R32F,
+`array<u32>`와 `array<vecN<u32>>`는 R32UI, `array<i32>`와 `array<vecN<i32>>`는 R32I입니다. 벡터
+요소는 std430 레인 수만큼 텍셀을 차지하므로 `vec4u` 하나는 텍셀 넷입니다. 구조체 요소는 필드가
+모두 float이면 R32F를, `u32`나 `i32` 필드가 있으면 R32UI를 씁니다. 이때는 std430 바이트를
+`Uint32Array`로 올리고, 셰이더는 float 필드를 `uintBitsToFloat`로 되돌려 읽습니다. 런타임에는 이
+짝을 아무것도 검사하지 않습니다. 그러니 짝을 따로 기억하지 말고 `reflect()`가 주는 바인딩의
+`glslDataTexture`(`'r32f'`, `'r32ui'`, `'r32i'`)를 보고 할당하십시오.
 
-이 하향 변환은 gather(읽기만 하는 접근)만 지원하므로, GLSL 타깃에서
-`'read_write'` 바인딩을 쓰면 빌드 시점 오류가 됩니다. 모듈이 WGSL 전용이 아니라면 `'read'`를 씁니다. GLSL도 타깃으로 삼는
-모듈에서 `'read_write'` 바인딩을 쓰면, GLSL을 처음 생성하기 전까지는 문제가 드러나지
-않습니다.
+이 하향 변환은 gather(읽기만 하는 접근)만 합니다. 그래서 버텍스 진입점이나 프래그먼트 진입점이
+닿는 `"read_write"` 바인딩에는 GLSL 형태가 없습니다. 이때 `compile()`은 WGSL을 유지하고 `glsl`을
+정의하지 않은 채 `TS8015` 경고를 보고합니다. 컴퓨트 진입점은 WebGL2에서 패스 프로그램을 거쳐 이런
+바인딩에 씁니다. 그 방법은 [이식 가능한 컴퓨트 커널](#portable-compute-kernels)에 있습니다.
 
 ### 텍스처와 샘플러
 
-`resource`는 필드가 없는 바인딩 값을 선언합니다. 텍스처와 샘플러가 여기에 해당합니다.
-접근 노드가 어떤 값을 받는지는 타입 토큰이 정합니다. 실수를 필터링해 읽는 2D 텍스처에는
-`texture2dfT`를, 샘플러에는 `samplerT`를 씁니다. 샘플러는 필터링과 래핑 상태를 담는
-객체입니다. `.node`는 구체적인 타입을 그대로 갖고 있으므로, 텍스처와 샘플러를 뒤바꿔
-넘기면 `tsc`가 잡아냅니다.
+텍스처와 샘플러는 `uniform<>`이나 `storage<>`로 감싸지 않고 그대로 씁니다. 핸들은 어느 주소
+공간에도 속하지 않기 때문입니다. 타입이 읽기에서 받을 수 있는 것을 정합니다. `texture_2d<f32>`는
+필터링된 float를 담는 2D 텍스처이고, `sampler`는 필터링과 랩 상태를 담는 객체입니다. 둘 다 다른
+리소스처럼 선언 순서대로 다음 바인딩 슬롯을 차지합니다.
 
 ```ts
-const tex = resource('tex', texture2dfT, { group: 0, binding: 1 })
-const texSampler = resource('tex_sampler', samplerT, { group: 0, binding: 2 })
+"use typeshade";
 
-const c = textureSample(tex.node, texSampler.node, uv) // fragment only
-const cv = textureSampleLevel(tex.node, texSampler.node, uv, 0) // any stage
-const size = textureDimensions(tex.node) // → Node<'vec2<u32>'>, the extent in texels
+declare const tex: texture_2d<f32>;
+declare const texSampler: sampler;
+
+@fragment
+export function fs(@location(0) uv: vec2): vec4 {
+  const c = textureSample(tex, texSampler, uv); // fragment only
+  const cv = textureSampleLevel(tex, texSampler, uv, 0.); // any stage
+  const size = textureDimensions(tex); // vec2u, the extent in texels
+  return c + cv * f32(size.x);
+}
 ```
 
-`textureSample`은 밉 레벨을 화면 공간 미분에서 얻습니다. 미분은 프래그먼트 호출에만
-있으므로 이 함수는 프래그먼트 전용이며, 버텍스나 컴퓨트에서 쓰면 SD0109 린트 오류가
-됩니다. 레벨을 직접 지정하려면 `textureSampleLevel(tex, smp, uv, level)`을 쓰며, 이 함수는
-모든 스테이지에서 쓸 수 있습니다. 미분 내장 함수 `fwidth`, `dpdx`, `dpdy`도 같은 이유로
-프래그먼트 전용이고 버텍스나 컴퓨트용은 아예 없으므로, 필요한 값은 그 스테이지에서 미리
-계산해서 넘깁니다.
+`textureSample`은 화면 공간 미분값으로 밉 레벨을 정하는데, 이 값은 프래그먼트 호출에만 있습니다.
+그래서 이 함수는 프래그먼트 전용입니다. 버텍스 진입점이나 컴퓨트 진입점이 닿는 곳에서 쓰면 그
+진입점을 밝히는 오류가 납니다. 레벨을 직접 정해 읽으려면 모든 스테이지에서 쓸 수 있는
+`textureSampleLevel(tex, smp, uv, level)`을 쓰십시오. 미분 내장 함수 `fwidth`, `dpdx`, `dpdy`도
+같은 이유로 프래그먼트 전용이며, 버텍스나 컴퓨트에서 쓰는 형태가 없습니다. 그러니 그 값은
+프래그먼트에서 미리 계산해 넘기십시오. GLSL ES 3.00에서는 텍스처와 샘플러가 `sampler2D` 하나로
+합쳐지고, 호출에서 샘플러 인자가 사라집니다.
 
 ### 배열 텍스처와 정수 텍스처
 
-2D 배열 텍스처는 바인딩 하나 뒤에 레이어 N개를 두고, 레이어는 호출할 때마다 고릅니다.
-그래서 깊이가 얼마든 아틀라스 하나가 슬롯 하나만 씁니다. `texture2dArrayfT`로
-선언합니다. 읽기 함수 세 개도 그대로 씁니다. 첫 번째 인자가 배열 텍스처 타입이면 `layer`
-인자가 필수가 됩니다. 레이어에 그냥 숫자를 넘기면 정수 리터럴로 승격됩니다.
-`textureDimensions`는 배열 텍스처에서도 너비와 높이만 돌려줍니다. 레이어 개수는
-`textureNumLayers`로 따로 얻으며, 결과가 `u32`이므로 실수 연산에 쓰려면 `toF32`로
-감쌉니다.
+2D 배열 텍스처는 바인딩 하나 뒤에 N개의 레이어를 담고, 호출할 때마다 레이어를 고릅니다. 그래서
+깊이와 상관없이 아틀라스 하나가 슬롯 하나만 차지합니다. `texture_2d_array<f32>`로 선언합니다. 같은
+읽기 함수를 그대로 씁니다. 텍스처 타입이 배열 형태를 고르고, 그러면 `layer` 인자가 필수가 됩니다.
+레이어는 `i32`이고 `textureLoad`의 레벨은 `u32`이므로, 그냥 숫자를 쓰면 알맞은 타입이 됩니다.
+`textureDimensions`는 배열 텍스처에서도 너비와 높이만 알려 줍니다. 레이어 수는 따로
+`textureNumLayers`로 읽으며, 이 함수는 `u32`를 돌려줍니다.
 
-정수 텍스처는 32비트 값을 손실 없이 담는 텍셀로 이루어지며, id 맵, 여러 값을 정수 하나에
-묶어 담은 색상 테이블, 비트필드 조회에 씁니다. 2D 텍스처는 `texture2duT`와 `texture2diT`로,
-배열 텍스처는 `texture2dArrayuT`와 `texture2dArrayiT`로 선언합니다. 로드 결과의 타입은
-텍스처의 요소 타입을 따릅니다. 부호 없는 텍스처에서는 `vec4<u32>`, 부호 있는 텍스처에서는
-`vec4<i32>`가 나오므로, 다른 타입에 대입하면 `tsc` 오류가 됩니다. `textureSample`과
-`textureSampleLevel`은 이런 타입을 `tsc` 단계에서 거부하는데, 필터링은 가중 평균이고
-WGSL에 정수 텍스처를 샘플링하는 함수가 아예 없기 때문입니다. 정수 텍스처에서 쓸 수 있는
-함수는 `textureLoad`, `textureDimensions`, `textureNumLayers`뿐입니다.
+정수 텍스처는 정확한 32비트 텍셀을 담습니다. id 맵, 압축한 색상 표, 비트 필드 조회표에 씁니다.
+`texture_2d<u32>`와 `texture_2d<i32>`는 2D 형태를 선언하고, `texture_2d_array<u32>`와
+`texture_2d_array<i32>`는 그 배열판입니다. 읽은 결과는 텍스처의 요소를 따릅니다. 부호 없는
+텍스처에서는 `vec4u`, 부호 있는 텍스처에서는 `vec4i`가 나옵니다. `textureSample`과
+`textureSampleLevel`은 정수 텍스처를 거부하고 대신 `textureLoad`를 쓰라고 알려 줍니다. 필터링은
+가중 평균인데, WGSL에는 정수 텍스처를 샘플링하는 형태가 아예 없기 때문입니다.
 
 ```ts
-const atlas = resource('atlas', texture2dArrayfT, { group: 0, binding: 4 })
-const atlasSampler = resource('atlas_sampler', samplerT, { group: 0, binding: 5 })
+"use typeshade";
 
-textureSample(atlas.node, atlasSampler.node, uv, layer) // implicit LOD, fragment only
-textureSampleLevel(atlas.node, atlasSampler.node, uv, layer, level) // explicit LOD, any stage
-textureLoad(atlas.node, coord, layer, level) // unfiltered texel fetch
-textureNumLayers(atlas.node) // → Node<'u32'>
+declare const atlas: texture_2d_array<f32>;
+declare const atlasSampler: sampler;
+declare const ids: texture_2d<u32>;
 
-const ids = resource('ids', texture2duT, { group: 0, binding: 3 })
-
-textureLoad(ids.node, coord, 0) // → Node<'vec4<u32>'>
-textureDimensions(ids.node) // → Node<'vec2<u32>'>, same as any other texture
+@fragment
+export function fs(@builtin("position") p: vec4, @location(0) uv: vec2): vec4 {
+  const layer: i32 = 2;
+  const a = textureSample(atlas, atlasSampler, uv, layer); // implicit LOD, fragment only
+  const b = textureSampleLevel(atlas, atlasSampler, uv, layer, 0.); // explicit LOD, any stage
+  const c = textureLoad(atlas, vec2i(0, 0), layer, 0); // unfiltered texel fetch
+  const n = textureNumLayers(atlas); // u32
+  const id = textureLoad(ids, vec2i(p.xy), 0); // vec4u
+  const size = textureDimensions(ids); // vec2u, as for any other texture
+  return a + b + c + vec4(f32(n), f32(id.x), f32(size.x), 1.);
+}
 ```
 
-`reflect()`는 텍스처 바인딩마다 차원과 요소 타입을 돌려줍니다. 호스트가 거기에 맞는 뷰를
-만들고 샘플 타입을 고르려면 이 정보가 필요합니다. 짝을 잘못 맞춰도 런타임에는 아무 오류도
-나지 않습니다. 포맷과 샘플러 타입이 어긋난 텍스처는 INCOMPLETE 상태가 될 뿐이고, 그
-텍스처에서 읽으면 조용히 영을 돌려줍니다.
+`reflect()`는 텍스처 바인딩마다 차원과 요소를 알려 줍니다. 호스트가 맞는 뷰를 만들고 샘플 타입을
+고르는 데 이 정보가 필요합니다. 이 짝이 틀려도 런타임에는 아무 오류도 나지 않습니다. 포맷이 샘플러
+타입과 맞지 않는 텍스처는 불완전한 텍스처가 되고, 그 텍스처를 읽으면 조용히 영이 돌아옵니다. 큐브,
+3D, 깊이, 멀티샘플, 스토리지 텍스처는 `docs/use-typeshade-surface.md` §33부터 §37까지에 있습니다.

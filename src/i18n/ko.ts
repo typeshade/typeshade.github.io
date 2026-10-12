@@ -13,37 +13,37 @@ const err = typedError();
 const std = facts.layoutStandards[0];
 const split = facts.splitLabels ?? ['f32', 'f64'];
 
-// 작성 가이드의 절마다 한국어 제목과 설명. 키는 로더가 제목에서 만든 id입니다. 본문은
-// 영어 원문 그대로이므로, 사이드바와 페이지 제목과 설명만 한국어로 둡니다.
+// 작성 가이드의 절마다 한국어 제목과 설명. 키는 로더가 제목에서 만든 id입니다. 본문의
+// 번역은 content/guide/ko/에 있고, 사이드바와 페이지 제목과 설명은 여기에 둡니다.
 const sections: Record<string, { title: string; description: string }> = {
   'your-first-shader': {
     title: '첫 셰이더',
-    description: `TypeScript로 진입점 두 개짜리 셰이더 모듈을 쓰고 WGSL과 ${glsl}로 출력합니다. 어느 호출이 어느 문자열을 냈는지도 알게 됩니다.`,
+    description: `TypeScript로 진입점 두 개짜리 셰이더 모듈을 쓰고 WGSL과 ${glsl}로 생성합니다. 어느 호출이 어느 문자열을 냈는지도 알게 됩니다.`,
   },
   'values-and-mutation': {
     title: '값과 변경',
     description:
-      '중간 값을 쓰고 필요한 곳에만 타입을 붙이며, 그 값을 바꾸고, 어떤 값이 자기 이름을 따로 가져야 하는지 가리는 법을 익힙니다.',
+      '중간값을 쓰고, 코드에 필요한 자리에 타입을 붙이고, 그 값을 바꾸고, 상수와 변수를 구분하는 법을 익힙니다.',
   },
   'functions-and-entry-points': {
     title: '함수와 진입점',
     description:
-      '헬퍼 함수를 선언해 다른 함수에서 부르고, 어느 스테이지든 진입점을 쓰고, 그 함수들을 모두 담는 모듈을 선언하는 법을 익힙니다.',
+      '헬퍼 함수를 선언해 다른 함수에서 부르고, 어느 스테이지든 진입점을 쓰고, 그 함수들을 담는 모듈로 모으는 법을 익힙니다.',
   },
   'control-flow': {
     title: '제어 흐름',
     description:
-      '셰이더 본문 안에서 분기하고 반복하고 디스패치하는 법을 익히고, 문장 형태의 제어 흐름과 값 형태의 제어 흐름을 서로 구분합니다.',
+      '셰이더 본문 안에서 분기하고 반복하고 디스패치하는 법을 익히고, 할 일을 고르는 문장과 값을 고르는 표현식을 구분합니다.',
   },
   'layouts-and-resources': {
     title: '레이아웃과 리소스',
     description:
-      '버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고, 그 선언 하나에서 모든 필드를 읽어 두 타깃에 그대로 쓰는 법을 익힙니다.',
+      '버텍스, 유니폼, 스토리지, 텍스처 레이아웃을 한 번만 선언하고, 그 선언 하나에서 모든 필드를 읽는 법을 익힙니다.',
   },
   'emitting-and-reflection': {
-    title: '출력과 리플렉션',
+    title: '생성과 리플렉션',
     description:
-      '모듈을 WGSL로, GLSL 두 스테이지로, 또는 호스트가 조합하는 조각으로 바꾸고, 호스트가 바인딩에 쓰는 파이프라인 메타데이터를 읽습니다.',
+      '모듈을 WGSL로, GLSL 두 스테이지로, 또는 호스트가 조합하는 모듈 조각으로 바꾸고, 호스트가 바인딩할 때 읽는 파이프라인 메타데이터를 읽습니다.',
   },
   'the-cpu-oracle': {
     title: 'CPU 오라클 안내서',
@@ -58,12 +58,12 @@ const sections: Record<string, { title: string; description: string }> = {
   'conditional-programs': {
     title: '조건부 프로그램',
     description:
-      '소스 하나에서 여러 프로그램 중 무엇을 만들지 정하고, 배리언트가 상수 하나로 끝나는 경우를 가려내며, 선택을 호스트에 넘깁니다.',
+      '소스 하나에서 여러 프로그램 중 무엇을 만들지 정하고, 변형이 상수 하나로 끝나는 경우를 가려내며, 선택을 호스트에 넘깁니다.',
   },
   'capabilities-extensions': {
     title: '기능과 확장',
     description:
-      '모듈에 필요한 GPU 기능을 선언하고, 대상마다 그 기능이 무엇을 요구하는지 읽고, 출력 전에 부팅된 장치를 그 선언과 대조합니다.',
+      '모듈에 필요한 GPU 기능을 선언하고, 타깃마다 그 기능이 무엇을 요구하는지 읽고, 생성 전에 부팅된 디바이스를 그 선언과 대조합니다.',
   },
   fp64: {
     title: 'fp64',
@@ -76,14 +76,14 @@ const sections: Record<string, { title: string; description: string }> = {
       'GLSL 스테이지를 언제 mediump로 출력할지, 그 옵션 하나가 출력된 소스에서 무엇을 바꾸고 무엇을 그대로 두는지 압니다.',
   },
   'production-emit': {
-    title: '프로덕션 출력',
+    title: '배포용 생성',
     description:
-      '배포 시점 변환을 출력 호출 하나로 조합하고, 이름이 바뀐 셰이더 텍스트로 돌아온 드라이버 로그를 원래 이름으로 되돌려 읽습니다.',
+      '배포 시점 변환을 생성 호출 하나로 조합하고, 이름이 바뀐 셰이더 텍스트로 돌아온 드라이버 로그를 원래 이름으로 되돌려 읽습니다.',
   },
   'migrating-a-glsl-shader': {
     title: 'GLSL 셰이더 옮기기',
     description:
-      '눈앞의 GLSL 구문을 DSL에서 어떻게 쓰는지 표에서 찾고, 그 표기가 WGSL과 GLSL 각 타깃에서 무엇으로 바뀌는지 확인합니다.',
+      '눈앞의 GLSL 구문을 "use typeshade" 파일에서 어떻게 쓰는지 표에서 찾고, 그 표기가 WGSL과 GLSL 각 타깃에서 무엇으로 바뀌는지 확인합니다.',
   },
 };
 
@@ -2281,7 +2281,7 @@ export const ko: Copy = {
   guide: {
     title: 'TypeShade 작성 가이드: TypeScript로 셰이더 쓰기',
     description:
-      'TypeShade의 작성 API를 절마다 설명합니다. 값, 제어 흐름, 레이아웃, 진단, 에뮬레이션 f64, 프로덕션 출력, GLSL 셰이더 옮기기.',
+      'TypeShade의 작성 API를 절마다 설명합니다. 값, 제어 흐름, 레이아웃, 진단, 에뮬레이션 f64, 배포용 생성, GLSL 셰이더 옮기기.',
     contents: '목차',
     sectionTitle: (title: string) => `${title}, TypeShade 작성 가이드`,
     sections,

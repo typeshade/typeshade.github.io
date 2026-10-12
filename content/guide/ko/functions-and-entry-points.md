@@ -1,170 +1,211 @@
 ---
 id: functions-and-entry-points
-source: d8b2da39eac02885b042eb94778cb0fa6827f46073a02be56d7e2a883807255f
-sourceLine: 534
+source: 0eb77fdf24b40f5f916813b6d8737070d04275acd5c0dbf1655c77f2ab2ce973
+sourceLine: 514
+rules: 2.1 9eWN6RxoCWF7PMo_T1USzBA1CAyjigmKnoVwzLkeJ4Q=, 3.2 9-wLkxopPgqhKoXl0afzqsDa3zUi6T6yoxXjhOBg0qc=, 3.4 qTsvqHCf4ZNlv5OA0ks54fZEJ2-O_jR3l_uT-MjDSqw=, 9.5 0ahOuIeiTVBHHjA-1IXXW_l9GsFrF8XtZveADRO2qNw=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=, 12.6 mtagVARmVcrr7MFUlSWwsp__ZpD9GjxUFaerAkPz5WI=
 ---
 
-이 페이지를 읽고 나면 헬퍼 함수를 선언하고, 그 헬퍼를 다른 함수에서 호출하고, 버텍스·프래그먼트·컴퓨트 스테이지의 진입점을 작성하고, 이 함수들을 담는 모듈을 조립할 수 있습니다.
+이 페이지를 마치면 헬퍼를 선언해 다른 함수에서 부르고, 버텍스, 프래그먼트, 컴퓨트 스테이지의
+진입점을 쓰고, 이 함수들을 담는 모듈을 조립할 수 있습니다.
 
 ### 함수 선언하기
 
-셰이더 안의 모든 함수는 `fn`으로 작성합니다. 일반 헬퍼 함수도, 파이프라인이 실행하는 진입점도 마찬가지입니다. `fn`은 이름(생략 가능), 파라미터 이름을 키로 하는 레코드, 본문을 차례로 받습니다. 본문의 첫 번째 인자로는 타입이 붙은 파라미터 노드가 들어오므로, 이 인자를 구조 분해하면 파라미터마다 노드를 하나씩 꺼낼 수 있습니다.
+셰이더의 함수는 모두 `function` 선언으로 작성합니다. 평범한 헬퍼도, 파이프라인이 실행하는
+진입점도 마찬가지입니다. 매개변수에는 타입을 붙이고, 본문은 평범한 TypeScript로 씁니다.
 
 ```ts
-// Helper: return type inferred as f32 from `return select(...)`.
-export const dist_to_segment = fn(
-  'dist_to_segment',
-  { p: vec2fT, a: vec2fT, b: vec2fT },
-  ({ p, a, b }) => {
-    const ab = b.sub(a)
-    const len2 = dot(ab, ab)
-    const t = clamp(dot(p.sub(a), ab).div(max(len2, 1e-10)), 0, 1)
-    const segDist = length(p.sub(a).sub(ab.mul(t)))
-    return select(len2.lt(1e-10), length(p.sub(a)), segDist)
-  },
-)
+"use typeshade";
+
+// Helper: the return type is f32, the type the body returns.
+export function distToSegment(p: vec2, a: vec2, b: vec2): f32 {
+  const ab = b - a;
+  const len2 = dot(ab, ab);
+  const t = clamp(dot(p - a, ab) / max(len2, 1e-10), 0., 1.);
+  const segDist = length(p - a - ab * t);
+  return len2 < 1e-10 ? length(p - a) : segDist;
+}
 ```
 
-`fn`은 핸들(handle)을 돌려줍니다. 직접 부를 수 있는 함수이면서 함수 선언이기도 한 객체 하나입니다. 호출할 때도 이 핸들을 그대로 부르고, 모듈에 나열할 때도 이 핸들을 그대로 넣습니다.
-
-파라미터 이름으로 `in`, `sample`, `filter`, `texture`처럼 GLSL 예약어를 써도 됩니다. IR에는 그 이름이 그대로 남고, GLSL 백엔드가 생성 시점에 다른 이름으로 바꿉니다. 다만 JavaScript 구조 분해로는 예약어를 변수로 받을 수 없으므로 `({ in: inp }) => …`처럼 씁니다.
+매개변수 이름으로 `sample`, `filter`, `texture`처럼 GLSL이 예약한 이름을 써도 됩니다. IR은 그
+이름을 그대로 두고, GLSL 백엔드가 생성할 때 이름을 바꿉니다. 지역 함수, 다른 함수 안에서 선언한
+함수, 함수를 인자로 받는 함수도 TypeScript의 형태 그대로 쓸 수 있습니다
+(`docs/use-typeshade-surface.md` §14).
 
 ### 반환 타입
 
-반환 타입을 생략하면 본문이 돌려주는 값에서 추론합니다. 본문 안의 TypeScript `return`도 이 타입으로 검사하므로, 타입이 다른 값을 돌려주면 컴파일 오류가 납니다. 아무 값도 돌려주지 않는 본문 역시 추론되며, 이 경우 `void`가 됩니다.
-
-타입 토큰을 직접 넘겨야 하는 경우는 이제 한 가지만 남았습니다. 반환값이 중첩 클로저 안의 `Return(value)` 호출로 빠져나가는 본문입니다. TypeScript는 이런 본문을 실제로 아무 값도 돌려주지 않는 본문과 똑같이 반환 없음으로 읽습니다. 두 경우는 본문이 실제로 실행되고 나서야 비로소 구분되므로, 이때 토큰을 생략하면 어떤 토큰을 써야 하는지 알려주는 `SD0113` 오류로 거부됩니다.
+반환 타입을 생략하면 TypeScript가 추론하는 대로 본문이 돌려주는 타입이 됩니다. 모든 `return`은
+이 타입과 대조되므로, 타입이 틀린 반환은 컴파일 오류입니다. 아무것도 돌려주지 않는 본문의 타입은
+`void`입니다.
 
 ```ts
+"use typeshade";
+
+declare const outputB: storage<array<f32>, "read_write">;
+
 // Inferred: dot() yields f32, so luma returns f32.
-const luma = fn('luma', { c: vec3fT }, ({ c }) => dot(c, vec3(0.2126, 0.7152, 0.0722)))
+export function luma(c: vec3) {
+  return dot(c, vec3(0.2126, 0.7152, 0.0722));
+}
 
 // Inferred too: this one writes into a storage buffer and returns no value, so it is void.
-const store = fn('store', { i: u32T, v: f32T }, ({ i, v }) => {
-  outputB.at(i).assign(v)
-})
+export function store(i: u32, v: f32) {
+  outputB[i] = v;
+}
 
-// Pinned: the value leaves through the ambient Return(), which tsc cannot see.
-const firstHit = fn(
-  'first_hit',
-  { d: f32T },
-  f32T,
-  ({ d }) => {
-    If(d.lt(0), () => {
-      Return(f32(0))
-    })
-    Return(d)
-  },
-  { allowEarlyReturn: true },
-)
+// Written: a return from inside a branch is an ordinary return.
+export function firstHit(d: f32): f32 {
+  if (d < 0.) {
+    return 0.;
+  }
+  return d;
+}
 ```
 
 ### 함수 호출하기
 
-핸들을 호출할 때는 파라미터 이름을 키로 하는 객체 하나를 넘깁니다. 이렇게 호출하면 인자 이름과 타입, 빠진 인자가 없는지까지 검사하고, 자동 완성도 됩니다. 위치 인자로 호출할 수도 있지만, 이때는 TypeScript가 인자 개수, 타입, 순서를 검사하지 않으므로 같은 타입의 인자 두 개를 바꿔 넣어도 그대로 컴파일됩니다.
-
-`externFn`은 호출만 할 수 있도록 만든 대응 함수입니다. 본문이 생성 시점에 다른 곳에서 링크되어 들어오는 함수의 시그니처만 선언하므로, 타입을 검사하는 호출은 지금 바로 쓸 수 있지만 모듈에 나열할 선언은 생기지 않습니다. 호출 지점에서 그 함수를 import할 수 있다면 언제나 실제 `fn` 핸들을 씁니다.
+호출은 TypeScript처럼 인자를 위치 순서대로 넘깁니다. 컴파일러는 인자의 개수와 타입을 선언과
+대조합니다. 파일이 선언하거나 가져온 함수는 같은 이름의 내장 함수보다 우선합니다.
 
 ```ts
-const d = dist_to_segment({ p: uv, a: p0, b: p1 })
-const same = dist_to_segment(uv, p0, p1) // the unchecked form
-
-const toneMap = externFn('host_tone_map', { c: vec4fT }, vec4fT)
-const mapped = toneMap({ c: colour })
+const d = distToSegment(uv, p0, p1);
 ```
+
+매개변수의 기본값은 호출 지점에서 채워집니다. 함수는 다른 함수를 매개변수로 받을 수도 있으며,
+호출할 때마다 그 자리의 스코프에 있는 함수 이름을 넘깁니다(`docs/use-typeshade-surface.md` §14).
+WGSL에는 호출 스택이 없으므로 재귀는 거부됩니다.
 
 ### 진입점
 
-진입점은 옵션에 `stage`를 지정한 `fn`입니다. `stage`는 `'vertex'`, `'fragment'`, `'compute'` 중 하나입니다. 컴퓨트 진입점은 `workgroupSize`도 받습니다. 기본값은 64이며, `@compute @workgroup_size(N)`으로 생성됩니다.
+진입점은 스테이지 데코레이터 `@vertex`, `@fragment`, `@compute` 가운데 하나를 붙인 최상위
+`export function`입니다. 컴퓨트 진입점은 워크그룹 크기를 데코레이터에 `@compute([64])`나
+`@compute([8, 8])`처럼 적습니다. 아무 인자 없는 `@compute`는 기본값 64를 씁니다.
 
 ```ts
-const WINDOW = u32(8)
-const params = resource('params', vec4uT, { group: 0, binding: 2 })
+"use typeshade";
 
-const reduceKernel = fn(
-  'reduce_windows',
-  { gid: builtin('global_invocation_id') },
-  ({ gid }) => {
-    const idx = gid.x
-    If(idx.ge(params.node.x), () => {
-      Return()
-    })
-    const base = idx.mul(WINDOW)
-    // …fold WINDOW input elements into one output element…
-  },
-  { stage: 'compute', workgroupSize: 64, allowEarlyReturn: true },
-)
+const WINDOW: u32 = 8;
+
+declare const params: uniform<vec4u>;
+declare const input: storage<array<f32>>;
+declare const output: storage<array<f32>, "read_write">;
+
+@compute([64])
+export function reduceWindows(@builtin("global_invocation_id") gid: vec3u): void {
+  const idx = gid.x;
+  if (idx >= params.x) {
+    return;
+  }
+  const base = idx * WINDOW;
+  let acc = 0.;
+  for (let k: u32 = 0; k < WINDOW; k++) {
+    acc += input[base + k];
+  }
+  output[idx] = acc;
+}
 ```
 
-이 가드 절(guard clause)은 함수의 마지막 문장에 이르기 전에 함수를 빠져나가므로, 옵션에 `allowEarlyReturn: true`도 함께 넣어야 합니다. 조기 반환과 이 옵션은 [제어 흐름](/guide/authoring/control-flow/)에서 다룹니다.
+가드는 평범한 `return`으로 마지막 문장 전에 함수를 빠져나갑니다. 조기 반환은
+[제어 흐름](/guide/authoring/control-flow/)에서 다룹니다.
 
-아무 값도 돌려주지 않는 본문에는 반환 타입 토큰이 필요 없습니다. 컴퓨트 진입점이 예전에 써넣던 `voidT`도 이제 추론됩니다.
+워크그룹 크기 자리에는 `override<u32>` 이름을 쓸 수도 있습니다. 이 이름은 워크그룹 임시 배열의
+바깥 길이와 함께 씁니다. 평범한 TypeScript 코드가 입력 형태를 보고 특수화 값을 고른 뒤
+`program.compute(entry, { constants })`로 넘기고, 디스패치 횟수를 계산하기 전에 확정된
+`pipeline.workgroupShape`를 읽을 수 있습니다. 소스 형태와 제한, 호스트 호출은
+[`docs/use-typeshade-surface.md` §3](docs/use-typeshade-surface.md#3-entries--function-decorators-and-explicit-builtins),
+[`§15`](docs/use-typeshade-surface.md#15-textures-samplers-and-overrides),
+[`§24`](docs/use-typeshade-surface.md#24-module-variables),
+[`§69`](docs/use-typeshade-surface.md#69-running-a-compiled-program)를 보십시오.
 
-### 스테이지 파라미터
+### 스테이지 매개변수
 
-스테이지는 속성이 붙은 파라미터로 입력을 전달받습니다. `builtin(name)`은 `'vertex_index'`, `'position'`, `'global_invocation_id'`처럼 하드웨어가 공급하는 값을 선언하며, 타입은 id로부터 읽어옵니다. WGSL은 `clip_distances`를 뺀 모든 id의 타입을 고정해 두었고, 이 id만은 `array<f32, N>`의 길이를 직접 정해서 넘깁니다. `location(n, type)`은 스테이지 사이에서 데이터를 나르는, 번호가 매겨진 슬롯을 선언합니다. IO 구조체의 필드도 이 두 헬퍼로 똑같이 적으며, `ioStruct`로 한 번 선언해 두면 두 스테이지가 그 구조체를 함께 씁니다. 필드 맵, 보간 모드, 핸들에 딸린 접근자는 [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에서 설명합니다.
+스테이지는 속성을 붙인 매개변수로 입력을 받습니다. `@builtin("id")`는 하드웨어가 주는 값을
+선언합니다. `"vertex_index"`, `"position"`, `"global_invocation_id"`가 그런 값입니다.
+`@location(n)`은 스테이지 사이에서 데이터를 나르는 번호 붙은 슬롯을 선언합니다. 같은 두 속성이
+IO 구조체의 필드도 설명하며, IO 구조체는 두 스테이지가 함께 쓰는 클래스입니다. 보간 모드는
+[레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에 있습니다.
 
 ```ts
-const VsOut = ioStruct('VsOut', {
-  pos: builtin('position'),
-  uv: location(0, vec2fT),
-})
+"use typeshade";
 
-const vsFull = fn(
-  'vs_full',
-  { idx: builtin('vertex_index') },
-  (p) => {
-    const pos = vec2(-1, -1)
-    If(p.idx.eq(1), () => {
-      pos.assign(vec2(3, -1))
-    }).elif(p.idx.eq(2), () => {
-      pos.assign(vec2(-1, 3))
-    })
-    return VsOut.construct({
-      pos: vec4(pos, 0, 1),
-      uv: vec2(pos.x.add(1).mul(0.5), pos.y.add(1).mul(0.5)),
-    })
-  },
-  { stage: 'vertex' },
-)
+class VsOut {
+  @builtin("position") pos: vec4;
+  @location(0) uv: vec2;
+}
 
-// U is a uniform block declared alongside these functions.
-const fsGradient = fn(
-  'fs_gradient',
-  { vo: VsOut },
-  (p) => {
-    const t = p.vo.uv.y.add(U.field.mix_bias)
-    const rgb = mix(U.field.bottom.rgb, U.field.top.rgb, t)
-    return vec4(rgb, 1)
-  },
-  { stage: 'fragment' },
-)
+interface Gradient {
+  top: vec4;
+  bottom: vec4;
+  mixBias: f32;
+}
+
+declare const u: uniform<Gradient>;
+
+@vertex
+export function vsFull(@builtin("vertex_index") idx: u32): VsOut {
+  let pos = vec2(-1., -1.);
+  if (idx == 1) {
+    pos = vec2(3., -1.);
+  } else if (idx == 2) {
+    pos = vec2(-1., 3.);
+  }
+  return { pos: vec4(pos, 0., 1.), uv: vec2((pos.x + 1.) * 0.5, (pos.y + 1.) * 0.5) };
+}
+
+@fragment
+export function fsGradient(vo: VsOut): vec4 {
+  const t = vo.uv.y + u.mixBias;
+  const rgb = mix(u.bottom.rgb, u.top.rgb, t);
+  return vec4(rgb, 1.);
+}
 ```
 
-프래그먼트 함수가 구조체가 아닌 값 하나만 돌려주면, 따로 적지 않아도 첫 번째 색상 어태치먼트인 `@location(0)`이 붙습니다. 다른 곳으로 보내려면 `retAttr`을 넘기면 되고, 이런 기본값이 없는 버텍스 스테이지에서는 `retAttr`을 반드시 씁니다. 구조체를 돌려주는 스테이지 함수라면 속성은 이미 구조체 필드에 붙어 있습니다.
+구조체 없이 값만 돌려주는 프래그먼트 진입점은 따로 적지 않아도 첫 번째 색상 어태치먼트인
+`@location(0)`을 받습니다. 구조체 없이 `vec4`만 돌려주는 버텍스 진입점은 위치를 돌려줍니다.
+구조체를 돌려주는 진입점은 구조체 필드에 속성을 붙입니다.
 
 ### 모듈 조립하기
 
-`module`은 함께 생성할 선언을 모으며, 필드는 모두 생략할 수 있습니다. `consts`, `structs`, `bindings`, `funcs`에는 선언을 그대로 넣고, `uses`에는 선언을 스스로 지닌 핸들을 넣습니다. [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)의 예제가 이 방식을 씁니다. 모듈은 [조건부 프로그램](/guide/authoring/conditional-programs/)의 `overrides`와 [기능과 확장](/guide/authoring/capabilities-extensions/)의 `enables`도 담습니다.
+파일 하나가 모듈 하나입니다. 파일의 함수, 구조체, 상수, 리소스가 함께 생성됩니다. WGSL에는
+파일이 선언한 모든 함수가 파일에 선언된 순서대로 들어갑니다. WGSL에서는 뒤에 선언된 함수를
+불러도 되기 때문입니다. GLSL 스테이지에는 그 스테이지의 진입점이 닿는 함수만 들어가며, GLSL ES
+3.00의 요구대로 불리는 함수가 부르는 함수보다 앞에 놓입니다.
+
+파일은 다른 TypeScript 모듈처럼 다른 셰이더 파일이 내보낸 것을 가져옵니다. 컴파일하는 파일과,
+그 파일이 직접 또는 다른 파일을 거쳐 가져오는 셰이더 파일은 하나의 프로그램이며, 이 프로그램이
+모듈 하나가 됩니다. 가져온 파일에서 여러분의 파일이 닿는 헬퍼, 구조체, 상수, 바인딩은 함께
+들어옵니다. 가져온 파일의 진입점은 들어오지 않습니다.
 
 ```ts
-const gradientModule = module({
-  structs: [U.struct, VsOut.decl],
-  bindings: [U.binding],
-  funcs: [vsFull, fsGradient],
-})
+// noise.shade.ts
+"use typeshade";
+
+export function hash(p: vec2): f32 {
+  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+// clouds.shade.ts
+"use typeshade";
+
+import { hash } from "./noise.shade.ts";
+
+@fragment
+export function fs(@location(0) uv: vec2): vec4 {
+  return vec4(hash(uv), hash(uv * 2.), 0., 1.);
+}
 ```
 
-`funcs` 배열의 순서가 곧 생성 순서입니다. 불리는 함수를 부르는 함수보다 앞에 두어야 합니다. GLSL ES 3.00은 함수를 쓰기 전에 선언해 두기를 요구하고, 순서를 고정해 두면 실행할 때마다 같은 바이트가 생성되기 때문입니다. 핸들 호출로만 닿고 목록에는 없는 함수는 컴파일러가 알아서 모아 그 함수를 부르는 함수 앞에 넣어 주므로, 진입점만 적은 목록도 올바른 순서로 생성됩니다.
+이런 프로그램을 컴파일하는 호스트 호출은
+[다른 셰이더 모듈을 가져오는 셰이더 모듈](#a-shader-module-that-imports-another)에 있습니다.
 
-리소스는 함수처럼 저절로 모이지 않습니다. 모듈은 오직 건네받은 선언만 조립하므로, 어떤 함수가 읽는 `uniformStruct`나 `storageBuffer`를 `uses`에 나열하지 않으면 `var` 선언 자체가 전혀 생성되지 않습니다. 이 실수를 맨 처음 알려주는 것은 파이프라인을 생성하는 시점의 드라이버입니다. `uses-declared` 린트 규칙이 바로 이 문제를 미리 잡아냅니다. `diagnose(m)`나 `lintModule(m)`을 실행하면 본문이 읽지만 아무것도 선언하지 않은 변수를 모두 찾아내고, 어떤 핸들을 추가해야 하는지 알려줍니다.
+### 모듈 안 함수의 이름
 
-### 모듈 안 함수 이름 짓기
+함수는 두 타깃 모두에서 선언한 이름 그대로 생성됩니다. 진입점은 언제나 이름을 유지합니다.
+호스트가 그 이름으로 파이프라인을 만들기 때문입니다. `use`처럼 WGSL이 예약한 이름을 가진
+함수는 `TS8068`로 거부되며, 이 진단은 해당 타깃을 알려 줍니다.
 
-이름이 없는 `fn`에는 플레이스홀더 이름이 붙습니다. 함수 이름을 한자리에서 정하려면 `funcs`를 레코드로 넘깁니다. 각 키가 생성된 코드에서 그 함수의 이름이 되고, 키 순서가 곧 생성 순서입니다.
-
-```ts
-module({ funcs: { dist_to_segment, vs_full: vsFull, fs_gradient: fsGradient } })
-```
-
-레코드 키의 순서는 실행할 때마다 같으므로, 바이트 단위로 비교하는 스냅숏이나 문자열 이름으로 함수를 찾는 코드에도 이 방식을 안심하고 쓸 수 있습니다. 함수 목록이 여러 소스에 흩어져 있거나 데이터로 후처리해야 할 때는 배열 방식을 그대로 둡니다. 한 가지 주의할 점이 있습니다. 레코드 키는 공유되는 선언 자체의 이름을 바꿉니다. 그래서 이미 다른 모듈에 다른 이름으로 조립된 함수에 새 키를 붙이면, 그 모듈의 생성 결과를 조용히 망가뜨리는 대신 오류를 던집니다.
+컴파일러가 헬퍼에 다른 이름을 붙이는 경우는 두 가지입니다. 첫째, 직접 만든 `fract`처럼 내장
+함수와 이름이 같은 헬퍼는 `fract_`로 생성되고, 그 선언을 거치는 모든 호출도 함께 바뀝니다.
+WGSL에서는 내장 함수가 가려지고, GLSL ES 3.00은 다시 선언하는 것을 거부하기 때문입니다. 둘째,
+한 프로그램의 두 파일이 같은 이름의 비공개 헬퍼를 각각 선언하면 두 번째 헬퍼는 자기만의 이름으로
+생성됩니다. CPU 오라클은 각 함수를 파일이 붙인 이름으로 부릅니다. 타깃마다 예약한 이름은
+`docs/use-typeshade-surface.md` §62에 있습니다.

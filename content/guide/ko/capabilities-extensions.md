@@ -1,31 +1,50 @@
 ---
 id: capabilities-extensions
-source: ba14bcf854244061af71291f9f9d45ecb90872abbaa35245e3c8a79c746a7541
-sourceLine: 1891
-rules: 8.7 6nXwFhkduvfWc5DgkjOLkznHD8X0n6kYTNs5_bU7BjI=
+source: 97b3944d6bccd62314722649758440a27f5f27a2639d318e05bc64461c568f3d
+sourceLine: 2110
 ---
 
 이 절을 읽고 나면 모듈에 필요한 GPU 기능을 선언하고, 그 기능이 타깃마다 어떤 비용이
 드는지 알아보고, 부팅된 디바이스가 그 기능을 갖추었는지 확인하고, 어떤 모양의 모듈이
-코드를 생성하는 대신 fail closed(드라이버가 거부할 소스를 내는 대신 컴파일 시점에
-실패하는 것)로 실패하는지 가려낼 수 있게 됩니다.
+코드를 생성하는 대신 fail closed로 실패하는지 가려낼 수 있게 됩니다.
 
 기능(capability)은 모듈이 생성하는 코드가 기대는 GPU 기능 하나에 붙인 중립 id입니다.
 float 텍스처에 렌더링하기, float 텍스처에 블렌딩하기 같은 것이 여기에 해당합니다.
 
 ### 기능 선언
 
-모듈은 필요한 기능을 `enables`에 나열합니다.
+대부분의 기능은 스스로 선언됩니다. `@builtin("clip_distances")`, `@builtin("primitive_index")`,
+서브그룹 내장 값, `@blend_src(n)`을 쓰면 그 쓰임에 필요한 기능이 파생됩니다. 스토리지 바인딩,
+컴퓨트 진입점, 한 타깃에 없는 종류의 텍스처도 마찬가지입니다. 어떤 쓰임으로도 파생되지 않는 확장은
+`"use typeshade"` 옆에 문자열 지시문으로 켭니다. 지시문은 한 줄에 하나씩, WGSL의 이름 그대로
+적습니다.
 
 ```ts
-module({ enables: ['floatRenderTarget'], funcs: [vs, fs] })
+"use typeshade";
+"enable subgroups";
+
+@compute([64])
+export function k(@builtin("global_invocation_id") gid: vec3u) {
+}
 ```
 
-이 id 목록은 고정되어 있고 어느 타깃에도 매이지 않으므로, `EXT_*`나 `OVR_*` 같은 확장
-문자열을 모듈에 직접 적을 일은 없습니다. 각 id는 기능 게이트(capability gate)에서
-검사되는데, 이 게이트는 어떤 생성기가 모듈을 손대기 전에 먼저 실행됩니다. 그래서 그
-기능을 지원하지 않는 백엔드는 해당 기능의 이름을 담은 `UnsupportedFeatureError`(`SD0030`)를
-던지며 fail closed로 실패하고, 드라이버가 거부할 소스는 아예 생성하지 않습니다.
+이 어휘는 고정되어 있고 어느 타깃에도 매이지 않으므로, `EXT_*`나 `OVR_*` 같은 확장 문자열을
+소스에 직접 적을 일은 없습니다. 각 id는 기능 게이트(capability gate)에서 검사되는데, 이 게이트는
+어떤 생성기가 모듈을 손대기 전에 먼저 실행됩니다. 그래서 그 기능을 표현하지 못하는 백엔드는 해당
+기능의 이름을 담은 `UnsupportedFeatureError`(`SD0030`)를 던지며 fail closed(드라이버가 거부할
+소스를 내는 대신 컴파일 시점에 실패하는 것)로 실패하고, 드라이버가 거부할 소스는 아예 생성하지
+않습니다.
+
+소스에서 쓸 표기가 없는 기능이 넷 있습니다. `floatRenderTarget`, `float32Blend`,
+`float32Filterable`, `multiview`입니다. 앞의 셋은 호스트가 켜며 셰이더에는 토큰 하나도 더하지
+않고, 넷째는 GLSL `#extension`입니다. 이런 기능이 필요한 호스트는 컴파일된 모듈의 `enables`에
+적습니다.
+
+```ts
+import { compile, type ModuleDecl } from 'typeshade'
+
+const m: ModuleDecl = { ...compile(source).module, enables: ['floatRenderTarget'] }
+```
 
 ### id별 타깃 요구 사항
 
@@ -59,12 +78,7 @@ WGSL에서는 선언부 앞에 들어갑니다.
 이 셋을 저마다 짝이 맞는 `enable` 없이는 거부하기 때문입니다. `"bgra8unorm"` 스토리지
 텍스처와 packed 4x8 계열 함수 호출도 각각 바인딩과 호출에서 기능을 끌어냅니다. 어떤
 사용으로도 파생되지 않는 `f16`과, 서브그룹 내장 값을 하나도 읽지 않는 파일의 `subgroups`는
-`"use typeshade"` 옆에 문자열 지시문으로 적습니다.
-
-```ts
-'use typeshade';
-'enable subgroups';
-```
+앞에서 본 문자열 지시문으로 적습니다.
 
 호스트 기능만 있고 소스 지시문이 없는 기능은 선언해도 생성되는 셰이더가 한 바이트도
 달라지지 않습니다. `float32Blend`와 `float32Filterable` 이름에 붙은 `32`에는 이유가
@@ -76,6 +90,8 @@ WGSL에서는 선언부 앞에 들어갑니다.
 도구나 문서 페이지가 손으로 옮겨 적지 않고 그대로 출력할 수 있습니다.
 
 ```ts
+import { capabilityMatrix, glslEs300Backend, wgslBackend } from 'typeshade'
+
 capabilityMatrix([wgslBackend, glslEs300Backend])
 // → [{ capability: 'storageBuffer', support: { wgsl: 'native', 'glsl-es300': 'unsupported' },
 //      declarable: false },
@@ -119,8 +135,8 @@ capabilityMatrix([wgslBackend, glslEs300Backend])
 파생됩니다. `bgra8unorm`은 코어 사양에 들지 않는 유일한 스토리지 포맷이라, 디바이스는
 `bgra8unorm-storage`를 요청받지 않았으면 바인드 그룹 레이아웃을 거부합니다. 이는 실측한
 결과이며, Tint는 어느 쪽이든 모듈을 컴파일하므로 이 요구 사항을 호스트에 전하는 것은 이
-기능뿐입니다. `enables`의 타입에서 파생 기능 id는 모두 빠져 있으므로, 하나라도 적으면
-컴파일 오류가 납니다.
+기능뿐입니다. 모듈의 `enables` 타입에서는 파생 기능 id가 모두 빠져 있으므로, 하나라도 적으면
+타입 오류가 납니다.
 
 호스트가 확인해야 할 것이 기능만은 아닙니다. WGSL _언어_ 기능(language feature)은
 디바이스가 아니라 브라우저의 셰이딩 언어 구현이 갖는 속성입니다. 그래서 `requestDevice`에서
@@ -137,7 +153,7 @@ packed 4x8 계열은 지시문 없이도 컴파일되므로 지시문을 생성�
 돌려주므로, 모듈이 하나만 선언해도 둘 다 들어 있습니다.
 
 ```ts
-const m = module({ enables: ['float32Blend'], funcs: [vs, fs] })
+const m: ModuleDecl = { ...compile(source).module, enables: ['float32Blend'] }
 reflect(m).requiredFeatures // ['float32Blend', 'floatRenderTarget']
 ```
 
@@ -171,9 +187,12 @@ const device = await adapter.requestDevice({
 })
 ```
 
+`typeshade/runtime`은 WebGPU 쪽 확인을 대신 해 줍니다. 디바이스를 직접 요청하는 런타임은 자기
+프로그램에 필요한 기능을 함께 요청합니다.
+
 ### 두 모듈 중 고르기
 
-`enables`는 반드시 있어야 하는 기능을 적는 자리이므로, 없어도 되는 기능을 다루는 데는
+기능은 반드시 있어야 하는 것을 밝히므로, 없어도 되는 기능을 다루는 데는
 맞지 않습니다. 폴백은 모듈 두 개와 결정 하나면 됩니다. 결정은 디바이스가 이미 정해진
 부팅 시점에 한 번 내립니다.
 
@@ -188,58 +207,40 @@ const m = ok ? fancy : plain // two modules, one decision, made once
 
 ### 이식 가능한 컴퓨트 커널
 
-`portable: true`로 선언한 컴퓨트 진입점은 두 백엔드 모두에서 생성됩니다. WGSL에서는
-`@compute` 진입점으로 그대로 나오고, GLSL ES 3.00에서는 컴퓨트를 프래그먼트 셰이더로
-바꾸는 하향 변환(lowering)을 거쳐 나옵니다. 이 변환에는 별도의 생성 옵션이 필요 없습니다.
-그 대신 커널은 gather(읽기만 하는 접근) 전용 tier(커널이 속하는 지원 단계) 안에 머물러야
-합니다. 이 tier에서는 각 호출이 어디든 자유롭게 읽되, 쓰기는 자기 인덱스 위치의 원소
-하나에만 합니다.
+`"use typeshade"` 컴퓨트 진입점은 두 백엔드 모두에서 실행됩니다. WebGPU에서는 `@compute`
+진입점입니다. 컴퓨트 스테이지가 없는 WebGL2에서는 패스 프로그램으로 실행됩니다. 패스 프로그램은
+패스마다 텍스처에 전체 화면을 그리는 드로이며, 컴파일러가 이를 작성하고 매니페스트가 담아
+나릅니다(변경 제안 0054). 어느 단계로 실행할지는 프로그램 런타임이 고르므로, 호스트 코드는 두
+백엔드에서 같습니다.
 
 ```ts
-const dispatch = resource('dispatch', vec4uT, { group: 0, binding: 0 })
-const field = storageBuffer('field', f32T, { group: 0, binding: 1, access: 'read' })
-const outColor = storageBuffer('out_color', u32T, { group: 0, binding: 2, access: 'read_write' })
+"use typeshade";
 
-const kernel = fn(
-  'eval_field',
-  { gid: builtin('global_invocation_id', vec3uT) },
-  voidT,
-  ({ gid }) => {
-    const fid = gid.x
-    If(fid.ge(dispatch.node.x), () => {
-      Return()
-    })
-    outColor.at(fid).assign(pack4x8unorm(vec4(field.at(fid), 0, 0, 1)))
-  },
-  { stage: 'compute', workgroupSize: 64, portable: true },
-)
+declare const field: storage<array<f32>>;
+declare const outColor: storage<array<u32>, "read_write">;
 
-const m = module({
-  bindings: [dispatch.binding, field.binding, outColor.binding],
-  funcs: [kernel],
-})
+@compute([64])
+export function evalField(@builtin("global_invocation_id") gid: vec3u): void {
+  const i = gid.x;
+  if (i >= arrayLength(field)) {
+    return;
+  }
+  outColor[i] = pack4x8unorm(vec4(field[i], 0., 0., 1.));
+}
 ```
 
-이 tier의 모양은 정확히 이렇습니다.
+```ts
+import { compile, packModule } from 'typeshade'
 
-- `global_invocation_id`는 `.x`로만 읽으며, 1차원 선형 호출 인덱스를 가리킵니다.
-- `read_write` 스토리지 바인딩은 정확히 하나이고 원소 타입이 `u32`이므로 타입은
-  `array<u32>`이며, `gid.x` 위치에 정확히 한 번 씁니다. scatter 쓰기를 하거나, 두 번
-  쓰거나, 한 번도 쓰지 않으면 검증에 실패합니다.
-- 첫 번째 `uniform` 바인딩은 `vec4<u32>` 타입의 디스패치 유니폼이어야 합니다. `.x`가 호출
-  횟수, `.y`가 출력 그리드 너비이고 나머지 두 성분은 예약되어 있습니다. 여기서 첫 번째란
-  모듈의 `bindings` 목록에서 첫 번째라는 뜻이므로 선언 순서가 중요합니다.
-- 진입점의 호출 그래프가 닿는 곳 어디에도 `raw` 문(statement)을 둘 수 없습니다. 타깃마다
-  다른 텍스트가 들어가면 이식 가능하다는 말이 성립하지 않기 때문입니다.
+const program = packModule(compile(source).module)
+program.gl?.computes // { evalField: … }, the pass program WebGL2 runs
+```
 
-이 모양에서 벗어나면 두 생성기 모두 생성할 때마다 검증에 실패하며, 오류에는 `SD0111`과
-위반 사항별 해결 방법이 담깁니다. 컴퓨트가 아닌 진입점에 `portable`을 선언하면 빌드
-시점에 `SD0110`으로 실패합니다.
-
-이 하향 변환은 커널을 생성하는 방식과 함께 디스패치하는 방식도 바꿉니다. WebGL2에서는
-호스트가 컴퓨트 디스패치 대신 R32UI 타깃에 풀스크린 드로우를 제출합니다. WebGL2 호스트는
-`portable` 선언을 보고 이 커널을 그 경로로 보낼 수 있다고 판단합니다.
-
-배리어, 워크그룹 메모리, 원자 연산, scatter 쓰기, 다중 출력 커널은 이 tier 밖에 있습니다.
-이 가운데 하나라도 필요한 커널은 WebGPU 전용으로 두고 `portable`을 빼거나, 작업을 gather
-전용 패스 여러 개로 나누어야 합니다.
+`program.gl.computes`에는 컴퓨트 진입점마다 패스 프로그램이 들어 있고, 패스 프로그램이 없으면 그
+이유가 들어 있습니다. `typeshade/runtime`은 디바이스가 어느 단계이든
+`rt.load(program).compute('evalField')`로 이를 실행합니다(`docs/use-typeshade-surface.md` §69).
+배리어, 워크그룹 메모리, 원자 연산도 WebGL2 단계의 패스에서 WGSL이 허용하는 순서대로 실행됩니다
+(`changes/0054-webgl2-compute.md`). 1D, 큐브 배열, 멀티샘플 텍스처를 읽는 진입점처럼 패스
+프로그램이 없는 진입점은 런타임이 그 이유와 함께 거부합니다. IR 빌더에는 이보다 좁은 `portable`
+tier(커널이 속하는 지원 단계)도 있습니다. GLSL 생성기가 프래그먼트 셰이더 하나로 하향 변환하는
+gather(읽기만 하는 접근) 전용 커널이며, [`docs/ir-builder.md`](docs/ir-builder.md)가 설명합니다.

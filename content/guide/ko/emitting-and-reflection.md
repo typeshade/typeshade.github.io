@@ -1,7 +1,7 @@
 ---
 id: emitting-and-reflection
-source: 0355386172867fa3bb585a6db41b7ce5c06e756ccee2e2c0046b711e5b27361e
-sourceLine: 1216
+source: 16054602f63c26560685461877a2234afca846d4caaf058983c7e55a75acb76a
+sourceLine: 1172
 rules: 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=
 ---
 
@@ -15,17 +15,47 @@ rules: 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 8O2dxHWoC8EyiSghUP
 다시 적지 않고 모듈에서 바로 읽어 올 수 있습니다. 둘 다 IR을 읽기만 할 뿐 바꾸지 않으므로,
 어느 쪽을 호출해도 넘긴 모듈은 그대로 남습니다.
 
+이 페이지의 예제는 다음 소스에서 `compile()`이 돌려준 모듈을 `m`이라는 이름으로 읽습니다.
+
+```ts
+"use typeshade";
+
+interface Uniforms {
+  time: f32;
+  tint: vec4;
+}
+
+declare const u: uniform<Uniforms>;
+
+class VsOut {
+  @builtin("position") pos: vec4;
+  @location(0) uv: vec2;
+}
+
+@vertex
+export function vs(@location(0) xy: vec2): VsOut {
+  return { pos: vec4(xy, 0., 1.), uv: xy * 0.5 + 0.5 };
+}
+
+@fragment
+export function fs(vo: VsOut): vec4 {
+  return u.tint * (0.5 + 0.5 * sin(u.time + vo.uv.x));
+}
+```
+
 ### WGSL 생성
 
-`emitModule(m)`은 모듈 전체를 WGSL 문자열 하나로 돌려줍니다. 모듈의 상수, 구조체, 바인딩,
-함수가 모두 들어가고, 진입점마다 스테이지 속성이 붙습니다. 생성 전 검사를 먼저 돌리므로,
+`compile()`은 이미 WGSL을 `wgsl`로 돌려줍니다. `emitModule(m)`은 모듈에서 같은 문자열을
+돌려주며, 빌드마다 달라지는 옵션을 받습니다. 최적화 수준, 괄호 모드, f64 방식, 플러그인 체인이
+그런 옵션입니다. 생성 전 검사를 먼저 돌리므로,
 검증에 실패하는 모듈이나 타깃이 지원하지 않는 기능을 쓰는 모듈은 생성을 호출하는 시점에
 오류 코드가 붙은 오류를 던집니다.
 
 ```ts
-import { emitModule, emitModuleAt, emitIdentity } from 'typeshade'
+import { compile, emitModule, emitModuleAt, emitIdentity } from 'typeshade'
 
-const wgsl = emitModule(m)
+const { module: m } = compile(source)
+const wgsl = emitModule(m) // the same string as compile(source).wgsl
 
 // The same module at an explicit optimization level. 'O2' is what emitModule runs and is
 // byte-identical to it; 'O0' is the lowered module with no optimizer pass.
@@ -46,7 +76,8 @@ emitIdentity('wgsl') // 'wgsl;parens=full;fp64=float;plugins=-#069d5f95'
 
 WebGL2 프로그램은 따로 컴파일되는 셰이더 두 개로 이루어지므로, GLSL 백엔드는 호출 한 번에
 스테이지 하나씩만 생성합니다. `emitGlslStages(m)`은 한 모듈의 두 스테이지를 한꺼번에
-돌려주며, 두 스테이지에 공통인 하향 변환(lowering)은 한 번만 수행합니다.
+돌려주며, 두 스테이지에 공통인 하향 변환(lowering)은 한 번만 수행합니다. `compile()`이 `glsl`로
+돌려주는 값이 바로 이 결과입니다.
 
 ```ts
 import { emitGlslModule, emitGlslStages } from 'typeshade'
@@ -74,7 +105,7 @@ const whole = emitGlslModule(m)
 
 모듈 조각은 프로그램의 한 부분입니다. 버전 헤더 없이, 기본값으로는 진입점도 없이 선언과
 헬퍼만 담은 것으로, 최종 프로그램은 호스트가 소유하고 우리 쪽 텍스트를 그 안에 붙여 넣는
-경우에 씁니다. GLSL 코드베이스에서 `#include`를 쓰던 자리에는 모듈 조각을 쓰면 됩니다.
+경우에 씁니다. GLSL 호스트 코드베이스에서 `#include`를 쓰던 자리에는 모듈 조각을 쓰면 됩니다.
 `emitGlslFragment(m, stage)`는 GLSL용 모듈 조각을, `emitFragment(m)`은 WGSL용 모듈 조각을
 같은 모양으로 돌려줍니다.
 
@@ -83,7 +114,7 @@ import { emitFragment, emitGlslFragment } from 'typeshade'
 
 const f = emitGlslFragment(m, 'fragment')
 
-f.source // 'struct VsOut {\n  vec4 pos;\n …', the declarations and helpers
+f.source // 'struct VsOut {\n  vec4 pos;\n  vec2 uv;\n};…', the declarations and helpers
 f.preamble // ['#version 300 es', 'precision highp float;', 'precision highp int;']
 f.declares // { functions, structs, bindings, consts, overrides, entryPoints }
 f.requires // [], the symbols this fragment calls and does not define
@@ -113,14 +144,14 @@ import { reflect } from 'typeshade'
 
 const r = reflect(m)
 
-r.bindGroups // [{ group: 0, entries: [{ group: 0, binding: 0, name: 'U', space: 'uniform',
+r.bindGroups // [{ group: 0, entries: [{ group: 0, binding: 0, name: 'u', space: 'uniform',
 //                 resourceKind: 'uniform-buffer', owner: 'module',
 //                 structName: 'Uniforms', stages: ['fragment'] }] }]
 r.uniforms // [{ name: 'Uniforms', size: 32, align: 16, fields: [
 //              { name: 'time', type: 'f32', offset: 0, align: 4, size: 4 }, … ] }]
 r.storage // std430 layouts for a storage binding declared directly as a struct
-r.vertex // { attributes: [{ name, location, type, offset }], arrayStride }
-r.entries // [{ name: 'vs', stage: 'vertex', inputs: ['u32'], output: 'struct:VsOut', io }, …]
+r.vertex // { attributes: [{ name: 'xy', location: 0, type: 'vec2<f32>', offset: 0 }], arrayStride: 8 }
+r.entries // [{ name: 'vs', stage: 'vertex', inputs: ['vec2<f32>'], output: 'struct:VsOut', io }, …]
 r.overrides // the pipeline constants a host supplies per variant
 r.requiredFeatures // the capabilities a host must have active before it creates a pipeline
 r.requiredLanguageFeatures // the WGSL language features the browser must implement
@@ -130,13 +161,16 @@ r.requires // host-provided globals the module references and does not declare
 `uniforms`는 std140, `storage`는 std430 레이아웃입니다. 타깃이 유니폼 블록과 스토리지 버퍼에
 각각 쓰는 바이트 레이아웃입니다. 둘 다 필드마다 오프셋, 정렬, 크기를 적고, 구조체 자체의
 크기도 정렬 단위로 이미 올림한 값으로 담습니다. 그래서 그 크기를 그대로 구조체 배열의
-스트라이드로 쓸 수 있습니다. `storageBuffer`로 선언한 바인딩은 넘긴 요소 타입의 배열이므로
-`bindGroups`에는 나타나지만 `storage`에는 항목이 없습니다. 그 요소의 std430 스트라이드가
-필요하거나, 모듈 없이 `structDecl` 핸들만 들고 있는 상태에서 레이아웃이 필요하면, 핸들의
-`decl`에 `wgslLayout`을 호출하십시오.
-[레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에서 선언한 구조체라면
-`wgslLayout(ShapeSegment.decl, 'std430')`처럼 씁니다. 버텍스 진입점이 `location` 매개변수를
+스트라이드로 쓸 수 있습니다. `storage<array<T>>` 바인딩은 요소 타입의 배열이므로
+`bindGroups`에는 나타나지만 `storage`에는 항목이 없습니다. 그 요소의 std430 스트라이드나,
+모듈이 선언한 아무 구조체의 레이아웃이 필요하면 그 선언에 `wgslLayout`을 호출하십시오.
+[레이아웃과 리소스](/guide/authoring/layouts-and-resources/)가 선언한 구조체라면
+`wgslLayout(m.structs.find((s) => s.name === 'ShapeSegment')!, 'std430')`처럼 씁니다. 버텍스 진입점이 `location` 매개변수를
 하나도 받지 않는 모듈에서는 `vertex`가 `undefined`입니다.
+
+`packModule(m)`은 같은 정보를 평범한 JSON 매니페스트 하나로 모읍니다. 프로그램의 WGSL, 바이트
+레이아웃이 붙은 바인딩, 진입점, WebGL2 프로그램이 여기에 들어갑니다. 빌드가 이 매니페스트를
+디스크에 쓰고, `typeshade/runtime`이 불러옵니다(`docs/use-typeshade-surface.md` §69).
 
 ### 리플렉션에서 바인딩하기
 
@@ -159,14 +193,13 @@ const reach = reachFrom(
   m,
   m.funcs.filter((f) => stageOf(f) === 'fragment'),
 )
-reach.bindings // Set { 'U' }, the binding names that stage reads
+reach.bindings // Set { 'u' }, the binding names that stage reads
 reach.fns // the call-graph closure from those entries, the entries included
 ```
 
 `owner`는 리소스의 주인이 누구인지 나타냅니다. 모듈이 바인딩을 선언하고 호스트가 이
-리플렉션을 보고 할당하면 `'module'`, 파이프라인을 소유한 호스트가 직접 선언하고 호스트 쪽
-레이아웃이 기준이 되면 `'host'`입니다. 어느 쪽이든 목록에서 빠지는 바인딩은 없습니다.
-호스트가 직접 소유한 바인딩이라도 그 자리를 알아야 하기 때문입니다. `resourceKind`는 무엇을
+리플렉션을 보고 할당하면 `'module'`입니다. `"use typeshade"` 파일이 선언하는 바인딩은 모두
+이 경우입니다. `resourceKind`는 무엇을
 만들어야 하는지 나타냅니다. 텍스처 항목에는 뷰에 필요한 두 값인 `textureDim`과
 `textureElem`도 들어 있으며, 작성하는 쪽 설명은
 [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에 있습니다. 바인드 그룹
