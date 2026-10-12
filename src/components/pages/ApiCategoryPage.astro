@@ -5,6 +5,8 @@
 import Docs from '../../layouts/Docs.astro';
 import Rich from '../Rich.astro';
 import { apiCategories, apiCategory } from '../../lib/api-nav.ts';
+import { apiEntries } from '../../lib/api.ts';
+import { apiTranslationStatus } from '../../lib/api-translations.ts';
 import { editCopy, links } from '../../lib/links.ts';
 import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts';
 import { facts } from '../../lib/examples.ts';
@@ -24,6 +26,14 @@ const all = apiCategories();
 const at = all.findIndex((c) => c.category.slug === slug);
 const previous = at > 0 ? all[at - 1]!.category.slug : undefined;
 const first = members[0];
+// Each member's sentence in this locale where its translation is current (src/lib/api-translations.ts),
+// the JSDoc's English where it is not.
+const current = locale === 'en' ? new Map() : apiTranslationStatus(locale, apiEntries()).current;
+const lead = (slug: string, english: string): { text: string; lang: string } => {
+  const text = current.get(slug)?.texts.get('summary');
+  return text ? { text, lang: locale } : { text: english, lang: 'en' };
+};
+const allTranslated = members.every((m) => current.has(m.slug));
 ---
 
 <Docs
@@ -49,7 +59,7 @@ const first = members[0];
   <h1 lang={locale}>{named.name}</h1>
   <p class="api-kind" lang={locale}>{a.members(members.length)}</p>
   <p class="api-summary" lang={locale}>{named.summary}</p>
-  <p class="guide-note" lang={locale}><Rich text={a.note} locale={locale} /></p>
+  <p class="guide-note" lang={locale}><Rich text={allTranslated ? a.translatedNote : a.note} locale={locale} /></p>
   <dl class="api-list api-index">
     {members.map((m) => (
       <>
@@ -57,7 +67,7 @@ const first = members[0];
           <a href={localePath(locale, `/api/${m.slug}/`)}><code>{m.name}</code></a>
           <span class="api-type" lang={locale}>{a.kinds[m.kind]}</span>
         </dt>
-        <dd lang="en">{m.summary}</dd>
+        <dd lang={lead(m.slug, m.summary).lang}>{lead(m.slug, m.summary).text}</dd>
       </>
     ))}
   </dl>

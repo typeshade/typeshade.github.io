@@ -252,6 +252,9 @@ export const en = {
       },
       kindLine: (kind: string, category: string) => `${kind} in ${category}`,
       note: `The signature, the description and the examples come from the compiler's own source at commit ${facts.pinnedCommit}.`,
+      // The note over a page whose JSDoc text is translated (content/api/<locale>/), which only a
+      // translated locale shows; English keeps it so every dictionary has the same keys.
+      translatedNote: `The description is translated from the JSDoc in the compiler's own source at commit ${facts.pinnedCommit}; the signature and the example code are as the source has them.`,
       syntax: 'Syntax',
       parameters: 'Parameters',
       returnValue: 'Return value',
