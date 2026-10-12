@@ -1,7 +1,8 @@
-// Build-time shader emission. Runs in Astro frontmatter only. It takes one
-// example from the vendored registry and produces what shader-runtime.ts renders, including
-// the uniform layout as reflect() recovers it. An example the runtime cannot render fails
-// the build.
+// Build-time shader emission. Runs in Astro frontmatter only. It takes one `.shade.ts`
+// example and produces what shader-runtime.ts renders, including the uniform layout as
+// reflect() recovers it. An example the runtime cannot render fails the build. The `fn()`
+// registry is read for one thing: a source twin's uniform values, which are its original's
+// controls (shadeControls below).
 
 import { examples } from '../../vendor/shader-dsl/examples/index.ts';
 import { shadeExampleList, shadeFileModule, shadeModule } from './shade-examples.ts';
@@ -119,6 +120,14 @@ function shadeControls(
       );
     }
     out[field.name] = control;
+  }
+  // A log sweep reads its exponent from a slider of its own (`magField`), which the original
+  // declares as a control with no uniform field behind it. Without it the sweep reads 0 and a
+  // twin draws its frame at 10^0 where the original draws it at the slider's value.
+  for (const control of Object.values(out)) {
+    if (control.kind !== 'logmag1d' && control.kind !== 'logmag2d') continue;
+    const mag = twin?.controls?.[control.magField];
+    if (mag && !(control.magField in out)) out[control.magField] = mag;
   }
   return out;
 }
@@ -254,21 +263,15 @@ function clockControls(module: Parameters<typeof reflect>[0]): Record<string, Co
   return out;
 }
 
-/** Emit one registry example as the runtime's payload: both targets plus the reflected layout.
- *  The registry's `blurb` is left out: nothing reads it, and it would ship prose the page
- *  never renders into every inlined payload. */
+/** Emit one `.shade.ts` example as the runtime's payload: both targets plus the reflected
+ *  layout. The registry's `blurb` is left out: nothing reads it, and it would ship prose the
+ *  page never renders into every inlined payload. */
 export function heroShader(id: string): ShaderData {
-  // Both corpora: the `fn()` registry, and the `.shade.ts` files, whose registration has no
-  // module in it, so the module is compiled from the file's own bytes here.
+  // The registration has no module in it, so the module is compiled from the file's own bytes.
   const shade = shadeExampleList.find((e) => e.id === id);
-  const fromShade = shade
-    ? (() => {
-        const module = shadeModule(id);
-        return { ...shade, module, controls: shadeControls(id, shade.twinOf, module) };
-      })()
-    : undefined;
-  const ex = examples.find((e) => e.id === id) ?? fromShade;
-  if (!ex) throw new Error(`[hero-shader] no example '${id}' in the mirror's registry`);
+  if (!shade) throw new Error(`[hero-shader] no example '${id}' in the .shade.ts corpus`);
+  const module = shadeModule(id);
+  const ex = { ...shade, module, controls: shadeControls(id, shade.twinOf, module) };
   if (!ex.renderable) throw new Error(`[hero-shader] example '${id}' is not renderable (compute)`);
 
   const controls: Record<string, Control> = { ...clockControls(ex.module) };
@@ -278,8 +281,8 @@ export function heroShader(id: string): ShaderData {
 
   // An example drawn in several passes (compiler change 0026) carries each pass's program,
   // bound the same way: a texture named like a pass reads it.
-  const passNames = (shade?.passes ?? []).map((p) => p.name);
-  const passes: ShaderPassData[] = (shade?.passes ?? []).map((p) => {
+  const passNames = (shade.passes ?? []).map((p) => p.name);
+  const passes: ShaderPassData[] = (shade.passes ?? []).map((p) => {
     const module = shadeFileModule(p.file);
     const passControls: Record<string, Control> = { ...clockControls(module) };
     for (const [field, c] of Object.entries(shadeControls(`${id}.${p.name}`, undefined, module)))

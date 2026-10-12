@@ -1,10 +1,10 @@
 // The `.shade.ts` corpus, as the site reads it. These are the compiler's `"use typeshade"`
-// examples: one TypeScript file each, compiled by `compile()` instead of built with `fn()`.
-// They are registered in `examples/_shade.ts` and not in `examples/index.ts`, because that
-// barrel feeds src/lib/examples.ts, whose counts and its one WGSL-only row are written
-// against the `fn()` corpus alone. So the two are read side by side and shown apart: the
-// gallery groups these by the language feature each file is there to demonstrate, and the
-// Playground opens any of them in the editor.
+// examples: one TypeScript file each, compiled by `compile()` from the file's own bytes. They
+// are the only examples a reader sees. The compiler's other corpus, the `fn()` registry in
+// `examples/index.ts`, is read only where a file here borrows from the example it is the
+// source twin of (src/lib/examples.ts, src/lib/hero-shader.ts); its own pages redirect to the
+// twin (src/lib/retired-examples.mjs). The gallery groups these files by what each one is
+// there to show, and the Playground opens any of them in the editor.
 //
 // Why the registry is read and not imported. `examples/_shade.ts` finds its own directory
 // through `import.meta.url` and reads the files from there. Vite bundles a module the site
@@ -37,7 +37,8 @@ export interface ShadeExample {
   readonly file: string;
   /** Has a GLSL ES 3.00 form, so a browser with no WebGPU can still draw it. */
   readonly renderable: boolean;
-  /** The `fn()` example this file is the source-language twin of, where it has one. */
+  /** The `fn()` registry example this file is the source-language twin of, where it has one.
+   *  The site shows the twin in the original's place and under its name. */
   readonly twinOf?: string;
   /** The passes drawn before this file each frame, in draw order (compiler change 0026). */
   readonly passes?: readonly { readonly name: string; readonly file: string }[];
@@ -147,12 +148,46 @@ export function shadeFileModule(file: string): ModuleDecl {
   return module;
 }
 
-/** The groups the gallery and the Playground's picker show, by the language feature each
- *  file is there for. The compiler files them all under one category, `source`, because to
- *  it they are one corpus written on the other authoring surface; a reader looking for
- *  inheritance or for a texture wants them apart. Each group's heading is copy and lives in
- *  the dictionaries under `examples.shade.groups`. */
+/** The groups the gallery and the Playground's picker show, by what each file is there for.
+ *  The compiler files them all under one category, `source`, because to it they are one
+ *  corpus written on the other authoring surface; a reader looking for inheritance or for a
+ *  texture wants them apart. The first two groups hold the source twins of the registry's
+ *  cartographic and screen-space examples, which the gallery listed first, so a reader finds
+ *  each one where its original was; the registry's compute example has its twin in `compute`.
+ *  Each group's heading is copy and lives in the dictionaries under `examples.shade.groups`. */
 export const SHADE_GROUPS = [
+  {
+    key: 'cartographic',
+    ids: [
+      'hillshade-twin',
+      'fp64-deep-zoom-twin',
+      'fp64-checker-plane-twin',
+      'fp64-loran-twin',
+      'fp64-rtc-twin',
+    ],
+  },
+  {
+    key: 'screen',
+    ids: [
+      'plasma-twin',
+      'voronoi-twin',
+      'julia-twin',
+      'mandelbrot-twin',
+      'domain-warp-twin',
+      'tunnel-twin',
+      'ocean-twin',
+      'starfield-twin',
+      'kaleidoscope-twin',
+      'fp64-julia-twin',
+      'fp64-burning-ship-twin',
+      'fp64-newton-twin',
+      'fp64-mandelbrot-de-twin',
+      'fp64-clock-twin',
+      'fp64-cancellation-twin',
+      'fp64-sine-sweep-twin',
+      'gradient-twin',
+    ],
+  },
   {
     key: 'stages',
     ids: [
@@ -255,33 +290,6 @@ export const SHADE_GROUPS = [
     key: 'kernels',
     ids: ['loop-kernel', 'loop-reduction', 'loop-struct-array', 'loop-on-cpu'],
   },
-  {
-    key: 'twins',
-    ids: [
-      'hillshade-twin',
-      'plasma-twin',
-      'julia-twin',
-      'mandelbrot-twin',
-      'domain-warp-twin',
-      'tunnel-twin',
-      'ocean-twin',
-      'starfield-twin',
-      'kaleidoscope-twin',
-      'gradient-twin',
-      'voronoi-twin',
-      'fp64-deep-zoom-twin',
-      'fp64-checker-plane-twin',
-      'fp64-loran-twin',
-      'fp64-rtc-twin',
-      'fp64-julia-twin',
-      'fp64-burning-ship-twin',
-      'fp64-newton-twin',
-      'fp64-mandelbrot-de-twin',
-      'fp64-clock-twin',
-      'fp64-cancellation-twin',
-      'fp64-sine-sweep-twin',
-    ],
-  },
 ] as const;
 
 export type ShadeGroupKey = (typeof SHADE_GROUPS)[number]['key'];
@@ -303,10 +311,25 @@ export type ShadeGroupKey = (typeof SHADE_GROUPS)[number]['key'];
     throw new Error(`[shade] SHADE_GROUPS and ${REGISTRY} disagree (${parts.join('; ')})`);
 }
 
+/** What the compiler appends to a source twin's title. The site shows a twin in the place of
+ *  its original and under the original's name, so the suffix comes off. */
+const TWIN_SUFFIX = ' (source twin)';
+
 /** The English title of every `.shade.ts` example, keyed by id. English is the compiler's own
- *  wording; every other language writes its own line against the same keys, in src/i18n. */
+ *  wording; every other language writes its own line against the same keys, in src/i18n. A
+ *  twin's title loses the suffix above, and a twin registered without it stops the build, since
+ *  the title would then no longer be the original's. */
 export function shadeTitles(): Record<string, string> {
-  return Object.fromEntries(shadeExampleList.map((e) => [e.id, e.title]));
+  return Object.fromEntries(
+    shadeExampleList.map((e) => {
+      if (!e.twinOf) return [e.id, e.title];
+      if (!e.title.endsWith(TWIN_SUFFIX))
+        throw new Error(
+          `[shade] the twin ${e.file} is titled '${e.title}', without '${TWIN_SUFFIX}'`,
+        );
+      return [e.id, e.title.slice(0, -TWIN_SUFFIX.length)];
+    }),
+  );
 }
 
 /** The English description of every one, shortened to its first clause the way the registry

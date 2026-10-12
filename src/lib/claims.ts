@@ -9,8 +9,8 @@ export interface Claim {
 
 export const claims: readonly Claim[] = [
   {
-    text: `${facts.bothTargets} of the ${facts.examples} examples emit WGSL and ${facts.glslTarget} from one source.`,
-    source: links.examplesIndex,
+    text: `${facts.shadeRenderable} of the ${facts.shadeExamples} examples emit WGSL and ${facts.glslTarget} from one source.`,
+    source: links.examplesDir,
   },
   {
     text: `${facts.testFiles} test files.`,

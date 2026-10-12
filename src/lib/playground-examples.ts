@@ -27,12 +27,35 @@ import {
 const examplesDir = path.resolve(process.cwd(), 'vendor/shader-dsl/examples');
 
 /** Every TypeShade example the Playground offers, in the order the gallery groups them:
- *  stages, resources, values and control flow, classes and generics, imports, module state
- *  and compute, loops that run as kernels, then the source twins of the `fn()` corpus. The
+ *  cartographic passes, screen-space effects, stages, resources, values and control flow,
+ *  classes and generics, imports, several passes, module state and compute, then loops that
+ *  run as kernels. The
  *  same order as `SHADE_GROUPS` in src/lib/shade-examples.ts, which is where their words live;
  *  the list is repeated here because this module reads the directory with `fs` alone and
  *  imports nothing of the compiler but the rule a specifier resolves by. */
 export const playgroundExampleIds = [
+  'hillshade-twin',
+  'fp64-deep-zoom-twin',
+  'fp64-checker-plane-twin',
+  'fp64-loran-twin',
+  'fp64-rtc-twin',
+  'plasma-twin',
+  'voronoi-twin',
+  'julia-twin',
+  'mandelbrot-twin',
+  'domain-warp-twin',
+  'tunnel-twin',
+  'ocean-twin',
+  'starfield-twin',
+  'kaleidoscope-twin',
+  'fp64-julia-twin',
+  'fp64-burning-ship-twin',
+  'fp64-newton-twin',
+  'fp64-mandelbrot-de-twin',
+  'fp64-clock-twin',
+  'fp64-cancellation-twin',
+  'fp64-sine-sweep-twin',
+  'gradient-twin',
   'hello',
   'hello-vsout',
   'hello-vsin',
@@ -105,28 +128,6 @@ export const playgroundExampleIds = [
   'loop-reduction',
   'loop-struct-array',
   'loop-on-cpu',
-  'hillshade-twin',
-  'plasma-twin',
-  'julia-twin',
-  'mandelbrot-twin',
-  'domain-warp-twin',
-  'tunnel-twin',
-  'ocean-twin',
-  'starfield-twin',
-  'kaleidoscope-twin',
-  'gradient-twin',
-  'voronoi-twin',
-  'fp64-deep-zoom-twin',
-  'fp64-checker-plane-twin',
-  'fp64-loran-twin',
-  'fp64-rtc-twin',
-  'fp64-julia-twin',
-  'fp64-burning-ship-twin',
-  'fp64-newton-twin',
-  'fp64-mandelbrot-de-twin',
-  'fp64-clock-twin',
-  'fp64-cancellation-twin',
-  'fp64-sine-sweep-twin',
 ] as const;
 
 export type PlaygroundExampleId = (typeof playgroundExampleIds)[number];

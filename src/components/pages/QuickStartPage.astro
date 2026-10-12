@@ -103,8 +103,11 @@ fs(canvas, {});`;
     />
   </section>
   <p><Rich text={q.p1} locale={locale} /></p>
-  <CodeFrame label={t.codeLabels.quickStartFile}>
-    <Code code={quickStartFile.code} lang="ts" title="shader.ts" locale={locale} />
+  <CodeFrame label={t.codeLabels.quickStartShader}>
+    <Code code={quickStartFile.shader.code} lang="ts" title={quickStartFile.shader.name} locale={locale} />
+  </CodeFrame>
+  <CodeFrame label={t.codeLabels.quickStartHost}>
+    <Code code={quickStartFile.host.code} lang="ts" title={quickStartFile.host.name} locale={locale} />
   </CodeFrame>
   <p>{q.p2}</p>
   <CodeFrame label={t.codeLabels.wgsl}>

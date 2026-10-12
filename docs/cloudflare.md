@@ -51,7 +51,10 @@ same data (The gallery, below).
 ## What a page does with the data
 
 - **The gallery** (`/guide/examples/`) ends with a hidden section. `src/scripts/examples-runtime.ts`
-  fetches the index and adds a tile for each example no tile on the page links to yet.
+  fetches the index and adds a tile for each `.shade.ts` example no tile on the page links to
+  yet. A release published before the `fn()` registry left the site still lists the registry's
+  examples; their pages redirect (`src/lib/retired-examples.mjs`), so they get no tile, and
+  `scripts/publish-examples.ts` no longer publishes them.
 - **An example's page.** The build also renders `/guide/examples/runtime-example/`, a template:
   `ExamplePage.astro` with the dictionary's stand-in words, both corpora's halves, `noindex`
   and out of the sitemap and the search index. For an example the build does not have, the

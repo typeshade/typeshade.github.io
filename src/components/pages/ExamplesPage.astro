@@ -7,11 +7,10 @@ import ShaderCanvas from '../ShaderCanvas.astro';
 import type { CanvasText } from '../ShaderCanvas.astro';
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
-import { checkedBlurbs, facts, hero } from '../../lib/examples.ts';
+import { hero } from '../../lib/examples.ts';
 import { checkedShade, shadeExampleList, SHADE_GROUPS } from '../../lib/shade-examples.ts';
 import { examplePath } from '../../lib/example-pages.ts';
-import { examples } from '../../../vendor/shader-dsl/examples/index.ts';
-import { SHADE_STILL_EXAMPLES, STILL_EXAMPLES } from '../../../scripts/artifacts.mjs';
+import { SHADE_STILL_EXAMPLES } from '../../../scripts/artifacts.mjs';
 import { slugify } from '../../lib/slug.ts';
 
 interface Props {
@@ -27,10 +26,8 @@ const deepZoom: CanvasText = {
   webgl2: e.f64.caption,
   none: `${e.f64.caption} ${e.f64.captionNone}`,
 };
-const order = ['cartographic', 'generic', 'compute'] as const;
 const headings = [
   { depth: 2, slug: 'mnist', text: t.mnist.title },
-  ...order.map((c) => ({ depth: 2, slug: slugify(c), text: e.categories[c] })),
   { depth: 2, slug: slugify(e.shade.h), text: e.shade.h },
   ...SHADE_GROUPS.map((g) => ({ depth: 3, slug: slugify(g.key), text: e.shade.groups[g.key] })),
   ...[e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h })),
@@ -38,22 +35,9 @@ const headings = [
 
 const learningPath = e.path.steps.map((step) => ({ ...step, href: localePath(locale, links[step.linkKey].href) }));
 
-const blurbs = checkedBlurbs(e.blurbs);
-const stills = new Set<string>(STILL_EXAMPLES);
-const rows = examples.map((x) => ({
-  id: x.id,
-  still: stills.has(x.id),
-  title: x.title,
-  href: localePath(locale, examplePath(x.id)),
-  category: e.categories[x.category],
-  wgslOnly: x.id === facts.wgslOnlyExample.id,
-  blurb: blurbs[x.id]!,
-}));
-const groups = order.map((c) => rows.filter((r) => r.category === e.categories[c]));
-
-// The other corpus. Same tile, same still rule; the picture is there for the ones the page
-// can draw and the plain mark stands in for the rest. Every tile opens the example's own
-// page (src/components/pages/ExamplePage.astro), which runs it and shows what it emits.
+// The `.shade.ts` corpus, by group. The picture is there for the ones the page can draw and the
+// plain mark stands in for the rest. Every tile opens the example's own page
+// (src/components/pages/ExamplePage.astro), which runs it and shows what it emits.
 const shadeTitleFor = checkedShade('title', e.shade.titles);
 const shadeTextFor = checkedShade('description', e.shade.descriptions);
 const shadeStills = new Set<string>(SHADE_STILL_EXAMPLES);
@@ -78,9 +62,8 @@ const shadeGroups = SHADE_GROUPS.map((g) => ({
 const tile = 'example-tile group flex block-full flex-col overflow-hidden rounded-md border border-line-1 bg-(--color-elevated)';
 const tileTitle = 'px-4 pbs-4 text-h5 font-semibold text-text-1 transition-[color] group-hover:text-accent';
 const tileBlurb = 'example-tile-blurb px-4 pbs-1 pbe-4 text-ui text-text-2';
-// An Ant tag beside the name of the one example that emits a single target.
+// An Ant tag beside the name of an example that emits a single target.
 const tag = 'ms-2 inline-block rounded-sm border border-line-2 bg-surface-1 px-[7px] text-label whitespace-nowrap text-text-2';
-const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts hillshade'].join('\n');
 ---
 
 <Docs locale={locale} path={links.examples.href} title={e.title} description={e.description} headings={headings} editHref={editCopy(locale, 'examples')}>
@@ -106,35 +89,6 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
       <p class="mbs-3 text-text-2">{t.mnist.short}</p>
       <a href={localePath(locale, links.mnist.href)}>{t.mnist.open} →</a>
     </section>
-
-    <p class="text-ui text-text-2">{e.tableCaption}</p>
-    {groups.map((group, i) => (
-      <section>
-        <h2 id={slugify(order[i]!)}>{e.categories[order[i]!]}</h2>
-        <ul class="example-grid grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-x-4 gap-y-6">
-          {group.map((row) => (
-            <li>
-              <a class={tile} href={row.href}>
-                <span class="tile-cover">
-                  {row.still ? <img src={`/stills/${row.id}.webp`} alt="" loading="lazy" decoding="async" /> : (
-                    <span class="no-still">
-                      <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-                        <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
-                        <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
-                        <circle cx="14.5" cy="15.5" r="2.25" />
-                      </svg>
-                      <span class="no-still-note">{e.noStill}</span>
-                    </span>
-                  )}
-                </span>
-                <span class={tileTitle}>{row.title}{row.wgslOnly && <span class={tag}>{e.wgslOnly}</span>}</span>
-                <span class={tileBlurb}><Rich text={row.blurb} locale={locale} inert /></span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
-    ))}
 
     <section>
       <h2 id={slugify(e.shade.h)}>{e.shade.h}</h2>
@@ -197,10 +151,8 @@ const printCommands = ['npx tsx examples/print.ts', 'npx tsx examples/print.ts h
       </ul>
     </section>
 
-    <p>{e.printIntro}</p>
-    <CodeFrame label={t.codeLabels.print}><Code code={printCommands} lang="bash" locale={locale} /></CodeFrame>
     <section><h2 id={slugify(e.glsl.h)}>{e.glsl.h}</h2><p><Rich text={e.glsl.p1} locale={locale} /></p><CodeFrame label={t.codeLabels.glsl}><Code code={hero.glsl} lang="glsl" locale={locale} /></CodeFrame><p><Rich text={e.glsl.p2} locale={locale} /></p></section>
-    <section><h2 id={slugify(e.f64.h)}>{e.f64.h}</h2><p><Rich text={e.f64.p1} locale={locale} /></p><p><Rich text={e.f64.p2} locale={locale} /></p><ShaderCanvas locale={locale} example="fp64-deep-zoom" aspect="3/1" still split caption={deepZoom} /></section>
+    <section><h2 id={slugify(e.f64.h)}>{e.f64.h}</h2><p><Rich text={e.f64.p1} locale={locale} /></p><p><Rich text={e.f64.p2} locale={locale} /></p><ShaderCanvas locale={locale} example="fp64-deep-zoom-twin" stillId="fp64-deep-zoom" aspect="3/1" still split caption={deepZoom} /></section>
 </Docs>
 
 <style>

@@ -11,9 +11,11 @@ import remarkPackageName from './src/lib/remark-package-name.mjs';
 import remarkPromoteBoldLeads from './src/lib/remark-promote-bold-leads.mjs';
 import remarkRuleLinks from './src/lib/remark-rule-links.mjs';
 import { verifyArtifacts } from './scripts/artifacts.mjs';
+import { retiredExampleRedirects } from './src/lib/retired-examples.mjs';
 import { verifyKoreanFonts } from './scripts/fonts.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
+const retiredPaths = new Set(Object.keys(retiredExampleRedirects()));
 
 // typeshade.dev: a static site built from the compiler vendored at vendor/shader-dsl. Every
 // code sample and number on the page is computed from that checkout at build time.
@@ -21,13 +23,16 @@ export default defineConfig({
   site: 'https://typeshade.dev',
   output: 'static',
   trailingSlash: 'always',
-  // The docs moved under /guide/ on the day the site launched; the first routes redirect.
+  // The docs moved under /guide/ on the day the site launched; the first routes redirect. The
+  // pages of the `fn()` registry examples redirect to their source twins, or to the examples
+  // page where there is none (src/lib/retired-examples.mjs).
   redirects: Object.fromEntries(
     Object.entries({
       '/motivation/': '/guide/introduction/',
       '/checks/': '/guide/checks/',
       '/examples/': '/guide/examples/',
       '/guide/': '/guide/introduction/',
+      ...retiredExampleRedirects(),
     }).flatMap(([from, to]) => [
       [from, to],
       [`/ko${from}`, `/ko${to}`],
@@ -85,6 +90,8 @@ export default defineConfig({
           '/gallery',
           '/ko/gallery',
         ].includes(new URL(page).pathname.replace(/\/$/, '')) &&
+        // The retired example pages only redirect (src/lib/retired-examples.mjs).
+        !retiredPaths.has(new URL(page).pathname.replace(/^\/ko(?=\/)/, '')) &&
         // /guide/authoring/ and its sections only redirect to /guide/internals/.
         !/^\/(ko\/)?guide\/authoring\//.test(new URL(page).pathname),
       // No lastmod: one build date on every URL tells a crawler nothing, and Google stops

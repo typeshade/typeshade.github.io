@@ -138,7 +138,6 @@ export const links = {
   releases: { label: 'Watch releases', href: `${mirror}/releases` },
   license: { label: facts.licenseName, href: at('LICENSE') },
   changelog: { label: 'Changelog', href: at('CHANGELOG.md') },
-  examplesIndex: { label: 'examples/index.ts', href: at('examples/index.ts') },
   examplesDir: {
     label: 'the examples directory',
     href: `${mirror}/tree/${facts.pinnedCommit}/examples`,
@@ -147,7 +146,10 @@ export const links = {
   packageJson: { label: 'package.json', href: at('package.json') },
   oracle: { label: 'src/core/oracle.ts', href: at('src/core/oracle.ts') },
   intrinsicRegistry: { label: 'src/core/intrinsics.ts', href: at('src/core/intrinsics.ts') },
-  deepZoom: { label: 'fp64-deep-zoom.ts', href: at('examples/fp64-deep-zoom.ts') },
+  deepZoom: {
+    label: 'fp64-deep-zoom-twin.shade.ts',
+    href: at('examples/fp64-deep-zoom-twin.shade.ts'),
+  },
   compileGate: { label: 'scripts/compile-gate.ts', href: at('scripts/compile-gate.ts') },
   ciGates: { label: 'the CI workflow', href: `${siteRepo}/blob/main/.github/workflows/deploy.yml` },
   maplibreRoadmap: {

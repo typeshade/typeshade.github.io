@@ -2,7 +2,7 @@
 // build (src/lib/examples.ts). Inline links are written as [text](key), where key names a
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
 import { API_CATEGORIES } from '../lib/api.ts';
-import { exampleFile, facts, hero, quickStartFile, registryBlurbs } from '../lib/examples.ts';
+import { facts, hero, quickStartFile, twinBlurbs } from '../lib/examples.ts';
 import { shadeDescriptions, shadeTitles } from '../lib/shade-examples.ts';
 import { guideSections } from '../lib/guide.ts';
 import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
@@ -1123,9 +1123,9 @@ export const en = {
 
   install: { label: 'Submodule command' },
   diagnostic: {
-    frameLabel: 'Shader with a misspelt field, typed-error-shader.ts',
-    error: (code: number, line: number, column: number) =>
-      `error TS${code} at line ${line}, column ${column}:`,
+    frameLabel: 'Shader with a misspelt field, typed-error.shade.ts',
+    error: (code: string, line: number, column: number) =>
+      `error ${code} at line ${line}, column ${column}:`,
     truncated: '(first line of a longer message)',
   },
   layout: {
@@ -1138,17 +1138,17 @@ export const en = {
   },
   codeLabels: {
     authored: `Authored fragment, ${hero.file}`,
-    quickStartFile: 'The complete file, shader.ts',
+    quickStartShader: `The shader file, ${quickStartFile.shader.name}`,
+    quickStartHost: `The host file that compiles it, ${quickStartFile.host.name}`,
     wgsl: 'The emitted WGSL fragment entry point',
     glsl: `The emitted ${glsl} fragment main`,
-    print: "Printing an example's WGSL, GLSL and reflection",
     useTypeshade: 'hello.shade.ts',
   },
 
   front: {
     title: 'A shader language you write in TypeScript.',
     searchTitle: 'TypeShade',
-    lede: `TypeShade is a language of its own, with TypeScript's syntax, types and editor. A file that starts with \`"use typeshade"\` emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.bothTargets} of the ${facts.examples} examples in the repository emit both from one file.`,
+    lede: `TypeShade is a language of its own, with TypeScript's syntax, types and editor. A file that starts with \`"use typeshade"\` emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.shadeRenderable} of the ${facts.shadeExamples} examples in the repository emit both from one file.`,
     playground: 'Open the Playground',
     quickStart: 'Quick start',
     stageAria: 'A shader running beside the file that draws it',
@@ -1169,7 +1169,7 @@ export const en = {
     },
     gallery: {
       h: 'More shaders',
-      p: `${facts.examples} examples ship with the compiler, from cartographic passes to a compute kernel. Each tile is the frame its shader drew at build time, and opens the page that runs it.`,
+      p: `${facts.shadeExamples} examples ship with the compiler, from cartographic passes to compute kernels. Each tile is the frame its shader drew at build time, and opens the page that runs it.`,
       all: 'All examples',
       /** What a canvas of one example says under it, by what drew the frame. The front page's
        *  tiles are stills and carry none of this; the example's own page runs the shader. */
@@ -1294,8 +1294,8 @@ export const en = {
     h1: 'Use TypeShade',
     installH: 'Install',
     p0: 'Start with a TypeScript file whose first statement is `"use typeshade"`. That directive crosses the boundary into the TypeShade shader language; the example below is a complete first shader, written with a class and stage-decorated functions.',
-    p1: `TypeShade also has a function-based authoring surface: the same pass declared with [\`fn\`](apiFn) and [\`module()\`](apiModule) instead of classes, ${quickStartFile.lines} lines from the import line to a call that emits WGSL:`,
-    p2: 'Running it emits WGSL for both stages. Here is the fragment entry point:',
+    p1: `A host compiles a file with one call. Save the gradient pass below as \`${quickStartFile.shader.name}\`, ${quickStartFile.shader.lines} lines with a uniform block, a vertex stage and a fragment stage, and compile it from a host file of ${quickStartFile.host.lines} lines that calls [\`compile()\`](apiCompile) and prints the WGSL:`,
+    p2: 'Running it prints WGSL for both stages. Here is the fragment entry point:',
     p3: `The ${glsl} stage for the same function, and the uniform layout [\`reflect()\`](apiReflect) recovers for it, are on the [examples page](examples). The [language guide](guide) covers the rest of the surface.`,
     live: {
       h: 'Live example',
@@ -1460,7 +1460,7 @@ export const en = {
     },
     authorTime: {
       h: 'At author time',
-      p: 'The uniform block is declared once, and every field read is typed against that declaration. Misspell one and TypeScript says so in the editor, before a string reaches a GPU.',
+      p: 'The uniform block is declared once, and every field read is typed against that declaration. Misspell one and the editor says so, before a string reaches a GPU, and the compiler refuses the file with the same code.',
       caption: `The wrong read on line ${err.wrongLine}, the diagnostic it produces, and the ${std} layout [\`reflect()\`](apiReflect) recovers for the block it reads from: ${err.layout.size} bytes over ${err.layout.fields.length} fields. The gap after the first field is alignment.`,
     },
   },
@@ -1931,13 +1931,10 @@ export const en = {
         },
       ]),
     },
-    title: `TypeShade examples: ${facts.totalExamples} shaders, GLSL emit, emulated f64`,
-    description: `The ${facts.totalExamples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
+    title: `TypeShade examples: ${facts.shadeExamples} shaders, GLSL emit, emulated f64`,
+    description: `The ${facts.shadeExamples} TypeShade examples, the ${glsl} emit of the gradient pass, and a deep-zoom demo of emulated double precision.`,
     h1: 'Examples',
-    intro: `There are ${facts.totalExamples} runnable examples in the repository, written on the two authoring surfaces. ${facts.examples} are built with the \`fn()\` builder and cover cartographic passes, the ShaderToy-era screen-space effects, the emulated-double tier and a compute kernel; ${facts.fp64Examples} of those use emulated double precision. The builder's are exported from [examples/index.ts](examplesIndex); browse [the examples directory](examplesDir).`,
-    categories: { cartographic: 'Cartographic', generic: 'Screen space', compute: 'Compute' },
-    columns: { example: 'Example', category: 'Category', blurb: 'Description' },
-    tableCaption: `${facts.bothTargets} of the ${facts.examples} examples below emit WGSL and ${glsl}. ${facts.wgslOnlyExample.title} has no vertex or fragment stage to emit as ${glsl}, so it is marked WGSL only; its WebGL2 path is the opt-in emulation.`,
+    intro: `There are ${facts.shadeExamples} runnable examples in the repository, from cartographic passes and the ShaderToy-era screen-space effects to compute kernels; ${facts.fp64Examples} of them use emulated double precision. Browse [the examples directory](examplesDir).`,
     wgslOnly: 'WGSL only',
     /** A tile whose example has nothing the page can draw shows Ant's Empty mark and this
      *  line instead of a bare grey frame. */
@@ -1948,18 +1945,18 @@ export const en = {
       h: 'Added since this build',
       p: 'The compiler has these examples and this build of the site does not yet. Their pages are filled in from the example data its main branch published.',
     },
-    /** The Description column, one line per example, keyed by the registry's id. English
-     *  takes the compiler's own wording; a translation writes the same lines in its language. */
-    blurbs: registryBlurbs(),
-    /** The other corpus: one TypeScript file per example, compiled from the file itself.
-     *  Grouped by the part of TypeScript each file is there to show, because the compiler
-     *  files them all under one category and a reader looking for inheritance wants them
-     *  apart. The titles and the lines under them are the registry's own words in English;
+    /** Every example: one TypeScript file each, compiled from the file itself. Grouped by
+     *  what each file is there to show, because the compiler files them all under one
+     *  category and a reader looking for inheritance wants them apart. The titles and the
+     *  lines under them are the registry's own words in English, and a source twin's line is
+     *  the one the registry writes for the example it ports (src/lib/examples.ts twinBlurbs);
      *  a translation writes its own against the same keys. */
     shade: {
       h: 'Written as TypeScript source',
-      p: `${facts.shadeExamples} more examples in the same directory are TypeScript files that open with \`"use typeshade"\`, compiled by \`compile()\` from the file's own bytes. Each one is there for one part of the language, and they are grouped here that way. ${facts.shadeRenderable} have a ${glsl} form and the others emit WGSL alone. The ones the page can draw carry a picture.`,
+      p: `Each example is a TypeScript file that opens with \`"use typeshade"\`, compiled by \`compile()\` from the file's own bytes. Each one is there for one part of the language, and they are grouped here that way. ${facts.shadeRenderable} have a ${glsl} form and the others emit WGSL alone. The ones the page can draw carry a picture.`,
       groups: {
+        cartographic: 'Cartographic',
+        screen: 'Screen space',
         stages: 'Stages and IO structs',
         resources: 'Resources',
         values: 'Values and control flow',
@@ -1968,10 +1965,9 @@ export const en = {
         passes: 'Several passes',
         compute: 'Module state and compute',
         kernels: 'Loops as kernels',
-        twins: 'Source twins',
       },
       titles: shadeTitles(),
-      descriptions: shadeDescriptions(),
+      descriptions: { ...shadeDescriptions(), ...twinBlurbs() },
     },
     /** The page one example gets, at /guide/examples/<id>/. Every tile in the gallery links
      *  here, and the file on GitHub is one link in the row at the foot of the page. */
@@ -2032,9 +2028,6 @@ export const en = {
        *  Playground seeded with that file. */
       editable:
         "The editor holds this example's own file, and the program is that file and any file it imports. An edit recompiles it in your browser, and the tabs beside the editor follow.",
-      /** The line on an `fn()` example's page, which carries the static card instead. */
-      builder:
-        'This example is written against the `fn()` builder API, which the editor in the [Playground](playground) does not take.',
       /** The template page the Worker fills in for an example the compiler added after the
        *  site was built (worker/index.ts). Its own words stand in until the Worker writes the
        *  example's, and `note` is the line the filled page keeps. */
@@ -2060,17 +2053,15 @@ export const en = {
           'This example reads its vertex attributes from a buffer the page does not bind, so the page shows no picture.',
       },
     },
-    printIntro:
-      'From a checkout of the repository, the first command prints WGSL, GLSL and reflection for every example; the second does one by id.',
     glsl: {
       h: `The gradient pass in ${glsl}`,
-      p1: `The front page shows a file that starts with \`"use typeshade"\`. The gallery pass \`${hero.file}\` still emits this ${glsl} \`main\`:`,
+      p1: `The gradient pass, \`${hero.file}\`, emits this ${glsl} \`main\` for its fragment stage:`,
       p2: `The whole module is ${hero.emit.wgslLines} lines of WGSL; the GLSL vertex stage is ${hero.emit.glslVertexLines} lines and the fragment stage ${hero.emit.glslFragmentLines}. Uniform types, byte offsets, bind-group entries and entry signatures come from [\`reflect()\`](apiReflect), which reads the same intermediate representation and stays off the emit path, so a host can pack its uniform buffer from that layout. [Verification](checks) shows the reflected layout of a uniform block beside the diagnostic for a misspelt field.`,
     },
     f64: {
       h: 'Emulated double precision',
       p1: `Neither WGSL nor ${glsl} has a double-precision float. TypeShade emulates one as an unevaluated pair of f32 values, and lowers arithmetic, comparisons and a set of builtins into calls on that pair. An operation outside that set fails at emit with a coded error. What you write is unchanged: only the declared type differs. In the deep-zoom example the \`${facts.deepZoomOrigin.name}\` field is declared \`${facts.deepZoomOrigin.sourceType}\` in the source and occupies a \`${facts.deepZoomOrigin.layoutType}\` slot in the uniform block, which the host fills with the split pair.`,
-      p2: 'A module that does f64 arithmetic also carries an injected guard texture binding for the host to fill with a single white texel. A downstream shader compiler cannot fold a texel read, and without one it is free to optimise the error-compensation terms away. Each operation costs several times its f32 equivalent, so the type is opted into per value. The example is [fp64-deep-zoom.ts](deepZoom).',
+      p2: 'A module that does f64 arithmetic also carries an injected guard texture binding for the host to fill with a single white texel. A downstream shader compiler cannot fold a texel read, and without one it is free to optimise the error-compensation terms away. Each operation costs several times its f32 equivalent, so the type is opted into per value. The example is [fp64-deep-zoom-twin.shade.ts](deepZoom).',
       caption: `One world coordinate drawn twice: ${split[0]} on the left, ${split[1]} on the right. The ${split[0]} half draws the stripes as steps because one ${split[0]} ulp at this distance is coarser than the fraction a stripe needs; the other half draws them smooth.`,
       captionNone: 'Rendered at build time; this browser has no WebGPU or WebGL2.',
     },

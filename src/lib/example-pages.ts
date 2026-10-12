@@ -1,7 +1,8 @@
-// One page per example, at /guide/examples/<id>/. Both corpora are on it: the `fn()` registry
-// in examples/index.ts and the `"use typeshade"` files the `.shade.ts` registry lists. The
-// gallery's tiles link here instead of to GitHub, so a reader who clicks an example sees it
-// run on the site and keeps the file on GitHub as one link in the footer row.
+// One page per example, at /guide/examples/<id>/: every `"use typeshade"` file the `.shade.ts`
+// registry lists. The compiler's `fn()` registry (examples/index.ts) has no pages; its old
+// routes redirect (src/lib/retired-examples.mjs, astro.config.mjs). The gallery's tiles link
+// here instead of to GitHub, so a reader who clicks an example sees it run on the site and
+// keeps the file on GitHub as one link in the footer row.
 //
 // Everything a page shows is read at build time: the example's own source file, the emitted
 // text the compiler baked into examples/__emit-goldens__/ at the pinned commit, and the group
@@ -9,20 +10,19 @@
 // dictionary.
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { examples } from '../../vendor/shader-dsl/examples/index.ts';
 import {
   NO_STILL_REASONS,
   NO_STILL_REASON_KEYS,
   SHADE_STILL_EXAMPLES,
-  STILL_EXAMPLES,
 } from '../../scripts/artifacts.mjs';
 import { TEMPLATE_ID } from './example-data.ts';
 import { facts } from './examples.ts';
 import { playgroundExampleIds } from './playground-examples.ts';
 import { SHADE_GROUPS, shadeExampleList } from './shade-examples.ts';
 
-/** Which registry an example is written in. The two are shown apart everywhere else on the
- *  site, and the pager keeps them apart here too. */
+/** Which registry an example is written in. Every page the build writes is a `.shade.ts`
+ *  example; the example data the Worker serves (src/lib/example-data.ts) still names the
+ *  other one, for a release published before the `fn()` registry left the site. */
 export type Corpus = 'registry' | 'shade';
 
 /** Why the page draws no picture for one example. The sentence each one gets is copy and
@@ -39,15 +39,15 @@ export interface Emitted {
   readonly glsl?: { readonly vertex: string; readonly fragment: string };
 }
 
-/** One example page. `title` is the registry's own English wording; a `.shade.ts` example's
- *  title and description are translated and read from the dictionary by the page. */
+/** One example page. `title` is the registry's own English wording; the page reads the title
+ *  and the description it shows from the dictionary. */
 export interface ExamplePage {
   readonly id: string;
   readonly corpus: Corpus;
   /** The file in the compiler's examples directory, for the code frame and the GitHub link. */
   readonly file: string;
   readonly title: string;
-  /** The group the pager walks: a registry category, or a `.shade.ts` group key. */
+  /** The group the pager walks: a `.shade.ts` group key. */
   readonly group: string;
   /** The page draws the example live over its build-time still. */
   readonly drawn: boolean;
@@ -125,10 +125,9 @@ function sourceOf(file: string): string {
 
 // Where the shader starts in one of these files, so the code pane opens on it and the reader
 // scrolls up for the header. A `.shade.ts` file declares a stage with `@vertex`, `@fragment`
-// or `@compute`; a `fn()` file builds one by assigning a `fn(` call. A file with neither
-// opens on its first export. The file's own text is never touched.
-const STAGE_LINE =
-  /^[\t ]*(?:@vertex|@fragment|@compute)\b|^[\t ]*(?:const|let|var)\s+\w+\s*=\s*fn\(/;
+// or `@compute`. A file with none opens on its first export. The file's own text is never
+// touched.
+const STAGE_LINE = /^[\t ]*(?:@vertex|@fragment|@compute)\b/;
 const EXPORT_LINE = /^[\t ]*export\b/;
 
 function entryLineOf(id: string, source: string): number {
@@ -143,20 +142,17 @@ function entryLineOf(id: string, source: string): number {
   );
 }
 
-// The order the gallery already shows: the registry's three categories, then the `.shade.ts`
-// groups. The pager walks one of these lists at a time, so previous and next stay inside the
-// group a reader arrived from.
-const REGISTRY_ORDER = ['cartographic', 'generic', 'compute'] as const;
-
-const drawn = new Set<string>([...STILL_EXAMPLES, ...SHADE_STILL_EXAMPLES]);
+// The order the gallery shows: the `.shade.ts` groups. The pager walks one group at a time, so
+// previous and next stay inside the group a reader arrived from.
+const drawn = new Set<string>(SHADE_STILL_EXAMPLES);
 const reasons = NO_STILL_REASONS as Record<string, NoPictureReason>;
 const inPlayground = new Set<string>(playgroundExampleIds);
 
-/** The reason table against both registries, in both directions. An example that stops being
+/** The reason table against the registry, in both directions. An example that stops being
  *  drawable upstream needs a line here before it can reach a page as an empty frame, and a
  *  reason for an example that is drawn again is stale and says so. */
 {
-  const all = [...examples.map((e) => e.id), ...shadeExampleList.map((e) => e.id)];
+  const all = shadeExampleList.map((e) => e.id);
   const missing = all.filter((id) => !drawn.has(id) && !reasons[id]);
   const stale = Object.keys(reasons).filter((id) => !all.includes(id) || drawn.has(id));
   const unknown = Object.entries(reasons)
@@ -184,28 +180,6 @@ function withPager(group: readonly ExamplePage[]): readonly ExamplePage[] {
 }
 
 function build(): readonly ExamplePage[] {
-  const registry = REGISTRY_ORDER.flatMap((category) =>
-    withPager(
-      examples
-        .filter((e) => e.category === category)
-        .map((e) => {
-          const source = sourceOf(e.file);
-          return {
-            id: e.id,
-            corpus: 'registry' as const,
-            file: e.file,
-            title: e.title,
-            group: category,
-            drawn: drawn.has(e.id),
-            ...(reasons[e.id] ? { reason: reasons[e.id]! } : {}),
-            source,
-            entryLine: entryLineOf(e.file, source),
-            emitted: emittedFor(e.id, e.renderable),
-            inPlayground: inPlayground.has(e.id),
-          };
-        }),
-    ),
-  );
   const byId = new Map(shadeExampleList.map((e) => [e.id, e]));
   const shade = SHADE_GROUPS.flatMap((g) =>
     withPager(
@@ -228,7 +202,7 @@ function build(): readonly ExamplePage[] {
       }),
     ),
   );
-  return [...registry, ...shade];
+  return shade;
 }
 
 /** Every example page, in the order the gallery lists them. */
@@ -238,7 +212,7 @@ const pageById = new Map(examplePages.map((p) => [p.id, p]));
 
 export function examplePage(id: string): ExamplePage {
   const page = pageById.get(id);
-  if (!page) throw new Error(`[example-pages] no example '${id}' in either registry`);
+  if (!page) throw new Error(`[example-pages] no example '${id}' in the .shade.ts registry`);
   return page;
 }
 

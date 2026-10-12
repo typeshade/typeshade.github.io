@@ -26,10 +26,10 @@ const headings = [c.ciH, c.pairH, c.authorTime.h].map((h) => ({ depth: 2, slug: 
     <h2 id={slugify(c.pairH)}>{c.pairH}</h2>
     <p>{c.pairIntro}</p>
     <div class="figure-pair">
-      <ShaderCanvas locale={locale} example="gradient" aspect="3/2" still caption={c.gpuFrame} />
+      <ShaderCanvas locale={locale} example="gradient-twin" stillId="gradient" aspect="3/2" still caption={c.gpuFrame} />
       <ShaderCanvas
         locale={locale}
-        example="gradient"
+        example="gradient-twin"
         stillId="gradient-webgl2"
         aspect="3/2"
         still

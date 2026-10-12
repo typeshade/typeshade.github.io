@@ -103,7 +103,7 @@ test('uniform values bind by manifest name and entries exclude stale resources',
 });
 
 test('hero and edited live payloads carry their emitted program manifest', () => {
-  const hero = heroShader('mandelbrot');
+  const hero = heroShader('mandelbrot-twin');
   expect(hero.manifest.wgsl).toBe(hero.wgsl);
   for (const pass of hero.passes ?? []) expect(pass.manifest.wgsl).toBe(pass.wgsl);
   const live = compileLive(
