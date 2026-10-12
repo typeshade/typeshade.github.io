@@ -42,12 +42,27 @@ const TO = PACKAGE_NAME;
  *  entry point, typeshade/emit, which reads portable IR without the TypeScript front end. The
  *  IR builder left the barrel for typeshade/core/ir (Rule 11.19, compiler change 0060), so its
  *  names are read from there and their pages import them from there; a name the barrel still
- *  exports, such as an IR type, keeps the barrel's import line. */
-const ENTRY_POINTS: readonly { readonly file: string; readonly specifier: string }[] = [
+ *  exports, such as an IR type, keeps the barrel's import line. The fuse scope is
+ *  typeshade/fuse (compiler change 0058), and hostFace and its types are public from
+ *  typeshade/language-service (compiler change 0062). */
+const ENTRY_POINTS: readonly {
+  readonly file: string;
+  readonly specifier: string;
+  /** The names the reference reads from this entry point, when it reads only some. */
+  readonly only?: readonly string[];
+}[] = [
   { file: BARREL, specifier: PACKAGE_NAME },
   { file: 'src/runtime.ts', specifier: `${PACKAGE_NAME}/runtime` },
   { file: 'src/emit.ts', specifier: `${PACKAGE_NAME}/emit` },
   { file: 'src/core/ir/index.ts', specifier: `${PACKAGE_NAME}/core/ir` },
+  { file: 'src/fuse.ts', specifier: `${PACKAGE_NAME}/fuse` },
+  // The editor's language service has its own types, some under the barrel's names, so the
+  // reference reads only the four names change 0062 made public here.
+  {
+    file: 'src/language-service/index.ts',
+    specifier: `${PACKAGE_NAME}/language-service`,
+    only: ['hostFace', 'HostFace', 'HostFaceOptions', 'HostExport'],
+  },
 ];
 // The one name from the pre-release scope that stays, because it is what the pinned compiler
 // reads at runtime. scripts/check-seo.mjs exempts it too.
@@ -182,6 +197,9 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/runtime/runtime.ts': 'runtime-api',
   'src/runtime/program.ts': 'runtime-api',
   'src/runtime/resources.ts': 'runtime-api',
+  // typeshade/fuse, the fuse scope of a host (compiler change 0058).
+  'src/fuse.ts': 'runtime-api',
+  'src/core/fuse-plan.ts': 'runtime-api',
   'src/core/passes/determinism.ts': 'tooling',
   'src/core/ir/builder.ts': 'authoring',
   'src/core/ir/types.ts': 'types',
@@ -221,6 +239,8 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   'src/core/semantic-diff.ts': 'tooling',
   'src/core/emit-identity.ts': 'tooling',
   'src/language-service.ts': 'editor',
+  // hostFace, public from typeshade/language-service (compiler change 0062).
+  'src/compiler/ts/host-face.ts': 'editor',
 };
 // The language service is one file today and a directory once it grows; both sit in Editor.
 const EDITOR_DIR = 'src/language-service/';
@@ -1003,7 +1023,13 @@ function build(): Built {
     if (!file) throw new Error(`[api] no ${ROOT}/${point.file} at the pinned commit`);
     const moduleSymbol = checker.getSymbolAtLocation(file);
     if (!moduleSymbol) throw new Error(`[api] ${ROOT}/${point.file} is not a module`);
-    for (const raw of checker.getExportsOfModule(moduleSymbol)) {
+    const exported = checker.getExportsOfModule(moduleSymbol);
+    for (const name of point.only ?? []) {
+      if (!exported.some((e) => e.name === name))
+        throw new Error(`[api] ${point.specifier} no longer exports ${name}`);
+    }
+    for (const raw of exported) {
+      if (point.only && !point.only.includes(raw.name)) continue;
       const symbol = raw.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(raw) : raw;
       const known = symbols.find((s) => s.name === raw.name);
       if (known && known.symbol === symbol) {

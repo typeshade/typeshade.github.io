@@ -200,3 +200,18 @@ id first, then the pull request that did the work.
   Vite plugin's generated module and `typeshade/runtime` in the page, which the site's canvas
   does not load, and is left for a later pull request. Handled in the pull request that pins
   the compiler at 48e3951.
+- 0058: a host fuses a chain of kernel calls with `fuse` from `typeshade/fuse`: the
+  control-flow page's kernel-function paragraph (en and ko) names the fuse scope, the option
+  `typeshade({ fuse: true })` and the report; the WebGPU concept page's load-time emitter
+  paragraph names `typeshade/fuse` beside the emitter; the API reference reads `typeshade/fuse`
+  (`fuse`, `FuseReport`, `FuseScope`); the Korean guide gains the new subsection of the CPU
+  oracle section, and the Korean blurb of `loop-fuse` follows its fifth function, `total`. The
+  gallery, the Playground picker and the stills gained `loop-fuse` in the pull request that
+  pinned the compiler at 48e3951. Handled in the pull request that pins the compiler at
+  c89f6b2.
+- 0062: `hostFace` is public from `typeshade/language-service`: the API reference reads
+  `hostFace`, `HostFace`, `HostFaceOptions` and `HostExport` from that entry point. The
+  Playground's language worker does not compute a host face yet, so it has no deep import of
+  `src/compiler/ts/host-face.ts` to replace; the editable `host.ts` tab that will call
+  `hostFace` imports it from `typeshade/language-service`. Handled in the pull request that pins
+  the compiler at c89f6b2.
