@@ -355,8 +355,17 @@ export const en = {
         // suffix that stays inside the 60 characters check-seo.mjs allows. Measured over
         // every name in the reference, the shortest of them `E` and the longest
         // `textureSampleCompareLevel`: the titles run from 45 to 60 characters.
-        title: (name: string, kind: string) => {
+        // A builtin function with a form on both targets names them: the searches that reach
+        // these pages are "glsl pow" and "glsl atan2", so the title carries the target words.
+        title: (name: string, kind: string, targets = false) => {
           const suffixes = [
+            ...(targets
+              ? [
+                  ` in WGSL and GLSL, TypeShade shader reference`,
+                  ` in WGSL and GLSL, TypeShade reference`,
+                  ` in WGSL and GLSL, TypeShade`,
+                ]
+              : []),
             `: ${kind} in the TypeShade language reference`,
             `: ${kind}, TypeShade language reference`,
             `: ${kind}, TypeShade reference`,
@@ -368,8 +377,16 @@ export const en = {
           );
         },
         // 'attribute' is the one kind that starts with a vowel, so the article follows the word.
-        description: (name: string, kind: string, summary: string) =>
-          `${name}, ${/^[aeiou]/i.test(kind) ? 'an' : 'a'} ${kind} in the TypeShade language reference. ${summary}`,
+        // With both targets' forms, the description opens with them, as a search result shows it.
+        description: (
+          name: string,
+          kind: string,
+          summary: string,
+          targets?: { readonly wgsl: string; readonly glsl: string },
+        ) =>
+          targets
+            ? `${name} in TypeShade compiles to ${targets.wgsl} in WGSL and ${targets.glsl} in ${glsl}. ${summary}`
+            : `${name}, ${/^[aeiou]/i.test(kind) ? 'an' : 'a'} ${kind} in the TypeShade language reference. ${summary}`,
         kindNames: {
           type: 'Type',
           attribute: 'Attribute',
