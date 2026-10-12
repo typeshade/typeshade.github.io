@@ -16,11 +16,12 @@
 //                 function-name rows on the GLSL page.
 import { compile } from '../../vendor/shader-dsl/src/index.ts';
 import { compileTsSource } from '../../vendor/shader-dsl/src/compiler/ts/source-file.ts';
+import { wgslBackend } from '../../vendor/shader-dsl/src/index.ts';
+// The declare-once tables are `typeshade/core/ir` only since Rule 11.19 (change 0060).
 import {
-  wgslBackend,
   WGSL_BUILTIN_NAMES,
   WGSL_BUILTIN_TYPES,
-} from '../../vendor/shader-dsl/src/index.ts';
+} from '../../vendor/shader-dsl/src/core/ir/index.ts';
 import type { Backend } from '../../vendor/shader-dsl/src/core/backend.ts';
 import type { ShaderType } from '../../vendor/shader-dsl/src/core/ir/types.ts';
 

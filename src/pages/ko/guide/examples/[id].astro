@@ -1,7 +1,9 @@
 ---
+import HostExamplePage from '../../../../components/pages/HostExamplePage.astro';
 import ExamplePage from '../../../../components/pages/ExamplePage.astro';
 import { examplePaths } from '../../../../lib/example-pages.ts';
+import { isHostExample } from '../../../../lib/host-example-pages.ts';
 export const getStaticPaths = examplePaths;
 ---
 
-<ExamplePage locale="ko" id={String(Astro.params.id)} />
+{isHostExample(String(Astro.params.id)) ? <HostExamplePage locale="ko" id={String(Astro.params.id)} /> : <ExamplePage locale="ko" id={String(Astro.params.id)} />}

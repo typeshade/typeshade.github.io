@@ -80,11 +80,6 @@ const sections: Record<string, { title: string; description: string }> = {
     description:
       '배포 시점 변환을 출력 호출 하나로 조합하고, 이름이 바뀐 셰이더 텍스트로 돌아온 드라이버 로그를 원래 이름으로 되돌려 읽습니다.',
   },
-  'raw-statements': {
-    title: '원시 문장',
-    description:
-      '손으로 쓴 문장을 모듈에 그대로 끼워 넣는 법과, 그 문장이 WGSL과 GLSL 각 타깃에서 무엇을 포기하게 하는지 알아봅니다.',
-  },
   'migrating-a-glsl-shader': {
     title: 'GLSL 셰이더 옮기기',
     description:
@@ -2149,6 +2144,70 @@ export const ko: Copy = {
         'packed-bytes':
           '`u32` 하나를 바이트 네 개로 읽거나 네 개를 다시 써 넣는 내장 함수 여덟 개입니다.',
         'compute-sync': 'WGSL에는 있지만 이 표면에 없던 동기화 내장 함수 세 개입니다.',
+      },
+    },
+    host: {
+      h: '호스트 예제',
+      p: '예제마다 파일이 두 개입니다. 하나는 `"use typeshade"` 모듈이고, 다른 하나는 애플리케이션이 쓰는 방식 그대로 그 모듈을 실행하는 `host.ts`입니다. 호스트는 Vite 플러그인으로 모듈을 가져와 모듈이 내보내는 것을 부릅니다. 페이지마다 두 파일과, 호스트가 실행되는 tier를 보여 줍니다.',
+      cover: '모듈과 그 모듈을 실행하는 호스트, 두 파일입니다.',
+      titles: {
+        'host-draw': '캔버스에 그리기',
+        'host-compute': '컴퓨트 진입점 디스패치',
+        'host-kernel': '커널 함수 호출',
+        'host-resident': '데이터를 GPU에 두기',
+        'host-helper': 'CPU와 GPU가 함께 쓰는 헬퍼',
+        'host-program': '컴파일된 프로그램 실행',
+        'loop-fuse': '커널 호출 체인 합치기',
+      },
+      descriptions: {
+        'host-draw': '전체 화면 `@fragment` 진입점과 이를 그리는 호스트입니다.',
+        'host-compute': '`@compute` 진입점과 이를 디스패치하는 호스트입니다.',
+        'host-kernel': '커널 함수 두 개와 이를 부르는 호스트입니다.',
+        'host-resident':
+          '커널 함수 세 개와, 이를 `resident()` 배열 위에서 이어 부르는 호스트입니다.',
+        'host-helper':
+          '프래그먼트 진입점이 GPU에서 그리고 호스트가 CPU에서 부르는 지형 함수 `height`입니다.',
+        'host-program':
+          '버텍스 진입점과 프래그먼트 진입점, 그리고 엔진처럼 이를 실행하는 호스트입니다.',
+        'loop-fuse':
+          '커널 함수 네 개와, `typeshade/fuse`의 `fuse()` 안에서 이를 부르는 호스트입니다.',
+      },
+      blurbs: {
+        'host-draw':
+          '전체 화면 `@fragment` 진입점과 이를 그리는 호스트입니다. 호스트는 `fs`를 가져와 프레임마다 `fs(canvas, { frame })`를 한 번 부르고, 유니폼에 시간을 넣습니다. 그리는 것은 전체 화면 삼각형 하나입니다. WebGPU가 먼저이고, 없으면 WebGL2, 그다음은 CPU tier입니다. 호스트 코드에는 파이프라인도 버퍼도 바인드 그룹도 없습니다(규칙 8.24).',
+        'host-compute':
+          '`@compute` 진입점과 이를 디스패치하는 호스트입니다. 호스트는 `scale`을 가져와 `await scale({ k, xs, ys }, 4)`를 부릅니다. 바인딩은 숫자 하나와 `Float32Array` 두 개로, 모두 평범한 값입니다. 프로미스가 이행되면 GPU가 쓴 값이 `ys`에 들어 있습니다(규칙 8.24). WebGPU가 없으면 WebGL2나 CPU tier에서 실행됩니다.',
+        'host-kernel':
+          '커널 함수 두 개와 이를 부르는 호스트입니다. `exposure`는 `array<f32>`를 돌고, `peak`는 그 배열을 하나의 값으로 줄입니다. 호스트는 `Float32Array`를 넘겨 `await exposure(1.5, pixels)`를 부르고, 숫자 하나를 얻으려고 `await peak(pixels)`를 부릅니다. 컴파일러가 반복이 서로 독립이라고 증명한 루프는 GPU에서 반복마다 인보케이션 하나로 실행되고, 배열은 제자리에서 바뀌어 돌아옵니다(규칙 8.22).',
+        'host-resident':
+          '커널 함수 세 개와, 이를 `resident()` 배열 위에서 이어 부르는 호스트입니다. `decay`와 `accumulate` 호출은 큐에 들어가기만 합니다. 배열은 장치의 버퍼에 그대로 남고, 다음 호출이 같은 버퍼를 바인딩합니다. 호스트는 `sum`을 기다릴 때 한 번만 기다리고, `read()`로 배열을 한 번만 읽어 옵니다(규칙 11.8).',
+        'host-helper':
+          '프래그먼트 진입점이 GPU에서 그리고 호스트가 CPU에서 부르는 지형 함수 `height`입니다. 호스트는 `fs(canvas, { view })`로 지형을 그린 뒤, 커서 아래의 높이를 얻으려고 `height([u, v])`를 부릅니다. 결과는 평범한 숫자이고, 같은 코드를 `f32` 정밀도로 계산한 값입니다. 캔버스는 읽지 않습니다(표면 문서 §64).',
+        'host-program':
+          '버텍스 진입점과 프래그먼트 진입점, 그리고 엔진처럼 이를 실행하는 호스트입니다. 모듈의 기본 내보내기가 매니페스트입니다. 호스트는 프로그램 런타임에서 `rt.load()`로 매니페스트를 불러오고, 렌더 파이프라인을 만들어 프레임마다 텍스처에 전체 화면 삼각형을 그립니다. 유니폼은 이름으로 바인딩합니다. 마지막으로 텍스처를 읽어 옵니다(규칙 11.10, 11.11).',
+        'loop-fuse':
+          '커널 함수 네 개와, `typeshade/fuse`의 `fuse()` 안에서 이를 부르는 호스트입니다. `add`, `mul`, `relu` 호출은 저마다 바로 앞 호출이 같은 인덱스에 쓴 값을 읽습니다. 그래서 WebGPU에서는 스코프가 이 호출들을 디스패치 하나로 실행하고, 리포트에도 그렇게 적힙니다. `pairsum`은 `t[i ^ 1]`을 읽는데, 이 원소는 다른 인보케이션이 씁니다. 그래서 이 호출을 가운데 둔 스코프는 디스패치 두 번으로 실행되고, 리포트가 그 줄을 짚어 줍니다.',
+      },
+      page: {
+        // 영어와 같은 방식입니다. 60자 상한에 들어가는 가장 긴 꼬리말을 고릅니다.
+        title: (name: string) => {
+          const suffixes = [
+            ', TypeShade 호스트 예제의 셰이더 모듈과 그 모듈을 실행하는 호스트 파일',
+            ', TypeShade 호스트 예제의 모듈과 호스트 파일',
+            ', TypeShade 호스트 예제',
+          ];
+          return name + (suffixes.find((s) => (name + s).length <= 60) ?? '');
+        },
+        files: '모듈과 호스트',
+        module: '모듈',
+        host: '호스트 파일',
+        tiersLabel: '실행 tier',
+        tiers: { webgpu: 'WebGPU', webgl2: 'WebGL2', cpu: 'CPU tier' },
+        tiersNote:
+          '이 목록은 컴파일러가 확인합니다. tier(호출이 실행되는 백엔드)는 호스트의 실행 전체가 그 tier 하나만으로 기준값을 낼 때만 목록에 오릅니다. 컴파일러의 저니 게이트가 호스트마다 WebGPU와 WebGL2에서 실행하고, 단위 테스트가 CPU tier에서 실행합니다.',
+        filesNote: `두 파일 모두 커밋 ${facts.pinnedCommit}의 컴파일러에 있는 그대로이며, [예제 디렉터리](examplesDir)에서 읽어 왔습니다.`,
+        moduleLink: 'GitHub의 모듈',
+        hostLink: 'GitHub의 호스트 파일',
       },
     },
     page: {

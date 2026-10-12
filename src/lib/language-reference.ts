@@ -38,7 +38,9 @@ import {
   TYPE_DOCS,
   WGSL_BUILTIN_NAMES,
 } from '../../vendor/shader-dsl/src/language-service/index.ts';
-import { WGSL_BUILTIN_TYPES, typeKey } from '../../vendor/shader-dsl/src/index.ts';
+import { typeKey } from '../../vendor/shader-dsl/src/index.ts';
+// The declare-once tables are `typeshade/core/ir` only since Rule 11.19 (change 0060).
+import { WGSL_BUILTIN_TYPES } from '../../vendor/shader-dsl/src/core/ir/index.ts';
 import { builtinGroups, type BuiltinFamily, type BuiltinRow } from './builtin-table.ts';
 
 const ROOT = 'vendor/shader-dsl';

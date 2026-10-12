@@ -4,6 +4,7 @@
 import { API_CATEGORIES } from '../lib/api.ts';
 import { facts, hero, quickStartFile, twinBlurbs } from '../lib/examples.ts';
 import { shadeDescriptions, shadeTitles } from '../lib/shade-examples.ts';
+import { hostBlurbs, hostDescriptions, hostTitles } from '../lib/host-example-pages.ts';
 import { guideSections } from '../lib/guide.ts';
 import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import type { LinkKey } from '../lib/links.ts';
@@ -1968,6 +1969,42 @@ export const en = {
       },
       titles: shadeTitles(),
       descriptions: { ...shadeDescriptions(), ...twinBlurbs() },
+    },
+    /** The host examples (compiler change 0061): a `"use typeshade"` module and the host file
+     *  that runs it, after the `.shade.ts` groups. The titles, the lines under the tiles and the
+     *  paragraph each page opens with are the compiler's own words in English
+     *  (src/lib/host-example-pages.ts); a translation writes its own against the same keys. */
+    host: {
+      h: 'Host examples',
+      p: 'Each of these is two files: a `"use typeshade"` module and the `host.ts` that runs it, written the way an application writes it. The host imports the module through the Vite plugin and calls what it exports. Each page shows both files and the tiers the host runs on.',
+      /** The tile's cover, which has no picture: the page shows two files and draws nothing. */
+      cover: 'Two files: the module and the host that runs it.',
+      titles: hostTitles(),
+      descriptions: hostDescriptions(),
+      blurbs: hostBlurbs(),
+      /** The page one host example gets, at /guide/examples/<id>/. */
+      page: {
+        // The longest suffix that keeps the title within the 60 characters check-seo.mjs
+        // enforces; the page asserts the 45 to 60 the SEO review wants.
+        title: (name: string) => {
+          const suffixes = [
+            ', a TypeShade host example with both files',
+            ', a TypeShade host example',
+            ' in TypeShade',
+          ];
+          return name + (suffixes.find((s) => (name + s).length <= 60) ?? '');
+        },
+        files: 'The module and its host',
+        module: 'Module',
+        host: 'Host file',
+        tiersLabel: 'Runs on',
+        tiers: { webgpu: 'WebGPU', webgl2: 'WebGL2', cpu: 'CPU tier' },
+        tiersNote:
+          "The compiler checks this list: a tier is on it exactly when the host's whole run gives the reference with that tier alone. Its journeys gate runs each host on WebGPU and on WebGL2, and its unit suite runs each one on the CPU tier.",
+        filesNote: `Both files are the compiler's own at commit ${facts.pinnedCommit}, from [the examples directory](examplesDir).`,
+        moduleLink: 'Module on GitHub',
+        hostLink: 'Host file on GitHub',
+      },
     },
     /** The page one example gets, at /guide/examples/<id>/. Every tile in the gallery links
      *  here, and the file on GitHub is one link in the row at the foot of the page. */

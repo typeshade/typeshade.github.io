@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { authoringSections, type AuthoringSection } from './authoring.ts';
+import { RETIRED_GUIDE_SECTIONS } from './retired-guide-sections.mjs';
 
 export const GUIDE_FILE = 'vendor/shader-dsl/AUTHORING.md';
 
@@ -16,3 +17,13 @@ export const guideSections: readonly AuthoringSection[] = authoringSections(
 export const guideSectionIds: readonly string[] = guideSections
   .filter((s) => s.id !== 'overview')
   .map((s) => s.id);
+
+// A retired section's redirect against the pinned file: a section that comes back has its own
+// page again, and its old redirect would write a second file at the same route.
+{
+  const back = Object.keys(RETIRED_GUIDE_SECTIONS).filter((id) => guideSectionIds.includes(id));
+  if (back.length > 0)
+    throw new Error(
+      `[guide] ${GUIDE_FILE} has the section ${back.join(', ')} again; remove its line from src/lib/retired-guide-sections.mjs`,
+    );
+}

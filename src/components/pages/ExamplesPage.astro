@@ -10,6 +10,7 @@ import { editCopy, links } from '../../lib/links.ts';
 import { hero } from '../../lib/examples.ts';
 import { checkedShade, shadeExampleList, SHADE_GROUPS } from '../../lib/shade-examples.ts';
 import { examplePath } from '../../lib/example-pages.ts';
+import { checkedHost, hostExampleIds } from '../../lib/host-example-pages.ts';
 import { SHADE_STILL_EXAMPLES } from '../../../scripts/artifacts.mjs';
 import { slugify } from '../../lib/slug.ts';
 
@@ -30,6 +31,7 @@ const headings = [
   { depth: 2, slug: 'mnist', text: t.mnist.title },
   { depth: 2, slug: slugify(e.shade.h), text: e.shade.h },
   ...SHADE_GROUPS.map((g) => ({ depth: 3, slug: slugify(g.key), text: e.shade.groups[g.key] })),
+  { depth: 2, slug: slugify(e.host.h), text: e.host.h },
   ...[e.glsl.h, e.f64.h].map((h) => ({ depth: 2, slug: slugify(h), text: h })),
 ];
 
@@ -56,6 +58,17 @@ const shadeGroups = SHADE_GROUPS.map((g) => ({
       blurb: shadeTextFor[id]!,
     };
   }),
+}));
+// The host examples (compiler change 0061), after the `.shade.ts` groups, in the compiler's
+// order. They draw nothing on the page, so every tile carries the plain mark, with a line that
+// says what the page holds instead of a picture.
+const hostTitleFor = checkedHost('title', e.host.titles);
+const hostTextFor = checkedHost('description', e.host.descriptions);
+const hostRows = hostExampleIds.map((id) => ({
+  id,
+  title: hostTitleFor[id]!,
+  href: localePath(locale, examplePath(id)),
+  blurb: hostTextFor[id]!,
 }));
 // A gallery tile: an Ant Card, a picture where the runtime can draw one as the cover, the name
 // and the sentence in the body, the whole tile one link to the example's page.
@@ -120,6 +133,31 @@ const tag = 'ms-2 inline-block rounded-sm border border-line-2 bg-surface-1 px-[
           </ul>
         </Fragment>
       ))}
+    </section>
+
+    <section>
+      <h2 id={slugify(e.host.h)}>{e.host.h}</h2>
+      <p><Rich text={e.host.p} locale={locale} /></p>
+      <ul class="example-grid grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-x-4 gap-y-6">
+        {hostRows.map((row) => (
+          <li>
+            <a class={tile} href={row.href}>
+              <span class="tile-cover">
+                <span class="no-still">
+                  <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                    <rect x="3.75" y="8.75" width="32.5" height="22.5" rx="3" />
+                    <path d="M3.75 24.5l7.5-6.5 6 5 5.5-4.5 13.5 11" />
+                    <circle cx="14.5" cy="15.5" r="2.25" />
+                  </svg>
+                  <span class="no-still-note">{e.host.cover}</span>
+                </span>
+              </span>
+              <span class={tileTitle}>{row.title}</span>
+              <span class={tileBlurb}><Rich text={row.blurb} locale={locale} inert /></span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
 
     {/* Examples the compiler has and this build does not: the section stays hidden until
