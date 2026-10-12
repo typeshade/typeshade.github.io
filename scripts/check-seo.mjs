@@ -112,6 +112,14 @@ for (const file of pages) {
     if (!every(html, /hreflang="([^"]*)"/g).includes('x-default')) fail('no x-default alternate');
     if (!html.includes(`property="og:locale" content="${lang === 'ko' ? 'ko_KR' : 'en_US'}"`))
       fail('og:locale does not match lang');
+    // A Korean page's own text links to Korean pages. A link from the body to an English guide,
+    // reference or API page sends a Korean reader out of the language they chose; the nav and
+    // the language switch are outside <main> or inside a <nav> and are not counted.
+    if (rel.startsWith('ko/')) {
+      const main = (one(html, /<main[^>]*>([\s\S]*)<\/main>/) ?? '').replace(/<nav[\s\S]*?<\/nav>/g, '');
+      for (const href of every(main, /href="(\/(?:guide|reference|api)\/[^"]*)"/g))
+        fail(`links from its body to the English page ${href}`);
+    }
   }
 }
 
