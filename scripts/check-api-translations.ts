@@ -37,7 +37,7 @@ import { KO_TELLS, forbiddenSubstitutes, sameEndingStreak } from './korean-tells
 const SAME_ENDING_STREAK = 6;
 // An export with no translation fails the check when this is true, and is a warning when it
 // is false. It is false while the store is being filled for the first time.
-const MISSING_FAILS = false;
+const MISSING_FAILS = true;
 const entries = apiEntries();
 
 const sourceAt = process.argv.indexOf('--source');

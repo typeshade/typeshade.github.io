@@ -3,7 +3,7 @@
   "source": "77fbbf8f1d15ec5dfbd39c7d71275fa6b9da00602fe963ca671a5af35e42b939",
   "texts": {
     "summary": "fuse 스코프가 계획을 실행한 뒤 한 일입니다.",
-    "description": "이 개수는 계획이 장치에 보낸 호출만 세며, 다른 것은 세지 않습니다. `dispatches`는 WebGPU의 디스패치 하나 또는 WebGL2의 드로 하나입니다. `submissions`는 `queue.submit` 하나이며, 계획이 필요로 한 `Resident` 읽기도 포함됩니다.",
+    "description": "이 개수는 계획이 장치에 보낸 호출만 세며, 다른 것은 세지 않습니다. `dispatches`는 WebGPU의 디스패치 하나 또는 WebGL2의 드로 하나입니다. `submissions`는 `queue.submit` 한 번이며, 계획이 필요로 한 `Resident` 읽기도 포함됩니다.",
     "members.tier": "계획의 호출 가운데 실행된 가장 앞선 tier입니다. 순서는 WebGPU, WebGL2, CPU tier이며, 어떤 호출도 장치에서 실행되지 않으면 `'cpu'`입니다. 각 호출은 `configure({ prefer })`의 tier 가운데 실행할 수 있는 첫 번째 tier에서 실행됩니다. 스코프 밖의 호출이 그렇게 실행되는 것과 같습니다.",
     "members.dispatches": "계획이 만든 디스패치 수입니다. CPU tier에서는 없습니다.",
     "members.submissions": "계획이 WebGPU 큐에 명령을 넘긴 횟수입니다. 다른 tier에서는 없습니다. 호출이 모두 WebGPU에서 실행되고 reduce하는 호출이 없는 스코프는 1입니다. reduce하는 호출은 자기 루프에 1을 더하고, 부분 결과의 단계마다 1을 더합니다. 부분 결과는 단계 사이에서 다시 읽힙니다. 계획이 그 전에 들고 있는 값에도 1을 더합니다.",

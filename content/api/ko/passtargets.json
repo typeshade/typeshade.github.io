@@ -2,7 +2,7 @@
   "slug": "passtargets",
   "source": "7f96f74ea97a4072a8de787ce567b5e50e62397bbf76c72aec06d206f324f596",
   "texts": {
-    "summary": "렌더 패스의 첨부 대상입니다. 텍스처 또는 호스트가 설정한 캔버스 컨텍스트이며, 각각 지울 값을 함께 가집니다.",
-    "description": "색상 대상은 `Texture`, 컨텍스트, 또는 `{ target, clear, load }`입니다. `load`의 기본값은 `'clear'`이고, `clear`의 기본값은 투명한 검정, `[0, 0, 0, 0]`입니다. 깊이 대상은 `Texture` 또는 `{ target, clear, load }`입니다. `clear`의 기본값은 1이며, 역방향 투영은 이를 0으로 설정합니다. `load`의 기본값은 `'clear'`입니다. 모든 첨부 대상은 저장됩니다."
+    "summary": "렌더 패스의 어태치먼트입니다. 텍스처 또는 호스트가 설정한 캔버스 컨텍스트이며, 각각 지울 값을 함께 가집니다.",
+    "description": "색상 대상은 `Texture`, 컨텍스트, 또는 `{ target, clear, load }`입니다. `load`의 기본값은 `'clear'`이고, `clear`의 기본값은 투명한 검정, `[0, 0, 0, 0]`입니다. 깊이 대상은 `Texture` 또는 `{ target, clear, load }`입니다. `clear`의 기본값은 1입니다. 역방향 투영은 이 값을 0으로 둡니다. `load`의 기본값은 `'clear'`입니다. 모든 어태치먼트는 저장됩니다."
   }
 }

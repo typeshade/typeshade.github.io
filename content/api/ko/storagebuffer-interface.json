@@ -6,7 +6,7 @@
     "description": "`.at(i)`는 요소 접근자입니다. 구조체 요소([`structDecl`](/api/structdecl/) 또는 [`ioStruct`](/api/iostruct/) 핸들)이면 타입이 지정된 필드 프록시 `buf.at(i).p0`를 돌려줍니다. 이때 `.of()`나 요소 타입 인자는 필요하지 않습니다. 스칼라 요소(`f32T`)이면 요소 노드를 돌려줍니다.",
     "members.binding": "`module({ bindings })`에 쓰는 바인딩 선언입니다.",
     "members.node": "배열 전체의 원시 바인딩 접근 노드입니다.",
-    "members.elementDecl": "요소가 구조체 핸들이었을 때 채워지는 요소 구조체의 선언입니다. 따라서 `module({ uses: [buf] })`는 요소 구조체도 함께 등록합니다.",
+    "members.elementDecl": "요소가 구조체 핸들이었을 때 요소 구조체의 선언입니다. 이 선언 덕분에 `module({ uses: [buf] })`가 요소 구조체도 함께 등록합니다.",
     "members.at": "요소 `i`를 읽습니다. 구조체 요소이면 타입이 지정된 필드 프록시를, 스칼라 또는 벡터 요소이면 요소 노드를 돌려줍니다."
   }
 }

@@ -3,7 +3,7 @@
   "source": "f9fc8f1ce9ce79f69225ddc1edcd9853e622cc9dad6370c39aeeb5701a86a269",
   "texts": {
     "summary": "fma(a, b, c): 융합 곱셈-덧셈이며, a·b + c를 계산합니다.",
-    "description": "`a.mul(b).add(c)`와 달리 이 연산은 한 번만 반올림하므로, 드라이버의 fast-math가 분배하거나 결합 순서를 바꿀 수 없습니다. WGSL은 하드웨어 `fma`를 생성합니다. GLSL ES 3.00에는 `fma`가 없으므로, GLSL 출력은 융합되지 않은 `(a * b + c)`입니다. 단일 반올림이 핵심인 자리에서만 씁니다. 예를 들어 정확한 곱의 오차항 `fma(a, b, -a*b)`가 그렇습니다. 이 항을 별도의 연산으로 만들면 일부 GPU 컴파일러가 이 항을 지워 버립니다.",
+    "description": "WGSL은 하드웨어 `fma`를 생성합니다. 이 연산은 한 번만 반올림하므로, `a.mul(b).add(c)`와 달리 드라이버의 fast-math가 분배하거나 결합 순서를 바꿀 수 없습니다. GLSL ES 3.00에는 `fma`가 없으므로, GLSL 출력은 융합되지 않은 `(a * b + c)`입니다. 단일 반올림이 핵심인 자리에서만 씁니다. 예를 들어 정확한 곱의 오차항 `fma(a, b, -a*b)`가 그렇습니다. 이 오차항을 별도의 연산으로 만들면 일부 GPU 컴파일러가 없애 버립니다.",
     "targets.wgsl": "`fma(a, b, c)`로 생성합니다.",
     "targets.glsl": "`((a) * (b) + (c))`로 생성합니다.",
     "targets.cpu": "오라클이 f64로 계산합니다."
