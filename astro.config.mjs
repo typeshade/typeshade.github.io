@@ -12,10 +12,14 @@ import remarkPromoteBoldLeads from './src/lib/remark-promote-bold-leads.mjs';
 import remarkRuleLinks from './src/lib/remark-rule-links.mjs';
 import { verifyArtifacts } from './scripts/artifacts.mjs';
 import { retiredExampleRedirects } from './src/lib/retired-examples.mjs';
+import { retiredGuideRedirects } from './src/lib/retired-guide-sections.mjs';
 import { verifyKoreanFonts } from './scripts/fonts.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-const retiredPaths = new Set(Object.keys(retiredExampleRedirects()));
+const retiredPaths = new Set([
+  ...Object.keys(retiredExampleRedirects()),
+  ...Object.keys(retiredGuideRedirects()),
+]);
 
 // typeshade.dev: a static site built from the compiler vendored at vendor/shader-dsl. Every
 // code sample and number on the page is computed from that checkout at build time.
@@ -25,7 +29,9 @@ export default defineConfig({
   trailingSlash: 'always',
   // The docs moved under /guide/ on the day the site launched; the first routes redirect. The
   // pages of the `fn()` registry examples redirect to their source twins, or to the examples
-  // page where there is none (src/lib/retired-examples.mjs).
+  // page where there is none (src/lib/retired-examples.mjs). A guide section the compiler's
+  // AUTHORING.md removed redirects to the page that holds what it said
+  // (src/lib/retired-guide-sections.mjs).
   redirects: Object.fromEntries(
     Object.entries({
       '/motivation/': '/guide/introduction/',
@@ -33,6 +39,7 @@ export default defineConfig({
       '/examples/': '/guide/examples/',
       '/guide/': '/guide/introduction/',
       ...retiredExampleRedirects(),
+      ...retiredGuideRedirects(),
     }).flatMap(([from, to]) => [
       [from, to],
       [`/ko${from}`, `/ko${to}`],
@@ -90,7 +97,8 @@ export default defineConfig({
           '/gallery',
           '/ko/gallery',
         ].includes(new URL(page).pathname.replace(/\/$/, '')) &&
-        // The retired example pages only redirect (src/lib/retired-examples.mjs).
+        // The retired example pages and guide sections only redirect
+        // (src/lib/retired-examples.mjs, src/lib/retired-guide-sections.mjs).
         !retiredPaths.has(new URL(page).pathname.replace(/^\/ko(?=\/)/, '')) &&
         // /guide/authoring/ and its sections only redirect to /guide/internals/.
         !/^\/(ko\/)?guide\/authoring\//.test(new URL(page).pathname),

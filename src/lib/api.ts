@@ -39,11 +39,15 @@ const TO = PACKAGE_NAME;
  *  whose import line is the barrel's and which names the other specifiers too. The program
  *  runtime is its own entry point (compiler change 0025): an application that loads compiled
  *  programs imports it and none of the compiler. The optional load-time emitter is a separate
- *  entry point, typeshade/emit, which reads portable IR without the TypeScript front end. */
+ *  entry point, typeshade/emit, which reads portable IR without the TypeScript front end. The
+ *  IR builder left the barrel for typeshade/core/ir (Rule 11.19, compiler change 0060), so its
+ *  names are read from there and their pages import them from there; a name the barrel still
+ *  exports, such as an IR type, keeps the barrel's import line. */
 const ENTRY_POINTS: readonly { readonly file: string; readonly specifier: string }[] = [
   { file: BARREL, specifier: PACKAGE_NAME },
   { file: 'src/runtime.ts', specifier: `${PACKAGE_NAME}/runtime` },
   { file: 'src/emit.ts', specifier: `${PACKAGE_NAME}/emit` },
+  { file: 'src/core/ir/index.ts', specifier: `${PACKAGE_NAME}/core/ir` },
 ];
 // The one name from the pre-release scope that stays, because it is what the pinned compiler
 // reads at runtime. scripts/check-seo.mjs exempts it too.

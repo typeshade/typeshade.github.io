@@ -178,3 +178,25 @@ id first, then the pull request that did the work.
   resolved `workgroupShape`. The new compiler example appears in the compute gallery and
   Playground picker. Pinned at compiler commit `b0e489b3a3991278973916933a991e807e00318d`;
   handled in #154.
+- 0060: the package root no longer exports the IR builder (Rule 11.19), which stays at
+  `typeshade/core/ir`. `src/lib/language-reference.ts` and `src/lib/target-mapping.ts` import
+  `WGSL_BUILTIN_NAMES` and `WGSL_BUILTIN_TYPES` from `typeshade/core/ir`; the API reference
+  reads `typeshade/core/ir` as an entry point, so a builder name's page imports it from there
+  and no page lists it under `typeshade`. AUTHORING.md teaches `"use typeshade"` alone: the
+  section Raw statements is gone, and `/guide/internals/raw-statements/` and
+  `/guide/authoring/raw-statements/` (and their Korean twins) redirect to the reference page of
+  `rawStmt` (`src/lib/retired-guide-sections.mjs`); its Korean translation is removed. No page
+  of the site linked to a renamed or removed heading of the guide. The front page, the quick
+  start, the examples page, the example pages, the Playground picker and the stills already
+  show only `"use typeshade"` files. The Korean guide sections the rewrite leaves stale are
+  shown in English until they are translated again from the pinned AUTHORING.md, in a pull
+  request of their own. Handled in the pull request that pins the compiler at 48e3951.
+- 0061: the host examples. The examples page gains a group, Host examples, after the
+  `.shade.ts` groups, which reads `hostExamples` from the pinned compiler; each host example
+  has a page at `/guide/examples/<id>/` in English and Korean that shows the module and its
+  `host.ts` under two tabs, and the tiers its host runs on (`src/lib/host-example-pages.ts`,
+  `src/components/pages/HostExamplePage.astro`). The Korean dictionary carries each title, line
+  and paragraph. The pages run no host: the live run of `host-draw` and `host-program` needs the
+  Vite plugin's generated module and `typeshade/runtime` in the page, which the site's canvas
+  does not load, and is left for a later pull request. Handled in the pull request that pins
+  the compiler at 48e3951.
