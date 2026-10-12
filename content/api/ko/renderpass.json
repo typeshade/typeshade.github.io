@@ -1,0 +1,9 @@
+{
+  "slug": "renderpass",
+  "source": "1388e5ea4e575d269c00a5c470d3c32027f4ed3c147d2f307d9c3ddc50026ef6",
+  "texts": {
+    "summary": "프레임의 렌더 패스입니다. 그리기가 여기에 기록됩니다.",
+    "description": "`raw`는 `GPURenderPassEncoder`입니다.",
+    "members.draw": "그리기를 기록합니다. `bindings`는 파이프라인의 진입점이 닿는 바인딩입니다(변경 0030)."
+  }
+}

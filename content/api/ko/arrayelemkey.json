@@ -1,0 +1,8 @@
+{
+  "slug": "arrayelemkey",
+  "source": "ac3ffb18c23d8556b7b19a87dc9ea0f423fb7b4b1079c33032989904bb129cf9",
+  "texts": {
+    "summary": "배열 키의 원소 키입니다. array<f32,4> → 'f32', array<vec3<f32>> → 'vec3<f32>'이며, 배열이 아닌 키에는 never입니다.",
+    "description": "배열 키의 원소 키입니다: `array<f32,4>` → `'f32'`, `array<vec3<f32>>` → `'vec3<f32>'`이며, 배열이 아닌 키에는 `never`입니다. [`KeyOf`](/api/keyof/)의 `array` 분기를 거꾸로 되돌린 것이며, 이 덕분에 `xs.at(i)`는 원소 타입을 다시 알려 받지 않아도 알 수 있습니다. 선언이 이미 그 원소 타입을 밝혔습니다."
+  }
+}

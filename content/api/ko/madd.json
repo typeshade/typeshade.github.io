@@ -1,0 +1,8 @@
+{
+  "slug": "madd",
+  "source": "cfd3bafa1ed70b4dba322b0e90f116c0a0e7ebbf9025148364b25fa333df248e",
+  "texts": {
+    "summary": "곱셈 후 덧셈, a*b + c입니다. 평범한 a.mul(b).add(c) 체인으로 작성합니다.",
+    "description": "한 번만 반올림하는 융합 연산은 [`fma`](/api/fma/)를 씁니다."
+  }
+}

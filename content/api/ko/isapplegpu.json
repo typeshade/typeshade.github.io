@@ -1,0 +1,7 @@
+{
+  "slug": "isapplegpu",
+  "source": "b51047d898c26f9cfe44900a5746b84cf613007615c53dd4f8bee63070e797db",
+  "texts": {
+    "summary": "어떤 신호든 Apple GPU / Metal 기반 컨텍스트를 가리키면 true입니다."
+  }
+}
