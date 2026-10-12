@@ -103,6 +103,15 @@ jobs:
             api_stale=$(bun scripts/check-api-translations.ts 2>&1 | sed -n 's/^  \(content\/api\/[^ ]*\) was translated from older English.*/- `\1`/p' || true)
             echo "${api_stale:-None.}"
             echo
+            echo "## Reference notes this pin leaves stale"
+            echo
+            echo "The build on this pull request fails until each English section below is read again against the new values and the reading recorded (\`bun run check:notes --read <note>\`, in a commit with a \`Read-Against: <note>\` line). A translated section is shown in English until it is translated or read again."
+            echo
+            # The script prints None. when nothing is stale, so an empty answer is a run that
+            # stopped before it could compare; the build on the pull request says why.
+            notes=$(bun scripts/check-reference-notes.ts --stale --markdown 2>/dev/null || true)
+            echo "${notes:-The check stopped before it could compare the notes at this pin; the build on this pull request names the reason.}"
+            echo
             if [ -f vendor/shader-dsl/scripts/downstream-impact.ts ]; then
               echo
               impact=$(bun vendor/shader-dsl/scripts/downstream-impact.ts --repo typeshade.github.io \

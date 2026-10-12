@@ -75,13 +75,14 @@ The production build verifies generated artifacts, documentation consistency, li
 - `check-copy`: numerals, links and code spans equal in English and Korean; label widths.
 - `check-i18n`: every string in the dictionaries, every locale URL through `localePath()`, no Hangul or locale literal outside `src/i18n/`, route parity between `src/pages` and `src/pages/ko`, one-line route files.
 - `check-guide`: the Korean guide translations against the pinned English.
+- `check-notes`: the reference notes against their rules and their readings at the pin (DESIGN.md, Reference notes). After the build, `bun scripts/check-reference-notes.ts --dist` reads the built pages.
 - `check-api`: the reference data from the compiler.
 - `check-api-translations`: the Korean API reference against the pinned JSDoc (`bun run check:api-ko`).
 - The artifact hashes, the Korean font coverage, then Astro and Pagefind.
 
 After the build: `bun run qa:seo`, `bun run qa:links` and `bun run qa:openseo` over `dist/`.
 
-In a Claude Code session, `scripts/commit-gate.mjs` runs the checks that read only the source tree (`format:check`, `check-style`, `check-copy`, `check-i18n`) before every commit, side by side in about ten seconds, so a numeral that differs between the English and the Korean stops the commit instead of a CI build.
+In a Claude Code session, `scripts/commit-gate.mjs` runs the checks that read only the source tree (`format:check`, `check-style`, `check-copy`, `check-i18n`, `check:notes:lint`) before every commit, side by side in about ten seconds, so a numeral that differs between the English and the Korean stops the commit instead of a CI build.
 
 On a pull request, CI also checks what a compiler bump owes the site. The check runs `scripts/downstream-impact.ts` from the pinned compiler. It fails while a page, a component or a script still names an export or a file that the new pin removes. It also fails while a compiler change proposal that the new pin implements names this site and `compiler-changes.md` does not record its id. It also fails while a compiler `LINT.ThenChange(//typeshade.github.io/…)` target has not changed with its block. The site's own `LINT.IfChange` pairs are checked by the compiler's `scripts/ifchange.ts`. The compiler's `AGENTS.md` describes the convention.
 

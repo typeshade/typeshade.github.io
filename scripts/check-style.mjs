@@ -1,11 +1,15 @@
 // Flags writing patterns this site does not use, in page source and in Markdown. The list
 // is in DESIGN.md. A line ending in `<!-- ok -->` is skipped. Run: bun run check:style
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 
-const SCAN_DIRS = ['src', 'scripts'];
+// The English of a reference note is page copy (DESIGN.md, Reference notes); the directory
+// exists once a note is published.
+const SCAN_DIRS = ['src', 'scripts', 'content/reference/en'].filter((d) =>
+  existsSync(path.join(root, d)),
+);
 const SCAN_FILES = ['README.md', 'DESIGN.md'];
 const EXT = new Set(['.astro', '.ts', '.mjs', '.md', '.css']);
 

@@ -17,6 +17,7 @@ import {
 } from './lib/guide-translations.ts';
 import { apiLoader } from './lib/api-loader.ts';
 import { rulesLoader } from './lib/rules-loader.ts';
+import { referenceNotesLoader } from './lib/reference-notes.ts';
 
 const SECTIONS_MIN = 10;
 
@@ -81,6 +82,9 @@ export const collections = {
   api: defineCollection({ loader: apiLoader() }),
   // The design rules: one entry per rule of the compiler's reqs/, its text rendered to HTML.
   rules: defineCollection({ loader: rulesLoader() }),
+  // The reference notes, one entry per note and language: each section's tokens drawn and its
+  // Markdown rendered (src/lib/reference-notes.ts). Empty while no note is published.
+  referenceNotes: defineCollection({ loader: referenceNotesLoader() }),
   guideKo: defineCollection({
     loader: translated('ko'),
     schema: z.object({ order: z.number(), sourceLine: z.number(), source: z.string() }),

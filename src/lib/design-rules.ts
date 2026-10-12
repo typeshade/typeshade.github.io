@@ -31,6 +31,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { firstSentence, registryTexts, tsCodeNames, writtenExampleCodes } from './error-codes.ts';
+import { noteRuleMentions } from './reference-notes/index.ts';
 
 const ROOT = 'vendor/shader-dsl';
 const RULES_DIR = 'reqs/rules';
@@ -800,7 +801,9 @@ function copyStrings(value: unknown, key = ''): [string, string][] {
 /** The places that explain each rule, by rule number: the error code pages with words of their
  *  own (the ones whose program is written by hand, and the front-end codes whose line the
  *  dictionary writes, `docs.errors.lines` by constant name), every string of the dictionary
- *  that names the rule, and EXPLAINERS. */
+ *  that names the rule, EXPLAINERS, and every reference note that names it. A note's
+ *  translation records the rule in its own front matter (src/lib/reference-notes.ts), so it
+ *  has no `translated` place here. */
 export function ruleExplanations(
   english: GuardedCopy,
 ): ReadonlyMap<string, readonly RuleExplanation[]> {
@@ -843,6 +846,7 @@ export function ruleExplanations(
         where: `${e.page} (${e.source})`,
         translated: (locale) => `/${locale}${e.page} (${e.source})`,
       });
+  for (const m of noteRuleMentions(mentioned)) add(m.number, { where: m.where });
   return out;
 }
 

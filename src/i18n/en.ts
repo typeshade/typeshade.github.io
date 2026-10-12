@@ -433,6 +433,9 @@ export const en = {
         oracleEvaluates: 'Evaluated in f64 by the CPU oracle.',
         oracleStub:
           'The CPU oracle has no texture memory and no neighbouring fragments. The call throws unless the module was compiled with `{ gpuStubs: true }`, which returns a placeholder.',
+        // Over a section of a reference note that a page in another language shows in English,
+        // because its translation is missing or was made from an older English.
+        noteUntranslated: 'This section is in English: its translation is missing or out of date.',
       },
       kinds: {
         type: {

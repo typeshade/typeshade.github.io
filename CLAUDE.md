@@ -84,12 +84,14 @@ pin is a step with checks, not a memory:
 - A pin that moves a value a reference note reads fails the build until the note is read again
   (DESIGN.md, Reference notes). The message names each section that reads the value and prints
   the recorded value beside the new one. Read each named section against the new value, fix what
-  no longer holds, then record the reading again. A Korean section whose English or values moved
-  is shown in English until it is translated or read again.
+  no longer holds, then run `bun run check:notes --read <note>` and commit the reading with a
+  line `Read-Against: <note>`. A Korean section whose English or values moved is shown in
+  English until it is translated, or read again and stamped with
+  `bun run check:notes --read-ko <note> <section>`.
 - When you edit inside a `LINT.IfChange` block, edit its `LINT.ThenChange` targets in the same
   commit. `TYPESHADE_DOCS_ROOT=$PWD bun vendor/shader-dsl/scripts/ifchange.ts` checks this.
-- `.claude/settings.json` runs both checks before every `git commit` and blocks the commit while
-  one fails. A line of its own in the message, `NO_IFTTT=<reason>`, waives an unmet
+- `.claude/settings.json` runs `downstream-impact.ts` and `ifchange.ts` before every
+  `git commit` and blocks the commit while one fails. A line of its own in the message, `NO_IFTTT=<reason>`, waives an unmet
   `LINT.ThenChange` and nothing else. Write it only after reading the target: a reviewer relies
   on it.
 - CI runs the same checks on every pull request (`.github/workflows/deploy.yml`).
@@ -101,9 +103,9 @@ checks come from.
 
 Run `bun run format:check` and `bun run build`, then the `qa:*` passes over `dist/`: the same
 steps as CI's build job (README.md, Checks; the full review procedure is in the skill).
-`.claude/settings.json` also runs the fast ones (prettier, check-style, check-copy and
-check-i18n, `scripts/commit-gate.mjs`) before every `git commit` and blocks the commit while one
-fails.
+`.claude/settings.json` also runs the fast ones (prettier, check-style, check-copy, check-i18n
+and the reference notes' lint, `scripts/commit-gate.mjs`) before every `git commit` and blocks
+the commit while one fails.
 
 ## Merging
 
