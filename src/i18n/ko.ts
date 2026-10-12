@@ -1348,7 +1348,7 @@ export const ko: Copy = {
         ],
         [
           '컴파일 결과는 무엇인가요?',
-          'TypeShade 소스는 하나의 중간 표현으로 내려간 뒤 호스트가 사용할 셰이더 소스로 출력됩니다. 현재 WebGPU에는 WGSL을, WebGL2에는 GLSL ES 3.00을 생성합니다. 애플리케이션에는 TypeShade 런타임을 배포하지 않고 생성된 결과를 호스트가 소비합니다.',
+          'TypeShade 소스는 하나의 중간 표현으로 내려간 뒤 호스트가 사용할 셰이더 소스로 출력됩니다. 현재 WebGPU에는 WGSL을, WebGL2에는 GLSL ES 3.00을 생성합니다. 호스트는 이 소스를 직접 작성한 WebGPU나 WebGL2 코드에 넘기거나, 컴파일된 프로그램을 프로그램 런타임 `typeshade/runtime`에 불러와 실행합니다.',
         ],
         [
           '어디서부터 배우면 되나요?',

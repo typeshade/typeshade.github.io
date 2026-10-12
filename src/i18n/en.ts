@@ -1387,7 +1387,7 @@ export const en = {
         ],
         [
           'What does the compiler produce?',
-          'TypeShade source is lowered to one intermediate representation and then emitted as host-consumable shader source. The current targets are WGSL for WebGPU and GLSL ES 3.00 for WebGL2. There is no TypeShade runtime to ship with the application.',
+          'TypeShade source is lowered to one intermediate representation and then emitted as host-consumable shader source. The current targets are WGSL for WebGPU and GLSL ES 3.00 for WebGL2. A host hands that source to its own WebGPU or WebGL2 code, or loads the compiled program into the program runtime, `typeshade/runtime`.',
         ],
         [
           'Where should you go next?',
