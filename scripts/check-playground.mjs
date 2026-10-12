@@ -92,6 +92,11 @@
 //      Open in VS Code hands the browser a vscode://typeshade.vscode-typeshade/open uri whose
 //      link is the page's own URL, the code, files and passes of the workspace with it,
 //      read the way VS Code and the extension read it (the query decoded once, then split)
+//  52. file names: picking Plasma names the main tab after it; a double click renames the
+//      main file, its diagnostics still come back under the new name, and the link carries
+//      the name into a second tab; renaming a file the main one imports rewrites that import;
+//      an empty name is refused and Escape cancels; a `#code=` link written before files had
+//      names opens under its example's name, or main.shade.ts for code no example has
 //  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
 //      editor with a tab for each file it imports, an edit to the imported file changes the
 //      emitted WGSL, a new file is a tab the main file can import, the link carries the
@@ -1072,10 +1077,8 @@ async function checkStorageTextures(page, problems) {
 const firstDiff = (a, b) => a.findIndex((x, i) => x !== b[i]);
 
 /** The `file:line` of each line of `source` that holds `needle`, as the editor numbers it. */
-const linesWith = (source, needle) =>
-  source
-    .split('\n')
-    .flatMap((text, i) => (text.includes(needle) ? [`hello.shade.ts:${i + 1}`] : []));
+const linesWith = (source, needle, file = 'gpu-console.shade.ts') =>
+  source.split('\n').flatMap((text, i) => (text.includes(needle) ? [`${file}:${i + 1}`] : []));
 
 async function checkConsole(page, problems) {
   await pickExample(page, 'gpu-console');
@@ -1198,8 +1201,8 @@ async function checkPixelConsole(page, problems) {
     .replace('let x = -0.8;', 'console.log("vertex", i);\n  let x = -0.8;');
   await typeSource(page, source);
   // Each line names the tier that ran it and the line of its call (surface §66).
-  const [atCall] = linesWith(source, 'console.log("at"');
-  const [vertexCall] = linesWith(source, 'console.log("vertex"');
+  const [atCall] = linesWith(source, 'console.log("at"', 'hello.shade.ts');
+  const [vertexCall] = linesWith(source, 'console.log("vertex"', 'hello.shade.ts');
   const placesOf = (report, block) =>
     (report.places[block] ?? []).map(([tier, where]) => `${tier} ${where}`);
   await settleResult(page);
@@ -1343,7 +1346,7 @@ export function main(@location(0) uv: vec2, @builtin("position") p: vec4): vec4 
     );
   // The file has no vertex entry, so the page compiles it with the prelude's lines in it; the
   // line a call names is still the editor's.
-  const [gridCall] = linesWith(grid(40), 'console.log("grid"');
+  const [gridCall] = linesWith(grid(40), 'console.log("grid"', 'hello.shade.ts');
   const misplaced = (report, tier) =>
     (report.places.frame ?? []).filter(([t, where]) => t !== tier || where !== gridCall);
   if (misplaced(sparse, 'GPU').length > 0)
@@ -3168,6 +3171,175 @@ async function litPixels(page) {
   return lit;
 }
 
+/** File names (52 above). */
+async function checkNames(browser, origin) {
+  const problems = [];
+  let cdnFailures = [];
+  let mounted = true;
+  const pages = [];
+  const open = async (hash) => {
+    const opened = await openPage(browser);
+    pages.push(opened);
+    cdnFailures = opened.cdnFailures;
+    await opened.page.goto(`${origin}${ROUTES[0]}#${hash}`, { waitUntil: 'load' });
+    try {
+      await opened.page.waitForSelector('.monaco-editor', { timeout: EDITOR_TIMEOUT });
+    } catch {
+      mounted = false;
+    }
+    await opened.page.waitForTimeout(AFTER_EDIT);
+    return opened.page;
+  };
+  const tabsOf = (page) =>
+    page.$$eval('[data-file-tab]', (nodes) =>
+      nodes.map((node) => node.getAttribute('data-file-tab')),
+    );
+  const errorRows = (page) =>
+    page.$$eval('[data-diagnostics] .error', (nodes) => nodes.map((node) => node.textContent));
+  const strip = (url, key) => {
+    const at = new URL(url);
+    const params = new URLSearchParams(at.hash.replace(/^#/, ''));
+    params.delete(key);
+    at.hash = params.toString();
+    return at.toString();
+  };
+  try {
+    const page = await open('example=hello');
+    if (mounted) {
+      // The picker names the main file after the example it opens.
+      await pickExample(page, 'plasma-twin');
+      const picked = await tabsOf(page);
+      if (picked[0] !== 'plasma-twin.shade.ts')
+        problems.push(`picking Plasma left the main tab named ${picked[0]}`);
+      const label = (await page.textContent('[data-runtime="file-name"]'))?.trim();
+      if (label !== 'plasma-twin.shade.ts')
+        problems.push(`picking Plasma left the toolbar naming ${label}`);
+
+      // An empty name is refused with a message, and Escape puts the tab back.
+      await page.dblclick('[data-file-tab="plasma-twin.shade.ts"]');
+      await page.waitForSelector('[data-file-tabs] input');
+      await page.fill('[data-file-tabs] input', '');
+      await page.press('[data-file-tabs] input', 'Enter');
+      const refusal = (await page.textContent('[data-file-error]'))?.trim() ?? '';
+      if (!(await page.isVisible('[data-file-tabs] input')) || refusal === '')
+        problems.push('an empty name was not refused with a message');
+      await page.press('[data-file-tabs] input', 'Escape');
+      if ((await tabsOf(page))[0] !== 'plasma-twin.shade.ts')
+        problems.push('Escape did not put the tab back under its old name');
+
+      // A double click renames the main file, and the worker answers under the new name.
+      await page.dblclick('[data-file-tab="plasma-twin.shade.ts"]');
+      await page.fill('[data-file-tabs] input', 'waves');
+      await page.press('[data-file-tabs] input', 'Enter');
+      await page.waitForSelector('[data-file-tab="waves.shade.ts"]');
+      await page.waitForTimeout(AFTER_EDIT);
+      if (!/[#&]name=waves\.shade\.ts(&|$)/.test(page.url()))
+        problems.push(`the link does not carry the new name: ${page.url().slice(0, 160)}`);
+      const renamedUrl = page.url();
+      await page.evaluate(() => {
+        const model = window.monaco.editor.getModels()[0];
+        model.setValue(`${model.getValue()}\nconst broken: f32 = undefinedName;\n`);
+      });
+      const listed = await page
+        .waitForFunction(
+          () => document.querySelectorAll('[data-diagnostics] .error').length > 0,
+          null,
+          {
+            timeout: 15_000,
+          },
+        )
+        .then(() => true)
+        .catch(() => false);
+      const rows = await errorRows(page);
+      const markers = await page.evaluate(
+        () =>
+          window.monaco.editor
+            .getModelMarkers({ owner: 'typeshade' })
+            .filter((marker) => marker.severity === 8).length,
+      );
+      if (!listed || !rows.some((row) => /undefinedName/.test(row)) || markers === 0)
+        problems.push(
+          `a mistake in the renamed file brought back no diagnostic (${rows.length} rows, ${markers} markers)`,
+        );
+
+      // A file the main one imports, renamed: the import follows it.
+      await page.evaluate(() => {
+        const model = window.monaco.editor.getModels()[0];
+        model.setValue(model.getValue().replace('\nconst broken: f32 = undefinedName;\n', ''));
+      });
+      await page.click('[data-new-file]');
+      await page.fill('[data-file-tabs] input', 'lib/wave');
+      await page.press('[data-file-tabs] input', 'Enter');
+      await page.waitForSelector('[data-file-tab="lib/wave.shade.ts"]');
+      await page.click('[data-file-tab="waves.shade.ts"]');
+      await page.evaluate(() => {
+        const model = window.monaco.editor.getModels()[0];
+        model.setValue(
+          model
+            .getValue()
+            .replace(
+              '"use typeshade";\n',
+              '"use typeshade";\nimport { wave } from "./lib/wave.shade.ts";\n',
+            )
+            .replace(/return vec4\(/, 'return wave(0.0, 0.0) * vec4('),
+        );
+      });
+      await page.waitForTimeout(AFTER_EDIT);
+      await page.dblclick('[data-file-tab="lib/wave.shade.ts"]');
+      await page.fill('[data-file-tabs] input', 'lib/ripple');
+      await page.press('[data-file-tabs] input', 'Enter');
+      await page.waitForSelector('[data-file-tab="lib/ripple.shade.ts"]');
+      await page.waitForTimeout(AFTER_EDIT);
+      await settleResult(page).catch(() => {});
+      const main = await sourceOf(page);
+      const note = (await page.textContent('[data-file-error]'))?.trim() ?? '';
+      if (!main.includes('from "./lib/ripple.shade.ts"') || main.includes('./lib/wave.shade.ts'))
+        problems.push("renaming an imported file did not rewrite the main file's import of it");
+      if (!note.includes('waves.shade.ts'))
+        problems.push(`the rename did not say which file's import changed: "${note}"`);
+      const afterImports = await errorRows(page);
+      if (afterImports.length > 0)
+        problems.push(
+          `after the renames the program reports: ${afterImports.join(' | ').slice(0, 300)}`,
+        );
+      else if (!/fn wave/.test(await wgslPane(page)))
+        problems.push('the renamed import did not reach the emitted WGSL');
+
+      // The link carries the name into a second tab.
+      const second = await open(renamedUrl.split('#')[1]);
+      const reopened = await tabsOf(second);
+      if (reopened[0] !== 'waves.shade.ts')
+        problems.push(`a link with name= opened the main tab as ${reopened[0]}`);
+      // A link written before files had names: Plasma's own code opens as Plasma's file,
+      // code no example has as main.shade.ts.
+      const old = await open(strip(renamedUrl, 'name').split('#')[1]);
+      const oldTabs = await tabsOf(old);
+      if (oldTabs[0] !== 'plasma-twin.shade.ts')
+        problems.push(`an old #code= link of Plasma opened the main tab as ${oldTabs[0]}`);
+      const edited = await open(strip(page.url(), 'name').split('#')[1]);
+      const editedTabs = await tabsOf(edited);
+      if (editedTabs[0] !== 'main.shade.ts')
+        problems.push(`an old #code= link of edited code opened the main tab as ${editedTabs[0]}`);
+      if (!/fn wave/.test(await wgslPane(edited)))
+        problems.push('an old #code= link with its files did not compile');
+      console.log(
+        `  picked: ${picked[0]}; renamed: waves.shade.ts with ${rows.length} diagnostic(s) back; import rewritten: ${note}; reopened: ${reopened[0]}, ${oldTabs[0]}, ${editedTabs[0]}`,
+      );
+    }
+    for (const { pageErrors } of pages)
+      for (const message of pageErrors.filter((m) => !/ResizeObserver|Canceled/.test(m)))
+        problems.push(`the page threw: ${message}`);
+  } finally {
+    for (const { page } of pages) await page.close();
+  }
+  return {
+    route: `${ROUTES[0]} names`,
+    problems,
+    cdnFailures,
+    cdnOnly: !mounted && cdnFailures.length > 0,
+  };
+}
+
 /** Examples drawn in several passes (51 above). */
 async function checkMultipass(browser, origin) {
   const problems = [];
@@ -3258,6 +3430,8 @@ async function checkMultipass(browser, origin) {
         zip.readUInt32LE(0) !== 0x04034b50 ||
         zip.readUInt32LE(zip.length - 22) !== 0x06054b50 ||
         download.suggestedFilename() !== 'feedback-trail.zip' ||
+        parsed?.main !== 'feedback-trail.shade.ts' ||
+        !text.includes('feedback-trail.shade.ts') ||
         parsed?.passes?.[0]?.name !== 'trail' ||
         parsed?.passes?.[0]?.file !== 'passes/trail.shade.ts' ||
         !text.includes('passes/trail.shade.ts') ||
@@ -3389,6 +3563,8 @@ try {
     results.push(await checkWorkspace(browser, server.url));
     console.log('[playground] /playground/ passes');
     results.push(await checkMultipass(browser, server.url));
+    console.log('[playground] /playground/ file names');
+    results.push(await checkNames(browser, server.url));
     console.log('[playground] /playground/ with no WebGPU');
     const missing = [];
     await checkMissingWebGpu(browser, server.url, missing);

@@ -490,9 +490,15 @@ cards takes the column. A third measure needs a reason.
   fills the editor from that file and drops the picker, and `still`, the example's
   build-time still. The editor holds a workspace: the file the canvas runs, and a tab for
   each file beside it, the files the example imports (`imported-noise` imports
-  `lib/noise.shade.ts`) and any the reader adds with the + at the end of the tabs. A new file
-  is a `.shade.ts` path relative to the main file, and it opens on an exported function the
-  main file can import. Every file is an open document in the language worker, so the service
+  `lib/noise.shade.ts`) and any the reader adds with the New file button at the end of the
+  tabs. A new file is a `.shade.ts` path relative to the main file, and it opens on an
+  exported function the main file can import. The main file has the name of the example's own
+  file (`plasma-twin.shade.ts`), and `main.shade.ts` where no example is behind it. A double
+  click on a tab, or F2 on it, turns the tab into a field for the stem; the `.shade.ts` ending
+  stays. An empty name, a name another tab has and a path the + refuses are refused, and the
+  main file stays at the root. The imports of a renamed file in the other tabs are rewritten
+  to the new name, and the line under the bar names those tabs. The buttons after the tabs
+  (New file, Download, Open in VS Code) draw the header's 24-unit stroke icons at 16px. Every file is an open document in the language worker, so the service
   and the compile read an import through the text the reader sees, the way `compile()` reads
   one through `readDocument`, and an edit to any file recompiles the program. Hover,
   completion, go to definition, rename and the colouring answer in every tab; the list under
@@ -519,7 +525,9 @@ cards takes the column. A third measure needs a reason.
   extension (vscode-typeshade `docs/playground-bridge.md`), so it changes only on purpose. Its
   fragment is URL search parameters. One names what the editor holds: `example`, an example
   as it ships, `blank`, or `code`, the main file, which `files`, a JSON object of the other
-  files by path, and `passes`, `name:path` pairs in draw order, go with. The emit options and
+  files by path, `passes`, `name:path` pairs in draw order, and `name`, the main file's name,
+  go with. `name` is written only when it is not the name the link opens under without it:
+  the example's whose text `code` is, else `main.shade.ts`. The emit options and
   the backend pick follow (`opt`, `parens`, `minify`, `numbers`, `obfuscate`, `fp64`,
   `precision`, `backend`), each only when it is not the default. `code` and `files` are
   `encodeSource` (`src/scripts/source-link.ts`): a `z` then the UTF-8 bytes `deflate-raw`

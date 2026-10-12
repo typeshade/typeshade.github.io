@@ -785,7 +785,6 @@ export const ko: Copy = {
     h1: 'Playground',
     intro:
       'TypeShade TypeScript 파일을 작성하고 브라우저에서 컴파일한 뒤, 나온 WGSL과 진단을 확인하십시오.',
-    fileName: 'hello.shade.ts',
     help: 'Monaco 편집기에서 TypeShade를 작성하고 여기서 컴파일합니다.',
     run: '컴파일',
     reset: '예제 복원',
@@ -1019,6 +1018,12 @@ export const ko: Copy = {
       badName:
         '파일 이름은 .shade.ts로 끝나야 하고 영문자, 숫자, 점, 하이픈, 밑줄, 슬래시만 쓸 수 있습니다.',
       takenName: '같은 이름의 파일이 이미 있습니다.',
+      renameHint: '두 번 클릭하거나 F2를 눌러 이름 바꾸기',
+      renameLabel: '{file}의 새 이름',
+      emptyName: '파일 이름을 입력하십시오.',
+      mainNameSlash: '메인 파일은 작업 영역 맨 위에 있으므로 이름에 슬래시를 쓸 수 없습니다.',
+      importsRenamed:
+        '{old}의 이름을 {new}(으)로 바꿨습니다. {files}에서 이 파일을 가져오는 import도 새 이름으로 고쳤습니다.',
       deleteFile: '{file} 삭제',
       confirmDelete: '{file} 파일을 삭제할까요? 이 파일을 가져오는 파일은 컴파일되지 않습니다.',
       play: '재생',
