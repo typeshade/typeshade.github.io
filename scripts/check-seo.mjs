@@ -107,7 +107,10 @@ for (const file of pages) {
     if (robots !== 'noindex') fail('the 404 must carry noindex');
   } else {
     if (robots) fail(`unexpected robots directive: ${robots}`);
-    if (!sitemapUrls.has(canonical)) fail(`canonical ${canonical} is not in the sitemap`);
+    // The Korean API reference is left out of the sitemap on purpose (astro.config.mjs).
+    const unlisted = canonical?.startsWith(`${SITE}/ko/api/`);
+    if (!unlisted && !sitemapUrls.has(canonical))
+      fail(`canonical ${canonical} is not in the sitemap`);
     const lang = one(html, /<html lang="([^"]*)"/);
     if (!every(html, /hreflang="([^"]*)"/g).includes('x-default')) fail('no x-default alternate');
     if (!html.includes(`property="og:locale" content="${lang === 'ko' ? 'ko_KR' : 'en_US'}"`))

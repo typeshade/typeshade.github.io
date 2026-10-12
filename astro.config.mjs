@@ -102,7 +102,11 @@ export default defineConfig({
         // (src/lib/retired-examples.mjs, src/lib/retired-guide-sections.mjs).
         !retiredPaths.has(new URL(page).pathname.replace(/^\/ko(?=\/)/, '')) &&
         // /guide/authoring/ and its sections only redirect to /guide/internals/.
-        !/^\/(ko\/)?guide\/authoring\//.test(new URL(page).pathname),
+        !/^\/(ko\/)?guide\/authoring\//.test(new URL(page).pathname) &&
+        // The Korean API reference is the English JSDoc under Korean labels: about 15% of its
+        // text is Korean. Its 520 pages stay, linked by hreflang from the English ones, and leave
+        // the sitemap so a crawler spends its visits on the pages written in Korean.
+        !/^\/ko\/api\//.test(new URL(page).pathname),
       // No lastmod: one build date on every URL tells a crawler nothing, and Google stops
       // reading a sitemap's lastmod once it proves inaccurate.
       i18n: { defaultLocale: 'en', locales: { en: 'en', ko: 'ko' } },
