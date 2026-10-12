@@ -13,12 +13,15 @@ import { slugify } from '../../lib/slug.ts';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const content = copyFor(locale).concepts;
+if (content.title.length < 45 || content.title.length > 60) {
+  throw new Error(`[concepts] the bridge page has a ${content.title.length}-character title, outside the 45 to 60 the SEO checks want: ${content.title}`);
+}
 const headings = [content.startH, content.modelH, content.fitH, content.orderH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 
 <Docs locale={locale} path={links.concepts.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
   <h1>{content.h1}</h1>
-  <p>{content.lead}</p>
+  <p><Rich text={content.lead} locale={locale} /></p>
 
   <section>
     <h2 id={slugify(content.startH)}>{content.startH}</h2>

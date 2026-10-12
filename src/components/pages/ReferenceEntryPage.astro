@@ -50,14 +50,16 @@ const targets =
   entry.spelling?.wgsl && entry.spelling.glsl
     ? { wgsl: entry.spelling.wgsl, glsl: entry.spelling.glsl }
     : undefined;
-const title = e.title(entry.name, kindWord, targets !== undefined);
+// A Math member is named as an author writes it, `Math.pow`, the way its h1 names it.
+const shownName = kind === 'math' ? entry.title : entry.name;
+const title = e.title(shownName, kindWord, targets !== undefined);
 if (title.length < 45 || title.length > 60) {
   throw new Error(`[reference-entry] '${kind}/${name}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`);
 }
 // The compiler's sentence is Markdown with inline code; a meta description carries neither,
 // so the backticks come off and the rest is the compiler's own words.
 const plain = (text: string): string => text.replace(/`/g, '');
-const composed = e.description(entry.name, kindWord, plain(entry.line), targets);
+const composed = e.description(shownName, kindWord, plain(entry.line), targets);
 // A one-clause sentence leaves the description under the 70 characters the SEO checks want,
 // so the kind's own line fills it out, the way a category's does in the API reference.
 const filled = composed.length < META_MIN ? `${composed} ${plain(named.summary)}` : composed;
