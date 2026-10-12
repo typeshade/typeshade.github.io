@@ -116,7 +116,10 @@ for (const file of pages) {
     // reference or API page sends a Korean reader out of the language they chose; the nav and
     // the language switch are outside <main> or inside a <nav> and are not counted.
     if (rel.startsWith('ko/')) {
-      const main = (one(html, /<main[^>]*>([\s\S]*)<\/main>/) ?? '').replace(/<nav[\s\S]*?<\/nav>/g, '');
+      const main = (one(html, /<main[^>]*>([\s\S]*)<\/main>/) ?? '').replace(
+        /<nav[\s\S]*?<\/nav>/g,
+        '',
+      );
       for (const href of every(main, /href="(\/(?:guide|reference|api)\/[^"]*)"/g))
         fail(`links from its body to the English page ${href}`);
     }
