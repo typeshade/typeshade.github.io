@@ -57,8 +57,10 @@ const seeded = seed !== undefined || runtime;
 const library = playgroundLibrary(examples);
 const opening = runtime ? '' : (seed ?? defaultPlaygroundExample);
 const [importsBefore, importsAfter] = t.importsNote.split('{files}');
-// The name over the toolbar is the file the editor holds, so a seeded page names its own.
-const fileName = seed ? `${seed}.shade.ts` : runtime ? '' : t.fileName;
+// The name over the toolbar is the file the editor holds: the example's own file, whose stem
+// is the example's id. The script names it again after the example the link opens, and after a
+// rename (src/scripts/playground.ts).
+const fileName = runtime ? '' : `${opening}.shade.ts`;
 const sample = `"use typeshade";
 
 class Clip {
@@ -364,9 +366,9 @@ const runtimeCopy = {
         <div class="file-tabs" role="group" aria-label={w.files} data-file-tabs>
           <button type="button" class="file-tab" aria-current="true" data-file-tab={fileName || 'main'}>{fileName || t.editor}</button>
         </div>
-        <button type="button" class="file-add" data-new-file aria-label={w.newFile} title={w.newFile}>+</button>
-        <button type="button" class="file-add" data-download aria-label={w.download} title={w.download}><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M7 2h2v6.6l2.3-2.3 1.4 1.4L8 12.4 3.3 7.7l1.4-1.4L7 8.6zM2 13h12v2H2z"/></svg></button>
-        <button type="button" class="file-add" data-open-vscode aria-label={w.openInVsCode} title={w.openInVsCodeTitle}><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M9 2h5v5h-2V5.4L7.7 9.7 6.3 8.3 10.6 4H9zM2 4h5v2H4v6h6V9h2v5H2z"/></svg></button>
+        <button type="button" class="file-add" data-new-file aria-label={w.newFile} title={w.newFile}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M12 11v6M9 14h6" /></svg></button>
+        <button type="button" class="file-add" data-download aria-label={w.download} title={w.download}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg></button>
+        <button type="button" class="file-add" data-open-vscode aria-label={w.openInVsCode} title={w.openInVsCodeTitle}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" /></svg></button>
         <kbd>TS</kbd>
       </div>
       <p data-file-error role="alert" hidden></p>
@@ -555,8 +557,11 @@ const runtimeCopy = {
   .file-tabs :global(.file-dirty)::after { content: ''; display: inline-block; inline-size: 6px; block-size: 6px; margin-inline-start: 4px; border-radius: 50%; background: var(--color-accent); vertical-align: middle; }
   .file-tabs :global(input) { inline-size: 16ch; border: 1px solid var(--color-accent); border-radius: var(--radius-sm); padding: 2px 6px; background: var(--color-ground); color: var(--color-text-1); font: 400 .75rem/1.4 var(--font-mono); }
   .file-tabs :global(input[aria-invalid='true']) { border-color: var(--color-diag); }
-  .file-add { flex: none; inline-size: 24px; block-size: 24px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 0; background: var(--color-ground); color: var(--color-text-2); font: 400 1rem/1 var(--font-sans); cursor: pointer; }
-  .file-add svg { inline-size: 14px; block-size: 14px; fill: currentColor; vertical-align: middle; }
+  .file-tabs :global(.file-rename) { display: inline-flex; flex: none; align-items: center; }
+  .file-tabs :global(.file-suffix) { padding-inline: 2px 8px; color: var(--color-text-3); font: 500 .75rem/1.4 var(--font-mono); }
+  .file-add { flex: none; display: inline-grid; place-items: center; inline-size: 24px; block-size: 24px; border: 1px solid var(--color-line-2); border-radius: var(--radius-sm); padding: 0; background: var(--color-ground); color: var(--color-text-2); cursor: pointer; }
+  /* The header's icons (SiteHeader.astro): 24-unit strokes of 2, round ends, 16px, currentColor. */
+  .file-add svg { inline-size: 16px; block-size: 16px; }
   .file-add:hover { color: var(--color-text-1); background: var(--color-surface-1); }
   [data-vscode-hint] { margin: 0; padding: 6px 12px; color: var(--color-text-2); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }
   [data-file-error] { margin: 0; padding: 6px 12px; color: var(--color-diag); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }

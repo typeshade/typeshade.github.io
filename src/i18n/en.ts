@@ -758,7 +758,6 @@ export const en = {
     h1: 'Playground',
     intro:
       'Write a TypeShade TypeScript file, compile it in your browser, and inspect the generated WGSL and diagnostics.',
-    fileName: 'hello.shade.ts',
     help: 'Author TypeShade in a Monaco editor and compile it here.',
     run: 'Compile',
     reset: 'Reset example',
@@ -1035,6 +1034,13 @@ export const en = {
       badName:
         'A file name ends in .shade.ts and uses letters, digits, dots, hyphens, underscores and slashes.',
       takenName: 'The workspace already has a file with that name.',
+      // A file tab's tooltip, and the label of the field a rename opens in its place.
+      renameHint: 'Double-click or press F2 to rename',
+      renameLabel: 'New name for {file}',
+      emptyName: 'A file needs a name.',
+      // The main file is the root of the workspace that the other files import from.
+      mainNameSlash: 'The main file stays at the top of the workspace, so its name has no slash.',
+      importsRenamed: 'Renamed {old} to {new}. The imports of it in {files} now use the new name.',
       deleteFile: 'Delete {file}',
       confirmDelete: 'Delete {file}? A file that imports it stops compiling.',
       play: 'Play',
