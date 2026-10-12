@@ -897,8 +897,10 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   and option values in code spans, a table cell that is only code, and the words the
   glossary lists under "영어로 두는 낱말" (the ones Korean developers say in English, such
   as fail closed, gather and scatter), glossed once at first use. The check refuses the
-  Korean substitutes the glossary names for them. The reference's body stays English on
-  every locale.
+  Korean substitutes the glossary names for them. The language reference's entries stay
+  English on every locale. The API reference's JSDoc is translated the same way the guide
+  is, one file per export under `content/api/<locale>/` that records the hash of the English
+  it was made from; an export with no current file is shown in English under the note.
 - Inline links in copy are written `[text](key)`, inline code in backticks; `Rich.astro`
   renders them. `key` is a record in `src/lib/links.ts` or a page name, which the locale
   prefixes.
@@ -926,6 +928,12 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - `scripts/check-api.ts` (`bun run check:api`): the reference data read from the compiler, before it
   reaches a page. A missing description, a slug two exports share, an export with no category, or a
   text that names a consumer fails; a `{@link}` target the barrel does not export is a warning.
+- `scripts/check-api-translations.ts` (`bun run check:api-ko`): the reference's translations
+  under `content/api/<locale>/`, one JSON file per export, against the pinned JSDoc. A stale
+  translation, a file for no export, a missing or extra key, a code span, code block or link
+  target that differs from the English, a dropped numeral, or a text left in English fails.
+  `--source <slug>` prints an export's English and the hash to record; `--worklist <file>`
+  writes every export's status, English and hash as one JSON list.
 - `scripts/check-live.mjs` (`bun run check:live`), after the build: a live example in a real browser (Live examples).
 - `scripts/check-playground.mjs` (`bun run check:playground`), after the build: the Playground
   in a real browser. It selects every example in the picker in turn, photographs the Result

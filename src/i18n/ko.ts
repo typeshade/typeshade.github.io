@@ -330,13 +330,15 @@ export const ko: Copy = {
       categoryTitle: (name: string) => `${name} 분류, TypeShade 셰이더 API 참조 문서`,
       categoryDescription: (name: string, summary: string) =>
         `TypeShade API 참조의 ${name} 분류입니다. ${summary}`,
-      // "~에 대한 TypeShade API 참조입니다"였던 접두어를 줄였습니다: 예제 요약(summary)은 컴파일러의
-      // JSDoc 원문이라 영어이고, 접두어만 한글이라서 접두어가 길수록 문장 경계를 찾을 70-140자 구간이
-      // 좁아져 단어 중간에서 잘리는 사례가 늘었습니다(SEO 리뷰, onpage, 설명 절단).
+      // "~에 대한 TypeShade API 참조입니다"였던 접두어를 줄였습니다: 요약(summary)이 번역되지 않은
+      // export에서는 컴파일러의 JSDoc 원문이라 영어이고, 접두어가 길수록 문장 경계를 찾을 70-140자
+      // 구간이 좁아져 단어 중간에서 잘리는 사례가 늘었습니다(SEO 리뷰, onpage, 설명 절단). 번역이
+      // 있는 export는 content/api/ko/의 한국어 요약이 뒤에 붙습니다.
       pageDescription: (name: string, kind: string, category: string, summary: string) =>
         `${name}, ${category} 분류 ${kind}입니다. ${summary}`,
       kindLine: (kind: string, category: string) => `${kind}, ${category} 분류`,
       note: `시그니처, 설명, 예제는 커밋 ${facts.pinnedCommit}의 컴파일러 소스에서 그대로 가져온 영어 원문입니다.`,
+      translatedNote: `설명은 커밋 ${facts.pinnedCommit}의 컴파일러 소스에 있는 JSDoc을 한국어로 옮긴 것입니다. 시그니처와 예제 코드는 소스에 적힌 그대로입니다.`,
       syntax: '구문',
       parameters: '매개변수',
       returnValue: '반환값',
