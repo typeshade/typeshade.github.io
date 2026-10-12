@@ -296,6 +296,8 @@ type View = 'result' | Target | 'reflection' | 'console';
 interface PlaygroundHandle {
   /** Hold the shader clock at `seconds` on both engines, or let it run with null. */
   freeze(seconds: number | null): void;
+  /** Stop drawing and leave the frame up, or draw again (`MountedShader.idle`). */
+  idle(on: boolean): void;
   /** The rasteriser's RGBA at each pixel of a `width` by `height` grid, one 1-pixel tile each,
    *  or null where the triangle does not cover it; a sentence when it cannot run at all. */
   cpuPixels(
@@ -2555,6 +2557,7 @@ function mount(root: HTMLElement): void {
       mounted?.holdScale(seconds !== null);
       mounted?.redraw();
     },
+    idle: (on) => mounted?.idle(on),
     cpuPixels: (points, width, height) => {
       if (!compiled) return 'no module';
       const vertex = entries.find((entry) => entry.stage === 'vertex');
