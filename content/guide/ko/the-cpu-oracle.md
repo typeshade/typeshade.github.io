@@ -1,8 +1,8 @@
 ---
 id: the-cpu-oracle
-source: 1750a3a50087afb7b53d8333bee8f7191767dcd1c8affd0bdf9b4f9a083c5b56
+source: e278d05ae3957f5ba1a244778a6db05587b6129eb56cd15881a38cd72a7ca119
 sourceLine: 1384
-rules: 8.22 PygQu-2zpBpXxfy0iqGlCW9XaBG8ymvS5XCIROH8XT4=, 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
+rules: 8.22 Xt6mPRor2ls0KSvun5CLtdZy-RuV8jM9dJw6CqkTdwU=, 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -297,6 +297,80 @@ const h = height([0.5, 0.5], [1, 0.5, 2, 0.25]) // a number
 두 겹의 중첩 루프로 쓴 격자는 행 하나가 호출 하나입니다. 칸마다 호출 하나가 되어야 한다면 격자를
 평평한 루프 하나 `for (let i: u32 = 0; i < w * h; i++)`로 쓰고, 인덱스에서 `x = i % w`와
 `y = i / w`를 구합니다.
+
+### 호출 체인을 디스패치 하나로
+
+같은 데이터에 커널 함수를 여러 번 부르는 호스트는 호출마다 디스패치 하나와 제출 하나를 씁니다.
+`typeshade/fuse`의 `fuse`는 본문이 하는 호출을 기록했다가 한꺼번에 실행합니다. 호출들은 제출
+하나로 실행되고, 각 호출이 바로 앞 호출이 같은 인덱스에 쓴 값을 읽으면 디스패치 하나로도
+실행됩니다. 호스트는 `fuse`를 일부러 가져오고, `vite.config.ts`의 `typeshade({ fuse: true })`는
+플러그인이 계획의 재료가 되는 사실을 기록하게 합니다. 다음 세 커널 함수는 디스패치 하나입니다.
+
+```ts
+"use typeshade";
+
+export function add(out: array<f32>, a: array<f32>, b: array<f32>): void {
+  for (let i: u32 = 0; i < out.length; i++) {
+    out[i] = a[i] + b[i];
+  }
+}
+
+export function mul(out: array<f32>, a: array<f32>, b: array<f32>): void {
+  for (let i: u32 = 0; i < out.length; i++) {
+    out[i] = a[i] * b[i];
+  }
+}
+
+export function relu(out: array<f32>, x: array<f32>): void {
+  for (let i: u32 = 0; i < out.length; i++) {
+    out[i] = max(x[i], 0.);
+  }
+}
+```
+
+```ts
+import { resident } from 'typeshade/runtime'
+import { fuse } from 'typeshade/fuse'
+import { add, mul, relu } from './ops.shade.ts'
+
+const out = resident(new Float32Array(n)) // a, b and c are resident arrays too
+const report = await fuse((scope) => {
+  const t = scope.scratch(n)
+  const u = scope.scratch(n)
+  add(t, a, b)
+  mul(u, t, c)
+  relu(out, u)
+})
+report.dispatches // 1
+const y = await out.read()
+```
+
+체인이 합쳐지게 하는 습관은 세 가지입니다. 첫째, 함수마다 루프를 하나만 쓰고, 모든 배열을 루프의
+카운터 하나로만 인덱싱합니다(`out[i] = a[i] + b[i]`). 호출은 바로 앞 호출이 같은 인덱스에 쓴 값을
+읽을 때 그 호출과 합쳐집니다. 둘째, 중간값은 호스트가 읽는 `resident`가 아니라 스크래치 배열
+`scope.scratch(n)`에 둡니다. 합쳐진 그룹은 스크래치 배열을 자기 변수에 두므로, 위의 `t`와 `u`에는
+버퍼가 만들어지지 않고 그 `read()`는 오류입니다. 셋째, 합계가 필요하면 체인을 리덕션으로
+끝냅니다. 스코프의 마지막 호출인 `total(u)`는 앞의 호출들을 자기 루프 안으로 가져가고, 리덕션
+뒤에는 어떤 호출도 그룹에 합쳐지지 않습니다.
+
+호출이 바로 앞 호출과 떨어져 자기 디스패치로 실행되는 경우는 다음과 같습니다. 이웃을 읽는 경우
+(`t[i - 1]`, `t[i ^ 1]`), 다른 인덱스에 쓰는 경우(`out[2 * i]`), 앞 호출이 읽는 것을 쓰는 경우,
+반복 횟수가 다른 경우, 루프가 둘이거나 `continue`나 스캐터가 있는 경우입니다. 그룹이 장치가
+허용하는 것보다 많은 스토리지 버퍼를 바인딩하게 될 때, 모듈을 `fuse: true` 없이 빌드했을 때도
+떨어집니다. WebGL2와 CPU tier는 합치지 않습니다. 배열과 결과는 어느 쪽이든 같습니다. 합치기는
+디스패치만 바꾸고 다른 것은 바꾸지 않습니다.
+
+리포트는 어떤 호출이 합쳐졌고 나머지는 왜 합쳐지지 않았는지를 코드에 쓴 이름으로 알려 줍니다.
+`report.groups`는 그룹을 순서대로 나열합니다. 각 그룹에는 `calls`와 합쳐졌는지(`fused`)가 있고,
+바로 앞 그룹과 떨어진 그룹에는 `why`도 있습니다.
+
+```text
+mul and blur run as two dispatches because blur reads `t[i - 1]` (line 9)
+```
+
+`report.dispatches`와 `report.submissions`는 계획이 장치에 준 것을 셉니다. 계획이 확인하는
+모든 사실, 리포트와 오류의 각 문구, 스크래치 배열과 tier는 표면 레퍼런스
+`docs/use-typeshade-surface.md` §71에 있습니다.
 
 ### 다른 셰이더 모듈을 가져오는 모듈
 
