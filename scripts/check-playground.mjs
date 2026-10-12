@@ -590,12 +590,21 @@ async function checkEnginesAgree(page, problems, ids) {
         ground: getComputedStyle(frame).backgroundColor,
       };
     });
+    // The frame is held and drawn at full size, so the loop stops drawing it again while it is
+    // photographed: a program this runner draws in seconds a frame keeps the GPU process busy,
+    // and a busy GPU process composites nothing for the photograph (capsule-corp-namek-class
+    // timed out four times in a row on two runs, 2026-10-12).
+    await page.evaluate(() => document.querySelector('[data-playground]').__playground.idle(true));
     // A photograph that times out names the example it was of, which the error alone does not.
-    const shot = await photographCanvasSteady(page).catch((error) => {
-      throw new Error(`photographing '${id}' for the engine comparison: ${error.message}`, {
-        cause: error,
-      });
-    });
+    const shot = await photographCanvasSteady(page)
+      .catch((error) => {
+        throw new Error(`photographing '${id}' for the engine comparison: ${error.message}`, {
+          cause: error,
+        });
+      })
+      .finally(() =>
+        page.evaluate(() => document.querySelector('[data-playground]').__playground.idle(false)),
+      );
     const { data, info } = await sharp(shot)
       .raw()
       .ensureAlpha()

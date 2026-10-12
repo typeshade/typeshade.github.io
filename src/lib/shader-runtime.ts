@@ -287,6 +287,10 @@ export interface MountedShader {
    *  program drawn in several passes, from the same frame before, so a control a reader moves
    *  still shows and a pass that reads its frame before stands still. A host's Pause holds it. */
   holdFrames(hold: boolean): void;
+  /** Leave the frame on the canvas and draw nothing more, or draw again. A check that
+   *  photographs a canvas a software GPU draws slowly idles it first: a GPU that never rests
+   *  composites nothing else, and a page photograph waits on the compositor. */
+  idle(on: boolean): void;
   /** The bytes the packer last wrote into the uniform buffer, copied. Empty when the module
    *  binds no block. scripts/check-live.mjs reads it to see a control reach the shader. */
   uniformBytes(): Float32Array;
@@ -1623,6 +1627,8 @@ export async function mountShader(
   const uniformBytes = (): Float32Array => (state.data ? state.data.slice() : new Float32Array(0));
 
   let scaleHeld = false;
+  // Set by `idle()`: the loop keeps its place and draws nothing.
+  let idled = false;
   /** The pass on the canvas, for the handle's methods, which exist before it does. */
   let current: Pass | null = null;
   const handle = (
@@ -1663,6 +1669,9 @@ export async function mountShader(
       },
       holdFrames(hold: boolean) {
         held = hold;
+      },
+      idle(on: boolean) {
+        idled = on;
       },
       get passFormat() {
         return current?.passFormat ?? '';
@@ -1767,6 +1776,7 @@ export async function mountShader(
     raf = requestAnimationFrame(tick);
     seconds += (now - last) / 1000;
     last = now;
+    if (idled) return;
     // One frame on the GPU at a time. Submitting another every animation frame while the
     // first is still being drawn queues work faster than it drains, and a GPU process that
     // is never idle composites nothing else: the whole page stops, not just this canvas.
