@@ -14,6 +14,9 @@ import { slugify } from '../../lib/slug.ts';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const c = copyFor(locale).concepts.cpuAndGpu;
+if (c.title.length < 45 || c.title.length > 60) {
+  throw new Error(`[concepts] the CPU and GPU page has a ${c.title.length}-character title, outside the 45 to 60 the SEO checks want: ${c.title}`);
+}
 const headings = [c.invocationH, c.memoryH, c.callsH, c.loopsH, c.typesH, c.tableH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 

@@ -37,6 +37,8 @@ const written: Record<string, string> = {
     'After this page you can declare the GPU features a module needs, read what each costs on each target, and check a booted device against them before it emits.',
   'glsl-float-precision':
     'After this page you know when to emit a GLSL stage at mediump, what that one option changes in the emitted source, and what it leaves alone.',
+  'migrating-a-glsl-shader':
+    'After this page you can take a GLSL shader construct by construct, find the "use typeshade" spelling of each, and see what it emits as WGSL and GLSL.',
 };
 const sections: Record<string, { title: string; description: string }> = Object.fromEntries(
   guideSections
@@ -250,6 +252,9 @@ export const en = {
       },
       kindLine: (kind: string, category: string) => `${kind} in ${category}`,
       note: `The signature, the description and the examples come from the compiler's own source at commit ${facts.pinnedCommit}.`,
+      // The note over a page whose JSDoc text is translated (content/api/<locale>/), which only a
+      // translated locale shows; English keeps it so every dictionary has the same keys.
+      translatedNote: `The description is translated from the JSDoc in the compiler's own source at commit ${facts.pinnedCommit}; the signature and the example code are as the source has them.`,
       syntax: 'Syntax',
       parameters: 'Parameters',
       returnValue: 'Return value',
@@ -1187,7 +1192,7 @@ export const en = {
   },
 
   front: {
-    title: 'A shader language you write in TypeScript.',
+    title: 'TypeShade, a shader language you write in TypeScript',
     searchTitle: 'TypeShade',
     lede: `TypeShade is a language of its own, with TypeScript's syntax, types and editor. A file that starts with \`"use typeshade"\` emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.shadeRenderable} of the ${facts.shadeExamples} examples in the repository emit both from one file.`,
     playground: 'Open the Playground',
@@ -1362,7 +1367,7 @@ export const en = {
 
   motivation: {
     use: {
-      title: 'What is TypeShade?',
+      title: 'What is TypeShade? A shader language in TypeScript',
       description:
         'Learn TypeShade as a shader language: start from TypeScript concepts, cross the use typeshade boundary, and compile to host-ready GPU code.',
       h1: 'A shader language that starts in TypeScript',
@@ -1385,7 +1390,7 @@ export const en = {
         ],
         [
           'What does the compiler produce?',
-          'TypeShade source is lowered to one intermediate representation and then emitted as host-consumable shader source. The current targets are WGSL for WebGPU and GLSL ES 3.00 for WebGL2. There is no TypeShade runtime to ship with the application.',
+          'TypeShade source is lowered to one intermediate representation and then emitted as host-consumable shader source. The current targets are WGSL for WebGPU and GLSL ES 3.00 for WebGL2. A host hands that source to its own WebGPU or WebGL2 code, or loads the compiled program into the program runtime, `typeshade/runtime`.',
         ],
         [
           'Where should you go next?',
@@ -1509,11 +1514,10 @@ export const en = {
   /** The bridge page at /guide/typescript-and-webgpu/. Rendered by
    *  src/components/pages/ConceptsPage.astro; the shader sample is not copy, so it stays there. */
   concepts: {
-    title: 'TypeScript and WebGPU concepts',
-    description:
-      'How TypeScript types, functions and modules map to TypeShade GPU values, entry points and shader modules, and where WebGPU begins.',
-    h1: 'TypeScript and WebGPU concepts',
-    lead: 'TypeShade starts from TypeScript authoring and adds GPU-specific semantics. This page connects the concepts you already know to the concepts you need to write shaders.',
+    title: 'TypeScript and WebGPU: write GPU shaders in TypeScript',
+    description: `Write WebGPU shaders in TypeScript. A "use typeshade" file compiles to WGSL and ${glsl}, and this page maps types, functions and modules to the GPU.`,
+    h1: 'WebGPU shaders in TypeScript',
+    lead: `TypeShade lets you write WebGPU shaders in TypeScript. A file marked with \`"use typeshade"\` compiles to WGSL for WebGPU and to ${glsl} for WebGL2. Your editor reads the same file as TypeScript. This page maps the types, functions and modules you know to what a shader needs, and shows where the WebGPU API begins.`,
     startH: 'Start with a TypeScript file',
     startP:
       '`"use typeshade"` marks the file as TypeShade source, and the file compiles with the TypeShade files it imports as one program. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports.',
@@ -1565,7 +1569,7 @@ export const en = {
      *  developer knows to what a shader needs. Each is a component in src/components/pages
      *  and a one-line route file in src/pages/guide/concepts/. */
     cpuAndGpu: {
-      title: 'CPU and GPU execution',
+      title: 'CPU and GPU execution: why shaders have no heap or recursion',
       description:
         'What the GPU hands one invocation, why a shader has no heap, no strings and no recursion, and which TypeShade rule follows from each of those facts.',
       h1: 'CPU and GPU',
@@ -1759,9 +1763,9 @@ export const en = {
     },
 
     wgslAndGlsl: {
-      title: `WGSL and ${facts.glslTarget}`,
-      description: `The two shader languages one TypeShade source compiles to, the emitted text for one small shader, and where the targets differ.`,
-      h1: `WGSL and ${facts.glslTarget}`,
+      title: `WGSL vs ${facts.glslTarget}: differences and one source for both`,
+      description: `WGSL and ${facts.glslTarget} compared on one shader: the text the TypeShade compiler writes for each target, and where the two differ.`,
+      h1: `WGSL vs ${facts.glslTarget}`,
       lead: `One \`"use typeshade"\` file reaches WebGPU as WGSL and WebGL2 as ${facts.glslTarget}. The blocks on this page are compiled while the page is built, from the file above them, by the compiler pinned at ${facts.pinnedCommit}.`,
       sourceH: 'The source',
       sourceP:

@@ -1,0 +1,8 @@
+{
+  "slug": "storagetexturelayoutaccess",
+  "source": "dc61854486e0b7e02a01a24abb1dec84f764e5c0a219d5706ad5d8216ac16210",
+  "texts": {
+    "summary": "WebGPU의 GPUStorageTextureBindingLayout.access가 WGSL 접근 모드라고 부르는 값입니다.",
+    "description": "두 용어 체계는 하이픈과 낱말 하나만큼 다릅니다. 호스트가 WGSL 철자를 그대로 넘기면 검증 오류가 납니다. 그래서 리플렉션은 호스트 쪽 철자를 함께 실어 보냅니다."
+  }
+}

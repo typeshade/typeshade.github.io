@@ -182,7 +182,7 @@ export const ko: Copy = {
   },
 
   meta: {
-    title: 'TypeShade, 검증 가능한 TypeScript 셰이더 라이브러리',
+    title: 'TypeShade: WebGPU와 WebGL2를 위한 TypeScript 셰이더 언어',
     description: `파일 맨 위에 "use typeshade"를 쓰면 WebGPU용 WGSL과 WebGL2용 ${glsl}이 나옵니다. 같은 소스가 CPU에서 f64로 실행되어 출력을 대조할 수 있습니다.`,
     ogAlt: 'TypeShade: WebGPU와 WebGL2를 위한 하나의 셰이더 소스. 렌더링된 metaballs 셰이더.',
   },
@@ -330,13 +330,15 @@ export const ko: Copy = {
       categoryTitle: (name: string) => `${name} 분류, TypeShade 셰이더 API 참조 문서`,
       categoryDescription: (name: string, summary: string) =>
         `TypeShade API 참조의 ${name} 분류입니다. ${summary}`,
-      // "~에 대한 TypeShade API 참조입니다"였던 접두어를 줄였습니다: 예제 요약(summary)은 컴파일러의
-      // JSDoc 원문이라 영어이고, 접두어만 한글이라서 접두어가 길수록 문장 경계를 찾을 70-140자 구간이
-      // 좁아져 단어 중간에서 잘리는 사례가 늘었습니다(SEO 리뷰, onpage, 설명 절단).
+      // "~에 대한 TypeShade API 참조입니다"였던 접두어를 줄였습니다: 요약(summary)이 번역되지 않은
+      // export에서는 컴파일러의 JSDoc 원문이라 영어이고, 접두어가 길수록 문장 경계를 찾을 70-140자
+      // 구간이 좁아져 단어 중간에서 잘리는 사례가 늘었습니다(SEO 리뷰, onpage, 설명 절단). 번역이
+      // 있는 export는 content/api/ko/의 한국어 요약이 뒤에 붙습니다.
       pageDescription: (name: string, kind: string, category: string, summary: string) =>
         `${name}, ${category} 분류 ${kind}입니다. ${summary}`,
       kindLine: (kind: string, category: string) => `${kind}, ${category} 분류`,
       note: `시그니처, 설명, 예제는 커밋 ${facts.pinnedCommit}의 컴파일러 소스에서 그대로 가져온 영어 원문입니다.`,
+      translatedNote: `설명은 커밋 ${facts.pinnedCommit}의 컴파일러 소스에 있는 JSDoc을 한국어로 옮긴 것입니다. 시그니처와 예제 코드는 소스에 적힌 그대로입니다.`,
       syntax: '구문',
       parameters: '매개변수',
       returnValue: '반환값',
@@ -1153,7 +1155,7 @@ export const ko: Copy = {
   },
 
   front: {
-    title: 'TypeScript로 쓰는 셰이더 언어입니다.',
+    title: 'TypeScript로 쓰는 셰이더 언어, TypeShade',
     searchTitle: 'TypeShade',
     lede: `TypeShade는 TypeScript의 문법과 타입, 편집기를 그대로 쓰는 독립된 언어입니다. \`"use typeshade"\`로 시작하는 파일 하나가 WebGPU용 WGSL과 WebGL2용 ${glsl}을 냅니다. 저장소의 예제 ${facts.shadeExamples}개 가운데 ${facts.shadeRenderable}개가 파일 하나로 둘 다 냅니다.`,
     playground: 'Playground 열기',
@@ -1325,7 +1327,7 @@ export const ko: Copy = {
   },
   motivation: {
     use: {
-      title: 'TypeShade란 무엇인가',
+      title: 'TypeShade란 무엇인가? TypeScript로 쓰는 셰이더 언어',
       description:
         'TypeScript의 개발 경험에서 출발해 셰이더 언어로 확장되는 TypeShade와 use typeshade의 의미를 설명합니다.',
       h1: 'TypeScript에서 시작하는 셰이더 언어',
@@ -1348,7 +1350,7 @@ export const ko: Copy = {
         ],
         [
           '컴파일 결과는 무엇인가요?',
-          'TypeShade 소스는 하나의 중간 표현으로 내려간 뒤 호스트가 사용할 셰이더 소스로 출력됩니다. 현재 WebGPU에는 WGSL을, WebGL2에는 GLSL ES 3.00을 생성합니다. 애플리케이션에는 TypeShade 런타임을 배포하지 않고 생성된 결과를 호스트가 소비합니다.',
+          'TypeShade 소스는 하나의 중간 표현으로 내려간 뒤 호스트가 사용할 셰이더 소스로 출력됩니다. 현재 WebGPU에는 WGSL을, WebGL2에는 GLSL ES 3.00을 생성합니다. 호스트는 이 소스를 직접 작성한 WebGPU나 WebGL2 코드에 넘기거나, 컴파일된 프로그램을 프로그램 런타임 `typeshade/runtime`에 불러와 실행합니다.',
         ],
         [
           '어디서부터 배우면 되나요?',
@@ -1453,11 +1455,10 @@ export const ko: Copy = {
   },
 
   concepts: {
-    title: 'TypeScript와 WebGPU 개념 연결',
-    description:
-      'TypeScript의 타입, 함수, 모듈이 TypeShade의 GPU 값, 진입점, 셰이더 모듈로 어떻게 이어지는지, 그리고 WebGPU가 어디에서 시작되는지 설명합니다.',
-    h1: 'TypeScript와 WebGPU 개념 연결',
-    lead: 'TypeShade는 TypeScript 개발 경험에서 출발해 GPU 전용 의미론을 더합니다. 이미 아는 개념을 셰이더를 작성하는 데 필요한 개념으로 연결해 봅니다.',
+    title: 'TypeScript와 WebGPU: TypeScript로 WebGPU 셰이더를 작성하는 방법',
+    description: `TypeScript로 WebGPU 셰이더를 작성합니다. "use typeshade" 파일은 WGSL과 ${glsl}으로 컴파일됩니다. 타입, 함수, 모듈이 GPU에서 무엇이 되는지 설명합니다.`,
+    h1: 'TypeScript로 쓰는 WebGPU 셰이더',
+    lead: `TypeShade를 쓰면 WebGPU 셰이더를 TypeScript로 작성할 수 있습니다. \`"use typeshade"\`로 표시한 파일은 WebGPU용 WGSL과 WebGL2용 ${glsl}으로 컴파일됩니다. 편집기는 같은 파일을 TypeScript로 읽습니다. 이 페이지는 이미 아는 타입, 함수, 모듈이 셰이더에서 무엇이 되는지 짚고 WebGPU API가 어디에서 시작되는지 보여 줍니다.`,
     startH: 'TypeScript 파일에서 시작합니다',
     startP:
       '`"use typeshade"`는 파일을 TypeShade 소스로 표시합니다. 그 파일과 그 파일이 가져오는 TypeShade 파일은 한 프로그램으로 컴파일됩니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.',
@@ -1509,7 +1510,7 @@ export const ko: Copy = {
      *  필요한 것까지 이어지는 학습 경로이며, 각 페이지는 src/components/pages의 컴포넌트와
      *  src/pages/guide/concepts의 한 줄짜리 라우트 파일로 이루어집니다. */
     cpuAndGpu: {
-      title: 'CPU와 GPU 실행 모델',
+      title: 'CPU와 GPU 실행 모델: 셰이더에 힙과 재귀가 없는 이유와 TypeShade 규칙',
       description:
         'GPU가 인보케이션 하나에 무엇을 건네는지, 셰이더에 힙과 문자열과 재귀가 없는 이유는 무엇인지, 그 사실에서 어떤 TypeShade 규칙이 나오는지 설명합니다.',
       h1: 'CPU와 GPU',
@@ -1703,10 +1704,9 @@ export const ko: Copy = {
     },
 
     wgslAndGlsl: {
-      title: `WGSL과 ${glsl}`,
-      description:
-        'TypeShade 소스 하나가 컴파일되는 두 셰이더 언어, 작은 셰이더 하나의 생성 결과, 그리고 두 타깃이 갈라지는 지점을 설명합니다.',
-      h1: `WGSL과 ${glsl}`,
+      title: `WGSL과 ${glsl} 비교: 두 언어가 다른 곳과 한 소스에서 나온 코드`,
+      description: `WGSL과 ${glsl}을 셰이더 하나로 비교합니다. TypeShade 컴파일러가 두 타깃에 쓴 코드를 나란히 놓고, 두 언어가 갈라지는 지점을 짚습니다.`,
+      h1: `WGSL과 ${glsl} 비교`,
       lead: `\`"use typeshade"\` 파일 하나가 WebGPU에는 WGSL로, WebGL2에는 ${glsl}로 도착합니다. 이 페이지의 코드 블록은 페이지를 빌드하는 동안 바로 위의 파일에서 컴파일한 결과이며, 사용한 컴파일러는 ${facts.pinnedCommit}에 고정된 판입니다.`,
       sourceH: '소스',
       sourceP:

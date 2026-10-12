@@ -40,9 +40,10 @@ The site follows the shapes readers already know, and nothing else:
   them, `/api/<export>/` is the page for one export. A page keeps MDN's order and leaves out
   a section it has nothing for: Syntax, Parameters, Return value, Exceptions, Description,
   Examples, Targets (MDN's compatibility table), Constructor, Instance properties, Instance
-  methods, In the guide, See also, Source. Nothing on those pages is written by hand: the text
-  is the compiler's own JSDoc at the pinned commit, read by `src/lib/api.ts`. A wrong sentence
-  is fixed upstream and arrives at the next pin, never by editing the site. What the site does
+  methods, In the guide, See also, Source. Nothing on the English pages is written by hand: the
+  text is the compiler's own JSDoc at the pinned commit, read by `src/lib/api.ts`. A wrong
+  sentence is fixed upstream and arrives at the next pin, never by editing the site. The
+  Korean pages read a translation of that JSDoc (The Korean API reference, below). What the site does
   write is the words around it, `docs.api` in every dictionary, including a name and a
   sentence for every category (`docs.api.categories`, keyed by the extractor's slug).
 - **Footer**: vuejs.org. A site map in three groups spread across the shell, Documentation's
@@ -110,9 +111,36 @@ the pull request `.github/workflows/pin-compiler.yml` opens lists the ones it le
 code blocks byte for byte, every inline code span the same number of times, the numerals, the
 link targets, the heading count, and the Korean rules above. Translate meaning first with
 `content/guide/GLOSSARY.md` as the term list, and add to the glossary any term you decide on.
-The reference's generated body is not translated; a Korean reference page is Korean chrome
-around the compiler's own JSDoc and declarations. A language reference note is the exception:
-it is translated section by section (DESIGN.md, Reference notes).
+The language reference's generated body is not translated; a Korean language reference page is
+Korean chrome around the compiler's own declarations and sentences. A language reference note is
+the exception: it is translated section by section (DESIGN.md, Reference notes).
+
+## The Korean API reference
+
+The reference's JSDoc is translated too (owner decision, 2026-10-12: a Korean page with an
+English body is a near-duplicate of the English page to a search engine). The store is
+`content/api/<locale>/<slug>.json`, one file per export, keyed by the export's slug:
+
+```json
+{ "slug": "lift", "source": "<sha256>", "texts": { "summary": "…", "description": "…" } }
+```
+
+`texts` holds every non-empty English text of the export under the key
+`apiSourceTexts()` in `src/lib/api-translations.ts` gives it: `summary`, `description`,
+`parameters.<name>`, `returns`, `exceptions.<name>`, `examples.<n>`, `targets.<target>`,
+`members.<name>` (a repeated name takes `#2`). `source` is the sha256 of those English texts.
+When a pin changes one, the file is stale: the Korean page shows the English JSDoc again under
+the untranslated note, and `bun run check:api-ko` (part of `bun run build`) fails and names
+it. To translate or refresh one export:
+
+1. Run `bun scripts/check-api-translations.ts --source <slug>`.
+2. Translate each text under its key, meaning first, with `content/guide/GLOSSARY.md`.
+3. Keep every code span, fenced block, link target and numeral of the English.
+4. Write the printed `source` hash into the file.
+5. Run `bun run check:api-ko`.
+
+The summary is the page's lead, the category page's line and the tail of the meta
+description, so it stays one sentence or two short ones.
 
 A translation that explains a design rule also records the rule it was read against, by the
 rule's fingerprint (`reviewed` in the compiler's `reqs/rules/RULE-xxxx.md`). A section does it in
@@ -234,6 +262,8 @@ Reference and guide data:
   reference's data, its contract, its categories and pager order, and the content collection.
   `bun run check:api` prints the categories and their counts and fails on a missing
   description or a slug two exports share.
+- `src/lib/api-translations.ts`, `content/api/<locale>/`, `scripts/check-api-translations.ts`:
+  the reference's translations, their staleness and their check (`bun run check:api-ko`).
 - `src/lib/remark-api-links.mjs`: the first mention of an export's name in inline code on a
   guide page, as a link to its reference page.
 - `src/components/pages/ApiReferencePage.astro`, `ApiIndexPage.astro`, `ApiCategoryPage.astro`.
