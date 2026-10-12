@@ -3,7 +3,7 @@
 import { execSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { examples, type ShaderExample } from '../../vendor/shader-dsl/examples/index.ts';
+import { examples as registry } from '../../vendor/shader-dsl/examples/index.ts';
 import { shortBlurb } from './blurb.ts';
 import { builtinCounts } from './builtin-table.ts';
 import { languageCounts } from './language-reference.ts';
@@ -13,17 +13,15 @@ import { ruleHistory } from './rule-history.ts';
 import { loweringRowCount } from './typescript-lowering.ts';
 import { glslCapabilityCount } from './glsl-mapping.ts';
 import { wgslBuiltinIdCount } from './target-mapping.ts';
-import { shadeCounts, shadeExampleList } from './shade-examples.ts';
-import { emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts';
+import { shadeCounts, shadeExampleList, shadeModule } from './shade-examples.ts';
+import { RETIRED_EXAMPLES } from './retired-examples.mjs';
+import { compile, emitModule, emitGlslModule, reflect } from '../../vendor/shader-dsl/src/index.ts';
 
-// Read with fs from the site root, without Vite's glob, so scripts run by bun
-// (check-copy.ts) can import this module too.
+// Every example a page shows is a `"use typeshade"` file (src/lib/shade-examples.ts). The
+// `fn()` registry (examples/index.ts) is read for two things only: the words and the controls
+// of the example a source twin ports, which the twin takes over in the original's place, and
+// the table of retired pages (src/lib/retired-examples.mjs), which is held against it here.
 const examplesDir = path.resolve('vendor/shader-dsl/examples');
-const sourceByFile = Object.fromEntries(
-  readdirSync(examplesDir)
-    .filter((f) => f.endsWith('.ts'))
-    .map((f) => [f, readFileSync(path.join(examplesDir, f), 'utf8')]),
-);
 
 /** Text from `from` (inclusive) to the first `to` after it (inclusive), else ''. */
 function between(text: string, from: string, to: string): string {
@@ -36,18 +34,36 @@ function between(text: string, from: string, to: string): string {
 /** Line count as an editor gutter shows it, including the empty line after a trailing newline. */
 const countLines = (text: string): number => text.trimEnd().split('\n').length;
 
-const ex = examples.find((e) => e.id === 'gradient');
-if (!ex) throw new Error("example 'gradient' is not in the registry");
-const source = sourceByFile[ex.file] ?? '';
-const wgsl = emitModule(ex.module);
-const glslVertex = emitGlslModule(ex.module, 'vertex');
-const glsl = emitGlslModule(ex.module, 'fragment');
+/** One `.shade.ts` example by id, or the build stops. */
+function shadeExample(id: string): (typeof shadeExampleList)[number] {
+  const e = shadeExampleList.find((x) => x.id === id);
+  if (!e) throw new Error(`[examples] no example '${id}' in the .shade.ts corpus`);
+  return e;
+}
 
-const authored = between(source, 'const fsGradient = fn(', '\n)');
+/** The registry example a source twin ports, or the build stops. */
+function originalOf(id: string): (typeof registry)[number] {
+  const twinOf = shadeExample(id).twinOf;
+  const e = twinOf ? registry.find((x) => x.id === twinOf) : undefined;
+  if (!e) throw new Error(`[examples] '${id}' is no source twin of a registry example`);
+  return e;
+}
 
-/** The gradient example: the authored fragment function and what it emits for each target. */
+// The gradient pass, written as TypeScript source: the file the quick start and the examples
+// page print, and the one the two backends draw on the verification page.
+const HERO_ID = 'gradient-twin';
+const heroFile = shadeExample(HERO_ID).file;
+const source = readFileSync(path.join(examplesDir, heroFile), 'utf8');
+const heroModule = shadeModule(HERO_ID);
+const wgsl = emitModule(heroModule);
+const glslVertex = emitGlslModule(heroModule, 'vertex');
+const glsl = emitGlslModule(heroModule, 'fragment');
+
+const authored = between(source, '@fragment', '\n}');
+
+/** The gradient pass: the authored fragment entry and what it emits for each target. */
 export const hero = {
-  file: ex.file,
+  file: heroFile,
   authored,
   authoredLines: countLines(authored),
   wgsl: between(wgsl, '@fragment', '\n}'),
@@ -59,51 +75,55 @@ export const hero = {
   },
 };
 
-/** The complete file the quick start shows: gradient-pass.ts's uniform block, both stages
- *  and the module they build, real source with nothing rewritten except the import line,
- *  which now points at the path this pin resolves (nothing is on npm yet; the checked-out
- *  submodule is the package), and one emit call appended so the file runs end to end. */
-function buildQuickStartFile(): { code: string; lines: number; importPath: string } {
+/** The name the quick start saves the shader under, and the host file that compiles it. */
+const QUICK_START_SHADER = 'gradient.shade.ts';
+const QUICK_START_HOST = 'compile.ts';
+
+/** The two files the quick start shows. The shader is gradient-twin.shade.ts with its
+ *  registration block and its comments taken out, since those talk about the compiler's own
+ *  test corpus; no line of code is touched, and the build compiles both texts and stops if
+ *  their WGSL differs. The host file is the one call that compiles it, `compile()` from the
+ *  main entry, imported from the path this pin resolves (nothing is on npm yet; the
+ *  checked-out submodule is the package). */
+function buildQuickStartFile(): {
+  shader: { name: string; code: string; lines: number };
+  host: { name: string; code: string; lines: number };
+  importPath: string;
+} {
   const importPath = `./${gitmodulesField('path')}/src/index.js`;
-  const importStart = source.indexOf('import {');
-  const importEnd = source.indexOf(`from '../src/index.js'`);
-  if (importStart < 0 || importEnd < 0)
-    throw new Error("[examples] gradient-pass.ts's import block moved");
-  const names = source
-    .slice(importStart + 'import {'.length, importEnd)
-    .replace(/\}\s*$/, '')
-    .split(',')
-    .map((n) => n.trim())
-    .filter(Boolean);
-  const importLine = `import { ${[...names, 'emitModule'].join(', ')} } from '${importPath}'`;
-
-  const declStart = source.indexOf('const U = uniformStruct(');
-  const moduleStart = source.indexOf('const gradientModule = module({');
-  const moduleEnd = source.indexOf('\n})', moduleStart);
-  if (declStart < 0 || moduleStart < 0 || moduleEnd < 0)
-    throw new Error("[examples] gradient-pass.ts's declarations moved");
-  const decls = source.slice(declStart, moduleStart).trim();
-  const moduleDecl = source.slice(moduleStart, moduleEnd + 3);
-
-  const code = [
-    importLine,
+  const shader = source
+    .replace(/\r\n/g, '\n')
+    .replace(/\/\*\s*@example[\s\S]*?\*\/\n?/, '')
+    .split('\n')
+    .filter((line) => !/^\s*\/\//.test(line))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  const compiled = compile(shader, { fileName: QUICK_START_SHADER });
+  const errors = compiled.diagnostics.filter((d) => d.category === 'error');
+  if (errors.length > 0 || compiled.wgsl === undefined)
+    throw new Error(
+      `[examples] the quick start's ${QUICK_START_SHADER} does not compile: ${errors.map((d) => d.message).join('; ')}`,
+    );
+  if (compiled.wgsl !== compile(source, { fileName: heroFile }).wgsl)
+    throw new Error(
+      `[examples] taking the comments out of ${heroFile} changed its WGSL; the quick start would print another program`,
+    );
+  const host = [
+    "import { readFileSync } from 'node:fs'",
+    `import { compile } from '${importPath}'`,
     '',
-    decls,
-    '',
-    moduleDecl,
-    '',
-    'console.log(emitModule(gradientModule))',
+    `const { diagnostics, wgsl } = compile(readFileSync('${QUICK_START_SHADER}', 'utf8'))`,
+    'for (const d of diagnostics) console.error(`${d.line}:${d.character} ${d.message}`)',
+    'console.log(wgsl)',
   ].join('\n');
-  return { code, lines: countLines(code), importPath };
+  return {
+    shader: { name: QUICK_START_SHADER, code: shader, lines: countLines(shader) },
+    host: { name: QUICK_START_HOST, code: host, lines: countLines(host) },
+    importPath,
+  };
 }
 export const quickStartFile = buildQuickStartFile();
-
-/** The source file of one registry example, so a caption can name it. */
-export function exampleFile(id: string): string {
-  const e = examples.find((x) => x.id === id);
-  if (!e) throw new Error(`[examples] no example '${id}' in the registry`);
-  return e.file;
-}
 
 const vendorRoot = path.resolve(process.cwd(), 'vendor/shader-dsl');
 function walk(dir: string, out: string[] = []): string[] {
@@ -118,57 +138,61 @@ function walk(dir: string, out: string[] = []): string[] {
 const packageFiles = walk(vendorRoot);
 const testFiles = packageFiles.filter((f) => f.endsWith('.test.ts'));
 
-/** Whether one example emits both GLSL stages. A compute kernel has no GLSL ES 3.00 stage
- *  and refuses, which is what the count and the examples table both read. */
-export function emitsGlsl(module: ShaderExample['module']): boolean {
-  try {
-    emitGlslModule(module, 'vertex');
-    emitGlslModule(module, 'fragment');
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** The one registry example that emits WGSL alone, so the examples table can name it once
- *  instead of repeating "WGSL and GLSL ES 3.00" in every other row. The build stops if the
- *  registry ever has none or more than one, the same way it stops on a drifted count. */
-function wgslOnlyExample(): { id: string; title: string } {
-  const only = examples.filter((e) => !emitsGlsl(e.module));
-  if (only.length !== 1)
-    throw new Error(`[examples] expected exactly one WGSL-only example, found ${only.length}`);
-  return { id: only[0]!.id, title: only[0]!.title };
-}
-
-/** How many registry examples emit both targets. WGSL emission runs outside the guard
- *  because every example must emit WGSL; only a GLSL refusal is counted. */
-function countBothTargets(): number {
+/** How many `.shade.ts` examples emit both targets. Every one must emit WGSL, and every one
+ *  the registry marks as having a GLSL ES 3.00 form must emit both of its stages; the build
+ *  stops on either, the way it stops on a drifted count. An example marked without one may
+ *  still emit GLSL (a vertex stage with nothing to draw, a kernel), and is not counted. */
+function countShadeBothTargets(): number {
   let n = 0;
-  for (const e of examples) {
-    emitModule(e.module);
-    if (emitsGlsl(e.module)) n += 1;
+  for (const e of shadeExampleList) {
+    const module = shadeModule(e.id);
+    emitModule(module);
+    if (!e.renderable) continue;
+    try {
+      emitGlslModule(module, 'vertex');
+      emitGlslModule(module, 'fragment');
+    } catch (error) {
+      throw new Error(
+        `[examples] '${e.id}' is marked as having a GLSL form and does not emit one: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    n += 1;
   }
   return n;
 }
 
-/** The English description of every example, keyed by id. English is the compiler's own
- *  wording; every other language writes its own line against the same keys, in src/i18n. */
-export function registryBlurbs(): Record<string, string> {
-  return Object.fromEntries(examples.map((e) => [e.id, shortBlurb(e.blurb)]));
+/** The English description of every source twin, keyed by the twin's id: the line the
+ *  registry writes for the example it ports. The site shows the twin in the original's place,
+ *  and the twin's own line ("x.ts written in the source language") points at a file the site
+ *  no longer shows. */
+export function twinBlurbs(): Record<string, string> {
+  return Object.fromEntries(
+    shadeExampleList.filter((e) => e.twinOf).map((e) => [e.id, shortBlurb(originalOf(e.id).blurb)]),
+  );
 }
 
-/** One locale's descriptions, checked against the registry, so an example added upstream
- *  cannot reach the table without a line in each language. */
-export function checkedBlurbs(blurbs: Record<string, string>): Record<string, string> {
-  const ids = examples.map((e) => e.id);
-  const missing = ids.filter((id) => !blurbs[id]);
-  const extra = Object.keys(blurbs).filter((id) => !ids.includes(id));
-  if (missing.length > 0) throw new Error(`[examples] no description for ${missing.join(', ')}`);
-  if (extra.length > 0)
+// The retired pages' table against the registry and the twins, in both directions: every
+// registry example has a line, every line names a registry example, and a line names a twin
+// exactly when one is registered, and the right one.
+{
+  const ids = registry.map((e) => e.id);
+  const table = RETIRED_EXAMPLES as Record<string, string | null>;
+  const problems = [
+    ...ids.filter((id) => !(id in table)).map((id) => `no line for ${id}`),
+    ...Object.keys(table)
+      .filter((id) => !ids.includes(id))
+      .map((id) => `a line for ${id}, which the registry does not have`),
+    ...ids
+      .filter((id) => id in table)
+      .flatMap((id) => {
+        const twin = shadeExampleList.find((e) => e.twinOf === id)?.id ?? null;
+        return table[id] === twin ? [] : [`${id} goes to ${table[id]}, and its twin is ${twin}`];
+      }),
+  ];
+  if (problems.length > 0)
     throw new Error(
-      `[examples] description for ${extra.join(', ')}, which the registry has no example for`,
+      `[examples] src/lib/retired-examples.mjs is out of date (${problems.join('; ')})`,
     );
-  return blurbs;
 }
 
 function pinnedCommit(): string {
@@ -271,13 +295,16 @@ const mirrorVersion = pkg.version;
 /** The next minor above the mirror's own version: the release the page says is not out yet. */
 const nextVersion = `${semver(mirrorVersion)[0]}.${semver(mirrorVersion)[1] + 1}.0`;
 
+/** The deep-zoom example the examples page draws and describes. */
+const DEEP_ZOOM_ID = 'fp64-deep-zoom-twin';
+
 function deepZoomOrigin(): { name: string; sourceType: string; layoutType: string } {
-  const e = examples.find((x) => x.id === 'fp64-deep-zoom');
-  if (!e) throw new Error("[examples] no example 'fp64-deep-zoom' in the registry");
-  const field = reflect(e.module).uniforms[0]?.fields.find((f) => f.name === 'origin');
-  if (!field) throw new Error("[examples] 'fp64-deep-zoom' reflects no 'origin' field");
+  const field = reflect(shadeModule(DEEP_ZOOM_ID)).uniforms[0]?.fields.find(
+    (f) => f.name === 'origin',
+  );
+  if (!field) throw new Error(`[examples] '${DEEP_ZOOM_ID}' reflects no 'origin' field`);
   if (field.type !== 'f64')
-    throw new Error(`[examples] 'fp64-deep-zoom' declares origin as '${field.type}'`);
+    throw new Error(`[examples] '${DEEP_ZOOM_ID}' declares origin as '${field.type}'`);
   const lanes = field.size / 4;
   if (!Number.isInteger(lanes) || lanes < 1)
     throw new Error(`[examples] origin occupies ${field.size} bytes`);
@@ -319,24 +346,15 @@ function licenseName(spdx: string): string {
 }
 
 export const facts = {
-  examples: examples.length,
-  /** The other corpus: the `.shade.ts` files, written in TypeScript source and compiled from
-   *  the file itself. They are registered in examples/_shade.ts and not in the barrel the
-   *  count above reads, so the two are counted apart and shown apart. */
+  /** The examples a page shows: the `.shade.ts` files, written in TypeScript source and
+   *  compiled from the file itself (src/lib/shade-examples.ts). */
   shadeExamples: shadeCounts.total,
   /** How many of those have a GLSL ES 3.00 form. The registry states it per file; a compute
-   *  entry and a WGSL-only texture have none. */
-  shadeRenderable: shadeCounts.renderable,
-  /** Both corpora, for the sentences that count the repository's examples as a whole. */
-  totalExamples: examples.length + shadeCounts.total,
-  bothTargets: countBothTargets(),
-  /** How many examples of the two corpora together have a GLSL ES 3.00 pair baked beside
-   *  their WGSL in examples/__emit-goldens__/. The per-example pages read that directory, so
-   *  a pin that stops baking a stage stops the build here as well as at the page that wanted
-   *  the file. */
-  goldenGlslPairs: [...examples, ...shadeExampleList].filter((e) => e.renderable).length,
-  wgslOnlyExample: wgslOnlyExample(),
-  fp64Examples: examples.filter((e) => e.id.startsWith('fp64')).length,
+   *  entry and a WGSL-only texture have none. Each one is emitted for both targets here, so a
+   *  file that claims a GLSL form and lost it stops the build. */
+  shadeRenderable: countShadeBothTargets(),
+  /** The examples that use emulated double precision, by the compiler's `fp64` prefix. */
+  fp64Examples: shadeExampleList.filter((e) => e.id.startsWith('fp64')).length,
   testFiles: testFiles.length,
   pinnedCommit: pinnedCommit(),
   license: pkg.license,
@@ -378,7 +396,9 @@ export const facts = {
   mirrorPath: gitmodulesField('path'),
   mirrorVersion,
   nextVersion,
-  splitLabels: examples.find((e) => e.id === 'fp64-deep-zoom')?.splitLabels ?? null,
+  /** The two halves the deep-zoom frame is split into, as the example its twin ports names
+   *  them. */
+  splitLabels: originalOf(DEEP_ZOOM_ID).splitLabels ?? null,
   deepZoomOrigin: deepZoomOrigin(),
   /** Third-party survey figures. They describe the market as a whole. */
   survey: {
@@ -430,11 +450,10 @@ export const facts = {
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
   commit: 'f144f26d',
-  examples: 36,
   shadeExamples: 94,
-  bothTargets: 35,
+  shadeRenderable: 73,
+  fp64Examples: 12,
   testFiles: 302,
-  goldenGlslPairs: 106,
   builtins: 169,
   portableBuiltins: 44,
   glslAbsentBuiltins: 43,
@@ -463,14 +482,12 @@ const pinned = {
   rulesChanged: 0,
 };
 const drift: string[] = [];
-if (facts.examples !== pinned.examples)
-  drift.push(`examples ${facts.examples} != ${pinned.examples}`);
 if (facts.shadeExamples !== pinned.shadeExamples)
   drift.push(`shadeExamples ${facts.shadeExamples} != ${pinned.shadeExamples}`);
-if (facts.bothTargets !== pinned.bothTargets)
-  drift.push(`bothTargets ${facts.bothTargets} != ${pinned.bothTargets}`);
-if (facts.goldenGlslPairs !== pinned.goldenGlslPairs)
-  drift.push(`goldenGlslPairs ${facts.goldenGlslPairs} != ${pinned.goldenGlslPairs}`);
+if (facts.shadeRenderable !== pinned.shadeRenderable)
+  drift.push(`shadeRenderable ${facts.shadeRenderable} != ${pinned.shadeRenderable}`);
+if (facts.fp64Examples !== pinned.fp64Examples)
+  drift.push(`fp64Examples ${facts.fp64Examples} != ${pinned.fp64Examples}`);
 if (facts.testFiles < pinned.testFiles)
   drift.push(`testFiles ${facts.testFiles} < ${pinned.testFiles}`);
 if (facts.builtins !== pinned.builtins)

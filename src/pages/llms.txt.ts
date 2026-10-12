@@ -179,7 +179,7 @@ const table = [
   },
   {
     dest: links.examples,
-    note: `the ${facts.totalExamples} examples, one page each with the shader running and the text it emits, the GLSL emit and the emulated-double demo`,
+    note: `the ${facts.shadeExamples} examples, one page each with the shader running and the text it emits, the GLSL emit and the emulated-double demo`,
   },
   {
     dest: links.mnist,

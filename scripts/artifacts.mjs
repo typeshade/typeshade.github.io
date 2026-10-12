@@ -7,51 +7,11 @@ import path from 'node:path';
 
 /** One still per mount, with the page it is captured from. A mount forced onto WebGL2 gets
  * its own file, so the image under it is a frame that backend drew. An entry with `live`
- * names a <LiveShader> instance by its id instead of a registry example. */
-/** Every registry example src/lib/hero-shader.ts can emit for the canvas: no compute-only
- *  module, no control kind the runtime has no packer for. A list, because this file is read
- *  by plain Node before the build, where the registry (TypeScript) cannot be imported. */
-export const STILL_EXAMPLES = [
-  'color-ramp',
-  'discard-cutout',
-  'domain-warp',
-  'fbm-clouds',
-  'fp64-cancellation',
-  'fp64-clock',
-  'fp64-deep-zoom',
-  'fp64-mercator-tiles',
-  'fp64-sine-sweep',
-  'gradient',
-  'graticule',
-  'heart',
-  'hillshade',
-  'julia',
-  'kaleidoscope',
-  'mandelbrot',
-  'metaballs',
-  'ocean',
-  'plasma',
-  'raymarch-boxes',
-  'raymarch-sphere',
-  'starfield',
-  'truchet',
-  'tunnel',
-  'voronoi',
-  'fp64-checker-plane',
-  'fp64-loran',
-  'fp64-rtc',
-  'fp64-mandelbrot',
-  'fp64-julia',
-  'fp64-burning-ship',
-  'fp64-newton',
-  'fp64-mandelbrot-de',
-];
-
-/** The `.shade.ts` examples the same runtime can draw. The ones with a GLSL ES 3.00 form
- *  that are left out are listed in NO_STILL_REASONS below, with the reason each one gives.
- *  Those keep the gallery's plain tile, the way a registry example the runtime cannot
- *  draw already does. A list for the same reason as the one above: plain Node reads this
- *  file before the build. */
+ * names a <LiveShader> instance by its id instead of an example. */
+/** The `.shade.ts` examples src/lib/hero-shader.ts can emit for the canvas. The ones with a
+ *  GLSL ES 3.00 form that are left out are listed in NO_STILL_REASONS below, with the reason
+ *  each one gives. Those keep the gallery's plain tile. A list, because this file is read by
+ *  plain Node before the build, where the registry (TypeScript) cannot be imported. */
 export const SHADE_STILL_EXAMPLES = [
   'capsule-corp-namek-class',
   'array-literal-ramp',
@@ -123,10 +83,10 @@ export const SHADE_STILL_EXAMPLES = [
   'rt-renderer-class',
 ];
 
-/** Why one example has no still, keyed by id, for every example of either corpus that is not
- *  in the two lists above. The per-example page (src/components/pages/ExamplePage.astro)
+/** Why one example has no still, keyed by id, for every example that is not in the list
+ *  above. The per-example page (src/components/pages/ExamplePage.astro)
  *  prints the sentence its language writes for the reason instead of an empty frame, and
- *  src/lib/example-pages.ts holds this table against the two registries in both directions,
+ *  src/lib/example-pages.ts holds this table against the registry in both directions,
  *  so an example added upstream stops the build here instead of shipping a blank picture.
  *
  *  The five reasons, each the refusal src/lib/hero-shader.ts already raises:
@@ -138,11 +98,6 @@ export const SHADE_STILL_EXAMPLES = [
  *   - `vertex-buffer` vertex attributes read from a buffer, which a page that draws one
  *                    fullscreen triangle and binds no vertex buffer cannot fill */
 export const NO_STILL_REASONS = {
-  // The `fn()` registry.
-  'override-quality': 'no-glsl',
-  'texture-array-lod': 'no-glsl',
-  'compute-reduction': 'no-glsl',
-  // The `.shade.ts` corpus.
   'hello-vsin': 'vertex-buffer',
   'hello-uniform': 'no-glsl',
   'hello-camera': 'no-glsl',
@@ -175,28 +130,23 @@ export const NO_STILL_REASONS = {
 export const NO_STILL_REASON_KEYS = ['no-glsl', 'control', 'texture', 'uniform', 'vertex-buffer'];
 
 export const STILLS = [
-  { id: 'gradient', example: 'gradient', page: '/guide/checks/', backend: 'webgpu' },
+  // The gradient pass and the deep zoom, drawn at the aspect their own pages use. The ids are
+  // the stills' file names, which predate the source twins that draw them now.
+  { id: 'gradient', example: 'gradient-twin', page: '/guide/checks/', backend: 'webgpu' },
   {
     id: 'gradient-webgl2',
-    example: 'gradient',
+    example: 'gradient-twin',
     page: '/guide/checks/',
     forceWebGl2: true,
     backend: 'webgl2',
   },
-  { id: 'fp64-deep-zoom', example: 'fp64-deep-zoom', page: '/guide/examples/' },
+  { id: 'fp64-deep-zoom', example: 'fp64-deep-zoom-twin', page: '/guide/examples/' },
   { id: 'quick-start-stripes', live: true, page: '/guide/quick-start/' },
   { id: 'gpu-types-disc', live: true, page: '/guide/language/gpu-types/' },
   // The front page's own live file.
   { id: 'front-first', live: true, page: '/' },
-  // One tile per example the runtime can draw, photographed on the build-only /capture-stills/ page.
-  // The examples gallery shows them as pictures and the front page runs nine of them live.
-  // gradient and fp64-deep-zoom keep the entries above, at the aspect their own pages use.
-  ...STILL_EXAMPLES.filter((id) => id !== 'gradient' && id !== 'fp64-deep-zoom').map((id) => ({
-    id,
-    example: id,
-    page: '/capture-stills/',
-  })),
-  // The `.shade.ts` corpus, photographed on the same page.
+  // One tile per example the runtime can draw, photographed on the build-only /capture-stills/
+  // page. The examples gallery and the front page show them as pictures.
   ...SHADE_STILL_EXAMPLES.map((id) => ({ id, example: id, page: '/capture-stills/' })),
 ];
 

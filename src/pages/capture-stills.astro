@@ -1,17 +1,16 @@
 ---
-// A page that exists only to be photographed: every registry example the runtime can draw,
+// A page that exists only to be photographed: every `.shade.ts` example the runtime can draw,
 // one framed canvas each at the tile aspect the gallery and the front page use.
 // scripts/capture-stills.ts opens it, and the build removes it from dist afterwards
 // (astro.config.mjs), so it is never served.
 import '../styles/global.css';
 import ShaderCanvas from '../components/ShaderCanvas.astro';
-import { SHADE_STILL_EXAMPLES, STILL_EXAMPLES } from '../../scripts/artifacts.mjs';
-import { examples } from '../../vendor/shader-dsl/examples/index.ts';
+import { SHADE_STILL_EXAMPLES } from '../../scripts/artifacts.mjs';
 import { shadeExampleList } from '../lib/shade-examples.ts';
 
-const tiles = [...STILL_EXAMPLES, ...SHADE_STILL_EXAMPLES].map((id) => {
-  const example = examples.find((e) => e.id === id) ?? shadeExampleList.find((e) => e.id === id);
-  if (!example) throw new Error(`[stills] '${id}' is in neither examples registry`);
+const tiles = SHADE_STILL_EXAMPLES.map((id) => {
+  const example = shadeExampleList.find((e) => e.id === id);
+  if (!example) throw new Error(`[stills] '${id}' is not in the .shade.ts corpus`);
   return { id, title: example.title };
 });
 const caption = (title: string) => ({ neutral: title, webgpu: title, webgl2: title, none: title });

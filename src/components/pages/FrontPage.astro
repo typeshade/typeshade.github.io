@@ -18,7 +18,8 @@ import { useTypeshadeHero } from '../../lib/use-typeshade-emit.ts';
 import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts';
 import { links } from '../../lib/links.ts';
 import { fileClass } from '../../lib/live-card.ts';
-import { examples } from '../../../vendor/shader-dsl/examples/index.ts';
+import { SHADE_STILL_EXAMPLES } from '../../../scripts/artifacts.mjs';
+import { checkedShade } from '../../lib/shade-examples.ts';
 
 interface Props {
   locale: Locale;
@@ -53,16 +54,17 @@ export function main(@location(0) uv: vec2): vec4 {
 }
 `;
 
-/** The tiles, in the order they read. Every id is in the registry; a missing one stops the
- *  build here, before a blank frame could. A tile shows the still captured from the shader at
- *  build time and links to that example's own page, the way a gallery tile does: the front
- *  page is a first visit, and nine shaders compiling and animating on it is GPU work every
- *  visitor pays for. The showcase card above is the one thing on the page that runs. */
-const TILE_IDS = ['metaballs', 'plasma', 'voronoi', 'julia', 'ocean', 'starfield', 'tunnel', 'kaleidoscope', 'mandelbrot'] as const;
+/** The tiles, in the order they read. Every id is a `.shade.ts` example with a still; a
+ *  missing one stops the build here, before a blank frame could. A tile shows the still
+ *  captured from the shader at build time and links to that example's own page, the way a
+ *  gallery tile does: the front page is a first visit, and nine shaders compiling and
+ *  animating on it is GPU work every visitor pays for. The showcase card above is the one
+ *  thing on the page that runs. */
+const TILE_IDS = ['domain-warp-twin', 'plasma-twin', 'voronoi-twin', 'julia-twin', 'ocean-twin', 'starfield-twin', 'tunnel-twin', 'kaleidoscope-twin', 'mandelbrot-twin'] as const;
+const tileTitles = checkedShade('title', t.examples.shade.titles);
 const tiles = TILE_IDS.map((id) => {
-  const example = examples.find((e) => e.id === id);
-  if (!example) throw new Error(`[front] tile '${id}' is not in the examples registry`);
-  return { id, title: example.title, href: localePath(locale, examplePath(id)) };
+  if (!(SHADE_STILL_EXAMPLES as readonly string[]).includes(id)) throw new Error(`[front] tile '${id}' has no still`);
+  return { id, title: tileTitles[id]!, href: localePath(locale, examplePath(id)) };
 });
 
 const playground = localePath(locale, links.playground.href);
@@ -181,8 +183,8 @@ const quickStart = localePath(locale, links.quickStart.href);
     <h2 class={heading}>{f.oracle.h}</h2>
     <p class={lead}><Rich text={f.oracle.p} locale={locale} /></p>
     <div class="figure-pair">
-      <ShaderCanvas locale={locale} example="gradient" aspect="3/1" still caption={f.oracle.webgpu} stillId="gradient" />
-      <ShaderCanvas locale={locale} example="gradient" aspect="3/1" still forceWebGl2 caption={f.oracle.webgl2} stillId="gradient-webgl2" />
+      <ShaderCanvas locale={locale} example="gradient-twin" aspect="3/1" still caption={f.oracle.webgpu} stillId="gradient" />
+      <ShaderCanvas locale={locale} example="gradient-twin" aspect="3/1" still forceWebGl2 caption={f.oracle.webgl2} stillId="gradient-webgl2" />
     </div>
   </section>
 

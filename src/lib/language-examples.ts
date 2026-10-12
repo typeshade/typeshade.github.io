@@ -1,7 +1,7 @@
 // Which examples call which documented name, for the Examples section of an entry page in
 // the language reference. The corpus is read, not listed by hand: every example page already
-// carries the file's own source text (src/lib/example-pages.ts, both the `fn()` registry and
-// the `"use typeshade"` files), and each of those is parsed with the TypeScript parser the
+// carries the file's own source text (src/lib/example-pages.ts, the `"use typeshade"` files),
+// and each of those is parsed with the TypeScript parser the
 // rest of the site's build-time reads use.
 //
 // The scan lives beside the generator instead of inside it because src/lib/examples.ts reads

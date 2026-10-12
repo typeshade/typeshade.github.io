@@ -579,32 +579,36 @@ why lives on its own page.
     dictionaries.
   - Concepts: `/guide/typescript-and-webgpu/`, how TypeScript types, functions and modules map
     to GPU values, entry points and shader modules, and where WebGPU begins.
-  - Examples: `/guide/examples/`, the gallery of every example in both corpora, grouped by
-    category, each tile linking to that example's own page at `/guide/examples/<id>/`. The 73
-    `.shade.ts` examples are `"use typeshade"` files, which is what the Playground's editor
-    compiles, so their page carries the Playground itself, seeded with that file and with the
-    picker gone, since the page already names the example. One line under the tool says the
-    editor holds the example's own file, that the program is that file and any file it
-    imports, and that an edit recompiles it in the reader's browser. The 36 `fn()` examples are TypeScript against the compiler's builder API, which
-    that editor does not take, so their page keeps the card, laid out the way ShaderToy lays
-    one out: one card split down the middle, the shader running over its build-time still on
-    the left and its text on the right, and nothing else in either pane. The card is the
-    showcase card the front page's hero already is (`.live-card`). Its right pane carries its
-    own Ant tab bar over one of four texts, the source file first and then every target the
-    compiler emits, the WGSL and the two GLSL ES 3.00 stages it baked into
-    `examples/__emit-goldens__/` at the pinned commit; it opens on the line the shader starts
-    at, since several of those files begin with a banner comment. A GLSL tab reads `GLSL
-vertex` and `GLSL fragment`: the head is 490px from a 1320 viewport and 470px at 1280,
-    and the full target name put the four tabs at 569px in English and 573px in Korean, so
-    the last tab was cut off at every desktop width. The full name is in the line under the
-    card and in the pane's own accessible name. The head is a scroller wherever it is under
-    about 450px, which is the phone layout and the widths where the card splits inside a
-    narrow column, and it carries there the 32px fade on its trailing edge that the panels
-    carry at their foot. The file is the tab that gives way when the four ask for more than
-    the head has, down to 16 characters, since the file name is the one tab text the site
-    does not choose. Which backend drew the frame, or why nothing did, where the emitted text
-    comes from, and that the example is written against `fn()` are written under the card,
-    because a label inside a pane makes that pane read as a figure. The card is its own container, so the panes go side by side
+  - Examples: `/guide/examples/`, the gallery of every `.shade.ts` example, grouped by what
+    each file is there to show, each tile linking to that example's own page at
+    `/guide/examples/<id>/`. The examples are `"use typeshade"` files, which is what the
+    Playground's editor compiles, so their page carries the Playground itself, seeded with
+    that file and with the picker gone, since the page already names the example. One line
+    under the tool says the editor holds the example's own file, that the program is that file
+    and any file it imports, and that an edit recompiles it in the reader's browser. The first
+    two groups hold the source twins of the compiler's `fn()` registry examples, under the
+    original's name and line, so a reader finds each where the original was. The registry
+    itself is not shown: the page of a registry example redirects to its twin's page, or to
+    `/guide/examples/` where it has none (`src/lib/retired-examples.mjs`). The template the
+    Worker fills (`docs/cloudflare.md`) keeps the card an `fn()` example's page once had, laid
+    out the way ShaderToy lays one out: one card split down the middle, the shader running
+    over its build-time still on the left and its text on the right, and nothing else in
+    either pane. The card is the showcase card the front page's hero already is
+    (`.live-card`). Its right pane carries its own Ant tab bar over one of four texts, the
+    source file first and then every target the compiler emits, the WGSL and the two GLSL ES
+    3.00 stages it baked into `examples/__emit-goldens__/` at the pinned commit; it opens on
+    the line the shader starts at, since several of those files begin with a banner comment. A
+    GLSL tab reads `GLSL vertex` and `GLSL fragment`: the head is 490px from a 1320 viewport
+    and 470px at 1280, and the full target name put the four tabs at 569px in English and
+    573px in Korean, so the last tab was cut off at every desktop width. The full name is in
+    the line under the card and in the pane's own accessible name. The head is a scroller
+    wherever it is under about 450px, which is the phone layout and the widths where the card
+    splits inside a narrow column, and it carries there the 32px fade on its trailing edge
+    that the panels carry at their foot. The file is the tab that gives way when the four ask
+    for more than the head has, down to 16 characters, since the file name is the one tab
+    text the site does not choose. Which backend drew the frame, or why nothing did, and where
+    the emitted text comes from are written under the card, because a label inside a pane
+    makes that pane read as a figure. The card is its own container, so the panes go side by side
     once the card is wide enough and stack with the picture first when it is not. Under it
     the page closes with the file on GitHub and previous and next inside its own group. An
     example the page cannot draw says in one sentence why, from the reason
@@ -781,13 +785,12 @@ A field of any other type stops the build, so a page cannot ship a uniform it le
 without saying so. `bool` is one of them: WGSL forbids it in the uniform address space, so a
 flag is a `u32` with `toggle: true`.
 
-A still is captured for every drawable example in the registry, not for the live blocks alone.
-`STILL_EXAMPLES` in `scripts/artifacts.mjs` lists them, `src/pages/capture-stills.astro` is a
+A still is captured for every drawable `.shade.ts` example, not for the live blocks alone.
+`SHADE_STILL_EXAMPLES` in `scripts/artifacts.mjs` lists them, `src/pages/capture-stills.astro` is a
 build-only route that draws all of them at the tile aspect, `scripts/capture-stills.ts`
 photographs it, and `astro.config.mjs` removes the route from `dist/`, so it is never served.
 Each file lands in `public/stills/<id>.webp` beside a committed sha256, and the build asserts
-the hashes. The gallery shows those stills as tile covers and the front page runs nine of the
-same examples live over theirs.
+the hashes. The gallery and the front page's nine tiles show those stills as covers.
 
 The build refuses a sample whose emitted GLSL reads the uniform block and declares none. The
 compiler dropped that declaration for a module built by the TypeScript front end until the pin

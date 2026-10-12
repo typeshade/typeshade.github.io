@@ -69,8 +69,7 @@ const FORMER_HOST = /\bX-?GIS (#\d+)/g;
 const clean = (text: string): string =>
   text.replace(/\r\n/g, '\n').trimEnd().replace(FORMER_HOST, '$1');
 
-const STAGE_LINE =
-  /^[\t ]*(?:@vertex|@fragment|@compute)\b|^[\t ]*(?:const|let|var)\s+\w+\s*=\s*fn\(/;
+const STAGE_LINE = /^[\t ]*(?:@vertex|@fragment|@compute)\b/;
 const EXPORT_LINE = /^[\t ]*export\b/;
 function entryLineOf(source: string): number {
   const lines = source.split('\n');
@@ -100,7 +99,8 @@ function emittedFor(id: string, renderable: boolean): ExampleRecord['emitted'] {
 const EXAMPLE_BLOCK = /\/\*\s*@example\s*([\s\S]*?)\*\//;
 const SHADE_EXT = '.shade.ts';
 
-/** Step one, at the compiler commit being published: every example in both corpora. */
+/** Step one, at the compiler commit being published: every `.shade.ts` example. The `fn()`
+ *  registry is not published: the site shows none of it, and its old pages redirect. */
 async function read(): Promise<void> {
   const commit = git(vendor, 'rev-parse HEAD');
   const repo = git(root, 'config -f .gitmodules submodule.vendor/shader-dsl.url').replace(
@@ -108,34 +108,6 @@ async function read(): Promise<void> {
     '',
   );
   const out: Read['examples'][number][] = [];
-
-  // The `fn()` registry, imported as the compiler exports it at this commit.
-  const { examples } = (await import(path.join(examplesDir, 'index.ts'))) as {
-    examples: readonly {
-      id: string;
-      title: string;
-      blurb: string;
-      category: string;
-      file: string;
-      renderable: boolean;
-    }[];
-  };
-  for (const e of examples) {
-    const source = clean(readFileSync(path.join(examplesDir, e.file), 'utf8'));
-    out.push({
-      id: e.id,
-      corpus: 'registry',
-      category: e.category,
-      file: e.file,
-      title: e.title,
-      blurb: e.blurb,
-      renderable: e.renderable,
-      sourceHref: `${repo}/blob/${commit}/examples/${e.file}`,
-      source,
-      entryLine: entryLineOf(source),
-      emitted: emittedFor(e.id, e.renderable),
-    });
-  }
 
   // The `.shade.ts` corpus: every file in the directory, each registered by its own block. A
   // block that does not parse leaves the file with its id for a title, where the build stops.
@@ -178,9 +150,6 @@ async function read(): Promise<void> {
   console.log(`read: ${out.length} examples at ${commit.slice(0, 12)} -> ${readFile}`);
 }
 
-// The registry's three categories, in the gallery's order, then the `.shade.ts` groups.
-const REGISTRY_ORDER = ['cartographic', 'generic', 'compute'];
-
 /** Step two, at the site's pin: each example's words, group and page meta, from the
  *  dictionaries the build uses. An example they do not know yet keeps the registry's English
  *  and goes in the group `new`, which is the gap this data covers until the next build. */
@@ -191,44 +160,41 @@ async function words(): Promise<void> {
   const { SHADE_GROUPS } = await import('../src/lib/shade-examples.ts');
   const { shortBlurb } = await import('../src/lib/blurb.ts');
   const { exampleMeta } = await import('../src/lib/example-meta.ts');
-  const { STILL_EXAMPLES, SHADE_STILL_EXAMPLES } = await import('./artifacts.mjs');
-  const stills = new Set<string>([...STILL_EXAMPLES, ...SHADE_STILL_EXAMPLES]);
+  const { twinBlurbs } = await import('../src/lib/examples.ts');
+  const { SHADE_STILL_EXAMPLES } = await import('./artifacts.mjs');
+  const stills = new Set<string>(SHADE_STILL_EXAMPLES);
+  // A source twin's English line is the one its original's registry entry writes, the way
+  // the dictionaries give it (src/lib/examples.ts).
+  const twinLines = twinBlurbs();
   const groupOf = new Map<string, string>(
     SHADE_GROUPS.flatMap((g) => g.ids.map((id): [string, string] => [id, g.key])),
   );
   const shadeOrder = SHADE_GROUPS.flatMap((g) => [...g.ids] as string[]);
 
-  const records: ExampleRecord[] = input.examples.map(({ category, title, blurb, ...e }) => {
-    const english = { title, blurb: shortBlurb(blurb) };
-    const inLocale = (locale: DataLocale) => {
-      const x = copyFor(locale).examples;
-      const t =
-        e.corpus === 'shade'
-          ? ((x.shade.titles as Record<string, string>)[e.id] ?? english.title)
-          : english.title;
-      const b =
-        (e.corpus === 'shade'
-          ? (x.shade.descriptions as Record<string, string>)[e.id]
-          : (x.blurbs as Record<string, string>)[e.id]) ?? english.blurb;
-      return { title: t, blurb: b, page: exampleMeta(locale, t, b) };
-    };
-    const w = Object.fromEntries(LOCALES.map((l) => [l, inLocale(l)])) as Record<
-      DataLocale,
-      ReturnType<typeof inLocale>
-    >;
-    return {
-      ...e,
-      group: e.corpus === 'shade' ? (groupOf.get(e.id) ?? 'new') : category,
-      title: { en: w.en.title, ko: w.ko.title },
-      blurb: { en: w.en.blurb, ko: w.ko.blurb },
-      page: { en: w.en.page, ko: w.ko.page },
-      still: stills.has(e.id),
-    };
-  });
-  const rank = (r: ExampleRecord): number =>
-    r.corpus === 'registry'
-      ? REGISTRY_ORDER.indexOf(r.group)
-      : REGISTRY_ORDER.length + (r.group === 'new' ? 1e6 : shadeOrder.indexOf(r.id));
+  const records: ExampleRecord[] = input.examples.map(
+    ({ category: _category, title, blurb, ...e }) => {
+      const english = { title, blurb: twinLines[e.id] ?? shortBlurb(blurb) };
+      const inLocale = (locale: DataLocale) => {
+        const x = copyFor(locale).examples;
+        const t = (x.shade.titles as Record<string, string>)[e.id] ?? english.title;
+        const b = (x.shade.descriptions as Record<string, string>)[e.id] ?? english.blurb;
+        return { title: t, blurb: b, page: exampleMeta(locale, t, b) };
+      };
+      const w = Object.fromEntries(LOCALES.map((l) => [l, inLocale(l)])) as Record<
+        DataLocale,
+        ReturnType<typeof inLocale>
+      >;
+      return {
+        ...e,
+        group: groupOf.get(e.id) ?? 'new',
+        title: { en: w.en.title, ko: w.ko.title },
+        blurb: { en: w.en.blurb, ko: w.ko.blurb },
+        page: { en: w.en.page, ko: w.ko.page },
+        still: stills.has(e.id),
+      };
+    },
+  );
+  const rank = (r: ExampleRecord): number => (r.group === 'new' ? 1e6 : shadeOrder.indexOf(r.id));
   records.sort((a, b) => rank(a) - rank(b) || a.id.localeCompare(b.id));
 
   const siteCommit = git(root, 'rev-parse HEAD');

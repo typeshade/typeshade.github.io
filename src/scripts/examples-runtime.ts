@@ -16,7 +16,9 @@ async function fill(section: HTMLElement): Promise<void> {
       .map((a) => /\/guide\/examples\/([^/]+)\/$/.exec(new URL(a.href).pathname)?.[1])
       .filter((id): id is string => id !== undefined),
   );
-  const fresh = index.examples.filter((x) => !built.has(x.id));
+  // A release published before the `fn()` registry left the site still lists its examples;
+  // their pages redirect, so they get no tile.
+  const fresh = index.examples.filter((x) => x.corpus === 'shade' && !built.has(x.id));
   if (fresh.length === 0) return;
 
   const locale = pageLocale();
