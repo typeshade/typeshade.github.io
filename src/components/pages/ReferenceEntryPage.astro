@@ -7,7 +7,9 @@
 // sentence, the stage rules and the two target spellings are a LanguageEntry
 // (src/lib/language-reference.ts), the examples come from the corpus
 // (src/lib/language-examples.ts), and the words around them are docs.reference in every
-// dictionary.
+// dictionary. A reference note is the one part a person writes: sections after Description
+// and before Targets, translated like a guide section and held to the values they read
+// (DESIGN.md, Reference notes). A page without a note shows nothing there.
 import { Code } from 'astro-expressive-code/components';
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import LanguageType from '../LanguageType.astro';

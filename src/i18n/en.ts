@@ -311,7 +311,7 @@ export const en = {
         'This is the reference for shader authors. The surface a host application and the [`fn()`](apiFn) builder call is the [compiler API reference](api).',
       reference: 'Reference',
       breadcrumbs: 'Breadcrumbs',
-      note: `The signature and the sentence under each name are the compiler's own text at commit ${facts.pinnedCommit}.`,
+      note: `The signature, the sentence and any message are the compiler's own text at commit ${facts.pinnedCommit}.`,
       readingH: 'Reading an entry',
       numberP:
         'A `number` in a parameter or a return position is the scalar slot. The ambient file declares a GPU scalar as a branded number whose brand is optional, so a literal and any branded scalar both fill it.',

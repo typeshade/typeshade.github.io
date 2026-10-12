@@ -81,6 +81,11 @@ pin is a step with checks, not a memory:
   repository and that `compiler-changes.md` does not record yet: do the work the proposal lists,
   then add its id to that file. Then run `bun run check:guide`, which lists the Korean guide
   pages the new `AUTHORING.md` leaves stale.
+- A pin that moves a value a reference note reads fails the build until the note is read again
+  (DESIGN.md, Reference notes). The message names each section that reads the value and prints
+  the recorded value beside the new one. Read each named section against the new value, fix what
+  no longer holds, then record the reading again. A Korean section whose English or values moved
+  is shown in English until it is translated or read again.
 - When you edit inside a `LINT.IfChange` block, edit its `LINT.ThenChange` targets in the same
   commit. `TYPESHADE_DOCS_ROOT=$PWD bun vendor/shader-dsl/scripts/ifchange.ts` checks this.
 - `.claude/settings.json` runs both checks before every `git commit` and blocks the commit while

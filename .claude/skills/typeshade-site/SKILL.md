@@ -111,6 +111,9 @@ the pull request `.github/workflows/pin-compiler.yml` opens lists the ones it le
 code blocks byte for byte, every inline code span the same number of times, the numerals, the
 link targets, the heading count, and the Korean rules above. Translate meaning first with
 `content/guide/GLOSSARY.md` as the term list, and add to the glossary any term you decide on.
+The language reference's generated body is not translated; a Korean language reference page is
+Korean chrome around the compiler's own declarations and sentences. A language reference note is
+the exception: it is translated section by section (DESIGN.md, Reference notes).
 
 ## The Korean API reference
 
