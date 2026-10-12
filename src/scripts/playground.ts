@@ -40,6 +40,7 @@ import type {
 import {
   SEMANTIC_TOKEN_MODIFIERS,
   SEMANTIC_TOKEN_TYPES,
+  HOST_URI,
   createLanguageClient,
   encodeSemanticTokens,
   type Analysis,
@@ -59,6 +60,10 @@ import { errorLink } from './error-links.ts';
 import { diagnosticsForDocument } from './playground-diagnostics.ts';
 import { decodeSource, encodeSource } from './source-link.ts';
 import { workspaceFolder, zipStored } from './workspace-folder.ts';
+// host.ts (compiler change 0062): the declarations the worker checks it against, as one asset
+// it fetches the first time host.ts is opened, and the sandboxed frame a run happens in.
+import hostTypesAsset from 'virtual:playground-host-types';
+import { startHostFrame, type HostEvent, type HostRun } from './playground-host-run.ts';
 import { provideProgram } from './report-context.ts';
 import {
   fetchExample,
@@ -116,6 +121,8 @@ interface PlaygroundExample {
   readonly passes?: readonly { readonly name: string; readonly file: string }[];
   /** Where a source twin's uniform fields start, by field name. */
   readonly defaults?: Readonly<Record<string, readonly number[]>>;
+  /** A host example's host.ts (compiler change 0061), which opens in the tab beside it. */
+  readonly host?: string;
 }
 
 /** What the options bar is set to. Every field is a value the compiler's emit API takes. */
@@ -282,6 +289,13 @@ interface PlaygroundCopy {
     readonly passFailed: string;
     readonly passTexture: string;
     readonly passesRgba8: string;
+    readonly runHost: string;
+    readonly stopHost: string;
+    readonly hostFrame: string;
+    readonly hostConsole: string;
+    readonly hostNone: string;
+    readonly hostUnloaded: string;
+    readonly hostStopped: string;
   };
 }
 
@@ -3412,6 +3426,8 @@ function mount(root: HTMLElement): void {
         analysedVersion = asked;
         paintAnalysis(analysis);
         paintFileMarkers();
+        // host.ts reads the module's host view, so a new program is a new check of it.
+        checkHost();
       })
       .catch((error: unknown) => {
         if (asked === version)
@@ -3436,6 +3452,10 @@ function mount(root: HTMLElement): void {
     const text = model.getValue();
     const unnamed = exampleFileName(examples.find((candidate) => candidate.source === text)?.id);
     if (fileName !== unnamed) more.push(`name=${encodeURIComponent(fileName)}`);
+    // host.ts rides along where it is other than the one the link opens with without it: the
+    // example's own, or the starter the page writes. A link written before host.ts opens as
+    // it always did.
+    if (hostCarried()) more.push(`host=${await encodeSource(hostText())}`);
     writeHash('code', await encodeSource(text), currentChoice(), more);
   };
 
@@ -3568,6 +3588,9 @@ function mount(root: HTMLElement): void {
     renameMain(exampleFileName(example.id));
     // The files it imports go in first, so the worker holds them when the new text asks.
     setFiles(filesFor(example.source, example), graphFor(example));
+    // host.ts goes with the example: its own for a host example, else none until it is needed.
+    stopHost();
+    setHost(example.host, example.host);
     model.setValue(example.source);
     // The edit handler queued a render for the new text; this one is immediate, so that one
     // is dropped and the example is painted once.
@@ -3583,7 +3606,10 @@ function mount(root: HTMLElement): void {
   /** Whether the link can stay the short `#example=` form: it names an example, carries no
    *  code, and the main file still has that example's name. */
   const exampleLink = (named: string | null): boolean =>
-    Boolean(named) && !hashParams().get('code') && fileName === exampleFileName(named!);
+    Boolean(named) &&
+    !hashParams().get('code') &&
+    fileName === exampleFileName(named!) &&
+    !hostCarried();
 
   const applyOptions = (): void => {
     levelNote.hidden = levelPicker.value === 'O2';
@@ -3740,6 +3766,7 @@ function mount(root: HTMLElement): void {
     example?: PlaygroundExample;
     files?: Record<string, string>;
     graph?: { name: string; path: string }[];
+    host?: string;
   }> => {
     await addReleaseExamples();
     let params = hashParams();
@@ -3767,6 +3794,8 @@ function mount(root: HTMLElement): void {
     ) {
       enginePicker.value = backend;
     }
+    const linkedHost = params.get('host');
+    const host = linkedHost ? await decodeSource(linkedHost) : undefined;
     const code = params.get('code');
     if (code) {
       const source = await decodeSource(code);
@@ -3785,6 +3814,7 @@ function mount(root: HTMLElement): void {
           example,
           files: await linkedFiles(params.get('files')),
           graph: linkedGraph(params.get('passes')),
+          ...(host !== undefined ? { host } : {}),
         };
       }
     }
@@ -4014,6 +4044,18 @@ function mount(root: HTMLElement): void {
       return button;
     };
     fileTabs.append(tab('', fileName));
+    // host.ts beside the main file. It keeps its name, so it has no rename and no close.
+    const hostTab = el('button', 'file-tab', HOST_TAB) as HTMLButtonElement;
+    hostTab.type = 'button';
+    hostTab.dataset.fileTab = HOST_TAB;
+    if (activeFile === HOST_TAB) hostTab.setAttribute('aria-current', 'true');
+    if (hostMarkers > 0) hostTab.classList.add('file-errors');
+    if (hostReady && hostPristine !== undefined && hostText() !== hostPristine)
+      hostTab.classList.add('file-dirty');
+    hostTab.addEventListener('click', () => {
+      if (activeFile !== HOST_TAB) showFile(HOST_TAB);
+    });
+    fileTabs.append(hostTab);
     for (const [path, file] of extras) {
       const pass = passGraph.find((p) => p.path === path);
       const button = tab(path, path);
@@ -4058,6 +4100,24 @@ function mount(root: HTMLElement): void {
     }
   };
 
+  /** A diagnostic of a file with no prelude, as a marker on its model: its lines are the ones
+   *  the service counts. */
+  const fileMarker = (diagnostic: TypeshadeDiagnostic) => ({
+    startLineNumber: diagnostic.range.start.line + 1,
+    startColumn: diagnostic.range.start.character + 1,
+    endLineNumber: diagnostic.range.end.line + 1,
+    endColumn: Math.max(
+      diagnostic.range.end.character + 1,
+      diagnostic.range.start.line === diagnostic.range.end.line
+        ? diagnostic.range.start.character + 2
+        : 1,
+    ),
+    message: diagnostic.message,
+    source: diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
+    code: String(diagnostic.code),
+    severity: markerSeverity(monacoApi, diagnostic.severity),
+  });
+
   /** Asks the worker about each file beside the main one and puts its diagnostics on its own
    *  model, since the list under the editor is the program's. A file with no prelude has its
    *  lines as the service counts them. */
@@ -4071,26 +4131,7 @@ function mount(root: HTMLElement): void {
           if (!analysis || asked !== version || extras.get(path) !== file) return;
           const found = diagnosticsForDocument(analysis.diagnostics, uriOf(path));
           file.markers = found.filter((diagnostic) => diagnostic.severity === 'error').length;
-          monacoApi.editor.setModelMarkers(
-            file.model,
-            'typeshade',
-            found.map((diagnostic) => ({
-              startLineNumber: diagnostic.range.start.line + 1,
-              startColumn: diagnostic.range.start.character + 1,
-              endLineNumber: diagnostic.range.end.line + 1,
-              endColumn: Math.max(
-                diagnostic.range.end.character + 1,
-                diagnostic.range.start.line === diagnostic.range.end.line
-                  ? diagnostic.range.start.character + 2
-                  : 1,
-              ),
-              message: diagnostic.message,
-              source:
-                diagnostic.source === 'typescript' ? copy.sourceTypescript : copy.sourceTypeshade,
-              code: String(diagnostic.code),
-              severity: markerSeverity(monacoApi, diagnostic.severity),
-            })),
-          );
+          monacoApi.editor.setModelMarkers(file.model, 'typeshade', found.map(fileMarker));
           paintTabs();
         })
         .catch((error: unknown) => {
@@ -4141,6 +4182,227 @@ function mount(root: HTMLElement): void {
     else paintTabs();
     workspaceEdited();
   };
+
+  // ── host.ts ────────────────────────────────────────────────────────────────────────────
+  // The TypeScript an application writes around the module (compiler change 0062), in a tab
+  // beside the main file. The language worker checks it against the DOM, the runtime and the
+  // host view of each module it imports (playground-host-service.ts), and builds it for Run,
+  // which runs it in a sandboxed frame over the canvas (playground-host-run.ts) and never on its
+  // own: not on a keystroke, not from a link. A host example opens with its own host.ts; any
+  // other file gets a starter written from its host face (playground-host-default.ts) the first
+  // time host.ts is shown, run or downloaded.
+
+  const HOST_TAB = 'host.ts';
+  /** Where the markers on host.ts come from: its own check, apart from the compiler's. */
+  const HOST_MARKERS = 'typeshade-host';
+  const hostTypes = new URL(hostTypesAsset, window.location.href).toString();
+  let hostModel: any;
+  /** Whether host.ts holds a text: its example's, the link's or the starter. Until then the
+   *  model is empty, nothing checks it and the link carries none. */
+  let hostReady = false;
+  /** The text host.ts opened with, which the link need not carry; undefined for one a link
+   *  brought with nothing to compare it with. */
+  let hostPristine: string | undefined;
+  /** Whether the reader has looked at host.ts or run it: until then it is not checked, so a
+   *  reader who never opens it never downloads the declarations it is checked against. */
+  let hostSeen = false;
+  let hostMarkers = 0;
+  let hostChecks = 0;
+  let hostTimer = 0;
+  /** Raised each time the page sets host.ts's text, so a starter asked for before is dropped. */
+  let hostEpoch = 0;
+  /** True while the page itself writes host.ts, which is no edit of the reader's. */
+  let hostSetting = false;
+
+  const hostText = (): string => (hostReady && hostModel ? (hostModel.getValue() as string) : '');
+  /** Whether the link has to carry host.ts. */
+  const hostCarried = (): boolean => hostReady && hostText() !== hostPristine;
+
+  /** Asks the worker for host.ts's diagnostics and puts them on its model. */
+  const checkHost = (): void => {
+    if (!client || !hostModel || !hostReady || !hostSeen || !monacoApi) return;
+    const asked = ++hostChecks;
+    const text = hostText();
+    void client
+      .request('hostDiagnostics', HOST_URI, version, { text, types: hostTypes })
+      .then((found) => {
+        if (!found || asked !== hostChecks || text !== hostText()) return;
+        hostMarkers = found.filter((diagnostic) => diagnostic.severity === 'error').length;
+        monacoApi.editor.setModelMarkers(hostModel, HOST_MARKERS, found.map(fileMarker));
+        paintTabs();
+      });
+  };
+
+  /** Gives host.ts a text, or none (`undefined`), as the workspace opens. */
+  const setHost = (text: string | undefined, pristine: string | undefined): void => {
+    hostEpoch += 1;
+    hostReady = text !== undefined;
+    hostPristine = pristine;
+    hostMarkers = 0;
+    if (hostModel) {
+      hostSetting = true;
+      hostModel.setValue(text ?? '');
+      hostSetting = false;
+      monacoApi?.editor.setModelMarkers(hostModel, HOST_MARKERS, []);
+    }
+    checkHost();
+    paintTabs();
+  };
+
+  /** Writes the starter into a host.ts that has no text yet. The starter is of the main file the
+   *  worker holds, so an answer about a version the editor has left is asked again. */
+  const ensureHost = async (): Promise<void> => {
+    if (hostReady || !client) return;
+    const epoch = hostEpoch;
+    for (let tries = 0; tries < 4; tries += 1) {
+      const asked = version;
+      const starter = await client.request('hostStarter', documentUri, asked, {});
+      if (epoch !== hostEpoch || hostReady) return;
+      if (starter) {
+        setHost(starter, starter);
+        return;
+      }
+      if (asked === version) return;
+    }
+  };
+
+  /** An edit of the reader's to host.ts: checked once the typing settles, and carried by the
+   *  link. It runs only on Run. */
+  const hostEdited = (): void => {
+    if (hostSetting) return;
+    window.clearTimeout(hostTimer);
+    hostTimer = window.setTimeout(checkHost, 350);
+    window.clearTimeout(urlTimer);
+    urlTimer = window.setTimeout(() => {
+      void publishSource();
+    }, 600);
+    paintTabs();
+  };
+
+  // Run: host.ts and the modules it imports, built by the worker, in a frame over the canvas.
+  // Its console lines and errors fill the Console tab as they come, each with the line of
+  // host.ts it came from; a second click stops it and removes the frame.
+  const runHostButton = root.querySelector('[data-run-host]');
+  const runHostLabel = root.querySelector('[data-run-host-label]');
+  const hostNote = root.querySelector('[data-host-note]');
+  let hostRun: HostRun | undefined;
+  /** Raised by every Run and Stop, so a build that comes back after either is dropped. */
+  let hostTicket = 0;
+  let hostList: HTMLOListElement | undefined;
+  let hostLines = 0;
+  let hostMore: HTMLParagraphElement | undefined;
+
+  const syncRunHost = (): void => {
+    if (!(runHostButton instanceof HTMLButtonElement)) return;
+    const running = hostRun !== undefined;
+    runHostButton.setAttribute('aria-pressed', String(running));
+    runHostButton.querySelector('[data-icon-run]')?.toggleAttribute('hidden', running);
+    runHostButton.querySelector('[data-icon-stop]')?.toggleAttribute('hidden', !running);
+    // The name stays on the button when a narrow file bar shows its icon alone.
+    runHostButton.setAttribute('aria-label', running ? w.stopHost : w.runHost);
+    if (runHostLabel instanceof HTMLElement)
+      runHostLabel.textContent = running ? w.stopHost : w.runHost;
+    if (hostNote instanceof HTMLElement) hostNote.hidden = !running;
+  };
+
+  /** Removes the frame of a run, if one is up. `say` adds a line saying so to its report. */
+  const stopHost = (say = false): void => {
+    hostTicket += 1;
+    if (!hostRun) return;
+    hostRun.stop();
+    hostRun = undefined;
+    syncRunHost();
+    if (say && consolePane instanceof HTMLElement && consolePane.dataset.report === 'host')
+      consolePane.append(sentence(w.hostStopped));
+  };
+
+  /** One line of the run's report, the way a console line of the module's is drawn: where it
+   *  ran, the line of host.ts it came from, then what it printed. */
+  const hostLine = (method: string, source: string, text: string): void => {
+    if (!hostList || !(consolePane instanceof HTMLElement)) return;
+    hostLines += 1;
+    consolePane.dataset.lines = String(hostLines);
+    if (hostLines > CONSOLE_SHOWN) {
+      hostMore ??= sentence('');
+      hostMore.textContent = fillNumbers(copy.consoleMore, { more: hostLines - CONSOLE_SHOWN });
+      if (!hostMore.isConnected) consolePane.append(hostMore);
+      return;
+    }
+    const li = document.createElement('li');
+    if (method === 'warn' || method === 'error') li.className = method;
+    const part = (className: string, value: string): HTMLSpanElement => {
+      const node = document.createElement('span');
+      node.className = className;
+      node.textContent = value;
+      return node;
+    };
+    const tier = part('tier', 'host');
+    tier.dataset.tier = 'host';
+    li.append(tier, part('source', source), part('at', ''), part('value', text));
+    hostList.append(li);
+  };
+
+  const onHostEvent = (event: HostEvent): void => {
+    const at = (line: number | undefined): string => (line ? `${HOST_TAB}:${line}` : HOST_TAB);
+    switch (event.kind) {
+      case 'console':
+        hostLine(event.method, at(event.line), event.text);
+        return;
+      case 'error':
+        hostLine('error', at(event.line), event.text);
+        return;
+      case 'returned':
+        if (event.text !== undefined) hostLine('log', 'run()', event.text);
+        return;
+      case 'started':
+        if (event.call === 'none' && consolePane instanceof HTMLElement)
+          consolePane.append(sentence(w.hostNone));
+        return;
+      case 'unloaded':
+        if (consolePane instanceof HTMLElement) consolePane.append(sentence(w.hostUnloaded));
+        return;
+    }
+  };
+
+  const runHost = async (): Promise<void> => {
+    if (!client || !hostModel || !(frame instanceof HTMLElement)) return;
+    stopHost();
+    const ticket = hostTicket;
+    hostSeen = true;
+    await ensureHost();
+    if (!hostReady || ticket !== hostTicket) return;
+    let build = await client.request('hostBuild', HOST_URI, version, { text: hostText() });
+    // The main file moved under the build: once more, against the text the worker now holds.
+    build ??= await client.request('hostBuild', HOST_URI, version, { text: hostText() });
+    if (!build || ticket !== hostTicket) return;
+    checkHost();
+    if (view !== 'result' && view !== 'console') selectView('result');
+    hostList = document.createElement('ol');
+    hostList.dataset.consoleBlock = 'host';
+    hostLines = 0;
+    hostMore = undefined;
+    paintConsole({ report: 'host', lines: 0 }, sentence(w.hostConsole), hostList);
+    for (const problem of build.problems) hostLine('error', HOST_TAB, problem);
+    if (!build.host.code) return;
+    const example = examples.find((candidate) => candidate.id === openedExample);
+    hostRun = startHostFrame(
+      frame,
+      {
+        host: build.host,
+        modules: build.modules,
+        ...(example?.host !== undefined ? { example: example.id } : {}),
+      },
+      onHostEvent,
+      { background: getComputedStyle(frame).backgroundColor, title: w.hostFrame },
+    );
+    syncRunHost();
+  };
+
+  if (runHostButton instanceof HTMLButtonElement)
+    runHostButton.addEventListener('click', () => {
+      if (hostRun) stopHost(true);
+      else void runHost();
+    });
 
   // ── Names ────────────────────────────────────────────────────────────────────────────
   // The main file opens under its example's name and every tab can be renamed: a double
@@ -4218,6 +4480,8 @@ function mount(root: HTMLElement): void {
     const others: [string, any][] = [
       ['', model],
       ...[...extras].map(([key, file]): [string, any] => [key, file.model]),
+      // host.ts imports the main file by its name, so its import follows a rename too.
+      ...(hostReady && hostModel ? [[HOST_TAB, hostModel] as [string, any]] : []),
     ];
     for (const [key, other] of others) {
       if (key === (path === '' ? '' : next) || !other) continue;
@@ -4234,7 +4498,7 @@ function mount(root: HTMLElement): void {
 
   /** Turns the tab of `path` ('' for the main file) into a field for its new name. */
   function startRename(path: string): void {
-    if (!(fileTabs instanceof HTMLElement) || !editor) return;
+    if (!(fileTabs instanceof HTMLElement) || !editor || path === HOST_TAB) return;
     if (fileTabs.querySelector('input')) return;
     const current = path === '' ? fileName : path;
     const button = [...fileTabs.querySelectorAll('[data-file-tab]')].find(
@@ -4353,6 +4617,16 @@ function mount(root: HTMLElement): void {
 
   function showFile(path: string): void {
     if (!editor || !model) return;
+    if (path === HOST_TAB) {
+      if (!hostModel) return;
+      activeFile = HOST_TAB;
+      hostSeen = true;
+      editor.setModel(hostModel);
+      paintTabs();
+      paintOutput();
+      void ensureHost().then(checkHost);
+      return;
+    }
     const file = path === '' ? undefined : extras.get(path);
     if (path !== '' && !file) return;
     activeFile = path;
@@ -4437,12 +4711,14 @@ export function wave(x: f32, t: f32): f32 {
   // and the pass graph in typeshade.json (src/scripts/workspace-folder.ts).
   const downloadButton = root.querySelector('[data-download]');
   if (downloadButton instanceof HTMLButtonElement)
-    downloadButton.addEventListener('click', () => {
+    downloadButton.addEventListener('click', async () => {
       if (!model) return;
+      await ensureHost();
       const folder = workspaceFolder(
         { path: fileName, text: model.getValue() },
         workspaceFiles(),
         passGraph,
+        hostReady ? hostText() : undefined,
       );
       const url = URL.createObjectURL(new Blob([zipStored(folder)], { type: 'application/zip' }));
       const anchor = document.createElement('a');
@@ -4499,6 +4775,8 @@ export function wave(x: f32, t: f32): f32 {
     bindings.seed({});
     renameMain(MAIN_FILE);
     setFiles({});
+    stopHost();
+    setHost(undefined, undefined);
     model.setValue(blankSource);
     window.clearTimeout(timer);
     writeHash('blank', '1', currentChoice());
@@ -4508,6 +4786,7 @@ export function wave(x: f32, t: f32): f32 {
     if (!(gallery instanceof HTMLElement)) return;
     root.dataset.view = view;
     if (view === 'editor') editor?.layout();
+    else stopHost();
   };
   const hashOpensEditor = (): boolean =>
     /(^|&)(example|code|blank|share)(=|&|$)/.test(window.location.hash.replace(/^#/, ''));
@@ -4617,6 +4896,17 @@ export function wave(x: f32, t: f32): f32 {
         'typescript',
         monaco.Uri.parse(MAIN_MODEL_URI),
       );
+      // host.ts's model, after the main one: the main file stays the first model. Its text is
+      // the link's, else its example's, else none until it is needed.
+      hostModel = monaco.editor.createModel(
+        '',
+        'typescript',
+        monaco.Uri.parse('inmemory://playground/host.ts'),
+      );
+      hostModel.onDidChangeContent(hostEdited);
+      if (opening.host !== undefined) setHost(opening.host, opening.example?.host);
+      else if (opening.example?.host !== undefined)
+        setHost(opening.example.host, opening.example.host);
       editor = monaco.editor.create(editorHost, {
         model,
         automaticLayout: true,
@@ -4672,13 +4962,21 @@ export function wave(x: f32, t: f32): f32 {
       monaco.languages.registerCompletionItemProvider('typescript', {
         triggerCharacters: ['@', '"', ':', '.'],
         provideCompletionItems: async (currentModel: any, position: MonacoPosition) => {
-          if (!isOurs(currentModel) || !client) return { suggestions: [] };
-          const items = await client.request(
-            'completions',
-            uriIn(currentModel),
-            version,
-            here(position, mainModel(currentModel)),
-          );
+          const onHost = currentModel === hostModel;
+          if ((!onHost && !isOurs(currentModel)) || !client) return { suggestions: [] };
+          // host.ts is TypeScript, answered by its own checker in the worker.
+          const items = onHost
+            ? await client.request('hostCompletions', HOST_URI, version, {
+                text: currentModel.getValue(),
+                types: hostTypes,
+                ...here(position, false),
+              })
+            : await client.request(
+                'completions',
+                uriIn(currentModel),
+                version,
+                here(position, mainModel(currentModel)),
+              );
           if (!items) return { suggestions: [] };
           const word = currentModel.getWordUntilPosition(position);
           const range = new monaco.Range(
@@ -4722,17 +5020,24 @@ export function wave(x: f32, t: f32): f32 {
 
       monaco.languages.registerHoverProvider('typescript', {
         provideHover: async (currentModel: any, position: MonacoPosition) => {
-          if (!isOurs(currentModel) || !client) return null;
-          const hover = await client.request(
-            'hover',
-            uriIn(currentModel),
-            version,
-            here(position, mainModel(currentModel)),
-          );
+          const onHost = currentModel === hostModel;
+          if ((!onHost && !isOurs(currentModel)) || !client) return null;
+          const hover = onHost
+            ? await client.request('hostHover', HOST_URI, version, {
+                text: currentModel.getValue(),
+                types: hostTypes,
+                ...here(position, false),
+              })
+            : await client.request(
+                'hover',
+                uriIn(currentModel),
+                version,
+                here(position, mainModel(currentModel)),
+              );
           if (!hover) return null;
           return {
             contents: [{ value: hover.contents }],
-            range: monacoRange(hover.range, mainModel(currentModel)),
+            range: monacoRange(hover.range, !onHost && mainModel(currentModel)),
           };
         },
       });

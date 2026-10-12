@@ -210,8 +210,9 @@ id first, then the pull request that did the work.
   pinned the compiler at 48e3951. Handled in the pull request that pins the compiler at
   c89f6b2.
 - 0062: `hostFace` is public from `typeshade/language-service`: the API reference reads
-  `hostFace`, `HostFace`, `HostFaceOptions` and `HostExport` from that entry point. The
-  Playground's language worker does not compute a host face yet, so it has no deep import of
-  `src/compiler/ts/host-face.ts` to replace; the editable `host.ts` tab that will call
-  `hostFace` imports it from `typeshade/language-service`. Handled in the pull request that pins
-  the compiler at c89f6b2.
+  `hostFace`, `HostFace`, `HostFaceOptions` and `HostExport` from that entry point, handled in
+  the pull request that pins the compiler at c89f6b2. The Playground had no deep import of
+  `src/compiler/ts/host-face.ts` to replace: its language worker computed no host face until
+  the editable `host.ts` tab, which imports `hostFace` from the subpath's entry
+  (`src/language-service/index.ts`) to type-check and run `host.ts`, handled in the pull
+  request that adds that tab.

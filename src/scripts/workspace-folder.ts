@@ -1,6 +1,6 @@
 // The Playground's workspace as a folder a reader opens in VS Code: the files as they are in the
-// tabs, `typeshade.json` naming the main file and the pass graph, a `tsconfig.json` over the
-// shader files, and `.vscode/extensions.json` recommending the extension. The folder layout is
+// tabs, host.ts among them, `typeshade.json` naming the main file and the pass graph, a
+// `tsconfig.json` over the shader files, and `.vscode/extensions.json` recommending the extension. The folder layout is
 // the one vscode-typeshade's docs/playground-bridge.md §2.1 proposes, and it holds nothing the
 // Playground's link does not also carry (DESIGN.md, Playground, "The link").
 
@@ -15,14 +15,17 @@ const EXTENSION = 'typeshade.vscode-typeshade';
 
 const json = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
 
-/** Every file of the folder by its path in it, the main file at the root. */
+/** Every file of the folder by its path in it, the main file at the root, and host.ts beside it
+ *  when the workspace holds one. */
 export function workspaceFolder(
   main: { readonly path: string; readonly text: string },
   files: Readonly<Record<string, string>>,
   passes: readonly FolderPass[],
+  host?: string,
 ): Record<string, string> {
   return {
     [main.path]: main.text,
+    ...(host !== undefined ? { 'host.ts': host } : {}),
     ...files,
     'typeshade.json': json({
       main: main.path,
