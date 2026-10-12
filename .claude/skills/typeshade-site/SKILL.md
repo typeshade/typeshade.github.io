@@ -110,8 +110,9 @@ the pull request `.github/workflows/pin-compiler.yml` opens lists the ones it le
 code blocks byte for byte, every inline code span the same number of times, the numerals, the
 link targets, the heading count, and the Korean rules above. Translate meaning first with
 `content/guide/GLOSSARY.md` as the term list, and add to the glossary any term you decide on.
-Nothing about the reference's body is translated; a Korean reference page is Korean chrome
-around the compiler's own JSDoc.
+The reference's generated body is not translated; a Korean reference page is Korean chrome
+around the compiler's own JSDoc and declarations. A language reference note is the exception:
+it is translated section by section (DESIGN.md, Reference notes).
 
 A translation that explains a design rule also records the rule it was read against, by the
 rule's fingerprint (`reviewed` in the compiler's `reqs/rules/RULE-xxxx.md`). A section does it in

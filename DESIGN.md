@@ -765,6 +765,75 @@ body says so. The contract between the generator and the page is `src/lib/api-ty
 the words around it are `docs.api` in every dictionary, with a name and a sentence for every
 category the extractor defines.
 
+### Reference notes
+
+A page of the language reference, `/reference/<kind>/<name>/`, is generated from the compiler
+at the pinned commit the way an API page is. A note is the one part of such a page a person
+writes: a few sections that explain the name, set after Description and before Targets. A page
+without a note shows nothing there. A note has to stay true while the pin moves under it, so
+this section fixes what it may say, and the build holds it to that.
+
+A note holds two kinds of text: the sentences a person wrote, and the values the build fills in
+when it renders the page.
+
+A person may write:
+
+- Mathematics, which does not change: `pow(x, y)` is $x^y$. A formula is LaTeX (Formulas).
+- What a specification defines, with that specification cited in the same section.
+- What a design rule says, with the rule named by its number, "Rule 9.4".
+- When to use the name and what to use beside it. Such advice rests on the mathematics, on a
+  cited specification or on a value the build computes, and on nothing else.
+
+The build computes, and nobody copies by hand:
+
+- What the compiler emits: an output line, a diagnostic's code and text, a spelling, an alias,
+  an accuracy bound.
+- What the CPU oracle returns.
+- A value from `facts`, and the pinned commit.
+- A specification's text, its address and its edition.
+- Every code block. A code block in a note is a sample the build compiles.
+
+A note never states what nothing can check again:
+
+- A value a GPU, a driver or a browser returns, a speed, or a vendor. A live example shows the
+  reader the value their own GPU returns; a table of values measured on one GPU is not part of
+  a note.
+- A word that points at a time, such as currently, yet, soon or latest. A page carries no date,
+  so the sentence states the condition the claim holds under.
+- A section number of a specification. The number moves between editions and the anchor id
+  stays.
+
+Each section a person wrote is bound to a reading. The reading records the value of every input
+the section reads, at the moment a person read the section: the oracle's answer to a call, a
+diagnostic, an accuracy bound, the compiler's sentence under the name. The build computes the
+same inputs again from the pinned compiler. When one differs, the build stops, names each
+section that reads it, and prints the recorded value beside the new one. The person reads those
+sections against the new value, fixes what no longer holds, and records the reading again.
+
+The build compares values. A pin that leaves every value a note reads as it was passes, whatever
+else it changed. Over the 20 moves of the pin measured when this rule was written, no value the
+`pow` page would read changed, so a build that compared commits would have stopped 20 times for
+nothing. The build reads a behaviour by calling the compiler's public exports, and hashes no
+source file.
+
+A prose file holds no computed value. A token in the text draws each value when the page is
+built, so a pin that moves a value changes no byte of the prose.
+
+A fact lives in one place. A design rule's fingerprint is in `READ_AGAINST`
+(`src/lib/design-rules.ts`), a note's reading is in its reading file, a specification's edition
+is in the specification pin, and its address is a key in `src/lib/links.ts`.
+
+A section that says what TypeShade, its compiler or its oracle does carries the evidence: a
+token, or the inputs it reads declared beside it. The build stops on a section with neither.
+
+A note is translated, and its English is the source. A translated section records the English
+section and the values it was translated from. When either one changes, the build names that
+section in a warning, and the page shows it in English under the untranslated note until it is
+translated or read again. A stale English section stops the build, since re-reading a named
+section is short work and a page that states a value the compiler no longer has is wrong. What
+the compiler writes stays English on every locale: a diagnostic, an accuracy bound and the
+sentence under the name.
+
 ## Live examples
 
 A guide or concept page can carry a shader the reader edits. The model is
@@ -937,8 +1006,9 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   and option values in code spans, a table cell that is only code, and the words the
   glossary lists under "영어로 두는 낱말" (the ones Korean developers say in English, such
   as fail closed, gather and scatter), glossed once at first use. The check refuses the
-  Korean substitutes the glossary names for them. The reference's body stays English on
-  every locale.
+  Korean substitutes the glossary names for them. The reference's generated body stays
+  English on every locale: the declarations, the compiler's sentences and its messages. A
+  reference note is translated, section by section (Reference notes).
 - Inline links in copy are written `[text](key)`, inline code in backticks; `Rich.astro`
   renders them. `key` is a record in `src/lib/links.ts` or a page name, which the locale
   prefixes.
