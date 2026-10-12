@@ -519,7 +519,8 @@ cards takes the column. A third measure needs a reason.
   full-screen `@fragment` entry drawn in `animate(canvas)`, else a `@compute` entry dispatched
   once in `run()`, else `run()` opening the program runtime and listing the program's entries.
   Run host.ts, the button after the tabs, is the only way it runs: never on a keystroke and
-  never from a link. The worker turns it and each module it imports into CommonJS, and the
+  never from a link. In a file bar under 32rem it is its icon alone, a 24px box like the three
+  beside it, so the tabs keep their room. The worker turns it and each module it imports into CommonJS, and the
   page puts an `<iframe sandbox="allow-scripts">` over the canvas that loads the runtime bundle
   (`src/scripts/playground-host-frame.ts`) and runs them. The frame calls `animate(canvas)`
   when host.ts exports it, else `run()`, with the inputs `examples/hosts/_drive.ts` gives a

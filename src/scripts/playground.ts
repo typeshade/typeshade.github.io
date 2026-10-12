@@ -4298,6 +4298,8 @@ function mount(root: HTMLElement): void {
     runHostButton.setAttribute('aria-pressed', String(running));
     runHostButton.querySelector('[data-icon-run]')?.toggleAttribute('hidden', running);
     runHostButton.querySelector('[data-icon-stop]')?.toggleAttribute('hidden', !running);
+    // The name stays on the button when a narrow file bar shows its icon alone.
+    runHostButton.setAttribute('aria-label', running ? w.stopHost : w.runHost);
     if (runHostLabel instanceof HTMLElement)
       runHostLabel.textContent = running ? w.stopHost : w.runHost;
     if (hostNote instanceof HTMLElement) hostNote.hidden = !running;

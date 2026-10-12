@@ -407,7 +407,7 @@ const runtimeCopy = {
           <button type="button" class="file-tab" aria-current="true" data-file-tab={fileName || 'main'}>{fileName || t.editor}</button>
         </div>
         {/* Runs host.ts in a sandboxed frame over the canvas, and stops it (src/scripts/playground-host-run.ts). */}
-        <button type="button" class="file-run" data-run-host aria-pressed="false" title={w.runHostTitle}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" data-icon-run><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16l13-8z" /></svg><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" data-icon-stop hidden><rect x="6" y="6" width="12" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" /></svg><span data-run-host-label>{w.runHost}</span></button>
+        <button type="button" class="file-run" data-run-host aria-pressed="false" aria-label={w.runHost} title={w.runHostTitle}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" data-icon-run><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16l13-8z" /></svg><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" data-icon-stop hidden><rect x="6" y="6" width="12" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" /></svg><span data-run-host-label>{w.runHost}</span></button>
         <button type="button" class="file-add" data-new-file aria-label={w.newFile} title={w.newFile}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M12 11v6M9 14h6" /></svg></button>
         <button type="button" class="file-add" data-download aria-label={w.download} title={w.download}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg></button>
         <button type="button" class="file-add" data-open-vscode aria-label={w.openInVsCode} title={w.openInVsCodeTitle}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" /></svg></button>
@@ -580,7 +580,7 @@ const runtimeCopy = {
 
   /* The file tabs sit where the pane's title was, the way an editor's open files do. The add
      button closes the row; a row with more tabs than room scrolls sideways inside itself. */
-  .pane-title.file-bar { padding-block: 6px; gap: 6px; }
+  .pane-title.file-bar { padding-block: 6px; gap: 6px; container: file-bar / inline-size; }
   .file-bar kbd { flex: none; }
   .file-tabs { display: flex; flex: 1 1 auto; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
   .file-tabs::-webkit-scrollbar { display: none; }
@@ -613,6 +613,14 @@ const runtimeCopy = {
   .file-run:hover { color: var(--color-text-1); background: var(--color-surface-1); }
   .file-run:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
   .file-run[aria-pressed='true'] { border-color: var(--color-accent); color: var(--color-accent); }
+  /* A narrow bar keeps its room for the tabs: the button is its icon alone, the 24px box of
+     the three beside it, and the aria-label names it. 32rem leaves the tabs about 280px with
+     the word, the width two tabs of an example's names take. */
+  @container file-bar (max-width: 32rem) {
+    .file-run { justify-content: center; inline-size: 24px; padding: 0; }
+    .file-run svg { inline-size: 16px; block-size: 16px; }
+    .file-run [data-run-host-label] { display: none; }
+  }
   .file-add:hover { color: var(--color-text-1); background: var(--color-surface-1); }
   [data-vscode-hint] { margin: 0; padding: 6px 12px; color: var(--color-text-2); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }
   [data-file-error] { margin: 0; padding: 6px 12px; color: var(--color-diag); font-size: .75rem; line-height: 1.45; background: var(--color-surface-1); border-bottom: 1px solid var(--color-line-1); }
