@@ -2514,7 +2514,7 @@ export const ko: Copy = {
         next: '다음: Control flow',
       },
       controlFlow: {
-        title: 'TypeShade 제어 흐름',
+        title: 'TypeShade 제어 흐름: 분기, 루프, 커널',
         description:
           'TypeScript에서 익숙한 조건문과 반복문의 개념을 TypeShade의 GPU 실행 모델로 연결하고, 실제 셰이더에서 컴파일 가능한 분기와 반복을 안전하게 작성하는 방법을 단계적으로 설명합니다.',
         h1: 'Control flow: 익숙한 흐름, 명시적인 GPU 실행',
@@ -2525,6 +2525,7 @@ export const ko: Copy = {
         branch: '2. 조건 분기',
         branchP:
           'if/else는 계산 경로를 표현합니다. 분기 안에서도 TypeShade가 이해하는 값과 resource만 사용합니다.',
+        branchValueP: `조건에 따라 값을 고를 때는 \`c ? a : b\`로 씁니다. WGSL에는 \`?:\` 연산자가 없습니다. 스칼라나 벡터라면 WGSL 출력은 \`select(b, a, c)\`입니다. 거짓일 때의 값이 먼저 오고 조건이 마지막에 옵니다. WGSL은 두 값을 모두 계산하므로 비용이 큰 쪽은 \`if\`에 두십시오. ${glsl}에서는 \`?:\`가 그대로 남습니다. 구조체나 배열은 두 타깃 모두 변수 하나와 \`if\`로 고릅니다.`,
         loop: '3. 반복',
         loopP:
           'for 루프와 while 루프, 배열을 도는 for...of를 씁니다. for 루프는 유니폼 필드나 배열의 길이처럼 실행 중에야 정해지는 값까지 셀 수 있습니다. 배열의 map, forEach, some, every, reduce도 저마다 카운트 루프로 컴파일되며, map은 길이가 정해진 배열에 씁니다.',
@@ -2676,9 +2677,9 @@ export const ko: Copy = {
               '생성자와 메서드, 정적 멤버, 상속, 믹스인, 제네릭이 각각 무엇이 되는지, 컴파일러가 쓰는 구조체와 함수를 옆에 나란히 놓고 보여 줍니다.',
           },
           controlFlow: {
-            title: '제어 흐름과 그 변환 결과',
+            title: '제어 흐름과 삼항 연산이 WGSL로 바뀌는 결과',
             description:
-              '조건과 횟수가 정해진 루프, while, switch, 삼항 연산, break, continue, discard를 생성 코드와 함께 놓고, 거절되는 루프도 보여 줍니다.',
+              '조건, 횟수가 정해진 루프, while, switch, break, continue, discard, 그리고 WGSL에 없는 삼항 연산을 각각의 WGSL과 함께 놓고, 거절되는 루프도 보여 줍니다.',
           },
           expressions: {
             title: '식과 타입, 그리고 그 변환 결과',
@@ -2894,7 +2895,7 @@ export const ko: Copy = {
           },
           ternaryScalar: {
             name: '스칼라 삼항 연산',
-            p: `WGSL에서는 \`select\`가 되고, ${glsl}에서는 삼항 연산자가 됩니다.`,
+            p: `WGSL에는 \`?:\` 연산자가 없어서 삼항 연산이 \`select\`가 됩니다. 거짓일 때의 값이 먼저, 조건이 마지막에 옵니다. WGSL은 두 값을 모두 계산합니다. ${glsl}에는 삼항 연산자가 그대로 남습니다.`,
           },
           ternaryStruct: {
             name: '구조체 삼항 연산',

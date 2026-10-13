@@ -2360,7 +2360,7 @@ export const en = {
         next: 'Next: Control flow',
       },
       controlFlow: {
-        title: 'TypeShade control flow',
+        title: 'Control flow in TypeShade: branches, loops and kernels',
         description:
           'How familiar TypeScript conditionals and loops map to the TypeShade GPU execution model.',
         h1: 'Control flow: familiar syntax, explicit GPU execution',
@@ -2371,6 +2371,7 @@ export const en = {
         branch: '2. Branching',
         branchP:
           'Use if/else to express calculation paths. Inside a branch, keep values and resources within the TypeShade GPU model.',
+        branchValueP: `A value chosen by a condition is written \`c ? a : b\`. WGSL has no \`?:\` operator. For a scalar or a vector, the WGSL emit is \`select(b, a, c)\`, with the false value first and the condition last. WGSL evaluates both values, so put an expensive arm in an \`if\`. ${glsl} keeps \`?:\`. A struct or an array is chosen through a variable and an \`if\` on both targets.`,
         loop: '3. Loops',
         loopP:
           "Write a for loop, a while loop, or for...of over an array. A for loop may count to a value known only at run time, such as a uniform field or the length of an array. An array's map, forEach, some, every and reduce compile too, each to a counted loop, and map takes an array with a fixed length.",
@@ -2528,9 +2529,9 @@ export const en = {
               'Constructors, methods, static members, inheritance, mixins and generics, each with the struct and the functions the compiler writes for it.',
           },
           controlFlow: {
-            title: 'Control flow in TypeShade and what it lowers to',
+            title: 'Control flow and the ternary in TypeShade, lowered to WGSL',
             description:
-              'Conditions, counted loops, while, switch, the ternary, break, continue and discard, with the shader text written for each and the loops refused.',
+              'Conditions, counted loops, while, switch, break, continue, discard and the ternary, which WGSL lacks, each with its WGSL, and the loops refused.',
           },
           expressions: {
             title: 'TypeShade expressions and types, and what they lower to',
@@ -2749,7 +2750,7 @@ export const en = {
           },
           ternaryScalar: {
             name: 'Ternary on a scalar',
-            p: `A \`select\` on WGSL, and the ternary each ${glsl} driver has.`,
+            p: `WGSL has no \`?:\` operator, so the ternary becomes \`select\`: the false value first, the condition last. WGSL evaluates both values. ${glsl} keeps the ternary.`,
           },
           ternaryStruct: {
             name: 'Ternary on a struct',
