@@ -504,6 +504,8 @@ const runtimeCopy = {
           <p data-pixel-note hidden></p>
           {/* While host.ts runs in its frame over the canvas. */}
           <p data-host-note hidden>{w.hostNote}</p>
+          {/* What run() returned, under the picture it drew: the Console tab holds it too. */}
+          <p data-host-result hidden></p>
           <p data-canvas-note data-cpu-only hidden>{t.canvasIdle}</p>
           {/* Every binding and override the module declares, each with what the reader
               supplies it with. Built by src/scripts/playground-bindings.ts after a compile. */}
@@ -538,8 +540,8 @@ const runtimeCopy = {
 </script>
 
 <style>
-  /* The page field is Ant's layout ground (src/styles/global.css), so the tool's own region
-     is a white container on it, the way the docs column is. */
+  /* The tool's own region is the container white, the way the docs column is. The page field
+     is the same white now (src/styles/global.css), so the region reads as part of the page. */
   :global(.playground-page) { background: var(--color-ground) }
   /* The tool and its left column are `section` elements, and a documentation page puts a
      section gap in front of every section it holds, so a page that embeds the tool would get
@@ -678,7 +680,7 @@ const runtimeCopy = {
   .playground-check { display: flex; align-items: center; gap: 6px; padding-bottom: 7px; }
   .playground-check label { margin-bottom: 0; }
   .playground-check input { accent-color: var(--color-accent); }
-  .playground-options [data-level-note], .playground-options [data-prelude-note], .playground-options [data-imports-note] { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
+  .playground-options [data-level-note], .playground-options [data-prelude-note], .playground-options [data-imports-note] { flex-basis: 100%; max-inline-size: var(--content); margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
   .playground-options :global(code) { font: 400 .75rem/1.5 var(--font-mono); }
 
   .output-meta { display: flex; flex: none; align-items: center; gap: 10px; }
@@ -764,7 +766,7 @@ const runtimeCopy = {
   /* The canvas panel takes the room the row has and holds the canvas at the top of it, so
      the box the picture is drawn in is the same size behind every tab. */
   .canvas-host { display: flex; flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 8px; padding: 14px 16px 12px; background: var(--color-ground); }
-  .canvas-host [data-canvas-note], .canvas-host [data-gpu-note], .canvas-host [data-pixel-note], .canvas-host [data-host-note] { align-self: center; margin: 0; min-height: 1.3em; max-width: 60ch; color: var(--color-text-2); font: 400 .6875rem/1.45 var(--font-mono); text-align: center; }
+  .canvas-host [data-canvas-note], .canvas-host [data-gpu-note], .canvas-host [data-pixel-note], .canvas-host [data-host-note], .canvas-host [data-host-result] { align-self: center; margin: 0; min-height: 1.3em; max-width: 60ch; color: var(--color-text-2); font: 400 .6875rem/1.45 var(--font-mono); text-align: center; }
   .canvas-host [hidden] { display: none; }
   /* The picture takes the width of its column at 4:3, the way a Shadertoy pane does, and
      every engine draws into the same box. The runtime matches a GPU canvas's drawing buffer
