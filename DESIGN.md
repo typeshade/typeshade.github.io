@@ -776,6 +776,11 @@ body says so. The contract between the generator and the page is `src/lib/api-ty
 the words around it are `docs.api` in every dictionary, with a name and a sentence for every
 category the extractor defines.
 
+A page of the language reference for a builtin with a form on both targets prints the two
+forms on one line under its summary, the way the API page prints its import line there, each
+form after its target's name: WGSL `pow(a, b)`, then GLSL ES 3.00 `pow(a, b)`. Targets keeps the same two cells. A builtin with
+no form on one target leaves the line out, and Targets says why.
+
 ### Reference notes
 
 A page of the language reference, `/reference/<kind>/<name>/`, is generated from the compiler
