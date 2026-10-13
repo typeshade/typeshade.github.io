@@ -1803,6 +1803,7 @@ export const ko: Copy = {
         `[${glsl} 명세](specGlslEs)와 [WebGL2 명세](specWebgl2)가 두 번째를 정의합니다.`,
         '[MDN WebGPU API](mdnWebgpu)와 [MDN WebGL2RenderingContext](mdnWebgl2)에서 호스트가 각각을 드라이버에 어떻게 넘기는지 볼 수 있습니다.',
         `언어 참조의 [함수](referenceFunctions)에는 내장 함수마다 컴파일러가 쓰는 WGSL과 ${glsl} 코드가 있고, [타입](referenceTypes)에는 타입마다 같은 내용이 있습니다.`,
+        `[내장 함수](languageBuiltins) 페이지 하나에 내장 함수 ${facts.builtins}개가 모두 있고, 백엔드마다 쓰는 코드가 함께 있습니다. 그중 ${facts.glslAbsentBuiltins}개는 ${glsl} 형태가 없습니다.`,
       ],
       nextP:
         '다음은 [예제](examples)입니다. 컴파일러 레지스트리의 예제마다 어떤 타깃을 생성하는지 적혀 있습니다.',
@@ -3046,8 +3047,7 @@ export const ko: Copy = {
         description:
           'WGSL 작성 인터페이스를 구성 요소별로 훑고 각각의 TypeShade 표기를 보여 줍니다. 스칼라, 벡터, 텍스처, 주소 공간, 스테이지 속성, 문을 다룹니다.',
         h1: 'WGSL을 TypeShade로',
-        intro:
-          '이미 WGSL을 쓰는 사람이 이 사이트에서 찾는 것은 하나입니다. 눈앞에 있는 구성 요소를 TypeShade로 어떻게 적느냐입니다. 이 페이지는 그 방향으로 읽힙니다. 왼쪽에 WGSL 형태, 오른쪽에 `"use typeshade"` 파일에 적을 코드, 그리고 둘이 맞아떨어지지 않는 자리에는 설명을 답니다.',
+        intro: `이미 WGSL을 쓰는 사람이 이 사이트에서 찾는 것은 하나입니다. 눈앞에 있는 구성 요소를 TypeShade로 어떻게 적느냐입니다. 이 페이지는 그 방향으로 읽힙니다. 왼쪽에 WGSL 형태, 오른쪽에 \`"use typeshade"\` 파일에 적을 코드, 그리고 둘이 맞아떨어지지 않는 자리에는 설명을 답니다. [WGSL과 ${glsl} 비교](conceptsWgsl)에서는 셰이더 하나를 두 타깃으로 컴파일하고 서로 다른 곳을 짚습니다.`,
         readingH: '표 읽는 법',
         readingP: `오른쪽 칸은 커밋 ${facts.pinnedCommit}의 컴파일러가 실제로 받아들이는 소스이고, 왼쪽 칸은 그 컴파일러가 같은 소스에 대해 생성한 WGSL입니다. 두 칸 모두 이 페이지를 빌드할 때 측정합니다. 컴파일러가 더 이상 그렇게 쓰지 않게 되면 다음 고정 시점에 바뀐 행으로 여기에 도착합니다.`,
         colWgsl: 'WGSL',
@@ -3164,7 +3164,7 @@ export const ko: Copy = {
         title: `${glsl}을 TypeShade로: 타입과 유니폼 블록`,
         description: `${glsl} 작성 인터페이스를 구성 요소별로 훑고 각각의 TypeShade 표기를 보여 줍니다. 샘플러, 유니폼 블록, varying, builtin 변수, 함수를 다룹니다.`,
         h1: `${glsl}을 TypeShade로`,
-        intro: `WebGL2용 셰이더는 ${glsl}로 씁니다. 그 대부분에는 두 타깃에 같은 프로그램을 생성하는 TypeShade 표기가 있습니다. 이 페이지는 그 방향으로 읽히며, 어떤 구성 요소가 WebGPU에만 있고 어떤 구성 요소를 컴파일러가 양쪽에서 거부하는지도 함께 말합니다.`,
+        intro: `WebGL2용 셰이더는 ${glsl}로 씁니다. 그 대부분에는 두 타깃에 같은 프로그램을 생성하는 TypeShade 표기가 있습니다. 이 페이지는 그 방향으로 읽히며, 어떤 구성 요소가 WebGPU에만 있고 어떤 구성 요소를 컴파일러가 양쪽에서 거부하는지도 함께 말합니다. [WGSL과 ${glsl} 비교](conceptsWgsl)에서는 셰이더 하나를 두 타깃으로 컴파일하고 서로 다른 곳을 짚습니다.`,
         readingH: '표 읽는 법',
         readingP: `오른쪽 칸은 커밋 ${facts.pinnedCommit}의 컴파일러가 실제로 받아들이는 소스이고, 왼쪽 칸은 그 컴파일러가 같은 소스에 대해 생성한 ${glsl}입니다. 이 타깃에 형태가 없는 행에서는 없는 표기를 지어내는 대신 컴파일러가 직접 내는 문장을 그 칸에 싣습니다.`,
         colGlsl: glsl,
@@ -3311,7 +3311,7 @@ export const ko: Copy = {
         h1: '내장 함수',
         intro: `내장 함수는 GPU에 이미 들어 있는 함수입니다. 호출은 컴파일러 안에서 중립 이름 하나로 다니고, 백엔드가 타깃마다 자기 표기를 씁니다. 그래서 한 번 작성한 호출이 두 벌로 생성됩니다. 레지스트리에 담긴 이름은 ${facts.builtins}개입니다.`,
         readingH: '한 행을 읽는 법',
-        readingP: `첫째 칸은 호출이 달고 다니는 이름이며, 인자가 들어갈 자리마다 플레이스홀더를 하나씩 넣었습니다. 다음 두 칸은 WGSL 백엔드와 ${glsl} 백엔드가 그 호출에 대해 쓰는 코드로, 고정된 커밋의 컴파일러 표기표를 그대로 실행해 얻었습니다. 이 가운데 ${facts.portableBuiltins}개는 두 타깃에서 표기가 같고, ${facts.glslAbsentBuiltins}개는 ${glsl}에 형태가 아예 없어 그 칸에 컴파일러가 낸 메시지를 싣습니다. ${facts.mathAliasBuiltins}개는 \`Math.\` 이름으로도 부를 수 있으며, 수학과 캐스트 표의 마지막 칸이 그 이름을 보여 줍니다.`,
+        readingP: `첫째 칸은 호출이 달고 다니는 이름이며, 인자가 들어갈 자리마다 플레이스홀더를 하나씩 넣었습니다. 다음 두 칸은 WGSL 백엔드와 ${glsl} 백엔드가 그 호출에 대해 쓰는 코드로, 고정된 커밋의 컴파일러 표기표를 그대로 실행해 얻었습니다. 이 가운데 ${facts.portableBuiltins}개는 두 타깃에서 표기가 같고, ${facts.glslAbsentBuiltins}개는 ${glsl}에 형태가 아예 없어 그 칸에 컴파일러가 낸 메시지를 싣습니다. ${facts.mathAliasBuiltins}개는 \`Math.\` 이름으로도 부를 수 있으며, 수학과 캐스트 표의 마지막 칸이 그 이름을 보여 줍니다. [WGSL과 ${glsl} 비교](conceptsWgsl)에서는 셰이더 하나를 두 타깃으로 컴파일하고 서로 다른 곳을 짚습니다.`,
         idsP: `이 이름 가운데 몇 개는 컴파일러가 고르는 것이라 손으로 적지 않습니다. 레이어 텍스처 읽기, 깊이 비교, 스토리지 fetch, 부호 없는 좌표로 하는 텍셀 읽기는 저마다 자기 이름을 받습니다. 그래야 호출의 인자 순서가 어떤 텍스처에 쓰였는지에 따라 달라지지 않습니다. 부호 없는 값의 \`abs\`와 정수 \`dot\`도 따로 이름을 받습니다. ${glsl}에는 둘 다 그 타입의 오버로드가 없기 때문입니다.`,
         precedenceH: '파일이 직접 선언한 이름',
         precedenceP:
