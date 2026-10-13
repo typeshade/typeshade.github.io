@@ -271,6 +271,9 @@ export const en = {
       instanceMethods: 'Instance methods',
       inGuide: 'In the guide',
       seeAlso: 'See also',
+      // Under the import line of a builtin's IR builder, before a link to the builtin itself.
+      languageNote:
+        'This export returns an IR node. A `"use typeshade"` file calls the builtin itself:',
       source: 'Source',
       optional: 'optional',
       readonly: 'read only',
@@ -334,6 +337,8 @@ export const en = {
       noForm: 'No form on this target.',
       preEmit: 'Rewritten into a pair of `f32` lanes before either backend runs.',
       inTable: 'Builtin table',
+      // The See also row to the compiler's IR builder of the same name (docs.api.languageNote).
+      irBuilderLink: (name: string) => `\`${name}()\` in \`typeshade/core/ir\``,
       validIn: 'Valid in',
       anyStage: 'The compiler holds this id to no stage of the pipeline.',
       stageRule: (stage: string, direction: string) => `${stage} ${direction}`,

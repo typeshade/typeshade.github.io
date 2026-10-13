@@ -742,13 +742,16 @@ nothing to show:
 | Examples                                           | an h3 and a code block each                                                                                                                  | `@example`                                         |
 | Browser compatibility                              | Targets: WGSL, GLSL ES 3.00, CPU oracle, each Supported, Emulated, Stub, Not supported or Does not apply, with the spelling the target emits | the intrinsics registry and the oracle's stub list |
 | Instance properties, Instance methods, Constructor | the members of an interface or class with their JSDoc                                                                                        | the declaration                                    |
-| See also                                           | other reference pages                                                                                                                        | `{@link}` targets and `@see`                       |
+| See also                                           | other reference pages; an IR builder in Builtins or Values lists the language reference's function of its name first                         | `{@link}` targets and `@see`                       |
 | Specifications                                     | In the guide: the guide sections that mention the name                                                                                       | `src/lib/authoring.ts`                             |
 | Source                                             | file, line and commit on GitHub                                                                                                              | the declaration                                    |
 
 Under the summary every page prints the line a reader imports the export with, built from the
 barrel and the release name (`import { emitModule } from 'typeshade'`), and a type is imported
-as a type. A parameter, a return value and a property show their type as a link to the page of
+as a type. An IR builder in Builtins or Values (`pow` from `typeshade/core/ir`) adds a line under it that
+names the builtin a `"use typeshade"` file calls, linked to its language reference page, and that
+page's See also links back to the builder. No other export with a language entry's name links to
+it: `reflect` and `location` name something else. A parameter, a return value and a property show their type as a link to the page of
 every name in it that has one.
 
 The sidebar's Reference group opens with the reference's own index and then lists the
