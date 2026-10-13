@@ -1489,7 +1489,7 @@ export const ko: Copy = {
       ],
     ],
     fitH: 'WebGPU는 어디에 있나요?',
-    fitP: 'TypeShade를 브라우저 그래픽 API 위에 놓인 작성·컴파일 계층으로 생각하면 됩니다. TypeShade가 셰이더 코드를 만들면, 애플리케이션은 `GPUDevice`를 만들고 파이프라인을 구성하고 리소스를 바인딩하고 작업을 제출합니다. 애플리케이션이 Vite 플러그인으로 가져오는 모듈은 이 단계를 자신이 내보내는 호출 안에서 처리합니다.',
+    fitP: 'TypeShade를 브라우저 그래픽 API 위에 놓인 작성·컴파일 계층으로 생각하면 됩니다. TypeShade가 셰이더 코드를 만들면, 애플리케이션은 `GPUDevice`를 만들고 파이프라인을 구성하고 리소스를 바인딩하고 작업을 제출합니다. 애플리케이션이 Vite 플러그인으로 가져오는 모듈은 이 단계를 자신이 내보내는 호출 안에서 처리합니다. 진입점이 파이프라인의 어디에서 실행되는지는 [셰이더 파이프라인](conceptsPipeline)에 있습니다. 어느 쪽이 어떤 객체를 소유하는지는 [WebGPU와 WebGL2](conceptsWebgpu)가 설명합니다.',
     fitLinks: [
       ['TypeScript 문서 ↗', 'https://www.typescriptlang.org/docs/'],
       ['MDN WebGPU API ↗', 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API'],
@@ -1502,8 +1502,8 @@ export const ko: Copy = {
     orderH: '이 순서로 배우세요',
     orderItems: [
       '타입, 함수, 모듈 등 TypeScript의 형태를 익힙니다.',
-      '`"use typeshade"`를 추가하고 GPU 타입을 익힙니다.',
-      '진입점 데코레이터와 리소스 선언을 추가합니다.',
+      '`"use typeshade"`를 추가하고 [GPU 타입](languageGpuTypes)을 익힙니다.',
+      '진입점 데코레이터와 리소스 선언을 추가합니다. [셰이더 스테이지](languageStages)와 [리소스](languageResources)가 이 내용을 다룹니다.',
       'Playground에서 편집하면서 진단과 생성된 WGSL을 확인합니다.',
       '마지막으로 컴파일러와 백엔드 내부로 들어갑니다.',
     ],
@@ -2691,7 +2691,7 @@ export const ko: Copy = {
           '일반 TypeScript에서 입력 모양에 따라 크기를 고른 뒤 `program.compute()`의 이름 있는 상수로 넘깁니다. 디스패치 수는 `pipeline.workgroupShape`에서 계산합니다.',
         graphics: '3. Vertex와 fragment',
         graphicsP:
-          '`@vertex`와 `@fragment`는 그래픽스 pipeline의 entry point를 표현합니다. 입력과 출력은 TypeShade value type과 명시적인 builtin parameter로 선언합니다.',
+          '`@vertex`와 `@fragment`는 그래픽스 pipeline의 entry point를 표현합니다. 입력과 출력은 TypeShade value type과 명시적인 builtin parameter로 선언합니다. 스테이지마다 무엇을 건네받고 무엇을 돌려주는지는 [셰이더 파이프라인](conceptsPipeline)이 설명합니다.',
         helper: '4. Helper function',
         helperP:
           'decorator가 없는 함수는 entry가 아니라 helper입니다. entry point를 class method로 만들거나 `this`를 pipeline 객체로 취급하지 않습니다.',
