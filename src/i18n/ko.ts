@@ -3221,7 +3221,7 @@ export const ko: Copy = {
         capabilitiesH: '확장과 기능',
         capabilitiesP: `\`#extension\` 줄은 GPU 기능의 한쪽 절반이고, 호스트의 \`getExtension\` 호출이 나머지 절반입니다. 이 타깃의 프로파일에는 행이 ${facts.glslCapabilities}개 있고 그중 하나만 소스에 지시문을 넣습니다. 행이 아예 없는 기능은 텍스트를 쓰기도 전에 이 타깃에서 모듈을 차단합니다.`,
         enablesP:
-          '`"use typeshade"` 파일에는 이 네 가지를 적을 방법이 없습니다. `"enable ..."`은 WGSL 확장 이름을 받는데 넷 중 어느 것도 WGSL 확장이 아니므로, 이런 기능이 필요한 모듈은 `fn()` 인터페이스의 `module({ enables: [...] })`로 조립합니다. 스토리지 바인딩, 컴퓨트 진입점, `@builtin("clip_distances")`처럼 모듈의 모양에서 따라오는 기능은 파일에서 도출되며, 그중 어느 것도 이 표에 행이 없습니다.',
+          '`"use typeshade"` 파일에는 이 네 가지를 적을 방법이 없습니다. `"enable ..."`은 WGSL 확장 이름을 받는데 넷 중 어느 것도 WGSL 확장이 아니므로, 호스트가 필요한 기능을 컴파일된 모듈의 `enables`에 적습니다: `{ ...compile(source).module, enables: [...] }`. 스토리지 바인딩, 컴퓨트 진입점, `@builtin("clip_distances")`처럼 모듈의 모양에서 따라오는 기능은 파일에서 도출되며, 그중 어느 것도 이 표에 행이 없습니다.',
         variablesH: 'builtin 변수',
         variablesP:
           '`gl_*` 전역 변수는 매개변수나 클래스 필드나 반환 자리에 붙는 `@builtin(...)` 속성입니다. 어떤 값인지는 속성이 말하고 그것이 어느 전역 변수가 될지는 생성기가 정합니다. 파일 하나가 두 타깃에 모두 닿는 방식이 이것입니다.',
@@ -3236,9 +3236,8 @@ export const ko: Copy = {
         operatorsH: '연산자',
         restP:
           '컴파일러가 표기할 수 있는 내장 함수와 두 타깃에서 각각 생성하는 텍스트는 [내장 함수 표](languageBuiltins)에 있습니다.',
-        edslH: 'fn() 표기',
-        edslP:
-          '이 페이지가 다루는 것은 `"use typeshade"` 인터페이스입니다. 컴파일러에는 `fn()`과 `uniformStruct()` 같은 함수로 이루어진 내장 인터페이스도 있고, 같은 GLSL 구성 요소를 그 표기와 나란히 놓은 글이 [GLSL 셰이더 옮기기](internalsGlslShader)입니다. 이 페이지의 WGSL 쪽은 [WGSL을 TypeShade로](languageFromWgsl)입니다.',
+        edslH: '관련 페이지',
+        edslP: `이 페이지는 구성 요소를 하나씩 다룹니다. [GLSL 셰이더 옮기기](internalsGlslShader)는 ${glsl} 셰이더 전체에 걸린 것을 다룹니다. 유니폼 블록, \`#ifdef\`, \`#include\`, \`#extension\`이 그 예입니다. 그 페이지의 행마다 \`"use typeshade"\` 표기가 있습니다. [WGSL과 ${glsl} 비교](conceptsWgsl)는 셰이더 하나를 두 타깃으로 컴파일해 보여 주고, 이 페이지의 WGSL 쪽은 [WGSL을 TypeShade로](languageFromWgsl)입니다.`,
         refusals: {
           'uniforms.precision': '적을 것이 없습니다.',
         },

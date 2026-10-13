@@ -3084,7 +3084,7 @@ export const en = {
         capabilitiesH: 'Extensions and capabilities',
         capabilitiesP: `An \`#extension\` line is one half of a GPU feature and the host's \`getExtension\` call is the other. The profile for this target has ${facts.glslCapabilities} rows, and one of them puts a directive in the source; everything with no row at all fails the module closed here before any text is written.`,
         enablesP:
-          'A `"use typeshade"` file has no spelling for these four. `"enable ..."` takes WGSL extension names and none of the four is one, so a module that needs one is assembled with `module({ enables: [...] })` on the `fn()` surface. What a module\'s shape implies, such as a storage binding, a compute entry or a `@builtin("clip_distances")`, is derived from the file, and none of those has a row here.',
+          'A `"use typeshade"` file has no spelling for these four. `"enable ..."` takes WGSL extension names and none of the four is one, so a host lists the one it needs in the compiled module\'s `enables`: `{ ...compile(source).module, enables: [...] }`. What a module\'s shape implies, such as a storage binding, a compute entry or a `@builtin("clip_distances")`, is derived from the file, and none of those has a row here.',
         variablesH: 'Builtin variables',
         variablesP:
           'A `gl_*` global is a `@builtin(...)` attribute on a parameter, on a class field or on the return. The attribute says which value it is and the writer decides which global that becomes, which is how one file reaches both targets.',
@@ -3099,9 +3099,8 @@ export const en = {
         operatorsH: 'Operators',
         restP:
           'Every builtin the compiler can spell, with the text it writes for each one on both targets, is on [the builtin table](languageBuiltins).',
-        edslH: 'The fn() spelling',
-        edslP:
-          'This page is the `"use typeshade"` surface. The compiler also has an embedded surface, built out of `fn()` and `uniformStruct()` and their kin, and the same GLSL constructs are put against that spelling in [Migrating a GLSL shader](internalsGlslShader). The WGSL side of this page is [WGSL in TypeShade](languageFromWgsl).',
+        edslH: 'Related pages',
+        edslP: `This page maps one construct at a time. [Migrating a GLSL shader](internalsGlslShader) covers what a whole ${glsl} shader also carries: uniform blocks, \`#ifdef\`, \`#include\` and \`#extension\`. Each row there gives the \`"use typeshade"\` spelling. [WGSL vs ${glsl}](conceptsWgsl) compiles one shader to both targets, and the WGSL side of this page is [WGSL in TypeShade](languageFromWgsl).`,
         refusals: {
           'uniforms.precision': 'Nothing to write.',
         },
