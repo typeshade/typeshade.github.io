@@ -384,16 +384,14 @@ export const en = {
           );
         },
         // 'attribute' is the one kind that starts with a vowel, so the article follows the word.
-        // With both targets' forms, the description opens with them, as a search result shows it.
-        description: (
-          name: string,
-          kind: string,
-          summary: string,
-          targets?: { readonly wgsl: string; readonly glsl: string },
-        ) =>
-          targets
-            ? `${name} in TypeShade compiles to ${targets.wgsl} in WGSL and ${targets.glsl} in ${glsl}. ${summary}`
-            : `${name}, ${/^[aeiou]/i.test(kind) ? 'an' : 'a'} ${kind} in the TypeShade language reference. ${summary}`,
+        description: (name: string, kind: string, summary: string) =>
+          `${name}, ${/^[aeiou]/i.test(kind) ? 'an' : 'a'} ${kind} in the TypeShade language reference. ${summary}`,
+        // With both targets' forms, the description opens with them, as a search result shows it,
+        // and the compiler's sentence follows (src/lib/meta-description.ts, fitLeadAndTail).
+        targetsLead: (name: string, targets: { readonly wgsl: string; readonly glsl: string }) =>
+          targets.wgsl === targets.glsl
+            ? `${name} in TypeShade compiles to ${targets.wgsl} in both WGSL and ${glsl}.`
+            : `${name} in TypeShade compiles to ${targets.wgsl} in WGSL and ${targets.glsl} in ${glsl}.`,
         kindNames: {
           type: 'Type',
           attribute: 'Attribute',

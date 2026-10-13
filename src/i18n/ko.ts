@@ -453,15 +453,12 @@ export const ko: Copy = {
               suffixes[suffixes.length - 1]!)
           );
         },
-        description: (
-          name: string,
-          kind: string,
-          summary: string,
-          targets?: { readonly wgsl: string; readonly glsl: string },
-        ) =>
-          targets
-            ? `TypeShade에서 ${name} 호출은 WGSL에서 ${targets.wgsl}, ${glsl}에서 ${targets.glsl} 형태로 컴파일됩니다. ${summary}`
-            : `${name}, TypeShade 언어 참조의 ${kind}입니다. ${summary}`,
+        description: (name: string, kind: string, summary: string) =>
+          `${name}, TypeShade 언어 참조의 ${kind}입니다. ${summary}`,
+        targetsLead: (name: string, targets: { readonly wgsl: string; readonly glsl: string }) =>
+          targets.wgsl === targets.glsl
+            ? `TypeShade에서 ${name} 호출은 WGSL과 ${glsl} 모두에서 ${targets.wgsl} 형태로 컴파일됩니다.`
+            : `TypeShade에서 ${name} 호출은 WGSL에서 ${targets.wgsl}, ${glsl}에서 ${targets.glsl} 형태로 컴파일됩니다.`,
         kindNames: {
           type: '타입',
           attribute: '어트리뷰트',
