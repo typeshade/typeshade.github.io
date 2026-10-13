@@ -449,7 +449,7 @@ export const facts = {
 // asks for a copy decision. Comparing them only at the commit the copy was written at left
 // the check inert from the next pin on, which is when it has something to catch.
 const pinned = {
-  commit: 'db6d0af3',
+  commit: '827ae157',
   shadeExamples: 94,
   shadeRenderable: 73,
   fp64Examples: 12,
@@ -477,9 +477,9 @@ const pinned = {
   rulesPending: 0,
   rulesReview: 5,
   rulesSurfaceSections: 43,
-  rulesAdded: 5,
+  rulesAdded: 0,
   rulesRemoved: 0,
-  rulesChanged: 2,
+  rulesChanged: 0,
 };
 const drift: string[] = [];
 if (facts.shadeExamples !== pinned.shadeExamples)

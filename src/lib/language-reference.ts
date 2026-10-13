@@ -641,11 +641,12 @@ function build(): readonly LanguageSection[] {
     throw new Error(`[language-reference] the ${kind} '${name}' is documented and has no ${where}`);
   };
 
-  // Every name any table documents, so a helper is what is left over. A type whose
-  // declaration names a brand tag is an opaque handle (a texture, a sampler, the vector and
-  // matrix shapes): its body is the tag and says nothing a reader can use. What is left is
-  // the structural helpers, whose body is the vocabulary itself, and an entry carries the
-  // ones its own signature reaches for.
+  // Every name any table documents, so a helper is what is left over. A type that keys a
+  // property by a brand tag, `{ readonly [textureTag]: ... }`, is an opaque handle (a texture,
+  // a sampler, the vector and matrix shapes): its body is the tag and says nothing a reader
+  // can use. A helper may read a tag in a condition, `typeof f32Tag extends keyof A`, as
+  // `ScalarOf` does, and stays a helper. What is left is the structural helpers, whose body is
+  // the vocabulary itself, and an entry carries the ones its own signature reaches for.
   const documented = new Set(
     [
       TYPE_DOCS,
@@ -657,7 +658,7 @@ function build(): readonly LanguageSection[] {
     ].flatMap((t) => Object.keys(t)),
   );
   const isHandle = (text: string): boolean =>
-    [...decl.brandTags].some((tag) => new RegExp(`\\b${tag}\\b`).test(text));
+    [...decl.brandTags].some((tag) => new RegExp(`\\[\\s*${tag}\\s*\\]`).test(text));
   const allHelpers: LanguageHelper[] = [...decl.oneLiners.entries()]
     .filter(([name]) => !documented.has(name))
     .filter(([, text]) => !isHandle(text))

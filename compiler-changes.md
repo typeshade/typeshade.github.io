@@ -216,3 +216,9 @@ id first, then the pull request that did the work.
   the editable `host.ts` tab, which imports `hostFace` from the subpath's entry
   (`src/language-service/index.ts`) to type-check and run `host.ts`, handled in the pull
   request that adds that tab.
+- 0063: a builtin's scalar overload returns `ScalarOf<P0, …>` in place of the inlined chain
+  over the brand symbols, so the Syntax frame of 49 function pages prints a short signature.
+  `isHandle` in `src/lib/language-reference.ts` now takes a brand tag only in key position
+  (`[textureTag]`) for an opaque handle, so `ScalarOf`, which reads the tags in a condition,
+  is listed beside `Numeric` under the types the ambient file declares for its own use.
+  Handled in the pull request that pins the compiler at the merge of typeshade/typeshade#625.
