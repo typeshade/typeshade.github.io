@@ -32,7 +32,7 @@ import {
   type LanguageKind,
 } from '../../lib/language-reference.ts';
 import { editCopy, links } from '../../lib/links.ts';
-import { META_MIN, fitDescription } from '../../lib/meta-description.ts';
+import { META_MIN, fitDescription, fitLeadAndTail } from '../../lib/meta-description.ts';
 import { assertNoteReading, noteEntryId, noteOf, type NoteView } from '../../lib/reference-notes.ts';
 
 interface Props {
@@ -65,11 +65,18 @@ if (title.length < 45 || title.length > 60) {
 // The compiler's sentence is Markdown with inline code; a meta description carries neither,
 // so the backticks come off and the rest is the compiler's own words.
 const plain = (text: string): string => text.replace(/`/g, '');
-const composed = e.description(shownName, kindWord, plain(entry.line), targets);
+const line = plain(entry.line);
+// With both targets' forms the lead names them and stays whole; the compiler's sentence after
+// it is what gets cut, so the description still says what the name does.
+const lead = targets ? e.targetsLead(shownName, targets) : undefined;
+const composed = lead ? `${lead} ${line}` : e.description(shownName, kindWord, line);
 // A one-clause sentence leaves the description under the 70 characters the SEO checks want,
 // so the kind's own line fills it out, the way a category's does in the API reference.
-const filled = composed.length < META_MIN ? `${composed} ${plain(named.summary)}` : composed;
-const description = fitDescription(filled, localeSettings[locale].metaDescriptionMax);
+const short = composed.length < META_MIN;
+const max = localeSettings[locale].metaDescriptionMax;
+const description = lead
+  ? fitLeadAndTail(lead, short ? `${line} ${plain(named.summary)}` : line, max)
+  : fitDescription(short ? `${composed} ${plain(named.summary)}` : composed, max);
 
 // The examples that call this name, found by parsing the corpus.
 const examples = languageExamples(kind, name);
