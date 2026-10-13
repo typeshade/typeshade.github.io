@@ -189,6 +189,7 @@ export const links = {
     href: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext',
   },
   specWebgpu: { label: 'WebGPU specification', href: 'https://www.w3.org/TR/webgpu/' },
+  webgpuTypes: { label: 'WebGPU types', href: 'https://github.com/gpuweb/types' },
   specWgsl: { label: 'WGSL specification', href: 'https://www.w3.org/TR/WGSL/' },
   specWebgl2: {
     label: 'WebGL2 specification',

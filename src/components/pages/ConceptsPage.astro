@@ -16,7 +16,7 @@ const content = copyFor(locale).concepts;
 if (content.title.length < 45 || content.title.length > 60) {
   throw new Error(`[concepts] the bridge page has a ${content.title.length}-character title, outside the 45 to 60 the SEO checks want: ${content.title}`);
 }
-const headings = [content.startH, content.modelH, content.fitH, content.orderH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
+const headings = [content.startH, content.modelH, content.fitH, content.typesH, content.orderH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 
 <Docs locale={locale} path={links.concepts.href} title={content.title} description={content.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
@@ -46,6 +46,11 @@ export function main(): vec4 {
       {content.fitLinks.map(([label, href]) => <li><a href={href}>{label}</a></li>)}
       <li><a href={localePath(locale, links.playground.href)}>{content.playgroundLink}</a></li>
     </ul>
+  </section>
+
+  <section>
+    <h2 id={slugify(content.typesH)}>{content.typesH}</h2>
+    <p><Rich text={content.typesP} locale={locale} /></p>
   </section>
 
   <section>
