@@ -429,6 +429,8 @@ export const ko: Copy = {
       glsl,
       noForm: '이 대상에는 형태가 없습니다.',
       preEmit: '두 백엔드가 돌기 전에 `f32` 레인 두 개로 바뀝니다.',
+      formsP: `작성자는 어느 텍스처에든 같은 호출을 쓰고, 컴파일러가 타깃마다 필요한 형태를 씁니다. ${glsl}의 \`texelFetch\`는 부호 있는 좌표만 받고, 배열 레이어를 좌표 안에 넣으며, 1d 텍스처와 멀티샘플 텍스처가 없습니다.`,
+      formsColumns: ['텍스처', '작성하는 코드', 'WGSL', glsl],
       inTable: '내장 함수 표',
       irBuilderLink: (name: string) => `\`typeshade/core/ir\`의 \`${name}()\``,
       validIn: '쓰이는 곳',
