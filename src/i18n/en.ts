@@ -1115,6 +1115,7 @@ export const en = {
     npm: 'npm package',
     newIssue: 'Report a problem',
     radiance: 'Radiance',
+    typenn: 'TypeNN',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
@@ -3495,6 +3496,12 @@ export const en = {
     kernelSource: 'MNIST TypeShade shader source',
     instructions: 'Training and validation instructions',
     resultRecord: 'Full-dataset result record',
+    typenn: {
+      h: 'MNIST in TypeNN',
+      p: 'This guide trains a softmax regression with kernels written by hand. TypeNN is a neural-network library built on TypeShade. A model is a stack of layers, and each layer runs as TypeShade kernel functions. The code below defines a model with one hidden layer and trains it on batches.',
+      lab: 'Open the TypeNN lab',
+      github: 'TypeNN on GitHub',
+    },
   },
 
   notFound: {
