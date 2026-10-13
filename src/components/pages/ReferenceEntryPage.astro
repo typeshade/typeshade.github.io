@@ -19,7 +19,7 @@ import LinkColumns from '../LinkColumns.astro';
 import ReferenceNotes from '../ReferenceNotes.astro';
 import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
-import { apiSlugByName } from '../../lib/api-nav.ts';
+import { irBuilderSlugByName } from '../../lib/api-nav.ts';
 import { facts } from '../../lib/examples.ts';
 import { languageExamples } from '../../lib/language-examples.ts';
 import {
@@ -73,20 +73,21 @@ const description = fitDescription(filled, localeSettings[locale].metaDescriptio
 
 // The examples that call this name, found by parsing the corpus.
 const examples = languageExamples(kind, name);
-// The compiler's own export of the same name, where it has one: `mix` is a builtin an author
+// The compiler's IR builder of the same name, where it has one: `mix` is a builtin an author
 // calls and a function the `fn()` builder exports, and the two pages answer two questions.
-// The row is named after the reference it leads to, since the name on it is this one.
-const apiSlug = apiSlugByName().get(entry.name);
+// Only a builder counts; the export named `reflect` is the module reflection, not this call.
+const apiSlug = irBuilderSlugByName().get(entry.name);
 
 // See also: the index this name is listed on, the family of the builtin table that shows the
 // same call four columns wide, the same call under its other name, and the compiler's own
 // page for it.
-const seeAlso: { href: string; label: string; code: boolean }[] = [
+// A label marked `rich` is copy with inline code, rendered through <Rich>.
+const seeAlso: { href: string; label: string; code: boolean; rich?: true }[] = [
   { href: localePath(locale, `/reference/${section.slug}/`), label: named.name, code: false },
 ];
 if (entry.spelling) seeAlso.push({ href: `${localePath(locale, links.languageBuiltins.href)}#${entry.spelling.family}`, label: r.inTable, code: false });
 if (entry.alias) seeAlso.push({ href: localePath(locale, languageEntryPath(entry.alias.kind, entry.alias.name)), label: entry.alias.title, code: true });
-if (apiSlug) seeAlso.push({ href: localePath(locale, `/api/${apiSlug}/`), label: copyFor(locale).docs.api.h1, code: false });
+if (apiSlug) seeAlso.push({ href: localePath(locale, `/api/${apiSlug}/`), label: r.irBuilderLink(entry.name), code: false, rich: true });
 
 // The two target cells, the way the builtin table's own rows read them: the copy for an id a
 // pre-emit pass consumes, the registry's own message where it named a reason, and the plain
@@ -295,7 +296,7 @@ const meta = `title:${entry.name} (${kindWord})`;
   <section>
     <h2 id="see-also" lang={locale}>{e.seeAlso}</h2>
     <LinkColumns>
-      {seeAlso.map((s) => <li><a href={s.href} lang={s.code ? 'en' : locale}>{s.code ? <code>{s.label}</code> : s.label}</a></li>)}
+      {seeAlso.map((s) => <li><a href={s.href} lang={s.code ? 'en' : locale}>{s.rich ? <Rich text={s.label} locale={locale} inert /> : s.code ? <code>{s.label}</code> : s.label}</a></li>)}
     </LinkColumns>
   </section>
 </Docs>
