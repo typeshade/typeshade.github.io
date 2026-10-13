@@ -37,7 +37,14 @@ export type FrameMessage =
     }
   | { readonly kind: 'error'; readonly text: string; readonly line?: number }
   | { readonly kind: 'started'; readonly call: 'animate' | 'run' | 'none' }
-  | { readonly kind: 'returned'; readonly call: 'run'; readonly text?: string };
+  | {
+      readonly kind: 'returned';
+      readonly call: 'run';
+      readonly text: string;
+      /** Whether anything asked the frame's canvas for a context, so the canvas may show what
+       *  the run drew. A run that drew nothing has only its value and its lines to show. */
+      readonly drew: boolean;
+    };
 
 const post = (message: FrameMessage): void => {
   window.parent.postMessage({ typeshadeHost: message }, '*');
@@ -181,6 +188,16 @@ async function start(): Promise<void> {
   if (!(canvas instanceof HTMLCanvasElement)) return;
   canvas.width = Math.max(1, Math.round(canvas.clientWidth * devicePixelRatio));
   canvas.height = Math.max(1, Math.round(canvas.clientHeight * devicePixelRatio));
+  // A run draws by asking the canvas for a context: the runtime's WebGPU or WebGL2 one, or a
+  // 2D one. Whether anything asked says whether the canvas holds a picture.
+  let drew = false;
+  const getContext = canvas.getContext.bind(canvas) as (...args: unknown[]) => unknown;
+  (canvas as unknown as { getContext: (...args: unknown[]) => unknown }).getContext = (
+    ...args: unknown[]
+  ) => {
+    drew = true;
+    return getContext(...args);
+  };
   let host: Record<string, unknown>;
   try {
     host = evaluate(HOST_URL, plan.host.code);
@@ -203,11 +220,8 @@ async function start(): Promise<void> {
         result.length === size * size * 4
       )
         paintPixels(canvas, result, size);
-      post({
-        kind: 'returned',
-        call: 'run',
-        text: result === undefined ? undefined : show(result),
-      });
+      // `undefined` is shown too: a run that returns nothing says so.
+      post({ kind: 'returned', call: 'run', text: show(result), drew });
     } else {
       post({ kind: 'started', call: 'none' });
     }

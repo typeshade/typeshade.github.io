@@ -333,6 +333,10 @@ const meta = `title:${entry.name} (${kindWord})`;
      declaration column. The declaration is one wrapped line, so a sixteen-format union costs a
      paragraph. */
   .ref-reading p { margin-block-start: 10px }
+  /* The reading is a run of sentences inside a box of its own, so the document's measure does
+     not reach it: each sentence takes the text measure here. The brand line and the helpers'
+     declarations are code, and they take the column the way a code frame does. */
+  .ref-reading > p:not(.ref-entry-code) { max-inline-size: var(--content) }
   .ref-helpers code, .ref-emits dd :global(code) { font-size: var(--text-code) }
   /* Below 30rem the pairs stack, since a GLSL cell can hold a whole inlined expression and
      needs the row's width to itself. */
