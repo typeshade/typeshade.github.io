@@ -538,8 +538,8 @@ const runtimeCopy = {
 </script>
 
 <style>
-  /* The page field is Ant's layout ground (src/styles/global.css), so the tool's own region
-     is a white container on it, the way the docs column is. */
+  /* The tool's own region is the container white, the way the docs column is. The page field
+     is the same white now (src/styles/global.css), so the region reads as part of the page. */
   :global(.playground-page) { background: var(--color-ground) }
   /* The tool and its left column are `section` elements, and a documentation page puts a
      section gap in front of every section it holds, so a page that embeds the tool would get
@@ -678,7 +678,7 @@ const runtimeCopy = {
   .playground-check { display: flex; align-items: center; gap: 6px; padding-bottom: 7px; }
   .playground-check label { margin-bottom: 0; }
   .playground-check input { accent-color: var(--color-accent); }
-  .playground-options [data-level-note], .playground-options [data-prelude-note], .playground-options [data-imports-note] { flex-basis: 100%; margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
+  .playground-options [data-level-note], .playground-options [data-prelude-note], .playground-options [data-imports-note] { flex-basis: 100%; max-inline-size: var(--content); margin: 0; color: var(--color-text-3); font-size: .75rem; line-height: 1.5; }
   .playground-options :global(code) { font: 400 .75rem/1.5 var(--font-mono); }
 
   .output-meta { display: flex; flex: none; align-items: center; gap: 10px; }
