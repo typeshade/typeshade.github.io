@@ -81,6 +81,9 @@ if (!hostTraining.includes("'forward', 'objective', 'backward', 'update'") ||
 </div>
 <style>
   .mnist-walkthrough { max-width: 100%; }
+  /* The walkthrough's sentences sit in boxes of their own, which the document's measure does
+     not reach, so they take the text measure here. The code frames between them keep the column. */
+  .mnist-walkthrough > p, .mnist-step > p, .mnist-host > p { max-inline-size: var(--content); }
   .mnist-flow { border: 1px solid var(--color-line-2); border-radius: var(--radius-md); padding: 12px 16px; margin-block: 18px 22px; }
   .mnist-flow p { margin: 7px 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .mnist-flow code { overflow-wrap: anywhere; }

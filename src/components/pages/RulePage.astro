@@ -223,6 +223,10 @@ const kind = x.kinds[rule.verification];
      (`src/compiler/ts/compile.contract.test.ts`), which would push a phone's page sideways;
      a span breaks anywhere before it does. */
   .rule-md :global(code) { overflow-wrap: anywhere }
+  /* The rule's Markdown sits in a box of its own, which the document's measure does not reach,
+     so its paragraphs and lists take the text measure here. A table inside it keeps the
+     document's own rules. */
+  .rule-md :global(:is(p, ul, ol)) { max-inline-size: var(--content) }
   /* The rule's text under the heading, in the lead's size. It is Markdown, so a list or a
      table inside it keeps the document's own rules; only the gap after the heading is set. */
   .rule-text { margin-block-start: 12px }

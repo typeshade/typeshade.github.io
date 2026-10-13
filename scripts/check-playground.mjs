@@ -102,7 +102,9 @@
 //      runs it in an iframe whose sandbox is exactly `allow-scripts`, and its console line
 //      reaches the Console tab with the line of host.ts it was written on, beside what `run()`
 //      returned; Stop removes the frame; and the link, which carries host.ts, opens with no
-//      frame until Run is clicked
+//      frame until Run is clicked. Run from the Result tab on loop-fuse, whose run() draws
+//      nothing, brings the Console tab and its value to the front; on host-helper, which
+//      draws, the Result tab stays and the value is on a line under the frame
 //  50. the workspace: a bare link opens on the gallery, a tile opens that example in the
 //      editor with a tab for each file it imports, an edit to the imported file changes the
 //      emitted WGSL, a new file is a tab the main file can import, the link carries the
@@ -3718,13 +3720,58 @@ async function checkHostTs(browser, origin) {
         problems.push('the link did not bring its host.ts');
       await linked.click('[data-run-host]');
       const ran = await linked
-        // The Console tab is behind Result, so the line is attached and not visible.
         .waitForSelector('[data-console-block="host"] li', { state: 'attached', timeout: 60_000 })
         .then(() => true)
         .catch(() => false);
       if (!ran) problems.push('Run on a linked host.ts printed nothing');
+
+      // A run that draws nothing shows its value: Run from the Result tab brings the Console
+      // tab to the front once run() returns. loop-fuse is the owner's report (2026-10-13):
+      // its run() resolves to the three scopes' values, and the Result tab showed an empty
+      // frame. A run that draws keeps the Result tab, where its picture is.
+      const shownAfterRun = async (id, pattern) => {
+        await pickExample(page, id);
+        await page.click('[data-target="result"]');
+        await page.waitForTimeout(AFTER_EDIT);
+        await page.click('[data-run-host]');
+        const row = await page
+          .waitForFunction(
+            (source) =>
+              [...document.querySelectorAll('[data-console-block="host"] li')]
+                .map((li) => li.textContent ?? '')
+                .find((text) => new RegExp(source).test(text)) ?? false,
+            pattern.source,
+            { timeout: 60_000 },
+          )
+          .then((handle) => handle.jsonValue())
+          .catch(() => '');
+        await page.waitForTimeout(500);
+        const state = await page.evaluate(() => ({
+          tab: document.querySelector('[role="tab"][aria-selected="true"]')?.dataset.target,
+          visible: [...document.querySelectorAll('[data-console-block="host"] li')].some(
+            (li) => li.getClientRects().length > 0,
+          ),
+          under: (() => {
+            const line = document.querySelector('[data-host-result]');
+            return line && line.getClientRects().length > 0 ? (line.textContent ?? '') : '';
+          })(),
+        }));
+        await page.click('[data-run-host]');
+        return { row, ...state };
+      };
+      const fused = await shownAfterRun('loop-fuse', /run\(\).*reduce: \{ sum: /);
+      if (!fused.row) problems.push("loop-fuse's run() returned nothing to the Console tab");
+      if (fused.tab !== 'console' || !fused.visible)
+        problems.push(
+          `loop-fuse's run() value is not on screen after Run: the ${fused.tab} tab is shown`,
+        );
+      const drawn = await shownAfterRun('host-helper', /run\(\)/);
+      if (drawn.tab !== 'result')
+        problems.push(`host-helper draws, and Run left the Result tab for the ${drawn.tab} tab`);
+      if (!/^run\(\) \d/.test(drawn.under))
+        problems.push(`host-helper's run() value is not under its frame: "${drawn.under}"`);
       console.log(
-        `  host.ts tab: ${tabs.slice(0, 2).join(', ')}; type error marked: ${errors[0] ?? 'none'}; frame sandbox: ${sandbox.join(', ')}; console: ${printed.join(' | ').slice(0, 200)}; linked frames before Run: ${before.length}`,
+        `  host.ts tab: ${tabs.slice(0, 2).join(', ')}; type error marked: ${errors[0] ?? 'none'}; frame sandbox: ${sandbox.join(', ')}; console: ${printed.join(' | ').slice(0, 200)}; linked frames before Run: ${before.length}; loop-fuse after Run: ${fused.tab} tab, ${fused.row.slice(0, 60)}; host-helper after Run: ${drawn.tab} tab, "${drawn.under}" under the frame`,
       );
     }
     for (const { pageErrors } of pages)
