@@ -1858,6 +1858,7 @@ export const en = {
         `[${facts.glslTarget} specification](specGlslEs) and the [WebGL2 specification](specWebgl2) define the second.`,
         '[MDN WebGPU API](mdnWebgpu) and [MDN WebGL2RenderingContext](mdnWebgl2) show how a host hands each of them to a driver.',
         `[Functions](referenceFunctions) in the language reference gives each builtin with the WGSL and ${facts.glslTarget} text the compiler writes for it, and [Types](referenceTypes) does the same for every type.`,
+        `[Builtin functions](languageBuiltins) lists all ${facts.builtins} builtins on one page, with the text each backend writes. ${facts.glslAbsentBuiltins} of them have no ${glsl} form.`,
       ],
       nextP:
         'Next: [Examples](examples), where every example in the compiler’s registry names the targets it emits.',
@@ -2900,8 +2901,7 @@ export const en = {
         description:
           'The WGSL surface construct by construct, with the TypeShade spelling of each one: scalars, vectors, textures, address spaces, stage attributes and statements.',
         h1: 'WGSL in TypeShade',
-        intro:
-          'A reader who already writes WGSL needs one thing from this site, which is the TypeShade spelling of the construct in front of them. This page reads in that direction: a WGSL form on the left, what to write in a `"use typeshade"` file on the right, and a note where the two do not line up.',
+        intro: `A reader who already writes WGSL needs one thing from this site, which is the TypeShade spelling of the construct in front of them. This page reads in that direction: a WGSL form on the left, what to write in a \`"use typeshade"\` file on the right, and a note where the two do not line up. [WGSL vs ${glsl}](conceptsWgsl) compiles one shader to both targets and lists where they differ.`,
         readingH: 'How to read a row',
         readingP: `The right column is source text the compiler at commit ${facts.pinnedCommit} accepts, and the left column is the WGSL that same compiler writes for it. Both are measured when this page is built, so a spelling the compiler stops writing arrives here at the next pin as a changed row.`,
         colWgsl: 'WGSL',
@@ -3021,7 +3021,7 @@ export const en = {
         title: `${glsl} in TypeShade: types and uniform blocks`,
         description: `The ${glsl} surface construct by construct, with the TypeShade spelling of each one: samplers, uniform blocks, varyings, builtin variables and functions.`,
         h1: `${glsl} in TypeShade`,
-        intro: `A shader written for WebGL2 is written in ${glsl}, and most of it has a TypeShade spelling that emits the same program for both targets. This page reads in that direction, and it says which constructs have no form on WebGPU and which ones the compiler refuses on both.`,
+        intro: `A shader written for WebGL2 is written in ${glsl}, and most of it has a TypeShade spelling that emits the same program for both targets. This page reads in that direction, and it says which constructs have no form on WebGPU and which ones the compiler refuses on both. [WGSL vs ${glsl}](conceptsWgsl) compiles one shader to both targets and lists where they differ.`,
         readingH: 'How to read a row',
         readingP: `The right column is source text the compiler at commit ${facts.pinnedCommit} accepts, and the left column is the ${glsl} that same compiler writes for it. Where this target has no form for a row, the cell carries the compiler's own sentence about it instead of a spelling it never writes.`,
         colGlsl: glsl,
@@ -3170,7 +3170,7 @@ export const en = {
         h1: 'Builtin functions',
         intro: `A builtin is a function the GPU already has. A call carries one neutral name through the compiler, and each backend writes its own spelling for that name, so the call is written once and emitted twice. The registry holds ${facts.builtins} names.`,
         readingH: 'How to read a row',
-        readingP: `The first column is the name the call carries, with a placeholder argument in each position it takes. The next two are the text the WGSL backend and the ${glsl} backend write for that call, run from the compiler's own spelling table at the pinned commit. ${facts.portableBuiltins} of the names are spelled the same way on both targets, and ${facts.glslAbsentBuiltins} have no ${glsl} form at all, where the cell carries the compiler's own message. ${facts.mathAliasBuiltins} answer to a \`Math.\` name as well, which the last column of the maths and cast tables shows.`,
+        readingP: `The first column is the name the call carries, with a placeholder argument in each position it takes. The next two are the text the WGSL backend and the ${glsl} backend write for that call, run from the compiler's own spelling table at the pinned commit. ${facts.portableBuiltins} of the names are spelled the same way on both targets, and ${facts.glslAbsentBuiltins} have no ${glsl} form at all, where the cell carries the compiler's own message. ${facts.mathAliasBuiltins} answer to a \`Math.\` name as well, which the last column of the maths and cast tables shows. [WGSL vs ${glsl}](conceptsWgsl) compiles one shader to both targets and lists where they differ.`,
         idsP: `A few of these names are chosen by the compiler and never written by hand. A layered texture read, a depth comparison, a storage fetch and a texel read at an unsigned coordinate each take a name of their own, so the argument order of a call never depends on the texture it landed on. An \`abs\` of an unsigned value and an integer \`dot\` take one too, because ${glsl} has no overload for either.`,
         precedenceH: 'A name the file declares',
         precedenceP:
