@@ -189,6 +189,9 @@ const meta = `title:${entry.name} (${kindWord})`;
   <h1><code>{entry.title}</code></h1>
   <p class="api-kind" lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
   <p class="api-summary" lang="en"><Rich text={entry.line} locale={locale} /></p>
+  {wgslCell && glslCell && 'code' in wgslCell && 'code' in glslCell && (
+    <p class="flex min-w-0 flex-wrap gap-x-4 text-(length:--text-ui) text-text-2"><span class="min-w-0 wrap-anywhere"><span lang={locale}>{r.wgsl}</span> <code>{wgslCell.code}</code></span><span class="min-w-0 wrap-anywhere"><span lang={locale}>{r.glsl}</span> <code>{glslCell.code}</code></span></p>
+  )}
   <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
 
   <section>
