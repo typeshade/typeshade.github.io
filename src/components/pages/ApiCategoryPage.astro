@@ -8,7 +8,8 @@ import { apiCategories, apiCategory } from '../../lib/api-nav.ts';
 import { apiEntries } from '../../lib/api.ts';
 import { apiTranslationStatus } from '../../lib/api-translations.ts';
 import { editCopy, links } from '../../lib/links.ts';
-import { apiCategoryCopy, assertApiCategories, copyFor, localePath, type Locale } from '../../i18n/index.ts';
+import { apiCategoryCopy, assertApiCategories, copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
+import { fitDescription } from '../../lib/meta-description.ts';
 import { facts } from '../../lib/examples.ts';
 
 interface Props {
@@ -40,7 +41,7 @@ const allTranslated = members.every((m) => current.has(m.slug));
   locale={locale}
   path={`/api/${slug}/`}
   title={a.categoryTitle(named.name)}
-  description={a.categoryDescription(named.name, named.summary)}
+  description={fitDescription(a.categoryDescription(named.name, named.summary), localeSettings[locale].metaDescriptionMax)}
   editHref={editCopy(locale)}
   openCategory={slug}
   previous={previous

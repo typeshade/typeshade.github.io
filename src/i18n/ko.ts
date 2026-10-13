@@ -98,7 +98,7 @@ const apiCategories: Record<string, { name: string; summary: string }> = {
   builtins: {
     name: '내장 함수',
     summary:
-      '셰이더에서 부르는 수학, 벡터, 텍스처 함수입니다. 이름 하나로 두 대상 모두에 나갑니다.',
+      '수학, 벡터, 텍스처 연산을 만드는 IR 빌더 함수입니다. 각 함수는 IR 노드를 반환합니다. 셰이더 파일은 언어 참조에 실린 내장 함수를 부릅니다.',
   },
   values: {
     name: '값',
@@ -327,6 +327,20 @@ export const ko: Copy = {
         const fitting = variants.find((suffix) => (heading + suffix).length <= 60);
         return fitting ? heading + fitting : heading;
       },
+      builderTitle: (heading: string) => {
+        const suffixes = [
+          ': typeshade/core/ir의 IR 빌더 함수, TypeShade 컴파일러 API',
+          ': typeshade/core/ir의 IR 빌더 함수, TypeShade API',
+          ': typeshade/core/ir의 IR 빌더 함수',
+        ];
+        return (
+          heading +
+          (suffixes.find((suffix) => (heading + suffix).length <= 60) ??
+            suffixes[suffixes.length - 1]!)
+        );
+      },
+      builderDescription: (name: string, summary: string) =>
+        `${name}, typeshade/core/ir의 IR 빌더 함수입니다. ${summary}`,
       categoryTitle: (name: string) => `${name} 분류, TypeShade 셰이더 API 참조 문서`,
       categoryDescription: (name: string, summary: string) =>
         `TypeShade API 참조의 ${name} 분류입니다. ${summary}`,
@@ -1086,6 +1100,7 @@ export const ko: Copy = {
     npm: 'npm 패키지',
     newIssue: '문제 보고',
     radiance: 'Radiance',
+    typenn: 'TypeNN',
     license: `[${{ MIT: 'MIT 라이선스', 'Apache-2.0': 'Apache 라이선스 2.0' }[facts.license] ?? facts.licenseName}](license)에 따라 배포합니다.`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: '빌드한 커밋',
@@ -1463,7 +1478,8 @@ export const ko: Copy = {
     lead: `TypeShade를 쓰면 WebGPU 셰이더를 TypeScript로 작성할 수 있습니다. \`"use typeshade"\`로 표시한 파일은 WebGPU용 WGSL과 WebGL2용 ${glsl}으로 컴파일됩니다. 편집기는 같은 파일을 TypeScript로 읽습니다. 이 페이지는 이미 아는 타입, 함수, 모듈이 셰이더에서 무엇이 되는지 짚고 WebGPU API가 어디에서 시작되는지 보여 줍니다.`,
     startH: 'TypeScript 파일에서 시작합니다',
     startP:
-      '`"use typeshade"`는 파일을 TypeShade 소스로 표시합니다. 그 파일과 그 파일이 가져오는 TypeShade 파일은 한 프로그램으로 컴파일됩니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.',
+      '`"use typeshade"`는 파일을 TypeShade 소스로 표시합니다. 그 파일과 그 파일이 가져오는 TypeShade 파일은 한 프로그램으로 컴파일됩니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다. 두 번째 블록은 고정된 컴파일러가 이 파일에서 만든 WGSL이며 페이지를 빌드하는 동안 생성됩니다.',
+    startWgslLabel: '컴파일된 WGSL',
     modelH: '머릿속 모델',
     adds: 'TypeShade 추가 사항',
     model: [
@@ -3626,6 +3642,12 @@ export const ko: Copy = {
     kernelSource: 'MNIST TypeShade 셰이더 소스',
     instructions: '학습 및 검증 안내',
     resultRecord: '전체 데이터 결과 기록',
+    typenn: {
+      h: 'TypeNN의 MNIST',
+      p: '이 가이드는 직접 작성한 커널로 소프트맥스 회귀를 학습합니다. TypeNN은 TypeShade 위에 만든 신경망 라이브러리입니다. 모델은 레이어를 쌓아 정의하고, 각 레이어는 TypeShade 커널 함수로 실행됩니다. 아래 코드는 은닉층이 하나인 모델을 정의하고 배치 단위로 학습합니다.',
+      lab: 'TypeNN 실습 도구 열기',
+      github: 'GitHub에서 TypeNN 보기',
+    },
   },
 
   notFound: {

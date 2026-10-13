@@ -242,6 +242,23 @@ export const en = {
         const fitting = suffixes.find((suffix) => (base + suffix).length <= 60);
         return fitting ? base + fitting : base;
       },
+      // An IR builder for a builtin of the language (Builtins and Values, imported from
+      // typeshade/core/ir alone) is named as one, so its page and the builtin's page in the
+      // language reference do not read as the same answer.
+      builderTitle: (heading: string) => {
+        const suffixes = [
+          ': IR builder function in typeshade/core/ir, TypeShade',
+          ': IR builder function in typeshade/core/ir',
+          ': IR builder in typeshade/core/ir',
+        ];
+        return (
+          heading +
+          (suffixes.find((suffix) => (heading + suffix).length <= 60) ??
+            suffixes[suffixes.length - 1]!)
+        );
+      },
+      builderDescription: (name: string, summary: string) =>
+        `${name}, an IR builder function in typeshade/core/ir. ${summary}`,
       categoryTitle: (name: string) => `${name}, a category in the TypeShade API reference`,
       categoryDescription: (name: string, summary: string) =>
         `${name} in the TypeShade API reference. ${summary}`,
@@ -1115,6 +1132,7 @@ export const en = {
     npm: 'npm package',
     newIssue: 'Report a problem',
     radiance: 'Radiance',
+    typenn: 'TypeNN',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
@@ -1526,7 +1544,8 @@ export const en = {
     lead: `TypeShade lets you write WebGPU shaders in TypeScript. A file marked with \`"use typeshade"\` compiles to WGSL for WebGPU and to ${glsl} for WebGL2. Your editor reads the same file as TypeScript. This page maps the types, functions and modules you know to what a shader needs, and shows where the WebGPU API begins.`,
     startH: 'Start with a TypeScript file',
     startP:
-      '`"use typeshade"` marks the file as TypeShade source, and the file compiles with the TypeShade files it imports as one program. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports.',
+      '`"use typeshade"` marks the file as TypeShade source, and the file compiles with the TypeShade files it imports as one program. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports. The second block is the WGSL the pinned compiler writes for this file, produced while the page is built.',
+    startWgslLabel: 'The WGSL it compiles to',
     modelH: 'The mental model',
     adds: 'TypeShade adds',
     model: [
@@ -3498,6 +3517,12 @@ export const en = {
     kernelSource: 'MNIST TypeShade shader source',
     instructions: 'Training and validation instructions',
     resultRecord: 'Full-dataset result record',
+    typenn: {
+      h: 'MNIST in TypeNN',
+      p: 'This guide trains a softmax regression with kernels written by hand. TypeNN is a neural-network library built on TypeShade. A model is a stack of layers, and each layer runs as TypeShade kernel functions. The code below defines a model with one hidden layer and trains it on batches.',
+      lab: 'Open the TypeNN lab',
+      github: 'TypeNN on GitHub',
+    },
   },
 
   notFound: {

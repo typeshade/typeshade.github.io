@@ -1,7 +1,8 @@
 ---
 // The bridge page at /guide/typescript-and-webgpu/, on the documentation layout like every
 // other guide page. Copy lives in `concepts` (src/i18n/en.ts, src/i18n/ko.ts); the shader
-// sample is not copy, so it stays here.
+// sample is not copy, and it lives in src/lib/concepts-emit.ts, which compiles it to the WGSL
+// shown under it while the page is built.
 import Docs from '../../layouts/Docs.astro';
 import ConceptDoc from '../ConceptDoc.astro';
 import Rich from '../Rich.astro';
@@ -9,6 +10,7 @@ import TypeShadeCode from '../TypeShadeCode.astro';
 import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
 import { slugify } from '../../lib/slug.ts';
+import { bridgeSample, bridgeWgsl } from '../../lib/concepts-emit.ts';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
@@ -25,12 +27,8 @@ const headings = [content.startH, content.modelH, content.fitH, content.typesH, 
 
   <section>
     <h2 id={slugify(content.startH)}>{content.startH}</h2>
-    <TypeShadeCode code={`"use typeshade";
-
-@vertex
-export function main(): vec4 {
-  return vec4(0., 0., 0., 1.);
-}`} />
+    <TypeShadeCode code={bridgeSample} />
+    <TypeShadeCode code={bridgeWgsl.trimEnd()} lang="wgsl" title={content.startWgslLabel} />
     <p><Rich text={content.startP} locale={locale} /></p>
   </section>
 

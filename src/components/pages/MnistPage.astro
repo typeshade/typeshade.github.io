@@ -9,7 +9,7 @@ import TypeShadeCode from '../TypeShadeCode.astro';
 import MnistTrainer from '../MnistTrainer.astro';
 import MnistWalkthrough from '../MnistWalkthrough.astro';
 import { copyFor, type Locale } from '../../i18n/index.ts';
-import { editCopy, links } from '../../lib/links.ts';
+import { editCopy, links, typennLab } from '../../lib/links.ts';
 import { facts } from '../../lib/examples.ts';
 
 interface Props {
@@ -39,6 +39,31 @@ const commands = [
   'node --experimental-strip-types journeys/mnist/test-webgl2.mjs --mnist --count 1024 --test 1000 --epochs 5',
 ].join('\n');
 const fullCommand = 'node --experimental-strip-types journeys/mnist/run.ts --tier webgpu';
+// A TypeNN model and training loop for the same MLP. `batches` stands for any async iterable of
+// { images, labels, size }. Run against typenn@86b8df4 on the CPU tier.
+const typennSnippet = `import * as nn from "typenn";
+
+const device = await nn.device();
+const model = new nn.Sequential(
+  new nn.Flatten(),
+  new nn.Linear(784, 128),
+  new nn.ReLU(),
+  new nn.Dropout(0.2),
+  new nn.Linear(128, 10),
+).to(device);
+const optimizer = nn.optim.Adam(model.parameters(), { lr: 0.001 });
+const criterion = new nn.CrossEntropyLoss();
+
+for await (const batch of batches) {
+  await optimizer.zeroGrad();
+  const images = device.tensor(batch.images, {
+    shape: [batch.size, 1, 28, 28],
+  });
+  const loss = criterion.forward(model.forward(images), batch.labels);
+  await loss.backward();
+  await optimizer.step();
+  await loss.disposeGraph(model.parameters());
+}`;
 const headings = [
   { depth: 2, slug: 'lab', text: c.demo.title },
   { depth: 2, slug: 'model', text: c.modelH },
@@ -46,6 +71,7 @@ const headings = [
   { depth: 2, slug: 'run', text: c.runH },
   { depth: 2, slug: 'limits', text: c.limitsH },
   { depth: 2, slug: 'source', text: c.sourceH },
+  { depth: 2, slug: 'typenn', text: c.typenn.h },
 ];
 ---
 
@@ -102,6 +128,16 @@ const headings = [
       <li><a href={readme}>{c.instructions}</a></li>
       <li><a href={rawReport}>{c.resultRecord}</a></li>
       <li><a href={checks}>{c.validationRun}</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="typenn">{c.typenn.h}</h2>
+    <p>{c.typenn.p}</p>
+    <TypeShadeCode code={typennSnippet} />
+    <ul>
+      <li><a href={typennLab(locale)}>{c.typenn.lab}</a></li>
+      <li><a href={links.typennGithub.href}>{c.typenn.github}</a></li>
     </ul>
   </section>
 </Docs>
