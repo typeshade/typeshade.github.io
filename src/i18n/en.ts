@@ -3466,9 +3466,9 @@ export const en = {
     instructions: 'Training and validation instructions',
     resultRecord: 'Full-dataset result record',
     typenn: {
-      h: 'The same model in TypeNN',
-      p: 'This guide writes the kernels by hand. TypeNN is a neural-network library built on TypeShade. Its model is a Module, and each layer runs as TypeShade kernel functions.',
-      lab: 'Train it in the TypeNN lab',
+      h: 'MNIST in TypeNN',
+      p: 'This guide trains a softmax regression with kernels written by hand. TypeNN is a neural-network library built on TypeShade. A model is a stack of layers, and each layer runs as TypeShade kernel functions. The code below defines a model with one hidden layer and trains it on batches.',
+      lab: 'Open the TypeNN lab',
       github: 'TypeNN on GitHub',
     },
   },

@@ -64,7 +64,7 @@ const git = (cwd: string, args: string): string =>
   execSync(`git ${args}`, { cwd, encoding: 'utf8' }).trim();
 
 // The same rewrite src/lib/example-pages.ts makes: the compiler's files cite its issue
-// tracker as "<project> #1840", and the site names no consumer of the library.
+// tracker as "<project> #1840", and no page names that former host.
 const FORMER_HOST = /\bX-?GIS (#\d+)/g;
 const clean = (text: string): string =>
   text.replace(/\r\n/g, '\n').trimEnd().replace(FORMER_HOST, '$1');

@@ -3594,9 +3594,9 @@ export const ko: Copy = {
     instructions: '학습 및 검증 안내',
     resultRecord: '전체 데이터 결과 기록',
     typenn: {
-      h: 'TypeNN으로 쓴 같은 모델',
-      p: '이 가이드는 커널을 손으로 작성합니다. TypeNN은 TypeShade 위에 만든 신경망 라이브러리입니다. 모델은 Module이고, 각 레이어는 TypeShade 커널 함수로 실행됩니다.',
-      lab: 'TypeNN 실습 도구에서 학습하기',
+      h: 'TypeNN의 MNIST',
+      p: '이 가이드는 직접 작성한 커널로 소프트맥스 회귀를 학습합니다. TypeNN은 TypeShade 위에 만든 신경망 라이브러리입니다. 모델은 레이어를 쌓아 정의하고, 각 레이어는 TypeShade 커널 함수로 실행됩니다. 아래 코드는 은닉층이 하나인 모델을 정의하고 배치 단위로 학습합니다.',
+      lab: 'TypeNN 실습 도구 열기',
       github: 'GitHub에서 TypeNN 보기',
     },
   },
