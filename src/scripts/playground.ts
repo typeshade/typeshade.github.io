@@ -52,13 +52,15 @@ import {
   isReserved,
   reservedValue,
   sampleShape,
+  type ControlProp,
+  type ControlProps,
 } from '../lib/live-shader-contract.ts';
 import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
 import { errorLink } from './error-links.ts';
 import { diagnosticsForDocument } from './playground-diagnostics.ts';
-import { decodeSource, encodeSource } from './source-link.ts';
+import { decodeSource, encodeSource, parseAspect, PLAYGROUND_ASPECT } from './source-link.ts';
 import { workspaceFolder, zipStored } from './workspace-folder.ts';
 // host.ts (compiler change 0062): the declarations the worker checks it against, as one asset
 // it fetches the first time host.ts is opened, and the sandboxed frame a run happens in.
@@ -1433,6 +1435,47 @@ function mount(root: HTMLElement): void {
     !entries.some((entry) => entry.stage === 'fragment');
 
   const frame = root.querySelector('[data-gpu-frame]');
+
+  // ── What a live example's link carries beside its file ─────────────────────────────────
+  // A live example's canvas has a shape of its own, and its controls a range and a value of
+  // their own (src/components/LiveShader.astro). Its link names both (`aspect=`, `controls=`,
+  // src/scripts/source-link.ts), so the file opens here on the picture the page draws. Both
+  // stay in the fragment while the file is edited, and go when an example or Blank is opened.
+
+  /** The frame's shape the link named, or undefined for the Playground's own 4:3. */
+  let linkedAspect: string | undefined;
+  /** The `controls=` text the link carried, written back unchanged while it holds. */
+  let linkedControls: string | undefined;
+  const defaultAspect = parseAspect(PLAYGROUND_ASPECT)!;
+  let frameAspect: [number, number] = defaultAspect;
+  /** The rasteriser's grid height for a grid `side` wide, at the frame's shape, so a pixel of
+   *  it is square on the page. */
+  const gridHeight = (side: number): number =>
+    Math.max(1, Math.round((side * frameAspect[1]) / frameAspect[0]));
+  /** Put the frame, the rasteriser's grid and the resolution labels on `text`'s shape, or back
+   *  on 4:3. With `redraw`, a grid that changes size is laid out again the way a pick of
+   *  another resolution lays it out. */
+  const applyAspect = (text: string | null | undefined, redraw = false): void => {
+    const parsed = text === PLAYGROUND_ASPECT ? undefined : parseAspect(text);
+    linkedAspect = parsed ? text! : undefined;
+    frameAspect = parsed ?? defaultAspect;
+    if (frame instanceof HTMLElement)
+      frame.style.aspectRatio = parsed ? `${parsed[0]} / ${parsed[1]}` : '';
+    if (resolutionPicker instanceof HTMLSelectElement) {
+      for (const option of resolutionPicker.options) {
+        const side = Number(option.value);
+        option.textContent = (option.textContent ?? '').replace(
+          /^\d+ × \d+/,
+          `${side} × ${gridHeight(side)}`,
+        );
+      }
+    }
+    if (!(canvas instanceof HTMLCanvasElement) || canvas.height === gridHeight(canvas.width))
+      return;
+    if (redraw && resolutionPicker instanceof HTMLSelectElement)
+      resolutionPicker.dispatchEvent(new Event('change'));
+    else canvas.height = gridHeight(canvas.width);
+  };
 
   /** Put a new canvas where the old one was, carrying its name and its handlers. */
   const freshCanvas = (): HTMLCanvasElement | undefined => {
@@ -3459,6 +3502,9 @@ function mount(root: HTMLElement): void {
     // example's own, or the starter the page writes. A link written before host.ts opens as
     // it always did.
     if (hostCarried()) more.push(`host=${await encodeSource(hostText())}`);
+    // A live example's frame shape and controls, as its link carried them.
+    if (linkedAspect) more.push(`aspect=${linkedAspect}`);
+    if (linkedControls) more.push(`controls=${linkedControls}`);
     writeHash('code', await encodeSource(text), currentChoice(), more);
   };
 
@@ -3579,6 +3625,18 @@ function mount(root: HTMLElement): void {
   /** Which example the editor was last filled from. On a page that names the example there
    *  is no picker to read it off, so the id is held here and Reset uses it. */
   let openedExample = root.dataset.defaultExample ?? '';
+  /** The file a link opened with no example behind it, and the values its controls started
+   *  at, so Reset comes back to it and not to an example the reader never opened. */
+  let linkedOpening: { source: string; seed: Record<string, number[]> } | undefined;
+
+  /** Drop what a live example's link carried: the frame goes back to 4:3 and the fields to
+   *  their own ranges. */
+  const forgetLinkedView = (): void => {
+    linkedOpening = undefined;
+    linkedControls = undefined;
+    bindings.setControls({});
+    applyAspect(undefined, true);
+  };
 
   const showExample = (id: string): void => {
     const example = examples.find((candidate) => candidate.id === id);
@@ -3587,6 +3645,7 @@ function mount(root: HTMLElement): void {
     if (examplePicker instanceof HTMLSelectElement) examplePicker.value = example.id;
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = example.description;
     showImportsNote(example.id);
+    forgetLinkedView();
     bindings.seed(example.defaults ?? {});
     renameMain(exampleFileName(example.id));
     // The files it imports go in first, so the worker holds them when the new text asks.
@@ -3651,9 +3710,9 @@ function mount(root: HTMLElement): void {
       // for tens of seconds, so this is a control a reader can reach mid-draw.
       if (drawing !== 0) retirePool();
       job += 1;
-      // The grid keeps the frame's 4:3, so a pixel of it is square on the page.
+      // The grid keeps the frame's shape, so a pixel of it is square on the page.
       canvas.width = side;
-      canvas.height = Math.round((side * 3) / 4);
+      canvas.height = gridHeight(side);
       const surface = canvas.getContext('2d');
       surface?.clearRect(0, 0, side, side);
       canvasFits = holdsItsPixels(canvas, surface);
@@ -3762,11 +3821,54 @@ function mount(root: HTMLElement): void {
     return out;
   };
 
+  /** The controls a live example's link carries (`controls=`): for each field, its range, its
+   *  step and the value it stood at. Undefined where the link carries none, or carries
+   *  anything but numbers, lists of numbers and the two flags. */
+  const linkedControlsOf = async (packed: string | null): Promise<ControlProps | undefined> => {
+    if (!packed) return undefined;
+    const text = await decodeSource(packed);
+    if (text === undefined) return undefined;
+    const numbers = (v: unknown): boolean =>
+      (typeof v === 'number' && Number.isFinite(v)) ||
+      (Array.isArray(v) &&
+        v.length <= 16 &&
+        v.every((n) => typeof n === 'number' && Number.isFinite(n)));
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
+      const out: Record<string, ControlProp> = {};
+      for (const [name, prop] of Object.entries(parsed)) {
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) || !prop || typeof prop !== 'object') continue;
+        const p = prop as Record<string, unknown>;
+        const keep: { -readonly [K in keyof ControlProp]?: ControlProp[K] } = {};
+        for (const key of ['min', 'max', 'step', 'value'] as const)
+          if (numbers(p[key])) keep[key] = p[key] as number | number[];
+        if (p.color === true) keep.color = true;
+        if (p.toggle === true) keep.toggle = true;
+        out[name] = keep;
+      }
+      return Object.keys(out).length > 0 ? out : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
+  /** The starting values a link's controls name, by field. */
+  const seedOf = (controls: ControlProps | undefined): Record<string, number[]> =>
+    Object.fromEntries(
+      Object.entries(controls ?? {})
+        .filter(([, prop]) => prop.value !== undefined && typeof prop.value !== 'boolean')
+        .map(([name, prop]) => [name, ([] as number[]).concat(prop.value as number | number[])]),
+    );
+
   /** What the page opens with: the source in the link, else the example the link names, else
    *  the first example. */
   const openingSource = async (): Promise<{
     source: string;
     example?: PlaygroundExample;
+    controls?: ControlProps;
+    /** Whether the source came in the link (`code=`). */
+    linked?: boolean;
     files?: Record<string, string>;
     graph?: { name: string; path: string }[];
     host?: string;
@@ -3804,6 +3906,9 @@ function mount(root: HTMLElement): void {
       const source = await decodeSource(code);
       if (source !== undefined) {
         const example = examples.find((candidate) => candidate.source === source);
+        applyAspect(params.get('aspect'));
+        const controls = await linkedControlsOf(params.get('controls'));
+        if (controls) linkedControls = params.get('controls')!;
         // A link written before the main file had a name of its own names none: it opens
         // under its example's name, or `main.shade.ts`.
         const linkedName = params.get('name');
@@ -3815,6 +3920,8 @@ function mount(root: HTMLElement): void {
         return {
           source,
           example,
+          linked: true,
+          ...(controls ? { controls } : {}),
           files: await linkedFiles(params.get('files')),
           graph: linkedGraph(params.get('passes')),
           ...(host !== undefined ? { host } : {}),
@@ -4775,6 +4882,7 @@ export function wave(x: f32, t: f32): f32 {
     if (examplePicker instanceof HTMLSelectElement) examplePicker.selectedIndex = -1;
     if (exampleNote instanceof HTMLElement) exampleNote.textContent = '';
     showImportsNote(undefined);
+    forgetLinkedView();
     bindings.seed({});
     renameMain(MAIN_FILE);
     setFiles({});
@@ -4783,6 +4891,15 @@ export function wave(x: f32, t: f32): f32 {
     model.setValue(blankSource);
     window.clearTimeout(timer);
     writeHash('blank', '1', currentChoice());
+    render();
+  };
+  /** Reset on a file a link opened with no example behind it: the file comes back as the link
+   *  had it, its controls at the values the link named, under the frame shape it named. */
+  const reopenLinked = (): void => {
+    if (!editor || !model || !linkedOpening) return;
+    bindings.seed(linkedOpening.seed);
+    model.setValue(linkedOpening.source);
+    window.clearTimeout(timer);
     render();
   };
   const setView = (view: 'gallery' | 'editor'): void => {
@@ -4891,8 +5008,19 @@ export function wave(x: f32, t: f32): f32 {
         if (examplePicker instanceof HTMLSelectElement) examplePicker.value = opening.example.id;
         if (exampleNote instanceof HTMLElement)
           exampleNote.textContent = opening.example.description;
-      } else if (exampleNote instanceof HTMLElement) {
-        exampleNote.textContent = '';
+      } else {
+        // A file with no example behind it: the picker names none, the way it does for Blank.
+        // The first example's title would name code that is not that example.
+        if (examplePicker instanceof HTMLSelectElement) examplePicker.selectedIndex = -1;
+        if (exampleNote instanceof HTMLElement) exampleNote.textContent = '';
+        if (opening.linked) {
+          openedExample = '';
+          linkedOpening = { source: opening.source, seed: seedOf(opening.controls) };
+        }
+      }
+      if (opening.controls) {
+        bindings.setControls(opening.controls);
+        if (!opening.example) bindings.seed(seedOf(opening.controls));
       }
       model = monaco.editor.createModel(
         opening.source,
@@ -5284,7 +5412,8 @@ export function wave(x: f32, t: f32): f32 {
         });
       });
       reset.addEventListener('click', () => {
-        if (openedExample === '' && blankSource) openBlank();
+        if (openedExample === '' && linkedOpening) reopenLinked();
+        else if (openedExample === '' && blankSource) openBlank();
         else showExample(openedExample);
         editor.focus();
       });

@@ -15,6 +15,8 @@ import {
   isReserved,
   reservedValue,
   suggestsColour,
+  type ControlProp,
+  type ControlProps,
 } from '../lib/live-shader-contract.ts';
 import {
   componentCount,
@@ -354,6 +356,8 @@ export class BindingsModel {
   private readonly overrideValues = new Map<string, number>();
   /** Built texels by binding, so a redraw that did not change a texture does not rebuild it. */
   private readonly texelCache = new Map<string, TextureSpec>();
+  /** The ranges a live example's link carried, by field name (`setControls`). */
+  private linkedProps: ControlProps = {};
   /** Starting values an example brings for the next module read, by field name. */
   private pendingSeed: Readonly<Record<string, readonly number[]>> | undefined;
   /** What the last dispatch wrote, by binding name, for the rows under each buffer. */
@@ -368,6 +372,19 @@ export class BindingsModel {
    *  next `update`, the compile of that example's file. */
   seed(values: Readonly<Record<string, readonly number[]>>): void {
     this.pendingSeed = values;
+  }
+
+  /** The range and step a live example gives each of its fields, carried by its link to the
+   *  Playground, so a slider here runs over the range the page's runs over. Empty for every
+   *  other file, whose fields take the contract's defaults. */
+  setControls(props: ControlProps): void {
+    this.linkedProps = props;
+  }
+
+  /** What a live example's link says about one field, for a field the module declares at the
+   *  top of its block. */
+  private propOf(field: PackedField): ControlProp | undefined {
+    return field.name === field.leaf ? this.linkedProps[field.name] : undefined;
   }
 
   /** Read a newly compiled module. Values the reader set survive for every binding and field
@@ -585,7 +602,10 @@ export class BindingsModel {
     }
     if (shape.columns > 1) return matrixPreset('identity', shape);
     if (shape.scalar === 'f32' && shape.rows >= 3) return [...nextColour()].slice(0, shape.rows);
-    const control = controlFor({ name: field.leaf, type: field.type, offset: field.offset });
+    const control = controlFor(
+      { name: field.leaf, type: field.type, offset: field.offset },
+      this.propOf(field),
+    );
     if (control) return [...control.value];
     return Array.from({ length: componentCount(shape) }, () => 0);
   }
@@ -1345,7 +1365,10 @@ export class BindingsModel {
       return row;
     }
 
-    const control = controlFor({ name: field.leaf, type: field.type, offset: field.offset });
+    const control = controlFor(
+      { name: field.leaf, type: field.type, offset: field.offset },
+      this.propOf(field),
+    );
     if (!control) {
       controls.append(el('span', 'binding-runtime', this.copy.noControl));
       return row;

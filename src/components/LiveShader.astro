@@ -98,6 +98,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   class:list={['figure', 'live', hero ? 'live-hero' : undefined]}
   data-live-shader
   data-live-id={id}
+  data-aspect={aspect}
   data-payload={payloadId}
   data-copy={JSON.stringify(runtimeCopy)}
   data-live-state="idle"
