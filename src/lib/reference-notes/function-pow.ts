@@ -20,9 +20,10 @@ function under(uv: vec2, f: f32): f32 {
   return 1. - smoothstep(-fwidth(d), fwidth(d), d)
 }
 
-// 1 within about px pixels of where d is 0.
-function line(d: f32, px: f32): f32 {
-  return 1. - smoothstep(0., px * fwidth(d), abs(d))
+// 1 within about px pixels of where d is 0. w is how much d changes from one pixel to the
+// next, taken from a value that does not jump, so the line keeps its width everywhere.
+function line(d: f32, w: f32, px: f32): f32 {
+  return 1. - smoothstep(0., px * w, abs(d))
 }
 
 @fragment
@@ -30,11 +31,14 @@ export function curve(@location(0) uv: vec2): vec4 {
   const y = pow(uv.x, u.k)
   let color = mix(vec3(0.95, 0.96, 0.98), vec3(0.09, 0.47, 1.), under(uv, y))
   // A grid line every 0.25, so a value such as pow(0.5, 2.) = 0.25 can be read off it.
-  const gx = fract(uv.x * 4. + 0.5) - 0.5
-  const gy = fract(uv.y * 4. + 0.5) - 0.5
-  color = mix(color, vec3(0.45), 0.35 * max(line(gx, 1.), line(gy, 1.)))
+  // fract jumps halfway between two lines, so the width comes from uv * 4., which does not.
+  const g = uv * 4.
+  const gx = fract(g.x + 0.5) - 0.5
+  const gy = fract(g.y + 0.5) - 0.5
+  color = mix(color, vec3(0.45), 0.35 * max(line(gx, fwidth(g.x), 1.), line(gy, fwidth(g.y), 1.)))
   // The line y = x is the curve at k = 1.
-  color = mix(color, vec3(0.15), 0.6 * line(uv.y - uv.x, 1.5))
+  const diagonal = uv.y - uv.x
+  color = mix(color, vec3(0.15), 0.6 * line(diagonal, fwidth(diagonal), 1.5))
   return vec4(color, 1.)
 }
 `;
@@ -129,13 +133,13 @@ export const functionPow: NoteRecord = {
   live: {
     'reference-pow-curve': {
       file: 'pow-curve.shade.ts',
-      aspect: '3/2',
+      aspect: '1/1',
       code: curve,
       controls: { k: { min: 0.1, max: 5, step: 0.01, value: 2 } },
     },
     'reference-pow-negative': {
       file: 'pow-negative.shade.ts',
-      aspect: '2/1',
+      aspect: '1/1',
       code: negative,
       controls: { k: { min: 0.5, max: 5, step: 0.5, value: 3 } },
     },
