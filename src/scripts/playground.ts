@@ -4395,6 +4395,13 @@ function mount(root: HTMLElement): void {
   const runHostButton = root.querySelector('[data-run-host]');
   const runHostLabel = root.querySelector('[data-run-host-label]');
   const hostNote = root.querySelector('[data-host-note]');
+  const hostResult = root.querySelector('[data-host-result]');
+  /** The line under the frame that shows what run() returned, or hides it. */
+  const showHostResult = (text: string | undefined): void => {
+    if (!(hostResult instanceof HTMLElement)) return;
+    hostResult.textContent = text === undefined ? '' : `run() ${text}`;
+    hostResult.hidden = text === undefined;
+  };
   let hostRun: HostRun | undefined;
   /** Raised by every Run and Stop, so a build that comes back after either is dropped. */
   let hostTicket = 0;
@@ -4418,6 +4425,7 @@ function mount(root: HTMLElement): void {
   /** Removes the frame of a run, if one is up. `say` adds a line saying so to its report. */
   const stopHost = (say = false): void => {
     hostTicket += 1;
+    showHostResult(undefined);
     if (!hostRun) return;
     hostRun.stop();
     hostRun = undefined;
@@ -4452,6 +4460,12 @@ function mount(root: HTMLElement): void {
     hostList.append(li);
   };
 
+  /** Brings the run's report to the front from the Result tab, where the frame shows none of
+   *  it. A reader on another tab chose it and stays there. */
+  const showHostReport = (): void => {
+    if (view === 'result') selectView('console');
+  };
+
   const onHostEvent = (event: HostEvent): void => {
     const at = (line: number | undefined): string => (line ? `${HOST_TAB}:${line}` : HOST_TAB);
     switch (event.kind) {
@@ -4460,9 +4474,15 @@ function mount(root: HTMLElement): void {
         return;
       case 'error':
         hostLine('error', at(event.line), event.text);
+        showHostReport();
         return;
       case 'returned':
-        if (event.text !== undefined) hostLine('log', 'run()', event.text);
+        hostLine('log', 'run()', event.text);
+        // What a run returns is written to the Console tab. A run that drew nothing leaves
+        // the Result tab an empty frame, so the tab with its value comes to the front; one
+        // that drew keeps its picture, with the value on a line under it.
+        if (event.drew) showHostResult(event.text);
+        else showHostReport();
         return;
       case 'started':
         if (event.call === 'none' && consolePane instanceof HTMLElement)
