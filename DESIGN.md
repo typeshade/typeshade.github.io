@@ -761,7 +761,10 @@ under their overview the same way, only on their own pages, so the sidebar never
 page of the reference at once, and the page a reader is on is scrolled into view inside the
 sidebar's own scroller. The guide links into the reference the way MDN links a function's first mention: the
 first inline code on a guide page that is exactly a public export's name becomes a link to
-that export's page (`src/lib/remark-api-links.mjs`, over the guide's markdown only). A
+that export's page (`src/lib/remark-api-links.mjs`, over the guide's markdown only). A name
+that is also a builtin of the language, an IR builder in Builtins or Values, links to the
+language reference instead: a call (`f32()`) to its function entry, a bare name (`f32`) to its
+type entry, each falling back to the other. A
 reference page records its kind for the search index, so a result reads "abs (function)". On a
 Korean page the chrome is Korean and the body English; the note above the
 body says so. The contract between the generator and the page is `src/lib/api-types.ts`, and
