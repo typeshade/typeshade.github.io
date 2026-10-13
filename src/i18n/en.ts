@@ -1838,9 +1838,9 @@ export const en = {
 
     wgslAndGlsl: {
       title: `WGSL vs ${facts.glslTarget}: differences and one source for both`,
-      description: `WGSL and ${facts.glslTarget} compared on one shader: the text the TypeShade compiler writes for each target, and where the two differ.`,
+      description: `WGSL and ${facts.glslTarget} compared on one shader: the types, builtin variables and function names that differ, as the TypeShade compiler writes them.`,
       h1: `WGSL vs ${facts.glslTarget}`,
-      lead: `One \`"use typeshade"\` file reaches WebGPU as WGSL and WebGL2 as ${facts.glslTarget}. The blocks on this page are compiled while the page is built, from the file above them, by the compiler pinned at ${facts.pinnedCommit}.`,
+      lead: `One \`"use typeshade"\` file reaches WebGPU as WGSL and WebGL2 as ${facts.glslTarget}. The compiler spells ${facts.builtins} builtins, and ${facts.portableBuiltins} of them are written the same way in both languages. The blocks on this page are compiled while the page is built, from the file above them, by the compiler pinned at ${facts.pinnedCommit}.`,
       sourceH: 'The source',
       sourceP:
         'A triangle, with a vertex entry that places it and a fragment entry that colours it. The two structs give each stage its output shape.',
@@ -1883,6 +1883,19 @@ export const en = {
           'A GPU feature is turned on by a preprocessor line, and the host asks the context for the matching extension.',
         ],
       ],
+      namesH: 'Names that differ',
+      namesP: `Each row is one construct. The ${facts.glslTarget} and WGSL cells are the text the compiler at ${facts.pinnedCommit} writes for the TypeShade cell. A spelling the compiler changes reaches this table at the next pin.`,
+      typesH: 'Types',
+      variablesH: 'Builtin variables',
+      functionsH: 'Functions',
+      meaningH: 'Same name, other meaning',
+      meaningP:
+        "A few names are in both languages and mean different things. GLSL's `mod` rounds the quotient down, and WGSL's `%` truncates it toward zero. WGSL's `round` sends a half to the even integer and GLSL's may send it either way, so the compiler writes `roundEven`. TypeShade has `mod` and `%`, and the compiler writes each target the text that keeps the meaning.",
+      swizzleP:
+        'GLSL can assign to several components at once, as in `c.xy = uv`. WGSL writes one component at a time, so the compiler refuses that assignment with `TS8018`. An assignment to one component, `c.x = uv.x`, compiles.',
+      colGlsl: `${facts.glslTarget}`,
+      colWgsl: 'WGSL',
+      colSource: 'TypeShade',
       convertH: 'Converting a shader',
       convertP: `\`compile()\` reads one kind of source, a \`"use typeshade"\` file, which is TypeScript. The compiler has no GLSL or WGSL front end, so a shader in either language is written once more in TypeScript. The compiler then writes the WGSL and the ${glsl} from that one file.`,
       convertItems: [
