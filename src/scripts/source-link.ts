@@ -47,7 +47,35 @@ export async function decodeSource(text: string): Promise<string | undefined> {
   }
 }
 
-/** The Playground at `base`, opened on `source`. */
-export async function playgroundLink(base: string, source: string): Promise<string> {
-  return `${base}#code=${await encodeSource(source)}`;
+/** The shape of the Playground's frame where a link names none. */
+export const PLAYGROUND_ASPECT = '4/3';
+
+/** An aspect a link may name, as `width/height` in small whole numbers, or undefined for
+ *  anything else, so a fragment cannot put an arbitrary string into a style. */
+export function parseAspect(text: string | null | undefined): [number, number] | undefined {
+  const match = /^([1-9]\d?)\/([1-9]\d?)$/.exec(text ?? '');
+  return match ? [Number(match[1]), Number(match[2])] : undefined;
+}
+
+/** What a live example shows beside its file: the shape of its canvas and its controls, the
+ *  range and the value each one stands at. The Playground opens the file under them, so it
+ *  draws the picture the page draws. */
+export interface LinkedView {
+  readonly aspect?: string;
+  readonly controls?: Readonly<Record<string, unknown>>;
+}
+
+/** The Playground at `base`, opened on `source`, under `view` where it differs from the
+ *  Playground's own. */
+export async function playgroundLink(
+  base: string,
+  source: string,
+  view: LinkedView = {},
+): Promise<string> {
+  const parts = [`code=${await encodeSource(source)}`];
+  if (view.aspect && view.aspect !== PLAYGROUND_ASPECT && parseAspect(view.aspect))
+    parts.push(`aspect=${view.aspect}`);
+  if (view.controls && Object.keys(view.controls).length > 0)
+    parts.push(`controls=${await encodeSource(JSON.stringify(view.controls))}`);
+  return `${base}#${parts.join('&')}`;
 }

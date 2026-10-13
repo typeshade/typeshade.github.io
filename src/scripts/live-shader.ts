@@ -206,6 +206,8 @@ function setUp(root: HTMLElement): void {
     // A reader who asked for less motion gets no frame loop, so the move they just made is
     // what puts the next frame up.
     if (onDemand) mounted?.redraw();
+    // The link to the Playground carries the value the control now stands at.
+    syncLink();
   };
 
   /** One `<input type="range">` or `<input type="number">` over one component of a field. */
@@ -462,20 +464,40 @@ function setUp(root: HTMLElement): void {
     }
     showEmitted(result.data);
     adopt(result.controls);
+    syncLink();
     say(report.length > 0 ? 'error' : 'ok', report, report.length > 0 ? copy.keptFrame : undefined);
   }
 
   // The link to the Playground carries the file as it stands, so an edit made here opens
-  // there, where the console calls it makes are listed. `linked` is the text the link holds.
+  // there, where the console calls it makes are listed. It carries the canvas's shape and
+  // the controls as they stand too, so the Playground draws the picture this canvas draws.
+  // `linked` is what the link holds.
   const openLink = root.querySelector<HTMLAnchorElement>('[data-live-playground]');
   const playground = openLink?.getAttribute('href') ?? '';
   let linked = '';
   const syncLink = (): void => {
     const source = editor ? editor.value() : payload.source;
-    if (!openLink || source === linked) return;
-    linked = source;
-    void playgroundLink(playground, source).then((href) => {
-      if (linked === source) openLink.href = href;
+    const view = {
+      aspect: root.dataset.aspect,
+      controls: Object.fromEntries(
+        controls.map((c) => [
+          c.field,
+          {
+            min: c.min,
+            max: c.max,
+            step: c.step,
+            value: values[c.field] ?? c.value,
+            ...(c.kind === 'color' ? { color: true } : {}),
+            ...(c.kind === 'checkbox' ? { toggle: true } : {}),
+          },
+        ]),
+      ),
+    };
+    const key = `${source}\u0000${JSON.stringify(view)}`;
+    if (!openLink || key === linked) return;
+    linked = key;
+    void playgroundLink(playground, source, view).then((href) => {
+      if (linked === key) openLink.href = href;
     });
   };
   syncLink();

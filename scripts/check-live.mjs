@@ -12,6 +12,8 @@
 //      change and so does the image
 //   5. the link to the Playground carries the file as it stands: the sample before an edit,
 //      and the edited text after one
+//   6. the Playground opens that link on the same picture: the frame's shape, the controls'
+//      starting values, and an example picker that names no example
 //
 // Exit codes: 1 for a broken page, 2 when no backend was reachable, which is the one failure
 // that is the runner and not the page. LIVE_GPU_OPTIONAL=1 lets a runner with no software
@@ -158,6 +160,71 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
         return new Response(stream).text();
       }, `[data-live-id="${id}"]`);
     const linkedBefore = await linked();
+
+    // 6. The Playground opens the link on the picture this canvas draws: its frame has the
+    //    canvas's shape, its controls start where the page's stand, and its example picker
+    //    names no example. Checked once per example, on the WebGPU route.
+    if (!expected) {
+      const opened = await page.evaluate((at) => {
+        const figure = document.querySelector(at);
+        const box = figure?.querySelector('canvas')?.getBoundingClientRect();
+        return {
+          href: figure?.querySelector('[data-live-playground]')?.href ?? '',
+          ratio: box && box.height > 0 ? box.width / box.height : 0,
+          values: figure?.__liveShader?.values() ?? {},
+        };
+      }, `[data-live-id="${id}"]`);
+      const playground = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+      try {
+        await playground.goto(opened.href, { waitUntil: 'load' });
+        await playground
+          .waitForFunction(
+            () => document.querySelectorAll('input[data-uniform]').length > 0,
+            undefined,
+            { timeout: TIMEOUT * 2 },
+          )
+          .catch(() => {});
+        const seen = await playground.evaluate(() => {
+          const frame = document.querySelector('[data-gpu-frame]')?.getBoundingClientRect();
+          const picker = document.querySelector('[data-example]');
+          return {
+            ratio: frame && frame.height > 0 ? frame.width / frame.height : 0,
+            picked: picker ? picker.selectedIndex : -1,
+            sliders: Object.fromEntries(
+              [...document.querySelectorAll('input[data-uniform]')].map((i) => [
+                i.dataset.uniform,
+                Number(i.value),
+              ]),
+            ),
+            // A colour field is a picker, which holds 8 bits a channel.
+            pickers: Object.fromEntries(
+              [...document.querySelectorAll('input[type="color"]')].map((i) => [
+                i.getAttribute('aria-label'),
+                [1, 3, 5].map((at) => parseInt(i.value.slice(at, at + 2), 16) / 255),
+              ]),
+            ),
+          };
+        });
+        if (Math.abs(seen.ratio - opened.ratio) > 0.02 * opened.ratio)
+          problems.push(
+            `the Playground frame is ${seen.ratio.toFixed(3)} wide per high, the canvas ${opened.ratio.toFixed(3)}`,
+          );
+        if (seen.picked !== -1)
+          problems.push(`the Playground picker names an example (index ${seen.picked})`);
+        // A slider shows its value on its own step, so a value is matched to within a step.
+        const near = (a, b) => typeof a === 'number' && Math.abs(a - b) <= 0.005;
+        for (const [field, value] of Object.entries(opened.values)) {
+          value.forEach((v, i) => {
+            const name = value.length > 1 ? `${field} ${'xyzw'[i]}` : field;
+            const shown = seen.sliders[name] ?? seen.pickers[field]?.[i];
+            if (!near(shown, v))
+              problems.push(`the Playground starts ${name} at ${shown}, the page at ${v}`);
+          });
+        }
+      } finally {
+        await playground.close();
+      }
+    }
 
     // 2. Nothing large before the first edit.
     const before = (await fetched()).filter((s) => s.length >= SMALL_SCRIPT);
