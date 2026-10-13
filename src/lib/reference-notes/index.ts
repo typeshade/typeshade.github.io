@@ -28,7 +28,7 @@ export type NoteControl = Omit<ControlProp, 'label'>;
 export interface NoteLive {
   readonly code: string;
   readonly file?: string;
-  readonly aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2';
+  readonly aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2' | '1/1';
   readonly controls?: Readonly<Record<string, NoteControl>>;
 }
 
