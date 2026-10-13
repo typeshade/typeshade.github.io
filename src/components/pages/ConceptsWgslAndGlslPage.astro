@@ -16,7 +16,7 @@ import { slugify } from '../../lib/slug.ts';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const c = copyFor(locale).concepts.wgslAndGlsl;
-const headings = [c.sourceH, c.wgslH, c.glslH, c.diffH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
+const headings = [c.sourceH, c.wgslH, c.glslH, c.diffH, c.convertH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 
 <Docs locale={locale} path={links.conceptsWgsl.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
@@ -46,6 +46,12 @@ const headings = [c.sourceH, c.wgslH, c.glslH, c.diffH, c.furtherH].map((h) => (
     <h2 id={slugify(c.diffH)}>{c.diffH}</h2>
     <p><Rich text={c.diffP} locale={locale} /></p>
     <ConceptDoc locale={locale} rows={c.diffRows} columns={c.diffColumns} />
+  </section>
+
+  <section>
+    <h2 id={slugify(c.convertH)}>{c.convertH}</h2>
+    <p><Rich text={c.convertP} locale={locale} /></p>
+    <ul>{c.convertItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   </section>
 
   <section>

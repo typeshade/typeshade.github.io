@@ -1790,6 +1790,13 @@ export const ko: Copy = {
           'GPU 기능은 전처리기 줄로 켜고, 호스트도 컨텍스트에 해당 확장을 요청합니다.',
         ],
       ],
+      convertH: '기존 셰이더 옮기기',
+      convertP: `\`compile()\`이 읽는 소스는 TypeScript로 쓴 \`"use typeshade"\` 파일 한 종류뿐입니다. 컴파일러에는 GLSL이나 WGSL을 읽는 프런트엔드가 없습니다. 그래서 두 언어 가운데 하나로 쓴 셰이더는 TypeScript로 한 번 다시 씁니다. 그러면 컴파일러가 그 파일 하나에서 WGSL과 ${glsl}을 만듭니다.`,
+      convertItems: [
+        `GLSL에서: [GLSL 셰이더 옮기기](internalsGlslShader)는 유니폼 블록, \`#ifdef\`, \`#include\`, \`#extension\`처럼 셰이더 전체에 걸린 것을 다룹니다. [${glsl}을 TypeShade로](languageFromGlsl)에는 타입, 유니폼, builtin 변수, 함수가 있습니다.`,
+        'WGSL에서: [WGSL을 TypeShade로](languageFromWgsl)에서 WGSL 구성 요소마다 TypeShade 표기를 찾습니다.',
+        'WGSL에만 있는 것: 그런 구성 요소를 쓴 파일도 컴파일됩니다. 스칼라 유니폼, 드로우 안의 `"read_write"` 스토리지 바인딩, `@interpolate("linear")`가 그 예입니다. 이때 `compile()`은 WGSL을 남기고 `glsl`을 undefined로 두며, 그 까닭을 `TS8015` 경고로 알립니다.',
+      ],
       furtherH: '더 읽을 자료',
       furtherItems: [
         '[WGSL 명세](specWgsl)가 두 타깃 가운데 첫 번째를 정의합니다.',
