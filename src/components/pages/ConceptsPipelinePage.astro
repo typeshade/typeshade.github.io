@@ -1,6 +1,6 @@
 ---
-// Concepts: the pipeline, at /guide/concepts/the-pipeline/. What each stage is handed and
-// what it produces, and how an entry point signature maps onto that. Copy lives in
+// Concepts: the shader pipeline, at /guide/concepts/the-pipeline/. The steps of a draw, what
+// each stage is handed and what it produces, and how an entry point signature maps onto that. Copy lives in
 // `concepts.pipeline` (src/i18n/en.ts, src/i18n/ko.ts); the code samples are not copy, so
 // they stay here.
 import Docs from '../../layouts/Docs.astro';
@@ -14,12 +14,20 @@ import { slugify } from '../../lib/slug.ts';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const c = copyFor(locale).concepts.pipeline;
-const headings = [c.stagesH, c.entryH, c.interpolationH, c.computeH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
+// The title is measured here, as the reference's entry pages measure theirs.
+if (c.title.length < 45 || c.title.length > 60) throw new Error(`[concepts] the pipeline page has a ${c.title.length}-character title, outside the 45 to 60 the SEO checks want: ${c.title}`);
+const headings = [c.drawH, c.stagesH, c.entryH, c.interpolationH, c.computeH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
 ---
 
 <Docs locale={locale} path={links.conceptsPipeline.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
   <h1>{c.h1}</h1>
   <p>{c.lead}</p>
+
+  <section>
+    <h2 id={slugify(c.drawH)}>{c.drawH}</h2>
+    <p><Rich text={c.drawP} locale={locale} /></p>
+    <ConceptDoc locale={locale} rows={c.drawRows} columns={c.drawColumns} strongTerm />
+  </section>
 
   <section>
     <h2 id={slugify(c.stagesH)}>{c.stagesH}</h2>

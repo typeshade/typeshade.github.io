@@ -154,7 +154,7 @@ export const en = {
       },
       conceptPages: {
         cpuAndGpu: 'CPU and GPU',
-        pipeline: 'The pipeline',
+        pipeline: 'The shader pipeline',
         webgpuAndWebgl2: 'WebGPU and WebGL2',
         wgslAndGlsl: 'WGSL and GLSL',
       },
@@ -1642,15 +1642,52 @@ export const en = {
         '[MDN WebGPU API](mdnWebgpu) is the browser side of the same model, written for a JavaScript developer.',
       ],
       nextP:
-        'Next in this path: [The pipeline](conceptsPipeline), which says what each stage is handed and what it produces.',
+        'Next in this path: [The shader pipeline](conceptsPipeline), which says what each stage is handed and what it produces.',
     },
 
     pipeline: {
-      title: 'The shader pipeline',
+      title: 'The shader pipeline: vertex, fragment and compute stages',
       description:
-        'What a vertex stage, a fragment stage and a compute stage are each handed, what each produces, and how an entry point signature maps onto them.',
-      h1: 'The pipeline',
-      lead: 'A shader never runs on its own. It sits at one of the fixed points of a GPU pipeline, and that point decides what the entry point is handed and what it has to give back. This page describes the points TypeShade emits for, and leaves the syntax to the language guide.',
+        'The steps a GPU runs from a draw call to pixels, which of them run shaders, and what the vertex, fragment and compute stages each take and return.',
+      h1: 'The shader pipeline',
+      lead: 'A shader pipeline is the chain of steps a GPU runs for one draw. The vertex stage and the fragment stage are the shaders in it. Fixed steps sit between them: primitive assembly, clipping and rasterization. A compute pipeline holds one stage, the compute stage. This page says what each stage is handed and what it gives back, and leaves the syntax to the language guide.',
+      drawH: 'Steps of a draw',
+      drawP:
+        'The [WebGPU specification](specWebgpu) defines a draw as these steps, in this order. A step that names an entry point runs your shader code. Fixed-function hardware runs the other steps.',
+      drawColumns: ['Step', 'What runs', 'What it does'],
+      drawRows: [
+        [
+          'Index resolution',
+          'Fixed function',
+          'Builds the list of vertices to process, from the index buffer or from the vertex count of the draw.',
+        ],
+        [
+          'Vertex processing',
+          'Your `@vertex` entry',
+          'Runs once per vertex and returns a clip-space position and the values the fragment stage reads.',
+        ],
+        [
+          'Primitive assembly',
+          'Fixed function',
+          'Groups the vertices into points, lines or triangles, as the pipeline topology says.',
+        ],
+        ['Primitive clipping', 'Fixed function', 'Cuts each primitive to the clip volume.'],
+        [
+          'Rasterization',
+          'Fixed function',
+          'Finds the fragments each primitive covers and the weight of each vertex at each fragment.',
+        ],
+        [
+          'Fragment processing',
+          'Your `@fragment` entry',
+          'Runs once per fragment on the vertex outputs weighed for it, and returns a value for each colour attachment.',
+        ],
+        [
+          'Output merging',
+          'Fixed function',
+          'Updates depth and stencil from the depth and stencil tests, then blends and writes the colours of each fragment that passed both.',
+        ],
+      ],
       stagesH: 'Stages',
       stagesP: 'Each row is one stage of the pipeline the host set up.',
       stagesColumns: ['Stage', 'What it is handed', 'What it produces'],
