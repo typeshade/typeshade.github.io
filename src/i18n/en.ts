@@ -1815,6 +1815,13 @@ export const en = {
           'A GPU feature is turned on by a preprocessor line, and the host asks the context for the matching extension.',
         ],
       ],
+      convertH: 'Converting a shader',
+      convertP: `\`compile()\` reads one kind of source, a \`"use typeshade"\` file, which is TypeScript. The compiler has no GLSL or WGSL front end, so a shader in either language is written once more in TypeScript. The compiler then writes the WGSL and the ${glsl} from that one file.`,
+      convertItems: [
+        `From GLSL: [Migrating a GLSL shader](internalsGlslShader) covers what a whole shader carries, such as uniform blocks, \`#ifdef\`, \`#include\` and \`#extension\`. [${glsl} in TypeShade](languageFromGlsl) has the types, uniforms, builtin variables and functions.`,
+        'From WGSL: [WGSL in TypeShade](languageFromWgsl) gives each WGSL construct its TypeShade spelling.',
+        'Only in WGSL: a file that uses such a construct still compiles. A scalar uniform, a `"read_write"` storage binding in a draw and `@interpolate("linear")` are examples. `compile()` then keeps the WGSL, leaves `glsl` undefined and says why in a `TS8015` warning.',
+      ],
       furtherH: 'Further reading',
       furtherItems: [
         '[WGSL specification](specWgsl) defines the first of the two targets.',
