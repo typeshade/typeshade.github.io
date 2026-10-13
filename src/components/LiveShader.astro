@@ -389,4 +389,9 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   /* Ant's split list draws no rule after the last row, and here it would land 12px above the
      emitted-output disclosure's own rule and read as two. */
   .figure.live .live-exercises li:last-child { border-block-end: 0 }
+  /* The sentences under a figure in a document are running text, so they keep the text measure
+     while the frame and the code above them take the wide one (the caption is capped with every
+     figure's, in global.css). The front page's card lays its note out inside the card, at the
+     card's own width. */
+  .figure.live:not(.live-hero) :is(.live-anchor, .live-reserved, .live-exercises) { max-inline-size: var(--content) }
 </style>
