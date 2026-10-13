@@ -1555,7 +1555,7 @@ export const en = {
       ],
     ],
     fitH: 'Where WebGPU fits',
-    fitP: 'Think of TypeShade as the authoring and compilation layer above the browser graphics API. TypeShade produces shader code, and the application creates a `GPUDevice`, configures a pipeline, binds resources and submits work. A module the application imports through the Vite plugin does those steps inside the calls it exports.',
+    fitP: 'Think of TypeShade as the authoring and compilation layer above the browser graphics API. TypeShade produces shader code, and the application creates a `GPUDevice`, configures a pipeline, binds resources and submits work. A module the application imports through the Vite plugin does those steps inside the calls it exports. [The shader pipeline](conceptsPipeline) shows where the entry points run, and [WebGPU and WebGL2](conceptsWebgpu) shows which side owns each object.',
     fitLinks: [
       ['TypeScript documentation ↗', 'https://www.typescriptlang.org/docs/'],
       ['MDN WebGPU API ↗', 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API'],
@@ -1568,8 +1568,8 @@ export const en = {
     orderH: 'Learn in this order',
     orderItems: [
       'Learn the TypeScript shape: types, functions and modules.',
-      'Add `"use typeshade"` and learn the GPU types.',
-      'Add entry-point decorators and resource declarations.',
+      'Add `"use typeshade"` and learn the [GPU types](languageGpuTypes).',
+      'Add entry-point decorators and resource declarations: [Shader stages](languageStages) and [Resources](languageResources).',
       'Use the Playground to see diagnostics and generated WGSL while you edit.',
       'Only then move into compiler and backend details.',
     ],
@@ -2575,7 +2575,7 @@ export const en = {
           'Choose a size in ordinary TypeScript, then pass it as a named constant to `program.compute()`. Read `pipeline.workgroupShape` to calculate dispatch counts.',
         graphics: '3. Vertex and fragment',
         graphicsP:
-          '`@vertex` and `@fragment` describe graphics-pipeline entry points. Inputs, outputs and builtins are expressed explicitly in the function signature.',
+          '`@vertex` and `@fragment` describe graphics-pipeline entry points. Inputs, outputs and builtins are expressed explicitly in the function signature. [The shader pipeline](conceptsPipeline) says what each stage is handed and what it returns.',
         helper: '4. Helper functions',
         helperP:
           'An undecorated function is a helper, not an entry point. Do not put entry points on classes or treat `this` as a pipeline object.',
