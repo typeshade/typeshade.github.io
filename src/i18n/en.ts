@@ -624,7 +624,7 @@ export const en = {
         MISSING_DIRECTIVE:
           'A file compiled as TypeShade that has no `"use typeshade"` directive at all.',
         TYPE_MISMATCH:
-          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross or an f32 past its range.',
+          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross, an f32 past its range or a builtin call outside its domain, such as `pow(-2., 2.)`.',
         UNKNOWN_FN: 'A call to a function the file neither declares nor imports.',
         CONST_ASSIGN:
           'An assignment to a name that cannot change, such as a `const` or a read-only resource.',
@@ -1748,11 +1748,42 @@ export const en = {
     },
 
     webgpuAndWebgl2: {
-      title: 'WebGPU and WebGL2',
-      description:
-        'What the host and TypeShade each own for a compiled, imported or loaded module, how reflection feeds a bind group layout, and where WebGL2 differs.',
+      title: 'WebGPU and WebGL2 compared: shaders, bindings and compute',
+      description: `WebGPU and WebGL2 side by side for one shader source: WGSL and ${facts.glslTarget}, bind groups and uniform blocks, native and generated compute, and who owns what.`,
       h1: 'WebGPU and WebGL2',
-      lead: "A host uses a TypeShade module one of three ways. It compiles the module and hands the shader text to its own WebGPU or WebGL2 code, which owns the device, the pipelines, the bind groups, the buffers and the textures. It imports the module through the Vite plugin and calls its entry points, and TypeShade's runtime creates those objects for the calls. Or it loads the compiled program into the program runtime and draws it in frames of its own: the runtime creates those objects, and the host keeps its render state and its frame loop. Knowing which side owns what is most of what a first TypeShade program needs.",
+      lead: `WebGPU and WebGL2 are the browser GPU APIs TypeShade compiles for. WebGPU takes WGSL, binds resources through bind groups and has a compute stage. WebGL2 takes ${facts.glslTarget}, binds a uniform block to a binding point and has no compute stage of its own. One TypeShade source compiles for both, and the table below sets them side by side. The sections after it say which side owns the device, the pipelines and the buffers in each of the three ways a host uses a module.`,
+      compareH: 'Comparison',
+      compareColumns: ['What differs', 'WebGPU', 'WebGL2'],
+      compareRows: [
+        [
+          'Shader language',
+          'WGSL. One module holds every stage.',
+          `${facts.glslTarget}. A vertex shader and a fragment shader are linked into one program.`,
+        ],
+        [
+          'Resource binding',
+          'Bind groups, whose layout `reflect()` reads from the compiled module.',
+          'No bind groups. A uniform block binds to a binding point, and a sampler is set through its uniform location.',
+        ],
+        [
+          'Compute',
+          'A native `@compute` stage.',
+          `No native compute stage. TypeShade runs supported \`@compute\` entries as generated ${facts.glslTarget} passes, and the manifest names the entries it cannot lower.`,
+        ],
+        [
+          'Precision',
+          'A type carries its own width.',
+          'Each program declares a default precision above its declarations.',
+        ],
+        [
+          'GPU features',
+          'The device is requested with the feature, and the emitted module declares an `enable` line where the feature has one.',
+          'The host asks the context for the extension, and the emitted source declares a directive where the extension has one.',
+        ],
+        ['Order for an imported module', 'Tried first.', 'Tried second, before the CPU.'],
+      ],
+      usesP:
+        "A host uses a TypeShade module one of three ways. It compiles the module and hands the shader text to its own WebGPU or WebGL2 code, which owns the device, the pipelines, the bind groups, the buffers and the textures. It imports the module through the Vite plugin and calls its entry points, and TypeShade's runtime creates those objects for the calls. Or it loads the compiled program into the program runtime and draws it in frames of its own: the runtime creates those objects, and the host keeps its render state and its frame loop. Knowing which side owns what is most of what a first TypeShade program needs.",
       ownsH: 'Ownership',
       ownsP:
         'One row per object a WebGPU application creates, for a host that compiles the module and wires it into its own code.',
