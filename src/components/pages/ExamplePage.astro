@@ -82,10 +82,11 @@ const glsl = example.emitted.glsl;
 // WGSL-only example has the two it has. The source tab is named by its file, which is not
 // copy and reads the same in every language, the way every code frame on the site names its
 // file; the emitted tabs are named by their target. A GLSL tab carries the language and the
-// stage: four tabs share the card's right half, which is 490px from a 1320 viewport, and the
-// full target name put the head at 569px in English and 573px in Korean, so the last tab was
-// cut off at every desktop width. The pane under a tab keeps the full name as its own
-// accessible name, and the line under the card says which commit emitted the text.
+// stage: four tabs share the card's right half, which is 470px at a 1280 viewport, 490px at
+// 1320, 550px at 1440 and 630px from 1600. The full target name put the head at 569px in
+// English and 573px in Korean, so the last tab was cut off from 1280 to past 1440. The pane
+// under a tab keeps the full name as its own accessible name, and the line under the card says
+// which commit emitted the text.
 const panes = [
   { key: 'source', label: example.file, region: `${p.source}, ${example.file}`, code: example.source, lang: 'ts' },
   { key: 'wgsl', label: p.wgsl, region: p.wgsl, code: example.emitted.wgsl, lang: 'wgsl' },
@@ -241,8 +242,8 @@ const editable = example.corpus === 'shade';
   /* The file is where the pane rests, so it leads and a rule sets it apart from the three
      texts the compiler makes out of it. It is also the one tab whose text the site does not
      choose: the longest file name on a card page is 22 characters, which puts the four tabs
-     at 465px in English and 469px in Korean, inside the head's 470px at a 1280 viewport and
-     its 490px from 1320. A longer file name would put them past it, so the file is the tab
+     at 465px in English and 469px in Korean, inside the head's 470px at a 1280 viewport, 490px
+     at 1320 and 630px from 1600. A longer file name would put them past it, so the file is the tab
      that gives way, and the three the compiler emits stay whole, since a tab a reader cannot
      read is a text they will not know the page holds. Its floor is 16 characters: under about
      450px of head the four tabs do not fit however far the file gives way, so the head scrolls

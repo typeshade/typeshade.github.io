@@ -19,16 +19,16 @@ The site follows the shapes readers already know, and nothing else:
   the tagline, five buttons (Use TypeShade, Write in the Playground, Why TypeShade, Learn the
   language, Explore examples), the live shader, the authored file beside the WGSL it emits,
   four concept cards, three short points. No lists of features, no long prose.
-- **Shell**: every page is laid out in one 1320px measure, the header, the footer, the front
-  page, the documentation grid and the Playground alike. Under 1320 it is the viewport behind
-  the gutter; above it, it is centred. A new full-width surface reads `--container` too; a
+- **Shell**: every page is laid out in one 1600px measure, the header, the footer, the front
+  page, the documentation grid and the Playground alike. Under 1600 it is the viewport behind
+  the gutter; above it, it is centred on the same white field, with no grey band beside it. A new full-width surface reads `--container` too; a
   width written into one page puts that page out of line with the header over it.
 - **Header**: VitePress. Name on the left; Use TypeShade, Playground, Language, API and
   Examples; then a language menu (globe icon, current language, list of the others), a
   dark-mode switch (sun or moon), GitHub as an icon. Under 64rem, a menu button and a panel
   with the same items.
 - **Docs**: VitePress. Sidebar on the left in six groups (Get started, Language, Concepts,
-  Examples, Reference, Project), the document in the middle at 716px, an outline of the page's
+  Examples, Reference, Project), the document in the middle at 996px from 1600 (prose at 700px), an outline of the page's
   own headings on the right on wide screens, an "Edit this page" link beside a "Report an
   issue" link and previous and next at the bottom, which follow the sidebar's order. Under 64rem the sidebar is a bar under the
   header that names the current page. Every guide page lives under `/guide/` and is written in
