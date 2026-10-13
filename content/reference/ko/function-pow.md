@@ -1,6 +1,6 @@
 ---
 entry: function/pow
-sources: definition 2a9fd974f58f, exponent-curve ea92ecac8edd, undefined-inputs 32e82b36e5c3, integer-exponents ebbbf953f4f6, accuracy 2225d454fb02, common-uses 5ef6084cb5bf, in-typeshade a26925c8db6f, specifications f2a07aa3ee6f
+sources: definition 2a9fd974f58f, exponent-curve ea92ecac8edd, undefined-inputs 32e82b36e5c3, integer-exponents ebbbf953f4f6, accuracy 2225d454fb02, common-uses 5ef6084cb5bf, in-typeshade 7d3ceb5ae028, specifications f2a07aa3ee6f
 rules: 1.3 fcW4P8W5BFQ0loGi6vlLvaa1Is6dCmpQ_g9tbwMsfHM=, 7.2 0kUnEDTCM0RqPR0zZ2fbOVCYvF-LDE3lKbKYgI20RZg=
 ---
 
@@ -147,11 +147,11 @@ TypeShade에는 이 호출의 철자가 세 가지 있습니다. `pow(a, b)`, `M
 
 마지막 행은 TypeShade 프런트엔드의 한계이며, 두 타깃 모두 이 대입을 받아들입니다. `a = a ** b`로 쓰면 나오는 줄은 {{compile starstar-rewrite}}입니다.
 
-컴파일러는 정의역을 검사하지 않습니다. 함수 안에서 `pow(-2.0, 0.5)`가 내는 줄은 {{compile negative-literal}}입니다. 두 인자가 모두 리터럴이라서, 내보낸 WGSL에서 이 호출은 상수 식입니다(위 상수 인자).
+인자가 모두 상수인 호출은 컴파일러가 정의역을 검사합니다. WGSL이 그런 호출을 셰이더를 만들 때 계산하기 때문입니다(위 상수 인자). 함수 안에서 `pow(-2.0, 0.5)`를 쓰면 컴파일러가 거부하며, 그 진단은 {{compile negative-literal}}입니다. 호출에 값이 있으면 메시지가 그 값을 알려 줍니다. `pow(-2.0, 2.0)`의 진단은 {{compile negative-whole}}입니다. 실행 시점에 읽는 인자가 있는 호출은 상수 식이 아니므로, 컴파일러는 그 정의역을 GPU에 맡깁니다. `pow(x, 0.5)`가 내는 줄은 {{compile runtime-base}}입니다.
 
-CPU 오라클은 TypeShade 셰이더를 CPU에서 실행하며, `pow`를 JavaScript의 `Math.pow`로 계산합니다 {{assert oracleIsMathPow}}. 오라클의 값은 `pow(-2.0, 3.0)`에서 {{oracle pow(-2.0, 3.0)}}, `pow(-2.0, 0.5)`에서 {{oracle pow(-2.0, 0.5)}}, `pow(0.0, 0.0)`에서 {{oracle pow(0.0, 0.0)}}, `pow(0.0, -1.0)`에서 {{oracle pow(0.0, -1.0)}}입니다. {{rule 1.3}}에 따라 오라클은 WGSL이 허용하는 어떤 값이든 낼 수 있고, 음수 밑에서 WGSL은 모든 값을 허용합니다. 그래서 그곳에서는 오라클과 GPU의 값이 다를 수 있습니다. GPU를 오라클과 비교하는 테스트는 $x > 0$이거나 $y > 0$인 $x = 0$이고, 결과가 유한한 곳에서만 성립합니다.
+CPU 오라클은 TypeShade 셰이더를 CPU에서 실행하며, `pow`를 JavaScript의 `Math.pow`로 계산합니다 {{assert oracleIsMathPow}}. `x`가 $-2$일 때 오라클의 값은 `pow(x, 3.0)`에서 {{oracle pow(-2.0, 3.0)}}, `pow(x, 0.5)`에서 {{oracle pow(-2.0, 0.5)}}입니다. `x`가 $0$일 때는 `pow(x, 0.0)`에서 {{oracle pow(0.0, 0.0)}}, `pow(x, -1.0)`에서 {{oracle pow(0.0, -1.0)}}입니다. {{rule 1.3}}에 따라 오라클은 WGSL이 허용하는 어떤 값이든 낼 수 있고, 음수 밑에서 WGSL은 모든 값을 허용합니다. 그래서 그곳에서는 오라클과 GPU의 값이 다를 수 있습니다. GPU를 오라클과 비교하는 테스트는 $x > 0$이거나 $y > 0$인 $x = 0$이고, 결과가 유한한 곳에서만 성립합니다.
 
-모듈 수준의 `const`는 오라클의 `pow`로 접힙니다. `const K: f32 = pow(-2., 0.5)`는 NaN을 내고 컴파일러가 이를 거부하며, 그 진단은 {{compile module-const-nan}}입니다. `const K: f32 = pow(-2., 2.)`가 내는 줄은 {{compile module-const-four}}이며, WGSL에서 상수 식입니다.
+모듈 수준의 `const`도 같은 검사를 거칩니다. `const K: f32 = pow(-2., 0.5)`의 진단은 {{compile module-const-no-value}}이고, `const K: f32 = pow(-2., 2.)`의 진단은 {{compile module-const-value}}입니다.
 
 `compile()`이 돌려주는 결정성 보고서가 적는 `pow`의 정확도는 {{accuracy pow}}입니다.
 

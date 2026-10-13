@@ -2,7 +2,7 @@
 id: functions-and-entry-points
 source: 0eb77fdf24b40f5f916813b6d8737070d04275acd5c0dbf1655c77f2ab2ce973
 sourceLine: 514
-rules: 2.1 9eWN6RxoCWF7PMo_T1USzBA1CAyjigmKnoVwzLkeJ4Q=, 3.2 9-wLkxopPgqhKoXl0afzqsDa3zUi6T6yoxXjhOBg0qc=, 3.4 qTsvqHCf4ZNlv5OA0ks54fZEJ2-O_jR3l_uT-MjDSqw=, 9.5 0ahOuIeiTVBHHjA-1IXXW_l9GsFrF8XtZveADRO2qNw=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=, 12.6 mtagVARmVcrr7MFUlSWwsp__ZpD9GjxUFaerAkPz5WI=
+rules: 2.1 9eWN6RxoCWF7PMo_T1USzBA1CAyjigmKnoVwzLkeJ4Q=, 3.2 9-wLkxopPgqhKoXl0afzqsDa3zUi6T6yoxXjhOBg0qc=, 3.4 qTsvqHCf4ZNlv5OA0ks54fZEJ2-O_jR3l_uT-MjDSqw=, 9.5 0ahOuIeiTVBHHjA-1IXXW_l9GsFrF8XtZveADRO2qNw=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=, 12.6 kuInDVEKCI_Qu_9zVLzT--W8UeBj0WgdX22sRWA_VNY=
 ---
 
 이 페이지를 마치면 헬퍼를 선언해 다른 함수에서 부르고, 버텍스, 프래그먼트, 컴퓨트 스테이지의

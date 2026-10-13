@@ -153,11 +153,11 @@ The compiler refuses the calls in this table, and the editor reports the same co
 
 The last row is a limit of the TypeShade front end; both targets accept the assignment it stands for. Write `a = a ** b`, which emits {{compile starstar-rewrite}}.
 
-The compiler does not check the domain. Inside a function, `pow(-2.0, 0.5)` emits {{compile negative-literal}}. Both arguments are literals, so in the emitted WGSL the call is a constant expression (Constant arguments, above).
+The compiler checks the domain of a call whose arguments are all constant, since WGSL evaluates that call when it creates the shader (Constant arguments, above). Inside a function, `pow(-2.0, 0.5)` is refused with {{compile negative-literal}}. Where the call has a value, the message gives it: `pow(-2.0, 2.0)` is refused with {{compile negative-whole}}. A call with an argument read at run time is no constant expression, and the compiler leaves its domain to the GPU: `pow(x, 0.5)` emits {{compile runtime-base}}.
 
-The CPU oracle runs a TypeShade shader on the CPU and evaluates `pow` with JavaScript's `Math.pow` {{assert oracleIsMathPow}}. It answers {{oracle pow(-2.0, 3.0)}} for `pow(-2.0, 3.0)`, {{oracle pow(-2.0, 0.5)}} for `pow(-2.0, 0.5)`, {{oracle pow(0.0, 0.0)}} for `pow(0.0, 0.0)` and {{oracle pow(0.0, -1.0)}} for `pow(0.0, -1.0)`. {{rule 1.3}} lets the oracle give any value WGSL permits, and for a negative base WGSL permits any value, so the oracle and a GPU can disagree there. A test that compares a GPU with the oracle holds only where $x > 0$, or $x = 0$ with $y > 0$, and the result is finite.
+The CPU oracle runs a TypeShade shader on the CPU and evaluates `pow` with JavaScript's `Math.pow` {{assert oracleIsMathPow}}. With `x` at $-2$, it answers {{oracle pow(-2.0, 3.0)}} for `pow(x, 3.0)` and {{oracle pow(-2.0, 0.5)}} for `pow(x, 0.5)`. With `x` at $0$, it answers {{oracle pow(0.0, 0.0)}} for `pow(x, 0.0)` and {{oracle pow(0.0, -1.0)}} for `pow(x, -1.0)`. {{rule 1.3}} lets the oracle give any value WGSL permits, and for a negative base WGSL permits any value, so the oracle and a GPU can disagree there. A test that compares a GPU with the oracle holds only where $x > 0$, or $x = 0$ with $y > 0$, and the result is finite.
 
-A `const` at module scope is folded with the oracle's `pow`. `const K: f32 = pow(-2., 0.5)` gives NaN, and the compiler refuses it: {{compile module-const-nan}}. `const K: f32 = pow(-2., 2.)` emits {{compile module-const-four}}, a constant expression in WGSL.
+A `const` at module scope takes the same check. `const K: f32 = pow(-2., 0.5)` is refused with {{compile module-const-no-value}}, and `const K: f32 = pow(-2., 2.)` with {{compile module-const-value}}.
 
 The determinism report that `compile()` returns lists `pow` with the accuracy {{accuracy pow}}.
 

@@ -1,8 +1,7 @@
 // The record of the reference note on `pow` (content/reference/en/function-pow.md): its three
 // live examples, the programs its {{compile}} tokens read, the scope its code spans compile in,
 // what it asserts and the spans that are no expression. The live examples name their entries
-// after what they draw: an entry named `main` with an early return emits `main__impl` in GLSL,
-// which ANGLE refuses (typeshade/typeshade#612).
+// after what they draw.
 import { compile, compileModule } from '../../../vendor/shader-dsl/src/index.ts';
 import type { NoteRecord } from './index.ts';
 
@@ -176,13 +175,14 @@ export const functionPow: NoteRecord = {
       source: fn('  let a = x\n  a = a ** b\n  return a', 'x: f32, b: f32'),
       wgsl: 'pow(',
     },
-    'negative-literal': { source: fn('  return pow(-2.0, 0.5) + x', 'x: f32'), wgsl: 'pow(' },
-    'module-const-nan': {
+    'negative-literal': { source: fn('  return pow(-2.0, 0.5) + x', 'x: f32') },
+    'negative-whole': { source: fn('  return pow(-2.0, 2.0) + x', 'x: f32') },
+    'runtime-base': { source: fn('  return pow(x, 0.5)', 'x: f32'), wgsl: 'pow(' },
+    'module-const-no-value': {
       source: `"use typeshade"\n\nconst K: f32 = pow(-2., 0.5)\n\nexport function f(x: f32): f32 {\n  return K + x\n}\n`,
     },
-    'module-const-four': {
+    'module-const-value': {
       source: `"use typeshade"\n\nconst K: f32 = pow(-2., 2.)\n\nexport function f(x: f32): f32 {\n  return K + x\n}\n`,
-      wgsl: 'const K',
     },
   },
   asserts: { sameEmit, oracleIsMathPow },
@@ -203,6 +203,10 @@ export const functionPow: NoteRecord = {
     'pow(dist, 2)': 'quoted from the introduction of the WGSL specification',
     'pow(max(dot(reflect(fromLight, nf), toEye), 0.), 16.)': 'quoted from the bit-bump example',
     'pow(10.0, -u.zoom_exp)': 'quoted from the fp64-julia-twin example',
+    'pow(-2.0, 2.0)':
+      'a constant call outside the WGSL domain; the compiler refuses it, and In TypeShade draws the refusal',
+    'pow(-2.0, 0.5)':
+      'a constant call outside the WGSL domain; the compiler refuses it, and In TypeShade draws the refusal',
     'pow(v, 2.2)': 'a call the compiler refuses; the row beside it draws the refusal',
     'v ** 2.2': 'a call the compiler refuses; the row beside it draws the refusal',
     'v: vec3': "a declaration, the type of the refused call's argument",
