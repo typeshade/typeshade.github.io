@@ -1463,7 +1463,8 @@ export const ko: Copy = {
     lead: `TypeShade를 쓰면 WebGPU 셰이더를 TypeScript로 작성할 수 있습니다. \`"use typeshade"\`로 표시한 파일은 WebGPU용 WGSL과 WebGL2용 ${glsl}으로 컴파일됩니다. 편집기는 같은 파일을 TypeScript로 읽습니다. 이 페이지는 이미 아는 타입, 함수, 모듈이 셰이더에서 무엇이 되는지 짚고 WebGPU API가 어디에서 시작되는지 보여 줍니다.`,
     startH: 'TypeScript 파일에서 시작합니다',
     startP:
-      '`"use typeshade"`는 파일을 TypeShade 소스로 표시합니다. 그 파일과 그 파일이 가져오는 TypeShade 파일은 한 프로그램으로 컴파일됩니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.',
+      '`"use typeshade"`는 파일을 TypeShade 소스로 표시합니다. 그 파일과 그 파일이 가져오는 TypeShade 파일은 한 프로그램으로 컴파일됩니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다. 두 번째 블록은 고정된 컴파일러가 이 파일에서 만든 WGSL이며 페이지를 빌드하는 동안 생성됩니다.',
+    startWgslLabel: '컴파일된 WGSL',
     modelH: '머릿속 모델',
     adds: 'TypeShade 추가 사항',
     model: [

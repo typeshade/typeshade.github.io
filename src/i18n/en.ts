@@ -1526,7 +1526,8 @@ export const en = {
     lead: `TypeShade lets you write WebGPU shaders in TypeScript. A file marked with \`"use typeshade"\` compiles to WGSL for WebGPU and to ${glsl} for WebGL2. Your editor reads the same file as TypeScript. This page maps the types, functions and modules you know to what a shader needs, and shows where the WebGPU API begins.`,
     startH: 'Start with a TypeScript file',
     startP:
-      '`"use typeshade"` marks the file as TypeShade source, and the file compiles with the TypeShade files it imports as one program. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports.',
+      '`"use typeshade"` marks the file as TypeShade source, and the file compiles with the TypeShade files it imports as one program. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports. The second block is the WGSL the pinned compiler writes for this file, produced while the page is built.',
+    startWgslLabel: 'The WGSL it compiles to',
     modelH: 'The mental model',
     adds: 'TypeShade adds',
     model: [
