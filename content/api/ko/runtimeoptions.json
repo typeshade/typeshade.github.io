@@ -1,9 +1,9 @@
 {
   "slug": "runtimeoptions",
-  "source": "f79b3a2d36a2e22a35c476905571492e6243f1d5559e6a99cf0c6f8d84906507",
+  "source": "e2c3da9fb0d9f568d08e23c18ea08cc8b83b57612c24beb6832c853862633ec6",
   "texts": {
     "summary": "createRuntime()이 런타임을 만드는 방법입니다.",
-    "members.device": "호스트의 `GPUDevice` 또는 `WebGL2RenderingContext`입니다. 런타임이 이를 사용만 하고 해제하지는 않습니다. 런타임의 tier는 이 디바이스가 속한 tier입니다(change 0054). 생략하면 런타임은 `prefer`의 tier를 순서대로 시도합니다. 이때 `programs`가 필요로 하는 기능을 갖춘 디바이스를 요청하거나, 자체 WebGL2 컨텍스트를 만듭니다.",
+    "members.device": "호스트의 `GPUDevice` 또는 `WebGL2RenderingContext`입니다. 런타임이 이를 사용만 하고 해제하지는 않습니다. 런타임의 tier는 이 디바이스가 속한 tier입니다(change 0054). 생략하면 런타임은 `prefer`의 tier를 순서대로 시도합니다. 이때 `programs`가 필요로 하는 기능을 갖춘 디바이스를 요청하거나, 자체 WebGL2 컨텍스트를 만듭니다.\n탈출구(Rule 11.17)입니다. 호스트가 직접 보관하며 런타임과 나란히 호출하는, 호스트 자신의 디바이스 또는 컨텍스트입니다.",
     "members.prefer": "디바이스가 주어지지 않았을 때 `createRuntime`이 순서대로 시도하는 tier입니다. 기본값은 `['webgpu', 'webgl2']`입니다. tier를 하나만 담은 목록이면 그 tier가 필수가 됩니다. WebGL2에서 런타임은 매니페스트가 담은 GLSL 프로그램으로 컴퓨트 항목과 드로우를 실행합니다(change 0054).",
     "members.programs": "요청하는 디바이스가 실행할 수 있어야 하는 프로그램입니다.",
     "members.console": "항목의 `console.*` 호출 이벤트가 전달되는 곳입니다. `'print'`(기본값)이면 호스트의 콘솔에 출력하며, 버퍼에 들어가지 못한 호출이 있으면 경고를 함께 냅니다. 싱크에 넘기면 싱크가 줄과 개수를 받고, 아무것도 출력하지 않습니다. 어느 쪽이든 `submit()`이 해결하는 값은 버퍼마다의 줄 수와 버려진 호출 수입니다.",
