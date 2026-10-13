@@ -194,7 +194,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
               <thead><tr><th>{l.field}</th><th>{l.type}</th><th>{l.offset}</th></tr></thead>
               <tbody>
                 {fields.map((f) => (
-                  <tr><td><code>{f.name}</code></td><td><code>{f.type}</code></td><td><code>{f.offset}</code></td></tr>
+                  <tr><td data-label={l.field}><code>{f.name}</code></td><td data-label={l.type}><code>{f.type}</code></td><td data-label={l.offset}><code>{f.offset}</code></td></tr>
                 ))}
               </tbody>
             </table>
