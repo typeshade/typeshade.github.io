@@ -701,7 +701,7 @@ The header is the one every library site has: the name on the left; Use TypeShad
 Language, API and Examples; then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 groups (Documentation, Project, Languages) across the shell, then the licence, the copyright
 and the commit the page was built from. Project closes with the products built on TypeShade,
-each a link under its own name (Radiance), so a new product adds a row to that group and no
+each a link under its own name (Radiance, TypeNN), so a new product adds a row to that group and no
 group to the footer. Documentation carries 20 links and runs them down two
 columns 32px apart, and the three groups spread to the shell's two edges: 120px between one
 group and the next at a 768 viewport and 396px from 1440 up in English, 148px and 424px in

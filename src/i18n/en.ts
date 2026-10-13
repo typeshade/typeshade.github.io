@@ -1115,6 +1115,7 @@ export const en = {
     npm: 'npm package',
     newIssue: 'Report a problem',
     radiance: 'Radiance',
+    typenn: 'TypeNN',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
@@ -3464,6 +3465,12 @@ export const en = {
     kernelSource: 'MNIST TypeShade shader source',
     instructions: 'Training and validation instructions',
     resultRecord: 'Full-dataset result record',
+    typenn: {
+      h: 'The same model in TypeNN',
+      p: 'This guide writes the kernels by hand. TypeNN is a neural-network library built on TypeShade. Its model is a Module, and each layer runs as TypeShade kernel functions.',
+      lab: 'Train it in the TypeNN lab',
+      github: 'TypeNN on GitHub',
+    },
   },
 
   notFound: {

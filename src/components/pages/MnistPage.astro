@@ -9,7 +9,7 @@ import TypeShadeCode from '../TypeShadeCode.astro';
 import MnistTrainer from '../MnistTrainer.astro';
 import MnistWalkthrough from '../MnistWalkthrough.astro';
 import { copyFor, type Locale } from '../../i18n/index.ts';
-import { editCopy, links } from '../../lib/links.ts';
+import { editCopy, links, typennLab } from '../../lib/links.ts';
 import { facts } from '../../lib/examples.ts';
 
 interface Props {
@@ -39,6 +39,42 @@ const commands = [
   'node --experimental-strip-types journeys/mnist/test-webgl2.mjs --mnist --count 1024 --test 1000 --epochs 5',
 ].join('\n');
 const fullCommand = 'node --experimental-strip-types journeys/mnist/run.ts --tier webgpu';
+// The TypeNN example of the same MLP, as examples/mnist in typenn@407aadb ran it on the CPU tier.
+const typennSnippet = `import * as nn from "typenn";
+
+class SimpleMLP extends nn.Module {
+  private readonly flatten = this.register("flatten", new nn.Flatten());
+  private readonly fc1 = this.register("fc1", new nn.Linear(784, 128));
+  private readonly relu = this.register("relu", new nn.ReLU());
+  private readonly dropout = this.register("dropout", new nn.Dropout(0.2));
+  private readonly fc2 = this.register("fc2", new nn.Linear(128, 10));
+
+  forward(input: nn.Tensor): nn.Tensor {
+    return this.fc2.forward(
+      this.dropout.forward(
+        this.relu.forward(this.fc1.forward(this.flatten.forward(input))),
+      ),
+    );
+  }
+}
+
+const device = await nn.device({ device: "auto" });
+const model = new SimpleMLP().to(device);
+const optimizer = nn.optim.Adam(model.parameters(), { lr: 0.001 });
+const criterion = new nn.CrossEntropyLoss();
+model.train();
+
+for await (const batch of batches) {
+  await optimizer.zeroGrad();
+  const images = device.tensor(batch.images, {
+    shape: [batch.size, 1, 28, 28],
+  });
+  const logits = model.forward(images);
+  const loss = criterion.forward(logits, batch.labels);
+  await loss.backward();
+  await optimizer.step();
+  await loss.disposeGraph(model.parameters());
+}`;
 const headings = [
   { depth: 2, slug: 'lab', text: c.demo.title },
   { depth: 2, slug: 'model', text: c.modelH },
@@ -46,6 +82,7 @@ const headings = [
   { depth: 2, slug: 'run', text: c.runH },
   { depth: 2, slug: 'limits', text: c.limitsH },
   { depth: 2, slug: 'source', text: c.sourceH },
+  { depth: 2, slug: 'typenn', text: c.typenn.h },
 ];
 ---
 
@@ -102,6 +139,16 @@ const headings = [
       <li><a href={readme}>{c.instructions}</a></li>
       <li><a href={rawReport}>{c.resultRecord}</a></li>
       <li><a href={checks}>{c.validationRun}</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="typenn">{c.typenn.h}</h2>
+    <p>{c.typenn.p}</p>
+    <TypeShadeCode code={typennSnippet} />
+    <ul>
+      <li><a href={typennLab(locale)}>{c.typenn.lab}</a></li>
+      <li><a href={links.typennGithub.href}>{c.typenn.github}</a></li>
     </ul>
   </section>
 </Docs>
