@@ -9,7 +9,7 @@ import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
 /** Scripts from CI's build job that finish in seconds and read only the source tree. */
-const CHECKS = ['format:check', 'check:style', 'check:copy', 'check:i18n'];
+const CHECKS = ['format:check', 'check:style', 'check:copy', 'check:i18n', 'check:notes:lint'];
 
 let command = '';
 try {

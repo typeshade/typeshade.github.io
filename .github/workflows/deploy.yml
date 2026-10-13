@@ -95,12 +95,23 @@ jobs:
           bun vendor/shader-dsl/scripts/downstream-impact.ts --repo typeshade.github.io \
             --submodule vendor/shader-dsl --base "origin/$BASE" --check
           TYPESHADE_DOCS_ROOT="$PWD" bun vendor/shader-dsl/scripts/ifchange.ts --base "origin/$BASE"
+      # A commit that records a reference note's reading names the note in a line of its own,
+      # `Read-Against: function/pow`: the line says a person read the sections against the values,
+      # and a reviewer reads the reading's diff with them (DESIGN.md, Reference notes).
+      - name: Each reading names the note it was read for
+        if: github.event_name != 'push'
+        env:
+          BASE: ${{ github.base_ref || 'main' }}
+        run: bun scripts/check-reference-notes.ts --trailers "origin/$BASE"
       # Prettier over the TypeScript, CSS, JSON and Markdown, then the `;` in each component's
       # frontmatter and <script>, which Prettier does not format (see .prettierignore).
       - run: bun run format:check
       # The build runs scripts/check-style.mjs, check-copy.ts and check-api.ts first; see
       # DESIGN.md.
       - run: bun run build
+      # The reference notes on the built pages: every section in every language, no token or
+      # marker left in one, and no note section on a page that has no note.
+      - run: bun scripts/check-reference-notes.ts --dist
       # dist/ for the browser checks and the Cloudflare jobs below, which deploy it with the
       # Worker (wrangler.jsonc).
       - uses: actions/upload-artifact@v4
@@ -112,6 +123,10 @@ jobs:
       - run: bun run check:types
       - name: Playground regressions
         run: bun test scripts/playground-diagnostics.test.ts scripts/compiler-authoring.test.ts scripts/compute-runtime.test.ts scripts/render-runtime.test.ts
+      # Every check of the reference notes fails on a fault planted into a copy of the fixture
+      # note, and passes on the fixture as committed.
+      - name: Reference notes checks fail on their faults
+        run: bun test scripts/reference-notes.test.ts
       - run: bun run qa:seo
       # The Worker answers first on the prefixes wrangler.jsonc lists; none may shadow a page.
       - run: bun run qa:worker-routes

@@ -9,11 +9,14 @@
 // (src/lib/language-examples.ts), and the words around them are docs.reference in every
 // dictionary. A reference note is the one part a person writes: sections after Description
 // and before Targets, translated like a guide section and held to the values they read
-// (DESIGN.md, Reference notes). A page without a note shows nothing there.
+// (DESIGN.md, Reference notes; src/lib/reference-notes.ts, ReferenceNotes.astro). A page
+// without a note shows nothing there.
+import { getEntry } from 'astro:content';
 import { Code } from 'astro-expressive-code/components';
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import LanguageType from '../LanguageType.astro';
 import LinkColumns from '../LinkColumns.astro';
+import ReferenceNotes from '../ReferenceNotes.astro';
 import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import { apiSlugByName } from '../../lib/api-nav.ts';
@@ -30,6 +33,7 @@ import {
 } from '../../lib/language-reference.ts';
 import { editCopy, links } from '../../lib/links.ts';
 import { META_MIN, fitDescription } from '../../lib/meta-description.ts';
+import { assertNoteReading, noteEntryId, noteOf, type NoteView } from '../../lib/reference-notes.ts';
 
 interface Props {
   locale: Locale;
@@ -97,6 +101,14 @@ const cellFor = (text: string | null, message: string): Cell => {
 const wgslCell = entry.spelling ? cellFor(entry.spelling.wgsl, '') : null;
 const glslCell = entry.spelling ? cellFor(entry.spelling.glsl, entry.spelling.glslMessage) : null;
 
+// The entry's reference note, if it has one. A note read against values the pin no longer
+// gives stops the build here, as it does in scripts/check-reference-notes.ts, since a build of
+// the pages alone (capture:stills) runs no script before Astro.
+assertNoteReading(kind, name);
+const noteId = noteOf(kind, name);
+const notes = noteId ? ((await getEntry('referenceNotes', noteEntryId(locale, noteId)))?.data as NoteView | undefined) : undefined;
+if (noteId && !notes) throw new Error(`[reference-notes] the referenceNotes collection has no ${noteEntryId(locale, noteId)}`);
+
 const stageText = entry.stages.map((s) =>
   r.stageRule(r.stages[s.stage as keyof typeof r.stages] ?? s.stage, r.directions[s.direction as keyof typeof r.directions] ?? s.direction),
 );
@@ -115,6 +127,8 @@ const sections = [
   // the sentence goes on to say, the stage the front end holds a builtin id to, and what the
   // CPU oracle does with the name. An entry with none of the three has no Description.
   { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.kind === 'builtin' || entry.oracle !== null },
+  // The note's sections, each under its own heading, after Description and before Targets.
+  ...(notes?.sections ?? []).map((n) => ({ id: n.id, label: n.heading.replace(/`/g, ''), show: true })),
   { id: 'targets', label: e.targets, show: entry.spelling !== null },
   { id: 'examples', label: e.examples, show: examples.length > 0 },
   { id: 'see-also', label: e.seeAlso, show: true },
@@ -246,6 +260,8 @@ const meta = `title:${entry.name} (${kindWord})`;
     )}
   </section>
   )}
+
+  <ReferenceNotes locale={locale} view={notes} />
 
   {shows('targets') && wgslCell && glslCell && (
     <section>

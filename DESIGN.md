@@ -834,6 +834,36 @@ section is short work and a page that states a value the compiler no longer has 
 the compiler writes stays English on every locale: a diagnostic, an accuracy bound and the
 sentence under the name.
 
+A note is three files and one record, named for its entry, `function/pow`:
+
+- `content/reference/en/function-pow.md`, the English: sections headed `## Heading {#id}`,
+  whose id is the anchor and the key a translation is matched by.
+- `content/reference/ko/function-pow.md`, the translation. Its front matter records a stamp per
+  section (`sources:`) and the fingerprint of each rule the English names (`rules:`).
+- `content/reference/readings/function-pow.json`, the reading. `--read` writes it; nobody edits
+  it by hand.
+- The record in `src/lib/reference-notes/`, registered in its `index.ts`: the samples, the
+  compile cases, the scope the note's code spans compile in, its assertions and its literals.
+
+A section draws each computed value with a token: `{{oracle pow(-2.0, 3.0)}}` (the oracle's
+answer at f64 and f32), `{{compile <case>}}` (both halves' diagnostic, or the WGSL line),
+`{{accuracy pow}}`, `{{entry spelling.glsl}}`, `{{assert <id>}}` (draws nothing),
+`{{fact glslTarget}}`, `{{rule 9.4}}`, `{{ref function/exp2}}`, `{{pin}}`, and `{{code <id>}}`
+on a line of its own. `<!-- reads: none -->` marks a section of mathematics; `<!-- reads: entry.summary -->`
+names an input a section explains without drawing it. `<!-- live: <id>` opens a live example,
+with its `title:`, `caption:`, `anchor:`, `exercise:` and `control <field>:` lines, and `-->`
+closes it; its code and ranges are in the record. `src/lib/reference-notes.ts` reads all of it,
+and `src/components/ReferenceNotes.astro` draws it.
+
+`bun run check:notes` (`scripts/check-reference-notes.ts`, in the build) holds a note to these
+rules and to its reading; the comment at its top lists every check. `--read <note>` records a
+reading, `--read-ko <note> <id>` stamps a translated section read again, `--stale` lists what a
+pin leaves stale for the pin's pull request, and `--dist` reads the built pages. A commit that
+changes a reading carries a line `Read-Against: <note>`, which CI checks. The fixture note under
+`scripts/fixtures/reference-notes/` is published nowhere: `scripts/reference-notes.test.ts`
+plants a fault into a copy of it for each check and sees the check fail, and
+`REFERENCE_NOTES_FIXTURE=1` runs the checks, or a build, on it.
+
 ## Live examples
 
 A guide or concept page can carry a shader the reader edits. The model is
@@ -1031,13 +1061,16 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 
 ## Things the build checks
 
-- `scripts/check-style.mjs`: the voice rules above, over `src/`, `scripts/` and the two Markdown
-  files, and that a selector in `global.css` names only a shared class (Styling).
+- `scripts/check-style.mjs`: the voice rules above, over `src/`, `scripts/`, the English of the
+  reference notes and the two Markdown files, and that a selector in `global.css` names only a
+  shared class (Styling).
 - `src/lib/math.mjs`: a formula Temml cannot read stops the build, with the formula in the
   message (Type, Formulas).
 - `src/lib/examples.ts`: every number, and that the pinned compiler still matches the copy.
 - `src/pages/llms.txt.ts`: every numeral in `/llms.txt` exists in `facts`.
 - `scripts/artifacts.mjs`: og.png, the icons and the stills match their committed hashes.
+- `scripts/check-reference-notes.ts` (`bun run check:notes`): every reference note against its
+  rules and its reading at the pin; after the build, `--dist` over the pages (Reference notes).
 - `scripts/check-api.ts` (`bun run check:api`): the reference data read from the compiler, before it
   reaches a page. A missing description, a slug two exports share, an export with no category, or a
   text that names a consumer fails; a `{@link}` target the barrel does not export is a warning.

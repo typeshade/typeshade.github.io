@@ -494,6 +494,8 @@ export const ko: Copy = {
         oracleEvaluates: 'CPU 오라클이 f64로 직접 계산합니다.',
         oracleStub:
           'CPU 오라클에는 텍스처 메모리도 이웃 프래그먼트도 없습니다. `{ gpuStubs: true }`로 컴파일한 모듈이 아니면 호출이 예외를 던집니다. 그 옵션을 주면 자리를 채우는 값이 돌아옵니다.',
+        noteUntranslated:
+          '이 절은 번역이 없거나 예전 영어 원문을 옮긴 것이라 영어로 보여 드립니다.',
       },
       kinds: {
         type: {
