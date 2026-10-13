@@ -149,13 +149,13 @@ export function fs(@location(0) uv: vec2): vec4 {
 }
 `;
 
-const FRAGCOORD_SNIPPET = `@fragment
+export const FRAGCOORD_SNIPPET = `@fragment
 export function fs(@builtin("position") p: vec4): vec4 {
   return p
 }
 `;
 
-const VERTEX_ID_SNIPPET = `@vertex
+export const VERTEX_ID_SNIPPET = `@vertex
 export function vs(@builtin("vertex_index") vi: u32, @builtin("instance_index") ii: u32): vec4 {
   return vec4(f32(vi), f32(ii), 0., 1.)
 }
@@ -166,7 +166,7 @@ export function fs(): vec4 {
 }
 `;
 
-const FRONT_FACING_SNIPPET = `class Out { @builtin("frag_depth") depth: f32; @location(0) color: vec4 }
+export const FRONT_FACING_SNIPPET = `class Out { @builtin("frag_depth") depth: f32; @location(0) color: vec4 }
 
 @fragment
 export function fs(@builtin("front_facing") facing: bool): Out {

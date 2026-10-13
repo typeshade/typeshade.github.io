@@ -5,18 +5,34 @@
 // lives in `concepts.wgslAndGlsl` (src/i18n/en.ts, src/i18n/ko.ts).
 import Docs from '../../layouts/Docs.astro';
 import ConceptDoc from '../ConceptDoc.astro';
+import MappingTable from '../MappingTable.astro';
 import Rich from '../Rich.astro';
 import TypeShadeCode from '../TypeShadeCode.astro';
-import { copyFor, type Locale } from '../../i18n/index.ts';
+import { copyFor, localePath, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
 import { bothTargets } from '../../lib/concepts-emit.ts';
 import { useTypeshadeSample } from '../../lib/use-typeshade-sample.ts';
 import { slugify } from '../../lib/slug.ts';
+import { wgslGlslNames, type NameRow } from '../../lib/wgsl-glsl-names.ts';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const c = copyFor(locale).concepts.wgslAndGlsl;
-const headings = [c.sourceH, c.wgslH, c.glslH, c.diffH, c.convertH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
+const h2 = (text: string) => ({ depth: 2, slug: slugify(text), text });
+const h3 = (text: string) => ({ depth: 3, slug: slugify(text), text });
+const headings = [
+  ...[c.sourceH, c.wgslH, c.glslH, c.diffH].map(h2),
+  h2(c.namesH),
+  ...[c.typesH, c.variablesH, c.functionsH, c.meaningH].map(h3),
+  ...[c.convertH, c.furtherH].map(h2),
+];
+// The name tables, read from the pinned compiler (src/lib/wgsl-glsl-names.ts). A TypeShade cell
+// that links to a reference page keeps the reader's locale.
+const names = wgslGlslNames();
+const localized = (rows: readonly NameRow[]): NameRow[] =>
+  rows.map(([g, w, t]) => [g, w, typeof t === 'object' && 'href' in t && t.href ? { ...t, href: localePath(locale, t.href) } : t]);
+const nameColumns = [c.colGlsl, c.colWgsl, c.colSource];
+const nameLang = ['glsl', 'wgsl', 'ts'] as const;
 ---
 
 <Docs locale={locale} path={links.conceptsWgsl.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
@@ -46,6 +62,21 @@ const headings = [c.sourceH, c.wgslH, c.glslH, c.diffH, c.convertH, c.furtherH].
     <h2 id={slugify(c.diffH)}>{c.diffH}</h2>
     <p><Rich text={c.diffP} locale={locale} /></p>
     <ConceptDoc locale={locale} rows={c.diffRows} columns={c.diffColumns} />
+  </section>
+
+  <section>
+    <h2 id={slugify(c.namesH)}>{c.namesH}</h2>
+    <p>{c.namesP}</p>
+    <h3 id={slugify(c.typesH)}>{c.typesH}</h3>
+    <MappingTable locale={locale} caption={c.typesH} columns={nameColumns} lang={nameLang} rows={localized(names.types)} />
+    <h3 id={slugify(c.variablesH)}>{c.variablesH}</h3>
+    <MappingTable locale={locale} caption={c.variablesH} columns={nameColumns} lang={nameLang} rows={localized(names.variables)} />
+    <h3 id={slugify(c.functionsH)}>{c.functionsH}</h3>
+    <MappingTable locale={locale} caption={c.functionsH} columns={nameColumns} lang={nameLang} rows={localized(names.functions)} />
+    <h3 id={slugify(c.meaningH)}>{c.meaningH}</h3>
+    <MappingTable locale={locale} caption={c.meaningH} columns={nameColumns} lang={nameLang} rows={localized(names.meaning)} />
+    <p><Rich text={c.meaningP} locale={locale} /></p>
+    <p><Rich text={c.swizzleP} locale={locale} /></p>
   </section>
 
   <section>

@@ -1744,9 +1744,9 @@ export const ko: Copy = {
 
     wgslAndGlsl: {
       title: `WGSL과 ${glsl} 비교: 두 언어가 다른 곳과 한 소스에서 나온 코드`,
-      description: `WGSL과 ${glsl}을 셰이더 하나로 비교합니다. TypeShade 컴파일러가 두 타깃에 쓴 코드를 나란히 놓고, 두 언어가 갈라지는 지점을 짚습니다.`,
+      description: `WGSL과 ${glsl}을 셰이더 하나로 비교합니다. 타입, builtin 변수, 함수 이름이 어디서 다른지 TypeShade 컴파일러가 쓴 코드로 보여 줍니다.`,
       h1: `WGSL과 ${glsl} 비교`,
-      lead: `\`"use typeshade"\` 파일 하나가 WebGPU에는 WGSL로, WebGL2에는 ${glsl}로 도착합니다. 이 페이지의 코드 블록은 페이지를 빌드하는 동안 바로 위의 파일에서 컴파일한 결과이며, 사용한 컴파일러는 ${facts.pinnedCommit}에 고정된 판입니다.`,
+      lead: `\`"use typeshade"\` 파일 하나가 WebGPU에는 WGSL로, WebGL2에는 ${glsl}로 도착합니다. 컴파일러가 표기하는 내장 함수는 ${facts.builtins}개이고, 그중 ${facts.portableBuiltins}개는 두 언어에서 똑같이 씁니다. 이 페이지의 코드 블록은 페이지를 빌드하는 동안 바로 위의 파일에서 컴파일한 결과이며, 사용한 컴파일러는 ${facts.pinnedCommit}에 고정된 판입니다.`,
       sourceH: '소스',
       sourceP:
         '삼각형 하나입니다. 버텍스 진입점이 위치를 정하고 프래그먼트 진입점이 색을 칠합니다. 구조체 두 개가 스테이지마다 출력 모양을 지정합니다.',
@@ -1790,6 +1790,19 @@ export const ko: Copy = {
           'GPU 기능은 전처리기 줄로 켜고, 호스트도 컨텍스트에 해당 확장을 요청합니다.',
         ],
       ],
+      namesH: '이름이 다른 곳',
+      namesP: `행 하나가 구성 요소 하나입니다. ${glsl} 칸과 WGSL 칸은 ${facts.pinnedCommit}의 컴파일러가 TypeShade 칸의 소스에서 생성한 코드입니다. 컴파일러가 표기를 바꾸면 다음 고정 때 이 표도 바뀝니다.`,
+      typesH: '타입',
+      variablesH: 'builtin 변수',
+      functionsH: '함수',
+      meaningH: '이름은 같고 뜻이 다른 곳',
+      meaningP:
+        '몇몇 이름은 두 언어에 다 있지만 뜻이 다릅니다. GLSL의 `mod`는 몫을 내림하고, WGSL의 `%`는 몫의 소수 부분을 버립니다. WGSL의 `round`는 딱 절반인 값을 짝수 쪽으로 보내고 GLSL은 어느 쪽으로든 보낼 수 있어서, 컴파일러는 `roundEven`을 씁니다. TypeShade에는 `mod`와 `%`가 둘 다 있고, 컴파일러는 타깃마다 같은 뜻이 되는 코드를 씁니다.',
+      swizzleP:
+        'GLSL은 `c.xy = uv`처럼 여러 성분에 한 번에 대입할 수 있습니다. WGSL은 성분을 하나씩 쓰므로 컴파일러는 이 대입을 `TS8018`로 거부합니다. `c.x = uv.x`처럼 성분 하나에 대입하면 컴파일됩니다.',
+      colGlsl: `${glsl}`,
+      colWgsl: 'WGSL',
+      colSource: 'TypeShade',
       convertH: '기존 셰이더 옮기기',
       convertP: `\`compile()\`이 읽는 소스는 TypeScript로 쓴 \`"use typeshade"\` 파일 한 종류뿐입니다. 컴파일러에는 GLSL이나 WGSL을 읽는 프런트엔드가 없습니다. 그래서 두 언어 가운데 하나로 쓴 셰이더는 TypeScript로 한 번 다시 씁니다. 그러면 컴파일러가 그 파일 하나에서 WGSL과 ${glsl}을 만듭니다.`,
       convertItems: [
