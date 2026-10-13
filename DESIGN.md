@@ -8,7 +8,7 @@ colors:
   primary-bg: "#e6f4ff"
   primary-border: "#91caff"
   primary-text-hover: "#69b1ff"
-  ground: "#f5f5f5"
+  ground: "#ffffff"
   container: "#ffffff"
   elevated: "#ffffff"
   surface-1: "#fafafa"
@@ -22,7 +22,7 @@ colors:
   text-4: "rgb(0 0 0 / 0.25)"
   diagnostic: "#ff4d4f"
   selection: "#bae0ff"
-  dark-ground: "#000000"
+  dark-ground: "#141414"
   dark-container: "#141414"
   dark-elevated: "#1f1f1f"
   dark-surface-2: "#262626"
@@ -237,13 +237,14 @@ other class, and says where it belongs.
   phone panel's links. Korean pushes a 500 label to 600, because Plex Sans KR ships two weights.
 - Negative tracking sits on the largest sizes alone: -0.02em on the front headline and h1,
   -0.01em on h2. Korean relaxes both and keeps a 1.8 line height with `word-break: keep-all`.
-- Running text in a document stops at 620px, which sets about 85 characters of English at 16px
-  and about 72 of Korean. That is the line the 596px column set before the shell went edge to
-  edge, and it is why the measure is not the 740px a wider body would allow: at 740px a line
-  runs to about 100 characters. The column around the text is wider: 676px at a 1280 viewport
-  and 716px from 1320, where the shell's cap holds it. A front page section's heading is
-  capped at 24ch and its paragraph at 62ch; the hero's lede is capped at 52ch, and the sentence
-  under a construct card's name at 62ch.
+- Running text in a document stops at 700px. Its longest line on the introduction is 99
+  characters of English at 16px and 73 of Korean. The measure was 620px until the shell grew
+  to 1600px, when a page with 300px of grey on each side of a 1920 screen read as cramped. The
+  column around the text is wider: 676px at a 1280 viewport, 836px at 1440 and 996px from
+  1600, where the shell's cap holds it. A front page section's heading is
+  capped at 24ch and its paragraph at 62ch; the hero's lede is capped at 52ch, the sentence
+  under a construct card's name at 62ch, and the sentence in a row of the front page's map of
+  what carries over from TypeScript at the 700px text measure.
 - No uppercase labels, no tracked "eyebrow" lines above headings, no single-word labels <!-- ok -->
   under blocks, no "a · b · c" metadata strings. <!-- ok -->
 
@@ -284,12 +285,14 @@ only for a page that shows a formula.
 - Lines are two greys: the hairline `#f0f0f0` that separates a card from its cover, a row from
   the next row and the header from the page, and the heavier `#d9d9d9` that draws a control's
   own border.
-- The page field is the layout ground `#f5f5f5` (`--color-layout`), set on `html` and `body`.
-  Every container on that field is the container white `#ffffff` (`--color-ground`): the
-  header, the showcase card, the gallery and examples tiles, the code frames, the docs column
-  with its sidebar and outline, the Playground's region, the footer above its `#f0f0f0` top
-  rule, the search dialog and the dropdowns. Dark inverts the pair the way Ant's dark
-  algorithm does: the field is `#000000` and the container `#141414`.
+- The page field is the container white `#ffffff` (`--color-ground`), set on `html` and
+  `body`, so the page reads as one surface from edge to edge. Every container on it is the
+  same white: the header, the showcase card, the gallery and examples tiles, the code frames,
+  the docs column with its sidebar and outline, the Playground's region, the footer above its
+  `#f0f0f0` top rule, the search dialog and the dropdowns. A hairline or a border sets each
+  one apart. Dark sets the field and the containers in the same `#141414`. The grey layout
+  ground `#f5f5f5` (`#000000` in dark) that filled the page beside the shell is retired: it
+  boxed the shell in, and the page read as cramped.
 - Surfaces are three greys over the container: `#fafafa` under a table head, a code frame's
   tab bar, the docs bar on a phone and a tag; `#f0f0f0` behind a canvas before it draws;
   `#e6e6e6` above that.
@@ -345,12 +348,12 @@ element is fully round except the two-axis pad's dot.
   out at: it needs about 1004px in English and 892px in Korean, and no item in it shrinks or
   wraps. It is the width the documentation grid opens its sidebar at, so the two chrome
   layouts change together.
-- The shell stops at 1320px. The header, the footer, the front page, the documentation grid,
+- The shell stops at 1600px. The header, the footer, the front page, the documentation grid,
   the examples gallery and the Playground all take that measure, so every page has one left
-  edge and one right edge. Under 1320 the shell is the viewport, held off it by the gutter
-  alone: 16px, 24px from 40rem. Above it the shell is centred and the margin grows: 60px at
-  1440, 300px at 1920, 620px at 2560. Two measures work inside that shell. Running text
-  stops at 620px. A block that shows one thing stops at the wide measure, 960px: a figure, a
+  edge and one right edge. Under 1600 the shell is the viewport, held off it by the gutter
+  alone: 16px, 24px from 40rem. Above it the shell is centred and the margin grows: 160px at
+  1920, 480px at 2560. Two measures work inside that shell. Running text stops at 700px. A
+  block that shows one thing stops at the wide measure, 1040px: a figure, a
   pair of figures, a table, the builtin table, a code frame the document itself carries, and
   the front page's source beside its output, which takes two of that measure side by side. A
   grid of cards takes the whole column, and answers a wider column with more cards, each at
@@ -360,9 +363,10 @@ element is fully round except the two-axis pad's dot.
   7fr stage, 48px apart; under that the columns stack with the text first.
 - The documentation grid is one column under 64rem, `240px / 1fr` from 64rem with a 48px gap,
   and `240px / 1fr / 220px` from 80rem, where the outline joins on the right. The document
-  column is what that leaves: 676px at a 1280 viewport, then 716px at 1320 and at every width
-  above it, since the shell stops growing there. A page with no headings keeps the two-column
-  form, and its column is 944px at 1280 and 984px from 1320. Under 64rem the sidebar is a bar
+  column is what that leaves: 676px at a 1280 viewport, 836px at 1440, then 996px at 1600 and
+  at every width above it, since the shell stops growing there. A page with no headings keeps
+  the two-column form, and its column is 944px at 1280, 1104px at 1440 and 1264px from 1600.
+  Under 64rem the sidebar is a bar
   under the header that names the current page, with the page's own headings folded under it.
 - Sections inside a document are 48px apart, 56px from 40rem. The footer starts 96px below the
   content.
@@ -388,9 +392,9 @@ element is fully round except the two-axis pad's dot.
   stacks into labelled rows below 45rem. The layout table keeps its natural width and a
   caption above it.
 
-**The Container Rule.** Every page is laid out in the same 1320px shell: edge to edge behind
-the gutter under that width, centred above it. Running text is
-laid out in the 620px measure and a figure, a table or a code frame in the 960px one. A grid of
+**The Container Rule.** Every page is laid out in the same 1600px shell: edge to edge behind
+the gutter under that width, centred above it on the same white field. Running text is laid
+out in the 700px measure and a figure, a table or a code frame in the 1040px one. A grid of
 cards takes the column. A third measure needs a reason.
 
 ## Components
@@ -646,9 +650,10 @@ why lives on its own page.
     source file first and then every target the compiler emits, the WGSL and the two GLSL ES
     3.00 stages it baked into `examples/__emit-goldens__/` at the pinned commit; it opens on
     the line the shader starts at, since several of those files begin with a banner comment. A
-    GLSL tab reads `GLSL vertex` and `GLSL fragment`: the head is 490px from a 1320 viewport
-    and 470px at 1280, and the full target name put the four tabs at 569px in English and
-    573px in Korean, so the last tab was cut off at every desktop width. The full name is in
+    GLSL tab reads `GLSL vertex` and `GLSL fragment`: the head is 470px at a 1280 viewport,
+    490px at 1320, 550px at 1440 and 630px from 1600, and the full target name put the four
+    tabs at 569px in English and 573px in Korean, so the last tab was cut off at a 1280, a 1320
+    and a 1440 viewport alike. The full name is in
     the line under the card and in the pane's own accessible name. The head is a scroller
     wherever it is under about 450px, which is the phone layout and the widths where the card
     splits inside a narrow column, and it carries there the 32px fade on its trailing edge
