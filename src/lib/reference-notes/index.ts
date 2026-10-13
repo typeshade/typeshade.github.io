@@ -11,6 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { ControlProp } from '../live-shader-contract.ts';
 import { FIXTURE_STILLS, fixtureExp2 } from './fixture.ts';
+import { functionPow } from './function-pow.ts';
 
 /** A sample a `{{code <id>}}` token draws: a whole `"use typeshade"` file. */
 export interface NoteSample {
@@ -33,10 +34,11 @@ export interface NoteLive {
 
 /** A program a `{{compile <case>}}` token reads with both halves, compile() and the language
  *  service. Where both accept it, `wgsl` picks the emitted line the token draws: the first line
- *  of the WGSL that holds it. */
+ *  of the WGSL that holds it; `glsl` does the same in the GLSL ES 3.00 stages. */
 export interface NoteCompileCase {
   readonly source: string;
   readonly wgsl?: string;
+  readonly glsl?: string;
 }
 
 /** One note's code. */
@@ -61,7 +63,7 @@ export interface NoteStill {
 }
 
 /** The notes the site publishes, by entry id. */
-export const NOTES: Readonly<Record<string, NoteRecord>> = {};
+export const NOTES: Readonly<Record<string, NoteRecord>> = { 'function/pow': functionPow };
 
 /** Where the published notes live. */
 export const NOTE_ROOT = 'content/reference';

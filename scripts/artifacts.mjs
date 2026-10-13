@@ -145,6 +145,10 @@ export const STILLS = [
   { id: 'gpu-types-disc', live: true, page: '/guide/language/gpu-types/' },
   // The front page's own live file.
   { id: 'front-first', live: true, page: '/' },
+  // The reference note on `pow` (content/reference/en/function-pow.md).
+  { id: 'reference-pow-curve', live: true, page: '/reference/functions/pow/' },
+  { id: 'reference-pow-negative', live: true, page: '/reference/functions/pow/' },
+  { id: 'reference-pow-specular', live: true, page: '/reference/functions/pow/' },
   // One tile per example the runtime can draw, photographed on the build-only /capture-stills/
   // page. The examples gallery and the front page show them as pictures.
   ...SHADE_STILL_EXAMPLES.map((id) => ({ id, example: id, page: '/capture-stills/' })),

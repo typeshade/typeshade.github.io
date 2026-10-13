@@ -194,11 +194,59 @@ export const links = {
     label: 'WebGL2 specification',
     href: 'https://registry.khronos.org/webgl/specs/latest/2.0/',
   },
+  // The sections of the WGSL specification a reference note cites, by the anchor each heading
+  // carries; the anchor stays when an edition renumbers the section.
+  specWgslPow: { label: 'WGSL pow', href: 'https://www.w3.org/TR/WGSL/#pow-builtin' },
+  specWgslIeeeOverview: {
+    label: 'WGSL floating point evaluation',
+    href: 'https://www.w3.org/TR/WGSL/#overview-of-ieee-754',
+  },
+  specWgslIeee: {
+    label: 'WGSL differences from IEEE-754',
+    href: 'https://www.w3.org/TR/WGSL/#differences-from-ieee754',
+  },
+  specWgslFloatAccuracy: {
+    label: 'WGSL floating point accuracy',
+    href: 'https://www.w3.org/TR/WGSL/#floating-point-accuracy',
+  },
+  specWgslAccuracy: {
+    label: 'WGSL accuracy of concrete expressions',
+    href: 'https://www.w3.org/TR/WGSL/#concrete-float-accuracy',
+  },
+  specWgslDomains: {
+    label: 'WGSL domains of floating point expressions',
+    href: 'https://www.w3.org/TR/WGSL/#domains-of-floating-point-expressions-and-builtins',
+  },
+  specWgslIndeterminate: {
+    label: 'WGSL indeterminate values',
+    href: 'https://www.w3.org/TR/WGSL/#indeterminate-values',
+  },
+  specWgslConstExpr: {
+    label: 'WGSL const expressions',
+    href: 'https://www.w3.org/TR/WGSL/#const-expr',
+  },
+  specWgslExtensions: {
+    label: 'WGSL enable extensions',
+    href: 'https://www.w3.org/TR/WGSL/#enable-extensions-sec',
+  },
+  specWgslIntro: { label: 'WGSL introduction', href: 'https://www.w3.org/TR/WGSL/#intro' },
   specGlslEs: {
     label: `${facts.glslTarget} specification`,
     href: 'https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf',
   },
   survey: { label: facts.survey.title, href: facts.survey.url },
+  // The examples the reference note on `pow` quotes a call from.
+  examplePowBitBump: { label: 'bit-bump', href: '/guide/examples/bit-bump/' },
+  examplePowDefaultArgs: { label: 'default-args', href: '/guide/examples/default-args/' },
+  examplePowJulia: { label: 'fp64-julia-twin', href: '/guide/examples/fp64-julia-twin/' },
+  examplePowCapsule: {
+    label: 'capsule-corp-namek-class',
+    href: '/guide/examples/capsule-corp-namek-class/',
+  },
+  guideGlslFloatPrecision: {
+    label: 'GLSL float precision',
+    href: '/guide/internals/glsl-float-precision/',
+  },
   // The `.shade.ts` example behind a row of /guide/language/from-typescript/.
   shadeModuleConst: shade('module-const'),
   shadePaletteConst: shade('palette-const'),
