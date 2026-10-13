@@ -38,7 +38,7 @@ export const links = {
   gallery: { label: 'Gallery', href: '/gallery/' },
   concepts: { label: 'TypeScript and WebGPU concepts', href: '/guide/typescript-and-webgpu/' },
   conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
-  conceptsPipeline: { label: 'The pipeline', href: '/guide/concepts/the-pipeline/' },
+  conceptsPipeline: { label: 'The shader pipeline', href: '/guide/concepts/the-pipeline/' },
   conceptsWebgpu: { label: 'WebGPU and WebGL2', href: '/guide/concepts/webgpu-and-webgl2/' },
   conceptsWgsl: { label: 'WGSL and GLSL', href: '/guide/concepts/wgsl-and-glsl/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
