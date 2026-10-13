@@ -242,6 +242,23 @@ export const en = {
         const fitting = suffixes.find((suffix) => (base + suffix).length <= 60);
         return fitting ? base + fitting : base;
       },
+      // An IR builder for a builtin of the language (Builtins and Values, imported from
+      // typeshade/core/ir alone) is named as one, so its page and the builtin's page in the
+      // language reference do not read as the same answer.
+      builderTitle: (heading: string) => {
+        const suffixes = [
+          ': IR builder function in typeshade/core/ir, TypeShade',
+          ': IR builder function in typeshade/core/ir',
+          ': IR builder in typeshade/core/ir',
+        ];
+        return (
+          heading +
+          (suffixes.find((suffix) => (heading + suffix).length <= 60) ??
+            suffixes[suffixes.length - 1]!)
+        );
+      },
+      builderDescription: (name: string, summary: string) =>
+        `${name}, an IR builder function in typeshade/core/ir. ${summary}`,
       categoryTitle: (name: string) => `${name}, a category in the TypeShade API reference`,
       categoryDescription: (name: string, summary: string) =>
         `${name} in the TypeShade API reference. ${summary}`,

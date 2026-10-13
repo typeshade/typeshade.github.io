@@ -53,7 +53,10 @@ const a = t.docs.api;
 const category = apiCategoryCopy(locale, entry.category.slug);
 const callable = entry.kind === 'function' || entry.kind === 'constant';
 const heading = callable && entry.signatures.length > 0 ? `${entry.name}()` : entry.name;
-const title = a.pageTitle(heading, a.kinds[entry.kind], category.name);
+// A function of Builtins or Values imported from typeshade/core/ir alone is an IR builder for a
+// builtin of the language, and its title and description say so.
+const builder = entry.kind === 'function' && isIrBuilder(entry) && entry.modules.length === 1 && entry.modules[0] === 'typeshade/core/ir';
+const title = builder ? a.builderTitle(heading) : a.pageTitle(heading, a.kinds[entry.kind], category.name);
 // The meta description. A JSDoc summary of one short sentence is under the 70 characters the
 // SEO checks want, so the category's own sentence fills it out. A long one is cut at 160 on
 // an English page. A Korean page's description is a short Korean lead-in (docs.api.pageDescription)
@@ -62,7 +65,7 @@ const title = a.pageTitle(heading, a.kinds[entry.kind], category.name);
 // falling to the word-boundary cut on almost every page, which a flat 100 did (the SEO review,
 // onpage, Korean description cutoff and mid-sentence cuts). The cut itself is in
 // src/lib/meta-description.ts, which the language reference's entry pages use too.
-const composed = a.pageDescription(entry.name, a.kinds[entry.kind], category.name, summary);
+const composed = builder ? a.builderDescription(entry.name, summary) : a.pageDescription(entry.name, a.kinds[entry.kind], category.name, summary);
 const filled = composed.length < META_MIN ? `${composed} ${category.summary}` : composed;
 const description = fitDescription(filled, localeSettings[locale].metaDescriptionMax);
 // The line a reader types before using any of this: one per specifier that exports the name,

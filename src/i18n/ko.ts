@@ -98,7 +98,7 @@ const apiCategories: Record<string, { name: string; summary: string }> = {
   builtins: {
     name: '내장 함수',
     summary:
-      '셰이더에서 부르는 수학, 벡터, 텍스처 함수입니다. 이름 하나로 두 대상 모두에 나갑니다.',
+      '수학, 벡터, 텍스처 연산을 만드는 IR 빌더 함수입니다. 각 함수는 IR 노드를 반환합니다. 셰이더 파일은 언어 참조에 실린 내장 함수를 부릅니다.',
   },
   values: {
     name: '값',
@@ -327,6 +327,20 @@ export const ko: Copy = {
         const fitting = variants.find((suffix) => (heading + suffix).length <= 60);
         return fitting ? heading + fitting : heading;
       },
+      builderTitle: (heading: string) => {
+        const suffixes = [
+          ': typeshade/core/ir의 IR 빌더 함수, TypeShade 컴파일러 API',
+          ': typeshade/core/ir의 IR 빌더 함수, TypeShade API',
+          ': typeshade/core/ir의 IR 빌더 함수',
+        ];
+        return (
+          heading +
+          (suffixes.find((suffix) => (heading + suffix).length <= 60) ??
+            suffixes[suffixes.length - 1]!)
+        );
+      },
+      builderDescription: (name: string, summary: string) =>
+        `${name}, typeshade/core/ir의 IR 빌더 함수입니다. ${summary}`,
       categoryTitle: (name: string) => `${name} 분류, TypeShade 셰이더 API 참조 문서`,
       categoryDescription: (name: string, summary: string) =>
         `TypeShade API 참조의 ${name} 분류입니다. ${summary}`,
