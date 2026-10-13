@@ -594,11 +594,10 @@ function spanProblems(note: LoadedNote): string[] {
     }
     return bad;
   };
+  // One module first; where it fails, each span alone, since the compiler may stop at the first
+  // error and leave a later span unread.
   let bad = failing(candidates);
-  if (bad.has(-1)) {
-    // An error the compiler does not place on a span's own line: read each span alone.
-    bad = new Set(candidates.flatMap((s, i) => (failing([s]).size ? [i] : [])));
-  }
+  if (bad.size) bad = new Set(candidates.flatMap((s, i) => (failing([s]).size ? [i] : [])));
   for (const i of [...bad].sort((a, b) => a - b)) {
     const span = candidates[i]!;
     out.push(

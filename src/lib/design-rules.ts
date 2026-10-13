@@ -701,6 +701,7 @@ const EXPLAINERS: readonly {
 /** The rule versions the explaining pages were last read against. */
 const READ_AGAINST: Readonly<Record<string, string>> = {
   '1.2': 't6OvP1FlcnvK4mIZKbcPULikBSKQ5LJ59oSe_GWWSio=',
+  '1.3': 'fcW4P8W5BFQ0loGi6vlLvaa1Is6dCmpQ_g9tbwMsfHM=',
   '2.1': '9eWN6RxoCWF7PMo_T1USzBA1CAyjigmKnoVwzLkeJ4Q=',
   '2.2': 'X0g_aM9dhyo0h4x4klnU_hRQiKqok1jFPsVAbMRIgag=',
   '2.3': 'r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=',

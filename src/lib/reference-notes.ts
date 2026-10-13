@@ -427,10 +427,11 @@ function editorErrors(source: string): { code: string; message: string }[] {
   }
 }
 
-/** compile()'s errors on one program, and its WGSL. */
+/** compile()'s errors on one program, and its WGSL and GLSL. */
 function compilerErrors(source: string): {
   errors: { code: string; message: string }[];
   wgsl?: string;
+  glsl?: string;
   threw?: string;
 } {
   try {
@@ -440,6 +441,7 @@ function compilerErrors(source: string): {
         .filter((d) => d.category === 'error')
         .map((d) => ({ code: String(d.code), message: d.message })),
       wgsl: r.wgsl,
+      glsl: r.glsl ? `${r.glsl.vertex ?? ''}\n${r.glsl.fragment ?? ''}` : undefined,
     };
   } catch (e) {
     return { errors: [], threw: e instanceof Error ? e.message : String(e) };
@@ -563,13 +565,19 @@ function probe(id: string, record: NoteRecord, key: string): ProbeResult {
         },
       };
     }
-    if (!c.wgsl) return { ok: true, probe: { kind: 'compile', value: 'ok' } };
-    const line = (compiler.wgsl ?? '')
+    const target = c.wgsl !== undefined ? 'wgsl' : c.glsl !== undefined ? 'glsl' : null;
+    if (!target) return { ok: true, probe: { kind: 'compile', value: 'ok' } };
+    const holds = target === 'wgsl' ? c.wgsl! : c.glsl!;
+    const line = ((target === 'wgsl' ? compiler.wgsl : compiler.glsl) ?? '')
       .split('\n')
-      .find((l) => l.includes(c.wgsl!))
+      .find((l) => l.includes(holds))
       ?.trim();
-    if (!line) return fail(`compile:${name}: no line of the WGSL holds '${c.wgsl}'`);
-    return { ok: true, probe: { kind: 'compile', value: recordable(`ok; wgsl: ${line}`), line } };
+    if (!line)
+      return fail(`compile:${name}: no line of the ${target.toUpperCase()} holds '${holds}'`);
+    return {
+      ok: true,
+      probe: { kind: 'compile', value: recordable(`ok; ${target}: ${line}`), line },
+    };
   }
   if (key.startsWith('assert:')) {
     const name = key.slice('assert:'.length);
