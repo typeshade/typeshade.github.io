@@ -1517,6 +1517,9 @@ export const ko: Copy = {
       ],
     ],
     playgroundLink: 'Playground에서 직접 작성 →',
+    typesH: 'WebGPU 타입',
+    typesP:
+      'WebGPU를 호출하는 호스트 코드에는 WebGPU 타입 선언이 필요합니다. TypeScript 5에서는 `@webgpu/types`를 설치하고 `tsconfig.json`의 `compilerOptions.types`에 추가합니다. TypeScript 6의 `dom` 라이브러리에는 그 선언의 일부만 들어 있으며 이때 쓸 방법은 [WebGPU 타입 README](webgpuTypes)에 있습니다. WebGL2 선언은 두 버전 모두 `dom` 라이브러리에 있습니다. `typeshade` 패키지의 선언에는 WebGPU 타입이 필요하지 않습니다. 런타임이 디바이스를 `object`로 받기 때문입니다.',
     orderH: '이 순서로 배우세요',
     orderItems: [
       '타입, 함수, 모듈 등 TypeScript의 형태를 익힙니다.',
