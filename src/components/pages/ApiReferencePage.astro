@@ -12,7 +12,8 @@ import LinkColumns from '../LinkColumns.astro';
 import Rich from '../Rich.astro';
 import type { ApiEntry, ApiEntryHtml, ApiTranslated } from '../../lib/api-types.ts';
 import { apiCategoryCopy, assertApiCategories, copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
-import { apiSiblings } from '../../lib/api-nav.ts';
+import { apiSiblings, isIrBuilder } from '../../lib/api-nav.ts';
+import { languageEntryPage } from '../../lib/language-reference.ts';
 import { errorCodePath } from '../../lib/error-codes.ts';
 import { facts } from '../../lib/examples.ts';
 import { links } from '../../lib/links.ts';
@@ -69,6 +70,10 @@ const description = fitDescription(filled, localeSettings[locale].metaDescriptio
 // that loads compiled programs imports alone. A type is imported as one.
 const typeOnly = entry.kind === 'interface' || entry.kind === 'type';
 const importLines = entry.modules.map((specifier) => `import ${typeOnly ? 'type ' : ''}{ ${entry.name} } from '${specifier}'`);
+// An IR builder for a builtin of the language names the builtin a shader file calls instead,
+// under the import line and first under See also.
+const languagePage = isIrBuilder(entry) ? languageEntryPage('function', entry.name) : undefined;
+const seeAlso = [...(languagePage ? [{ href: languagePage, label: `${entry.name}()` }] : []), ...entry.seeAlso];
 const sourceHref = `${facts.mirrorUrl}/blob/${facts.pinnedCommit}/${entry.source.file}#L${entry.source.line}`;
 // Previous and next walk this category alphabetically, then carry on into the next category,
 // the way the sidebar lists them. The pages of the reference are not in the sidebar's flat
@@ -105,7 +110,7 @@ const sections = [
   { id: 'instance-properties', label: a.instanceProperties, show: properties.length > 0 },
   { id: 'instance-methods', label: a.instanceMethods, show: methods.length > 0 },
   { id: 'in-the-guide', label: a.inGuide, show: entry.guideSections.length > 0 },
-  { id: 'see-also', label: a.seeAlso, show: entry.seeAlso.length > 0 },
+  { id: 'see-also', label: a.seeAlso, show: seeAlso.length > 0 },
   { id: 'source', label: a.source, show: true },
 ].filter((s) => s.show);
 // The first example is titled 'Example', later ones 'Example 2', 'Example 3'. The title is
@@ -164,6 +169,7 @@ const supportClass = (s: string) => supportTag[s] ?? `${tag} border-line-2 bg-su
   <p class="api-kind" lang={locale} data-pagefind-meta={`${a.kindMeta}:${a.kinds[entry.kind]}`}>{a.kindLine(a.kinds[entry.kind], category.name)}</p>
   <p class="api-summary">{summary}</p>
   <p class="text-(length:--text-ui) text-text-2">{importLines.map((line, i) => <>{i > 0 && <br />}<code>{line}</code></>)}</p>
+  {languagePage && <p class="text-(length:--text-ui) text-text-2" lang={locale}><Rich text={a.languageNote} locale={locale} /> <a href={localePath(locale, languagePage)} lang="en"><code>{entry.name}()</code></a></p>}
   <p class="guide-note" lang={locale}><Rich text={translated ? a.translatedNote : a.note} locale={locale} /></p>
 
   {sections.some((s) => s.id === 'syntax') && (
@@ -298,10 +304,10 @@ const supportClass = (s: string) => supportTag[s] ?? `${tag} border-line-2 bg-su
     </section>
   )}
 
-  {entry.seeAlso.length > 0 && (
+  {seeAlso.length > 0 && (
     <section>
       <h2 id="see-also" lang={locale}>{a.seeAlso}</h2>
-      <LinkColumns>{entry.seeAlso.map((l) => <li><a href={localePath(locale, l.href)}><code>{l.label}</code></a></li>)}</LinkColumns>
+      <LinkColumns>{seeAlso.map((l) => <li><a href={localePath(locale, l.href)}><code>{l.label}</code></a></li>)}</LinkColumns>
     </section>
   )}
 

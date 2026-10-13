@@ -73,3 +73,21 @@ export function apiSiblings(slug: string): {
 export function apiSlugByName(): ReadonlyMap<string, string> {
   return new Map(apiEntries().map((entry) => [entry.name, entry.slug]));
 }
+
+/** The categories whose exports are IR builders for a builtin a `"use typeshade"` file calls by
+ *  the same name (`pow`, `vec3`). Another export that shares a name with a language entry is
+ *  something else: `reflect` the module reflection, `location` a layout helper. */
+const BUILDER_CATEGORIES: ReadonlySet<string> = new Set(['builtins', 'values']);
+
+/** The IR builders by name, for the language reference's link to the builder of its builtin. */
+export function irBuilderSlugByName(): ReadonlyMap<string, string> {
+  return new Map(
+    apiEntries()
+      .filter((entry) => BUILDER_CATEGORIES.has(entry.category.slug))
+      .map((entry) => [entry.name, entry.slug]),
+  );
+}
+
+/** Whether an export is an IR builder for a builtin of the language. */
+export const isIrBuilder = (entry: { readonly category: { readonly slug: string } }): boolean =>
+  BUILDER_CATEGORIES.has(entry.category.slug);

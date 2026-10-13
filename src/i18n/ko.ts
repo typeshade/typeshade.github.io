@@ -355,6 +355,8 @@ export const ko: Copy = {
       instanceMethods: '인스턴스 메서드',
       inGuide: '관련 가이드',
       seeAlso: '함께 보기',
+      languageNote:
+        '이 export는 IR 노드를 반환합니다. `"use typeshade"` 파일은 내장 함수 자체를 부릅니다:',
       source: '소스',
       optional: '선택 사항',
       readonly: '읽기 전용',
@@ -414,6 +416,7 @@ export const ko: Copy = {
       noForm: '이 대상에는 형태가 없습니다.',
       preEmit: '두 백엔드가 돌기 전에 `f32` 레인 두 개로 바뀝니다.',
       inTable: '내장 함수 표',
+      irBuilderLink: (name: string) => `\`typeshade/core/ir\`의 \`${name}()\``,
       validIn: '쓰이는 곳',
       anyStage: '컴파일러가 이 아이디를 파이프라인의 어느 스테이지에도 묶어 두지 않습니다.',
       stageRule: (stage: string, direction: string) => `${stage} ${direction}`,
