@@ -207,7 +207,7 @@ const fnRow = (id: string): MappingRowData => {
 
 /** The compiler's own remedy for a `@builtin(...)` name neither writer takes, read off the
  *  WGSL backend's denylist. The trailing pointer at a file in another repository is cut,
- *  since the site names no consumer of the library. */
+ *  since the reference names no product built on TypeShade. */
 function remedyFor(name: string): string {
   const remedy = wgslBackend.absentBuiltins?.get(name);
   if (!remedy) throw new Error(`[glsl-mapping] the WGSL backend no longer refuses '${name}'`);

@@ -19,6 +19,8 @@ import LinkColumns from '../LinkColumns.astro';
 import ReferenceNotes from '../ReferenceNotes.astro';
 import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
+import MappingTable from '../MappingTable.astro';
+import { textureForms } from '../../lib/texture-load-forms.ts';
 import { typeSpellings } from '../../lib/type-spellings.ts';
 import { irBuilderSlugByName } from '../../lib/api-nav.ts';
 import { facts } from '../../lib/examples.ts';
@@ -109,6 +111,10 @@ const cellFor = (text: string | null, message: string): Cell => {
   if (entry.spelling?.preEmit) return { copy: r.preEmit };
   return message.length > 0 ? { message } : { copy: r.noForm };
 };
+// A builtin whose form depends on the texture it reads lists every form under Targets, one row
+// per texture, measured through the compiler (src/lib/texture-load-forms.ts).
+const forms = kind === 'function' ? textureForms(name) : undefined;
+const formRows = forms?.map((f) => [f.texture, f.call, f.wgsl, f.glsl ?? { note: r.noForm }] as const);
 const wgslCell = entry.spelling ? cellFor(entry.spelling.wgsl, '') : null;
 const glslCell = entry.spelling ? cellFor(entry.spelling.glsl, entry.spelling.glslMessage) : null;
 
@@ -192,6 +198,9 @@ const meta = `title:${entry.name} (${kindWord})`;
   <h1><code>{entry.title}</code></h1>
   <p class="api-kind" lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
   <p class="api-summary" lang="en"><Rich text={entry.line} locale={locale} /></p>
+  {wgslCell && glslCell && 'code' in wgslCell && 'code' in glslCell && (
+    <p class="flex min-w-0 flex-wrap gap-x-4 text-(length:--text-ui) text-text-2"><span class="min-w-0 wrap-anywhere"><span lang={locale}>{r.wgsl}</span> <code>{wgslCell.code}</code></span><span class="min-w-0 wrap-anywhere"><span lang={locale}>{r.glsl}</span> <code>{glslCell.code}</code></span></p>
+  )}
   <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
 
   <section>
@@ -291,6 +300,12 @@ const meta = `title:${entry.name} (${kindWord})`;
           {'message' in glslCell && <span lang="en">{glslCell.message}</span>}
         </dd>
       </dl>
+      {formRows && (
+        <>
+          <p lang={locale}><Rich text={r.formsP} locale={locale} /></p>
+          <MappingTable locale={locale} caption={e.targets} columns={r.formsColumns} lang={['wgsl', 'ts', 'wgsl', 'glsl']} rows={formRows} />
+        </>
+      )}
     </section>
   )}
 

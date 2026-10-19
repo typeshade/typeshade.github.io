@@ -1,6 +1,8 @@
 // Every destination the site links to, in one place. Routes into the compiler are permalinks
 // at the pinned commit, so a link never points at a file the site's numbers were not
-// measured from. No consumer of the library is named or linked anywhere.
+// measured from. A product built on TypeShade is named and linked in two places only: the
+// footer's Project group, and a guide page that shows the same task done with that product
+// (the MNIST guide shows TypeNN). The API reference names no consumer of the library.
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { apiCategories, apiSlugByName } from './api-nav.ts';
@@ -134,6 +136,9 @@ export const links = {
   // Products built on TypeShade, each in a repository of its own and served at its own host.
   // The footer's Project group closes with them, one link each under the product's name.
   radiance: { label: 'Radiance', href: 'https://radiance.typeshade.dev/' },
+  // TypeNN, a neural-network library built on TypeShade: its site and its repository.
+  typenn: { label: 'TypeNN', href: 'https://nn.typeshade.dev/' },
+  typennGithub: { label: 'TypeNN on GitHub', href: 'https://github.com/typeshade/typenn' },
   commit: { label: facts.pinnedCommit, href: `${mirror}/tree/${facts.pinnedCommit}` },
   releases: { label: 'Watch releases', href: `${mirror}/releases` },
   license: { label: facts.licenseName, href: at('LICENSE') },
@@ -189,6 +194,7 @@ export const links = {
     href: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext',
   },
   specWebgpu: { label: 'WebGPU specification', href: 'https://www.w3.org/TR/webgpu/' },
+  webgpuTypes: { label: 'WebGPU types', href: 'https://github.com/gpuweb/types' },
   specWgsl: { label: 'WGSL specification', href: 'https://www.w3.org/TR/WGSL/' },
   specWebgl2: {
     label: 'WebGL2 specification',
@@ -587,3 +593,7 @@ export function sidebar(
     { title: labels.project, items: [page('checks')] },
   ];
 }
+
+/** The TypeNN training lab in a locale's language: `/lab/`, or `/ko/lab/` on the TypeNN site. */
+export const typennLab = (locale: Locale): string =>
+  `${links.typenn.href.replace(/\/$/, '')}${localePath(locale, '/lab/')}`;

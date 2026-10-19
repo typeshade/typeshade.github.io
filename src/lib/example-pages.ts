@@ -69,10 +69,10 @@ export interface ExamplePage {
 const examplesDir = path.resolve(process.cwd(), 'vendor/shader-dsl/examples');
 const goldensDir = path.join(examplesDir, '__emit-goldens__');
 
-// The compiler's own files cite its issue tracker as "<project> #1840". The site names no
-// consumer of the library anywhere (scripts/check-seo.mjs enforces it, and src/lib/blurb.ts
-// already drops the same citations from the registry's sentences), so the project's name
-// comes off the number and the number stays. Nothing else about a file is rewritten.
+// The compiler's own files cite its issue tracker as "<project> #1840". No page names that
+// former host (scripts/check-seo.mjs enforces it, and src/lib/blurb.ts already drops the same
+// citations from the registry's sentences), so the project's name comes off the number and
+// the number stays. Nothing else about a file is rewritten.
 const FORMER_HOST = /\bX-?GIS (#\d+)/g;
 const NAMES_FORMER_HOST = /x-?gis/i;
 

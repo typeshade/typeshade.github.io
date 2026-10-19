@@ -88,7 +88,7 @@ export const API_CATEGORIES: readonly ApiCategory[] = [
     slug: 'builtins',
     name: 'Builtins',
     summary:
-      'The math, vector and texture functions a shader calls, spelled once for both targets.',
+      'IR builder functions for math, vector and texture operations. Each returns an IR node. A shader file calls the builtins that the language reference lists.',
   },
   {
     slug: 'values',
