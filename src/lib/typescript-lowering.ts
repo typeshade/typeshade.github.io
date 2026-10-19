@@ -42,9 +42,18 @@ export interface LoweringDiagnostic {
   readonly message: string;
 }
 
+/** A run of rows a section page prints under one h2, so the page's outline lists the runs. */
+export interface LoweringGroup {
+  /** The key the copy writes the group's heading under (`fromTypescript.groups`). */
+  readonly key: string;
+  readonly rows: readonly LoweringRow[];
+}
+
 export interface LoweringSection {
   readonly key: LoweringSectionKey;
   readonly rows: readonly LoweringRow[];
+  /** The same rows, in the same order, cut into the runs under one heading each. */
+  readonly groups: readonly LoweringGroup[];
 }
 
 /** A row's source: the construct itself, and whatever has to stand around it to compile. */
@@ -156,7 +165,17 @@ function build(): readonly LoweringSection[] {
       return built.row;
     });
     if (rows.length === 0) problems.push(`the ${key} section has no row`);
-    return { key, rows };
+    const groups = GROUPS[key].map((g) => ({
+      key: g.key,
+      rows: rows.filter((r) => g.ids.includes(r.id)),
+    }));
+    const grouped = groups.flatMap((g) => g.rows.map((r) => r.id));
+    if (grouped.join() !== rows.map((r) => r.id).join()) {
+      problems.push(
+        `the ${key} groups do not cover its rows once each, in order: ${grouped.join(', ')}`,
+      );
+    }
+    return { key, rows, groups };
   });
   if (problems.length > 0) {
     throw new Error(
@@ -180,6 +199,67 @@ export function loweringSections(): readonly LoweringSection[] {
 export function loweringRowCount(): number {
   return loweringSections().reduce((n, s) => n + s.rows.length, 0);
 }
+
+/** The runs each section's rows are printed in. A run is a stretch of the section's rows in
+ *  their order, so grouping never moves a card; a row that belongs to no run, or to two, stops
+ *  the build. The heading of a run is the dictionary's line under the same key. */
+const GROUPS: Record<
+  LoweringSectionKey,
+  readonly { readonly key: string; readonly ids: readonly string[] }[]
+> = {
+  declarations: [
+    {
+      key: 'constantsAndVariables',
+      ids: ['constScalar', 'constVector', 'letNoInit', 'unassignedRead', 'moduleLet', 'varRefused'],
+    },
+    {
+      key: 'typeDeclarations',
+      ids: ['enumRow', 'constEnum', 'typeAlias', 'interfaceRow', 'classStruct', 'namespaceRow'],
+    },
+  ],
+  functions: [
+    {
+      key: 'parametersAndNames',
+      ids: [
+        'lexicalShadow',
+        'mutableParameter',
+        'referenceParameter',
+        'outParameter',
+        'referenceAlias',
+      ],
+    },
+    {
+      key: 'kindsOfFunction',
+      ids: ['topFunction', 'localFunction', 'closure', 'defaultArgs', 'overloads', 'recursion'],
+    },
+    { key: 'calls', ids: ['callStatement', 'phonyAssign', 'mathAlias'] },
+  ],
+  classes: [
+    { key: 'fieldsAndConstructors', ids: ['baseValue', 'fieldlessClass', 'constructorNew'] },
+    { key: 'methods', ids: ['method', 'staticFn', 'thisAssign'] },
+    { key: 'inheritance', ids: ['extendsSuper', 'abstractRow', 'implementsRow'] },
+    { key: 'accessors', ids: ['accessModifiers', 'getter'] },
+    { key: 'mixinsAndGenerics', ids: ['mixin', 'genericFunction', 'genericClass'] },
+  ],
+  controlFlow: [
+    { key: 'conditionsAndLoops', ids: ['ifRow', 'forRow', 'forRuntime', 'whileRow', 'switchRow'] },
+    { key: 'choosingAValue', ids: ['ternaryScalar', 'ternaryStruct'] },
+    { key: 'leavingEarly', ids: ['breakRow', 'continueRow', 'discardRow'] },
+  ],
+  expressions: [
+    { key: 'builtValues', ids: ['destructuring', 'spread', 'arrayLiteral', 'tuple'] },
+    { key: 'claims', ids: ['literalUnion', 'brand', 'typeClaims'] },
+    { key: 'operators', ids: ['power', 'logicalScalar', 'logicalVector', 'optionalMember'] },
+    {
+      key: 'primitives',
+      ids: ['stringValue', 'numberType', 'booleanType', 'integerLiteral', 'increment'],
+    },
+  ],
+  double: [
+    { key: 'writingDoubles', ids: ['f64Scalar', 'f64Literal', 'f64Vector', 'f64Builtin'] },
+    { key: 'whereItStops', ids: ['f64Refused', 'f64Guard', 'f64Varying'] },
+  ],
+};
 
 const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
   declarations: [

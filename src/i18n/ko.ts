@@ -2802,6 +2802,30 @@ export const ko: Copy = {
               '두 타깃 모두 64비트 부동소수점이 없어서 배정밀도 값은 단정밀도 워드 쌍입니다. 컴파일러가 무엇을 다시 쓰고 어떤 호출로 연산을 대신하는지 봅니다.',
           },
         },
+        /** The headings the cards of a section page run under, one per run of rows
+         *  (src/lib/typescript-lowering.ts). The page's outline lists them. */
+        crumbs: '현재 위치',
+        groups: {
+          constantsAndVariables: '상수와 변수',
+          typeDeclarations: '타입과 네임스페이스',
+          parametersAndNames: '매개변수와 이름',
+          kindsOfFunction: '함수의 종류',
+          calls: '호출',
+          fieldsAndConstructors: '필드와 생성자',
+          methods: '메서드',
+          inheritance: '상속과 인터페이스',
+          accessors: '접근 제어와 접근자',
+          mixinsAndGenerics: '믹스인과 제네릭',
+          conditionsAndLoops: '조건문과 반복문',
+          choosingAValue: '값 고르기',
+          leavingEarly: '일찍 빠져나가기',
+          builtValues: '객체, 배열, 튜플',
+          claims: '타입 주장',
+          operators: '연산자',
+          primitives: '문자열, 숫자, 불리언',
+          writingDoubles: 'double 쓰기',
+          whereItStops: 'double이 멈추는 곳',
+        },
         sections: {
           declarations: {
             h: '선언',
