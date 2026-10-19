@@ -117,6 +117,8 @@ const forms = kind === 'function' ? textureForms(name) : undefined;
 const formRows = forms?.map((f) => [f.texture, f.call, f.wgsl, f.glsl ?? { note: r.noForm }] as const);
 const wgslCell = entry.spelling ? cellFor(entry.spelling.wgsl, '') : null;
 const glslCell = entry.spelling ? cellFor(entry.spelling.glsl, entry.spelling.glslMessage) : null;
+// The two spellings the facts box shows, when both targets have a form.
+const spelled = wgslCell && glslCell && 'code' in wgslCell && 'code' in glslCell ? { wgsl: wgslCell.code, glsl: glslCell.code } : undefined;
 
 // The entry's reference note, if it has one. A note read against values the pin no longer
 // gives stops the build here, as it does in scripts/check-reference-notes.ts, since a build of
@@ -198,18 +200,22 @@ const meta = `title:${entry.name} (${kindWord})`;
   <h1><code>{entry.title}</code></h1>
   <p class="api-kind" lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
   <p class="api-summary" lang="en"><Rich text={entry.line} locale={locale} /></p>
-  {entry.kind === 'builtin' && (
+  {(spelled || entry.kind === 'builtin') && (
     <dl class="ref-facts" lang={locale}>
-      {wgslCell && glslCell && 'code' in wgslCell && 'code' in glslCell && (
+      {spelled && (
         <>
           <dt>{r.wgsl}</dt>
-          <dd><code>{wgslCell.code}</code></dd>
+          <dd><code>{spelled.wgsl}</code></dd>
           <dt>{r.glsl}</dt>
-          <dd><code>{glslCell.code}</code></dd>
+          <dd><code>{spelled.glsl}</code></dd>
         </>
       )}
-      <dt>{r.validIn}</dt>
-      <dd>{stageText.length > 0 ? stageText.join(', ') : r.anyStage}</dd>
+      {entry.kind === 'builtin' && (
+        <>
+          <dt>{r.validIn}</dt>
+          <dd>{stageText.length > 0 ? stageText.join(', ') : r.anyStage}</dd>
+        </>
+      )}
     </dl>
   )}
   <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
