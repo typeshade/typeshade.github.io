@@ -2658,6 +2658,30 @@ export const en = {
               'Neither target has a 64-bit float, so a double is a pair of single words. What the compiler rewrites, and the calls it puts in place of the arithmetic.',
           },
         },
+        /** The headings the cards of a section page run under, one per run of rows
+         *  (src/lib/typescript-lowering.ts). The page's outline lists them. */
+        crumbs: 'Breadcrumbs',
+        groups: {
+          constantsAndVariables: 'Constants and variables',
+          typeDeclarations: 'Types and namespaces',
+          parametersAndNames: 'Parameters and names',
+          kindsOfFunction: 'Kinds of function',
+          calls: 'Calls',
+          classesAndConstructors: 'Classes and constructors',
+          methods: 'Methods',
+          inheritance: 'Inheritance and interfaces',
+          accessors: 'Access and accessors',
+          mixinsAndGenerics: 'Mixins and generics',
+          conditionsAndLoops: 'Conditions and loops',
+          choosingAValue: 'Choosing a value',
+          leavingEarly: 'Leaving early',
+          builtValues: 'Objects, arrays and tuples',
+          typeClaims: 'Type claims',
+          operators: 'Operators',
+          primitives: 'Strings, numbers and booleans',
+          writingDoubles: 'Writing a double',
+          whereItStops: 'Where a double stops',
+        },
         sections: {
           declarations: {
             h: 'Declarations',
