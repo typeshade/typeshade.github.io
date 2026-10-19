@@ -21,6 +21,7 @@ import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import MappingTable from '../MappingTable.astro';
 import { textureForms } from '../../lib/texture-load-forms.ts';
+import { typeSpellings } from '../../lib/type-spellings.ts';
 import { irBuilderSlugByName } from '../../lib/api-nav.ts';
 import { facts } from '../../lib/examples.ts';
 import { languageExamples } from '../../lib/language-examples.ts';
@@ -58,9 +59,11 @@ const targets =
   entry.spelling?.wgsl && entry.spelling.glsl
     ? { wgsl: entry.spelling.wgsl, glsl: entry.spelling.glsl }
     : undefined;
+// A scalar, vector or matrix type names what each target writes for it the same way.
+const typeTargets = kind === 'type' ? typeSpellings(entry.name) : undefined;
 // A Math member is named as an author writes it, `Math.pow`, the way its h1 names it.
 const shownName = kind === 'math' ? entry.title : entry.name;
-const title = e.title(shownName, kindWord, targets !== undefined);
+const title = e.title(shownName, kindWord, targets !== undefined || typeTargets !== undefined);
 if (title.length < 45 || title.length > 60) {
   throw new Error(`[reference-entry] '${kind}/${name}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`);
 }
@@ -70,7 +73,7 @@ const plain = (text: string): string => text.replace(/`/g, '');
 const line = plain(entry.line);
 // With both targets' forms the lead names them and stays whole; the compiler's sentence after
 // it is what gets cut, so the description still says what the name does.
-const lead = targets ? e.targetsLead(shownName, targets) : undefined;
+const lead = targets ? e.targetsLead(shownName, targets) : typeTargets ? e.typeLead(shownName, typeTargets) : undefined;
 const composed = lead ? `${lead} ${line}` : e.description(shownName, kindWord, line);
 // A one-clause sentence leaves the description under the 70 characters the SEO checks want,
 // so the kind's own line fills it out, the way a category's does in the API reference.
@@ -114,6 +117,8 @@ const forms = kind === 'function' ? textureForms(name) : undefined;
 const formRows = forms?.map((f) => [f.texture, f.call, f.wgsl, f.glsl ?? { note: r.noForm }] as const);
 const wgslCell = entry.spelling ? cellFor(entry.spelling.wgsl, '') : null;
 const glslCell = entry.spelling ? cellFor(entry.spelling.glsl, entry.spelling.glslMessage) : null;
+// The two spellings the facts box shows, when both targets have a form.
+const spelled = wgslCell && glslCell && 'code' in wgslCell && 'code' in glslCell ? { wgsl: wgslCell.code, glsl: glslCell.code } : undefined;
 
 // The entry's reference note, if it has one. A note read against values the pin no longer
 // gives stops the build here, as it does in scripts/check-reference-notes.ts, since a build of
@@ -140,7 +145,7 @@ const sections = [
   // The lead under the name is the compiler's first sentence, so Description carries what
   // the sentence goes on to say, the stage the front end holds a builtin id to, and what the
   // CPU oracle does with the name. An entry with none of the three has no Description.
-  { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.kind === 'builtin' || entry.oracle !== null },
+  { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.oracle !== null },
   // The note's sections, each under its own heading, after Description and before Targets.
   ...(notes?.sections ?? []).map((n) => ({ id: n.id, label: n.heading.replace(/`/g, ''), show: true })),
   { id: 'targets', label: e.targets, show: entry.spelling !== null },
@@ -195,8 +200,23 @@ const meta = `title:${entry.name} (${kindWord})`;
   <h1><code>{entry.title}</code></h1>
   <p class="api-kind" lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
   <p class="api-summary" lang="en"><Rich text={entry.line} locale={locale} /></p>
-  {wgslCell && glslCell && 'code' in wgslCell && 'code' in glslCell && (
-    <p class="flex min-w-0 flex-wrap gap-x-4 text-(length:--text-ui) text-text-2"><span class="min-w-0 wrap-anywhere"><span lang={locale}>{r.wgsl}</span> <code>{wgslCell.code}</code></span><span class="min-w-0 wrap-anywhere"><span lang={locale}>{r.glsl}</span> <code>{glslCell.code}</code></span></p>
+  {(spelled || entry.kind === 'builtin') && (
+    <dl class="ref-facts" lang={locale}>
+      {spelled && (
+        <>
+          <dt>{r.wgsl}</dt>
+          <dd><code>{spelled.wgsl}</code></dd>
+          <dt>{r.glsl}</dt>
+          <dd><code>{spelled.glsl}</code></dd>
+        </>
+      )}
+      {entry.kind === 'builtin' && (
+        <>
+          <dt>{r.validIn}</dt>
+          <dd>{stageText.length > 0 ? stageText.join(', ') : r.anyStage}</dd>
+        </>
+      )}
+    </dl>
   )}
   <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
 
@@ -265,11 +285,6 @@ const meta = `title:${entry.name} (${kindWord})`;
   <section>
     <h2 id="description" lang={locale}>{e.descriptionHeading}</h2>
     {entry.rest.length > 0 && <p lang="en"><Rich text={entry.rest} locale={locale} /></p>}
-    {entry.kind === 'builtin' && (
-      <p class="ref-entry-meta text-(length:--text-ui) text-text-3" lang={locale}>
-        {stageText.length > 0 ? <><span class="font-semibold text-text-2">{r.validIn}</span> {stageText.join(', ')}</> : r.anyStage}
-      </p>
-    )}
     {entry.oracle && (
       <p class="ref-entry-meta text-(length:--text-ui) text-text-3" lang={locale}>
         <Rich text={entry.oracle === 'evaluates' ? e.oracleEvaluates : e.oracleStub} locale={locale} />
@@ -331,6 +346,13 @@ const meta = `title:${entry.name} (${kindWord})`;
   .ref-entry-code { margin-block-start: 12px }
   .ref-entry-code code { font-size: var(--text-code) }
   .ref-entry-meta { margin-block-start: 10px }
+  /* The facts of a builtin under its summary: what each target writes and where the compiler
+     allows the id, as a label column and a value column in a frame of their own. */
+  .ref-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin-block-start: 16px; padding: 12px 16px; border: 1px solid var(--color-line-2); border-radius: 8px; font-size: var(--text-ui); color: var(--color-text-2) }
+  .ref-facts dt { font-weight: 600 }
+  .ref-facts dd { min-width: 0; overflow-wrap: anywhere }
+  .ref-facts code { font-size: var(--text-code) }
+  @media (max-width: 30rem) { .ref-facts { grid-template-columns: minmax(0, 1fr); gap: 2px } .ref-facts dt { margin-block-start: 6px } .ref-facts dt:first-child { margin-block-start: 0 } }
   .ref-entry-meta :global(a) { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
   .ref-entry-meta :global(a:hover) { color: var(--color-accent); text-decoration-color: currentColor }
   /* One parameter per row: the name, whether a call may leave it out, and every type the

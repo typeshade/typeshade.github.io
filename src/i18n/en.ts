@@ -392,8 +392,8 @@ export const en = {
           const suffixes = [
             ...(targets
               ? [
-                  ` in WGSL, GLSL and TypeShade: shader function reference`,
-                  ` in WGSL, GLSL and TypeShade: function reference`,
+                  ` in WGSL, GLSL and TypeShade: shader ${kind} reference`,
+                  ` in WGSL, GLSL and TypeShade: ${kind} reference`,
                   ` in WGSL, GLSL and TypeShade: reference`,
                   ` in WGSL, GLSL and TypeShade`,
                 ]
@@ -417,6 +417,11 @@ export const en = {
           targets.wgsl === targets.glsl
             ? `${name} in TypeShade compiles to ${targets.wgsl} in both WGSL and ${glsl}.`
             : `${name} in TypeShade compiles to ${targets.wgsl} in WGSL and ${targets.glsl} in ${glsl}.`,
+        // The same for a scalar, vector or matrix type: what each target writes for it.
+        typeLead: (name: string, targets: { readonly wgsl: string; readonly glsl: string }) =>
+          targets.wgsl === targets.glsl
+            ? `${name} is ${targets.wgsl} in both WGSL and ${glsl}.`
+            : `${name} is ${targets.wgsl} in WGSL and ${targets.glsl} in ${glsl}.`,
         kindNames: {
           type: 'Type',
           attribute: 'Attribute',

@@ -478,6 +478,10 @@ export const ko: Copy = {
           targets.wgsl === targets.glsl
             ? `TypeShade에서 ${name} 호출은 WGSL과 ${glsl} 모두에서 ${targets.wgsl} 형태로 컴파일됩니다.`
             : `TypeShade에서 ${name} 호출은 WGSL에서 ${targets.wgsl}, ${glsl}에서 ${targets.glsl} 형태로 컴파일됩니다.`,
+        typeLead: (name: string, targets: { readonly wgsl: string; readonly glsl: string }) =>
+          targets.wgsl === targets.glsl
+            ? `TypeShade의 ${name} 타입은 WGSL과 ${glsl} 모두에서 ${targets.wgsl} 형태로 씁니다.`
+            : `TypeShade의 ${name} 타입은 WGSL에서 ${targets.wgsl}, ${glsl}에서 ${targets.glsl} 형태로 씁니다.`,
         kindNames: {
           type: '타입',
           attribute: '어트리뷰트',
