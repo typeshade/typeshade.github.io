@@ -235,7 +235,7 @@ const GROUPS: Record<
     { key: 'calls', ids: ['callStatement', 'phonyAssign', 'mathAlias'] },
   ],
   classes: [
-    { key: 'classesAndConstructors', ids: ['baseValue', 'fieldlessClass', 'constructorNew'] },
+    { key: 'fieldsAndConstructors', ids: ['baseValue', 'fieldlessClass', 'constructorNew'] },
     { key: 'methods', ids: ['method', 'staticFn', 'thisAssign'] },
     { key: 'inheritance', ids: ['extendsSuper', 'abstractRow', 'implementsRow'] },
     { key: 'accessors', ids: ['accessModifiers', 'getter'] },
@@ -248,7 +248,7 @@ const GROUPS: Record<
   ],
   expressions: [
     { key: 'builtValues', ids: ['destructuring', 'spread', 'arrayLiteral', 'tuple'] },
-    { key: 'typeClaims', ids: ['literalUnion', 'brand', 'typeClaims'] },
+    { key: 'claims', ids: ['literalUnion', 'brand', 'typeClaims'] },
     { key: 'operators', ids: ['power', 'logicalScalar', 'logicalVector', 'optionalMember'] },
     {
       key: 'primitives',

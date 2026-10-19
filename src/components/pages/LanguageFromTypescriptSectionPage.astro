@@ -26,17 +26,19 @@ if (!group) throw new Error(`[from-typescript] src/lib/typescript-lowering.ts ha
 for (const row of group.rows) {
   if (!c.rows[row.id]) throw new Error(`[from-typescript] the row '${row.id}' has no line in the dictionary`);
 }
-// Each card is anchored by its row id in kebab case, `ternaryScalar` as `#ternary-scalar`.
+// Each card is anchored by its row id in kebab case, `ternaryScalar` as `#ternary-scalar`, and
+// each run by its key the same way. A run never takes the anchor of a card on the page.
 const anchor = (id: string): string => id.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 const words = c.sections[section];
 const page = c.pages[section];
 // The heading of each run of cards. A run the dictionary has no heading for stops the build.
 const headingOf = c.groups as Record<string, string>;
+const cardAnchors = new Set(group.rows.map((row) => anchor(row.id)));
 for (const g of group.groups) {
   if (!headingOf[g.key]) throw new Error(`[from-typescript] the group '${g.key}' has no heading in the dictionary`);
+  if (cardAnchors.has(anchor(g.key))) throw new Error(`[from-typescript] the group '${g.key}' has the anchor of a card`);
 }
-const slugOf = (key: string): string => key.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`);
-const headings: Heading[] = group.groups.map((g) => ({ depth: 2, slug: slugOf(g.key), text: headingOf[g.key]! }));
+const headings: Heading[] = group.groups.map((g) => ({ depth: 2, slug: anchor(g.key), text: headingOf[g.key]! }));
 // The trail names the set this page belongs to. Four of the six section names (Functions,
 // Control flow and the like) are also pages of the Language guide, so the h1 alone does not say
 // which page a reader is on.
@@ -50,26 +52,39 @@ const setPath = links.languageFromTypescript.href;
   title={page.title}
   description={page.description}
   editHref={editCopy(locale, 'language')}
+  headings={headings}
+  breadcrumbs={[
+    { name: setLabel, href: setPath },
+    { name: words.h, href: links[entry.link].href },
+  ]}
 >
+  <nav class="api-crumbs" aria-label={c.crumbs} lang={locale}>
+    <a href={localePath(locale, setPath)}>{setLabel}</a>
+  </nav>
   <h1>{words.h}</h1>
   <p><Rich text={words.p} locale={locale} /></p>
-  <ul class="construct-cards grid grid-cols-[repeat(auto-fill,minmax(min(100%,620px),1fr))] gap-4">
-    {group.rows.map((row) => (
-      <ConstructCard
-        locale={locale}
-        id={anchor(row.id)}
-        name={c.rows[row.id]!.name}
-        becomes={c.rows[row.id]!.p}
-        ts={row.ts}
-        tsTitle={c.paneTs}
-        emitTitle={c.paneWgsl}
-        wgsl={row.wgsl}
-        diagnostic={row.diagnostic}
-        refusedLabel={c.refused}
-        diagnosticTitle={c.paneDiagnostic}
-      />
-    ))}
-  </ul>
+  {group.groups.map((run) => (
+    <>
+      <h2 id={anchor(run.key)}>{headingOf[run.key]}</h2>
+      <ul class="construct-cards grid grid-cols-[repeat(auto-fill,minmax(min(100%,620px),1fr))] gap-4">
+        {run.rows.map((row) => (
+          <ConstructCard
+            locale={locale}
+            id={anchor(row.id)}
+            name={c.rows[row.id]!.name}
+            becomes={c.rows[row.id]!.p}
+            ts={row.ts}
+            tsTitle={c.paneTs}
+            emitTitle={c.paneWgsl}
+            wgsl={row.wgsl}
+            diagnostic={row.diagnostic}
+            refusedLabel={c.refused}
+            diagnosticTitle={c.paneDiagnostic}
+          />
+        ))}
+      </ul>
+    </>
+  ))}
 </Docs>
 
 <style>
