@@ -143,7 +143,7 @@ const sections = [
   // The lead under the name is the compiler's first sentence, so Description carries what
   // the sentence goes on to say, the stage the front end holds a builtin id to, and what the
   // CPU oracle does with the name. An entry with none of the three has no Description.
-  { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.kind === 'builtin' || entry.oracle !== null },
+  { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.oracle !== null },
   // The note's sections, each under its own heading, after Description and before Targets.
   ...(notes?.sections ?? []).map((n) => ({ id: n.id, label: n.heading.replace(/`/g, ''), show: true })),
   { id: 'targets', label: e.targets, show: entry.spelling !== null },
@@ -198,8 +198,19 @@ const meta = `title:${entry.name} (${kindWord})`;
   <h1><code>{entry.title}</code></h1>
   <p class="api-kind" lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
   <p class="api-summary" lang="en"><Rich text={entry.line} locale={locale} /></p>
-  {wgslCell && glslCell && 'code' in wgslCell && 'code' in glslCell && (
-    <p class="flex min-w-0 flex-wrap gap-x-4 text-(length:--text-ui) text-text-2"><span class="min-w-0 wrap-anywhere"><span lang={locale}>{r.wgsl}</span> <code>{wgslCell.code}</code></span><span class="min-w-0 wrap-anywhere"><span lang={locale}>{r.glsl}</span> <code>{glslCell.code}</code></span></p>
+  {entry.kind === 'builtin' && (
+    <dl class="ref-facts" lang={locale}>
+      {wgslCell && glslCell && 'code' in wgslCell && 'code' in glslCell && (
+        <>
+          <dt>{r.wgsl}</dt>
+          <dd><code>{wgslCell.code}</code></dd>
+          <dt>{r.glsl}</dt>
+          <dd><code>{glslCell.code}</code></dd>
+        </>
+      )}
+      <dt>{r.validIn}</dt>
+      <dd>{stageText.length > 0 ? stageText.join(', ') : r.anyStage}</dd>
+    </dl>
   )}
   <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
 
@@ -268,11 +279,6 @@ const meta = `title:${entry.name} (${kindWord})`;
   <section>
     <h2 id="description" lang={locale}>{e.descriptionHeading}</h2>
     {entry.rest.length > 0 && <p lang="en"><Rich text={entry.rest} locale={locale} /></p>}
-    {entry.kind === 'builtin' && (
-      <p class="ref-entry-meta text-(length:--text-ui) text-text-3" lang={locale}>
-        {stageText.length > 0 ? <><span class="font-semibold text-text-2">{r.validIn}</span> {stageText.join(', ')}</> : r.anyStage}
-      </p>
-    )}
     {entry.oracle && (
       <p class="ref-entry-meta text-(length:--text-ui) text-text-3" lang={locale}>
         <Rich text={entry.oracle === 'evaluates' ? e.oracleEvaluates : e.oracleStub} locale={locale} />
@@ -334,6 +340,13 @@ const meta = `title:${entry.name} (${kindWord})`;
   .ref-entry-code { margin-block-start: 12px }
   .ref-entry-code code { font-size: var(--text-code) }
   .ref-entry-meta { margin-block-start: 10px }
+  /* The facts of a builtin under its summary: what each target writes and where the compiler
+     allows the id, as a label column and a value column in a frame of their own. */
+  .ref-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin-block-start: 16px; padding: 12px 16px; border: 1px solid var(--color-line-2); border-radius: 8px; font-size: var(--text-ui); color: var(--color-text-2) }
+  .ref-facts dt { font-weight: 600 }
+  .ref-facts dd { min-width: 0; overflow-wrap: anywhere }
+  .ref-facts code { font-size: var(--text-code) }
+  @media (max-width: 30rem) { .ref-facts { grid-template-columns: minmax(0, 1fr); gap: 2px } .ref-facts dt { margin-block-start: 6px } .ref-facts dt:first-child { margin-block-start: 0 } }
   .ref-entry-meta :global(a) { color: var(--color-text-2); text-decoration: underline; text-decoration-color: var(--color-line-2); text-underline-offset: 3px }
   .ref-entry-meta :global(a:hover) { color: var(--color-accent); text-decoration-color: currentColor }
   /* One parameter per row: the name, whether a call may leave it out, and every type the
