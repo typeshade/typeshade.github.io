@@ -538,6 +538,23 @@ export function sidebar(
       href: localePath(locale, `/reference/${section.slug}/`),
       depth: 1,
     });
+    // On a function's own page, the functions of its family follow the kind one level in
+    // (maths, packing, textures). Only that family opens, so the sidebar never carries the
+    // 175 function names at once. The other kinds stay closed.
+    const name =
+      section.kind === 'function' && path?.startsWith(`/reference/${section.slug}/`)
+        ? path.slice(`/reference/${section.slug}/`.length).replace(/\/$/, '')
+        : '';
+    const group = name
+      ? section.groups.find((g) => g.entries.some((e) => e.name === name))?.entries
+      : undefined;
+    for (const e of group ?? [])
+      reference.push({
+        label: e.title,
+        href: localePath(locale, `/reference/${section.slug}/${e.name}/`),
+        depth: 2,
+        code: true,
+      });
   }
   // The diagnostic codes sit with the language reference: a code is what a reader of a
   // `"use typeshade"` file meets when the file does not compile.
