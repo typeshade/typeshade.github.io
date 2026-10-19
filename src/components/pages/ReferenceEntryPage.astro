@@ -21,6 +21,7 @@ import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import MappingTable from '../MappingTable.astro';
 import { textureForms } from '../../lib/texture-load-forms.ts';
+import { typeSpellings } from '../../lib/type-spellings.ts';
 import { irBuilderSlugByName } from '../../lib/api-nav.ts';
 import { facts } from '../../lib/examples.ts';
 import { languageExamples } from '../../lib/language-examples.ts';
@@ -58,9 +59,11 @@ const targets =
   entry.spelling?.wgsl && entry.spelling.glsl
     ? { wgsl: entry.spelling.wgsl, glsl: entry.spelling.glsl }
     : undefined;
+// A scalar, vector or matrix type names what each target writes for it the same way.
+const typeTargets = kind === 'type' ? typeSpellings(entry.name) : undefined;
 // A Math member is named as an author writes it, `Math.pow`, the way its h1 names it.
 const shownName = kind === 'math' ? entry.title : entry.name;
-const title = e.title(shownName, kindWord, targets !== undefined);
+const title = e.title(shownName, kindWord, targets !== undefined || typeTargets !== undefined);
 if (title.length < 45 || title.length > 60) {
   throw new Error(`[reference-entry] '${kind}/${name}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`);
 }
@@ -70,7 +73,7 @@ const plain = (text: string): string => text.replace(/`/g, '');
 const line = plain(entry.line);
 // With both targets' forms the lead names them and stays whole; the compiler's sentence after
 // it is what gets cut, so the description still says what the name does.
-const lead = targets ? e.targetsLead(shownName, targets) : undefined;
+const lead = targets ? e.targetsLead(shownName, targets) : typeTargets ? e.typeLead(shownName, typeTargets) : undefined;
 const composed = lead ? `${lead} ${line}` : e.description(shownName, kindWord, line);
 // A one-clause sentence leaves the description under the 70 characters the SEO checks want,
 // so the kind's own line fills it out, the way a category's does in the API reference.
