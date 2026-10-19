@@ -539,9 +539,10 @@ export function sidebar(
       ? path.slice(`/reference/${section.slug}/`.length).replace(/\/$/, '')
       : '';
     const group = name
-      ? section.groups.find((g) => g.entries.some((e) => e.name === name))
+      ? (section.groups.find((g) => g.entries.some((e) => e.name === name))?.entries ??
+        (section.entries.some((e) => e.name === name) ? section.entries : undefined))
       : undefined;
-    for (const e of group?.entries ?? [])
+    for (const e of group ?? [])
       reference.push({
         label: e.title,
         href: localePath(locale, `/reference/${section.slug}/${e.name}/`),
