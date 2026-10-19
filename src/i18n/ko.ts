@@ -98,7 +98,7 @@ const apiCategories: Record<string, { name: string; summary: string }> = {
   builtins: {
     name: '내장 함수',
     summary:
-      '셰이더에서 부르는 수학, 벡터, 텍스처 함수입니다. 이름 하나로 두 대상 모두에 나갑니다.',
+      '수학, 벡터, 텍스처 연산을 만드는 IR 빌더 함수입니다. 각 함수는 IR 노드를 반환합니다. 셰이더 파일은 언어 참조에 실린 내장 함수를 부릅니다.',
   },
   values: {
     name: '값',
@@ -327,6 +327,20 @@ export const ko: Copy = {
         const fitting = variants.find((suffix) => (heading + suffix).length <= 60);
         return fitting ? heading + fitting : heading;
       },
+      builderTitle: (heading: string) => {
+        const suffixes = [
+          ': typeshade/core/ir의 IR 빌더 함수, TypeShade 컴파일러 API',
+          ': typeshade/core/ir의 IR 빌더 함수, TypeShade API',
+          ': typeshade/core/ir의 IR 빌더 함수',
+        ];
+        return (
+          heading +
+          (suffixes.find((suffix) => (heading + suffix).length <= 60) ??
+            suffixes[suffixes.length - 1]!)
+        );
+      },
+      builderDescription: (name: string, summary: string) =>
+        `${name}, typeshade/core/ir의 IR 빌더 함수입니다. ${summary}`,
       categoryTitle: (name: string) => `${name} 분류, TypeShade 셰이더 API 참조 문서`,
       categoryDescription: (name: string, summary: string) =>
         `TypeShade API 참조의 ${name} 분류입니다. ${summary}`,
@@ -415,6 +429,8 @@ export const ko: Copy = {
       glsl,
       noForm: '이 대상에는 형태가 없습니다.',
       preEmit: '두 백엔드가 돌기 전에 `f32` 레인 두 개로 바뀝니다.',
+      formsP: `작성자는 어느 텍스처에든 같은 호출을 쓰고, 컴파일러가 타깃마다 필요한 형태를 씁니다. ${glsl}의 \`texelFetch\`는 부호 있는 좌표만 받고, 배열 레이어를 좌표 안에 넣으며, 1d 텍스처와 멀티샘플 텍스처가 없습니다.`,
+      formsColumns: ['텍스처', '작성하는 코드', 'WGSL', glsl],
       inTable: '내장 함수 표',
       irBuilderLink: (name: string) => `\`typeshade/core/ir\`의 \`${name}()\``,
       validIn: '쓰이는 곳',
@@ -1086,6 +1102,7 @@ export const ko: Copy = {
     npm: 'npm 패키지',
     newIssue: '문제 보고',
     radiance: 'Radiance',
+    typenn: 'TypeNN',
     license: `[${{ MIT: 'MIT 라이선스', 'Apache-2.0': 'Apache 라이선스 2.0' }[facts.license] ?? facts.licenseName}](license)에 따라 배포합니다.`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: '빌드한 커밋',
@@ -1463,7 +1480,8 @@ export const ko: Copy = {
     lead: `TypeShade를 쓰면 WebGPU 셰이더를 TypeScript로 작성할 수 있습니다. \`"use typeshade"\`로 표시한 파일은 WebGPU용 WGSL과 WebGL2용 ${glsl}으로 컴파일됩니다. 편집기는 같은 파일을 TypeScript로 읽습니다. 이 페이지는 이미 아는 타입, 함수, 모듈이 셰이더에서 무엇이 되는지 짚고 WebGPU API가 어디에서 시작되는지 보여 줍니다.`,
     startH: 'TypeScript 파일에서 시작합니다',
     startP:
-      '`"use typeshade"`는 파일을 TypeShade 소스로 표시합니다. 그 파일과 그 파일이 가져오는 TypeShade 파일은 한 프로그램으로 컴파일됩니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다.',
+      '`"use typeshade"`는 파일을 TypeShade 소스로 표시합니다. 그 파일과 그 파일이 가져오는 TypeShade 파일은 한 프로그램으로 컴파일됩니다. 함수, 매개변수, 반환 타입, 객체, import와 export처럼 익숙한 TypeScript 형태는 그대로 이어집니다. 두 번째 블록은 고정된 컴파일러가 이 파일에서 만든 WGSL이며 페이지를 빌드하는 동안 생성됩니다.',
+    startWgslLabel: '컴파일된 WGSL',
     modelH: '머릿속 모델',
     adds: 'TypeShade 추가 사항',
     model: [
@@ -1499,6 +1517,9 @@ export const ko: Copy = {
       ],
     ],
     playgroundLink: 'Playground에서 직접 작성 →',
+    typesH: 'WebGPU 타입',
+    typesP:
+      'WebGPU를 호출하는 호스트 코드에는 WebGPU 타입 선언이 필요합니다. TypeScript 5에서는 `@webgpu/types`를 설치하고 `tsconfig.json`의 `compilerOptions.types`에 추가합니다. TypeScript 6의 `dom` 라이브러리에는 그 선언의 일부만 들어 있으며 이때 쓸 방법은 [WebGPU 타입 README](webgpuTypes)에 있습니다. WebGL2 선언은 두 버전 모두 `dom` 라이브러리에 있습니다. `typeshade` 패키지의 선언에는 WebGPU 타입이 필요하지 않습니다. 런타임이 디바이스를 `object`로 받기 때문입니다.',
     orderH: '이 순서로 배우세요',
     orderItems: [
       '타입, 함수, 모듈 등 TypeScript의 형태를 익힙니다.',
@@ -2781,6 +2802,30 @@ export const ko: Copy = {
               '두 타깃 모두 64비트 부동소수점이 없어서 배정밀도 값은 단정밀도 워드 쌍입니다. 컴파일러가 무엇을 다시 쓰고 어떤 호출로 연산을 대신하는지 봅니다.',
           },
         },
+        /** The headings the cards of a section page run under, one per run of rows
+         *  (src/lib/typescript-lowering.ts). The page's outline lists them. */
+        crumbs: '현재 위치',
+        groups: {
+          constantsAndVariables: '상수와 변수',
+          typeDeclarations: '타입과 네임스페이스',
+          parametersAndNames: '매개변수와 이름',
+          kindsOfFunction: '함수의 종류',
+          calls: '호출',
+          fieldsAndConstructors: '필드와 생성자',
+          methods: '메서드',
+          inheritance: '상속과 인터페이스',
+          accessors: '접근 제어와 접근자',
+          mixinsAndGenerics: '믹스인과 제네릭',
+          conditionsAndLoops: '조건문과 반복문',
+          choosingAValue: '값 고르기',
+          leavingEarly: '일찍 빠져나가기',
+          builtValues: '객체, 배열, 튜플',
+          claims: '타입 주장',
+          operators: '연산자',
+          primitives: '문자열, 숫자, 불리언',
+          writingDoubles: 'double 쓰기',
+          whereItStops: 'double이 멈추는 곳',
+        },
         sections: {
           declarations: {
             h: '선언',
@@ -3623,6 +3668,12 @@ export const ko: Copy = {
     kernelSource: 'MNIST TypeShade 셰이더 소스',
     instructions: '학습 및 검증 안내',
     resultRecord: '전체 데이터 결과 기록',
+    typenn: {
+      h: 'TypeNN의 MNIST',
+      p: '이 가이드는 직접 작성한 커널로 소프트맥스 회귀를 학습합니다. TypeNN은 TypeShade 위에 만든 신경망 라이브러리입니다. 모델은 레이어를 쌓아 정의하고, 각 레이어는 TypeShade 커널 함수로 실행됩니다. 아래 코드는 은닉층이 하나인 모델을 정의하고 배치 단위로 학습합니다.',
+      lab: 'TypeNN 실습 도구 열기',
+      github: 'GitHub에서 TypeNN 보기',
+    },
   },
 
   notFound: {

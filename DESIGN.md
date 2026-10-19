@@ -706,7 +706,7 @@ The header is the one every library site has: the name on the left; Use TypeShad
 Language, API and Examples; then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
 groups (Documentation, Project, Languages) across the shell, then the licence, the copyright
 and the commit the page was built from. Project closes with the products built on TypeShade,
-each a link under its own name (Radiance), so a new product adds a row to that group and no
+each a link under its own name (Radiance, TypeNN), so a new product adds a row to that group and no
 group to the footer. Documentation carries 20 links and runs them down two
 columns 32px apart, and the three groups spread to the shell's two edges: 120px between one
 group and the next at a 768 viewport and 396px from 1440 up in English, 148px and 424px in
@@ -776,6 +776,11 @@ Korean page the chrome is Korean and the body English; the note above the
 body says so. The contract between the generator and the page is `src/lib/api-types.ts`, and
 the words around it are `docs.api` in every dictionary, with a name and a sentence for every
 category the extractor defines.
+
+A page of the language reference for a builtin with a form on both targets prints the two
+forms on one line under its summary, the way the API page prints its import line there, each
+form after its target's name: WGSL `pow(a, b)`, then GLSL ES 3.00 `pow(a, b)`. Targets keeps the same two cells. A builtin with
+no form on one target leaves the line out, and Targets says why.
 
 ### Reference notes
 

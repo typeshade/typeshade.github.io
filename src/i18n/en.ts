@@ -242,6 +242,23 @@ export const en = {
         const fitting = suffixes.find((suffix) => (base + suffix).length <= 60);
         return fitting ? base + fitting : base;
       },
+      // An IR builder for a builtin of the language (Builtins and Values, imported from
+      // typeshade/core/ir alone) is named as one, so its page and the builtin's page in the
+      // language reference do not read as the same answer.
+      builderTitle: (heading: string) => {
+        const suffixes = [
+          ': IR builder function in typeshade/core/ir, TypeShade',
+          ': IR builder function in typeshade/core/ir',
+          ': IR builder in typeshade/core/ir',
+        ];
+        return (
+          heading +
+          (suffixes.find((suffix) => (heading + suffix).length <= 60) ??
+            suffixes[suffixes.length - 1]!)
+        );
+      },
+      builderDescription: (name: string, summary: string) =>
+        `${name}, an IR builder function in typeshade/core/ir. ${summary}`,
       categoryTitle: (name: string) => `${name}, a category in the TypeShade API reference`,
       categoryDescription: (name: string, summary: string) =>
         `${name} in the TypeShade API reference. ${summary}`,
@@ -336,6 +353,9 @@ export const en = {
       glsl,
       noForm: 'No form on this target.',
       preEmit: 'Rewritten into a pair of `f32` lanes before either backend runs.',
+      // Under Targets, for a builtin whose form depends on the texture it reads.
+      formsP: `An author writes the same call on every texture, and the compiler writes what each target needs. ${glsl}'s \`texelFetch\` takes a signed coordinate, carries an array layer inside it and has no 1d or multisampled texture.`,
+      formsColumns: ['Texture', 'You write', 'WGSL', glsl],
       inTable: 'Builtin table',
       // The See also row to the compiler's IR builder of the same name (docs.api.languageNote).
       irBuilderLink: (name: string) => `\`${name}()\` in \`typeshade/core/ir\``,
@@ -1115,6 +1135,7 @@ export const en = {
     npm: 'npm package',
     newIssue: 'Report a problem',
     radiance: 'Radiance',
+    typenn: 'TypeNN',
     license: `Released under the [${facts.licenseName}](license).`,
     copyright: `Copyright © ${facts.year} ${facts.author}`,
     builtFrom: 'Built from commit',
@@ -1526,7 +1547,8 @@ export const en = {
     lead: `TypeShade lets you write WebGPU shaders in TypeScript. A file marked with \`"use typeshade"\` compiles to WGSL for WebGPU and to ${glsl} for WebGL2. Your editor reads the same file as TypeScript. This page maps the types, functions and modules you know to what a shader needs, and shows where the WebGPU API begins.`,
     startH: 'Start with a TypeScript file',
     startP:
-      '`"use typeshade"` marks the file as TypeShade source, and the file compiles with the TypeShade files it imports as one program. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports.',
+      '`"use typeshade"` marks the file as TypeShade source, and the file compiles with the TypeShade files it imports as one program. The rest of the program still uses familiar TypeScript-shaped constructs: functions, parameters, return types, objects, imports and exports. The second block is the WGSL the pinned compiler writes for this file, produced while the page is built.',
+    startWgslLabel: 'The WGSL it compiles to',
     modelH: 'The mental model',
     adds: 'TypeShade adds',
     model: [
@@ -1562,6 +1584,9 @@ export const en = {
       ],
     ],
     playgroundLink: 'Try it in the Playground →',
+    typesH: 'WebGPU types',
+    typesP:
+      'Host code that calls WebGPU needs the WebGPU type declarations. With TypeScript 5, install `@webgpu/types` and add it to `compilerOptions.types` in `tsconfig.json`. TypeScript 6 carries only part of them in its `dom` library, and the [WebGPU types README](webgpuTypes) says what to use there. WebGL2 is in the `dom` library of both versions. The declarations of the `typeshade` package need no WebGPU types, because its runtime takes the device as an `object`.',
     orderH: 'Learn in this order',
     orderItems: [
       'Learn the TypeScript shape: types, functions and modules.',
@@ -2636,6 +2661,30 @@ export const en = {
               'Neither target has a 64-bit float, so a double is a pair of single words. What the compiler rewrites, and the calls it puts in place of the arithmetic.',
           },
         },
+        /** The headings the cards of a section page run under, one per run of rows
+         *  (src/lib/typescript-lowering.ts). The page's outline lists them. */
+        crumbs: 'Breadcrumbs',
+        groups: {
+          constantsAndVariables: 'Constants and variables',
+          typeDeclarations: 'Types and namespaces',
+          parametersAndNames: 'Parameters and names',
+          kindsOfFunction: 'Kinds of function',
+          calls: 'Calls',
+          fieldsAndConstructors: 'Fields and constructors',
+          methods: 'Methods',
+          inheritance: 'Inheritance and interfaces',
+          accessors: 'Access and accessors',
+          mixinsAndGenerics: 'Mixins and generics',
+          conditionsAndLoops: 'Conditions and loops',
+          choosingAValue: 'Choosing a value',
+          leavingEarly: 'Leaving early',
+          builtValues: 'Objects, arrays and tuples',
+          claims: 'Type claims',
+          operators: 'Operators',
+          primitives: 'Strings, numbers and booleans',
+          writingDoubles: 'Writing a double',
+          whereItStops: 'Where a double stops',
+        },
         sections: {
           declarations: {
             h: 'Declarations',
@@ -3495,6 +3544,12 @@ export const en = {
     kernelSource: 'MNIST TypeShade shader source',
     instructions: 'Training and validation instructions',
     resultRecord: 'Full-dataset result record',
+    typenn: {
+      h: 'MNIST in TypeNN',
+      p: 'This guide trains a softmax regression with kernels written by hand. TypeNN is a neural-network library built on TypeShade. A model is a stack of layers, and each layer runs as TypeShade kernel functions. The code below defines a model with one hidden layer and trains it on batches.',
+      lab: 'Open the TypeNN lab',
+      github: 'TypeNN on GitHub',
+    },
   },
 
   notFound: {
