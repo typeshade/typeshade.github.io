@@ -149,6 +149,15 @@ keeps its three groups; nothing else on the page moves"). A bare number is a tar
 hit the wrong way: given a footer height, one reached it by laying the footer out in seven
 columns. Measure or screenshot what comes back before the pull request is marked ready.
 
+The owner's rules, given on 2026-10-13, for every session:
+
+- Run at most three sub-agents at the same time. Start the next one only when one has finished.
+- Stop a sub-agent as soon as its report is in. A sub-agent stops every server and background
+  process that it started before it reports.
+- Give every task its pull request first. Push the first commit early and open a draft pull
+  request at once. Push each later commit to the same branch, so that no work stays only in the
+  container.
+
 ## Tracking requests
 
 Keep a list of every distinct request the maintainer makes in a session. Before a batch of

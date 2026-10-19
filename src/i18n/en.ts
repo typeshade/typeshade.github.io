@@ -353,6 +353,9 @@ export const en = {
       glsl,
       noForm: 'No form on this target.',
       preEmit: 'Rewritten into a pair of `f32` lanes before either backend runs.',
+      // Under Targets, for a builtin whose form depends on the texture it reads.
+      formsP: `An author writes the same call on every texture, and the compiler writes what each target needs. ${glsl}'s \`texelFetch\` takes a signed coordinate, carries an array layer inside it and has no 1d or multisampled texture.`,
+      formsColumns: ['Texture', 'You write', 'WGSL', glsl],
       inTable: 'Builtin table',
       // The See also row to the compiler's IR builder of the same name (docs.api.languageNote).
       irBuilderLink: (name: string) => `\`${name}()\` in \`typeshade/core/ir\``,

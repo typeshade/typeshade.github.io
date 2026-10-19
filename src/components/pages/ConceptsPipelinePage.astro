@@ -1,8 +1,8 @@
 ---
 // Concepts: the shader pipeline, at /guide/concepts/the-pipeline/. The steps of a draw, what
-// each stage is handed and what it produces, and how an entry point signature maps onto that. Copy lives in
-// `concepts.pipeline` (src/i18n/en.ts, src/i18n/ko.ts); the code samples are not copy, so
-// they stay here.
+// each stage is handed and what it produces, and how an entry point signature maps onto that.
+// Copy lives in `concepts.pipeline` (src/i18n/en.ts, src/i18n/ko.ts). The code samples are
+// not copy: src/lib/pipeline-samples.ts holds them and compiles them while the page is built.
 import Docs from '../../layouts/Docs.astro';
 import ConceptDoc from '../ConceptDoc.astro';
 import Rich from '../Rich.astro';
@@ -10,6 +10,7 @@ import TypeShadeCode from '../TypeShadeCode.astro';
 import { copyFor, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
 import { slugify } from '../../lib/slug.ts';
+import { computeSample, entrySample, interpolationSample } from '../../lib/pipeline-samples.ts';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
@@ -38,21 +39,21 @@ const headings = [c.drawH, c.stagesH, c.entryH, c.interpolationH, c.computeH, c.
   <section>
     <h2 id={slugify(c.entryH)}>{c.entryH}</h2>
     <p><Rich text={c.entryP} locale={locale} /></p>
-    <TypeShadeCode code={`class VsIn {\n  @location(0) position: vec3\n  @location(1) uv: vec2\n}\n\n@vertex\nexport function vs(@builtin("vertex_index") vid: u32, vin: VsIn): vec4 {\n  return camera.view * vec4(vin.position, 1)\n}\n\n@fragment\nexport function fs(@builtin("position") pid: vec4): vec4 {\n  return vec4(pid.x, 0, 0, 1)\n}`} />
+    <TypeShadeCode code={entrySample} />
     <p>{c.entryNote}</p>
   </section>
 
   <section>
     <h2 id={slugify(c.interpolationH)}>{c.interpolationH}</h2>
     <p>{c.interpolationP}</p>
-    <TypeShadeCode code={`class VsOut {\n  @builtin("position") pos: vec4\n  @location(0) uv: vec2\n  @location(1) id: u32\n  @location(2) @interpolate("flat") tint: vec3\n}`} />
+    <TypeShadeCode code={interpolationSample} />
     <p><Rich text={c.interpolationNote} locale={locale} /></p>
   </section>
 
   <section>
     <h2 id={slugify(c.computeH)}>{c.computeH}</h2>
     <p><Rich text={c.computeP} locale={locale} /></p>
-    <TypeShadeCode code={`declare const pixels: storage<array<f32>, "read_write">\n\n@compute([64, 1, 1])\nexport function paint(@builtin("global_invocation_id") gid: vec3u) {\n  pixels[gid.x] = camera.pos.x\n}`} />
+    <TypeShadeCode code={computeSample} />
   </section>
 
   <section>
