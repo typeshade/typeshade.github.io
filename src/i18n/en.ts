@@ -1584,6 +1584,9 @@ export const en = {
       ],
     ],
     playgroundLink: 'Try it in the Playground →',
+    typesH: 'WebGPU types',
+    typesP:
+      'Host code that calls WebGPU needs the WebGPU type declarations. With TypeScript 5, install `@webgpu/types` and add it to `compilerOptions.types` in `tsconfig.json`. TypeScript 6 carries only part of them in its `dom` library, and the [WebGPU types README](webgpuTypes) says what to use there. WebGL2 is in the `dom` library of both versions. The declarations of the `typeshade` package need no WebGPU types, because its runtime takes the device as an `object`.',
     orderH: 'Learn in this order',
     orderItems: [
       'Learn the TypeScript shape: types, functions and modules.',
