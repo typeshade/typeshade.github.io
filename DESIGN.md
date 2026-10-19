@@ -762,8 +762,7 @@ every name in it that has one.
 The sidebar's Reference group opens with the reference's own index and then lists the
 category index pages; on a page of one category, that category's members follow it one level
 in. The language reference's kinds open the same way, on an entry's own page. A function opens
-its family only (maths, packing, textures). A kind that is one list, the types and the Math
-members, opens whole. Compiler internals and Language service close the group, and the
+its family only (maths, packing, textures). The other kinds stay closed. Compiler internals and Language service close the group, and the
 internals' sections open under their overview the same way, only on their own pages, so the
 sidebar never carries every page of the reference at once, and the page a reader is on is
 scrolled into view inside the sidebar's own scroller. The guide links into the reference the way MDN links a function's first mention: the

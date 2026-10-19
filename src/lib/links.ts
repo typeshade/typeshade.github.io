@@ -538,15 +538,15 @@ export function sidebar(
       href: localePath(locale, `/reference/${section.slug}/`),
       depth: 1,
     });
-    // On an entry's own page, the entries of its group follow the kind one level in: the
-    // family of a function (maths, packing, textures), or the whole of a kind that is one
-    // list. Only that group opens, so the sidebar never carries a kind's 175 names at once.
-    const name = path?.startsWith(`/reference/${section.slug}/`)
-      ? path.slice(`/reference/${section.slug}/`.length).replace(/\/$/, '')
-      : '';
+    // On a function's own page, the functions of its family follow the kind one level in
+    // (maths, packing, textures). Only that family opens, so the sidebar never carries the
+    // 175 function names at once. The other kinds stay closed.
+    const name =
+      section.kind === 'function' && path?.startsWith(`/reference/${section.slug}/`)
+        ? path.slice(`/reference/${section.slug}/`.length).replace(/\/$/, '')
+        : '';
     const group = name
-      ? (section.groups.find((g) => g.entries.some((e) => e.name === name))?.entries ??
-        (section.entries.some((e) => e.name === name) ? section.entries : undefined))
+      ? section.groups.find((g) => g.entries.some((e) => e.name === name))?.entries
       : undefined;
     for (const e of group ?? [])
       reference.push({
