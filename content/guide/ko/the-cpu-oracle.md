@@ -1,8 +1,8 @@
 ---
 id: the-cpu-oracle
-source: e278d05ae3957f5ba1a244778a6db05587b6129eb56cd15881a38cd72a7ca119
-sourceLine: 1384
-rules: 8.22 Xt6mPRor2ls0KSvun5CLtdZy-RuV8jM9dJw6CqkTdwU=, 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
+source: 55fea796dba93229955fa0dd605947610c78a9f6a10b28e2d56c12a3a500eb68
+sourceLine: 1385
+rules: 8.22 TYI0PqIhcozEl6DcSWj0gR3Y9FC0Hy0CjF1pTnLQ84A=, 7.2 onO98E-yRQ3RftA44lVmgPmSW7ZkCd7rYrJGgFS8EI4=, 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
 ---
 
 이 절을 다 읽고 나면 모듈을 CPU에서 배정밀도로 실행하고, 그 결과를 GPU가 만들어 낸 값과
@@ -298,6 +298,19 @@ const h = height([0.5, 0.5], [1, 0.5, 2, 0.25]) // a number
 평평한 루프 하나 `for (let i: u32 = 0; i < w * h; i++)`로 쓰고, 인덱스에서 `x = i % w`와
 `y = i / w`를 구합니다.
 
+커널 함수는 `@workgroup_size([128])`로 루프의 워크그룹 크기를 정할 수 있습니다. 배열에 정수 하나를
+쓰며, `@compute([128])`가 진입점의 크기를 정하는 방식과 같습니다(`docs/use-typeshade-surface.md`
+§3, §65). 리덕션을 하는 루프는 언제나 256 크기의 워크그룹으로 돌기 때문에, 이런 함수 안의
+리덕션은 `TS8077`로 거부됩니다. 리덕션은 따로 함수를 만들어 옮깁니다.
+
+커널 함수는 텍스처도 받을 수 있습니다(`docs/use-typeshade-surface.md` §65). `textureLoad`로 읽는
+`texture_2d<f32>`가 하나이고, 2D 스토리지 텍스처 `texture_storage_2d<F, A>`가 다른 하나입니다.
+스토리지 텍스처를 받으면 그 함수는 커널 함수가 되며, 루프는 `vec2u(i % w, i / w)`에 값을
+저장합니다. 스토리지 텍스처는 `device.texture({ size, format, storage: true })`로 만들고, 함수는 그
+디바이스의 `fuse()` 안에서 부릅니다. 텍스처 호출은 WebGPU에서 실행되고, WebGPU가 없으면 CPU
+tier에서 실행됩니다. CPU tier의 디바이스는 텍스처를 메모리에 두며, `ImageData`는 그곳으로
+복사됩니다. WebGL2는 아직 이 호출을 실행하지 않습니다.
+
 ### 호출 체인을 디스패치 하나로
 
 같은 데이터에 커널 함수를 여러 번 부르는 호스트는 호출마다 디스패치 하나와 제출 하나를 씁니다.
@@ -333,7 +346,7 @@ import { resident } from 'typeshade/runtime'
 import { fuse } from 'typeshade/fuse'
 import { add, mul, relu } from './ops.shade.ts'
 
-const out = resident(new Float32Array(n)) // a, b and c are resident arrays too
+const out = resident(n, 'f32') // zeros, with no upload; a, b and c are resident arrays too
 const report = await fuse((scope) => {
   const t = scope.scratch(n)
   const u = scope.scratch(n)
@@ -352,6 +365,11 @@ const y = await out.read()
 버퍼가 만들어지지 않고 그 `read()`는 오류입니다. 셋째, 합계가 필요하면 체인을 리덕션으로
 끝냅니다. 스코프의 마지막 호출인 `total(u)`는 앞의 호출들을 자기 루프 안으로 가져가고, 리덕션
 뒤에는 어떤 호출도 그룹에 합쳐지지 않습니다.
+
+본문 안의 진입점 호출(`@compute`)도 기록됩니다. 이 호출은 본문이 만든 순서대로 혼자 디스패치
+하나로 실행됩니다. 어떤 커널 호출도 이 호출에 합쳐지지 않고, 이 호출도 다른 그룹에 합쳐지지
+않습니다. 크기가 없는 스토리지 배열에는 `resident(...)` 값을 넘기며, 그 자리에 호스트 배열을 넘기면
+`TypeError`입니다.
 
 호출이 바로 앞 호출과 떨어져 자기 디스패치로 실행되는 경우는 다음과 같습니다. 이웃을 읽는 경우
 (`t[i - 1]`, `t[i ^ 1]`), 다른 인덱스에 쓰는 경우(`out[2 * i]`), 앞 호출이 읽는 것을 쓰는 경우,

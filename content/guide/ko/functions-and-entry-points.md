@@ -1,8 +1,7 @@
 ---
 id: functions-and-entry-points
-source: 0eb77fdf24b40f5f916813b6d8737070d04275acd5c0dbf1655c77f2ab2ce973
+source: a6bf3910702cfaeb61cd5426c328d0cb1754a6384855c231e0268ea74055235e
 sourceLine: 514
-rules: 2.1 9eWN6RxoCWF7PMo_T1USzBA1CAyjigmKnoVwzLkeJ4Q=, 3.2 9-wLkxopPgqhKoXl0afzqsDa3zUi6T6yoxXjhOBg0qc=, 3.4 qTsvqHCf4ZNlv5OA0ks54fZEJ2-O_jR3l_uT-MjDSqw=, 9.5 0ahOuIeiTVBHHjA-1IXXW_l9GsFrF8XtZveADRO2qNw=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=, 12.6 kuInDVEKCI_Qu_9zVLzT--W8UeBj0WgdX22sRWA_VNY=
 ---
 
 이 페이지를 마치면 헬퍼를 선언해 다른 함수에서 부르고, 버텍스, 프래그먼트, 컴퓨트 스테이지의
@@ -199,11 +198,12 @@ export function fs(@location(0) uv: vec2): vec4 {
 
 ### 모듈 안 함수의 이름
 
-함수는 두 타깃 모두에서 선언한 이름 그대로 생성됩니다. 진입점은 언제나 이름을 유지합니다.
-호스트가 그 이름으로 파이프라인을 만들기 때문입니다. `use`처럼 WGSL이 예약한 이름을 가진
-함수는 `TS8068`로 거부되며, 이 진단은 해당 타깃을 알려 줍니다.
+함수는 두 타깃 모두에서 선언한 이름 그대로 생성됩니다. 다만 그 타깃이 이름을 쓸 수 없으면
+다릅니다. WGSL의 `use`처럼 타깃이 예약한 이름을 가진 함수는 그 타깃에서 `use_`로 생성됩니다.
+내장 함수와 이름이 같은 진입점도 새 이름으로 생성됩니다. 기록에 두 이름이 모두 있으므로,
+호스트는 여전히 작성한 이름으로 파이프라인을 만듭니다.
 
-컴파일러가 헬퍼에 다른 이름을 붙이는 경우는 두 가지입니다. 첫째, 직접 만든 `fract`처럼 내장
+컴파일러가 헬퍼에 다른 이름을 붙이는 경우는 두 가지가 더 있습니다. 첫째, 직접 만든 `fract`처럼 내장
 함수와 이름이 같은 헬퍼는 `fract_`로 생성되고, 그 선언을 거치는 모든 호출도 함께 바뀝니다.
 WGSL에서는 내장 함수가 가려지고, GLSL ES 3.00은 다시 선언하는 것을 거부하기 때문입니다. 둘째,
 한 프로그램의 두 파일이 같은 이름의 비공개 헬퍼를 각각 선언하면 두 번째 헬퍼는 자기만의 이름으로
