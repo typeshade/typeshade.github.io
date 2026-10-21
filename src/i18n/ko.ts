@@ -256,6 +256,8 @@ export const ko: Copy = {
         gpuTypes: 'GPU 타입',
         resources: '리소스',
         stages: '셰이더 스테이지',
+        algorithms: '알고리즘',
+        random: '난수',
       },
       mapping: {
         fromTypescript: 'TypeScript에서',
@@ -526,7 +528,7 @@ export const ko: Copy = {
         attribute: {
           name: '어트리뷰트',
           summary: '진입점을 표시하고 필드를 파이프라인에 연결하는 데코레이터입니다.',
-          description: `컴파일러가 실제로 읽고 처리하는 데코레이터 ${facts.languageAttributes}개입니다. 진입점을 표시하거나, 필드를 파이프라인에 연결하거나, 스테이지 사이의 값과 출력의 성질을 정하거나, 진입점이 검사 결과를 보고하는 방식을 정합니다.`,
+          description: `컴파일러가 실제로 읽고 처리하는 데코레이터 ${facts.languageAttributes}개입니다. 진입점을 표시하거나, 워크그룹 크기를 정하거나, 필드를 파이프라인에 연결하거나, 스테이지 사이의 값과 출력의 성질을 정하거나, 진입점이 검사 결과를 보고하는 방식을 정합니다.`,
         },
         builtin: {
           name: '내장 값',
@@ -1762,12 +1764,12 @@ export const ko: Copy = {
       ],
       importH: '모듈 가져오기',
       importP:
-        '호스트는 `typeshade/vite` 플러그인으로 `.shade.ts`를 자신의 TypeScript에 가져와, 모듈이 내보내는 것을 부를 수도 있습니다. 헬퍼는 CPU에서 실행됩니다. `@compute` 진입점은 `await entry(bindings, workgroups)`로 부르고, 전체 화면 `@fragment` 진입점은 `entry(canvas, bindings)`로 WebGPU, WebGL2, CPU 순서로 그립니다. 이때 위 표에서 애플리케이션이 하던 일은 런타임이 맡습니다. 첫 호출에서 디바이스를 요청해 이후 호출과 함께 쓰고, 진입점마다 파이프라인을 만들며, 호출이 넘긴 객체로 바인딩을 채우고, 컴퓨트 진입점이 쓴 값을 다시 읽어 옵니다.',
+        '호스트는 `typeshade/vite` 플러그인으로 `.shade.ts`를 자신의 TypeScript에 가져와, 모듈이 내보내는 것을 부를 수도 있습니다. 헬퍼는 CPU에서 실행됩니다. `@compute` 진입점은 `await entry(bindings, workgroups)`로 부릅니다. `workgroups`는 `{ indirect, offset }`일 수도 있습니다. 이때는 앞선 호출이 `Resident<Uint32Array>`의 `offset` 원소에 쓴 개수 세 개를 호출이 실행될 때 읽습니다. 전체 화면 `@fragment` 진입점은 `entry(canvas, bindings)`로 WebGPU, WebGL2, CPU 순서로 그립니다. 이때 위 표에서 애플리케이션이 하던 일은 런타임이 맡습니다. 첫 호출에서 디바이스를 요청해 이후 호출과 함께 쓰고, 진입점마다 파이프라인을 만들며, 호출이 넘긴 객체로 바인딩을 채우고, 컴퓨트 진입점이 쓴 값을 다시 읽어 옵니다.',
       loadH: '프로그램 불러오기',
       loadP:
         '엔진이나 렌더러처럼 프레임을 직접 그리는 호스트는 컴파일된 프로그램을 프로그램 런타임 `typeshade/runtime`에 불러와 실행합니다. 프로그램은 매니페스트라는 객체 하나로 전달되며, 여기에 셰이더 코드와 바인딩, 진입점이 모두 들어 있습니다. `packModule(compile(source).module)`이 이 객체를 돌려주고, 호스트에서 모듈을 가져오면 기본 내보내기로 받습니다. 평범한 JSON이어서 빌드가 디스크에 그대로 쓸 수도 있습니다.',
       loadOwnsP:
-        '이때 위 표에서 애플리케이션이 하던 일은 대부분 런타임이 맡습니다. `createRuntime({ device })`에 애플리케이션의 `GPUDevice`를 넘기면 그 디바이스를 쓰되 파괴하지는 않고, 넘기지 않으면 프로그램에 필요한 기능을 갖춘 디바이스를 직접 요청합니다. 파이프라인과 바인드 그룹은 매니페스트에 적힌 레이아웃대로 만듭니다. 그리기나 디스패치가 이름으로 넘긴 값으로 바인딩을 채우고, 버퍼와 텍스처, 샘플러도 런타임이 만듭니다. 애플리케이션은 컴파일러가 알 수 없는 것을 정합니다. 파이프라인별 타깃과 깊이, 토폴로지, 그리고 프레임을 언제 그릴지가 여기에 속합니다. 애플리케이션이 직접 만든 `GPUBuffer`, `GPUTexture`, `GPUSampler`는 그대로 바인딩되고, 프레임의 `encoder`와 패스의 `raw` 인코더에는 애플리케이션 자신의 명령을 기록할 수 있습니다.',
+        '이때 위 표에서 애플리케이션이 하던 일은 대부분 런타임이 맡습니다. `createRuntime({ device })`에 애플리케이션의 `GPUDevice`를 넘기면 그 디바이스를 쓰되 파괴하지는 않고, 넘기지 않으면 프로그램에 필요한 기능과 한도, `createRuntime({ limits })`가 정한 한도를 갖춘 디바이스를 직접 요청합니다. 파이프라인과 바인드 그룹은 매니페스트에 적힌 레이아웃대로 만듭니다. 그리기나 디스패치가 이름으로 넘긴 값으로 바인딩을 채우고, 버퍼와 텍스처, 샘플러도 런타임이 만듭니다. 애플리케이션은 컴파일러가 알 수 없는 것을 정합니다. 파이프라인별 타깃과 깊이, 토폴로지, 그리고 프레임을 언제 그릴지가 여기에 속합니다. 애플리케이션이 직접 만든 `GPUBuffer`, `GPUTexture`, `GPUSampler`는 그대로 바인딩되고, 프레임의 `encoder`와 패스의 `raw` 인코더에는 애플리케이션 자신의 명령을 기록할 수 있습니다.',
       loadOptionsP:
         '프로그램의 override 값은 이름으로 지정합니다. 그릴 때는 `RenderState.constants`, 디스패치할 때는 `Program.compute()`의 `constants` 옵션으로 넘깁니다. 컴퓨트 파이프라인은 진입점의 기본값과 선택한 값으로 `workgroupShape`를 결정하므로 디스패치 수를 계산하기 전에 이 값을 읽습니다. 런타임은 선택한 모양이 현재 WebGPU 디바이스의 한도 안에 있는지 확인합니다. `Frame.submit()`은 기록한 진입점마다 콘솔 줄 수와 버퍼 공간이 부족해 기록하지 못한 호출 수를 돌려줍니다. 콘솔 sink를 쓰는 호스트는 이 수치로 누락된 호출을 알릴 수 있습니다.',
       loadEmitP:
@@ -1780,6 +1782,8 @@ export const ko: Copy = {
         '셰이더에서 필드 이름을 바꾸면 다음 빌드에서 리플렉션이 따라 바뀌고, 리플렉션을 읽는 호스트 코드도 함께 따라옵니다.',
       runtimeH: '런타임',
       runtimeP: `호스트가 컴파일하는 모듈은 브라우저에서 TypeShade의 어떤 코드도 필요로 하지 않습니다. 컴파일러는 셰이더 텍스트가 만들어지는 곳에서 돌아갑니다. 빌드, 테스트, 그리고 [언어 서비스](languageService)를 거친 편집기가 그런 곳입니다. 브라우저에 도달하는 것은 생성된 셰이더 소스와, 애플리케이션이 원래 쓰던 호스트 코드뿐입니다. 호스트가 가져오는 모듈은 \`typeshade/runtime\`을 번들에 싣습니다. 호출은 이 코드에서 실행되고, 컴파일러는 번들에 들어가지 않습니다. Vite 플러그인이 번들을 만들 때 모듈을 컴파일하기 때문입니다. 호출은 브라우저가 가진 첫 tier(호출이 실행되는 백엔드)에서 실행되며, 순서는 WebGPU, WebGL2, CPU입니다. \`configure({ prefer })\`는 compute 진입점과 커널 함수가 시도할 tier의 순서를 정하고, \`Resident\`는 호출과 호출 사이에 배열을 GPU에 둡니다. 프로그램 런타임에 프로그램을 불러오는 호스트도 같은 \`typeshade/runtime\`과 매니페스트만 싣고, 컴파일러는 싣지 않습니다. TypeShade가 설치하는 런타임 의존성은 ${facts.runtimeDeps}개, \`compile()\`과 언어 서비스가 소스를 읽을 때 쓰는 TypeScript뿐입니다.`,
+      runtimeOwnerP:
+        '호스트는 `typeshade/runtime`의 `createDevice()`로 호출의 소유자를 따로 열 수도 있습니다(규칙 11.8). 소유자는 `prefer`에서 처음 열리는 tier나 호스트가 이미 가진 `GPUDevice`, 또는 프로그램 런타임의 디바이스(`createDevice({ runtime })`) 위에 열립니다. `device.array()`는 그 호출이 받는 `Resident` 배열을 만들고, `device.fuse()`는 호출 체인을 그 디바이스에서 계획 하나로 실행합니다. `Resident` 하나는 처음부터 끝까지 소유자 하나에 속하므로, 호출은 다른 소유자의 배열을 거부합니다. 소유자는 에뮬레이션 배정밀도의 플레이버(`createDevice({ fp64Flavor })`)와, 긴 커널의 청크 하나가 쓸 수 있는 시간(`createDevice({ timeBudgetMs })`)도 정합니다. `configure()`, `resident()`, `fuse()`는 이전처럼 기본 소유자를 다룹니다.',
       webgl2H: 'WebGL2에서 달라지는 것',
       webgl2P: '같은 소스가 WebGL2용으로도 컴파일되고, 호스트 쪽 모습은 달라집니다.',
       webgl2Items: [
@@ -2109,6 +2113,10 @@ export const ko: Copy = {
         'loop-reduction': '루프 안의 리덕션',
         'loop-struct-array': '구조체 배열을 도는 루프',
         'loop-on-cpu': 'CPU에서 도는 루프',
+        'kernel-array-methods': '커널 함수 안의 배열 메서드',
+        'kernel-image-invert': '이미지를 쓰는 커널',
+        'kernel-push': 'push로 덧붙이는 커널',
+        'kernel-set-unique': 'Set에 고유한 라벨을 모으는 커널',
         'private-state': '인보케이션별 상태',
         'workgroup-scratch': '워크그룹 스크래치 메모리',
         'workgroup-reduce': '워크그룹 리덕션',
@@ -2242,6 +2250,14 @@ export const ko: Copy = {
         'loop-struct-array': '파티클 한 걸음을 `array<Particle>`을 도는 루프로 씁니다.',
         'loop-on-cpu':
           '반복이 서로 독립인지 보는 증명이 거부하는 루프를 규칙마다(R1부터 R6까지) 하나씩 둡니다.',
+        'kernel-array-methods':
+          '`sumOfSquares`, `scale`, `firstAbove`는 TypeScript 개발자가 먼저 쓰는 `Array.prototype`의 메서드로 배열을 줄이고, 쓰고, 찾습니다(변경 0079).',
+        'kernel-image-invert':
+          '`invert`는 `texture_2d<f32>`를 읽고 `texture_storage_2d`에 저장하므로 커널 함수입니다(규칙 8.22, 변경 0077).',
+        'kernel-push':
+          '`strong`은 문턱값보다 큰 원소의 인덱스를 `out.push(i)`로 덧붙입니다(변경 0078).',
+        'kernel-set-unique':
+          '`labels`는 영이 아닌 픽셀의 라벨을 `seen.add(...)`로 `Set<u32>`에 넣고(변경 0080), `latest`는 키마다 마지막에 넣은 값을 `Map<u32, f32>`에 둡니다.',
         'private-state':
           '최상위의 평범한 `let seed: u32`는 WGSL의 `var<private>`입니다. 인보케이션마다 복사본이 하나씩 있고, 그 인보케이션의 모든 함수가 함께 씁니다.',
         'workgroup-scratch':
@@ -2307,6 +2323,7 @@ export const ko: Copy = {
         'host-helper': 'CPU와 GPU가 함께 쓰는 헬퍼',
         'host-program': '컴파일된 프로그램 실행',
         'loop-fuse': '커널 호출 체인 합치기',
+        'host-set-unique': 'Set과 Map에 모으기',
       },
       descriptions: {
         'host-draw': '전체 화면 `@fragment` 진입점과 이를 그리는 호스트입니다.',
@@ -2320,6 +2337,8 @@ export const ko: Copy = {
           '버텍스 진입점과 프래그먼트 진입점, 그리고 엔진처럼 이를 실행하는 호스트입니다.',
         'loop-fuse':
           '커널 함수 다섯 개와, `typeshade/fuse`의 `fuse()` 안에서 이를 부르는 호스트입니다.',
+        'host-set-unique':
+          'JavaScript의 `Set`과 `Map`을 받는 커널 함수 두 개와, 이를 부르는 호스트입니다(변경 0080).',
       },
       blurbs: {
         'host-draw':
@@ -2336,6 +2355,8 @@ export const ko: Copy = {
           '버텍스 진입점과 프래그먼트 진입점, 그리고 엔진처럼 이를 실행하는 호스트입니다. 모듈의 기본 내보내기가 매니페스트입니다. 호스트는 프로그램 런타임에서 `rt.load()`로 매니페스트를 불러오고, 렌더 파이프라인을 만들어 프레임마다 텍스처에 전체 화면 삼각형을 그립니다. 유니폼은 이름으로 바인딩합니다. 마지막으로 텍스처를 읽어 옵니다(규칙 11.10, 11.11).',
         'loop-fuse':
           '커널 함수 다섯 개와, `typeshade/fuse`의 `fuse()` 안에서 이를 부르는 호스트입니다. `add`, `mul`, `relu` 호출은 저마다 바로 앞 호출이 같은 인덱스에 쓴 값을 읽습니다. 그래서 WebGPU에서는 스코프가 이 호출들을 디스패치 하나로 실행하고, 리포트에도 그렇게 적힙니다. `pairsum`은 `t[i ^ 1]`을 읽는데, 이 원소는 다른 인보케이션이 씁니다. 그래서 이 호출을 가운데 둔 스코프는 디스패치 두 번으로 실행되고, 리포트가 그 줄을 짚어 줍니다. 리덕션 호출로 끝나는 스코프도 있습니다. `total`로 끝나는 스코프는 `add`와 `mul`을 그 루프의 프롤로그로 실행합니다. 그래서 세 호출이 리덕션과 함께 디스패치 하나가 됩니다.',
+        'host-set-unique':
+          'JavaScript의 `Set`과 `Map`을 받는 커널 함수 두 개와, 이를 부르는 호스트입니다. `labels`는 영이 아닌 라벨을 한 번씩 넣고, `latest`는 키마다 마지막에 넣은 값을 남깁니다. 호스트는 `new Set()`과 `new Map()`을 넘깁니다. 각 프라미스가 이행되면 그 안에는 루프를 차례로 실행했을 때 남는 항목이 들어 있습니다. 키는 처음 넣은 순서대로 한 번씩 들어가고, 값은 마지막에 넣은 것입니다. 이번 버전에서 두 함수는 CPU tier에서 돕니다.',
       },
       page: {
         // 영어와 같은 방식입니다. 60자 상한에 들어가는 가장 긴 꼬리말을 고릅니다.
@@ -2422,6 +2443,7 @@ export const ko: Copy = {
       h: '에뮬레이션 배정밀도',
       p1: `WGSL에도 ${glsl}에도 배정밀도 부동소수점은 없습니다. TypeShade는 f32 값 두 개를 합치지 않고 나란히 든 쌍으로 이를 에뮬레이션하고, 산술, 비교, 일부 내장 함수를 그 쌍에 대한 호출로 바꿔 냅니다. 그 범위 밖의 연산은 출력할 때 코드가 붙은 오류로 실패합니다. 쓰는 코드는 그대로이고 선언한 타입만 다릅니다. deep-zoom 예제에서 \`${facts.deepZoomOrigin.name}\` 필드는 소스에서 \`${facts.deepZoomOrigin.sourceType}\`로 선언되고 유니폼 블록에서는 \`${facts.deepZoomOrigin.layoutType}\` 자리를 차지하며, 호스트가 그 자리를 분리한 쌍으로 채웁니다.`,
       p2: 'f64 산술을 하는 모듈에는 가드 텍스처 바인딩도 주입되는데, 호스트는 이 텍스처를 흰색 텍셀 하나로 채워야 합니다. GPU 드라이버의 셰이더 컴파일러는 텍셀 읽기를 미리 계산해 버릴 수 없는데, 그 읽기가 없으면 오차 보정 항을 마음대로 최적화해 없앨 수 있기 때문입니다. 연산마다 f32의 몇 배가 들므로 이 타입은 값 하나하나에 대해 골라서 씁니다. 예제는 [fp64-deep-zoom-twin.shade.ts](deepZoom)입니다.',
+      p3: "이 가드는 에뮬레이션의 `'float'` 플레이버에 속합니다. Apple GPU에는 `'integer'` 플레이버가 필요합니다. 이 플레이버는 같은 오차 항을 정수 연산으로 계산하고, 가드를 바인딩하지 않습니다. 모듈을 가져오는 호스트는 실행할 때 `createDevice({ fp64Flavor })`나 `configure({ fp64Flavor })`로 플레이버를 고릅니다. `recommendFp64Flavor`는 어댑터와 사용자 에이전트를 보고 알맞은 플레이버를 알려 줍니다.",
       caption: `같은 월드 좌표를 두 번 그렸습니다. 왼쪽은 ${split[0]}, 오른쪽은 ${split[1]}입니다. ${split[0]} 쪽은 줄무늬가 계단처럼 나오는데, 이 거리에서는 ${split[0]}의 ulp 하나가 줄무늬에 필요한 소수 부분보다 거칠기 때문입니다. 다른 쪽은 매끄럽게 나옵니다.`,
       captionNone: '빌드할 때 렌더링한 화면입니다. 이 브라우저에는 WebGPU도 WebGL2도 없습니다.',
     },
@@ -2609,7 +2631,7 @@ export const ko: Copy = {
           'vertex의 `vid`와 `vin`은 서로 다른 입력입니다. 하나는 GPU builtin이고 다른 하나는 사용자 정의 struct 입력입니다. fragment의 `pid` 역시 signature에 명시되어 있으므로 함수만 읽어도 필요한 입력을 알 수 있습니다.',
         scope: '9. 함수와 scope',
         scopeP:
-          '지역 변수는 함수 호출마다 생깁니다. 매개변수와 함수 본문의 지역 변수는 모듈 값과 같은 이름을 쓸 수 있으며, 클로저는 가장 가까운 선언을 찾습니다. 같은 스코프의 중복 선언은 여전히 오류입니다. 변수와 매개변수는 `target`처럼 TypeScript에서 유효한 이름을 쓸 수 있으며, 셰이더 작성기가 백엔드의 예약 이름을 바꿔 출력합니다. 리소스, 진입점과 구조체 필드는 기존 인터페이스 이름 규칙을 따릅니다.',
+          '지역 변수는 함수 호출마다 생깁니다. 매개변수와 함수 본문의 지역 변수는 모듈 값과 같은 이름을 쓸 수 있으며, 클로저는 가장 가까운 선언을 찾습니다. 같은 스코프의 중복 선언은 여전히 오류입니다. 모든 선언은 `target`이나 `half`처럼 TypeScript에서 유효한 이름을 쓸 수 있습니다. 변수, 매개변수, 리소스, 진입점, 구조체, 필드가 모두 그렇습니다. 셰이더 작성기는 대상 언어가 예약한 이름을 그 대상에서만 새 표기로 바꿔 출력하고, 호스트는 여전히 작성한 이름으로 바인딩하고 호출합니다.',
         scopeNote:
           '`factor`는 함수 안에서만 존재하는 local value입니다. 반대로 `camera`나 `pixels` 같은 resource는 host와 연결된 shader interface이며, builtin parameter는 GPU stage가 제공하는 입력입니다.',
         boundary: '10. TypeScript 함수와의 차이',
@@ -2642,19 +2664,41 @@ export const ko: Copy = {
         branchValueP: `조건에 따라 값을 고를 때는 \`c ? a : b\`로 씁니다. WGSL에는 \`?:\` 연산자가 없습니다. 스칼라나 벡터라면 WGSL 출력은 \`select(b, a, c)\`입니다. 거짓일 때의 값이 먼저 오고 조건이 마지막에 옵니다. WGSL은 두 값을 모두 계산하므로 비용이 큰 쪽은 \`if\`에 두십시오. ${glsl}에서는 \`?:\`가 그대로 남습니다. 구조체나 배열은 두 타깃 모두 변수 하나와 \`if\`로 고릅니다.`,
         loop: '3. 반복',
         loopP:
-          'for 루프와 while 루프, 배열을 도는 for...of를 씁니다. for 루프는 유니폼 필드나 배열의 길이처럼 실행 중에야 정해지는 값까지 셀 수 있습니다. 배열의 map, forEach, some, every, reduce도 저마다 카운트 루프로 컴파일되며, map은 길이가 정해진 배열에 씁니다.',
+          'for 루프와 while 루프, 배열을 도는 for...of를 씁니다. for 루프는 유니폼 필드나 배열의 길이처럼 실행 중에야 정해지는 값까지 셀 수 있습니다. 배열의 map, forEach, some, every, reduce, fill, findIndex, findLastIndex, indexOf, lastIndexOf, includes도 저마다 카운트 루프로 컴파일되며, map은 길이가 정해진 배열에 씁니다.',
         kernel: '4. 커널로 도는 루프',
         kernelP:
-          '진입점이 아니면서 크기가 없는 배열 `array<T>`를 받는 내보낸 함수는 커널 함수입니다(규칙 8.22). 그 배열은 호출한 쪽의 것이며, 함수는 그 자리에서 읽고 씁니다. 본문 최상위의 `for`는 저마다 컴파일러가 GPU에서 반복 하나당 호출 하나로 돌릴 수 있는 루프이고, 호스트 파일은 다른 가져오기처럼 이 함수를 await로 호출합니다. `@compute`나 바인딩, `global_invocation_id`는 쓰지 않습니다. 호스트는 `typeshade({ fuse: true })`로 빌드하고, `typeshade/fuse`의 `fuse()` 안에서 커널 함수 여러 개를 부를 수 있습니다(규칙 11.13). WebGPU에서는 바로 앞 호출이 같은 인덱스에 쓴 값을 읽는 호출들이 디스패치 하나로 실행됩니다. 스코프가 돌려주는 리포트는 그룹마다 이름을 대고, 두 호출이 따로 실행되는 이유를 알려 줍니다.',
+          '진입점이 아니면서 크기가 없는 배열 `array<T>`나 2D 스토리지 텍스처 `texture_storage_2d<F, A>`를 받는 내보낸 함수는 커널 함수입니다(규칙 8.22). 샘플링하는 텍스처만 받는 함수는 커널 함수가 아닙니다. 그런 텍스처를 읽는 내보낸 함수는 헬퍼로 남습니다. 배열이나 텍스처는 호출한 쪽의 것이며, 함수는 그 자리에서 읽고 씁니다. 본문 최상위의 `for`는 저마다 컴파일러가 GPU에서 반복 하나당 호출 하나로 돌릴 수 있는 루프이고, 호스트 파일은 다른 가져오기처럼 이 함수를 await로 호출합니다. `@compute`나 바인딩, `global_invocation_id`는 쓰지 않습니다. 함수 앞에 `@workgroup_size([128])`를 쓰면 WebGPU에서 그 루프들의 워크그룹 크기가 정해지며, 쓰지 않으면 64입니다. 리덕션을 하는 루프는 언제나 256 크기의 워크그룹으로 돕니다. 그래서 그런 루프가 있는 함수에 이 어트리뷰트를 쓰면 거부됩니다(`TS8077`).',
         kernelRulesP:
-          '컴파일러는 어떤 반복도 다른 반복이 건드리는 것을 건드리지 않는다고 증명할 때 루프를 GPU에서 돌립니다. 루프는 상수만큼 나아가는 카운트 `for`나 `for...of`여야 하고, 안에서 반환하거나 빠져나가는 곳이 없어야 합니다. 쓰기는 루프 안에서 선언한 이름, 루프 자신의 인덱스로 만든 자리의 바깥 배열이나 텍스처, 아무 인덱스에나 합쳐 넣는 정수 배열, 또는 `+=`, `*=`, `min`, `max`, `&`, `|`, `^`로 합치는 변수에만 합니다. 합치는 변수는 GPU와 CPU가 같은 트리 순서로 접습니다. 루프는 자신이 쓰는 배열을 쓰는 자리에서만 읽고 합치는 변수는 읽지 않으며, 모듈 변수나 바인딩을 쓰는 함수를 부르지 않고, 배리어와 워크그룹 메모리, `console` 호출이 없어야 합니다.',
+          '컴파일러는 어떤 반복도 다른 반복이 건드리는 것을 건드리지 않는다고 증명할 때 루프를 GPU에서 돌립니다. 루프는 상수만큼 나아가는 카운트 `for`나 `for...of`여야 하고, 안에서 반환하거나 빠져나가는 곳이 없어야 합니다. 쓰기는 다음 자리에만 합니다. 루프 안에서 선언한 이름, 루프 자신의 인덱스로 만든 자리의 바깥 배열이나 텍스처, 아무 인덱스에나 합쳐 넣는 정수 배열이 그 자리입니다. `+=`, `*=`, `min`, `max`, `&`, `|`, `^`로 합치는 변수도 됩니다. 합치는 변수는 GPU와 CPU가 같은 트리 순서로 접습니다. `push`로 덧붙이기만 하는 배열과, 루프가 값을 넣는 `Map`이나 `Set`도 됩니다. 루프는 자신이 쓰는 배열을 쓰는 자리에서만 읽습니다. 합치는 변수, 덧붙이는 배열, 값을 넣는 `Map`과 `Set`은 읽지 않습니다. 모듈 변수나 바인딩을 쓰는 함수를 부르지 않고, 배리어와 워크그룹 메모리, `console` 호출이 없어야 합니다.',
         kernelWarnP:
           '증명이 받아들이지 않은 루프는 CPU에서 돌며, 어느 쪽이든 프로그램은 올바르게 동작합니다. 진입점이나 헬퍼, 프래그먼트 셰이더 안의 루프는 증명 대상이 아니며, 지금처럼 호출마다 도는 코드로 남습니다. 컴파일러는 거부한 루프에 경고 `TS8070`을 붙입니다. 첫 문장은 해당 줄과 코드에 쓴 이름을 짚고, 둘째 문장은 고치는 방법을 알려 줍니다. 고정된 컴파일러에서 경고는 다음과 같습니다.',
         kernelRule: '규칙',
         kernelWarning: '경고',
-        boundary: '5. JavaScript와의 경계',
+        methods: '5. 배열 메서드, push, Map과 Set',
+        methodsP:
+          '`map`을 뺀 배열 메서드는 커널 함수의 배열에서도 씁니다. `forEach`, `reduce`, `some`, `every`, `fill`, `findIndex`, `findLastIndex`, `indexOf`, `lastIndexOf`, `includes`가 그 메서드입니다(규칙 8.18). 각 메서드는 자신이 나타내는 루프가 되어, 호출한 자리에 그대로 들어갑니다. 넘긴 함수는 그 루프의 본문이 됩니다. 증명은 이 루프를 `for` 루프와 똑같이 읽으므로, 아래의 두 루프는 모두 GPU에서 돕니다. `forEach`는 `out`의 자기 인덱스에 쓰고, `+`를 쓰는 `reduce`는 리덕션입니다.',
+        methodsOrderP:
+          '`reduce`는 모든 tier에서 리덕션의 트리 순서로 더합니다. TypeScript는 왼쪽부터 더하므로, `f32` 합은 끝자리가 다를 수 있습니다. 결정성 보고서는 이를 `order`로 적습니다(규칙 7.2). `some`, `every`, `includes`는 모든 원소에 대한 `|`와 `&`입니다. `findIndex`, `indexOf`와 그 `Last` 형태는 조건을 만족하는 인덱스의 `min`이나 `max`이며, 답을 정하는 첫 원소의 답과 같습니다. 넘긴 함수는 원소마다 실행되므로, 붙잡은 값을 쓰는 함수는 거부됩니다.',
+        pushP:
+          '루프는 `out.push(v)`로 배열 매개변수에 값을 덧붙입니다. 문장으로 쓰며, 한 반복 안에서 몇 번이든, 어느 분기에서든 쓸 수 있습니다. 함수 안에서 이 배열은 빈 상태로 시작합니다. 원소는 모든 tier에서 루프를 차례로 실행했을 때 덧붙는 순서대로 놓이고, 루프 뒤의 `out.length`는 덧붙인 개수입니다.',
+        pushHostP:
+          '호스트 배열의 길이가 용량입니다. 호출은 앞에서부터 용량만큼 원소를 쓰고, 나머지는 그대로 둡니다. 함수가 돌려주는 개수는 용량보다 클 수 있습니다. 그래서 `n > out.length`를 본 호스트는 더 큰 배열로 다시 호출할 수 있습니다. WebGPU에서 이 루프는 디스패치 세 번으로 돕니다. 먼저 반복마다 덧붙일 개수를 세고, 워크그룹 하나가 그 개수를 오프셋으로 스캔한 뒤, 반복마다 자기 오프셋에 값을 저장합니다. WebGL2는 값을 덧붙이는 루프를 돌리지 않습니다.',
+        collectionsP:
+          '매개변수는 ECMAScript의 `Set<K>`나 `Map<K, V>`일 수도 있습니다. `K`는 `u32`, `i32`, `f32` 가운데 하나입니다. 루프는 `s.add(k)`나 `m.set(k, v)`로 값을 넣습니다. 호스트는 JavaScript의 `Set`이나 `Map`을 그대로 넘깁니다. 호출이 끝나면 루프를 차례로 실행했을 때 남는 항목이 그 안에 들어 있습니다. 키는 한 번씩, 처음 넣은 순서대로 들어가고, 값은 마지막에 넣은 것입니다. 뒤의 루프는 `has`, `get`, `size`로 읽으며, `m.get(k)!`는 `m.has(k)`로 확인한 자리에서만 읽습니다. 이번 버전에서 이런 함수는 CPU tier에서 돕니다. [kernel-set-unique](exampleKernelSetUnique)와 [host-set-unique](exampleHostSetUnique)가 두 가지를 모두 보여 줍니다.',
+        fuse: '6. 커널 호출 체인',
+        fuseP:
+          '호스트는 `typeshade({ fuse: true })`로 빌드하고, `typeshade/fuse`의 `fuse()` 안에서 커널 함수 여러 개를 부를 수 있습니다(규칙 11.13). WebGPU에서는 바로 앞 호출이 같은 인덱스에 쓴 값을 읽는 호출들이 제출 하나 안의 디스패치 하나로 실행됩니다. 스코프가 돌려주는 리포트는 그룹마다 이름을 대고, 두 호출이 따로 실행되는 이유를 알려 줍니다. 본문 안의 진입점 호출은 혼자 그룹을 이루며, 배열에 값을 덧붙이는 루프도 그렇습니다. `FuseReport`와, 여러 리포트를 하나로 합치는 `mergeReports`는 `typeshade/runtime`에서도 가져올 수 있습니다. 그래서 리포트를 읽기만 하는 호스트는 플래너를 싣지 않습니다.',
+        fuseIndirectP:
+          '진입점 호출은 앞선 호출이 쓴 배열에서 워크그룹 개수를 읽을 수 있습니다. `entry(bindings, { indirect, offset })`는 호출이 실행될 때 `Resident<Uint32Array>`의 `offset` 원소에서 개수 세 개를 읽습니다. 그러면 호출 체인 사이에 읽기가 필요 없습니다. 스코프 안에서는 이런 호출의 그룹이 리포트에 `indirect: true`로 적힙니다.',
+        deviceP:
+          '`typeshade/runtime`의 `createDevice()`는 호출의 소유자를 엽니다. `device.array()`는 그 호출이 받는 `Resident` 배열을 만들고, `device.fuse()`는 본문의 호출을 그 디바이스에서 계획 하나로 실행합니다. `Resident` 하나는 처음부터 끝까지 소유자 하나에 속합니다. 그래서 호출은 다른 소유자의 배열을 거부합니다. `device.release(r)`는 배열을 디바이스의 풀에 돌려주며, 원소와 길이가 같은 다음 `array()`가 그 배열을 다시 씁니다.',
+        chunkP:
+          '디스패치 하나 안에서 반복하는 커널은 GPU 워치독이 디바이스를 재설정할 만큼 오래 돌 수 있습니다. 그런 루프는 청크로 나눕니다. `device.chunkSize(key, max)`는 디바이스의 시간 예산 `createDevice({ timeBudgetMs })` 안에서 다음 청크의 단위 수를 줍니다. `device.fuse(body, { chunk: { key, units } })`는 그 청크를 혼자 실행하고 시간을 잽니다. 리포트에는 `chunk` 행이 붙고, `device.chunkRates`에는 디바이스가 잰 값이 쌓입니다.',
+        modulesP:
+          '`typeshade/algorithms`와 `typeshade/random`은 TypeShade로 쓴 커널 함수이며, 한 스코프 안에서 직접 쓴 커널 함수와 합쳐집니다. [알고리즘](languageAlgorithms)과 [난수](languageRandom)에서 목록을 볼 수 있습니다.',
+        boundary: '7. JavaScript와의 경계',
         boundaryItems: [
-          'filter, find처럼 길이를 바꾸거나 원소를 찾는 배열 메서드는 루프로 씁니다.',
+          'filter, find처럼 길이를 바꾸거나 undefined를 줄 수 있는 배열 메서드는 루프로 씁니다. findIndex와 indexOf는 찾는 원소가 없으면 -1을 줍니다.',
           '일반 runtime 객체에 의존하지 않습니다.',
           '조건과 반복은 GPU에서 계산 가능한 값과 범위로 제한합니다.',
           'TypeScript에서 유효한 제어 흐름이라고 해서 TypeShade shader semantics에서도 자동으로 유효한 것은 아닙니다.',
@@ -2751,6 +2795,126 @@ export const ko: Copy = {
         helper: '4. Helper function',
         helperP:
           'decorator가 없는 함수는 entry가 아니라 helper입니다. entry point를 class method로 만들거나 `this`를 pipeline 객체로 취급하지 않습니다.',
+        next: '다음: 알고리즘',
+      },
+      algorithms: {
+        title: 'typeshade/algorithms: 맵, 리덕션, 스캔',
+        description:
+          'TypeShade가 커널 함수로 제공하는 공용 알고리즘입니다. 복사, 맵, 리덕션, 스캔, 압축, 히스토그램을 모든 tier에서, fuse() 안에서도 씁니다.',
+        h1: '알고리즘: typeshade/algorithms',
+        intro:
+          '`typeshade/algorithms`는 공용 모듈입니다. `"use typeshade"`로 쓴 커널 함수를 패키지의 하위 경로로 내보냅니다(규칙 11.20). 배열에 대한 복사, 채우기, 맵, 리덕션, 스캔, 압축, 히스토그램이 들어 있습니다. 각 함수는 WebGPU, WebGL2, CPU tier에서 돌며, 어느 쪽에서든 CPU 오라클과 같은 비트를 냅니다. `fuse` 스코프 안에서는 사실이 허용하는 만큼 주변 호출과 합쳐집니다.',
+        host: '1. 호스트 인터페이스',
+        hostP:
+          '호스트 코드는 다른 패키지처럼 이 하위 경로를 가져오고, 각 함수를 `Resident` 배열 위에서 부릅니다. 따로 부를 수도 있고 `fuse` 본문 안에서 부를 수도 있습니다. 각 함수는 출력의 모든 원소를 쓰므로, 디바이스 풀에서 받은 배열을 따로 초기화할 필요가 없습니다. 예외는 `histogram` 하나입니다. 이 함수는 받은 칸에 개수를 더하므로, 호출하는 쪽이 칸을 먼저 초기화합니다.',
+        functions: '2. 함수 목록',
+        functionsP: '행에 따로 적지 않은 배열 매개변수는 `array<f32>`입니다.',
+        functionsColumns: ['묶음', '함수', '하는 일'],
+        functionsRows: [
+          [
+            '복사와 채우기',
+            '`copy(out, x)`, `fill(out, value)`, `sequence(out, start, step)`',
+            '`i`에서 도는 루프 하나입니다. `sequence`는 `start + f32(i) * step`을 씁니다.',
+          ],
+          [
+            '이항 맵',
+            '`(out, a, b)` 형태의 `add`, `sub`, `mul`, `div`와 `scale(out, x, k)`',
+            '`i`의 루프 하나.',
+          ],
+          [
+            '단항 맵',
+            '`(out, x)` 형태의 `abs`, `neg`, `sqrt`, `rsqrt`, `exp`, `log`, `expm1`, `log1p`, `floor`, `ceil`, `round`, `sign`, `sin`, `cos`, `tan`, `tanh`, `sigmoid`, `relu`와 `clip(out, x, lo, hi)`',
+            '`i`에서 도는 루프 하나입니다. 셰이더 모듈에서는 `absMap`처럼 `<op>Map`이라는 이름을 씁니다. 커널 함수는 내장 함수의 이름을 가질 수 없기 때문입니다.',
+          ],
+          [
+            '전체 리덕션',
+            '`sum(x)`, `max(x)`, `min(x)`이며, 각각 `f32`를 돌려줍니다',
+            '모든 tier에서 같은 트리 순서로 접습니다(규칙 7.2). 셰이더 모듈에서는 `sum`, `maxAll`, `minAll`입니다.',
+          ],
+          [
+            '축 리덕션',
+            '`(out, x, axis, inner)` 형태의 `sumAxis`, `meanAxis`, `prodAxis`, `maxAxis`, `minAxis`, `argMaxAxis`, `argMinAxis`',
+            '`x`를 `[outer, axis, inner]`로 읽습니다. `out`의 각 원소는 오름차순으로 차례로 접은 값입니다.',
+          ],
+          [
+            '스캔',
+            '`array<u32>`에 대한 `inclusiveScan(out, x, sums)`, `exclusiveScan(out, x, sums)`',
+            '커널 함수 하나 안의 루프 두 개입니다. `sums`는 호출하는 쪽의 스크래치이며, 원소가 하나 이상이고 `x` 길이의 제곱근 정도면 됩니다.',
+          ],
+          [
+            '압축',
+            '`compact(out, x, flags, offsets)`',
+            '플래그가 1인 원소를 원래 순서대로 모읍니다. `offsets`는 `flags`의 배타적 스캔입니다.',
+          ],
+          [
+            '히스토그램',
+            '`histogram(bins, x, lo, hi)`',
+            '`[lo, hi)`를 같은 너비로 나눈 각 칸에 드는 `x`의 개수를 `bins`에 더합니다. WebGPU에서는 더하기마다 원자 연산입니다.',
+          ],
+        ],
+        fuse: '3. 호출이 합쳐지는 방식',
+        fuseP:
+          '모든 맵은 `out`의 `i`에 쓰고 입력도 `i`에서 읽습니다. 그래서 맵의 체인은 디스패치 하나가 되고, 전체 리덕션은 체인의 마지막 호출로 합류합니다. 축 리덕션, 스캔, 압축은 입력을 다른 인덱스에서 읽습니다. 그래서 그 입력을 쓴 호출 뒤에서는 저마다 새 그룹을 시작합니다. 예제의 첫 스코프에서는 `fill`, `add`, `relu`가 디스패치 하나로, `sumAxis`가 두 번째 디스패치로 실행되며, 둘은 제출 하나에 담깁니다.',
+        tiers: '4. 함수가 실행되는 곳',
+        tiersP:
+          '컴파일러의 차등 게이트는 모든 함수를 WebGPU와 WebGL2에서 불러 CPU 오라클과 비교합니다. 결정성 보고서에 행이 없는 함수는 비트 단위로 같아야 하고, `exp`나 `sin`처럼 행이 있는 함수는 정해진 범위 안에 들어야 합니다. WebGL2는 전체 리덕션 세 개, 스캔 두 개, `compact`, `histogram`을 거부합니다. 그래서 이 호출들은 `prefer`의 다음 tier로 넘어갑니다(규칙 11.8).',
+        device: '5. 디바이스 인터페이스',
+        deviceP:
+          '`"use typeshade"` 파일도 `typeshade/algorithms`에서 가져올 수 있습니다. 이 하위 경로는 `typeshade` 조건에서 셰이더 모듈을 가리킵니다. 그 내보내기는 커널 함수이고, 커널 함수는 다른 함수가 부르지 않습니다. 그래서 이번 버전에서 셰이더 파일이 이 모듈에서 부를 함수는 없습니다. 커널이 자기 워크그룹 메모리 위에서 조합하는 헬퍼는 다음에 나옵니다.',
+        later: '6. 아직 없는 것',
+        laterP:
+          '정렬, 분할, 구간별 리덕션, `reduceByKey`, 최근접 이웃 탐색, 행렬 곱, `f64` 선형대수, 워크그룹 메모리 스캔은 다음에 나옵니다.',
+        next: '다음: 난수',
+      },
+      random: {
+        title: 'typeshade/random: 해시와 균등 분포 난수',
+        description:
+          'TypeShade가 제공하는 공용 난수 생성기입니다. 커널에서는 hash32, xorshift32, uniform을, 호스트에서는 fillUniform, fillWords, generator를 쓰며, 모든 tier에서 결과가 같습니다.',
+        h1: '난수: typeshade/random',
+        intro:
+          '`typeshade/random`은 두 번째 공용 모듈입니다(규칙 11.20). 커널이 난수를 뽑는 생성기와 해시, 호스트가 부르는 채우기 함수가 들어 있습니다. 모두 모든 tier에서 같은 비트를 냅니다.',
+        device: '1. 디바이스 인터페이스',
+        deviceP:
+          '`"use typeshade"` 파일은 스칼라 헬퍼 세 개를 가져와 자기 커널이나 진입점에서 부릅니다. 예제의 난수는 시드와 인덱스에만 달려 있으므로, tier나 디스패치 모양이 바뀌어도 그대로입니다.',
+        deviceColumns: ['함수', '하는 일'],
+        deviceRows: [
+          [
+            '`xorshift32(state: u32): u32`',
+            'xorshift32를 한 단계 진행합니다. 상태가 영이면 계속 영이므로, 영이 아닌 값으로 시드를 줍니다.',
+          ],
+          [
+            '`hash32(x: u32): u32`',
+            '32비트 정수 마무리 해시이며, 상태 없이 인덱스에서 난수를 뽑을 때 씁니다. `hash32(0)`은 0입니다.',
+          ],
+          [
+            '`uniform(word: u32): f32`',
+            '`word`의 상위 24비트를 `[0, 1)` 범위의 `f32`로 바꿉니다. 이 값은 `f32`에서 정확하므로, 같은 워드는 모든 tier에서 같은 수가 됩니다.',
+          ],
+        ],
+        host: '2. 호스트 인터페이스',
+        hostP:
+          '호스트 코드도 같은 하위 경로를 가져옵니다. 세 헬퍼는 CPU에서 도는 함수로 여기에도 있고, 그 옆에 함수 세 개가 더 있습니다. `generator(seed)`는 같은 `hash32`와 `uniform`을 씁니다. 그래서 같은 시드라면 호스트에서 섞은 결과와 디바이스에서 뽑은 난수가 비트 단위로 맞습니다.',
+        hostColumns: ['함수', '하는 일'],
+        hostRows: [
+          [
+            '`fillUniform(out, seed: u32)`',
+            '커널 함수입니다. 원소 `i`는 `uniform(hash32(seed ^ i))`이며, `[0, 1)` 범위의 난수입니다.',
+          ],
+          [
+            '`fillWords(out: array<u32>, seed: u32)`',
+            '커널 함수입니다. 원소 `i`는 `hash32(seed ^ i)`입니다.',
+          ],
+          [
+            '`generator(seed: u32): () => number`',
+            '평범한 JavaScript 함수입니다. 부를 때마다 0에서 시작하는 카운터의 다음 난수를 줍니다.',
+          ],
+        ],
+        held: '3. 검증 방식',
+        heldP:
+          '컴파일러의 테스트는 CPU tier의 `fillUniform(out, seed)`를 원소마다 `generator(seed)`와 비교합니다. 차등 게이트는 WebGPU와 WebGL2에서 두 채우기 함수를 CPU 오라클과 비교합니다.',
+        later: '4. 아직 없는 것',
+        laterP:
+          '정규 분포, Philox나 PCG처럼 상태가 더 큰 카운터 기반 생성기, 순열은 다음에 나옵니다.',
         next: '언어 개요로 돌아가기',
       },
     },

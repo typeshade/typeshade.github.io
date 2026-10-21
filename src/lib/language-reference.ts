@@ -637,6 +637,9 @@ function build(): readonly LanguageSection[] {
     );
   }
 
+  // The attributes the compiler documents and reads off the decorator, with no declaration in
+  // SHADE_DTS to read a signature from.
+  const DECORATOR_ONLY: ReadonlySet<string> = new Set(['workgroup_size']);
   const missing = (kind: LanguageKind, name: string, where: string): never => {
     throw new Error(`[language-reference] the ${kind} '${name}' is documented and has no ${where}`);
   };
@@ -740,8 +743,14 @@ function build(): readonly LanguageSection[] {
         }
         case 'attribute': {
           title = `@${name}`;
-          const nodes = decl.functions.get(name) ?? missing(kind, name, 'declaration in SHADE_DTS');
-          signature = nodes.map((n) => n.getText(source)).join('\n');
+          // `@workgroup_size` on a kernel function (compiler change 0067) is read by the front end
+          // off the decorator itself, and the ambient file declares no function for it: its page
+          // shows the attribute as written, with no overload to list.
+          const nodes =
+            decl.functions.get(name) ??
+            (DECORATOR_ONLY.has(name) ? [] : missing(kind, name, 'declaration in SHADE_DTS'));
+          signature =
+            nodes.length > 0 ? nodes.map((n) => n.getText(source)).join('\n') : `${title}([n])`;
           // A decorator's declaration comes in two shapes and only one of them lists what an
           // author writes. A factory returns the decorator, so its own parameters are the
           // ones the call site passes (`@location(0)`, `@builtin("position")`). A bare

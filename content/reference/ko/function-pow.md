@@ -1,7 +1,7 @@
 ---
 entry: function/pow
 sources: definition 2a9fd974f58f, exponent-curve ea92ecac8edd, undefined-inputs 32e82b36e5c3, integer-exponents ebbbf953f4f6, accuracy 2225d454fb02, common-uses 5ef6084cb5bf, in-typeshade 7d3ceb5ae028, specifications f2a07aa3ee6f
-rules: 1.3 fcW4P8W5BFQ0loGi6vlLvaa1Is6dCmpQ_g9tbwMsfHM=, 7.2 0kUnEDTCM0RqPR0zZ2fbOVCYvF-LDE3lKbKYgI20RZg=
+rules: 1.3 fcW4P8W5BFQ0loGi6vlLvaa1Is6dCmpQ_g9tbwMsfHM=, 7.2 onO98E-yRQ3RftA44lVmgPmSW7ZkCd7rYrJGgFS8EI4=
 ---
 
 ## 정의 {#definition}

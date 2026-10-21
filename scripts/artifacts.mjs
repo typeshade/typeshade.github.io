@@ -124,6 +124,10 @@ export const NO_STILL_REASONS = {
   'loop-reduction': 'no-glsl',
   'loop-struct-array': 'no-glsl',
   'loop-on-cpu': 'no-glsl',
+  'kernel-array-methods': 'no-glsl',
+  'kernel-image-invert': 'no-glsl',
+  'kernel-push': 'no-glsl',
+  'kernel-set-unique': 'no-glsl',
 };
 
 /** The reason keys above, so a dictionary can be held to one sentence for each. */

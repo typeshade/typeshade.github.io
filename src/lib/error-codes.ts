@@ -129,7 +129,7 @@ const GROUP_OF: Readonly<Record<string, ErrorGroup>> = {
   MAT_UNSUPPORTED: 'f64',
   F64_ENTRY_IO: 'f64',
   BACKEND: 'targets',
-  RESERVED_NAME: 'targets',
+  RESERVED_NAME: 'types',
   SD0001: 'types',
   SD0002: 'types',
   SD0003: 'types',
@@ -1571,28 +1571,18 @@ export function main(@location(0) uv: vec2): vec4 {
   TS8068: {
     trigger: `"use typeshade"
 
-class Weights {
-  half: f32
-  rest: f32
-}
-
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  const w: Weights = { half: 0.5, rest: 0.5 }
-  return vec4(uv * w.half, 0., 1.)
+  const arguments = uv.x * 0.5
+  return vec4(uv * arguments, 0., 1.)
 }
 `,
     fix: `"use typeshade"
 
-class Weights {
-  low: f32
-  rest: f32
-}
-
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  const w: Weights = { low: 0.5, rest: 0.5 }
-  return vec4(uv * w.low, 0., 1.)
+  const w = uv.x * 0.5
+  return vec4(uv * w, 0., 1.)
 }
 `,
   },
@@ -1702,6 +1692,29 @@ export function main(@location(0) uv: vec2): vec4 {
     g = 0.25
   }
   return vec4(g, g, g, 1.)
+}
+`,
+  },
+  TS8077: {
+    trigger: `"use typeshade"
+
+@workgroup_size([128])
+export function total(xs: array<f32>): f32 {
+  let s = 0.
+  for (let i: u32 = 0; i < xs.length; i++) {
+    s += xs[i]
+  }
+  return s
+}
+`,
+    fix: `"use typeshade"
+
+export function total(xs: array<f32>): f32 {
+  let s = 0.
+  for (let i: u32 = 0; i < xs.length; i++) {
+    s += xs[i]
+  }
+  return s
 }
 `,
   },

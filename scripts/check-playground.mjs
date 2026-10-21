@@ -3765,13 +3765,21 @@ async function checkHostTs(browser, origin) {
         problems.push(
           `loop-fuse's run() value is not on screen after Run: the ${fused.tab} tab is shown`,
         );
+      // host-set-unique (compiler change 0080): two kernel functions collect into the host's
+      // own Set and Map, and the Console tab shows their entries in insertion order.
+      const collected = await shownAfterRun(
+        'host-set-unique',
+        /run\(\).*seen: Set\(6\) \{5, 3, 1, 6, 4, 2\}.*count: 6.*last: Map\(7\) \{/,
+      );
+      if (!collected.row)
+        problems.push("host-set-unique's run() did not show the Set and the Map it collected");
       const drawn = await shownAfterRun('host-helper', /run\(\)/);
       if (drawn.tab !== 'result')
         problems.push(`host-helper draws, and Run left the Result tab for the ${drawn.tab} tab`);
       if (!/^run\(\) \d/.test(drawn.under))
         problems.push(`host-helper's run() value is not under its frame: "${drawn.under}"`);
       console.log(
-        `  host.ts tab: ${tabs.slice(0, 2).join(', ')}; type error marked: ${errors[0] ?? 'none'}; frame sandbox: ${sandbox.join(', ')}; console: ${printed.join(' | ').slice(0, 200)}; linked frames before Run: ${before.length}; loop-fuse after Run: ${fused.tab} tab, ${fused.row.slice(0, 60)}; host-helper after Run: ${drawn.tab} tab, "${drawn.under}" under the frame`,
+        `  host.ts tab: ${tabs.slice(0, 2).join(', ')}; type error marked: ${errors[0] ?? 'none'}; frame sandbox: ${sandbox.join(', ')}; console: ${printed.join(' | ').slice(0, 200)}; linked frames before Run: ${before.length}; loop-fuse after Run: ${fused.tab} tab, ${fused.row.slice(0, 60)}; host-set-unique: ${collected.row.slice(0, 90)}; host-helper after Run: ${drawn.tab} tab, "${drawn.under}" under the frame`,
       );
     }
     for (const { pageErrors } of pages)

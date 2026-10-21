@@ -200,6 +200,12 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   // typeshade/fuse, the fuse scope of a host (compiler change 0058).
   'src/fuse.ts': 'runtime-api',
   'src/core/fuse-plan.ts': 'runtime-api',
+  // The device owner of a host's calls (compiler change 0071) and the report of a plan, which
+  // typeshade/runtime re-exports without the planner (change 0071, Amendment 2).
+  'src/runtime/device.ts': 'runtime-api',
+  'src/core/fuse-report.ts': 'runtime-api',
+  'src/core/host-entry.ts': 'runtime-api',
+  'src/runtime/chunk.ts': 'runtime-api',
   'src/core/passes/determinism.ts': 'tooling',
   'src/core/ir/builder.ts': 'authoring',
   'src/core/ir/types.ts': 'types',
