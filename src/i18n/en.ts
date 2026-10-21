@@ -474,7 +474,7 @@ export const en = {
         attribute: {
           name: 'Attributes',
           summary: 'The decorators that mark an entry point and bind a field to the pipeline.',
-          description: `The ${facts.languageAttributes} decorators the compiler reads: they mark an entry, bind a field to the pipeline, qualify a varying or an output, or set how an entry reports a check.`,
+          description: `The ${facts.languageAttributes} decorators the compiler reads: they mark an entry, set a kernel function's workgroup size, bind a field to the pipeline, qualify a varying or an output, or set how an entry reports a check.`,
         },
         builtin: {
           name: 'Builtin values',
