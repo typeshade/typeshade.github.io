@@ -89,6 +89,14 @@ const table = [
   },
   { dest: links.languageStages, note: 'the vertex, fragment and compute decorators' },
   {
+    dest: links.languageAlgorithms,
+    note: 'typeshade/algorithms: maps, reductions, scans, compaction and a histogram as kernel functions',
+  },
+  {
+    dest: links.languageRandom,
+    note: 'typeshade/random: hashes and uniform draws for a kernel and for a host',
+  },
+  {
     dest: links.languageFromTypescript,
     note: 'every TypeScript construct, what it lowers to, and the shader text it emits, one page per section',
   },

@@ -165,6 +165,8 @@ export const en = {
         gpuTypes: 'GPU types',
         resources: 'Resources',
         stages: 'Shader stages',
+        algorithms: 'Algorithms',
+        random: 'Random numbers',
       },
       /** The four construct-mapping pages, after the topics in the Language group. */
       mapping: {
@@ -474,7 +476,7 @@ export const en = {
         attribute: {
           name: 'Attributes',
           summary: 'The decorators that mark an entry point and bind a field to the pipeline.',
-          description: `The ${facts.languageAttributes} decorators the compiler reads: they mark an entry, set a kernel function's workgroup size, bind a field to the pipeline, qualify a varying or an output, or set how an entry reports a check.`,
+          description: `The ${facts.languageAttributes} decorators the compiler reads: they mark an entry, set a workgroup size, bind a field, qualify a varying or an output, or set how a check is reported.`,
         },
         builtin: {
           name: 'Builtin values',
@@ -1830,12 +1832,12 @@ export const en = {
       ],
       importH: 'Importing a module',
       importP:
-        "A host can import a `.shade.ts` into its own TypeScript through the `typeshade/vite` plugin instead, and call what the module exports. A helper runs on the CPU. A `@compute` entry is `await entry(bindings, workgroups)`, and a full-screen `@fragment` entry is `entry(canvas, bindings)`, drawn on WebGPU, then WebGL2, then the CPU. The application's column of the table above is then the runtime's: it requests the device on the first call and every later call shares it, builds each entry's pipeline, packs each binding from the object the call passes, and reads back what a compute entry wrote.",
+        "A host can import a `.shade.ts` into its own TypeScript through the `typeshade/vite` plugin instead, and call what the module exports. A helper runs on the CPU. A `@compute` entry is `await entry(bindings, workgroups)`, where `workgroups` may also be `{ indirect, offset }`: the three counts an earlier call wrote at element `offset` of a `Resident<Uint32Array>`, read when the call runs. A full-screen `@fragment` entry is `entry(canvas, bindings)`, drawn on WebGPU, then WebGL2, then the CPU. The application's column of the table above is then the runtime's: it requests the device on the first call and every later call shares it, builds each entry's pipeline, packs each binding from the object the call passes, and reads back what a compute entry wrote.",
       loadH: 'Loading a program',
       loadP:
         "A host that draws its own frames, an engine or a renderer, loads each compiled program into the program runtime, `typeshade/runtime`, and runs it there. A program travels as its manifest, one object that holds the shader code, the bindings and the entry points. `packModule(compile(source).module)` returns it, a module's host import gives it as its default export, and it is plain JSON a build can write to disk.",
       loadOwnsP:
-        "The runtime then does most of what the table above gives the application. It uses the application's `GPUDevice` when `createRuntime({ device })` names one, and never destroys it, or requests a device with the features the programs need. It builds every pipeline and bind group from the layouts in the manifest, packs each binding from the value a draw or a dispatch passes by name, and makes the buffers, textures and samplers. The application writes what the compiler cannot know: each pipeline's targets, depth and topology, and when a frame is drawn. A `GPUBuffer`, `GPUTexture` or `GPUSampler` of its own binds as it is, and the frame's `encoder` and a pass's `raw` encoder take its own commands.",
+        "The runtime then does most of what the table above gives the application. It uses the application's `GPUDevice` when `createRuntime({ device })` names one, and never destroys it, or requests a device with the features and limits the programs need and the limits `createRuntime({ limits })` names. It builds every pipeline and bind group from the layouts in the manifest, packs each binding from the value a draw or a dispatch passes by name, and makes the buffers, textures and samplers. The application writes what the compiler cannot know: each pipeline's targets, depth and topology, and when a frame is drawn. A `GPUBuffer`, `GPUTexture` or `GPUSampler` of its own binds as it is, and the frame's `encoder` and a pass's `raw` encoder take its own commands.",
       loadOptionsP:
         "Set a program's overrides by name through `RenderState.constants` for a draw or the `constants` option of `Program.compute()` for a dispatch. The compute pipeline resolves `workgroupShape` from the entry's defaults and selected values; read it before calculating dispatch counts. The runtime checks the selected shape against the active WebGPU device's limits. `Frame.submit()` returns the console's line and dropped-call counts for each recorded entry. A host with a console sink reads those counts to report calls that did not fit in the recording buffer.",
       loadEmitP:
@@ -1848,6 +1850,8 @@ export const en = {
         'A field renamed in the shader changes the reflection at the next build, and the host code that reads the reflection follows it.',
       runtimeH: 'Runtime',
       runtimeP: `A module the host compiles needs nothing of TypeShade in the browser. The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService), and what reaches the browser is the emitted shader source and the host code the application already had. A module the host imports carries \`typeshade/runtime\` into the bundle, the code its calls run on, and no compiler, because the Vite plugin compiles the module when the bundle is built. A call runs on the first tier the browser has, WebGPU, then WebGL2, then the CPU; \`configure({ prefer })\` orders the tiers a compute entry and a kernel function try, and a \`Resident\` keeps an array on the GPU between calls. A host that loads programs into the program runtime ships the same \`typeshade/runtime\` and the manifests, and no compiler either. TypeShade installs ${facts.runtimeDeps} runtime dependency, TypeScript, which \`compile()\` and the language service read source with.`,
+      runtimeOwnerP:
+        "A host can also open an owner of its calls with `createDevice()` from `typeshade/runtime` (Rule 11.8). It opens on the first tier of `prefer` that opens, on a `GPUDevice` the host already has, or on a program runtime's device, `createDevice({ runtime })`. `device.array()` makes the `Resident` arrays its calls take, and `device.fuse()` runs a chain of calls as one plan on that device. One `Resident` belongs to one owner for its life, so a call refuses an array of another owner. The owner also picks the flavor of the emulated double, `createDevice({ fp64Flavor })`, and the time one chunk of a long kernel may take, `createDevice({ timeBudgetMs })`. `configure()`, `resident()` and `fuse()` work on the default owner as before.",
       webgl2H: 'Where WebGL2 differs',
       webgl2P: 'The same source compiles for WebGL2, and the host side of it looks different.',
       webgl2Items: [
@@ -2268,6 +2272,7 @@ export const en = {
       h: 'Emulated double precision',
       p1: `Neither WGSL nor ${glsl} has a double-precision float. TypeShade emulates one as an unevaluated pair of f32 values, and lowers arithmetic, comparisons and a set of builtins into calls on that pair. An operation outside that set fails at emit with a coded error. What you write is unchanged: only the declared type differs. In the deep-zoom example the \`${facts.deepZoomOrigin.name}\` field is declared \`${facts.deepZoomOrigin.sourceType}\` in the source and occupies a \`${facts.deepZoomOrigin.layoutType}\` slot in the uniform block, which the host fills with the split pair.`,
       p2: 'A module that does f64 arithmetic also carries an injected guard texture binding for the host to fill with a single white texel. A downstream shader compiler cannot fold a texel read, and without one it is free to optimise the error-compensation terms away. Each operation costs several times its f32 equivalent, so the type is opted into per value. The example is [fp64-deep-zoom-twin.shade.ts](deepZoom).',
+      p3: "The guard belongs to the `'float'` flavor of the emulation. An Apple GPU needs the `'integer'` flavor, which computes the same terms through integer operations and binds no guard. A host that imports a module picks the flavor at run time, with `createDevice({ fp64Flavor })` or `configure({ fp64Flavor })`, and `recommendFp64Flavor` names it from the adapter and the user agent.",
       caption: `One world coordinate drawn twice: ${split[0]} on the left, ${split[1]} on the right. The ${split[0]} half draws the stripes as steps because one ${split[0]} ulp at this distance is coarser than the fraction a stripe needs; the other half draws them smooth.`,
       captionNone: 'Rendered at build time; this browser has no WebGPU or WebGL2.',
     },
@@ -2463,7 +2468,7 @@ export const en = {
           'The vertex function has two different inputs: `vid` is a GPU builtin and `vin` is a user-defined struct. The fragment function makes its builtin input, `pid`, explicit as well, so the signature documents the stage interface.',
         scope: '9. Functions and scope',
         scopeP:
-          'Local variables belong to the current function invocation. Parameters and body locals may shadow module values; a closure resolves the nearest declaration. Duplicate declarations in the same scope remain errors. A variable or parameter may use a legal TypeScript name such as `target`; the shader writer escapes names its backend reserves. Resource names, entry names and struct field names retain their interface naming rules.',
+          'Local variables belong to the current function invocation. Parameters and body locals may shadow module values; a closure resolves the nearest declaration. Duplicate declarations in the same scope remain errors. Every declaration may use a legal TypeScript name such as `target` or `half`: a variable, a parameter, a resource, an entry, a struct and a field alike. The shader writer gives a name its target reserves a fresh spelling on that target, and the host still binds and calls each one by the name written.',
         scopeNote:
           '`factor` is a local value scoped to the function. Resources such as `camera` and `pixels` belong to the host-facing shader interface, while builtin parameters are inputs supplied by the GPU stage.',
         boundary: '10. Where TypeScript functions stop',
@@ -2496,20 +2501,45 @@ export const en = {
         branchValueP: `A value chosen by a condition is written \`c ? a : b\`. WGSL has no \`?:\` operator. For a scalar or a vector, the WGSL emit is \`select(b, a, c)\`, with the false value first and the condition last. WGSL evaluates both values, so put an expensive arm in an \`if\`. ${glsl} keeps \`?:\`. A struct or an array is chosen through a variable and an \`if\` on both targets.`,
         loop: '3. Loops',
         loopP:
-          "Write a for loop, a while loop, or for...of over an array. A for loop may count to a value known only at run time, such as a uniform field or the length of an array. An array's map, forEach, some, every and reduce compile too, each to a counted loop, and map takes an array with a fixed length.",
+          "Write a for loop, a while loop, or for...of over an array. A for loop may count to a value known only at run time, such as a uniform field or the length of an array. An array's map, forEach, some, every, reduce, fill, findIndex, findLastIndex, indexOf, lastIndexOf and includes compile too, each to a counted loop, and map takes an array with a fixed length.",
         // A kernel function (compiler change 0013): the loop the compiler may run on the GPU.
         kernel: '4. A loop that runs as a kernel',
         kernelP:
-          "An exported function that is not an entry point and takes an array with no size, `array<T>`, is a kernel function (Rule 8.22). Its array is the caller's, read and written in place. Each `for` at the top of its body is a loop the compiler may run on the GPU, one invocation per iteration, and a host file awaits the function like any import. No `@compute`, binding or `global_invocation_id` is written. A host can call several kernel functions inside `fuse()` from `typeshade/fuse`, built with `typeshade({ fuse: true })` (Rule 11.13). On WebGPU, calls that read what the call before them wrote at the same index run as one dispatch. The report the scope returns names each group, and says why two calls run apart.",
+          "An exported function that is not an entry point and takes an array with no size, `array<T>`, or a 2D storage texture, `texture_storage_2d<F, A>`, is a kernel function (Rule 8.22). A sampled texture alone makes none, so an exported helper that reads one stays a helper. The array or the texture is the caller's, read and written in place. Each `for` at the top of its body is a loop the compiler may run on the GPU, one invocation per iteration, and a host file awaits the function like any import. No `@compute`, binding or `global_invocation_id` is written. `@workgroup_size([128])` before the function sets the workgroup of its loops on WebGPU, which is 64 without it. A loop that reduces always runs in workgroups of 256, so the attribute on a function with such a loop is refused (`TS8077`).",
         kernelRulesP:
-          "The compiler runs a loop on the GPU when it proves that no iteration touches what another one does. The loop is a counted `for`, or a `for...of`, that steps by a constant and that nothing returns from or breaks out of. Each write lands on a name declared inside the loop, on an outer array or a texture at an index made from the loop's own, on an integer array the loop combines into at any index, or on a variable the loop combines with `+=`, `*=`, `min`, `max`, `&`, `|` or `^`, which the GPU and the CPU fold in one tree order. The loop reads an array it writes only where it writes it and never reads a variable it combines, calls no function that writes a module variable or a binding, and has no barrier, no workgroup memory and no `console` call.",
+          "The compiler runs a loop on the GPU when it proves that no iteration touches what another one does. The loop is a counted `for`, or a `for...of`, that steps by a constant and that nothing returns from or breaks out of. Each write lands on a name declared inside the loop, on an outer array or a texture at an index made from the loop's own, on an integer array the loop combines into at any index, on a variable the loop combines with `+=`, `*=`, `min`, `max`, `&`, `|` or `^`, which the GPU and the CPU fold in one tree order, on an array the loop only appends to with `push`, or on a `Map` or a `Set` the loop adds to. The loop reads an array it writes only where it writes it. It never reads a variable it combines, an array it appends to or a `Map` or a `Set` it adds to. It calls no function that writes a module variable or a binding, and has no barrier, no workgroup memory and no `console` call.",
         kernelWarnP:
           'A loop the proof refuses runs on the CPU, and the program is correct either way. The proof never looks at a loop in an entry, a helper or a fragment shader, which stays per-invocation code. The compiler marks a refused loop with the warning `TS8070`: its first sentence names the line and the names in your code, and its second gives the remedy. At the pinned compiler the warnings read:',
         kernelRule: 'Rule',
         kernelWarning: 'Warning',
-        boundary: '5. Where JavaScript control flow stops',
+        // An array's methods, push, and Map and Set in a kernel function (compiler changes 0078,
+        // 0079 and 0080).
+        methods: "5. An array's methods, push, Map and Set",
+        methodsP:
+          "The methods of an array but `map` work on a kernel function's array too: `forEach`, `reduce`, `some`, `every`, `fill`, `findIndex`, `findLastIndex`, `indexOf`, `lastIndexOf` and `includes` (Rule 8.18). Each is the loop it stands for, written into the function where the call is, with the function handed over as the loop's body. The proof reads it as it reads a `for` loop, so both loops below run on the GPU: `forEach` writes `out` at its own index, and `reduce` with `+` is a reduction.",
+        methodsOrderP:
+          'A `reduce` adds in the tree order of a reduction on every tier, and TypeScript adds from left to right, so an `f32` sum may differ in the last places. The determinism report lists it as `order` (Rule 7.2). `some`, `every` and `includes` are an `|` and an `&` over every element. `findIndex`, `indexOf` and their `Last` forms are a `min` or a `max` of the index, which give the answer of the first element that decides. A function handed over runs for every element, so one that writes what it captures is refused.',
+        pushP:
+          'A loop appends to an array parameter with `out.push(v)`, as a statement, any number of times in an iteration and in any branch. The array starts empty in the function. The elements land in the order a sequential run of the loop appends them, on every tier, and `out.length` after the loop is the count appended.',
+        pushHostP:
+          'The host array is the capacity. The call writes the first elements up to that capacity and leaves the rest as they were. The count the function returns may exceed the capacity, so a host that sees `n > out.length` can call again with more room. On WebGPU the loop runs in three dispatches: each iteration counts its pushes, one workgroup scans the counts into offsets, and each iteration stores its pushes at its offset. WebGL2 runs no loop that pushes.',
+        collectionsP:
+          "A parameter may also be ECMAScript's `Set<K>` or `Map<K, V>`, with `K` a `u32`, an `i32` or an `f32`. A loop adds to it with `s.add(k)` or `m.set(k, v)`. The host passes JavaScript's own `Set` or `Map`, and when the call resolves it holds the entries a sequential run leaves: each key once, in the order first added, with the value set last. A later loop reads it with `has`, `get` and `size`, and reads `m.get(k)!` only where `m.has(k)` guards it. In this version such a function runs on the CPU tier. [kernel-set-unique](exampleKernelSetUnique) and [host-set-unique](exampleHostSetUnique) show both.",
+        // A chain of kernel calls (compiler changes 0058, 0069, 0071, 0072, 0074 and 0075).
+        fuse: '6. A chain of kernel calls',
+        fuseP:
+          'A host can call several kernel functions inside `fuse()` from `typeshade/fuse`, built with `typeshade({ fuse: true })` (Rule 11.13). On WebGPU, calls that read what the call before them wrote at the same index run as one dispatch, in one submission. The report the scope returns names each group, and says why two calls run apart. An entry call in the body forms a group of its own, and so does a loop that pushes onto an array. `FuseReport` and `mergeReports`, which adds several reports into one, come from `typeshade/runtime` too, so a host that only reads reports ships no planner.',
+        fuseIndirectP:
+          'An entry call may take its workgroup count from an array an earlier call wrote. `entry(bindings, { indirect, offset })` reads the three counts at element `offset` of a `Resident<Uint32Array>` when the call runs. A chain of calls then needs no read between them, and in a scope the group of such a call reports `indirect: true`.',
+        deviceP:
+          "`createDevice()` from `typeshade/runtime` opens an owner of the calls. `device.array()` makes the `Resident` arrays its calls take, and `device.fuse()` runs a body's calls as one plan on that device. One `Resident` belongs to one owner for its life, so a call refuses an array of another owner. `device.release(r)` gives an array back to the device's pool for the next `array()` of the same element and length.",
+        chunkP:
+          "A kernel that iterates inside one dispatch can run long enough for a GPU watchdog to reset the device. Cut its loop into chunks. `device.chunkSize(key, max)` gives the units of the next chunk under the device's time budget, `createDevice({ timeBudgetMs })`, and `device.fuse(body, { chunk: { key, units } })` runs and times that chunk alone. The report gains a `chunk` row, and `device.chunkRates` holds what the device measured.",
+        modulesP:
+          '`typeshade/algorithms` and `typeshade/random` are kernel functions written in TypeShade, and they fuse with yours in one scope. [Algorithms](languageAlgorithms) and [Random numbers](languageRandom) list them.',
+        boundary: '7. Where JavaScript control flow stops',
         boundaryItems: [
-          'Write filter, find and the other array methods that change a length or search for an element as a loop.',
+          'Write filter, find and the other array methods that change a length or can give undefined as a loop. findIndex and indexOf give -1 where nothing matches.',
           'Do not rely on general runtime objects.',
           'Keep conditions and loop ranges based on GPU-compilable values.',
           'A control-flow pattern valid in TypeScript is not automatically valid under TypeShade shader semantics.',
@@ -2606,6 +2636,128 @@ export const en = {
         helper: '4. Helper functions',
         helperP:
           'An undecorated function is a helper, not an entry point. Do not put entry points on classes or treat `this` as a pipeline object.',
+        next: 'Next: Algorithms',
+      },
+      // The common modules (compiler change 0072): typeshade/algorithms (surface §72) and
+      // typeshade/random (surface §73), each a page of its own in the Language group.
+      algorithms: {
+        title: 'typeshade/algorithms: maps, reductions and scans',
+        description:
+          'The common algorithms TypeShade ships as kernel functions: copy, maps, reductions, scans, compaction and a histogram, on every tier and inside fuse().',
+        h1: 'Algorithms: typeshade/algorithms',
+        intro:
+          '`typeshade/algorithms` is a common module: kernel functions written in `"use typeshade"` and published under a subpath of the package (Rule 11.20). It holds the copy, the fill, the maps, the reductions, the scan, the compaction and the histogram over arrays. Each function runs on WebGPU, on WebGL2 and on the CPU tier, and gives on each the bits the CPU oracle gives. In a `fuse` scope it fuses with the calls around it as far as the facts allow.',
+        host: '1. The host face',
+        hostP:
+          'Host code imports the subpath as it imports any package, and calls each function over `Resident` arrays, alone or inside a `fuse` body. Each function writes every element of its output, so an array from a device pool needs no zeroing. `histogram` is the one exception: it adds into the bins it is given, and the caller zeroes them.',
+        functions: '2. The functions',
+        functionsP: 'An array parameter is an `array<f32>` unless the row says otherwise.',
+        functionsColumns: ['Group', 'Functions', 'What each one does'],
+        functionsRows: [
+          [
+            'Copy and fill',
+            '`copy(out, x)`, `fill(out, value)` and `sequence(out, start, step)`',
+            'One loop at `i`. `sequence` writes `start + f32(i) * step`.',
+          ],
+          [
+            'Binary maps',
+            '`add`, `sub`, `mul` and `div` as `(out, a, b)`, and `scale(out, x, k)`',
+            'One loop at `i`.',
+          ],
+          [
+            'Unary maps',
+            '`abs`, `neg`, `sqrt`, `rsqrt`, `exp`, `log`, `expm1`, `log1p`, `floor`, `ceil`, `round`, `sign`, `sin`, `cos`, `tan`, `tanh`, `sigmoid` and `relu` as `(out, x)`, and `clip(out, x, lo, hi)`',
+            "One loop at `i`. In the shader module each one is `<op>Map`, such as `absMap`, since a kernel function cannot carry a builtin's name.",
+          ],
+          [
+            'Whole reductions',
+            '`sum(x)`, `max(x)` and `min(x)`, each an `f32`',
+            'One tree order on every tier (Rule 7.2). In the shader module they are `sum`, `maxAll` and `minAll`.',
+          ],
+          [
+            'Axis reductions',
+            '`sumAxis`, `meanAxis`, `prodAxis`, `maxAxis`, `minAxis`, `argMaxAxis` and `argMinAxis` as `(out, x, axis, inner)`',
+            '`x` is read as `[outer, axis, inner]`. Each element of `out` is a serial fold in ascending order.',
+          ],
+          [
+            'Scan',
+            '`inclusiveScan(out, x, sums)` and `exclusiveScan(out, x, sums)` over `array<u32>`',
+            "Two loops of one kernel function. `sums` is the caller's scratch, with at least one element and about as many as the square root of the length of `x`.",
+          ],
+          [
+            'Compaction',
+            '`compact(out, x, flags, offsets)`',
+            'The elements whose flag is 1, in their order, where `offsets` is the exclusive scan of `flags`.',
+          ],
+          [
+            'Histogram',
+            '`histogram(bins, x, lo, hi)`',
+            'Adds the count of `x` in each of the equal bins over `[lo, hi)` into `bins`. Each add is an atomic on WebGPU.',
+          ],
+        ],
+        fuse: '3. How the calls fuse',
+        fuseP:
+          'Every map writes `out` at `i` and reads its inputs at `i`, so a chain of maps is one dispatch, and a whole reduction joins a chain as its last call. An axis reduction, a scan and a compaction read their input at another index, so each one starts a group of its own after a call that wrote that input. In the first scope of the sample, `fill`, `add` and `relu` run as one dispatch and `sumAxis` as a second, in one submission.',
+        tiers: '4. Where each one runs',
+        tiersP:
+          "The compiler's differential gate calls every function on WebGPU and on WebGL2 against the CPU oracle. It holds a function bit for bit where the determinism report lists no row for it, and within a bound where it lists one, such as `exp` or `sin`. WebGL2 refuses the three whole reductions, the two scans, `compact` and `histogram`, so each of those calls falls to the next tier of `prefer` (Rule 11.8).",
+        device: '5. The device face',
+        deviceP:
+          'A `"use typeshade"` file may import from `typeshade/algorithms` too, which names the shader module under the `typeshade` condition. Its exports are kernel functions, and no function calls a kernel function, so a shader file has nothing to call from it in this version. The helpers a kernel composes over its own workgroup memory are a later delivery.',
+        later: '6. Not yet',
+        laterP:
+          'Sort, partition, a segmented reduction, `reduceByKey`, a nearest-neighbour search, matrix products, `f64` linear algebra and a workgroup-memory scan are later deliveries.',
+        next: 'Next: Random numbers',
+      },
+      random: {
+        title: 'typeshade/random: hashes and uniform draws',
+        description:
+          'The common generators TypeShade ships: hash32, xorshift32 and uniform for a kernel, and fillUniform, fillWords and generator for a host, the same on every tier.',
+        h1: 'Random numbers: typeshade/random',
+        intro:
+          '`typeshade/random` is the second common module (Rule 11.20). It holds the generators and the hashes a kernel draws from, and the fills a host calls. Each one gives the same bits on every tier.',
+        device: '1. The device face',
+        deviceP:
+          'A `"use typeshade"` file imports the three scalar helpers and calls them in its own kernel or entry. The draw in the sample depends on the seed and the index only, so the tier and the dispatch shape do not change it.',
+        deviceColumns: ['Function', 'What it does'],
+        deviceRows: [
+          [
+            '`xorshift32(state: u32): u32`',
+            'One step of xorshift32. A zero state stays zero, so seed it with a word that is not zero.',
+          ],
+          [
+            '`hash32(x: u32): u32`',
+            'A 32-bit integer finaliser, for a draw from an index with no state. `hash32(0)` is 0.',
+          ],
+          [
+            '`uniform(word: u32): f32`',
+            'The 24 high bits of `word` as an `f32` in `[0, 1)`. The value is exact in `f32`, so one word gives one number on every tier.',
+          ],
+        ],
+        host: '2. The host face',
+        hostP:
+          'Host code imports the same subpath. The three helpers are there too, as functions that run on the CPU, and three more stand beside them. `generator(seed)` uses the same `hash32` and `uniform`, so a shuffle on the host and a draw on the device from one seed agree bit for bit.',
+        hostColumns: ['Function', 'What it does'],
+        hostRows: [
+          [
+            '`fillUniform(out, seed: u32)`',
+            'A kernel function. Element `i` is `uniform(hash32(seed ^ i))`, a draw in `[0, 1)`.',
+          ],
+          [
+            '`fillWords(out: array<u32>, seed: u32)`',
+            'A kernel function. Element `i` is `hash32(seed ^ i)`.',
+          ],
+          [
+            '`generator(seed: u32): () => number`',
+            'Plain JavaScript. Each call gives the next draw of a counter that starts at 0.',
+          ],
+        ],
+        held: '3. What it is held to',
+        heldP:
+          "The compiler's tests hold `fillUniform(out, seed)` on the CPU tier to `generator(seed)` element for element. Its differential gate holds the two fills on WebGPU and WebGL2 to the CPU oracle.",
+        later: '4. Not yet',
+        laterP:
+          'A normal distribution, a counter-based generator with a larger state such as Philox or PCG, and a permutation are later deliveries.',
         next: 'Back to the language overview',
       },
     },
