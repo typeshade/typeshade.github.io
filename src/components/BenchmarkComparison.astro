@@ -1,0 +1,60 @@
+---
+import { copyFor, type Locale } from '../i18n/index.ts';
+import { PROFILES } from '../lib/benchmarks/definitions.ts';
+import { regressionCatalog } from '../lib/benchmarks/regression-contract.ts';
+interface Props { locale: Locale; }
+const {locale}=Astro.props;
+const c=copyFor(locale).benchmarks;
+---
+<section data-benchmarks data-paired>
+  <script type="application/json" data-benchmark-copy set:html={JSON.stringify(c).replace(/</g,'\\u003c')} />
+  <h2 id="comparison">{c.comparisonH}</h2>
+  <p>{c.comparisonInfo}</p>
+  <p>{c.runInfo}</p>
+  <dl>{regressionCatalog.builds.map((b,i)=><><dt>{i===0?c.baseline:c.candidate}</dt><dd><code>{b.revision}</code></dd></>)}</dl>
+  <p>{c.comparisonScope}</p>
+  <fieldset class="border border-line-1 rounded-md p-4" data-controls>
+    <legend>{c.comparisonH}</legend>
+    <label class="flex flex-wrap items-center gap-3">{c.profile}
+      <select data-profile class="bg-surface-1 border border-line-1 rounded-md p-2">
+        {Object.entries(PROFILES).map(([key,value])=><option value={key}>{c.profiles[key as keyof typeof PROFILES]}: {value.sizes.join(', ')} / {value.samples}</option>)}
+      </select><span class="text-ui text-text-2">{c.profileUnits}</span>
+    </label>
+  </fieldset>
+  <div class="flex flex-wrap gap-3 mt-4">
+    <button type="button" data-run class="compare-button">{c.run}</button>
+    <button type="button" data-stop class="compare-button" disabled>{c.stop}</button>
+  </div>
+  <p data-status role="status" aria-live="polite">{c.idle}</p>
+  <progress data-progress value="0" max="1" class="w-full" hidden></progress>
+  <p data-software hidden>{c.software}</p>
+  <p>{c.comparisonTiming}</p>
+  <p>{c.comparisonMemory}</p>
+  <p data-empty>{c.empty}</p>
+  <div class="compare-table" data-table tabindex="0" role="region" aria-label={c.comparisonH} hidden>
+    <table data-own-stack><thead><tr>{[c.experiment,c.build,c.size,c.peakBuffers,c.cold,c.wall,c.gpu,c.check].map(label=><th scope="col">{label}</th>)}</tr></thead><tbody data-results></tbody></table>
+  </div>
+  <div class="compare-table" data-pairs hidden tabindex="0" role="region" aria-label={c.ratios}>
+    <h3>{c.ratios}</h3><p>{c.ratioInfo}</p>
+    <table data-own-stack><thead><tr>{[c.experiment,c.size,c.wallRatio,c.gpuRatio,c.memoryRatio].map(label=><th scope="col">{label}</th>)}</tr></thead><tbody data-pair-results></tbody></table>
+  </div>
+  <section data-device hidden><h3>{c.deviceH}</h3><dl><dt>{c.webgpu}</dt><dd data-webgpu></dd><dt>{c.webgl}</dt><dd data-webgl></dd></dl></section>
+  <p>{c.comparisonTrust}</p>
+  <p>{c.privacy}</p>
+  <details><summary>{c.inspect}</summary><pre data-record class="compare-record"></pre></details>
+  <label class="flex items-start gap-3 mt-4"><input type="checkbox" data-consent class="mt-1" /><span>{c.consent}</span></label>
+  <div class="flex flex-wrap gap-3 mt-4">
+    <button type="button" data-download class="compare-button" disabled>{c.download}</button>
+    <button type="button" data-send class="compare-button" disabled>{c.send}</button>
+  </div>
+  <p data-send-status role="status" aria-live="polite"></p>
+</section>
+<style>
+  .compare-button { border: 1px solid var(--color-line-1); border-radius: .375rem; padding: .45rem 1rem; background: var(--color-surface-1); color: var(--color-text-1); font: inherit; cursor: pointer; }
+  .compare-button:disabled { opacity: .5; cursor: default; }
+  .compare-button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+  .compare-table { overflow-x: auto; }
+  .compare-table table { min-inline-size: 48rem; font-size: .8rem; }
+  .compare-record { max-block-size: 24rem; overflow: auto; font-size: .75rem; }
+  dd { overflow-wrap: anywhere; }
+</style>

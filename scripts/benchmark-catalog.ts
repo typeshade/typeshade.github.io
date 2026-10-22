@@ -1,10 +1,9 @@
 // Build-time TypeShade compilation. No compiler runs in the visitor's browser.
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { format } from 'prettier';
-import { compile } from '../vendor/shader-dsl/src/compiler/ts/compile.ts';
-import { packModule } from '../vendor/shader-dsl/src/compiler/ts/pack.ts';
+import original from '../src/lib/benchmarks/catalog-v1.json';
+import { benchmarkCompiler } from './benchmark-compiler.ts';
 import { EXPERIMENTS, type Experiment } from '../src/lib/benchmarks/definitions.ts';
 
 function source(e: Experiment): string {
@@ -49,9 +48,10 @@ export function main(@builtin("global_invocation_id") gid: vec3u): void {
 }`;
 }
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
-const compiler = execFileSync('git', ['rev-parse', 'HEAD:vendor/shader-dsl'], {
-  encoding: 'utf8',
-}).trim();
+const compiler = original.compiler;
+const { load } = benchmarkCompiler(compiler);
+const { compile } = await load('src/compiler/ts/compile.ts');
+const { packModule } = await load('src/compiler/ts/pack.ts');
 const cases = EXPERIMENTS.map((e) => {
   const text = source(e);
   if (!text) return { ...e, source: '', wgsl: '', shader: hash(''), bindings: [] };

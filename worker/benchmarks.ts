@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { parseRecord } from '../src/lib/benchmarks/contract.ts';
+import { parseAnyRecord as parseRecord } from '../src/lib/benchmarks/records.ts';
 import {
   RECORD_BYTES,
   RETENTION_DAYS,
@@ -8,8 +8,8 @@ import {
 } from '../src/lib/benchmarks/definitions.ts';
 
 export const RETAINED_LIMIT = 10000;
-const answer = (status: number, code: string) =>
-  new Response(JSON.stringify({ code }), {
+const answer = (status: number, code: string, receipt?: { id: string; receivedAt: string }) =>
+  new Response(JSON.stringify({ code, ...receipt }), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
@@ -84,13 +84,16 @@ export async function benchmarkRequest(
   const digest = await hash(json);
   try {
     const existing = await db
-      .prepare('SELECT digest FROM benchmark_records WHERE id = ?')
+      .prepare('SELECT digest, created FROM benchmark_records WHERE id = ?')
       .bind(record.id)
-      .first<{ digest: string }>();
+      .first<{ digest: string; created: number }>();
     if (existing)
       return answer(
         existing.digest === digest ? 200 : 409,
         existing.digest === digest ? 'duplicate' : 'conflict',
+        existing.digest === digest
+          ? { id: record.id, receivedAt: new Date(existing.created).toISOString() }
+          : undefined,
       );
     const hour = Math.floor(now / 3600000);
     const day = Math.floor(now / 86400000);
@@ -118,17 +121,20 @@ export async function benchmarkRequest(
       .run();
     if (!inserted.meta.changes) {
       const row = await db
-        .prepare('SELECT digest FROM benchmark_records WHERE id = ?')
+        .prepare('SELECT digest, created FROM benchmark_records WHERE id = ?')
         .bind(record.id)
-        .first<{ digest: string }>();
+        .first<{ digest: string; created: number }>();
       return row
         ? answer(
             row.digest === digest ? 200 : 409,
             row.digest === digest ? 'duplicate' : 'conflict',
+            row.digest === digest
+              ? { id: record.id, receivedAt: new Date(row.created).toISOString() }
+              : undefined,
           )
         : answer(503, 'capacity');
     }
-    return answer(201, 'stored');
+    return answer(201, 'stored', { id: record.id, receivedAt: new Date(now).toISOString() });
   } catch {
     return answer(503, 'unavailable');
   }

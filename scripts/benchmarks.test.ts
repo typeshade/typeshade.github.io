@@ -305,3 +305,190 @@ test('analysis pairs within runs, separates reported software and counts runs wi
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+import {
+  regressionCatalog,
+  type RegressionRecord,
+} from '../src/lib/benchmarks/regression-contract.ts';
+import retainedCatalogs from '../src/lib/benchmarks/regression-catalogs.json';
+import { parseAnyRecord } from '../src/lib/benchmarks/records.ts';
+import {
+  APPLICATIONS,
+  WORKLOAD_REVISION,
+  INSTRUMENT_REVISION,
+  applicationInput,
+  expectedApplication,
+  numbersMatch,
+} from '../src/lib/benchmarks/workloads.ts';
+import { nextBatch, MAX_DISPATCHES, validDeviceSamples } from '../src/lib/benchmarks/timing.ts';
+import { pairedResults, summarizePaired } from '../src/lib/benchmarks/comparison.ts';
+import { postBenchmarkRecord } from '../src/lib/benchmarks/send-record.ts';
+function pairedRecord(): RegressionRecord {
+  const metadata = exampleRecord().metadata;
+  const ids = [...regressionCatalog.builds[0]!.cases.map((e) => e.id), ...APPLICATIONS];
+  return {
+    schema: 2,
+    revision: WORKLOAD_REVISION,
+    instrument: INSTRUMENT_REVISION,
+    digest: regressionCatalog.digest,
+    workload: regressionCatalog.workload,
+    builds: [regressionCatalog.builds[0]!.revision, regressionCatalog.builds[1]!.revision],
+    runtimes: [
+      regressionCatalog.builds[0]!.runtimeDigest,
+      regressionCatalog.builds[1]!.runtimeDigest,
+    ],
+    id: crypto.randomUUID(),
+    started: '2026-10-22T00:00:00.000Z',
+    finished: '2026-10-22T00:00:01.000Z',
+    profile: 'quick',
+    status: 'complete',
+    orderSeed: 1,
+    metadata,
+    peers: [structuredClone(metadata), structuredClone(metadata)],
+    loadMs: [1, 2],
+    results: ids.flatMap((id) =>
+      [0, 1].map((build) => {
+        const e = regressionCatalog.builds[0]!.cases.find((e) => e.id === id);
+        return {
+          id,
+          n: 16384,
+          build: build === 0 ? ('baseline' as const) : ('candidate' as const),
+          kind: e
+            ? ('compiled' as const)
+            : id === 'resident-image'
+              ? ('resident' as const)
+              : ('host' as const),
+          status: 'passed' as const,
+          reason: 'none' as const,
+          setupMs: 1,
+          coldMs: 2,
+          wallMs: build === 0 ? [2, 4, 6] : [1, 2, 3],
+          readbackMs: id === 'resident-image' ? [1, 2, 3] : null,
+          gpuNs: null,
+          gpuTiming: 'unsupported' as const,
+          dispatches: id === 'resident-image' ? 16 : 1,
+          checkedValues: e
+            ? outputLength(e as any, 16384)
+            : id === 'particles'
+              ? 16384 * 8
+              : id === 'peak'
+                ? 1
+                : id === 'collect'
+                  ? 381
+                  : 16384,
+          corruptionDetected: true,
+          logicalBytes: e
+            ? storageBytes(e as any, 16384)
+            : 16384 * (id === 'particles' ? 32 : id === 'collect' ? 8 : 4),
+          peakBufferBytes: build === 0 ? 8192 : 4096,
+          bufferAllocations: 3,
+          gpuSubmissions: 4,
+        };
+      }),
+    ),
+  };
+}
+test('legacy and paired provenance, complete pairs and checked outputs are enforced', () => {
+  expect(parseAnyRecord(exampleRecord()).schema).toBe(1);
+  expect(parseAnyRecord(pairedRecord()).schema).toBe(2);
+  const retained = retainedCatalogs[0]!;
+  const older = pairedRecord();
+  older.digest = retained.digest;
+  older.workload = retained.workload;
+  older.builds = [retained.builds[0]!.revision, retained.builds[1]!.revision];
+  older.runtimes = [retained.builds[0]!.runtimeDigest, retained.builds[1]!.runtimeDigest];
+  expect(parseAnyRecord(older).schema).toBe(2);
+  for (const mutate of [
+    (r: any) => r.builds.reverse(),
+    (r: any) => r.runtimes.reverse(),
+    (r: any) => (r.workload = '0'.repeat(64)),
+    (r: any) => r.results.pop(),
+    (r: any) => r.results[0].checkedValues--,
+    (r: any) => r.results[1].dispatches++,
+    (r: any) => r.results[0].wallMs.pop(),
+    (r: any) => r.results.push(r.results[0]),
+    (r: any) => (r.results[0].gpuNs = [0, 0, 0]),
+    (r: any) => r.peers.pop(),
+    (r: any) => (r.instrument = 'unversioned'),
+  ]) {
+    const r = pairedRecord();
+    mutate(r);
+    expect(() => parseAnyRecord(r)).toThrow();
+  }
+  const partial = pairedRecord();
+  partial.status = 'cancelled';
+  partial.results = partial.results.slice(0, 2);
+  expect(parseAnyRecord(partial).results.length).toBe(2);
+  expect(pairedResults(partial)).toEqual([]);
+});
+test('calibration is bounded and device validity uses only measured samples', () => {
+  let count = 1;
+  while (count < MAX_DISPATCHES) count = nextBatch(count, null);
+  expect(count).toBe(MAX_DISPATCHES);
+  expect(nextBatch(count, null)).toBe(count);
+  expect(nextBatch(4, 3e6)).toBe(4);
+  expect(validDeviceSamples([4000, 8000, 4000])).toEqual([4000, 8000, 4000]);
+  expect(validDeviceSamples([4000, null, 4000])).toBeNull();
+  expect(validDeviceSamples([0, 4000])).toBeNull();
+});
+test('application references cover cold fields, insertion order and output corruption', () => {
+  const input = applicationInput(16384);
+  for (const id of APPLICATIONS) {
+    const expected = expectedApplication(id, input);
+    expect(numbersMatch(expected.slice(), expected)).toBe(true);
+    const bad = expected.slice();
+    bad[bad.length - 1]! += 1;
+    expect(numbersMatch(bad, expected)).toBe(false);
+    expect(numbersMatch(expected.slice(1), expected)).toBe(false);
+  }
+  expect(expectedApplication('particles', input).slice(4, 8)).toEqual([1, 2, 3, 4]);
+});
+test('paired ratios require a complete same-adapter run and expose sample spread', () => {
+  const r = pairedRecord();
+  const pairs = pairedResults(r);
+  expect(pairs).toHaveLength(15);
+  expect(pairs[0]!.wallRatio).toBe(2);
+  expect(pairs[0]!.bufferRatio).toBe(2);
+  expect(pairs[0]!.baselineWallP90).toBe(4);
+  const repeated = structuredClone(r);
+  repeated.id = crypto.randomUUID();
+  const summary = summarizePaired([r, r, repeated]);
+  expect(summary.every((row) => row.runs === 2)).toBe(true);
+  expect(summary.find((row: any) => row.metric === 'wallRatio')?.median).toBe(2);
+  r.peers[1]!.webgpu.architecture = 'different';
+  expect(pairedResults(r)).toEqual([]);
+});
+test('shared sender validates consent and reports stable receipts on idempotent retries', async () => {
+  const record = pairedRecord();
+  const first = await benchmarkRequest(request(record), db);
+  expect(first.status).toBe(201);
+  const receipt: any = await first.json();
+  expect(receipt.id).toBe(record.id);
+  const retry = await benchmarkRequest(request(record), db);
+  expect(retry.status).toBe(200);
+  expect(await retry.json()).toEqual({ ...receipt, code: 'duplicate' });
+  let sent = 0;
+  const send = (async (_url: any, options: any) => {
+    sent++;
+    return benchmarkRequest(request(undefined, { body: options.body }), db);
+  }) as typeof fetch;
+  expect((await postBenchmarkRecord(record, false, send)).status).toBe('failed');
+  expect(sent).toBe(0);
+  expect((await postBenchmarkRecord({ ...record, workload: 'bad' }, true, send)).status).toBe(
+    'failed',
+  );
+  expect(sent).toBe(0);
+  expect(await postBenchmarkRecord(record, true, send)).toEqual({
+    status: 'sent',
+    id: receipt.id,
+    receivedAt: receipt.receivedAt,
+  });
+  expect(sent).toBe(1);
+  expect(
+    await postBenchmarkRecord(
+      record,
+      true,
+      (async () => new Response('{}', { status: 429 })) as typeof fetch,
+    ),
+  ).toEqual({ status: 'failed', code: 'rate' });
+});
