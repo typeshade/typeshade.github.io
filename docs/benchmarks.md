@@ -8,7 +8,8 @@ includes proposal 0082's layout comparison. This is a site feature, not an imple
 of the proposed compiler optimizer.
 
 Implementation starts from site main at `6876351`, with compiler pin `94203d3c`.
-The page and collector are in progress. No production deployment is recorded yet.
+The page and collector are implemented in site PR #215. Local validation passed against
+implementation commit `04dbb9e`. CI, review and production deployment remain pending.
 
 ## Scope
 
@@ -128,3 +129,54 @@ complete, correct run. It groups by catalog, compiler, profile, size, reported a
 browser. It reports run counts, median and p10/p90 ratios, with software separated. These
 percentiles describe the submitted runs; they are not confidence intervals or device counts.
 Controlled reproduction remains necessary before compiler policy changes.
+
+## Validation record
+
+Observed on 2026-10-22 UTC against implementation `04dbb9e`, site baseline `6876351`
+and compiler pin `94203d3c`. Tools: Bun 1.4.3, Node 24.19.0, Chromium 154.0.8037.57,
+Wrangler 4.142.0. Chromium used SwiftShader, with reported fallback status and separately
+recorded WebGL renderer strings. These results validate the instrument, not hardware policy.
+
+| Command                                                                                                                                                                                                                | Observed result                                                                                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run build`                                                                                                                                                                                                        | Passed. Both localized benchmark routes were built.                                                                                                                                                                 |
+| `bun run format:check`                                                                                                                                                                                                 | Passed, including component semicolons.                                                                                                                                                                             |
+| `bun run check:style`                                                                                                                                                                                                  | Passed.                                                                                                                                                                                                             |
+| `bun run check:copy`                                                                                                                                                                                                   | Passed; 2,506 translated strings.                                                                                                                                                                                   |
+| `bun run check:i18n`                                                                                                                                                                                                   | Passed; route parity and dictionary checks.                                                                                                                                                                         |
+| `bun run check:notes:lint`                                                                                                                                                                                             | Passed.                                                                                                                                                                                                             |
+| `TYPESHADE_DOCS_ROOT=$PWD bun vendor/shader-dsl/scripts/ifchange.ts`                                                                                                                                                   | Passed.                                                                                                                                                                                                             |
+| `bun run check:types`                                                                                                                                                                                                  | Passed for site and Worker.                                                                                                                                                                                         |
+| `bun run check:benchmark-catalog`                                                                                                                                                                                      | All 22 compiled fixtures match the pin and digest.                                                                                                                                                                  |
+| `bun test scripts/benchmarks.test.ts scripts/playground-diagnostics.test.ts scripts/playground-host-default.test.ts scripts/compiler-authoring.test.ts scripts/compute-runtime.test.ts scripts/render-runtime.test.ts` | 39 tests passed, including seven new benchmark/collector/analysis tests.                                                                                                                                            |
+| `PLAYWRIGHT_CHROMIUM=/usr/bin/chromium bun run check:benchmarks`                                                                                                                                                       | Passed: 22 quick and 66 extended GPU cases, corrupt-output rejection, missing timestamps/debug extension, no adapter, cancellation, consent, local D1 storage/retry/rejection, JSON download and localized layouts. |
+| `bun run qa:seo`                                                                                                                                                                                                       | Passed; 2,596 pages and 2,476 sitemap entries.                                                                                                                                                                      |
+| `bun run qa:worker-routes`                                                                                                                                                                                             | Passed; eight prefixes shadow no built page.                                                                                                                                                                        |
+| `bun run qa:openseo`                                                                                                                                                                                                   | Passed; no warning or critical issue.                                                                                                                                                                               |
+| `NODE_USE_ENV_PROXY=1 bun run qa:links`                                                                                                                                                                                | Passed; 1,666 resolved, 119 transport/access warnings, zero broken destinations.                                                                                                                                    |
+| `bunx wrangler deploy --dry-run --outdir /tmp/benchmark-worker-build`                                                                                                                                                  | Passed; existing bindings only. Bundle 805.10 KiB, gzip 128.63 KiB. No deployment.                                                                                                                                  |
+| `prepare_monolith_input.py`, `verify_change_rate.py`, `verify_gates.py` from `im-not-ai`                                                                                                                               | Passed; low-risk route, 2.5% draft-to-final change, structural gates passed.                                                                                                                                        |
+
+The browser check writes local screenshots and measurements under ignored `shots/benchmarks/`.
+Both languages were inspected at 390 and 1440 pixels, in both themes, with menus closed and open.
+The header remains 65 pixels tall. Document scroll width equals viewport width. The results
+retain table headers and cells on phones and scroll inside their own container.
+
+For the footer baseline, the browser temporarily removes only the added benchmark link,
+measures the same DOM, then restores it. This reconstructs the unchanged footer structure.
+At 390 pixels, the footer grows from 1098.53 to 1126.52 pixels in English and from 1131.81 to
+1160.91 in Korean. At 1440 pixels, heights stay 448.83 and 461.03 respectively. The footer
+keeps its three groups and existing container. Controls measure 358 pixels wide on phones
+and 836 pixels on desktop. No global container or grid count changed.
+
+Development checks found a short Korean SEO title/description and the shared mobile Markdown
+table stacking rule. The copy was expanded, and the benchmark table gained its own scrolling
+layout. The final build, SEO and browser checks above passed after those fixes.
+
+## Open work
+
+- CI on the final PR head, owner review and merge remain pending. No production migration or deployment has run in this session.
+- Physical-device submissions and controlled hardware reproductions are pending. SwiftShader timings do not select an optimization policy.
+- WebGL render, mixed/vector layouts, write-heavy layouts and full TypeShade host-call overhead remain future suites.
+- The owner's follow-up asks TypeShade itself to expose shared build/device information. Proposal 0083 is draft [compiler PR #735](https://github.com/typeshade/typeshade/pull/735). The current pin does not implement that API.
+- Proposal 0082 remains a draft. Proposal 0081 deviation D1 remains open.
