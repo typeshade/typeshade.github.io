@@ -66,6 +66,7 @@ export function summarizePaired(records: readonly RegressionRecord[]) {
           profile: r.profile,
           id: pair.id,
           n: pair.n,
+          dispatches: pair.dispatches,
           metric,
           adapter,
           browser: r.metadata.userAgent,

@@ -52,6 +52,7 @@ if (mode === 'export') {
   ];
   const comparisons = regressionRuns.map((r: any) => ({
     run: r.id,
+    digest: r.digest,
     workload: r.workload,
     instrument: r.instrument,
     builds: r.builds,

@@ -310,6 +310,7 @@ import {
   regressionCatalog,
   type RegressionRecord,
 } from '../src/lib/benchmarks/regression-contract.ts';
+import retainedCatalogs from '../src/lib/benchmarks/regression-catalogs.json';
 import { parseAnyRecord } from '../src/lib/benchmarks/records.ts';
 import {
   APPLICATIONS,
@@ -390,6 +391,13 @@ function pairedRecord(): RegressionRecord {
 test('legacy and paired provenance, complete pairs and checked outputs are enforced', () => {
   expect(parseAnyRecord(exampleRecord()).schema).toBe(1);
   expect(parseAnyRecord(pairedRecord()).schema).toBe(2);
+  const retained = retainedCatalogs[0]!;
+  const older = pairedRecord();
+  older.digest = retained.digest;
+  older.workload = retained.workload;
+  older.builds = [retained.builds[0]!.revision, retained.builds[1]!.revision];
+  older.runtimes = [retained.builds[0]!.runtimeDigest, retained.builds[1]!.runtimeDigest];
+  expect(parseAnyRecord(older).schema).toBe(2);
   for (const mutate of [
     (r: any) => r.builds.reverse(),
     (r: any) => r.runtimes.reverse(),

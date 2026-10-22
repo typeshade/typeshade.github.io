@@ -108,6 +108,24 @@ const workload = sha(
 );
 const identity = {
   bundler: 'bun@1.4.3',
+  measurement: sha(
+    JSON.stringify(
+      [
+        'regression.worker.ts',
+        'version.worker.ts',
+        'regression-gpu.ts',
+        'timing.ts',
+        'metadata.ts',
+        'workloads.ts',
+        'fixtures.ts',
+        'definitions.ts',
+        'regression-contract.ts',
+      ].map((file) => ({
+        file,
+        source: sha(readFileSync(`src/lib/benchmarks/${file}`, 'utf8').replace(/\r\n/g, '\n')),
+      })),
+    ),
+  ),
   workloadRevision: WORKLOAD_REVISION,
   instrument: INSTRUMENT_REVISION,
   workload,

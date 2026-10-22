@@ -41,13 +41,13 @@ move the documentation pin or depend on that pending implementation.
 
 Workload `applications-1` fixes the source and deterministic inputs independently of the
 compiler. Instrument `paired-1` fixes timing and validation. A catalog digest identifies
-both exact compiler commits, generated shader bytes, bundled runtime bytes and workload hash.
+both exact compiler commits, generated shader bytes, bundled runtime bytes, workload hash and measurement-source hash.
 The first comparison uses `82d7ba527e72975df15c35eb16d27239401ea3eb` and
 `94203d3cab6433065bbe111c3b93f66a4058828e`. These are comparison controls, not a speedup claim.
 
 Each version runs in a separate worker with its own GPUDevice and runtime. The workers run
 on the same page, and every sample alternates their execution order. Both adapter snapshots
-are retained. The analyzer and page exclude ratios when reported WebGPU adapters differ.
+are retained. The analyzer and page exclude ratios when reported WebGPU adapters differ. Cohorts also retain the calibrated dispatch count.
 Counts describe runs; metadata does not establish unique physical devices.
 
 There are ten compiled cases and five application cases per size and build. Compiled cases
@@ -97,7 +97,8 @@ therefore changes the tested compiler and runtime while preserving the applicati
 Read the diff and run the browser instrument before merging a pin update.
 
 `bun run check:regression-catalog` regenerates the active artifacts from source and checks
-exact bytes. CI pins the bundler version. The original catalog check regenerates its original
+exact bytes. The catalog also hashes the measurement, fixture, metadata and validation sources.
+A measurement-code edit changes provenance even when the shader and runtime bytes remain equal. CI pins the bundler version. The original catalog check regenerates its original
 compiler commit rather than applying a new compiler to old provenance. Prior contracts and
 artifacts remain in the registry. A workload or measurement-protocol change requires its own
 revision and corresponding retained validation contract before deployment.
@@ -145,14 +146,14 @@ they do not select an optimization for physical devices.
 | `bun run qa:worker-routes`                                                                                                                                                                                             | Passed; eight prefixes shadow no built page.                                                                                                                                                                                       |
 | `bun run qa:openseo`                                                                                                                                                                                                   | Passed; no warning or critical issue.                                                                                                                                                                                              |
 | `NODE_USE_ENV_PROXY=1 bun run qa:links`                                                                                                                                                                                | Passed; 1,784 resolved, one access warning and zero broken destinations.                                                                                                                                                           |
-| `bunx wrangler deploy --dry-run --outdir /tmp/typeshade-benchmark-worker`                                                                                                                                              | Passed; existing bindings. Worker 846.37 KiB, gzip 132.45 KiB. No deployment.                                                                                                                                                      |
+| `bunx wrangler deploy --dry-run --outdir /tmp/typeshade-benchmark-worker`                                                                                                                                              | Passed; existing bindings. Worker 874.60 KiB, gzip 132.81 KiB. No deployment.                                                                                                                                                      |
 | `prepare_monolith_input.py`, `verify_change_rate.py`, `verify_gates.py`                                                                                                                                                | Passed; Korean copy used the low-risk route and passed structural gates. The audited draft needed no further wording changes.                                                                                                      |
 
 All 30 quick cases and 90 extended cases passed correctness checks. Device timestamps were
 available for all 20 quick and 60 extended compiled rows. The 10 quick and 30 extended
 application rows use complete-call wall time, with resident readbacks measured separately.
 The new runtime artifacts are 439,080 and 439,332 bytes. They are fetched only when a run starts.
-The Worker increased from 805.10 KiB/gzip 128.63 KiB to 846.37 KiB/gzip 132.45 KiB.
+The Worker increased from 805.10 KiB/gzip 128.63 KiB to 874.60 KiB/gzip 132.81 KiB.
 No compiler bundle budget or compiler source changed.
 
 Screenshots were inspected in both languages, both themes, at 390 and 1440 pixels, with menus
@@ -166,3 +167,10 @@ Local screenshots, software-only instrument records, measurements and compiler t
 in ignored directories. CI retains the software instrument evidence for three days. The
 physical-device report is private and is not included in those artifacts. PR #216 has not
 been merged or deployed. Owner review, CI and a physical-device rerun remain open.
+
+The source-identity follow-up retains the first implementation catalog from `23ad4bf`.
+It adds the measurement-source hash to the current catalog and keeps both collector contracts.
+A negative probe changed `timing.ts` temporarily: the catalog check rejected it, then passed
+after the source was restored. A regression test also accepts the retained catalog.
+A changed timing or validation implementation therefore cannot enter an existing measurement
+cohort silently. Changing only compiler/runtime artifacts keeps the fixed workload identity.

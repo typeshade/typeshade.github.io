@@ -1,5 +1,6 @@
 {
   "bundler": "bun@1.4.3",
+  "measurement": "125824526cfc52be0022550a375f5bca8178f58319f173eab19bf3dc226bc21a",
   "workloadRevision": "applications-1",
   "instrument": "paired-1",
   "workload": "b27de1bb537b3aa98beb84a4c4760667fc959a5f0d775c5b6efdb8351f5e23c1",
@@ -423,5 +424,5 @@
       ]
     }
   ],
-  "digest": "2bc3d41f51f88f0d3433be3c2e87ec6ecf1828c35620ab9b1066ebca798a6481"
+  "digest": "8d5c10ba8998e39d44fffb41febeac80beafc440e6a099da890cd49b0d073f2b"
 }
