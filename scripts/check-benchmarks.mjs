@@ -5,6 +5,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync } from 'nod
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { launchChromium } from './playwright.mjs';
+import { checkRegressions } from './check-regressions.mjs';
 
 const scratch = mkdtempSync(path.join(tmpdir(), 'typeshade-benchmarks-'));
 const port = 40000 + Math.floor(Math.random() * 2000);
@@ -64,22 +65,31 @@ try {
     if (r.url().includes('/data/benchmarks/') && r.method() === 'POST') posts++;
     if (/runner\.worker-.*\.js/.test(r.url())) workerLoads++;
   });
-  const record = async () => JSON.parse(await page.locator('[data-record]').textContent());
+  const record = async () =>
+    JSON.parse(
+      await page.locator('[data-benchmarks]:not([data-paired]) [data-record]').textContent(),
+    );
   const run = async () => {
-    await page.locator('[data-run]').click();
+    await page.locator('[data-benchmarks]:not([data-paired]) [data-run]').click();
     await page.waitForFunction(
-      () => document.querySelector('[data-stop]').disabled,
+      () => document.querySelector('[data-benchmarks]:not([data-paired]) [data-stop]').disabled,
       {},
       { timeout: 90000 },
     );
     return record();
   };
   await page.goto(`${url}/benchmarks/`);
-  assert(await page.locator('[data-send]').isDisabled());
-  assert.equal(await page.locator('[data-consent]').isChecked(), false);
+  assert(await page.locator('[data-benchmarks]:not([data-paired]) [data-send]').isDisabled());
+  assert.equal(
+    await page.locator('[data-benchmarks]:not([data-paired]) [data-consent]').isChecked(),
+    false,
+  );
   assert.equal(posts, 0);
   assert.equal(workerLoads, 0);
-  assert.equal(await page.locator('[data-record]').textContent(), '');
+  assert.equal(
+    await page.locator('[data-benchmarks]:not([data-paired]) [data-record]').textContent(),
+    '',
+  );
   const first = await run();
   assert.equal(first.status, 'complete');
   assert.equal(first.results.length, catalog.cases.length);
@@ -96,14 +106,16 @@ try {
   assert.equal(first.metadata.webgl.state, 'available');
   assert.equal(typeof first.metadata.webgl.debugExtension, 'boolean');
   assert.equal(posts, 0);
-  assert(await page.locator('[data-send]').isDisabled());
-  await page.locator('[data-consent]').check();
-  await page.locator('[data-send]').click();
-  await page.waitForFunction(
-    () => document.querySelector('[data-send-status]').textContent === 'Results received.',
+  assert(await page.locator('[data-benchmarks]:not([data-paired]) [data-send]').isDisabled());
+  await page.locator('[data-benchmarks]:not([data-paired]) [data-consent]').check();
+  await page.locator('[data-benchmarks]:not([data-paired]) [data-send]').click();
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-benchmarks]:not([data-paired]) [data-send-status]')
+      .textContent.startsWith('Results received.'),
   );
   assert.equal(posts, 1);
-  assert(await page.locator('[data-send]').isDisabled());
+  assert(await page.locator('[data-benchmarks]:not([data-paired]) [data-send]').isDisabled());
   const retry = await page.evaluate(
     async (r) =>
       (
@@ -134,21 +146,31 @@ try {
   );
   assert.equal((await fetch(`${url}/data/benchmarks/records/`)).status, 405);
   const downloadPromise = page.waitForEvent('download');
-  await page.locator('[data-download]').click();
+  await page.locator('[data-benchmarks]:not([data-paired]) [data-download]').click();
   const download = await downloadPromise;
   assert(download.suggestedFilename().includes(first.id));
   await download.saveAs(path.join(scratch, 'download.json'));
   assert.deepEqual(JSON.parse(readFileSync(path.join(scratch, 'download.json'), 'utf8')), first);
 
   // Stop an extended run. No completion timings are fabricated for the interrupted work.
-  await page.locator('[data-profile]').selectOption('extended');
-  await page.locator('[data-run]').click();
-  await page.waitForFunction(() => document.querySelectorAll('[data-results] tr').length > 0);
-  await page.locator('[data-stop]').click();
+  await page.locator('[data-benchmarks]:not([data-paired]) [data-consent]').uncheck();
+  await page
+    .locator('[data-benchmarks]:not([data-paired]) [data-profile]')
+    .selectOption('extended');
+  await page.locator('[data-benchmarks]:not([data-paired]) [data-run]').click();
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('[data-benchmarks]:not([data-paired]) [data-results] tr').length >
+      0,
+  );
+  await page.locator('[data-benchmarks]:not([data-paired]) [data-stop]').click();
   const partial = await record();
   assert.equal(partial.status, 'cancelled');
   assert(partial.results.length > 0 && partial.results.length < catalog.cases.length * 3);
-  assert.equal(await page.locator('[data-consent]').isChecked(), false);
+  assert.equal(
+    await page.locator('[data-benchmarks]:not([data-paired]) [data-consent]').isChecked(),
+    false,
+  );
 
   const extended = await run();
   assert.equal(extended.status, 'complete');
@@ -163,7 +185,7 @@ try {
       body: `const originalHas = GPUSupportedFeatures.prototype.has; GPUSupportedFeatures.prototype.has = function(n) { return n === 'timestamp-query' ? false : originalHas.call(this,n); }; const originalExtension = WebGL2RenderingContext.prototype.getExtension; WebGL2RenderingContext.prototype.getExtension = function(n) { return n === 'WEBGL_debug_renderer_info' ? null : originalExtension.call(this,n); };\n${await response.text()}`,
     });
   });
-  await page.locator('[data-profile]').selectOption('quick');
+  await page.locator('[data-benchmarks]:not([data-paired]) [data-profile]').selectOption('quick');
   const noTiming = await run();
   assert.equal(noTiming.status, 'complete');
   assert.equal(noTiming.metadata.webgpu.timestamps, false);
@@ -205,16 +227,29 @@ try {
   // Both localized pages, mobile/desktop, both themes, with the navigation opened.
   const measurements = [];
   mkdirSync('shots/benchmarks', { recursive: true });
+  await checkRegressions(page, url);
   for (const locale of ['', '/ko'])
     for (const width of [390, 1440])
       for (const theme of ['light', 'dark']) {
         await page.setViewportSize({ width, height: 1000 });
         await page.goto(`${url}${locale}/benchmarks/`);
         assert.equal((await run()).status, 'complete');
-        assert.equal(await page.locator('[data-table] thead').isVisible(), true);
+        await page.locator('[data-paired] [data-run]').click();
+        await page.waitForFunction(
+          () => document.querySelector('[data-paired] [data-stop]').disabled,
+          {},
+          { timeout: 90000 },
+        );
+        const paired = JSON.parse(await page.locator('[data-paired] [data-record]').textContent());
+        assert.equal(paired.status, 'complete');
+        assert.equal(await page.locator('[data-paired] [data-table] thead').isVisible(), true);
+        assert.equal(
+          await page.locator('[data-benchmarks]:not([data-paired]) [data-table] thead').isVisible(),
+          true,
+        );
         assert.equal(
           await page
-            .locator('[data-results] td')
+            .locator('[data-benchmarks]:not([data-paired]) [data-results] td')
             .first()
             .evaluate((el) => getComputedStyle(el).display),
           'table-cell',
@@ -246,14 +281,12 @@ try {
                 const r = document.querySelector(selector).getBoundingClientRect();
                 return { width: r.width, height: r.height };
               };
-              const added = document
-                .querySelector(`footer a[href="${locale}/benchmarks/"]`)
-                .closest('li');
-              const parent = added.parentElement;
-              const next = added.nextSibling;
-              added.remove();
+              const added = document.querySelector('[data-paired]');
+              added.hidden = true;
               const footerBefore = rect('.site-footer');
-              parent.insertBefore(added, next);
+              const headerBefore = rect('.site-header');
+              const controlsBefore = rect('[data-benchmarks]:not([data-paired]) [data-controls]');
+              added.hidden = false;
               return {
                 locale,
                 width,
@@ -262,8 +295,12 @@ try {
                 heading: document.querySelector('h1').textContent,
                 header: rect('.site-header'),
                 footerBefore,
+                headerBefore,
+                controlsBefore,
                 footer: rect('.site-footer'),
-                controls: rect('[data-controls]'),
+                controls: rect('[data-benchmarks]:not([data-paired]) [data-controls]'),
+                comparison: rect('[data-paired] [data-controls]'),
+                comparisonTable: rect('[data-paired] [data-table]'),
               };
             },
             { locale, width, theme },

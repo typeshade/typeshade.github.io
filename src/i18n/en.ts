@@ -1512,6 +1512,29 @@ export const en = {
   },
 
   benchmarks: {
+    receipt: 'Receipt {id}, received {time}.',
+    comparisonH: 'Version comparison',
+    ratios: 'Paired results',
+    ratioInfo:
+      'Ratios divide the baseline median by the candidate median. Values above 1 indicate less candidate time or buffer memory. Timing spread and readback samples remain in the JSON.',
+    wallRatio: 'Wall ratio',
+    gpuRatio: 'GPU ratio',
+    memoryRatio: 'Buffer ratio',
+    comparisonInfo:
+      'Run the same programs with the baseline and candidate builds. Each build has an isolated runtime, and their measured calls alternate.',
+    comparisonScope:
+      'Compiled programs compare layout, arithmetic and reduction. Application calls cover image inversion, particle updates, peak reduction and Map/Set collection. Resident calls keep image data on the device.',
+    comparisonTiming:
+      'First-call time includes case preparation. Repeated compiled timings are per dispatch in a calibrated batch. Application timings cover the complete call. Resident timings cover a fixed chain; readback is recorded separately in the JSON.',
+    comparisonMemory:
+      'Peak buffer bytes count live WebGPU buffers created through the instrument. They exclude textures, driver allocations and JavaScript memory. The record also includes allocation and submission counts.',
+    comparisonTrust:
+      'Compare versions within the same run and workload. Inspect both adapter snapshots and raw samples before interpreting a ratio. A submitted GPU command does not prove every part of a call ran on the GPU.',
+    baseline: 'Baseline',
+    candidate: 'Candidate',
+    build: 'Build',
+    peakBuffers: 'Peak buffers (B)',
+    cold: 'First call (ms)',
     title: 'Performance benchmarks',
     h1: 'Benchmarks',
     description:
@@ -1580,7 +1603,7 @@ export const en = {
       'WebGPU adapter information and WebGL renderer information have separate fields. The APIs may select different GPUs. Browsers can hide either value.',
     inspect: 'Inspect the record',
     consent:
-      'I agree to send this record, including its device information, for TypeShade performance research.',
+      'I agree to send benchmark records and device information for TypeShade performance research. Checked before a run, each completed, stopped or failed run sends its record.',
     retention:
       'Records expire after {days} days. A daily cleanup deletes expired records. Temporary address hashes enforce an hourly limit and expire at the end of the hour.',
     trust:

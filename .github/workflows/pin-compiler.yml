@@ -74,7 +74,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         if: steps.bump.outputs.changed == 'true'
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - name: Write the pull request body
         if: steps.bump.outputs.changed == 'true'
         env:
@@ -82,6 +82,7 @@ jobs:
           NEW: ${{ steps.bump.outputs.new }}
         run: |
           bun install --frozen-lockfile
+          bun scripts/regression-catalog.ts --new
           {
             echo "Moves the compiler pin (\`vendor/shader-dsl\`) from \`${OLD:0:7}\`, where \`main\` has it, to \`${NEW:0:7}\`, the compiler's \`main\`."
             echo
@@ -134,7 +135,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add vendor/shader-dsl
+          git add vendor/shader-dsl src/lib/benchmarks/regression-catalog*.json public/benchmarks/artifacts
           git commit --quiet -m "site: pin the compiler at $SHORT"
           title="site: pin the compiler at $SHORT"
           if [ "$OPEN" = "true" ]; then

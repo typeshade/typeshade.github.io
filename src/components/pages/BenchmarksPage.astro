@@ -1,16 +1,18 @@
 ---
 import Docs from '../../layouts/Docs.astro';
+import BenchmarkComparison from '../BenchmarkComparison.astro';
 import { copyFor, type Locale } from '../../i18n/index.ts';
 import { links } from '../../lib/links.ts';
 import { PROFILES, SUITES, RETENTION_DAYS } from '../../lib/benchmarks/definitions.ts';
 interface Props { locale: Locale; }
 const { locale } = Astro.props;
 const c = copyFor(locale).benchmarks;
-const headings = [{ depth: 2, slug: 'run', text: c.runH }, { depth: 2, slug: 'results', text: c.resultsH }, { depth: 2, slug: 'sharing', text: c.sharingH }];
+const headings = [{ depth: 2, slug: 'comparison', text: c.comparisonH }, { depth: 2, slug: 'run', text: c.runH }, { depth: 2, slug: 'results', text: c.resultsH }, { depth: 2, slug: 'sharing', text: c.sharingH }];
 ---
 <Docs locale={locale} path={links.benchmarks.href} title={c.title} description={c.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/components/pages/BenchmarksPage.astro">
   <h1>{c.h1}</h1>
   <p>{c.intro}</p>
+  <BenchmarkComparison locale={locale} />
   <div data-benchmarks>
     <script type="application/json" data-benchmark-copy set:html={JSON.stringify(c).replace(/</g, '\\u003c')} />
     <h2 id="run">{c.runH}</h2>

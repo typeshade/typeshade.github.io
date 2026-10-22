@@ -1,7 +1,9 @@
 // Private maintainer tools. Run with Bun; Wrangler supplies its own authenticated D1 access.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { parseRecord, type BenchRecord } from '../src/lib/benchmarks/contract.ts';
+import type { BenchRecord } from '../src/lib/benchmarks/contract.ts';
+import { parseAnyRecord as parseRecord } from '../src/lib/benchmarks/records.ts';
+import { pairedResults, summarizePaired } from '../src/lib/benchmarks/comparison.ts';
 import { median } from '../src/lib/benchmarks/fixtures.ts';
 
 const [mode, file] = process.argv.slice(2);
@@ -41,9 +43,23 @@ if (mode === 'export') {
   );
 } else {
   const input = JSON.parse(readFileSync(file, 'utf8'));
-  const records = (Array.isArray(input) ? input : input.schema === 1 ? [input] : input.records).map(
+  const allRecords = (Array.isArray(input) ? input : input.schema ? [input] : input.records).map(
     parseRecord,
-  ) as BenchRecord[];
+  );
+  const records = allRecords.filter((r: { schema: number }) => r.schema === 1) as BenchRecord[];
+  const regressionRuns = [
+    ...new Map(allRecords.filter((r: any) => r.schema === 2).map((r: any) => [r.id, r])).values(),
+  ];
+  const comparisons = regressionRuns.map((r: any) => ({
+    run: r.id,
+    workload: r.workload,
+    instrument: r.instrument,
+    builds: r.builds,
+    runtimes: r.runtimes,
+    profile: r.profile,
+    peers: r.peers,
+    pairs: pairedResults(r),
+  }));
   const unique = new Map(records.map((r) => [r.id, r]));
   const pairs = [
     ['layout-aos-8-read-1', 'layout-soa-8-read-1'],
@@ -115,6 +131,8 @@ if (mode === 'export') {
         excludedIncomplete: excluded,
         duplicatesRemoved: records.length - unique.size,
         summary,
+        comparisons,
+        regressionSummary: summarizePaired(regressionRuns),
       },
       null,
       2,
