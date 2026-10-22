@@ -1937,6 +1937,10 @@ export const ko: Copy = {
       importH: '모듈 가져오기',
       importP:
         '호스트는 `typeshade/vite` 플러그인으로 `.shade.ts`를 자신의 TypeScript에 가져와, 모듈이 내보내는 것을 부를 수도 있습니다. 헬퍼는 CPU에서 실행됩니다. `@compute` 진입점은 `await entry(bindings, workgroups)`로 부릅니다. `workgroups`는 `{ indirect, offset }`일 수도 있습니다. 이때는 앞선 호출이 `Resident<Uint32Array>`의 `offset` 원소에 쓴 개수 세 개를 호출이 실행될 때 읽습니다. 전체 화면 `@fragment` 진입점은 `entry(canvas, bindings)`로 WebGPU, WebGL2, CPU 순서로 그립니다. 이때 위 표에서 애플리케이션이 하던 일은 런타임이 맡습니다. 첫 호출에서 디바이스를 요청해 이후 호출과 함께 쓰고, 진입점마다 파이프라인을 만들며, 호출이 넘긴 객체로 바인딩을 채우고, 컴퓨트 진입점이 쓴 값을 다시 읽어 옵니다.',
+      overrideP:
+        '컴퓨트 진입점은 `entry(bindings, workgroups, { constants: { WIDTH: width } })`로도 부릅니다. 이름은 모듈에 선언한 override이며, 생략한 값은 기본값을 유지합니다. 선택한 값으로 워크그룹 모양과 공유 배열 길이, CPU 인보케이션 내장 값이 정해집니다. 그룹 개수는 그 모양에 맞춰 계산합니다. 상수를 선택해도 넘긴 개수는 바뀌지 않습니다. 런타임은 업로드 전에 이름과 스칼라 범위, 디바이스 한도를 검사하며, 호출 시점의 상수를 보관합니다.',
+      overrideLimitsP:
+        '디바이스와 진입점, 정규화한 상수와 fp64 방식이 같으면 파이프라인을 재사용합니다. 측정한 크기 몇 가지 중에서 고르십시오. CPU tier는 같은 상수를 받는 생성된 클로저를 사용하고 워크그룹 할당 크기를 제한합니다. 배리어는 여전히 GPU tier가 필요합니다. WebGL2는 일반 상수를 고정할 수 있지만, 워크그룹 모양이나 공유 배열 길이를 바꾸면 거부합니다. [host-compute 예제](exampleHostCompute)는 기본 호출과 상수를 선택한 직접 호출, 디바이스 계획을 보여 주며, 마지막 그룹이 일부만 채워지는 입력도 검사합니다.',
       loadH: '프로그램 불러오기',
       loadP:
         '엔진이나 렌더러처럼 프레임을 직접 그리는 호스트는 컴파일된 프로그램을 프로그램 런타임 `typeshade/runtime`에 불러와 실행합니다. 프로그램은 매니페스트라는 객체 하나로 전달되며, 여기에 셰이더 코드와 바인딩, 진입점이 모두 들어 있습니다. `packModule(compile(source).module)`이 이 객체를 돌려주고, 호스트에서 모듈을 가져오면 기본 내보내기로 받습니다. 평범한 JSON이어서 빌드가 디스크에 그대로 쓸 수도 있습니다.',
@@ -2500,7 +2504,7 @@ export const ko: Copy = {
       },
       descriptions: {
         'host-draw': '전체 화면 `@fragment` 진입점과 이를 그리는 호스트입니다.',
-        'host-compute': '`@compute` 진입점과 이를 디스패치하는 호스트입니다.',
+        'host-compute': '`@compute` 진입점과 호스트입니다.',
         'host-kernel': '커널 함수 두 개와 이를 부르는 호스트입니다.',
         'host-resident':
           '커널 함수 세 개와, 이를 `resident()` 배열 위에서 이어 부르는 호스트입니다.',
@@ -2519,7 +2523,7 @@ export const ko: Copy = {
         'host-draw':
           '전체 화면 `@fragment` 진입점과 이를 그리는 호스트입니다. 호스트는 `fs`를 가져와 프레임마다 `fs(canvas, { frame })`를 한 번 부르고, 유니폼에 시간을 넣습니다. 그리는 것은 전체 화면 삼각형 하나입니다. WebGPU가 먼저이고, 없으면 WebGL2, 그다음은 CPU tier입니다. 호스트 코드에는 파이프라인도 버퍼도 바인드 그룹도 없습니다(규칙 8.24).',
         'host-compute':
-          '`@compute` 진입점과 이를 디스패치하는 호스트입니다. 호스트는 `scale`을 가져와 `await scale({ k, xs, ys }, 4)`를 부릅니다. 바인딩은 숫자 하나와 `Float32Array` 두 개로, 모두 평범한 값입니다. 프로미스가 이행되면 GPU가 쓴 값이 `ys`에 들어 있습니다(규칙 8.24). WebGPU가 없으면 WebGL2나 CPU tier에서 실행됩니다.',
+          '`@compute` 진입점과 이를 실행하는 호스트입니다. `run()`은 선언한 기본값을 쓰고, `runSpecialized()`는 직접 호출과 `device.fuse()` 안의 호출에 `{ constants }`를 넘깁니다. `WIDTH`는 워크그룹 크기를, `GAIN`은 출력 배율을 정합니다. 호스트는 선택한 폭으로 그룹 개수를 계산하고, 계획의 배열을 Resident로 유지한 뒤 결과와 디스패치 리포트를 돌려줍니다(규칙 8.24). WebGPU와 CPU tier는 32개 인보케이션을 쓰며, WebGL2는 기본값 64를 유지하면서 `GAIN`을 선택합니다.',
         'host-kernel':
           '커널 함수 두 개와 이를 부르는 호스트입니다. `exposure`는 `array<f32>`를 돌고, `peak`는 그 배열을 하나의 값으로 줄입니다. 호스트는 `Float32Array`를 넘겨 `await exposure(1.5, pixels)`를 부르고, 숫자 하나를 얻으려고 `await peak(pixels)`를 부릅니다. 컴파일러가 반복이 서로 독립이라고 증명한 루프는 GPU에서 반복마다 인보케이션 하나로 실행되고, 배열은 제자리에서 바뀌어 돌아옵니다(규칙 8.22).',
         'host-resident':
@@ -2896,6 +2900,8 @@ export const ko: Copy = {
           '호스트는 `typeshade({ fuse: true })`로 빌드하고, `typeshade/fuse`의 `fuse()` 안에서 커널 함수 여러 개를 부를 수 있습니다(규칙 11.13). WebGPU에서는 바로 앞 호출이 같은 인덱스에 쓴 값을 읽는 호출들이 제출 하나 안의 디스패치 하나로 실행됩니다. 스코프가 돌려주는 리포트는 그룹마다 이름을 대고, 두 호출이 따로 실행되는 이유를 알려 줍니다. 본문 안의 진입점 호출은 혼자 그룹을 이루며, 배열에 값을 덧붙이는 루프도 그렇습니다. `Map`이나 `Set`을 받는 호출도 별도 그룹이며, 리포트는 `b takes a Map or a Set`이나 CPU에서 실행하는 이유를 표시합니다. `FuseReport`와, 여러 리포트를 하나로 합치는 `mergeReports`는 `typeshade/runtime`에서도 가져올 수 있습니다. 그래서 리포트를 읽기만 하는 호스트는 플래너를 싣지 않습니다.',
         fuseIndirectP:
           '진입점 호출은 앞선 호출이 쓴 배열에서 워크그룹 개수를 읽을 수 있습니다. `entry(bindings, { indirect, offset })`는 호출이 실행될 때 `Resident<Uint32Array>`의 `offset` 원소에서 개수 세 개를 읽습니다. 그러면 호출 체인 사이에 읽기가 필요 없습니다. 스코프 안에서는 이런 호출의 그룹이 리포트에 `indirect: true`로 적힙니다.',
+        fuseOverrideP:
+          '`device.fuse()` 안에서도 가져온 컴퓨트 진입점의 세 번째 인자로 `{ constants }`를 넘깁니다. 크기가 없는 스토리지 배열은 그 소유자의 Resident여야 합니다. 호출은 계획의 제출 안에서 혼자 그룹을 이루며, 소유자의 fp64 방식을 유지합니다. WebGPU에서는 `workgroupShapes`가 `[[32, 1, 1]]`처럼 선택한 차원을 표시합니다. 상수 선택으로 제출이나 대기, 읽기가 추가되지는 않습니다. [host-compute 예제](exampleHostCompute)는 리포트를 돌려주고 계획이 끝난 뒤 출력을 읽습니다.',
         deviceP:
           '`typeshade/runtime`의 `createDevice()`는 호출의 소유자를 엽니다. `device.array()`는 그 호출이 받는 `Resident` 배열을 만들고, `device.fuse()`는 본문의 호출을 그 디바이스에서 계획 하나로 실행합니다. `Resident` 하나는 처음부터 끝까지 소유자 하나에 속합니다. 그래서 호출은 다른 소유자의 배열을 거부합니다. `device.release(r)`는 배열을 디바이스의 풀에 돌려주며, 원소와 길이가 같은 다음 `array()`가 그 배열을 다시 씁니다.',
         chunkP:
@@ -2994,7 +3000,7 @@ export const ko: Copy = {
         computeP:
           'compute 진입점의 `@compute` 차원에는 `override<u32>` 이름을 쓸 수 있습니다. 숫자로 적던 차원도 계속 쓸 수 있습니다. `global_invocation_id` 같은 builtin은 명시적인 매개변수로 받습니다.',
         computeHostP:
-          '일반 TypeScript에서 입력 모양에 따라 크기를 고른 뒤 `program.compute()`의 이름 있는 상수로 넘깁니다. 디스패치 수는 `pipeline.workgroupShape`에서 계산합니다.',
+          '일반 TypeScript에서 크기를 고른 뒤 `program.compute()`의 이름 있는 상수로 넘깁니다. 디스패치 수는 `pipeline.workgroupShape`에서 계산합니다. 가져온 진입점은 `entry(bindings, groups, { constants: { WG_SIZE: selected } })`로 부르며, `device.fuse()` 안에서도 같습니다. 선택한 크기에 맞춰 `groups`를 계산하고, 마지막 그룹에서 입력을 벗어난 인보케이션은 셰이더에서 걸러냅니다. WebGL2는 기본 워크그룹 모양을 사용해야 합니다. [host-compute 예제](exampleHostCompute)에 전체 호스트와 셰이더가 있습니다.',
         graphics: '3. Vertex와 fragment',
         graphicsP:
           '`@vertex`와 `@fragment`는 그래픽스 pipeline의 entry point를 표현합니다. 입력과 출력은 TypeShade value type과 명시적인 builtin parameter로 선언합니다. 스테이지마다 무엇을 건네받고 무엇을 돌려주는지는 [셰이더 파이프라인](conceptsPipeline)이 설명합니다.',

@@ -1,7 +1,7 @@
 ---
 id: the-cpu-oracle
-source: 55fea796dba93229955fa0dd605947610c78a9f6a10b28e2d56c12a3a500eb68
-sourceLine: 1385
+source: 56b0b7ad2943fe2235dbc88a6fa8a9852f439a4f89f3f48d9e54449f442e0f5d
+sourceLine: 1387
 rules: 8.22 Ca5h_etdlFvIPBA1NRya7g-bBPugGzboprLldGAJYDc=, 7.2 onO98E-yRQ3RftA44lVmgPmSW7ZkCd7rYrJGgFS8EI4=, 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
 ---
 
@@ -263,7 +263,11 @@ compileModule(r.module).fns[r.name](0.5, 2, 1) // → { x: …, k: … }
 `f32` 정밀도로 계산합니다. 높이 조회나 피킹 검사, 단위 테스트처럼 호스트 코드가 셰이더의 계산을
 함께 쓸 때 이 방법을 씁니다. 같은 방식으로 가져온 `@compute` 진입점은 반대로 GPU에서 실행됩니다.
 `await entry(bindings, workgroups)`는 진입점을 WebGPU에서 디스패치하고 진입점이 쓴 값을 배열로
-다시 읽어 오며, `entry(canvas, bindings)`는 전체 화면 프래그먼트 진입점을 캔버스에
+다시 읽어 옵니다. `entry(bindings, workgroups, { constants: { WIDTH: 32 } })`는
+`program.compute`와 같은 검증으로 선언한 override를 선택합니다. 계획은 기존 제출을 유지하고
+선택한 워크그룹 모양을 리포트에 표시합니다. CPU 호출은 같은 상수를 받는 생성된 클로저를 쓰며,
+WebGL2는 선언한 기본 워크그룹 모양과 배열 길이를 지원합니다. 가져온 프래그먼트 진입점을
+`entry(canvas, bindings)`로 부르면 전체 화면 프래그먼트 진입점을 캔버스에
 그립니다(`docs/use-typeshade-surface.md` §67).
 
 ```ts
@@ -272,6 +276,22 @@ import { height } from './terrain.shade.ts'
 
 const h = height([0.5, 0.5], [1, 0.5, 2, 0.25]) // a number
 ```
+
+완전한 컴퓨트 예제는
+[`host-compute.shade.ts`](examples/hosts/host-compute/host-compute.shade.ts)와
+[`host.ts`](examples/hosts/host-compute/host.ts)에 있습니다. `run()`은 선언한 기본값을 씁니다.
+`runSpecialized()`는 직접 호출에서 `GAIN`을, `device.fuse()`에서 `WIDTH`를 선택합니다.
+`Math.ceil(n / width)`로 디스패치 크기를 계산하고 셰이더에서 경계를 검사하므로, 원소 259개를
+실행하면 마지막 워크그룹은 일부만 채워집니다. WebGPU에서 진입점 그룹은
+`workgroupShapes: [[32, 1, 1]]`과 디스패치 하나, 제출 하나를 리포트에 표시합니다.
+뒤따르는 `output.read()`는 별도의 읽기입니다. WebGL2는 일반 상수를 선택하면서 기본 폭
+64를 유지합니다. CPU tier는 선택한 모양과 상수를 쓰지만 배리어를 실행할 수는 없습니다.
+
+같은 디바이스와 진입점, fp64 방식에서 정규화한 상수가 같으면 파이프라인을 재사용합니다.
+입력 길이마다 새 파이프라인을 만들기보다 측정한 크기 몇 가지 중에서 고르십시오. 런타임은
+이름과 스칼라 범위, 워크그룹 차원과 공유 메모리 한도를 검사합니다. 크기를 선택해도 최적의
+크기가 자동으로 정해지거나 호출자가 넘긴 워크그룹 개수가 바뀌지는 않습니다. 계획을 기록할
+때도 진입점 호출 시점의 값을 보관합니다.
 
 값은 평범한 JavaScript 값입니다. 스칼라는 `number`나 `boolean`, 벡터는 튜플(`[x, y]`), 행렬은
 열 우선으로 펼친 배열, `array<T, N>`은 배열, 구조체는 객체가 됩니다. 호출은 인자를 하나씩
