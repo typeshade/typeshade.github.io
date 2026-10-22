@@ -2,7 +2,7 @@
 id: migrating-a-glsl-shader
 source: bd506fa7fe28f1d9b75040fa4f164873fd11f101181d7f3c01aa56e8cf195659
 sourceLine: 2903
-rules: 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 8O2dxHWoC8EyiSghUPlEO7j2e1gLt7se9PGHEkU-8fw=
+rules: 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 CjhXTenX6H0V0STxt5Bka_Sp7X0GVUeCZR9Mt1IqNvA=
 ---
 
 이 페이지를 마치면 눈앞의 GLSL 구문을 `"use typeshade"` 파일에서 어떻게 쓰는지 찾아보고, 그

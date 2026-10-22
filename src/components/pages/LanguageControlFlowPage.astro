@@ -12,7 +12,7 @@ interface Props { locale: Locale }
 const { locale } = Astro.props;
 const content = copyFor(locale).language.topics.controlFlow;
 const headings = [
-  ['ts', content.ts], ['branch', content.branch], ['loop', content.loop], ['kernel', content.kernel], ['boundary', content.boundary],
+  ['ts', content.ts], ['branch', content.branch], ['loop', content.loop], ['kernel', content.kernel], ['methods', content.methods], ['fuse', content.fuse], ['boundary', content.boundary],
 ].map(([slug, text]) => ({ depth: 2, slug, text }));
 // TS8070's warnings as the pinned compiler writes them (surface §65), in both languages.
 const warnings = kernelLoopWarnings();
@@ -29,11 +29,27 @@ const warnings = kernelLoopWarnings();
   <h2 id="kernel">{content.kernel}</h2><p><Rich text={content.kernelP} locale={locale} /></p>
   <TypeShadeCode code={`export function render(k: vec4, size: u32, out: array<f32>) {\n  for (let i: u32 = 0; i < size * size; i++) {\n    const p = vec2(f32(i % size), f32(i / size)) / f32(size)\n    out[i] = k.x * sin(p.x * k.y) + k.z * cos(p.y * k.w)\n  }\n}`} />
   <p><Rich text={content.kernelRulesP} locale={locale} /></p>
+  <p><Rich text={content.kernelLayoutP} locale={locale} /></p>
   <p><Rich text={content.kernelWarnP} locale={locale} /></p>
   <table>
     <thead><tr><th>{content.kernelRule}</th><th>{content.kernelWarning}</th></tr></thead>
     <tbody>{warnings.map((w) => <tr><td data-label={content.kernelRule}><code>{w.rule}</code></td><td data-label={content.kernelWarning}><code lang="en">{w.warning}</code></td></tr>)}</tbody>
   </table>
+  <h2 id="methods">{content.methods}</h2><p><Rich text={content.methodsP} locale={locale} /></p>
+  <TypeShadeCode code={`export function stats(xs: array<f32>, out: array<f32>): f32 {\n  xs.forEach((x, i) => {\n    out[i] = x * 2.\n  })\n  const s = xs.reduce((a, x) => a + x * x, 0.)\n  return sqrt(s)\n}`} />
+  <p><Rich text={content.methodsOrderP} locale={locale} /></p>
+  <p><Rich text={content.pushP} locale={locale} /></p>
+  <TypeShadeCode code={`export function strong(xs: array<f32>, t: f32, out: array<u32>): u32 {\n  for (let i: u32 = 0; i < xs.length; i++) {\n    if (xs[i] > t) {\n      out.push(i)\n    }\n  }\n  return out.length\n}`} />
+  <TypeShadeCode code={`const out = new Uint32Array(1024) // the capacity\nconst n = await strong(xs, 0.5, out) // out holds the first indices, in ascending order`} title="host.ts" />
+  <p><Rich text={content.pushHostP} locale={locale} /></p>
+  <p><Rich text={content.collectionsP} locale={locale} /></p>
+  <TypeShadeCode code={`export function labels(pixels: array<u32>, seen: Set<u32>): u32 {\n  for (let i: u32 = 0; i < pixels.length; i++) {\n    if (pixels[i] !== 0) {\n      seen.add(pixels[i])\n    }\n  }\n  return seen.size\n}`} />
+  <h2 id="fuse">{content.fuse}</h2><p><Rich text={content.fuseP} locale={locale} /></p>
+  <p><Rich text={content.fuseIndirectP} locale={locale} /></p>
+  <p><Rich text={content.deviceP} locale={locale} /></p>
+  <TypeShadeCode code={`import { createDevice } from 'typeshade/runtime'\nimport 'typeshade/fuse'\n\nconst dev = await createDevice({ prefer: ['webgpu', 'cpu'] })\nconst a = dev.array(new Float32Array(n))\nconst out = dev.array(n, 'f32')\nawait dev.fuse(() => {\n  relu(out, a)\n})\ndev.release(a) // the next array(n, 'f32') takes it from the pool\nconst values = await out.read()\nawait dev.dispose()`} title="host.ts" />
+  <p><Rich text={content.chunkP} locale={locale} /></p>
+  <p><Rich text={content.modulesP} locale={locale} /></p>
   <h2 id="boundary">{content.boundary}</h2><ul>{content.boundaryItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
   <p><a href={localePath(locale, links.languageGpuTypes.href)}>{content.next}</a></p>
 </Docs>

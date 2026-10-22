@@ -68,6 +68,18 @@ function show(value: unknown, depth = 0): string {
     return `${name}(${items.length}) [${head.join(', ')}${items.length > SHOWN ? ', …' : ''}]`;
   }
   if (depth > 2) return Array.isArray(value) ? '[…]' : '{…}';
+  // A Set and a Map, as a kernel function that collects into one gives it back (compiler
+  // change 0080): the entries in insertion order, which is what the run promises.
+  if (value instanceof Set) {
+    const head = [...value].slice(0, SHOWN).map((item) => show(item, depth + 1));
+    return `Set(${value.size}) {${head.join(', ')}${value.size > SHOWN ? ', …' : ''}}`;
+  }
+  if (value instanceof Map) {
+    const head = [...value]
+      .slice(0, SHOWN)
+      .map(([key, item]) => `${show(key, depth + 1)} => ${show(item, depth + 1)}`);
+    return `Map(${value.size}) {${head.join(', ')}${value.size > SHOWN ? ', …' : ''}}`;
+  }
   if (Array.isArray(value)) {
     const head = value.slice(0, SHOWN).map((item) => show(item, depth + 1));
     return `[${head.join(', ')}${value.length > SHOWN ? ', …' : ''}]`;
@@ -166,6 +178,7 @@ const DRIVE: Readonly<Record<string, (canvas: HTMLCanvasElement) => unknown[]>> 
     Float32Array.from(INPUTS.fuse.b),
     Float32Array.from(INPUTS.fuse.c),
   ],
+  'host-set-unique': () => [INPUTS.collect.n],
 };
 
 /** `host-program` reads its frame back as RGBA bytes; the canvas shows them. */

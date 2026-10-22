@@ -32,6 +32,7 @@ const siteRepo = 'https://github.com/typeshade/typeshade.github.io';
 
 export const links = {
   home: { label: 'TypeShade', href: '/' },
+  benchmarks: { label: 'Benchmarks', href: '/benchmarks/' },
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
@@ -44,12 +45,23 @@ export const links = {
   conceptsWebgpu: { label: 'WebGPU and WebGL2', href: '/guide/concepts/webgpu-and-webgl2/' },
   conceptsWgsl: { label: 'WGSL and GLSL', href: '/guide/concepts/wgsl-and-glsl/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
+  languageStringKeys: {
+    label: 'String keys and Record',
+    href: '/guide/language/string-keys-record/',
+  },
+  exampleStringKeysRecord: {
+    label: 'string-keys-record',
+    href: '/guide/examples/string-keys-record/',
+  },
   languageTypes: { label: 'Types', href: '/guide/language/types/' },
   languageFunctions: { label: 'Functions', href: '/guide/language/functions/' },
   languageControlFlow: { label: 'Control flow', href: '/guide/language/control-flow/' },
   languageGpuTypes: { label: 'GPU types', href: '/guide/language/gpu-types/' },
   languageResources: { label: 'Resources', href: '/guide/language/resources/' },
   languageStages: { label: 'Shader stages', href: '/guide/language/stages/' },
+  // The common modules (compiler change 0072, surface §72 and §73).
+  languageAlgorithms: { label: 'Algorithms', href: '/guide/language/algorithms/' },
+  languageRandom: { label: 'Random numbers', href: '/guide/language/random/' },
   languageFromTypescript: {
     label: 'TypeScript constructs',
     href: '/guide/language/from-typescript/',
@@ -194,6 +206,7 @@ export const links = {
     href: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext',
   },
   specWebgpu: { label: 'WebGPU specification', href: 'https://www.w3.org/TR/webgpu/' },
+  webgpuTypes: { label: 'WebGPU types', href: 'https://github.com/gpuweb/types' },
   specWgsl: { label: 'WGSL specification', href: 'https://www.w3.org/TR/WGSL/' },
   specWebgl2: {
     label: 'WebGL2 specification',
@@ -244,6 +257,12 @@ export const links = {
   examplePowBitBump: { label: 'bit-bump', href: '/guide/examples/bit-bump/' },
   examplePowDefaultArgs: { label: 'default-args', href: '/guide/examples/default-args/' },
   examplePowJulia: { label: 'fp64-julia-twin', href: '/guide/examples/fp64-julia-twin/' },
+  // The kernel examples the control-flow page names (compiler changes 0078 to 0080).
+  exampleKernelSetUnique: {
+    label: 'kernel-set-unique',
+    href: '/guide/examples/kernel-set-unique/',
+  },
+  exampleHostSetUnique: { label: 'host-set-unique', href: '/guide/examples/host-set-unique/' },
   examplePowCapsule: {
     label: 'capsule-corp-namek-class',
     href: '/guide/examples/capsule-corp-namek-class/',
@@ -421,7 +440,8 @@ type DocsPageKey =
   | 'reference'
   | 'internals'
   | 'languageService'
-  | 'checks';
+  | 'checks'
+  | 'benchmarks';
 /** One page of the guide as the sidebar and the footer name it, in one language. */
 function docsPage(locale: Locale, key: DocsPageKey): Destination {
   const d = copyFor(locale).docs;
@@ -447,6 +467,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     internals: d.labels.internals,
     languageService: d.labels.languageService,
     checks: d.checks,
+    benchmarks: copyFor(locale).benchmarks.h1,
     // The sections of the three mapping sets. The sidebar row takes the short name; the
     // page's own h1 is the longer heading the set's copy already carries.
     fromTsDeclarations: m.fromTypescript.declarations,
@@ -493,6 +514,11 @@ export function sidebar(
   const page = (key: DocsPageKey): SidebarItem => docsPage(locale, key);
   const languagePages: SidebarItem[] = [
     page('guide'),
+    {
+      label: topicLabels.stringKeys,
+      href: localePath(locale, links.languageStringKeys.href),
+      depth: 1,
+    },
     { label: topicLabels.types, href: localePath(locale, links.languageTypes.href), depth: 1 },
     {
       label: topicLabels.functions,
@@ -515,6 +541,12 @@ export function sidebar(
       depth: 1,
     },
     { label: topicLabels.stages, href: localePath(locale, links.languageStages.href), depth: 1 },
+    {
+      label: topicLabels.algorithms,
+      href: localePath(locale, links.languageAlgorithms.href),
+      depth: 1,
+    },
+    { label: topicLabels.random, href: localePath(locale, links.languageRandom.href), depth: 1 },
   ];
   // A mapping set is an index one level in, the way a topic is, with its own sections one
   // level further in. They open only while the reader is inside the set, the way the
@@ -537,6 +569,23 @@ export function sidebar(
       href: localePath(locale, `/reference/${section.slug}/`),
       depth: 1,
     });
+    // On a function's own page, the functions of its family follow the kind one level in
+    // (maths, packing, textures). Only that family opens, so the sidebar never carries the
+    // 175 function names at once. The other kinds stay closed.
+    const name =
+      section.kind === 'function' && path?.startsWith(`/reference/${section.slug}/`)
+        ? path.slice(`/reference/${section.slug}/`.length).replace(/\/$/, '')
+        : '';
+    const group = name
+      ? section.groups.find((g) => g.entries.some((e) => e.name === name))?.entries
+      : undefined;
+    for (const e of group ?? [])
+      reference.push({
+        label: e.title,
+        href: localePath(locale, `/reference/${section.slug}/${e.name}/`),
+        depth: 2,
+        code: true,
+      });
   }
   // The diagnostic codes sit with the language reference: a code is what a reader of a
   // `"use typeshade"` file meets when the file does not compile.
@@ -589,7 +638,7 @@ export function sidebar(
     },
     { title: labels.examples, items: [page('examples'), page('mnist')] },
     { title: labels.reference, items: reference },
-    { title: labels.project, items: [page('checks')] },
+    { title: labels.project, items: [page('checks'), page('benchmarks')] },
   ];
 }
 

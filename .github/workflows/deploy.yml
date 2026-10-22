@@ -75,7 +75,7 @@ jobs:
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - run: bun install --frozen-lockfile
       # What a compiler bump owes the site. A page, component or script that still names an
       # export or file the new pin removes fails this step, as does a compiler block whose
@@ -121,8 +121,10 @@ jobs:
           retention-days: 3
       # The translations are typed against the English copy; a missing string fails here.
       - run: bun run check:types
+      - run: bun run check:benchmark-catalog
+      - run: bun run check:regression-catalog
       - name: Playground regressions
-        run: bun test scripts/playground-diagnostics.test.ts scripts/compiler-authoring.test.ts scripts/compute-runtime.test.ts scripts/render-runtime.test.ts
+        run: bun test scripts/playground-diagnostics.test.ts scripts/playground-host-default.test.ts scripts/compiler-authoring.test.ts scripts/compute-runtime.test.ts scripts/render-runtime.test.ts scripts/benchmarks.test.ts
       # Every check of the reference notes fails on a fault planted into a copy of the fixture
       # note, and passes on the fixture as committed.
       - name: Reference notes checks fail on their faults
@@ -156,7 +158,7 @@ jobs:
           submodules: true
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - run: bun install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
@@ -173,6 +175,15 @@ jobs:
       # recompiles and a moved control reaches the frame. See scripts/check-live.mjs.
       - run: bun run check:live
         if: matrix.part == 2
+      - run: bun run check:benchmarks
+        if: matrix.part == 3
+        timeout-minutes: 10
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.part == 3
+        with:
+          name: benchmark-instrument-evidence
+          path: shots/benchmarks
+          retention-days: 3
       # The MNIST lab must train and infer with real TypeShade GPU passes.
       - run: bun run check:mnist
         if: matrix.part == 1
@@ -213,7 +224,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         if: needs.scope.outputs.code == 'true'
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - run: bun install --frozen-lockfile
         if: needs.scope.outputs.code == 'true'
       - uses: actions/download-artifact@v4
@@ -246,7 +257,7 @@ jobs:
           persist-credentials: false
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - run: bun install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
@@ -279,7 +290,7 @@ jobs:
           persist-credentials: false
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - run: bun install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:

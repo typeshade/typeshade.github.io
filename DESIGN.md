@@ -536,7 +536,10 @@ cards takes the column. A third measure needs a reason.
   with its own `host.ts`. Any other file gets a starter written from its host face the first
   time host.ts is shown, run or downloaded (`src/scripts/playground-host-default.ts`): a
   full-screen `@fragment` entry drawn in `animate(canvas)`, else a `@compute` entry dispatched
-  once in `run()`, else `run()` opening the program runtime and listing the program's entries.
+  once in `run()`, else an image kernel taking a sampled image, an RGBA8 storage texture,
+  width and height called in `device.fuse()` by `run(canvas)`. That starter processes a generated
+  gradient and draws the result, using WebGPU or the CPU tier. Other modules get `run()`
+  opening the program runtime and listing the program's entries.
   Run host.ts, the button after the tabs, is the only way it runs: never on a keystroke and
   never from a link. In a file bar under 32rem it is its icon alone, a 24px box like the three
   beside it, so the tabs keep their room. The worker turns it and each module it imports into CommonJS, and the
@@ -761,10 +764,11 @@ every name in it that has one.
 
 The sidebar's Reference group opens with the reference's own index and then lists the
 category index pages; on a page of one category, that category's members follow it one level
-in. Compiler internals and Language service close the group, and the internals' sections open
-under their overview the same way, only on their own pages, so the sidebar never carries every
-page of the reference at once, and the page a reader is on is scrolled into view inside the
-sidebar's own scroller. The guide links into the reference the way MDN links a function's first mention: the
+in. The language reference's kinds open the same way, on an entry's own page. A function opens
+its family only (maths, packing, textures). The other kinds stay closed. Compiler internals and Language service close the group, and the
+internals' sections open under their overview the same way, only on their own pages, so the
+sidebar never carries every page of the reference at once, and the page a reader is on is
+scrolled into view inside the sidebar's own scroller. The guide links into the reference the way MDN links a function's first mention: the
 first inline code on a guide page that is exactly a public export's name becomes a link to
 that export's page (`src/lib/remark-api-links.mjs`, over the guide's markdown only). A name
 that is also a builtin of the language, an IR builder in Builtins or Values, links to the

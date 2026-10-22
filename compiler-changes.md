@@ -222,3 +222,52 @@ id first, then the pull request that did the work.
   (`[textureTag]`) for an opaque handle, so `ScalarOf`, which reads the tags in a condition,
   is listed beside `Numeric` under the types the ambient file declares for its own use.
   Handled in the pull request that pins the compiler at the merge of typeshade/typeshade#625.
+- 0069: an entry call in a `fuse` body is recorded and runs as a group of its own: the Korean
+  API entry of `fuse` is translated again from the pinned JSDoc, the control-flow page's new
+  section on a chain of calls says so in both locales, and the Korean guide section The CPU
+  oracle is translated again for it; the site has no page that copies §67 or §71 whole, and a
+  tiled-matmul page waits for the compiler's decision Q7. Handled in #212, which pins the
+  compiler at 91df8e2.
+- 0071: the device owner: the WebGPU concept page gains a paragraph on `createDevice()` with
+  `device.array()`, `device.fuse()` and one owner for each `Resident` (en and ko), the
+  control-flow page's chain-of-calls section gains `device.array()`, `device.fuse()`,
+  `device.release()`, and `FuseReport` and `mergeReports` on `typeshade/runtime` (Amendment 2),
+  and the API reference files `src/runtime/device.ts`, `src/core/fuse-report.ts`,
+  `src/core/host-entry.ts` and `src/runtime/chunk.ts` under Runtime, with a Korean entry for each
+  new export. Handled in #212.
+- 0072: the common modules: a guide page each for `typeshade/algorithms` and `typeshade/random`
+  (`/guide/language/algorithms/`, `/guide/language/random/`, en and ko) teaches the host face
+  inside and outside `fuse` and the device face, and the control-flow page links both; the API
+  reference does not read the two subpaths, since their host faces export `add`, `abs`, `sqrt`
+  and other names that `typeshade/core/ir` exports as other declarations and the reference has
+  one page for each name, which stays open until the reference gives a page to a name under each
+  entry point. Handled in #212.
+- 0073: the flavor of the emulated double at run time: the Korean API entries of `configure`,
+  `createDevice` and `recommendFp64Flavor` are translated from the pinned JSDoc, the examples
+  page's emulated-double section gains a paragraph on `createDevice({ fp64Flavor })`,
+  `configure({ fp64Flavor })` and `recommendFp64Flavor` (en and ko), and the WebGPU concept
+  page's device-owner paragraph names the option. Handled in #212.
+- 0074: the time budget: the Korean API entries of `createDevice`, `Device`, `DeviceOptions`,
+  `FuseReport` and `ChunkRate` are translated from the pinned JSDoc, and the control-flow page's
+  chain-of-calls section and the WebGPU concept page's device-owner paragraph gain
+  `timeBudgetMs`, `chunkSize`, `fuse(body, { chunk })` and `chunkRates` (en and ko). Handled in
+  #212.
+- 0075: the indirect workgroup count: the WebGPU concept page's import paragraph gains
+  `{ indirect, offset }` (§67), and the control-flow page's chain-of-calls section gains the
+  indirect count and the group's `indirect: true` (§65 and §71), in both locales; the Korean API
+  entry of `FuseReport` is translated from the pinned JSDoc. Handled in #212.
+- 0078: `push` in a kernel function's loop: the control-flow page, which carries the
+  kernel-function and the array-methods copy, gains `out.push(v)`, its order, the capacity of the
+  host array and `out.length` after the loop with a sample, says that a loop that pushes runs as
+  a group of its own in a `fuse` plan, and lists `kernel-push` beside the other kernel examples in
+  the gallery, the Playground picker and the Korean titles and lines (en and ko). Handled in #212.
+- 0079: an array's methods on a kernel function's array: the control-flow page's loop list and
+  boundary list name the six new methods, and its new section gives the methods on a kernel
+  function's array, what runs on the GPU and the tree order of a floating-point `reduce` with a
+  sample, and lists `kernel-array-methods` in the gallery, the Playground picker and the Korean
+  titles and lines (en and ko). Handled in #212.
+
+- 0080, this pull request: collection loops now describe WebGPU execution, the CPU fallback and the WebGL2 refusal. The host example translation covers lookups.
+- 0081, this pull request: pin `91df8e2` moves to `94203d3c` (typeshade/typeshade#733). English and Korean pages teach key types, dense numeric Records and the host contract. The TypeScript string row links to the key page, and collection copy explains string conversions. The registered host example has both translations. D1 remains open upstream.
+- 0082, #205: pin `85b803f9` includes the first private input projection from compiler #738. English and Korean control-flow guidance describes eligibility, full logical validation and layout fallbacks. The unified benchmark adds actual one/four/eight-field host calls, separate validation/packing probes, input/upload bytes and device intervals. Controlled physical-device evidence remains pending upstream.
+- 0083, #205: pin `85b803f9` includes runtime information from compiler #736, merged as `72049d09`. The generated API reference has all new exports and translated JSDoc. English and Korean host guidance explains immutable snapshots and nullable provenance. The benchmark uses its candidate owner's `Device.info`, retaining independent adapter/WebGL observations and compiler/artifact/workload hashes. Source archives truthfully report `revision: null`.

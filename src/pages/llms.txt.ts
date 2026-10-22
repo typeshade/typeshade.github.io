@@ -74,6 +74,10 @@ const table = [
   },
   { dest: links.guide, note: 'the language guide and its topics' },
   {
+    dest: links.languageStringKeys,
+    note: 'closed string-literal key types, Record tables and their host values',
+  },
+  {
     dest: links.languageTypes,
     note: 'type aliases, classes as GPU structs, and the field decorators that describe layout',
   },
@@ -88,6 +92,14 @@ const table = [
     note: 'uniform and storage declarations, access modes and binding slots',
   },
   { dest: links.languageStages, note: 'the vertex, fragment and compute decorators' },
+  {
+    dest: links.languageAlgorithms,
+    note: 'typeshade/algorithms: maps, reductions, scans, compaction and a histogram as kernel functions',
+  },
+  {
+    dest: links.languageRandom,
+    note: 'typeshade/random: hashes and uniform draws for a kernel and for a host',
+  },
   {
     dest: links.languageFromTypescript,
     note: 'every TypeScript construct, what it lowers to, and the shader text it emits, one page per section',

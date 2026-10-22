@@ -6,12 +6,13 @@
   "description": "typeshade.dev, the TypeShade website",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && node scripts/check-i18n.mjs && bun scripts/check-guide-translations.ts && bun scripts/check-reference-notes.ts && node scripts/patch-vendor-api.mjs && node scripts/patch-api-categories.mjs && bun scripts/check-api.ts && bun scripts/check-api-translations.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
+    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && node scripts/check-i18n.mjs && bun scripts/check-guide-translations.ts && bun scripts/check-page-samples.ts && bun scripts/check-reference-notes.ts && node scripts/patch-vendor-api.mjs && node scripts/patch-api-categories.mjs && bun scripts/check-api.ts && bun scripts/check-api-translations.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
     "preview": "astro preview",
     "check:style": "node scripts/check-style.mjs",
     "check:copy": "bun scripts/check-copy.ts",
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:guide": "bun scripts/check-guide-translations.ts",
+    "check:samples": "bun scripts/check-page-samples.ts",
     "check:api": "bun scripts/check-api.ts",
     "check:api-ko": "bun scripts/check-api-translations.ts",
     "check:notes": "bun scripts/check-reference-notes.ts",
@@ -30,7 +31,10 @@
     "qa:openseo": "bun scripts/openseo-audit.mts dist",
     "check:playground": "node scripts/check-playground.mjs",
     "check:live": "node scripts/check-live.mjs",
-    "check:mnist": "node scripts/check-mnist-browser.mjs"
+    "check:mnist": "node scripts/check-mnist-browser.mjs",
+    "check:benchmarks": "node scripts/check-benchmarks.mjs",
+    "check:benchmark-catalog": "bun scripts/benchmark-catalog.ts --check",
+    "check:regression-catalog": "bun scripts/regression-catalog.ts --check"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

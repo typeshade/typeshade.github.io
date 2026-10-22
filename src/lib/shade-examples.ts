@@ -288,7 +288,16 @@ export const SHADE_GROUPS = [
   },
   {
     key: 'kernels',
-    ids: ['loop-kernel', 'loop-reduction', 'loop-struct-array', 'loop-on-cpu'],
+    ids: [
+      'loop-kernel',
+      'loop-reduction',
+      'loop-struct-array',
+      'loop-on-cpu',
+      'kernel-array-methods',
+      'kernel-push',
+      'kernel-set-unique',
+      'kernel-image-invert',
+    ],
   },
 ] as const;
 

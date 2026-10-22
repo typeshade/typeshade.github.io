@@ -6,6 +6,7 @@
 //                         the site's words for it (scripts/publish-examples.ts writes it)
 // /data/examples/<id>/    one example: its file, its emitted WGSL and GLSL, its page meta
 // /data/releases/         the releases the database records, newest first
+// /data/benchmarks/records/ POST: stores a consented, validated benchmark report privately in D1
 // /data/shares/           POST: stores a Playground link's page and fragment in D1 and answers
 //                         its short link
 // /data/shares/<id>/      one short link's page and fragment, its views and when it was made and
@@ -60,6 +61,7 @@ import {
 } from '../src/lib/issue-data.ts';
 import { hasCredential, openIssue, type GitHubEnv } from './github.ts';
 import { listEntries } from './gallery-store.ts';
+import { benchmarkRequest, cleanupBenchmarks } from './benchmarks.ts';
 
 export interface Env extends GitHubEnv {
   readonly ASSETS: Fetcher;
@@ -118,6 +120,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 async function api(request: Request, url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
+  if (url.pathname.startsWith('/data/benchmarks/')) return benchmarkRequest(request, env.DB);
   const parts = url.pathname.split('/').filter(Boolean); // ['data', 'examples', id?]
   if (parts[1] === 'examples' && parts.length === 2) {
     const index = await readJson<ReleaseIndex>(env, 'index.json');
@@ -1064,5 +1067,6 @@ export default {
   },
   async scheduled(_controller, env, ctx): Promise<void> {
     ctx.waitUntil(expireShares(env));
+    ctx.waitUntil(cleanupBenchmarks(env.DB));
   },
 } satisfies ExportedHandler<Env>;

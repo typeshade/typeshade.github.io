@@ -128,6 +128,10 @@ export const playgroundExampleIds = [
   'loop-reduction',
   'loop-struct-array',
   'loop-on-cpu',
+  'kernel-array-methods',
+  'kernel-push',
+  'kernel-set-unique',
+  'kernel-image-invert',
 ] as const;
 
 export type PlaygroundExampleId = (typeof playgroundExampleIds)[number];
