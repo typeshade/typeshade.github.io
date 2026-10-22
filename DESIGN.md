@@ -536,7 +536,10 @@ cards takes the column. A third measure needs a reason.
   with its own `host.ts`. Any other file gets a starter written from its host face the first
   time host.ts is shown, run or downloaded (`src/scripts/playground-host-default.ts`): a
   full-screen `@fragment` entry drawn in `animate(canvas)`, else a `@compute` entry dispatched
-  once in `run()`, else `run()` opening the program runtime and listing the program's entries.
+  once in `run()`, else an image kernel taking a sampled image, an RGBA8 storage texture,
+  width and height called in `device.fuse()` by `run(canvas)`. That starter processes a generated
+  gradient and draws the result, using WebGPU or the CPU tier. Other modules get `run()`
+  opening the program runtime and listing the program's entries.
   Run host.ts, the button after the tabs, is the only way it runs: never on a keystroke and
   never from a link. In a file bar under 32rem it is its icon alone, a 24px box like the three
   beside it, so the tabs keep their room. The worker turns it and each module it imports into CommonJS, and the
