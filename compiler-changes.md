@@ -284,3 +284,6 @@ id first, then the pull request that did the work.
   notes passed. Formatting, compiler impact, IfChange, SEO and Worker-route checks passed.
   The Playground browser check also executes `runSpecialized()` and compares both direct
   and planned outputs; its result is recorded in the pull request.
+  The versioned comparison catalog was regenerated and reproduced with Bun 1.4.3 for
+  `94203d3c` against `c5fd951c`, retaining all prior catalogs and runtime artifacts. Workload
+  and measurement identities did not change; `docs/benchmark-regressions.md` records the pin.

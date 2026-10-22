@@ -4,12 +4,28 @@
 
 The owner approved this change on 2026-10-22 UTC. The benchmark must show how
 compiler and runtime changes affect the same application. Site baseline is
-`02aa4ea9838024aa50c278a1c2d73c674cc4fbf8`. The documentation pin remains
-`94203d3cab6433065bbe111c3b93f66a4058828e`.
+`02aa4ea9838024aa50c278a1c2d73c674cc4fbf8`. The documentation pin at that baseline was
+`94203d3cab6433065bbe111c3b93f66a4058828e`. The compiler-pin follow-up below records its
+subsequent update.
 
 Implementation is tracked in [PR #216](https://github.com/typeshade/typeshade.github.io/pull/216).
 It merged as `13786f8` and deployed on 2026-10-22 UTC. The unified instrument in PR #217
 supersedes the separate controls described here; see [benchmark-unification.md](benchmark-unification.md).
+
+## Compiler-pin follow-up
+
+[PR #218](https://github.com/typeshade/typeshade.github.io/pull/218) pins the documentation
+compiler at `c5fd951c81ca6efe62c7dadf91b1e27ac07daa52` for compute-entry constants and the
+complete host example. The regression catalog must advance with that pin. The assistant
+regenerated it with `bun@1.4.3 scripts/regression-catalog.ts --new`, then reproduced it with
+`bun@1.4.3 run check:regression-catalog` on 2026-10-22 UTC.
+
+The current comparison is `94203d3c` against `c5fd951c`. Workload and measurement identity
+remain unchanged. The catalog registry retains every prior comparison, and the old runtime
+artifacts remain available for earlier reports. The new runtime artifact has digest
+`702f7fd1f55fdd6e0cfa55ec4448f2e945eba6629c2507adeb003a22f77df65c` and is 440,704 bytes.
+Regeneration proves reproducibility of the artifacts; browser correctness and instrument
+checks are recorded in PR #218 separately. No hardware performance gain is inferred from it.
 
 ## Scope
 
