@@ -250,6 +250,7 @@ export const ko: Copy = {
         wgslAndGlsl: 'WGSL과 GLSL',
       },
       topics: {
+        stringKeys: '문자열 키와 Record',
         types: '타입',
         functions: '함수',
         controlFlow: '제어 흐름',
@@ -2323,6 +2324,7 @@ export const ko: Copy = {
         'host-helper': 'CPU와 GPU가 함께 쓰는 헬퍼',
         'host-program': '컴파일된 프로그램 실행',
         'loop-fuse': '커널 호출 체인 합치기',
+        'string-keys-record': '문자열 키와 Record',
         'host-set-unique': 'Set과 Map에 모으기',
       },
       descriptions: {
@@ -2337,8 +2339,10 @@ export const ko: Copy = {
           '버텍스 진입점과 프래그먼트 진입점, 그리고 엔진처럼 이를 실행하는 호스트입니다.',
         'loop-fuse':
           '커널 함수 다섯 개와, `typeshade/fuse`의 `fuse()` 안에서 이를 부르는 호스트입니다.',
+        'string-keys-record':
+          '채널 이름은 u32 id가 되고 Record는 id 순서의 배열이 됩니다(변경 0081).',
         'host-set-unique':
-          'JavaScript의 `Set`과 `Map`을 받는 커널 함수 두 개와, 이를 부르는 호스트입니다(변경 0080).',
+          'JavaScript의 `Set`과 `Map`을 받는 커널 함수 네 개와, 이를 부르는 호스트입니다(변경 0080).',
       },
       blurbs: {
         'host-draw':
@@ -2355,8 +2359,10 @@ export const ko: Copy = {
           '버텍스 진입점과 프래그먼트 진입점, 그리고 엔진처럼 이를 실행하는 호스트입니다. 모듈의 기본 내보내기가 매니페스트입니다. 호스트는 프로그램 런타임에서 `rt.load()`로 매니페스트를 불러오고, 렌더 파이프라인을 만들어 프레임마다 텍스처에 전체 화면 삼각형을 그립니다. 유니폼은 이름으로 바인딩합니다. 마지막으로 텍스처를 읽어 옵니다(규칙 11.10, 11.11).',
         'loop-fuse':
           '커널 함수 다섯 개와, `typeshade/fuse`의 `fuse()` 안에서 이를 부르는 호스트입니다. `add`, `mul`, `relu` 호출은 저마다 바로 앞 호출이 같은 인덱스에 쓴 값을 읽습니다. 그래서 WebGPU에서는 스코프가 이 호출들을 디스패치 하나로 실행하고, 리포트에도 그렇게 적힙니다. `pairsum`은 `t[i ^ 1]`을 읽는데, 이 원소는 다른 인보케이션이 씁니다. 그래서 이 호출을 가운데 둔 스코프는 디스패치 두 번으로 실행되고, 리포트가 그 줄을 짚어 줍니다. 리덕션 호출로 끝나는 스코프도 있습니다. `total`로 끝나는 스코프는 `add`와 `mul`을 그 루프의 프롤로그로 실행합니다. 그래서 세 호출이 리덕션과 함께 디스패치 하나가 됩니다.',
+        'string-keys-record':
+          '정해진 채널 이름을 u32 id로 바꾸고, Record는 id 순서의 배열로 표현합니다. 호스트가 호출하는 커널 함수는 키 타입 매개변수로 게인을 고릅니다. 프래그먼트 진입점은 픽셀 위치로 채널을 고르고 같은 테이블을 읽습니다. 호스트는 커널에 채널 문자열을, 헬퍼에 객체를 넘깁니다. WebGPU, WebGL2, CPU tier에서 같은 값이 나옵니다.',
         'host-set-unique':
-          'JavaScript의 `Set`과 `Map`을 받는 커널 함수 두 개와, 이를 부르는 호스트입니다. `labels`는 영이 아닌 라벨을 한 번씩 넣고, `latest`는 키마다 마지막에 넣은 값을 남깁니다. 호스트는 `new Set()`과 `new Map()`을 넘깁니다. 각 프라미스가 이행되면 그 안에는 루프를 차례로 실행했을 때 남는 항목이 들어 있습니다. 키는 처음 넣은 순서대로 한 번씩 들어가고, 값은 마지막에 넣은 것입니다. 이번 버전에서 두 함수는 CPU tier에서 돕니다.',
+          'JavaScript의 `Set`과 `Map`을 받는 커널 함수 네 개와, 이를 부르는 호스트입니다. `labels`는 영이 아닌 라벨을 한 번씩 넣고, `latest`는 키마다 마지막에 넣은 값을 남깁니다. `lookup`은 `has`로 확인한 뒤 `get`으로 값을 읽고, `present`는 한 루프에서 값을 넣고 다음 루프에서 읽습니다. 호스트는 `new Set()`과 `new Map()`을 넘깁니다. 각 프라미스가 이행되면 그 안에는 루프를 차례로 실행했을 때 남는 항목이 들어 있습니다. 키는 처음 넣은 순서대로 한 번씩 들어가고, 값은 마지막에 넣은 것입니다. WebGPU에서는 add나 set마다 레코드를 덧붙이고 호출이 이를 순서대로 적용합니다. 조회는 업로드한 키를 이진 탐색합니다. WebGL2는 지원하지 않습니다.',
       },
       page: {
         // 영어와 같은 방식입니다. 60자 상한에 들어가는 가장 긴 꼬리말을 고릅니다.
@@ -2528,6 +2534,35 @@ export const ko: Copy = {
       nextLink: 'Quick start',
     },
     topics: {
+      stringKeys: {
+        title: 'TypeShade의 문자열 키와 Record',
+        description:
+          '정해진 이름 집합을 GPU id로 표현합니다. 문자열 키로 Record 테이블을 인덱싱하고, JavaScript 호스트에서 셰이더를 호출하는 방법을 설명합니다.',
+        h1: '문자열 키와 Record',
+        intro:
+          '문자열 리터럴 타입의 유니온은 키 타입입니다. 채널이나 모드처럼 사용할 이름이 정해진 값 집합을 나타냅니다.',
+        keys: '키 타입',
+        keysP:
+          '컴파일러는 멤버를 UTF-16 코드 단위로 정렬하고 각 멤버에 `u32` id를 부여합니다. 문자열 리터럴 타입 하나도 키 타입입니다. 멤버 집합이 같으면 id도 같습니다. 모든 타깃에서 GPU는 이 id를 받습니다.',
+        operationsP:
+          '키는 동등 비교와 멤버를 나누는 `switch`를 지원합니다. 산술 연산, 대소 비교, 숫자로의 변환은 거부됩니다. 키 타입이 필요한 자리에 쓴 문자열 리터럴은 해당 멤버가 됩니다. 값 집합이 열린 `string`은 계속 거부됩니다.',
+        record: 'Record',
+        recordP:
+          '`Record<K, V>`는 `K`의 멤버마다 `V` 값 하나를 담으며, id 순서의 고정 배열로 표현됩니다. `by[c]`, `by.r`, `by["r"]`로 원소를 선택합니다. 객체 리터럴은 모든 멤버를 포함하고 추가 프로퍼티는 없어야 합니다. 다른 키 타입, 숫자, `.length`는 거부됩니다.',
+        numeric: '숫자 키',
+        numericP:
+          '서로 다른 값이 정확히 0부터 N-1까지인 enum이나 정수 리터럴 유니온은 `Record`의 키가 될 수 있습니다. 각 멤버는 자신의 값으로 인덱싱합니다. 건너뛴 값, 음수, 정수가 아닌 값은 실제 값을 명시한 문장으로 거부됩니다. 값 집합이 열린 `Record<u32, V>`도 거부됩니다.',
+        host: '호스트 호출',
+        hostP:
+          '호스트에서 키 매개변수나 반환값은 문자열입니다. `Record` 매개변수나 반환값은 모든 멤버를 갖춘 객체입니다. 알 수 없는 문자열, 빠진 프로퍼티, 추가 프로퍼티는 `TypeError`를 냅니다.',
+        deviationP:
+          '진입점 바인딩과 크기를 지정하지 않은 커널 배열에서는 키가 숫자 id이고, Record는 id 순서의 배열입니다. 제안 0081은 이 차이를 D1으로 열어 둡니다.',
+        collections: 'Map과 Set',
+        collectionsP:
+          '커널은 `Map<Channel, V>`와 `Set<Channel>`을 받습니다. 호스트는 문자열 키를 넘깁니다. 호출은 루프를 실행하기 전에 키를 id로 바꾸고, 끝난 뒤에는 문자열로 되돌리며 삽입 순서를 유지합니다. 알 수 없는 문자열은 `TypeError`를 냅니다. 값 집합이 열린 `Map<string, V>`와 `Set<string>`은 거부됩니다.',
+        exampleP:
+          '[string-keys-record](exampleStringKeysRecord)는 WebGPU, WebGL2, CPU에서 Record를 인덱싱하는 커널을 호출합니다. [제어 흐름](languageControlFlow)은 컬렉션 루프와 지원 tier를 설명합니다.',
+      },
       types: {
         title: 'TypeShade 타입',
         description:
@@ -2684,10 +2719,10 @@ export const ko: Copy = {
         pushHostP:
           '호스트 배열의 길이가 용량입니다. 호출은 앞에서부터 용량만큼 원소를 쓰고, 나머지는 그대로 둡니다. 함수가 돌려주는 개수는 용량보다 클 수 있습니다. 그래서 `n > out.length`를 본 호스트는 더 큰 배열로 다시 호출할 수 있습니다. WebGPU에서 이 루프는 디스패치 세 번으로 돕니다. 먼저 반복마다 덧붙일 개수를 세고, 워크그룹 하나가 그 개수를 오프셋으로 스캔한 뒤, 반복마다 자기 오프셋에 값을 저장합니다. WebGL2는 값을 덧붙이는 루프를 돌리지 않습니다.',
         collectionsP:
-          '매개변수는 ECMAScript의 `Set<K>`나 `Map<K, V>`일 수도 있습니다. `K`는 `u32`, `i32`, `f32` 가운데 하나입니다. 루프는 `s.add(k)`나 `m.set(k, v)`로 값을 넣습니다. 호스트는 JavaScript의 `Set`이나 `Map`을 그대로 넘깁니다. 호출이 끝나면 루프를 차례로 실행했을 때 남는 항목이 그 안에 들어 있습니다. 키는 한 번씩, 처음 넣은 순서대로 들어가고, 값은 마지막에 넣은 것입니다. 뒤의 루프는 `has`, `get`, `size`로 읽으며, `m.get(k)!`는 `m.has(k)`로 확인한 자리에서만 읽습니다. 이번 버전에서 이런 함수는 CPU tier에서 돕니다. [kernel-set-unique](exampleKernelSetUnique)와 [host-set-unique](exampleHostSetUnique)가 두 가지를 모두 보여 줍니다.',
+          '매개변수는 ECMAScript의 `Set<K>`나 `Map<K, V>`일 수도 있습니다. `K`는 `u32`, `i32`, `f32` 또는 [키 타입](languageStringKeys)입니다. 루프는 `s.add(k)`나 `m.set(k, v)`로 값을 넣습니다. 호스트는 JavaScript의 `Set`이나 `Map`을 그대로 넘깁니다. 호출이 끝나면 루프를 차례로 실행했을 때 남는 항목이 그 안에 들어 있습니다. 키는 한 번씩, 처음 넣은 순서대로 들어가고, 값은 마지막에 넣은 것입니다. 뒤의 루프는 `has`, `get`, `size`로 읽으며, `m.get(k)!`는 `m.has(k)`로 확인한 자리에서만 읽습니다. 컬렉션 루프는 WebGPU와 CPU tier에서 실행됩니다. WebGL2는 지원하지 않습니다. 호출은 루프 전에 문자열 키를 id로 바꾸고, 끝난 뒤 문자열로 되돌리며 삽입 순서를 유지합니다. 알 수 없는 호스트 문자열은 `TypeError`를 냅니다. 값 집합이 열린 `Map<string, V>`와 `Set<string>`은 계속 거부됩니다. [kernel-set-unique](exampleKernelSetUnique)와 [host-set-unique](exampleHostSetUnique)가 두 가지를 모두 보여 줍니다.',
         fuse: '6. 커널 호출 체인',
         fuseP:
-          '호스트는 `typeshade({ fuse: true })`로 빌드하고, `typeshade/fuse`의 `fuse()` 안에서 커널 함수 여러 개를 부를 수 있습니다(규칙 11.13). WebGPU에서는 바로 앞 호출이 같은 인덱스에 쓴 값을 읽는 호출들이 제출 하나 안의 디스패치 하나로 실행됩니다. 스코프가 돌려주는 리포트는 그룹마다 이름을 대고, 두 호출이 따로 실행되는 이유를 알려 줍니다. 본문 안의 진입점 호출은 혼자 그룹을 이루며, 배열에 값을 덧붙이는 루프도 그렇습니다. `FuseReport`와, 여러 리포트를 하나로 합치는 `mergeReports`는 `typeshade/runtime`에서도 가져올 수 있습니다. 그래서 리포트를 읽기만 하는 호스트는 플래너를 싣지 않습니다.',
+          '호스트는 `typeshade({ fuse: true })`로 빌드하고, `typeshade/fuse`의 `fuse()` 안에서 커널 함수 여러 개를 부를 수 있습니다(규칙 11.13). WebGPU에서는 바로 앞 호출이 같은 인덱스에 쓴 값을 읽는 호출들이 제출 하나 안의 디스패치 하나로 실행됩니다. 스코프가 돌려주는 리포트는 그룹마다 이름을 대고, 두 호출이 따로 실행되는 이유를 알려 줍니다. 본문 안의 진입점 호출은 혼자 그룹을 이루며, 배열에 값을 덧붙이는 루프도 그렇습니다. `Map`이나 `Set`을 받는 호출도 별도 그룹이며, 리포트는 `b takes a Map or a Set`이나 CPU에서 실행하는 이유를 표시합니다. `FuseReport`와, 여러 리포트를 하나로 합치는 `mergeReports`는 `typeshade/runtime`에서도 가져올 수 있습니다. 그래서 리포트를 읽기만 하는 호스트는 플래너를 싣지 않습니다.',
         fuseIndirectP:
           '진입점 호출은 앞선 호출이 쓴 배열에서 워크그룹 개수를 읽을 수 있습니다. `entry(bindings, { indirect, offset })`는 호출이 실행될 때 `Resident<Uint32Array>`의 `offset` 원소에서 개수 세 개를 읽습니다. 그러면 호출 체인 사이에 읽기가 필요 없습니다. 스코프 안에서는 이런 호출의 그룹이 리포트에 `indirect: true`로 적힙니다.',
         deviceP:
@@ -3233,7 +3268,7 @@ export const ko: Copy = {
           },
           literalUnion: {
             name: '리터럴 유니온',
-            p: '멤버가 모두 한 타입을 가리키는 유니온은 그 타입을 가리킵니다.',
+            p: '문자열 리터럴 유니온은 [키 타입](languageStringKeys)입니다. 그 밖에 멤버가 모두 한 타입을 가리키는 유니온은 그 타입을 가리킵니다.',
           },
           brand: {
             name: '브랜드 타입',
@@ -3258,7 +3293,7 @@ export const ko: Copy = {
           },
           stringValue: {
             name: '문자열 값',
-            p: 'GPU에 문자열은 없습니다. 경우를 enum으로 적으십시오.',
+            p: '문자열 리터럴은 [키 타입](languageStringKeys)이 필요한 자리에서 허용됩니다. 값 집합이 열린 `string`은 계속 거부됩니다.',
           },
           numberType: { name: '`number`', p: 'GPU의 수에는 너비가 있습니다.' },
           booleanType: { name: '`boolean`', p: '셰이더 표기는 `bool`입니다.' },

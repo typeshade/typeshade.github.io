@@ -74,6 +74,10 @@ const table = [
   },
   { dest: links.guide, note: 'the language guide and its topics' },
   {
+    dest: links.languageStringKeys,
+    note: 'closed string-literal key types, Record tables and their host values',
+  },
+  {
     dest: links.languageTypes,
     note: 'type aliases, classes as GPU structs, and the field decorators that describe layout',
   },

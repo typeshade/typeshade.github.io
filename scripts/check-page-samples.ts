@@ -11,6 +11,7 @@ import { compileTsSource } from '../vendor/shader-dsl/src/compiler/ts/source-fil
 
 const PAGES = [
   'LanguagePage',
+  'LanguageStringKeysPage',
   'LanguageStagesPage',
   'LanguageFunctionsPage',
   'ConceptsCpuAndGpuPage',
