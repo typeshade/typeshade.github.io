@@ -31,7 +31,7 @@ export interface HostExamplePage {
   readonly next?: string;
 }
 
-// The compiler's titles open with the group's name ("Host: draw into a canvas"). The site
+// Some compiler titles open with the group's name ("Host: draw into a canvas"). The site
 // shows them under the heading Host examples, so the name comes off and the rest is the title.
 const TITLE_PREFIX = 'Host: ';
 // The compiler cites its own proposals ("(change 0058)"), which have no page on the site.
@@ -41,8 +41,7 @@ const NAMES_FORMER_HOST = /x-?gis/i;
 function check(): void {
   const problems: string[] = [];
   for (const h of hostExamples) {
-    if (!h.title.startsWith(TITLE_PREFIX))
-      problems.push(`'${h.id}' is titled '${h.title}', without '${TITLE_PREFIX}'`);
+    if (!h.title.trim()) problems.push(`'${h.id}' has an empty title`);
     if (shadeExampleIds.includes(h.id))
       problems.push(`'${h.id}' is also a .shade.ts example, and the two pages share a route`);
     if (h.tiers.length === 0) problems.push(`'${h.id}' lists no tier`);
@@ -64,7 +63,7 @@ export const hostExampleIds: readonly string[] = hostExamples.map((h) => h.id);
 export function hostTitles(): Record<string, string> {
   return Object.fromEntries(
     hostExamples.map((h) => {
-      const rest = h.title.slice(TITLE_PREFIX.length);
+      const rest = h.title.startsWith(TITLE_PREFIX) ? h.title.slice(TITLE_PREFIX.length) : h.title;
       return [h.id, rest.charAt(0).toUpperCase() + rest.slice(1)];
     }),
   );

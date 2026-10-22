@@ -44,6 +44,14 @@ export const links = {
   conceptsWebgpu: { label: 'WebGPU and WebGL2', href: '/guide/concepts/webgpu-and-webgl2/' },
   conceptsWgsl: { label: 'WGSL and GLSL', href: '/guide/concepts/wgsl-and-glsl/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
+  languageStringKeys: {
+    label: 'String keys and Record',
+    href: '/guide/language/string-keys-record/',
+  },
+  exampleStringKeysRecord: {
+    label: 'string-keys-record',
+    href: '/guide/examples/string-keys-record/',
+  },
   languageTypes: { label: 'Types', href: '/guide/language/types/' },
   languageFunctions: { label: 'Functions', href: '/guide/language/functions/' },
   languageControlFlow: { label: 'Control flow', href: '/guide/language/control-flow/' },
@@ -503,6 +511,11 @@ export function sidebar(
   const page = (key: DocsPageKey): SidebarItem => docsPage(locale, key);
   const languagePages: SidebarItem[] = [
     page('guide'),
+    {
+      label: topicLabels.stringKeys,
+      href: localePath(locale, links.languageStringKeys.href),
+      depth: 1,
+    },
     { label: topicLabels.types, href: localePath(locale, links.languageTypes.href), depth: 1 },
     {
       label: topicLabels.functions,

@@ -159,6 +159,7 @@ export const en = {
         wgslAndGlsl: 'WGSL and GLSL',
       },
       topics: {
+        stringKeys: 'String keys and Record',
         types: 'Types',
         functions: 'Functions',
         controlFlow: 'Control flow',
@@ -2365,6 +2366,35 @@ export const en = {
       nextLink: 'Quick start',
     },
     topics: {
+      stringKeys: {
+        title: 'String keys and Record in TypeShade',
+        description:
+          'Use closed sets of names as GPU ids, index a Record by a key, and call the shader from JavaScript.',
+        h1: 'String keys and Record',
+        intro:
+          'A union of string literal types is a key type. It names a closed set of values such as channels or modes.',
+        keys: 'Key types',
+        keysP:
+          'The compiler sorts members by UTF-16 code units and assigns a `u32` id to each member. A single string literal type is also a key type. Equal member sets give the same ids. The GPU receives the id on every target.',
+        operationsP:
+          'A key supports equality and `switch` over its members. Arithmetic, ordering and conversion to a number are refused. A string literal becomes a member where the key type is expected. Open `string` stays refused.',
+        record: 'Record',
+        recordP:
+          '`Record<K, V>` holds one value of `V` per member of `K`, as a fixed array in id order. `by[c]`, `by.r` and `by["r"]` select its elements. An object literal must provide every member, with no extra property. Another key type, a number and `.length` are refused.',
+        numeric: 'Numeric keys',
+        numericP:
+          'An enum or an integer-literal union can key a `Record` when its distinct values are exactly 0 through N-1. Each member indexes by its value. A gap, a negative value or a noninteger is refused with a sentence naming the values. Open `Record<u32, V>` is refused.',
+        host: 'Host calls',
+        hostP:
+          'A key parameter or result is the string on the host. A `Record` parameter or result is an object with every member. An unknown string, a missing property or an extra property produces a `TypeError`.',
+        deviationP:
+          'In entry bindings and runtime-sized kernel arrays, keys are numeric ids and records are arrays in id order. Proposal 0081 keeps this difference open as D1.',
+        collections: 'Map and Set',
+        collectionsP:
+          'A kernel accepts `Map<Channel, V>` and `Set<Channel>`. The host passes string keys. Before the loops, the call converts them to ids. Afterward, it converts ids back to strings and preserves insertion order. An unknown string produces a `TypeError`. Open `Map<string, V>` and `Set<string>` are refused.',
+        exampleP:
+          '[string-keys-record](exampleStringKeysRecord) calls a Record-indexed kernel on WebGPU, WebGL2 and the CPU. [Control flow](languageControlFlow) describes collection loops and their supported tiers.',
+      },
       types: {
         title: 'TypeShade types',
         description:
@@ -2524,11 +2554,11 @@ export const en = {
         pushHostP:
           'The host array is the capacity. The call writes the first elements up to that capacity and leaves the rest as they were. The count the function returns may exceed the capacity, so a host that sees `n > out.length` can call again with more room. On WebGPU the loop runs in three dispatches: each iteration counts its pushes, one workgroup scans the counts into offsets, and each iteration stores its pushes at its offset. WebGL2 runs no loop that pushes.',
         collectionsP:
-          "A parameter may also be ECMAScript's `Set<K>` or `Map<K, V>`, with `K` a `u32`, an `i32` or an `f32`. A loop adds to it with `s.add(k)` or `m.set(k, v)`. The host passes JavaScript's own `Set` or `Map`, and when the call resolves it holds the entries a sequential run leaves: each key once, in the order first added, with the value set last. A later loop reads it with `has`, `get` and `size`, and reads `m.get(k)!` only where `m.has(k)` guards it. In this version such a function runs on the CPU tier. [kernel-set-unique](exampleKernelSetUnique) and [host-set-unique](exampleHostSetUnique) show both.",
+          "A parameter may also be ECMAScript's `Set<K>` or `Map<K, V>`, with `K` a `u32`, an `i32`, an `f32` or a [key type](languageStringKeys). A loop adds to it with `s.add(k)` or `m.set(k, v)`. The host passes JavaScript's own `Set` or `Map`, and when the call resolves it holds the entries a sequential run leaves: each key once, in the order first added, with the value set last. A later loop reads it with `has`, `get` and `size`, and reads `m.get(k)!` only where `m.has(k)` guards it. Collection loops run on WebGPU and the CPU tier. WebGL2 cannot run them. String keys convert to ids before the loops and back afterward, preserving insertion order. An unknown host string is a `TypeError`. Open `Map<string, V>` and `Set<string>` stay refused. [kernel-set-unique](exampleKernelSetUnique) and [host-set-unique](exampleHostSetUnique) show both.",
         // A chain of kernel calls (compiler changes 0058, 0069, 0071, 0072, 0074 and 0075).
         fuse: '6. A chain of kernel calls',
         fuseP:
-          'A host can call several kernel functions inside `fuse()` from `typeshade/fuse`, built with `typeshade({ fuse: true })` (Rule 11.13). On WebGPU, calls that read what the call before them wrote at the same index run as one dispatch, in one submission. The report the scope returns names each group, and says why two calls run apart. An entry call in the body forms a group of its own, and so does a loop that pushes onto an array. `FuseReport` and `mergeReports`, which adds several reports into one, come from `typeshade/runtime` too, so a host that only reads reports ships no planner.',
+          'A host can call several kernel functions inside `fuse()` from `typeshade/fuse`, built with `typeshade({ fuse: true })` (Rule 11.13). On WebGPU, calls that read what the call before them wrote at the same index run as one dispatch, in one submission. The report the scope returns names each group, and says why two calls run apart. An entry call in the body forms a group of its own, and so does a loop that pushes onto an array. A call taking a `Map` or `Set` also forms its own group, reporting `b takes a Map or a Set` or its CPU fallback reason. `FuseReport` and `mergeReports`, which adds several reports into one, come from `typeshade/runtime` too, so a host that only reads reports ships no planner.',
         fuseIndirectP:
           'An entry call may take its workgroup count from an array an earlier call wrote. `entry(bindings, { indirect, offset })` reads the three counts at element `offset` of a `Resident<Uint32Array>` when the call runs. A chain of calls then needs no read between them, and in a scope the group of such a call reports `indirect: true`.',
         deviceP:
@@ -3084,7 +3114,7 @@ export const en = {
           },
           literalUnion: {
             name: 'Literal union',
-            p: 'A union whose members all name one type names that type.',
+            p: 'A string-literal union is a [key type](languageStringKeys). Other unions whose members name one type name that type.',
           },
           brand: {
             name: 'Branded type',
@@ -3109,7 +3139,7 @@ export const en = {
           },
           stringValue: {
             name: 'String value',
-            p: 'There is no string on the GPU; write the cases as an enum.',
+            p: 'A string literal is accepted where a [key type](languageStringKeys) is expected. Open `string` stays refused.',
           },
           numberType: { name: '`number`', p: 'A number on the GPU has a width.' },
           booleanType: { name: '`boolean`', p: 'The shader spelling is `bool`.' },

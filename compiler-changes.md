@@ -266,3 +266,6 @@ id first, then the pull request that did the work.
   function's array, what runs on the GPU and the tree order of a floating-point `reduce` with a
   sample, and lists `kernel-array-methods` in the gallery, the Playground picker and the Korean
   titles and lines (en and ko). Handled in #212.
+
+- 0080, this pull request: collection loops now describe WebGPU execution, the CPU fallback and the WebGL2 refusal. The host example translation covers lookups.
+- 0081, this pull request: pin `91df8e2` moves to `94203d3c` (typeshade/typeshade#733). English and Korean pages teach key types, dense numeric Records and the host contract. The TypeScript string row links to the key page, and collection copy explains string conversions. The registered host example has both translations. D1 remains open upstream.
