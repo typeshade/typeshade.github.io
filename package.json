@@ -31,7 +31,9 @@
     "qa:openseo": "bun scripts/openseo-audit.mts dist",
     "check:playground": "node scripts/check-playground.mjs",
     "check:live": "node scripts/check-live.mjs",
-    "check:mnist": "node scripts/check-mnist-browser.mjs"
+    "check:mnist": "node scripts/check-mnist-browser.mjs",
+    "check:benchmarks": "node scripts/check-benchmarks.mjs",
+    "check:benchmark-catalog": "bun scripts/benchmark-catalog.ts --check"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

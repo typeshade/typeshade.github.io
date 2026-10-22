@@ -397,3 +397,14 @@ points the Worker at a stand-in for `api.github.com`, so a local run files nothi
 GITHUB_TOKEN=test
 GITHUB_API_URL=http://localhost:9999
 ```
+
+## Performance records
+
+`POST /data/benchmarks/records/` stores a consented benchmark record in the existing `DB`
+binding. Migration `0008_benchmarks.sql` adds its record and temporary rate tables. The
+production deployment applies D1 migrations before deploying the Worker. A preview using
+an unmigrated database answers `503` to collection; local results and downloads still work.
+
+The daily cron also deletes expired benchmark records and rate entries. The collector has
+no public record-reading endpoint. Maintainers export through authenticated Wrangler D1
+access. [benchmarks.md](benchmarks.md) defines the limits, retention and export procedure.

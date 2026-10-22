@@ -32,6 +32,7 @@ const siteRepo = 'https://github.com/typeshade/typeshade.github.io';
 
 export const links = {
   home: { label: 'TypeShade', href: '/' },
+  benchmarks: { label: 'Benchmarks', href: '/benchmarks/' },
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
@@ -439,7 +440,8 @@ type DocsPageKey =
   | 'reference'
   | 'internals'
   | 'languageService'
-  | 'checks';
+  | 'checks'
+  | 'benchmarks';
 /** One page of the guide as the sidebar and the footer name it, in one language. */
 function docsPage(locale: Locale, key: DocsPageKey): Destination {
   const d = copyFor(locale).docs;
@@ -465,6 +467,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     internals: d.labels.internals,
     languageService: d.labels.languageService,
     checks: d.checks,
+    benchmarks: copyFor(locale).benchmarks.h1,
     // The sections of the three mapping sets. The sidebar row takes the short name; the
     // page's own h1 is the longer heading the set's copy already carries.
     fromTsDeclarations: m.fromTypescript.declarations,
@@ -635,7 +638,7 @@ export function sidebar(
     },
     { title: labels.examples, items: [page('examples'), page('mnist')] },
     { title: labels.reference, items: reference },
-    { title: labels.project, items: [page('checks')] },
+    { title: labels.project, items: [page('checks'), page('benchmarks')] },
   ];
 }
 
