@@ -192,6 +192,26 @@ try {
   for (const locale of ['', '/ko']) {
     await page.goto(`${url}${locale}/benchmarks/`);
     assert.equal((await run()).status, 'complete');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.evaluate(() => delete document.documentElement.dataset.theme);
+    assert.equal(
+      await root
+        .locator("[data-section='data']")
+        .evaluate((el) => getComputedStyle(el).getPropertyValue('--section-color').trim()),
+      '#b37feb',
+    );
+    assert.equal(
+      await root
+        .locator("[data-section='compute']")
+        .evaluate((el) => getComputedStyle(el).getPropertyValue('--section-color').trim()),
+      '#5cdbd3',
+    );
+    assert.equal(
+      await root
+        .locator("[data-section='execution']")
+        .evaluate((el) => getComputedStyle(el).getPropertyValue('--section-color').trim()),
+      '#ffc069',
+    );
     for (const width of [390, 1440])
       for (const theme of ['light', 'dark']) {
         await page.setViewportSize({ width, height: 1000 });

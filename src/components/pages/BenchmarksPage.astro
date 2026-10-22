@@ -107,6 +107,11 @@ const headings = [{ depth: 2, slug: 'run', text: c.runH }, { depth: 2, slug: 're
   :global([data-theme='dark']) .report-section[data-section='data'] { --section-color: #b37feb; }
   :global([data-theme='dark']) .report-section[data-section='compute'] { --section-color: #5cdbd3; }
   :global([data-theme='dark']) .report-section[data-section='execution'] { --section-color: #ffc069; }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .report-section[data-section='data'] { --section-color: #b37feb; }
+    :global(:root:not([data-theme='light'])) .report-section[data-section='compute'] { --section-color: #5cdbd3; }
+    :global(:root:not([data-theme='light'])) .report-section[data-section='execution'] { --section-color: #ffc069; }
+  }
   .report-section h3 { margin-block: 0 .5rem; border-inline-start: .25rem solid var(--section-color); padding-inline-start: .5rem; }
   .chart-legend, .chart-legend span, .chart-heading, .chart-values { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
   .chart-legend { font-size: .875rem; }

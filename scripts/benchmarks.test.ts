@@ -323,7 +323,7 @@ import {
 import { nextBatch, MAX_DISPATCHES, validDeviceSamples } from '../src/lib/benchmarks/timing.ts';
 import { pairedResults, summarizePaired } from '../src/lib/benchmarks/comparison.ts';
 import { postBenchmarkRecord } from '../src/lib/benchmarks/send-record.ts';
-import { reportGroups } from '../src/lib/benchmarks/report.ts';
+import { reportGroups, formatChange } from '../src/lib/benchmarks/report.ts';
 function pairedRecord(): RegressionRecord {
   const metadata = exampleRecord().metadata;
   const ids = [...regressionCatalog.builds[0]!.cases.map((e) => e.id), ...APPLICATIONS];
@@ -487,6 +487,12 @@ test('section report separates sample overlap, missing measurements and invalid 
   r.status = 'complete';
   r.peers[1]!.webgpu.device = 'different';
   expect(item().change).toBeNull();
+});
+test('report percentage labels keep direction without a negative zero', () => {
+  expect(formatChange(-0.01)).toBe('0.0');
+  expect(formatChange(-0)).toBe('0.0');
+  expect(formatChange(-0.06)).toBe('-0.1');
+  expect(formatChange(0.06)).toBe('0.1');
 });
 test('application references cover cold fields, insertion order and output corruption', () => {
   const input = applicationInput(16384);

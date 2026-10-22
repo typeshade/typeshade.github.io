@@ -9,6 +9,9 @@ export const REPORT_SECTIONS = ['applications', 'data', 'compute', 'execution'] 
 export type ReportSection = (typeof REPORT_SECTIONS)[number];
 export const REPORT_METRICS = ['wall', 'gpu', 'buffers', 'cold', 'readback'] as const;
 export type ReportMetric = (typeof REPORT_METRICS)[number];
+export function formatChange(value: number): string {
+  return Number(value.toFixed(1)).toFixed(1);
+}
 const sectionFor = (id: string): ReportSection => {
   const job = regressionCatalog.builds[0]!.cases.find((c) => c.id === id);
   if (!job) return 'applications';

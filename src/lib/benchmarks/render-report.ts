@@ -2,7 +2,7 @@ import type { Copy } from '../../i18n/index.ts';
 import type { RegressionRecord } from './regression-contract.ts';
 import { regressionRows } from './regression-contract.ts';
 import { PROFILES } from './definitions.ts';
-import { reportGroups, type ReportMetric } from './report.ts';
+import { reportGroups, formatChange, type ReportMetric } from './report.ts';
 
 export function renderReport(
   root: HTMLElement,
@@ -78,7 +78,7 @@ export function renderReport(
           ? copy.unavailable
           : copy[item.state as 'lower' | 'higher' | 'same' | 'overlap'].replace(
               '{value}',
-              (item.state === 'overlap' ? item.change : Math.abs(item.change)).toFixed(1),
+              formatChange(item.state === 'overlap' ? item.change : Math.abs(item.change)),
             );
       for (const build of ['baseline', 'candidate'] as const) {
         const m = item[build];
