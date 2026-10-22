@@ -122,7 +122,7 @@ jobs:
       # The translations are typed against the English copy; a missing string fails here.
       - run: bun run check:types
       - name: Playground regressions
-        run: bun test scripts/playground-diagnostics.test.ts scripts/compiler-authoring.test.ts scripts/compute-runtime.test.ts scripts/render-runtime.test.ts
+        run: bun test scripts/playground-diagnostics.test.ts scripts/playground-host-default.test.ts scripts/compiler-authoring.test.ts scripts/compute-runtime.test.ts scripts/render-runtime.test.ts
       # Every check of the reference notes fails on a fault planted into a copy of the fixture
       # note, and passes on the fixture as committed.
       - name: Reference notes checks fail on their faults

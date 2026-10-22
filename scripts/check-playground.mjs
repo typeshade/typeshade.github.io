@@ -3778,6 +3778,53 @@ async function checkHostTs(browser, origin) {
         problems.push(`host-helper draws, and Run left the Result tab for the ${drawn.tab} tab`);
       if (!/^run\(\) \d/.test(drawn.under))
         problems.push(`host-helper's run() value is not under its frame: "${drawn.under}"`);
+
+      // A kernel function has no program entries. Run must call it and show the image it wrote.
+      await pickExample(page, 'kernel-image-invert');
+      await page.click('[data-target="result"]');
+      await page.click('[data-run-host]');
+      const imageReturned = await page
+        .waitForFunction(
+          () =>
+            /run\(\).*width: 128, height: 96/.test(
+              document.querySelector('[data-host-result]')?.textContent ?? '',
+            ),
+          null,
+          { timeout: 60_000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      if (!imageReturned) problems.push('kernel-image-invert did not return its image dimensions');
+      else {
+        const frame = await (await page.$('iframe[data-host-frame]'))?.contentFrame();
+        const image = await frame?.$eval('canvas', (canvas) => {
+          const { width, height } = canvas;
+          const pixels = canvas.getContext('2d').getImageData(0, 0, width, height).data;
+          let wrong = 0;
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              const i = (y * width + x) * 4;
+              if (
+                pixels[i] !== 255 - Math.round((255 * x) / (width - 1)) ||
+                pixels[i + 1] !== 255 - Math.round((255 * y) / (height - 1)) ||
+                pixels[i + 2] !== 191 ||
+                pixels[i + 3] !== 255
+              )
+                wrong++;
+            }
+          }
+          return { width, height, wrong };
+        });
+        if (!image || image.width !== 128 || image.height !== 96 || image.wrong !== 0)
+          problems.push(`kernel-image-invert drew the wrong image: ${JSON.stringify(image)}`);
+        if (
+          (await page.$eval('[data-target="result"]', (tab) =>
+            tab.getAttribute('aria-selected'),
+          )) !== 'true'
+        )
+          problems.push('kernel-image-invert left the Result tab after drawing');
+      }
+      await page.click('[data-run-host]');
       console.log(
         `  host.ts tab: ${tabs.slice(0, 2).join(', ')}; type error marked: ${errors[0] ?? 'none'}; frame sandbox: ${sandbox.join(', ')}; console: ${printed.join(' | ').slice(0, 200)}; linked frames before Run: ${before.length}; loop-fuse after Run: ${fused.tab} tab, ${fused.row.slice(0, 60)}; host-set-unique: ${collected.row.slice(0, 90)}; host-helper after Run: ${drawn.tab} tab, "${drawn.under}" under the frame`,
       );

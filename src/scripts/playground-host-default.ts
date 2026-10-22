@@ -5,6 +5,8 @@
 //     entry into the canvas once a frame.
 //   - A module with a `@compute` entry gets `run()`, which dispatches it once and logs the
 //     bindings it wrote.
+//   - An image kernel taking a sampled image, an RGBA8 storage texture, width and height gets
+//     `run(canvas)`, which processes a generated image and draws the result.
 //   - Any other module gets `run()`, which opens the program runtime and logs the entries of
 //     the compiled program, the module's default export. Most of the gallery is this case: an
 //     entry that reads the `uv` the fullscreen triangle hands it is not one a host can draw yet
@@ -143,6 +145,61 @@ export async function run(): Promise<void> {
   const bindings = ${bindings};
   await ${name}(bindings, ${size > 1 ? `Math.ceil(${ELEMENTS} / ${size})` : ELEMENTS});
   console.log(bindings);
+}
+`;
+  }
+  for (const exported of exports) {
+    if (exported.kind !== 'kernel') continue;
+    const [src, dst, width, height] = exported.face.params;
+    if (
+      exported.face.params.length !== 4 ||
+      src?.k !== 'texture' ||
+      src.s !== 'texture_2d<f32>' ||
+      dst?.k !== 'texture' ||
+      dst.storage?.format !== 'rgba8unorm' ||
+      !['write', 'read_write'].includes(dst.storage.access) ||
+      width?.k !== 'value' ||
+      width.type.k !== 'num' ||
+      height?.k !== 'value' ||
+      height.type.k !== 'num'
+    )
+      continue;
+    const name = exported.name;
+    return `${HEADER(file)}
+import { createDevice } from 'typeshade/runtime';
+import 'typeshade/fuse';
+import { ${name} } from '${from}';
+
+/** Process a colour gradient with \`${name}\`, and show the resulting image. */
+export async function run(canvas: HTMLCanvasElement) {
+  const width = 128;
+  const height = 96;
+  const image = new ImageData(width, height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      image.data[i] = Math.round(255 * x / (width - 1));
+      image.data[i + 1] = Math.round(255 * y / (height - 1));
+      image.data[i + 2] = 64;
+      image.data[i + 3] = 255;
+    }
+  }
+  const device = await createDevice({ prefer: ['webgpu', 'cpu'] });
+  try {
+    const target = device.texture({ size: [width, height], format: 'rgba8unorm', storage: true });
+    await device.fuse(() => {
+      void ${name}(image, target, width, height);
+    });
+    const pixels = await target.read();
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d')?.putImageData(
+      new ImageData(new Uint8ClampedArray(pixels), width, height), 0, 0,
+    );
+    return { width, height, tier: device.tier };
+  } finally {
+    await device.dispose();
+  }
 }
 `;
   }
