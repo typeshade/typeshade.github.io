@@ -158,6 +158,7 @@ recorded WebGL renderer strings. These results validate the instrument, not hard
 | `prepare_monolith_input.py`, `verify_change_rate.py`, `verify_gates.py` from `im-not-ai`                                                                                                                               | Passed; low-risk route, 2.5% draft-to-final change, structural gates passed.                                                                                                                                        |
 
 The browser check writes local screenshots and measurements under ignored `shots/benchmarks/`.
+CI retains them as `benchmark-instrument-evidence` for three days.
 Both languages were inspected at 390 and 1440 pixels, in both themes, with menus closed and open.
 The header remains 65 pixels tall. Document scroll width equals viewport width. The results
 retain table headers and cells on phones and scroll inside their own container.
