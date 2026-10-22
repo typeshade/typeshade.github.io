@@ -1,0 +1,79 @@
+---
+import Docs from '../../layouts/Docs.astro';
+import { copyFor, type Locale } from '../../i18n/index.ts';
+import { links } from '../../lib/links.ts';
+import { PROFILES, SUITES, RETENTION_DAYS } from '../../lib/benchmarks/definitions.ts';
+interface Props { locale: Locale; }
+const { locale } = Astro.props;
+const c = copyFor(locale).benchmarks;
+const headings = [{ depth: 2, slug: 'run', text: c.runH }, { depth: 2, slug: 'results', text: c.resultsH }, { depth: 2, slug: 'sharing', text: c.sharingH }];
+---
+<Docs locale={locale} path={links.benchmarks.href} title={c.title} description={c.description} headings={headings} editHref="https://github.com/typeshade/typeshade.github.io/blob/main/src/components/pages/BenchmarksPage.astro">
+  <h1>{c.h1}</h1>
+  <p>{c.intro}</p>
+  <div data-benchmarks>
+    <script type="application/json" data-benchmark-copy set:html={JSON.stringify(c).replace(/</g, '\\u003c')} />
+    <h2 id="run">{c.runH}</h2>
+    <p>{c.runInfo}</p>
+    <fieldset class="border border-line-1 rounded-md p-4" data-controls>
+      <legend class="text-text-2">{c.runH}</legend>
+      <label class="flex flex-wrap items-center gap-3 mb-4">{c.profile}
+        <select data-profile class="bg-surface-1 border border-line-1 rounded-md p-2">
+          {Object.entries(PROFILES).map(([key, value]) => <option value={key}>{c.profiles[key as keyof typeof PROFILES]}: {value.sizes.join(', ')} / {value.samples}</option>)}
+        </select>
+        <span class="text-ui text-text-2">{c.profileUnits}</span>
+      </label>
+      <div class="flex flex-col gap-3">
+        {SUITES.map((suite) => <label class="flex items-start gap-3"><input type="checkbox" value={suite} data-suite checked class="mt-1" /><span><strong>{c.suites[suite]}</strong><span class="block text-ui text-text-2">{c.descriptions[suite]}</span></span></label>)}
+      </div>
+    </fieldset>
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button type="button" data-run class="bench-button">{c.run}</button>
+      <button type="button" data-stop class="bench-button" disabled>{c.stop}</button>
+    </div>
+    <p data-status role="status" aria-live="polite">{c.idle}</p>
+    <progress data-progress value="0" max="1" class="w-full" hidden></progress>
+    <p data-software class="text-text-2" hidden>{c.software}</p>
+    <h2 id="results">{c.resultsH}</h2>
+    <p>{c.timing}</p>
+    <p>{c.timingUnavailable}</p>
+    <p>{c.protocol}</p>
+    <p>{c.limits}</p>
+    <p data-empty>{c.empty}</p>
+    <div class="bench-table" data-table tabindex="0" role="region" aria-label={c.resultsH} hidden>
+      <table data-own-stack>
+        <thead><tr>{[c.experiment, c.size, c.storage, c.wall, c.gpu, c.check].map((label) => <th scope="col">{label}</th>)}</tr></thead>
+        <tbody data-results></tbody>
+      </table>
+    </div>
+    <section data-device hidden>
+      <h3>{c.deviceH}</h3>
+      <dl><dt>{c.webgpu}</dt><dd data-webgpu></dd><dt>{c.webgl}</dt><dd data-webgl></dd></dl>
+    </section>
+    <h2 id="sharing">{c.sharingH}</h2>
+    <p>{c.privacy}</p>
+    <p>{c.attribution}</p>
+    <p>{c.retention.replace('{days}', String(RETENTION_DAYS))}</p>
+    <p>{c.trust}</p>
+    <details><summary>{c.inspect}</summary><pre data-record class="bench-record"></pre></details>
+    <label class="flex items-start gap-3 mt-4"><input type="checkbox" data-consent class="mt-1" /><span>{c.consent}</span></label>
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button type="button" data-download class="bench-button" disabled>{c.download}</button>
+      <button type="button" data-send class="bench-button" disabled>{c.send}</button>
+    </div>
+    <p data-send-status role="status" aria-live="polite"></p>
+  </div>
+</Docs>
+<script>
+  import { mountBenchmarks } from '../../lib/benchmarks/client.ts';
+  document.querySelectorAll<HTMLElement>('[data-benchmarks]').forEach(mountBenchmarks);
+</script>
+<style>
+  .bench-button { border: 1px solid var(--color-line-1); border-radius: .375rem; padding: .45rem 1rem; background: var(--color-surface-1); color: var(--color-text-1); font: inherit; cursor: pointer; }
+  .bench-button:disabled { opacity: .5; cursor: default; }
+  .bench-button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+  .bench-table { overflow-x: auto; }
+  .bench-table table { min-inline-size: 38rem; font-size: .8rem; }
+  .bench-record { max-block-size: 24rem; overflow: auto; font-size: .75rem; }
+  dd { overflow-wrap: anywhere; }
+</style>

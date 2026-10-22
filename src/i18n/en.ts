@@ -1511,6 +1511,89 @@ export const en = {
     ],
   },
 
+  benchmarks: {
+    title: 'Performance benchmarks',
+    h1: 'Benchmarks',
+    description:
+      'Run TypeShade performance experiments on your device, inspect the results and choose whether to contribute them.',
+    intro:
+      'Measure how workloads behave on your device. These experiments help guide compiler work, including the proposed array layout optimization.',
+    runH: 'Run experiments',
+    resultsH: 'Results',
+    sharingH: 'Contribute results',
+    runInfo:
+      'Close other GPU applications and keep this tab visible. Switching tabs stops the run and retains completed results. Your device may become warm.',
+    profile: 'Run size',
+    profiles: { quick: 'Quick', standard: 'Standard', extended: 'Extended' },
+    profileUnits: 'elements; samples per experiment',
+    suites: {
+      layout: 'Array layout',
+      transfer: 'Buffer transfer',
+      memory: 'Memory access',
+      arithmetic: 'Integer arithmetic',
+      reduction: 'Reduction',
+      atomics: 'Atomic contention',
+      workgroup: 'Workgroup size',
+      submission: 'Queue submission',
+    },
+    descriptions: {
+      layout: 'Compare full and projected AoS and SoA buffers with scalar fields.',
+      transfer: 'Measure upload completion and readback into host memory.',
+      memory: 'Compare sequential access with permuted access at different steps.',
+      arithmetic: 'Compare different iteration counts of unsigned integer arithmetic.',
+      reduction: 'Compare serial tiles with a workgroup tree reduction.',
+      atomics: 'Compare concentrated and distributed atomic additions.',
+      workgroup: 'Compare workgroup sizes with the same copy workload.',
+      submission: 'Compare batched dispatches with separate queue submissions.',
+    },
+    run: 'Run',
+    stop: 'Stop',
+    download: 'Download JSON',
+    send: 'Send results',
+    idle: 'Choose experiments, then run them. Nothing runs or sends automatically.',
+    running: 'Running',
+    complete: 'Complete',
+    cancelled: 'Stopped',
+    failed: 'Run failed',
+    unsupported: 'WebGPU unavailable',
+    progress: 'Completed experiments',
+    empty: 'Results will appear here after a run.',
+    experiment: 'Experiment',
+    size: 'Elements',
+    storage: 'Storage bytes',
+    wall: 'Host ms',
+    gpu: 'GPU ns',
+    check: 'Result',
+    passed: 'Passed',
+    unavailable: 'Unavailable',
+    timing:
+      'Times are medians per dispatch or transfer. Host time includes submission and completion. GPU timestamps exclude transfers and host work.',
+    timingUnavailable:
+      'GPU timing requires timestamp queries and a resolved interval. Unavailable timing remains empty. Separate submissions report host time only.',
+    protocol:
+      'Each workload checks its output against an independent CPU reference and tests the comparison with a corrupted value. Alternatives rotate between rounds.',
+    limits:
+      'Run limits come from the selected profile. Setup includes pipeline creation, buffer allocation and initial upload. Raw samples and setup times are in the record.',
+    privacy:
+      'The record contains device and renderer information, browser version, workload identifiers, timings and correctness results. It contains no page URL or user program.',
+    attribution:
+      'WebGPU adapter information and WebGL renderer information have separate fields. The APIs may select different GPUs. Browsers can hide either value.',
+    inspect: 'Inspect the record',
+    consent:
+      'I agree to send this record, including its device information, for TypeShade performance research.',
+    retention:
+      'Records expire after {days} days. A daily cleanup deletes expired records. Temporary address hashes enforce an hourly limit and expire at the end of the hour.',
+    trust:
+      'These are voluntary, unverified device reports. Maintainers check controlled reproductions before making compiler decisions. Raw submissions are private.',
+    sent: 'Results received.',
+    sendFailed: 'Results could not be sent. Download the record and try again later.',
+    rateLimited: 'The submission limit was reached. Try again later.',
+    software:
+      'A software renderer is reported. This run checks the instrument and does not establish physical GPU performance.',
+    deviceH: 'Reported device',
+    webgpu: 'WebGPU adapter',
+    webgl: 'WebGL renderer',
+  },
   checks: {
     title: 'How TypeShade is checked: oracle, compile gate, goldens',
     description:
