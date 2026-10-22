@@ -13,7 +13,6 @@ export function mountBenchmarks(root: HTMLElement): void {
   const stop = get<HTMLButtonElement>('stop');
   const send = get<HTMLButtonElement>('send');
   const download = get<HTMLButtonElement>('download');
-  const consent = get<HTMLInputElement>('consent');
   const profile = get<HTMLSelectElement>('profile');
   const controls = get<HTMLFieldSetElement>('controls');
   const status = get('status');
@@ -27,8 +26,7 @@ export function mountBenchmarks(root: HTMLElement): void {
     run.disabled = !!worker || sending;
     stop.disabled = !worker;
     controls.disabled = !!worker || sending;
-    consent.disabled = sending;
-    send.disabled = !record || !!worker || !consent.checked || sending || received;
+    send.disabled = !record || !!worker || sending || received;
     download.disabled = !record || !!worker;
   };
   const inspect = () => {
@@ -63,9 +61,8 @@ export function mountBenchmarks(root: HTMLElement): void {
     status.textContent = copy[state];
     progress.hidden = true;
     refresh();
-    if (consent.checked) void sendRecord();
+    void sendRecord();
   };
-  consent.addEventListener('change', refresh);
   for (const name of ['metric', 'size'])
     get(name).addEventListener('change', () => {
       if (record) renderReport(root, record, copy);
@@ -185,11 +182,12 @@ export function mountBenchmarks(root: HTMLElement): void {
     setTimeout(() => URL.revokeObjectURL(href), 1000);
   });
   const sendRecord = async () => {
-    if (!record || worker || !consent.checked || sending || received) return;
+    if (!record || worker || sending || received) return;
     sending = true;
     refresh();
     try {
-      const outcome = await postBenchmarkRecord(record, consent.checked);
+      // Run authorizes this report through the notice beside the button.
+      const outcome = await postBenchmarkRecord(record, true);
       if (outcome.status === 'failed') {
         get('send-status').textContent =
           outcome.code === 'rate' ? copy.rateLimited : copy.sendFailed;

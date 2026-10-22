@@ -27,11 +27,11 @@ const headings = [{ depth: 2, slug: 'run', text: c.runH }, { depth: 2, slug: 're
         <span class="text-ui text-text-2">{c.profileUnits}</span>
       </label>
     </fieldset>
-    <label class="flex items-start gap-3 mt-4"><input type="checkbox" data-consent class="mt-1" /><span>{c.consent}</span></label>
     <div class="flex flex-wrap gap-3 mt-4">
-      <button type="button" data-run class="bench-button">{c.run}</button>
+      <button type="button" data-run class="bench-button" aria-describedby="benchmark-submission">{c.run}</button>
       <button type="button" data-stop class="bench-button" disabled>{c.stop}</button>
     </div>
+    <p id="benchmark-submission" data-submission-notice class="submission-notice text-ui text-text-2">{c.submissionNotice} <a href="#sharing">{c.submissionDetails}</a></p>
     <p data-status role="status" aria-live="polite">{c.idle}</p>
     <progress data-progress value="0" max="1" class="w-full" aria-label={c.progress} hidden></progress>
     <section data-device hidden>
@@ -95,6 +95,8 @@ const headings = [{ depth: 2, slug: 'run', text: c.runH }, { depth: 2, slug: 're
 </script>
 <style>
   .bench-button { border: 1px solid var(--color-line-2); border-radius: .375rem; padding: .45rem 1rem; background: var(--color-surface-1); color: var(--color-text-1); font: inherit; cursor: pointer; }
+  .bench-button[data-run], .bench-button[data-stop] { min-block-size: 44px; min-inline-size: 44px; }
+  .submission-notice { margin-block: .5rem 1rem; font-size: .875rem; }
   .bench-button:disabled { opacity: .5; cursor: default; }
   .bench-button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
   .bench-record { max-block-size: 24rem; overflow: auto; font-size: .75rem; }

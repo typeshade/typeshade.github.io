@@ -88,11 +88,12 @@ revision; WebGL render timings are a future suite.
 
 ## Collection and retention
 
-The page starts no experiment or POST on load. Sending requires a finished local record,
-an unchecked-by-default consent box. Checking it before a run sends the record after completion,
-failure or cancellation. A finished record can also be sent with the separate button. Consent
-remains selected until the visitor clears it on that page. Switching tabs cancels active work. JSON inspection and download work
-without sending. Each run gets a new random UUID; no persistent device identifier is used.
+The page starts no experiment or POST on load. The visitor selects Run to start work and
+send its record automatically. A small notice below Run explains this action and links to
+the collection details. Completion, failure, unsupported WebGPU and cancellation each attempt
+one submission. A failed send can retry the same record ID. Switching tabs cancels active
+work. JSON inspection and download remain available. Each run gets a new random UUID; no
+persistent device identifier is used. The original checkbox flow was replaced in PR #217.
 
 The record includes the user agent, separately attributed WebGPU and WebGL information,
 reported capabilities, workload provenance, status, raw samples and checks. Missing renderer

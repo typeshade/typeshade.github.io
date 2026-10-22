@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 export async function checkRegressions(page, url) {
+  const reports = [];
+  // Bulk fault and visual runs avoid consuming the integration collector's hourly quota.
+  await page.route('**/data/benchmarks/records/', (route) => {
+    const body = route.request().postDataJSON();
+    assert.equal(body.consent, true);
+    reports.push(body.record);
+    return route.fulfill({ json: { id: body.record.id, receivedAt: new Date().toISOString() } });
+  });
   // Supply faults in the real nested-worker realm; Chromium does not route its script requests.
   const fault = async (patch) =>
     page.route('**/regression.worker-*.js', async (route) => {
@@ -17,15 +25,23 @@ export async function checkRegressions(page, url) {
   const root = page.locator('[data-benchmarks]');
   const record = async () => JSON.parse(await root.locator('[data-record]').textContent());
   const run = async () => {
+    const before = reports.length;
     await root.locator('[data-run]').click();
     await page.waitForFunction(
       () => document.querySelector('[data-benchmarks] [data-stop]').disabled,
       {},
       { timeout: 650000 },
     );
+    await page.waitForFunction(() =>
+      document
+        .querySelector('[data-benchmarks] [data-send-status]')
+        .textContent.startsWith('Results received.'),
+    );
+    assert.equal(reports.length, before + 1);
+    assert.equal(reports.at(-1).id, (await record()).id);
     return record();
   };
-  assert.equal(await root.locator('[data-consent]').isChecked(), false);
+  assert.equal(reports.length, 0);
   const quick = await run();
   writeFileSync('shots/benchmarks/unified-quick.json', JSON.stringify(quick, null, 2));
   assert.equal(quick.status, 'complete', JSON.stringify(quick.results.at(-1)));
@@ -50,8 +66,7 @@ export async function checkRegressions(page, url) {
   assert(extended.results.every((r) => r.wallMs.length === 15 && r.status === 'passed'));
   writeFileSync('shots/benchmarks/unified-extended.json', JSON.stringify(extended, null, 2));
   await root.locator('[data-profile]').selectOption('quick');
-  // Consent before a run sends the completed record once and shows a stable receipt.
-  await root.locator('[data-consent]').check();
+  // Each Run action sends the completed record once and shows a stable receipt.
   await run();
   await page.waitForFunction(
     () =>
@@ -63,13 +78,12 @@ export async function checkRegressions(page, url) {
   );
   assert((await root.locator('[data-send-status]').textContent()).includes((await record()).id));
   assert(await root.locator('[data-send]').isDisabled());
-  await root.locator('[data-consent]').uncheck();
   // Each version worker reports an unsupported adapter instead of zero timings.
   await fault('GPU.prototype.requestAdapter=async()=>null;');
   const unsupported = await run();
   assert.equal(unsupported.status, 'unsupported');
   assert.equal(unsupported.results.length, 0);
-  await page.unrouteAll();
+  await page.unroute('**/regression.worker-*.js');
   // Artifact bytes are checked before importing a runtime.
   await fault(
     "const fetchArtifact=self.fetch;self.fetch=async(u,o)=>{const r=await fetchArtifact(u,o);return String(u).includes('/benchmarks/artifacts/')?new Response((await r.text())+'/* modified */',{headers:r.headers}):r;};",
@@ -77,7 +91,7 @@ export async function checkRegressions(page, url) {
   const corrupt = await run();
   assert.equal(corrupt.status, 'failed');
   assert.equal(corrupt.results.length, 0);
-  await page.unrouteAll();
+  await page.unroute('**/regression.worker-*.js');
   // Timestamp support can be absent without failing application correctness.
   await fault(
     "const has=GPUSupportedFeatures.prototype.has;GPUSupportedFeatures.prototype.has=function(n){return n==='timestamp-query'?false:has.call(this,n)};const extension=WebGL2RenderingContext.prototype.getExtension;WebGL2RenderingContext.prototype.getExtension=function(n){return n==='WEBGL_debug_renderer_info'?null:extension.call(this,n)};",
@@ -87,12 +101,11 @@ export async function checkRegressions(page, url) {
   assert(noTiming.results.every((r) => r.gpuNs === null));
   assert.equal(noTiming.metadata.webgl.debugExtension, false);
   assert.equal(noTiming.metadata.webgl.unmaskedRenderer, null);
-  await page.unrouteAll();
-  // A corrupt GPU program fails validation and can send its failure with prior consent.
+  await page.unroute('**/regression.worker-*.js');
+  // A corrupt GPU program automatically sends the failed run's diagnostic record.
   await fault(
     "const create=GPUDevice.prototype.createShaderModule;GPUDevice.prototype.createShaderModule=function(d){return create.call(this,{...d,code:d.code.replaceAll('out[i] = src[i].f0;','out[i] = src[i].f0 + 1.0;')});};",
   );
-  await root.locator('[data-consent]').check();
   const wrong = await run();
   assert.equal(wrong.status, 'failed');
   assert(wrong.results.some((r) => r.status === 'failed' && r.reason === 'validation'));
@@ -104,8 +117,7 @@ export async function checkRegressions(page, url) {
     {},
     { timeout: 20000 },
   );
-  await root.locator('[data-consent]').uncheck();
-  await page.unrouteAll();
+  await page.unroute('**/regression.worker-*.js');
   await root.locator('[data-profile]').selectOption('extended');
   await root.locator('[data-run]').click();
   await page.waitForFunction(
@@ -116,6 +128,14 @@ export async function checkRegressions(page, url) {
   assert.equal(partial.status, 'cancelled');
   assert(partial.results.length > 0 && partial.results.length < 162);
   assert.equal(partial.results.length % 2, 0);
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-benchmarks] [data-send-status]')
+      .textContent.startsWith('Results received.'),
+  );
+  assert.equal(reports.at(-1).id, partial.id);
+  assert.equal(new Set(reports.map((r) => r.id)).size, reports.length);
+  await page.unroute('**/data/benchmarks/records/');
   console.log(
     'unified benchmarks: actual GPU, host calls, resident chains, receipts, integrity, absent timings and cancellation passed',
   );

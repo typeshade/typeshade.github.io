@@ -1538,7 +1538,7 @@ export const ko: Copy = {
     title: 'TypeShade 성능 벤치마크',
     h1: '벤치마크',
     description:
-      '기기에서 TypeShade 성능 실험을 실행하고 결과를 확인한 뒤 전송 여부를 선택합니다. 배열 배치, 메모리 전송, 연산, 작업 그룹 등 여러 실험을 비교할 수 있습니다.',
+      '기기에서 TypeShade 성능 실험을 실행하고 결과를 보내 컴파일러 개선에 참여합니다. 배열 배치, 메모리 전송, 연산, 작업 그룹 등 여러 실험을 비교할 수 있습니다.',
     intro:
       '사용 중인 기기에서 작업별 성능을 측정합니다. 수집한 결과는 배열 레이아웃 최적화 제안 등 컴파일러 개선의 근거로 씁니다.',
     runH: '통합 벤치마크',
@@ -1572,8 +1572,8 @@ export const ko: Copy = {
     run: '실행',
     stop: '중지',
     download: 'JSON 저장',
-    send: '결과 전송',
-    idle: '실행 규모를 고른 뒤 벤치마크를 실행하십시오. 전송에는 동의가 필요합니다.',
+    send: '전송 재시도',
+    idle: '실행 규모를 고른 뒤 벤치마크를 실행하십시오.',
     running: '실행 중',
     complete: '완료',
     cancelled: '중지됨',
@@ -1602,8 +1602,8 @@ export const ko: Copy = {
     attribution:
       'WebGPU 어댑터 정보와 WebGL 렌더러 정보는 따로 기록합니다. 두 API가 서로 다른 GPU를 선택할 수 있습니다. 브라우저가 정보를 가릴 수도 있습니다.',
     inspect: '기록 확인',
-    consent:
-      '벤치마크 기록과 기기 정보를 TypeShade 성능 연구에 전송하는 데 동의합니다. 실행 전에 선택하면 완료, 중지 또는 실패한 실행의 기록을 전송합니다.',
+    submissionNotice: '실행하면 결과와 기기 정보가 TypeShade에 자동 전송됩니다.',
+    submissionDetails: '전송 항목',
     retention:
       '전송한 기록은 {days}일 뒤 만료되며 매일 정리 작업으로 삭제합니다. 시간별 전송 한도에 쓰는 임시 주소 해시는 해당 시간이 끝나면 만료됩니다.',
     trust:

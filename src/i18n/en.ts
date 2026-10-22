@@ -1604,7 +1604,7 @@ export const en = {
     title: 'Performance benchmarks',
     h1: 'Benchmarks',
     description:
-      'Run TypeShade performance experiments on your device, inspect the results and choose whether to contribute them.',
+      'Run TypeShade performance experiments on your device and contribute results to guide compiler improvements.',
     intro:
       'Measure how workloads behave on your device. These experiments help guide compiler work, including the proposed array layout optimization.',
     runH: 'Unified benchmark',
@@ -1638,8 +1638,8 @@ export const en = {
     run: 'Run',
     stop: 'Stop',
     download: 'Download JSON',
-    send: 'Send results',
-    idle: 'Choose a run size, then run the benchmark. Sending requires your consent.',
+    send: 'Retry sending',
+    idle: 'Choose a run size, then run the benchmark.',
     running: 'Running',
     complete: 'Complete',
     cancelled: 'Stopped',
@@ -1668,8 +1668,8 @@ export const en = {
     attribution:
       'WebGPU adapter information and WebGL renderer information have separate fields. The APIs may select different GPUs. Browsers can hide either value.',
     inspect: 'Inspect the record',
-    consent:
-      'I agree to send benchmark records and device information for TypeShade performance research. Checked before a run, each completed, stopped or failed run sends its record.',
+    submissionNotice: 'Running automatically sends results and device information to TypeShade.',
+    submissionDetails: 'What is sent',
     retention:
       'Records expire after {days} days. A daily cleanup deletes expired records. Temporary address hashes enforce an hourly limit and expire at the end of the hour.',
     trust:

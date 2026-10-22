@@ -101,8 +101,8 @@ TypeShade is released under the Apache License 2.0, and was released under the M
 The English and Korean `/benchmarks/` pages run versioned WebGPU workloads in a browser
 Worker. One run compares both exact compiler/runtime builds across every experiment and
 correctness check. Four section charts show timing and buffer-memory changes. Visitors inspect
-local results and choose whether to send one record. The existing
-site Worker stores consented records privately in D1. See [docs/benchmarks.md](docs/benchmarks.md)
+results from a visitor-initiated run. A notice below Run explains automatic reporting. The
+site Worker stores authorized records privately in D1. See [docs/benchmarks.md](docs/benchmarks.md)
 for retention, migration and maintainer commands, and
 [docs/benchmark-unification.md](docs/benchmark-unification.md) for the current instrument.
 

@@ -1,4 +1,4 @@
-// End-to-end instrument check: real WGSL, browser Worker, consent UI and local Wrangler D1.
+// End-to-end instrument check: real WGSL, Run authorization and local Wrangler D1.
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
@@ -78,10 +78,15 @@ try {
   };
   await page.goto(`${url}/benchmarks/`);
   assert.equal(await root.count(), 1);
-  for (const name of ['run', 'stop', 'consent', 'send', 'profile', 'progress'])
+  for (const name of ['run', 'stop', 'submission-notice', 'send', 'profile', 'progress'])
     assert.equal(await root.locator(`[data-${name}]`).count(), 1);
   assert(await root.locator('[data-send]').isDisabled());
-  assert.equal(await root.locator('[data-consent]').isChecked(), false);
+  assert.equal(await root.locator('input[type="checkbox"]').count(), 0);
+  assert.equal(await root.locator('[data-run]').textContent(), 'Run');
+  assert.equal(
+    await root.locator('[data-run]').getAttribute('aria-describedby'),
+    'benchmark-submission',
+  );
   assert.equal(posts, 0);
   assert.equal(workerLoads, 0);
   const first = await run();
@@ -100,7 +105,10 @@ try {
   assert.equal(await root.locator('[data-section]:visible').count(), 4);
   assert.equal(await root.locator('[data-case]').count(), 27);
   assert.equal(await root.locator('table').count(), 0);
-  assert.equal(posts, 0);
+  await page.waitForFunction(() =>
+    document.querySelector('[data-send-status]').textContent.startsWith('Results received.'),
+  );
+  assert.equal(posts, 1);
   assert(await root.locator('[data-send]').isDisabled());
   assert.equal(first.metadata.webgl.state, 'available');
   for (const id of ['transfer-upload', 'transfer-readback', 'submission-separate'])
@@ -118,11 +126,6 @@ try {
     assert.equal(await root.locator('[data-case]').count(), 27);
     if (metric === 'readback') assert.equal(await root.locator('[data-bars]:visible').count(), 1);
   }
-  await root.locator('[data-consent]').check();
-  await root.locator('[data-send]').click();
-  await page.waitForFunction(() =>
-    document.querySelector('[data-send-status]').textContent.startsWith('Results received.'),
-  );
   assert.equal(posts, 1);
   assert((await root.locator('[data-send-status]').textContent()).includes(first.id));
   const retry = await page.evaluate(
@@ -164,7 +167,6 @@ try {
   await checkRegressions(page, url);
   // One report and receipt for cancellation; a failed send can retry the same ID.
   await page.goto(`${url}/benchmarks/`);
-  await root.locator('[data-consent]').check();
   await page.route('**/data/benchmarks/records/', (route) =>
     route.fulfill({ status: 503, contentType: 'application/json', body: '{"code":"unavailable"}' }),
   );
@@ -187,10 +189,17 @@ try {
   );
   assert((await root.locator('[data-send-status]').textContent()).includes(stopped.id));
   assert.equal(posts, previousPosts + 2);
+  // Repeated visual runs use receipts without consuming the collector's hourly quota.
+  await page.route('**/data/benchmarks/records/', (route) => {
+    const body = route.request().postDataJSON();
+    assert.equal(body.consent, true);
+    return route.fulfill({ json: { id: body.record.id, receivedAt: new Date().toISOString() } });
+  });
   // Both locales and themes render the same four charts at mobile and desktop widths.
   const measurements = [];
   for (const locale of ['', '/ko']) {
     await page.goto(`${url}${locale}/benchmarks/`);
+    assert.equal(await root.locator('[data-run]').textContent(), locale ? '실행' : 'Run');
     assert.equal((await run()).status, 'complete');
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.evaluate(() => delete document.documentElement.dataset.theme);
@@ -243,32 +252,42 @@ try {
             .locator('.site-lang')
             .first()
             .evaluate((el) => (el.open = false));
-        measurements.push(
-          await page.evaluate(
-            ({ locale, width, theme }) => {
-              const rect = (selector) => {
-                const r = document.querySelector(selector).getBoundingClientRect();
-                return { width: r.width, height: r.height };
-              };
-              return {
-                locale,
-                width,
-                theme,
-                document: document.documentElement.scrollWidth,
-                heading: document.querySelector('h1').textContent,
-                header: rect('.site-header'),
-                footer: rect('.site-footer'),
-                controls: rect('[data-controls]'),
-                charts: [...document.querySelectorAll('[data-section]')].map((el) => ({
-                  section: el.dataset.section,
-                  width: el.getBoundingClientRect().width,
-                  height: el.getBoundingClientRect().height,
-                })),
-              };
-            },
-            { locale, width, theme },
-          ),
+        const measurement = await page.evaluate(
+          ({ locale, width, theme }) => {
+            const rect = (selector) => {
+              const r = document.querySelector(selector).getBoundingClientRect();
+              return { width: r.width, height: r.height };
+            };
+            return {
+              locale,
+              width,
+              theme,
+              document: document.documentElement.scrollWidth,
+              heading: document.querySelector('h1').textContent,
+              header: rect('.site-header'),
+              footer: rect('.site-footer'),
+              controls: rect('[data-controls]'),
+              run: rect('[data-run]'),
+              notice: {
+                ...rect('[data-submission-notice]'),
+                size: getComputedStyle(document.querySelector('[data-submission-notice]')).fontSize,
+                belowButton:
+                  document.querySelector('[data-submission-notice]').getBoundingClientRect().top >=
+                  document.querySelector('[data-run]').getBoundingClientRect().bottom,
+              },
+              charts: [...document.querySelectorAll('[data-section]')].map((el) => ({
+                section: el.dataset.section,
+                width: el.getBoundingClientRect().width,
+                height: el.getBoundingClientRect().height,
+              })),
+            };
+          },
+          { locale, width, theme },
         );
+        assert(measurement.run.height >= 44);
+        assert(measurement.notice.belowButton);
+        assert.equal(measurement.notice.size, '14px');
+        measurements.push(measurement);
       }
   }
   assert(measurements.every((r) => r.document <= r.width));
@@ -276,7 +295,7 @@ try {
   writeFileSync('shots/benchmarks/measurements.json', JSON.stringify(measurements, null, 2));
   writeFileSync('shots/benchmarks/instrument-record.json', JSON.stringify(first, null, 2));
   console.log(
-    'unified benchmarks: one run/report, 54 quick / 162 extended checks, four section charts, every original experiment, correctness probes, consent, retry and localized layouts passed.',
+    'unified benchmarks: one run/report, 54 quick / 162 extended checks, four section charts, every original experiment, correctness probes, automatic submission, retry and localized layouts passed.',
   );
 } finally {
   await browser?.close();

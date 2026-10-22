@@ -19,9 +19,9 @@ Implementation is tracked in [PR #217](https://github.com/typeshade/typeshade.gi
 - Show four section charts with horizontal bars, raw values and sample variability.
 - Give each section a distinct chart color, as the owner requested.
 - Offer timing and buffer-memory views, with explicit unavailable values and JSON inspection.
-- Keep one result ID, consent control, JSON download, report request and receipt.
+- Keep one result ID, Run action, JSON download, report request and receipt.
 - Keep older reports readable and separate incompatible measurement cohorts.
-- Preserve voluntary reporting, private D1 storage, retention and rate limits.
+- Disclose automatic reporting below Run; preserve private D1 storage, retention and rate limits.
 
 ## Validation
 
@@ -40,7 +40,7 @@ extended runs check 162 rows across three input sizes. Every output and unchange
 checked against an independent reference. A deliberately modified result must be rejected.
 
 The workload uses one worker coordinator and two isolated version workers. The page has one
-profile, run/stop control, progress indicator, UUID, consent box and report request. The old
+profile, run/stop control, progress indicator, UUID and report request. The old
 standalone device runner is removed. Earlier schema-1 and schema-2 reports remain accepted;
 catalog provenance keeps their workloads and measurement protocols apart from this one.
 
@@ -68,8 +68,25 @@ blue, purple, teal and orange, with a grey baseline and text labels in every sec
 shared site palette, container and grid remain unchanged. This is an intentional exception
 to the site's single-blue convention for this report's data marks.
 
-One consented run consumes one collector record and one receipt. D1 bindings, migrations,
+One visitor-initiated run consumes one collector record and one receipt. D1 bindings, migrations,
 body limits, rate limits and retention do not change. No production test reports are sent.
+
+## Run and automatic submission
+
+Owner feedback on 2026-10-22 UTC replaces the separate checkbox with the Run action. The
+button remains labelled Run. A 14-pixel notice directly below it explains that results and
+device information are sent automatically, with a link to the collection details. Run and
+Stop have touch targets at least 44 pixels tall.
+
+The visitor's Run action authorizes that run's report. Completion, failure, unsupported
+WebGPU and cancellation each attempt one submission. The collector still requires the
+`consent: true` envelope. No work or report request starts on page load. Successful delivery
+shows a stable receipt; failed delivery enables Retry sending with the same record ID.
+JSON inspection and download remain available.
+
+Bulk fault and screenshot checks intercept report requests locally. The primary success,
+cancellation and retry checks use a temporary Wrangler D1 database. Preview verification
+intercepts submissions to avoid synthetic reports in the shared database.
 
 ## Status
 
@@ -116,10 +133,29 @@ English and Korean screenshots were inspected at 390 and 1440 pixels in both the
 menus open and closed and populated results. Existing header and footer dimensions match
 all eight baseline measurements. The header stays 65 pixels tall; document width matches the
 viewport. Run controls and chart containers are 358 pixels wide on mobile and 836 on desktop.
-Both original run/consent controls become one control set. No shared container or grid changes.
+Both original run controls become one control set. No shared container or grid changes.
 
 The requested section colors are scoped to this page and checked under both explicit themes
 and the system dark preference. Percentage labels round without a negative zero.
 A missing measurement has no bar;
 incomplete or mismatched-adapter runs have no version comparison. Every metric and input-size
 view uses the same four figures. Raw samples remain available through JSON inspection and download.
+
+### Automatic-submission follow-up
+
+Observed on 2026-10-22 UTC against prior PR head `83fe3d9`, with the same tools and compiler pin:
+
+- `bun run check:types`, `bun run build` and the manual commit gates passed.
+- `bun test scripts/*.test.ts` passed 90 tests with 515 assertions across seven files.
+- `PLAYWRIGHT_CHROMIUM=/usr/bin/chromium bun run check:benchmarks` passed 54 quick and 162 extended checks.
+- The first Run sent one report without another action. Failure, unsupported WebGPU and cancellation also sent one report each.
+- Page load sent nothing. Local D1 receipt, duplicate retry, failed-send retry, download and private GET rejection passed.
+- English and Korean at 390/1440 pixels passed both themes, system dark mode, populated charts and open menus.
+- The notice is 14 pixels and directly below Run. It occupies two lines on mobile and one on desktop.
+- Run changed from 40.375 to 44 pixels tall in English; Korean remains 45.172 pixels tall.
+- Header, footer, profile controls and document widths match all eight preceding captures. No horizontal overflow occurs.
+- Korean wording gates passed with no further polishing. No synthetic report was sent to the shared database.
+
+The removed checkbox had shrunk to 3.563 pixels wide in English and 4.672 in Korean at 390 pixels.
+Its label occupied 120 and 86.391 pixels respectively. The explicit Run action removes that control.
+These measurements explain the mobile feedback; they do not establish device performance.
