@@ -35,26 +35,25 @@ for (const revision of revisions) {
   const { compile } = await load('src/compiler/ts/compile.ts');
   const { packModule } = await load('src/compiler/ts/pack.ts');
   const { hostFace } = await load('src/compiler/ts/host-face.ts');
-  const cases = legacy.cases
-    .filter((e) => ['layout', 'arithmetic', 'reduction'].includes(e.suite))
-    .map((e) => {
-      const result = compile(e.source, { fileName: `${e.id}.shade.ts` });
-      if (result.diagnostics.some((d: { category: string }) => d.category === 'error'))
-        throw new Error(JSON.stringify(result.diagnostics));
-      const pack = packModule(result.module, { emit: { level: 'O1', parens: 'minimal' } });
-      return {
-        ...e,
-        wgsl: pack.wgsl,
-        shader: sha(pack.wgsl),
-        bindings: pack.bindings.map(
-          ({ name, binding, group }: { name: string; binding: number; group: number }) => ({
-            name,
-            binding,
-            group,
-          }),
-        ),
-      };
-    });
+  const cases = legacy.cases.map((e) => {
+    if (!e.source) return e;
+    const result = compile(e.source, { fileName: `${e.id}.shade.ts` });
+    if (result.diagnostics.some((d: { category: string }) => d.category === 'error'))
+      throw new Error(JSON.stringify(result.diagnostics));
+    const pack = packModule(result.module, { emit: { level: 'O1', parens: 'minimal' } });
+    return {
+      ...e,
+      wgsl: pack.wgsl,
+      shader: sha(pack.wgsl),
+      bindings: pack.bindings.map(
+        ({ name, binding, group }: { name: string; binding: number; group: number }) => ({
+          name,
+          binding,
+          group,
+        }),
+      ),
+    };
+  });
   const face = hostFace(APPLICATION_SOURCE, {
     fileName: 'applications.shade.ts',
     fuse: true,

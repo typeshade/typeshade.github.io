@@ -11,6 +11,10 @@ Implementation starts from site main at `6876351`, with compiler pin `94203d3c`.
 The page and collector are implemented in site PR #215. Local validation passed against
 implementation commit `04dbb9e`. PR #215 merged as `02aa4ea` and deployed on 2026-10-22 UTC. Migration `0008_benchmarks.sql` was applied.
 The follow-up comparison instrument is tracked in PR #216 and `docs/benchmark-regressions.md`.
+PR #216 merged as `13786f8` and deployed on 2026-10-22 UTC. PR #217 replaces the separate
+controls with one unified workload and four section charts. Its protocol and validation are
+recorded in [benchmark-unification.md](benchmark-unification.md). The original protocol and
+validation below describe the retained schema-1 reports.
 
 ## Scope
 
@@ -45,7 +49,7 @@ at desktop and mobile widths in both themes. Record actual outcomes before reque
 The site change follows the existing compiler pin. Public compiler APIs, exposed buffer
 layouts and proposal 0081's open deviation D1 remain unchanged.
 
-## Instrument protocol
+## Original instrument protocol
 
 Catalog `2026-10-22.1` contains 22 cases. Its compiler is `94203d3c`, with emit level `O1`.
 `scripts/benchmark-catalog.ts` compiles TypeShade at build-check time. The committed catalog
@@ -178,8 +182,8 @@ layout. The final build, SEO and browser checks above passed after those fixes.
 
 ## Open work
 
-- PR #215 is merged and deployed. PR #216 adds a paired comparison instrument; its status is recorded in `docs/benchmark-regressions.md`.
-- One physical-device submission was received on 2026-10-22 UTC. It passed 66 checks, but most device timings were unresolved. Controlled hardware reproduction and improved timing remain necessary.
+- PR #215 and PR #216 are merged and deployed. PR #217 unifies the experiments and report UI; its status is recorded in `docs/benchmark-unification.md`.
+- Physical-device submissions include retained schema-1 and schema-2 reports. Controlled hardware reproduction remains necessary before compiler policy changes.
 - WebGL render and mixed/vector layouts remain future suites. PR #216 adds class-array writes and full TypeShade host-call measurements.
 - The owner's follow-up asks TypeShade itself to expose shared build/device information. Proposal 0083 was accepted in [compiler PR #735](https://github.com/typeshade/typeshade/pull/735), merged as `dab37659`. Its implementation is [compiler PR #736](https://github.com/typeshade/typeshade/pull/736). The current pin does not implement that API.
 - Proposal 0082 remains a draft. Proposal 0081 deviation D1 remains open.

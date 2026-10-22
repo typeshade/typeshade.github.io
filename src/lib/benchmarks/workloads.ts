@@ -1,6 +1,6 @@
 /** Fixed application inputs and programs. Change this revision when their work changes. */
-export const WORKLOAD_REVISION = 'applications-1';
-export const INSTRUMENT_REVISION = 'paired-1';
+export const WORKLOAD_REVISION = 'applications-2';
+export const INSTRUMENT_REVISION = 'unified-1';
 export const APPLICATIONS = ['image', 'particles', 'peak', 'collect', 'resident-image'] as const;
 export type Application = (typeof APPLICATIONS)[number];
 export const APPLICATION_SOURCE = `"use typeshade";

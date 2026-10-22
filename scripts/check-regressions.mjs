@@ -14,22 +14,22 @@ export async function checkRegressions(page, url) {
       await route.fulfill({ response, body: bootstrap + (await response.text()) });
     });
   await page.goto(`${url}/benchmarks/`);
-  const root = page.locator('[data-paired]');
+  const root = page.locator('[data-benchmarks]');
   const record = async () => JSON.parse(await root.locator('[data-record]').textContent());
   const run = async () => {
     await root.locator('[data-run]').click();
     await page.waitForFunction(
-      () => document.querySelector('[data-paired] [data-stop]').disabled,
+      () => document.querySelector('[data-benchmarks] [data-stop]').disabled,
       {},
-      { timeout: 120000 },
+      { timeout: 650000 },
     );
     return record();
   };
   assert.equal(await root.locator('[data-consent]').isChecked(), false);
   const quick = await run();
-  writeFileSync('shots/benchmarks/paired-quick.json', JSON.stringify(quick, null, 2));
+  writeFileSync('shots/benchmarks/unified-quick.json', JSON.stringify(quick, null, 2));
   assert.equal(quick.status, 'complete', JSON.stringify(quick.results.at(-1)));
-  assert.equal(quick.results.length, 30);
+  assert.equal(quick.results.length, 54);
   assert(
     quick.results.every(
       (r) =>
@@ -41,14 +41,14 @@ export async function checkRegressions(page, url) {
   );
   assert(quick.results.filter((r) => r.kind === 'compiled').every((r) => r.gpuSubmissions > 0));
   assert(quick.results.some((r) => r.kind === 'resident' && r.readbackMs.length === 3));
-  assert.equal(await root.locator('[data-pair-results] tr').count(), 15);
+  assert.equal(await root.locator('[data-section]:visible').count(), 4);
   assert.equal(await root.locator('[data-send]').isDisabled(), true);
   await root.locator('[data-profile]').selectOption('extended');
   const extended = await run();
   assert.equal(extended.status, 'complete');
-  assert.equal(extended.results.length, 90);
+  assert.equal(extended.results.length, 162);
   assert(extended.results.every((r) => r.wallMs.length === 15 && r.status === 'passed'));
-  writeFileSync('shots/benchmarks/paired-extended.json', JSON.stringify(extended, null, 2));
+  writeFileSync('shots/benchmarks/unified-extended.json', JSON.stringify(extended, null, 2));
   await root.locator('[data-profile]').selectOption('quick');
   // Consent before a run sends the completed record once and shows a stable receipt.
   await root.locator('[data-consent]').check();
@@ -56,7 +56,7 @@ export async function checkRegressions(page, url) {
   await page.waitForFunction(
     () =>
       document
-        .querySelector('[data-paired] [data-send-status]')
+        .querySelector('[data-benchmarks] [data-send-status]')
         .textContent.startsWith('Results received.'),
     {},
     { timeout: 20000 },
@@ -80,11 +80,13 @@ export async function checkRegressions(page, url) {
   await page.unrouteAll();
   // Timestamp support can be absent without failing application correctness.
   await fault(
-    "const has=GPUSupportedFeatures.prototype.has;GPUSupportedFeatures.prototype.has=function(n){return n==='timestamp-query'?false:has.call(this,n)};",
+    "const has=GPUSupportedFeatures.prototype.has;GPUSupportedFeatures.prototype.has=function(n){return n==='timestamp-query'?false:has.call(this,n)};const extension=WebGL2RenderingContext.prototype.getExtension;WebGL2RenderingContext.prototype.getExtension=function(n){return n==='WEBGL_debug_renderer_info'?null:extension.call(this,n)};",
   );
   const noTiming = await run();
   assert.equal(noTiming.status, 'complete');
   assert(noTiming.results.every((r) => r.gpuNs === null));
+  assert.equal(noTiming.metadata.webgl.debugExtension, false);
+  assert.equal(noTiming.metadata.webgl.unmaskedRenderer, null);
   await page.unrouteAll();
   // A corrupt GPU program fails validation and can send its failure with prior consent.
   await fault(
@@ -97,7 +99,7 @@ export async function checkRegressions(page, url) {
   await page.waitForFunction(
     () =>
       document
-        .querySelector('[data-paired] [data-send-status]')
+        .querySelector('[data-benchmarks] [data-send-status]')
         .textContent.startsWith('Results received.'),
     {},
     { timeout: 20000 },
@@ -107,14 +109,14 @@ export async function checkRegressions(page, url) {
   await root.locator('[data-profile]').selectOption('extended');
   await root.locator('[data-run]').click();
   await page.waitForFunction(
-    () => document.querySelectorAll('[data-paired] [data-results] tr').length > 0,
+    () => document.querySelector('[data-benchmarks] [data-progress]').value > 0,
   );
   await root.locator('[data-stop]').click();
   const partial = await record();
   assert.equal(partial.status, 'cancelled');
-  assert(partial.results.length > 0 && partial.results.length < 90);
+  assert(partial.results.length > 0 && partial.results.length < 162);
   assert.equal(partial.results.length % 2, 0);
   console.log(
-    'paired benchmarks: actual GPU, host calls, resident chains, receipts, integrity, absent timings and cancellation passed',
+    'unified benchmarks: actual GPU, host calls, resident chains, receipts, integrity, absent timings and cancellation passed',
   );
 }

@@ -99,10 +99,14 @@ TypeShade is released under the Apache License 2.0, and was released under the M
 ## Device benchmarks
 
 The English and Korean `/benchmarks/` pages run versioned WebGPU workloads in a browser
-Worker. Visitors inspect local results and choose whether to send a record. The existing
+Worker. One run compares both exact compiler/runtime builds across every experiment and
+correctness check. Four section charts show timing and buffer-memory changes. Visitors inspect
+local results and choose whether to send one record. The existing
 site Worker stores consented records privately in D1. See [docs/benchmarks.md](docs/benchmarks.md)
-for the protocol, retention, migration and maintainer commands.
+for retention, migration and maintainer commands, and
+[docs/benchmark-unification.md](docs/benchmark-unification.md) for the current instrument.
 
-`bun run check:benchmark-catalog` recompiles every fixture against the compiler pin.
+`bun run check:benchmark-catalog` checks the retained original fixtures against their compiler.
+`bun run check:regression-catalog` checks the unified workload against both exact builds.
 After `bun run build`, `bun run check:benchmarks` runs the instrument, consent flow and local
 D1 collector in Chromium. Set `PLAYWRIGHT_CHROMIUM` when Chromium is installed outside Playwright.

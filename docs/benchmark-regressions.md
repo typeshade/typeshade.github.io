@@ -8,6 +8,8 @@ compiler and runtime changes affect the same application. Site baseline is
 `94203d3cab6433065bbe111c3b93f66a4058828e`.
 
 Implementation is tracked in [PR #216](https://github.com/typeshade/typeshade.github.io/pull/216).
+It merged as `13786f8` and deployed on 2026-10-22 UTC. The unified instrument in PR #217
+supersedes the separate controls described here; see [benchmark-unification.md](benchmark-unification.md).
 
 ## Scope
 
@@ -33,7 +35,7 @@ performance conclusions.
 
 ## Open items
 
-Implementation and local validation are complete. GitHub CI on the implementation head is pending. The benchmark does not implement proposal 0082. Proposal 0081 deviation D1 remains open. Compiler proposal 0083 was accepted in
+PR #216 is merged and deployed after green CI. The benchmark does not implement proposal 0082. Proposal 0081 deviation D1 remains open. Compiler proposal 0083 was accepted in
 PR #735 and merged as `dab37659`; its implementation is PR #736. This change does not
 move the documentation pin or depend on that pending implementation.
 

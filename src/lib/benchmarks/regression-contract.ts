@@ -4,12 +4,7 @@ import registry from './regression-catalogs.json';
 import type { Experiment } from './definitions.ts';
 import { metadataSchema, outputLength, storageBytes } from './contract.ts';
 import { PROFILES } from './definitions.ts';
-import {
-  APPLICATIONS,
-  APPLICATION_SOURCE,
-  WORKLOAD_REVISION,
-  INSTRUMENT_REVISION,
-} from './workloads.ts';
+import { APPLICATIONS, APPLICATION_SOURCE } from './workloads.ts';
 import { MAX_DISPATCHES } from './timing.ts';
 
 export const regressionCatalog = data;
@@ -47,8 +42,8 @@ export type RegressionResult = z.infer<typeof regressionResultSchema>;
 export const regressionRecordSchema = z
   .object({
     schema: z.literal(2),
-    revision: z.literal(WORKLOAD_REVISION),
-    instrument: z.literal(INSTRUMENT_REVISION),
+    revision: z.string().max(80),
+    instrument: z.string().max(80),
     digest: z.string().regex(/^[a-f0-9]{64}$/),
     workload: z.string().regex(/^[a-f0-9]{64}$/),
     builds: z.tuple([z.string().regex(/^[a-f0-9]{40}$/), z.string().regex(/^[a-f0-9]{40}$/)]),
@@ -62,7 +57,7 @@ export const regressionRecordSchema = z
     metadata: metadataSchema,
     peers: z.array(metadataSchema).max(2),
     loadMs: z.array(ms).max(2),
-    results: z.array(regressionResultSchema).max(90),
+    results: z.array(regressionResultSchema).max(162),
   })
   .strict()
   .superRefine((r, ctx) => {
@@ -78,6 +73,8 @@ export const regressionRecordSchema = z
       return;
     }
     if (
+      r.revision !== active.workloadRevision ||
+      r.instrument !== active.instrument ||
       r.workload !== active.workload ||
       r.builds.some((b, i) => b !== active.builds[i]!.revision) ||
       r.runtimes.some((b, i) => b !== active.builds[i]!.runtimeDigest)
@@ -121,8 +118,18 @@ export const regressionRecordSchema = z
       if (
         row.gpuNs &&
         (row.kind !== 'compiled' ||
+          e?.kind === 'upload' ||
+          e?.kind === 'readback' ||
+          e?.separate ||
           row.gpuNs.length !== row.wallMs.length ||
           !r.metadata.webgpu.timestamps)
+      )
+        fail();
+      if (
+        active.instrument === 'unified-1' &&
+        e &&
+        (e.kind === 'atomic' || e.kind === 'upload' || e.kind === 'readback' || e.dispatches > 1) &&
+        row.dispatches !== e.dispatches
       )
         fail();
       if ((row.kind === 'resident') !== (row.readbackMs !== null)) fail();

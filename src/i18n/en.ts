@@ -1512,6 +1512,72 @@ export const en = {
   },
 
   benchmarks: {
+    metricH: 'Measurement',
+    metrics: {
+      wall: 'Elapsed time',
+      gpu: 'GPU time',
+      buffers: 'Peak buffer memory',
+      cold: 'First call',
+      readback: 'Resident readback',
+    },
+    sections: {
+      applications: 'Application workloads',
+      data: 'Data and memory',
+      compute: 'Computation',
+      execution: 'Execution',
+    },
+    sectionInfo: {
+      applications:
+        'Complete image, particle, reduction and collection calls, plus a resident image chain.',
+      data: 'Object and field arrays, buffer transfers and memory access patterns.',
+      compute: 'Integer arithmetic, reduction and atomic additions.',
+      execution: 'Workgroup sizes and queue submission patterns.',
+    },
+    caseNames: {
+      image: 'Image inversion',
+      particles: 'Particle updates',
+      peak: 'Maximum value',
+      collect: 'Map and Set aggregation',
+      'resident-image': 'Resident image chain',
+      'layout-aos-8-read-1': 'Object array, read 1 of 8 fields',
+      'layout-soa-8-read-1': 'Field arrays, read 1 of 8 fields',
+      'layout-aos-1-read-1': 'Object array, 1 field',
+      'layout-soa-1-read-1': 'Field array, 1 field',
+      'layout-aos-8-read-8': 'Object array, read 8 fields',
+      'layout-soa-8-read-8': 'Field arrays, read 8 fields',
+      'transfer-upload': 'Upload to GPU',
+      'transfer-readback': 'Read back to host',
+      'memory-step-1': 'Sequential access',
+      'memory-step-17': 'Access step 17',
+      'memory-step-4097': 'Access step 4097',
+      'arithmetic-rounds-4': 'Integer arithmetic, 4 rounds',
+      'arithmetic-rounds-64': 'Integer arithmetic, 64 rounds',
+      'reduction-serial': 'Serial tile reduction',
+      'reduction-workgroup': 'Workgroup reduction',
+      'atomics-bins-1': 'Atomic additions, 1 bin',
+      'atomics-bins-256': 'Atomic additions, 256 bins',
+      'workgroup-64': 'Workgroup size 64',
+      'workgroup-128': 'Workgroup size 128',
+      'workgroup-256': 'Workgroup size 256',
+      'submission-batched': 'Batched dispatches',
+      'submission-separate': 'Separate submissions',
+    },
+    verdict: '{passed} / {total} checks passed',
+    summary:
+      'Lower: {lower}. Higher: {higher}. Overlapping or equal: {similar}. Unavailable: {missing}.',
+    chartInfo:
+      'Each baseline is 100. Shorter bars mean less time or buffer memory. Each section uses its own scale. Raw values appear above the bars.',
+    rangeInfo:
+      'Lines span percentiles 10 to 90 of repeated samples. Overlapping ranges stay separate from observed decreases and increases. First calls have one observation.',
+    range: '{baseline}; {candidate}.',
+    axis: 'Baseline 100; scale 0 to {max}.',
+    lower: '{value}% lower',
+    higher: '{value}% higher',
+    overlap: 'Ranges overlap ({value}%)',
+    same: 'Equal',
+    pending: 'Comparison requires a complete run with matching adapters.',
+    methodH: 'Measurement method',
+    sampleRanges: 'Sample ranges',
     receipt: 'Receipt {id}, received {time}.',
     comparisonH: 'Version comparison',
     ratios: 'Paired results',
@@ -1523,7 +1589,7 @@ export const en = {
     comparisonInfo:
       'Run the same programs with the baseline and candidate builds. Each build has an isolated runtime, and their measured calls alternate.',
     comparisonScope:
-      'Compiled programs compare layout, arithmetic and reduction. Application calls cover image inversion, particle updates, peak reduction and Map/Set collection. Resident calls keep image data on the device.',
+      'One run includes every experiment and correctness check on both builds. It covers application calls, memory, computation and execution patterns.',
     comparisonTiming:
       'First-call time includes case preparation. Repeated compiled timings are per dispatch in a calibrated batch. Application timings cover the complete call. Resident timings cover a fixed chain; readback is recorded separately in the JSON.',
     comparisonMemory:
@@ -1541,8 +1607,8 @@ export const en = {
       'Run TypeShade performance experiments on your device, inspect the results and choose whether to contribute them.',
     intro:
       'Measure how workloads behave on your device. These experiments help guide compiler work, including the proposed array layout optimization.',
-    runH: 'Run experiments',
-    resultsH: 'Results',
+    runH: 'Unified benchmark',
+    resultsH: 'Performance report',
     sharingH: 'Contribute results',
     runInfo:
       'Close other GPU applications and keep this tab visible. Switching tabs stops the run and retains completed results. Your device may become warm.',
@@ -1573,7 +1639,7 @@ export const en = {
     stop: 'Stop',
     download: 'Download JSON',
     send: 'Send results',
-    idle: 'Choose experiments, then run them. Nothing runs or sends automatically.',
+    idle: 'Choose a run size, then run the benchmark. Sending requires your consent.',
     running: 'Running',
     complete: 'Complete',
     cancelled: 'Stopped',

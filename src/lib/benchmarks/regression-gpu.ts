@@ -15,38 +15,48 @@ export async function prepareCompiled(device: GPUDevice, job: CompiledCase, n: n
       input.byteLength,
       GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     );
-    const out = make(expected.byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC);
+    const out = make(
+      expected.byteLength,
+      GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+    );
     const args = make(16, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
     device.queue.writeBuffer(src, 0, input.buffer);
     device.queue.writeBuffer(args, 0, new Uint32Array([n, 0, 0, 0]));
-    const layout = device.createBindGroupLayout({
-      entries: job.bindings.map((b) => ({
-        binding: b.binding,
-        visibility: GPUShaderStage.COMPUTE,
-        buffer: {
-          type:
-            b.name === 'args'
-              ? ('uniform' as const)
-              : b.name === 'src'
-                ? ('read-only-storage' as const)
-                : ('storage' as const),
-        },
-      })),
-    });
-    const pipeline = await device.createComputePipelineAsync({
-      layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
-      compute: { module: device.createShaderModule({ code: job.wgsl }), entryPoint: 'main' },
-    });
-    const bindings = device.createBindGroup({
-      layout,
-      entries: job.bindings.map((b) => ({
-        binding: b.binding,
-        resource: { buffer: b.name === 'args' ? args : b.name === 'src' ? src : out },
-      })),
-    });
-    const query = device.features.has('timestamp-query')
-      ? device.createQuerySet({ type: 'timestamp', count: 2 })
+    const layout = job.wgsl
+      ? device.createBindGroupLayout({
+          entries: job.bindings.map((b) => ({
+            binding: b.binding,
+            visibility: GPUShaderStage.COMPUTE,
+            buffer: {
+              type:
+                b.name === 'args'
+                  ? ('uniform' as const)
+                  : b.name === 'src'
+                    ? ('read-only-storage' as const)
+                    : ('storage' as const),
+            },
+          })),
+        })
       : undefined;
+    const pipeline = layout
+      ? await device.createComputePipelineAsync({
+          layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
+          compute: { module: device.createShaderModule({ code: job.wgsl }), entryPoint: 'main' },
+        })
+      : undefined;
+    const bindings = layout
+      ? device.createBindGroup({
+          layout,
+          entries: job.bindings.map((b) => ({
+            binding: b.binding,
+            resource: { buffer: b.name === 'args' ? args : b.name === 'src' ? src : out },
+          })),
+        })
+      : undefined;
+    const query =
+      pipeline && !job.separate && device.features.has('timestamp-query')
+        ? device.createQuerySet({ type: 'timestamp', count: 2 })
+        : undefined;
     const resolved = query
       ? make(16, GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC)
       : undefined;
@@ -68,32 +78,53 @@ export async function prepareCompiled(device: GPUDevice, job: CompiledCase, n: n
     };
     return {
       supported: !!query,
+      batchable: !!pipeline && job.kind !== 'atomic' && job.dispatches === 1,
+      dispatches: job.dispatches,
       async dispatch(count: number) {
-        const start = performance.now();
-        const enc = device.createCommandEncoder();
-        const pass = enc.beginComputePass(
-          query
-            ? {
-                timestampWrites: {
-                  querySet: query,
-                  beginningOfPassWriteIndex: 0,
-                  endOfPassWriteIndex: 1,
-                },
-              }
-            : {},
-        );
-        pass.setPipeline(pipeline);
-        pass.setBindGroup(0, bindings);
-        const groups = Math.ceil(
-          (job.kind === 'reduce' && job.variant === 'serial' ? n / 64 : n) / job.wg,
-        );
-        for (let i = 0; i < count; i++) pass.dispatchWorkgroups(groups);
-        pass.end();
-        if (query) {
-          enc.resolveQuerySet(query, 0, 2, resolved!, 0);
-          enc.copyBufferToBuffer(resolved!, 0, staging!, 0, 16);
+        // Reset atomics outside the measured interval so every call has the same input.
+        if (job.kind === 'atomic') {
+          device.queue.writeBuffer(out, 0, new Uint32Array(expected.length));
+          await device.queue.onSubmittedWorkDone();
         }
-        device.queue.submit([enc.finish()]);
+        const start = performance.now();
+        if (job.kind === 'upload') {
+          device.queue.writeBuffer(src, 0, input.buffer);
+          await device.queue.onSubmittedWorkDone();
+          return { wallMs: performance.now() - start, elapsedNs: null };
+        }
+        if (job.kind === 'readback') {
+          await read(src, input.byteLength);
+          return { wallMs: performance.now() - start, elapsedNs: null };
+        }
+        const encode = (dispatches: number) => {
+          const enc = device.createCommandEncoder();
+          const pass = enc.beginComputePass(
+            query
+              ? {
+                  timestampWrites: {
+                    querySet: query,
+                    beginningOfPassWriteIndex: 0,
+                    endOfPassWriteIndex: 1,
+                  },
+                }
+              : {},
+          );
+          pass.setPipeline(pipeline!);
+          pass.setBindGroup(0, bindings!);
+          const groups = Math.ceil(
+            (job.kind === 'reduce' && job.variant === 'serial' ? n / 64 : n) / job.wg,
+          );
+          for (let i = 0; i < dispatches; i++) pass.dispatchWorkgroups(groups);
+          pass.end();
+          if (query) {
+            enc.resolveQuerySet(query, 0, 2, resolved!, 0);
+            enc.copyBufferToBuffer(resolved!, 0, staging!, 0, 16);
+          }
+          return enc.finish();
+        };
+        if (job.separate) {
+          for (let i = 0; i < count; i++) device.queue.submit([encode(1)]);
+        } else device.queue.submit([encode(count)]);
         await device.queue.onSubmittedWorkDone();
         const wallMs = (performance.now() - start) / count;
         let elapsedNs: number | null = null;
@@ -110,7 +141,7 @@ export async function prepareCompiled(device: GPUDevice, job: CompiledCase, n: n
         return { wallMs, elapsedNs };
       },
       async verify(row: RegressionResult) {
-        const result = await read(out, expected.byteLength);
+        const result = await read(job.wgsl ? out : src, expected.byteLength);
         if (!matches(result, expected) || !matches(await read(src, input.byteLength), input))
           throw new Error('validation');
         result[0] = result[0]! ^ 1;
