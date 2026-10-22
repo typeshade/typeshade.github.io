@@ -3,7 +3,7 @@ import { RECORD_BYTES } from './definitions.ts';
 export type SendOutcome =
   | { status: 'sent'; id: string; receivedAt: string }
   | { status: 'failed'; code: 'consent' | 'invalid' | 'rate' | 'unavailable' | 'network' };
-/** Shared by both benchmark modes. Validation precedes the only network operation. */
+/** Requires authorization from the Run action. Validation precedes the network operation. */
 export async function postBenchmarkRecord(
   value: unknown,
   consent: boolean,

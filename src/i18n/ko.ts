@@ -1447,6 +1447,71 @@ export const ko: Copy = {
   },
 
   benchmarks: {
+    metricH: '측정 항목',
+    metrics: {
+      wall: '소요 시간',
+      gpu: 'GPU 시간',
+      buffers: '최대 버퍼 메모리',
+      cold: '첫 호출',
+      readback: '상주 데이터 되읽기',
+    },
+    sections: {
+      applications: '실제 작업',
+      data: '데이터와 메모리',
+      compute: '연산',
+      execution: '실행 방식',
+    },
+    sectionInfo: {
+      applications: '이미지, 입자, 리덕션, 컬렉션 호출 전체와 GPU 상주 이미지 처리를 비교합니다.',
+      data: '객체 배열과 필드별 배열, 버퍼 전송, 메모리 접근 방식을 비교합니다.',
+      compute: '정수 연산, 리덕션, 원자적 덧셈을 비교합니다.',
+      execution: '작업 그룹 크기와 큐 제출 방식을 비교합니다.',
+    },
+    caseNames: {
+      image: '이미지 반전',
+      particles: '입자 갱신',
+      peak: '최댓값',
+      collect: 'Map과 Set 집계',
+      'resident-image': 'GPU 상주 이미지 처리',
+      'layout-aos-8-read-1': '객체 배열, 8개 필드 중 1개 읽기',
+      'layout-soa-8-read-1': '필드별 배열, 8개 필드 중 1개 읽기',
+      'layout-aos-1-read-1': '객체 배열, 필드 1개',
+      'layout-soa-1-read-1': '필드별 배열, 필드 1개',
+      'layout-aos-8-read-8': '객체 배열, 필드 8개 읽기',
+      'layout-soa-8-read-8': '필드별 배열, 필드 8개 읽기',
+      'transfer-upload': 'GPU로 업로드',
+      'transfer-readback': '호스트로 되읽기',
+      'memory-step-1': '연속 접근',
+      'memory-step-17': '간격 17로 접근',
+      'memory-step-4097': '간격 4097로 접근',
+      'arithmetic-rounds-4': '정수 연산 4회',
+      'arithmetic-rounds-64': '정수 연산 64회',
+      'reduction-serial': '타일 내 순차 리덕션',
+      'reduction-workgroup': '작업 그룹 리덕션',
+      'atomics-bins-1': '원자적 덧셈, 슬롯 1개',
+      'atomics-bins-256': '원자적 덧셈, 슬롯 256개',
+      'workgroup-64': '작업 그룹 크기 64',
+      'workgroup-128': '작업 그룹 크기 128',
+      'workgroup-256': '작업 그룹 크기 256',
+      'submission-batched': '디스패치 묶음 제출',
+      'submission-separate': '디스패치 개별 제출',
+    },
+    verdict: '정확성 검사 {total}개 중 {passed}개 통과',
+    summary:
+      '감소 {lower}개. 증가 {higher}개. 범위 겹침 또는 동일 {similar}개. 비교 불가 {missing}개.',
+    chartInfo:
+      '각 항목의 기준 빌드를 100으로 맞췄습니다. 막대가 짧을수록 시간이나 버퍼 메모리가 적습니다. 섹션마다 축척이 다릅니다. 실제 값은 막대 위에 표시합니다.',
+    rangeInfo:
+      '가는 선은 반복 측정값의 10~90백분위 범위입니다. 범위가 겹치는 항목은 감소·증가와 따로 셉니다. 첫 호출은 한 번 측정한 값입니다.',
+    range: '{baseline}; {candidate}.',
+    axis: '기준 100, 축척 0~{max}.',
+    lower: '{value}% 감소',
+    higher: '{value}% 증가',
+    overlap: '측정 범위 겹침 ({value}%)',
+    same: '동일',
+    pending: '실행을 완료하고 두 어댑터가 같을 때 비교 결과를 표시합니다.',
+    methodH: '측정 방법',
+    sampleRanges: '측정 범위 상세',
     receipt: '수신 번호 {id}, 수신 시각 {time}.',
     comparisonH: '버전 비교',
     ratios: '대응 결과',
@@ -1458,7 +1523,7 @@ export const ko: Copy = {
     comparisonInfo:
       '기준 빌드와 비교 빌드로 같은 프로그램을 실행합니다. 각 빌드의 런타임을 분리하고, 측정할 때는 호출 순서를 번갈아 바꿉니다.',
     comparisonScope:
-      '컴파일된 프로그램으로 레이아웃, 연산, 리덕션을 비교합니다. 애플리케이션 호출은 이미지 반전, 입자 갱신, 최댓값 리덕션과 Map/Set 수집을 다룹니다. 기기 상주 호출에서는 이미지 데이터를 GPU에 유지합니다.',
+      '한 번 실행하면 두 빌드로 모든 실험과 정확성 검사를 수행합니다. 실제 작업, 메모리, 연산, 실행 방식을 함께 측정합니다.',
     comparisonTiming:
       '첫 호출 시간에는 작업 준비가 포함됩니다. 컴파일된 프로그램의 반복 시간은 보정한 묶음에서 디스패치당 측정한 값입니다. 애플리케이션 시간은 호출 전체를 포함합니다. 기기 상주 시간은 정해진 연속 호출을 포함하며, 되읽기 시간은 JSON에 따로 기록합니다.',
     comparisonMemory:
@@ -1473,11 +1538,11 @@ export const ko: Copy = {
     title: 'TypeShade 성능 벤치마크',
     h1: '벤치마크',
     description:
-      '기기에서 TypeShade 성능 실험을 실행하고 결과를 확인한 뒤 전송 여부를 선택합니다. 배열 배치, 메모리 전송, 연산, 작업 그룹 등 여러 실험을 비교할 수 있습니다.',
+      '기기에서 TypeShade 성능 실험을 실행하고 결과를 보내 컴파일러 개선에 참여합니다. 배열 배치, 메모리 전송, 연산, 작업 그룹 등 여러 실험을 비교할 수 있습니다.',
     intro:
       '사용 중인 기기에서 작업별 성능을 측정합니다. 수집한 결과는 배열 레이아웃 최적화 제안 등 컴파일러 개선의 근거로 씁니다.',
-    runH: '실험 실행',
-    resultsH: '결과',
+    runH: '통합 벤치마크',
+    resultsH: '성능 보고서',
     sharingH: '결과 보내기',
     runInfo:
       '다른 GPU 앱을 닫고 이 탭을 열어 두십시오. 탭을 전환하면 실행을 멈추고 완료된 결과를 보관합니다. 기기가 뜨거워질 수 있습니다.',
@@ -1507,8 +1572,8 @@ export const ko: Copy = {
     run: '실행',
     stop: '중지',
     download: 'JSON 저장',
-    send: '결과 전송',
-    idle: '실험을 선택한 뒤 실행하십시오. 자동 실행이나 전송은 없습니다.',
+    send: '전송 재시도',
+    idle: '실행 규모를 고른 뒤 벤치마크를 실행하십시오.',
     running: '실행 중',
     complete: '완료',
     cancelled: '중지됨',
@@ -1537,8 +1602,8 @@ export const ko: Copy = {
     attribution:
       'WebGPU 어댑터 정보와 WebGL 렌더러 정보는 따로 기록합니다. 두 API가 서로 다른 GPU를 선택할 수 있습니다. 브라우저가 정보를 가릴 수도 있습니다.',
     inspect: '기록 확인',
-    consent:
-      '벤치마크 기록과 기기 정보를 TypeShade 성능 연구에 전송하는 데 동의합니다. 실행 전에 선택하면 완료, 중지 또는 실패한 실행의 기록을 전송합니다.',
+    submissionNotice: '실행하면 결과와 기기 정보가 TypeShade에 자동 전송됩니다.',
+    submissionDetails: '전송 항목',
     retention:
       '전송한 기록은 {days}일 뒤 만료되며 매일 정리 작업으로 삭제합니다. 시간별 전송 한도에 쓰는 임시 주소 해시는 해당 시간이 끝나면 만료됩니다.',
     trust:

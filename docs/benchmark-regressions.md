@@ -8,6 +8,8 @@ compiler and runtime changes affect the same application. Site baseline is
 `94203d3cab6433065bbe111c3b93f66a4058828e`.
 
 Implementation is tracked in [PR #216](https://github.com/typeshade/typeshade.github.io/pull/216).
+It merged as `13786f8` and deployed on 2026-10-22 UTC. The unified instrument in PR #217
+supersedes the separate controls described here; see [benchmark-unification.md](benchmark-unification.md).
 
 ## Scope
 
@@ -33,7 +35,7 @@ performance conclusions.
 
 ## Open items
 
-Implementation and local validation are complete. GitHub CI on the implementation head is pending. The benchmark does not implement proposal 0082. Proposal 0081 deviation D1 remains open. Compiler proposal 0083 was accepted in
+PR #216 is merged and deployed after green CI. The benchmark does not implement proposal 0082. Proposal 0081 deviation D1 remains open. Compiler proposal 0083 was accepted in
 PR #735 and merged as `dab37659`; its implementation is PR #736. This change does not
 move the documentation pin or depend on that pending implementation.
 
@@ -107,13 +109,14 @@ revision and corresponding retained validation contract before deployment.
 
 The reporting design follows TypeCV main `6c90d02`, especially
 `website/src/lib/send-record.ts`, `run-record.ts` and `website/worker.mjs`. TypeShade provides its
-own shared sender, `src/lib/benchmarks/send-record.ts`, for both benchmark modes. It validates
+own shared sender, `src/lib/benchmarks/send-record.ts`. It validates
 the complete record and consent before making a same-origin request. D1 retains the record.
 The response carries a stable run ID and server receipt time. Identical retries return that
 receipt. A failed send leaves the local record available for inspection, download and retry.
 
-Consent starts unchecked. Visitors can give or withdraw it during a run. With consent selected,
-a completed, stopped or failed run sends its record. No run or request starts on page load.
+In the original PR #216 UI, consent started unchecked. With consent selected,
+a completed, stopped or failed run sent its record. PR #217 replaces this checkbox with
+a disclosure below Run and automatic submission. No run or request starts on page load.
 The existing hourly/global limits, private export and ninety-day retention remain in force.
 The schema-1 collector remains available beside schema 2, so earlier device reports stay readable.
 No network or telemetry behavior is added to the TypeShade compiler/runtime package.

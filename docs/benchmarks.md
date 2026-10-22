@@ -11,6 +11,10 @@ Implementation starts from site main at `6876351`, with compiler pin `94203d3c`.
 The page and collector are implemented in site PR #215. Local validation passed against
 implementation commit `04dbb9e`. PR #215 merged as `02aa4ea` and deployed on 2026-10-22 UTC. Migration `0008_benchmarks.sql` was applied.
 The follow-up comparison instrument is tracked in PR #216 and `docs/benchmark-regressions.md`.
+PR #216 merged as `13786f8` and deployed on 2026-10-22 UTC. PR #217 replaces the separate
+controls with one unified workload and four section charts. Its protocol and validation are
+recorded in [benchmark-unification.md](benchmark-unification.md). The original protocol and
+validation below describe the retained schema-1 reports.
 
 ## Scope
 
@@ -45,7 +49,7 @@ at desktop and mobile widths in both themes. Record actual outcomes before reque
 The site change follows the existing compiler pin. Public compiler APIs, exposed buffer
 layouts and proposal 0081's open deviation D1 remain unchanged.
 
-## Instrument protocol
+## Original instrument protocol
 
 Catalog `2026-10-22.1` contains 22 cases. Its compiler is `94203d3c`, with emit level `O1`.
 `scripts/benchmark-catalog.ts` compiles TypeShade at build-check time. The committed catalog
@@ -84,11 +88,12 @@ revision; WebGL render timings are a future suite.
 
 ## Collection and retention
 
-The page starts no experiment or POST on load. Sending requires a finished local record,
-an unchecked-by-default consent box. Checking it before a run sends the record after completion,
-failure or cancellation. A finished record can also be sent with the separate button. Consent
-remains selected until the visitor clears it on that page. Switching tabs cancels active work. JSON inspection and download work
-without sending. Each run gets a new random UUID; no persistent device identifier is used.
+The page starts no experiment or POST on load. The visitor selects Run to start work and
+send its record automatically. A small notice below Run explains this action and links to
+the collection details. Completion, failure, unsupported WebGPU and cancellation each attempt
+one submission. A failed send can retry the same record ID. Switching tabs cancels active
+work. JSON inspection and download remain available. Each run gets a new random UUID; no
+persistent device identifier is used. The original checkbox flow was replaced in PR #217.
 
 The record includes the user agent, separately attributed WebGPU and WebGL information,
 reported capabilities, workload provenance, status, raw samples and checks. Missing renderer
@@ -178,8 +183,8 @@ layout. The final build, SEO and browser checks above passed after those fixes.
 
 ## Open work
 
-- PR #215 is merged and deployed. PR #216 adds a paired comparison instrument; its status is recorded in `docs/benchmark-regressions.md`.
-- One physical-device submission was received on 2026-10-22 UTC. It passed 66 checks, but most device timings were unresolved. Controlled hardware reproduction and improved timing remain necessary.
+- PR #215 and PR #216 are merged and deployed. PR #217 unifies the experiments and report UI; its status is recorded in `docs/benchmark-unification.md`.
+- Physical-device submissions include retained schema-1 and schema-2 reports. Controlled hardware reproduction remains necessary before compiler policy changes.
 - WebGL render and mixed/vector layouts remain future suites. PR #216 adds class-array writes and full TypeShade host-call measurements.
 - The owner's follow-up asks TypeShade itself to expose shared build/device information. Proposal 0083 was accepted in [compiler PR #735](https://github.com/typeshade/typeshade/pull/735), merged as `dab37659`. Its implementation is [compiler PR #736](https://github.com/typeshade/typeshade/pull/736). The current pin does not implement that API.
 - Proposal 0082 remains a draft. Proposal 0081 deviation D1 remains open.

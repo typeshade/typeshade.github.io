@@ -323,6 +323,7 @@ import {
 import { nextBatch, MAX_DISPATCHES, validDeviceSamples } from '../src/lib/benchmarks/timing.ts';
 import { pairedResults, summarizePaired } from '../src/lib/benchmarks/comparison.ts';
 import { postBenchmarkRecord } from '../src/lib/benchmarks/send-record.ts';
+import { reportGroups, formatChange } from '../src/lib/benchmarks/report.ts';
 function pairedRecord(): RegressionRecord {
   const metadata = exampleRecord().metadata;
   const ids = [...regressionCatalog.builds[0]!.cases.map((e) => e.id), ...APPLICATIONS];
@@ -366,7 +367,7 @@ function pairedRecord(): RegressionRecord {
           readbackMs: id === 'resident-image' ? [1, 2, 3] : null,
           gpuNs: null,
           gpuTiming: 'unsupported' as const,
-          dispatches: id === 'resident-image' ? 16 : 1,
+          dispatches: e?.dispatches ?? (id === 'resident-image' ? 16 : 1),
           checkedValues: e
             ? outputLength(e as any, 16384)
             : id === 'particles'
@@ -393,6 +394,10 @@ test('legacy and paired provenance, complete pairs and checked outputs are enfor
   expect(parseAnyRecord(pairedRecord()).schema).toBe(2);
   const retained = retainedCatalogs[0]!;
   const older = pairedRecord();
+  older.revision = retained.workloadRevision;
+  older.instrument = retained.instrument;
+  const retainedIds = [...retained.builds[0]!.cases.map((e) => e.id), ...APPLICATIONS];
+  older.results = older.results.filter((row) => retainedIds.includes(row.id));
   older.digest = retained.digest;
   older.workload = retained.workload;
   older.builds = [retained.builds[0]!.revision, retained.builds[1]!.revision];
@@ -431,6 +436,64 @@ test('calibration is bounded and device validity uses only measured samples', ()
   expect(validDeviceSamples([4000, null, 4000])).toBeNull();
   expect(validDeviceSamples([0, 4000])).toBeNull();
 });
+test('unified workload contains each original experiment and application once per build', () => {
+  expect(regressionCatalog.builds[0]!.cases.map((c) => c.id)).toEqual(
+    catalog.cases.map((c) => c.id),
+  );
+  const r = pairedRecord();
+  expect(r.results).toHaveLength(54);
+  expect(new Set(r.results.map((row) => `${row.id}:${row.n}:${row.build}`)).size).toBe(54);
+  expect(reportGroups(r, 16384, 'wall').map((g) => [g.section, g.items.length])).toEqual([
+    ['applications', 5],
+    ['data', 11],
+    ['compute', 6],
+    ['execution', 5],
+  ]);
+  for (const id of [
+    'transfer-upload',
+    'transfer-readback',
+    'atomics-bins-1',
+    'submission-batched',
+    'submission-separate',
+  ]) {
+    const invalid = pairedRecord();
+    invalid.results.find((row) => row.id === id)!.dispatches++;
+    expect(() => parseAnyRecord(invalid)).toThrow();
+  }
+  const forged = pairedRecord();
+  const transfer = forged.results.find((row) => row.id === 'transfer-upload')!;
+  forged.metadata.webgpu.timestamps = true;
+  transfer.gpuNs = [1, 2, 3];
+  transfer.gpuTiming = 'available';
+  expect(() => parseAnyRecord(forged)).toThrow();
+});
+test('section report separates sample overlap, missing measurements and invalid comparisons', () => {
+  const r = pairedRecord();
+  const item = () =>
+    reportGroups(r, 16384, 'wall')
+      .flatMap((g) => g.items)
+      .find((i) => i.id === 'image')!;
+  expect(item().change).toBe(-50);
+  expect(item().state).toBe('overlap');
+  r.results.find((row) => row.id === 'image' && row.build === 'baseline')!.wallMs = [8, 9, 10];
+  expect(item().state).toBe('lower');
+  r.results.find((row) => row.id === 'image' && row.build === 'candidate')!.wallMs = [11, 12, 13];
+  expect(item().state).toBe('higher');
+  expect(reportGroups(r, 16384, 'gpu').every((g) => g.items.every((i) => i.change === null))).toBe(
+    true,
+  );
+  r.status = 'cancelled';
+  expect(item().change).toBeNull();
+  r.status = 'complete';
+  r.peers[1]!.webgpu.device = 'different';
+  expect(item().change).toBeNull();
+});
+test('report percentage labels keep direction without a negative zero', () => {
+  expect(formatChange(-0.01)).toBe('0.0');
+  expect(formatChange(-0)).toBe('0.0');
+  expect(formatChange(-0.06)).toBe('-0.1');
+  expect(formatChange(0.06)).toBe('0.1');
+});
 test('application references cover cold fields, insertion order and output corruption', () => {
   const input = applicationInput(16384);
   for (const id of APPLICATIONS) {
@@ -446,7 +509,7 @@ test('application references cover cold fields, insertion order and output corru
 test('paired ratios require a complete same-adapter run and expose sample spread', () => {
   const r = pairedRecord();
   const pairs = pairedResults(r);
-  expect(pairs).toHaveLength(15);
+  expect(pairs).toHaveLength(27);
   expect(pairs[0]!.wallRatio).toBe(2);
   expect(pairs[0]!.bufferRatio).toBe(2);
   expect(pairs[0]!.baselineWallP90).toBe(4);

@@ -136,7 +136,7 @@ async function command(data: any) {
       readbackMs: data.id === 'resident-image' ? [] : null,
       gpuNs: null,
       gpuTiming: 'unsupported',
-      dispatches: data.id === 'resident-image' ? RESIDENT_CALLS : 1,
+      dispatches: job?.dispatches ?? (data.id === 'resident-image' ? RESIDENT_CALLS : 1),
       checkedValues: 0,
       corruptionDetected: false,
       logicalBytes: job
@@ -151,11 +151,11 @@ async function command(data: any) {
     if (row.kind === 'resident')
       resident = session.owner.array(applicationInput(row.n, 'resident-image').values);
     row.setupMs = performance.now() - start;
-    const cold = compiled ? await compiled.dispatch(1) : await application();
-    row.coldMs = cold.wallMs + row.setupMs;
+    const cold = compiled ? await compiled.dispatch(compiled.dispatches) : await application();
+    row.coldMs = cold.wallMs * (compiled?.dispatches ?? 1) + row.setupMs;
     if (compiled) await compiled.verify(row);
-    let count = 1;
-    if (compiled) {
+    let count = compiled?.dispatches ?? 1;
+    if (compiled?.batchable) {
       for (;;) {
         const x = await compiled.dispatch(count);
         const next =
