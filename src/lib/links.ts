@@ -606,13 +606,14 @@ export function sidebar(
     reference.push({
       label: apiCategoryCopy(locale, category.slug).name,
       href: localePath(locale, `/api/${category.slug}/`),
+      depth: 1,
     });
     if (category.slug !== openCategory) continue;
     for (const m of members)
       reference.push({
         label: m.name,
         href: localePath(locale, `/api/${m.slug}/`),
-        depth: 1,
+        depth: 2,
         code: true,
       });
   }

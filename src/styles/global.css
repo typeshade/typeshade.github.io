@@ -869,7 +869,7 @@ body > main {
   border-block-end: 1px solid var(--color-line-1);
   background: var(--color-surface-1);
 }
-.docs-local summary {
+.docs-local > summary {
   list-style: none;
   display: flex;
   align-items: center;
@@ -881,10 +881,10 @@ body > main {
   color: var(--color-text-1);
   cursor: pointer;
 }
-.docs-local summary::-webkit-details-marker {
+.docs-local > summary::-webkit-details-marker {
   display: none;
 }
-.docs-local summary::before {
+.docs-local > summary::before {
   content: '';
   inline-size: 12px;
   block-size: 12px;
@@ -893,10 +893,10 @@ body > main {
   transform: rotate(-45deg) scale(0.7);
   transition: transform var(--motion);
 }
-.docs-local[open] summary::before {
+.docs-local[open] > summary::before {
   transform: rotate(45deg) scale(0.7);
 }
-.docs-local nav {
+.docs-local > nav {
   padding: 4px calc(var(--gutter-x) - 8px) 16px;
 }
 /* The phone's own "on this page": the same headings the wide outline shows, folded under the

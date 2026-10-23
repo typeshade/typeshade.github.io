@@ -130,6 +130,12 @@ export const en = {
     changelog: 'Changelog',
   },
   docs: {
+    navigation: {
+      location: 'Current location',
+      related: 'Related functions',
+      browse: 'All documentation',
+      overview: 'Overview',
+    },
     labels: {
       nav: {
         use: 'Use TypeShade',

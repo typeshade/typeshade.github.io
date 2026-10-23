@@ -37,7 +37,8 @@
     "check:benchmark-catalog": "bun scripts/benchmark-catalog.ts --check",
     "check:regression-catalog": "bun scripts/regression-catalog.ts --check",
     "check:operation-lessons": "bun scripts/check-operation-lessons.ts",
-    "check:operation-models": "bun scripts/check-operation-models.ts"
+    "check:operation-models": "bun scripts/check-operation-models.ts",
+    "check:docs-navigation": "bun scripts/check-docs-navigation.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

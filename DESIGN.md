@@ -904,6 +904,14 @@ Full source starts closed in compact figures. Edit opens it before focusing the 
 Numeric plot labels identify the displayed window. A selected input is marked on the curve.
 The same program supplies both GPU backends and its captured fallback image.
 
+## Documentation navigation
+
+Show the current page and its parent topic at the top of the sidebar. Function pages also
+show a short set of related functions. Put the six site-wide groups below this context,
+closed by default. Native disclosures reveal their hierarchy and keep navigation usable
+without JavaScript. Desktop and the mobile documentation drawer use the same data.
+Changing this menu must preserve the article measure, grid, destinations, and pager order.
+
 ## Live examples
 
 A guide or concept page can carry a shader the reader edits. The model is

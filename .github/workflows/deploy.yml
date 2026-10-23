@@ -197,6 +197,8 @@ jobs:
       - run: bun run check:mnist
         if: matrix.part == 1
         timeout-minutes: 15
+      - run: bun run check:docs-navigation
+        if: matrix.part == 4
       - run: bun run check:operation-models
         if: matrix.part == 4
       - run: bun run check:operation-lessons

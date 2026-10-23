@@ -222,6 +222,12 @@ export const ko: Copy = {
     changelog: '변경 이력',
   },
   docs: {
+    navigation: {
+      location: '현재 위치',
+      related: '관련 함수',
+      browse: '전체 문서',
+      overview: '개요',
+    },
     labels: {
       nav: {
         use: 'TypeShade 사용하기',
