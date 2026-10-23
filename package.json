@@ -51,7 +51,8 @@
     "astro-expressive-code": "^0.44.0",
     "remark-math": "^6.0.0",
     "tailwindcss": "^4.3.2",
-    "temml": "0.14.0"
+    "temml": "0.14.0",
+    "typeplot": "github:typeshade/typeplot#v0.1.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260928.1",
