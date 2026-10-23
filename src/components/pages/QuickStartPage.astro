@@ -65,7 +65,9 @@ const tsconfig = `{
 }`;
 const packageJson = `{
   "scripts": {
-    "prepare": "tshc sync"
+    "dev": "tsx node_modules/vite/bin/vite.js",
+    "build": "tsx node_modules/vite/bin/vite.js build",
+    "prepare": "tsx node_modules/typeshade/src/cli/bin.ts sync"
   }
 }`;
 const appTs = `import { fs } from './hello.shade.ts';
@@ -109,6 +111,9 @@ fs(canvas, {});`;
   <CodeFrame label={t.codeLabels.quickStartHost}>
     <Code code={quickStartFile.host.code} lang="ts" title={quickStartFile.host.name} locale={locale} />
   </CodeFrame>
+  <CodeFrame label={q.runLabel}>
+    <Code code={`npx tsx ${quickStartFile.host.name}`} lang="bash" locale={locale} />
+  </CodeFrame>
   <p>{q.p2}</p>
   <CodeFrame label={t.codeLabels.wgsl}>
     <Code code={hero.wgsl} lang="wgsl" locale={locale} />
@@ -142,6 +147,9 @@ const pipeline = device.createComputePipeline({
     <h3 id={slugify(host.importH)}>{host.importH}</h3>
     <p><Rich text={host.importP} locale={locale} /></p>
     <p><Rich text={host.setupP} locale={locale} /></p>
+    <CodeFrame label={host.toolingLabel}>
+      <Code code="npm install --save-dev vite" lang="bash" locale={locale} />
+    </CodeFrame>
     <CodeFrame label={host.viteLabel}>
       <Code code={viteConfig} lang="ts" title="vite.config.ts" locale={locale} />
     </CodeFrame>
@@ -154,6 +162,9 @@ const pipeline = device.createComputePipeline({
     <p><Rich text={host.drawP} locale={locale} /></p>
     <CodeFrame label={host.drawLabel}>
       <Code code={appTs} lang="ts" title="app.ts" locale={locale} />
+    </CodeFrame>
+    <CodeFrame label={host.devLabel}>
+      <Code code="npm run dev" lang="bash" locale={locale} />
     </CodeFrame>
     <p><Rich text={host.untilP} locale={locale} /></p>
   </section>

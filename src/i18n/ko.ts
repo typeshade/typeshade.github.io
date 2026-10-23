@@ -231,7 +231,7 @@ export const ko: Copy = {
     },
     labels: {
       nav: {
-        use: 'TypeShade 사용하기',
+        docs: 'Docs',
         playground: 'Playground',
         language: '언어',
         reference: '참조',
@@ -245,7 +245,7 @@ export const ko: Copy = {
       playground: 'Playground',
       editor: '에디터 지원',
       sidebarGroups: {
-        getStarted: '시작하기',
+        getStarted: 'Getting Started',
         language: '언어',
         concepts: '개념',
         examples: '예제',
@@ -303,7 +303,7 @@ export const ko: Copy = {
     authoring: '셰이더 작성',
     project: '프로젝트',
     why: '왜 TypeShade인가',
-    quickStart: '빠른 시작',
+    quickStart: 'Quick Start',
     authoringGuide: '작성 가이드',
     checks: '검증 방식',
     examples: '예제',
@@ -1201,7 +1201,7 @@ export const ko: Copy = {
   },
 
   footer: {
-    docs: '문서',
+    docs: 'Docs',
     project: '프로젝트',
     languages: '언어',
     readme: 'README',
@@ -1259,7 +1259,11 @@ export const ko: Copy = {
   },
 
   code: { copy: '클립보드로 복사', copied: '복사됨' },
-  install: { label: '서브모듈 추가 명령' },
+  install: {
+    label: 'npm 설치 명령',
+    source:
+      'Git 의존성은 TypeScript 소스를 포함합니다. Node.js에서 컴파일러와 CLI를 실행할 때는 tsx를 사용합니다.',
+  },
   diagnostic: {
     frameLabel: '필드 이름을 잘못 쓴 셰이더, typed-error.shade.ts',
     error: (code: string, line: number, column: number) => `오류 ${code}, ${line}행 ${column}열:`,
@@ -1285,9 +1289,9 @@ export const ko: Copy = {
   front: {
     title: 'TypeScript로 쓰는 셰이더 언어, TypeShade',
     searchTitle: 'TypeShade',
-    lede: `TypeShade는 TypeScript의 문법과 타입, 편집기를 그대로 쓰는 독립된 언어이다. \`"use typeshade"\`로 시작하는 파일 하나가 WebGPU용 WGSL과 WebGL2용 ${glsl}을 냅니다. 저장소의 예제 ${facts.shadeExamples}개 가운데 ${facts.shadeRenderable}개가 파일 하나로 둘 다 냅니다.`,
-    playground: 'Playground 열기',
-    quickStart: '빠른 시작',
+    lede: `TypeShade는 TypeScript의 문법과 타입, 편집기를 그대로 쓰는 독립된 언어입니다. \`"use typeshade"\`로 시작하는 파일 하나가 WebGPU용 WGSL과 WebGL2용 ${glsl}을 냅니다. 저장소의 예제 ${facts.shadeExamples}개 가운데 ${facts.shadeRenderable}개가 파일 하나로 둘 다 냅니다.`,
+    playground: 'Playground',
+    quickStart: 'Quick Start',
     stageAria: '그것을 그리는 파일 옆에서 실행되는 셰이더',
     first: {
       title: '굽은 띠',
@@ -1375,7 +1379,7 @@ export const ko: Copy = {
     },
     install: {
       h: '설치',
-      p: `출시 전입니다. ${facts.nextVersion}은 아직 npm에 없으므로 저장소를 git 서브모듈로 추가하고 거기서 import합니다. 첫 파일은 [빠른 시작](quickStart)에서 따라갈 수 있습니다.`,
+      p: `npm에 Git URL을 지정해 저장소를 설치합니다. 설치한 패키지는 \`typeshade\`로 import합니다. 설치와 첫 셰이더 예제는 [Quick Start](quickStart)에 있습니다. ${facts.nextVersion}의 레지스트리 배포는 아직 나오지 않았습니다.`,
     },
   },
   quickStart: {
@@ -1400,16 +1404,18 @@ export const ko: Copy = {
       hostP2:
         'TypeShade가 담당하는 것은 언어 의미와 셰이더 코드 생성입니다. device, pipeline, bind group, buffer, texture, command encoder 같은 GPU 런타임 객체의 생성과 수명 관리는 호스트가 담당합니다.',
       importH: '파일 가져오기',
-      importP: `${facts.nextVersion}이 npm에 나오면 쓸 수 있는 방법이다. 호스트 파일이 \`.shade.ts\`를 가져와 그 파일이 내보내는 것을 부르면, 호출에 필요한 디바이스와 파이프라인은 TypeShade의 런타임이 만든다. 헬퍼는 CPU에서 실행된다. \`@compute\` 진입점은 \`await entry(bindings, workgroups)\`로 부른다. 지원하는 환경에서는 WebGPU나 WebGL2로 실행하고, 진입점이 쓴 값을 다시 읽어 온다. 전체 화면 \`@fragment\` 진입점은 \`entry(canvas, bindings)\`로 캔버스에 그리는데, WebGPU가 먼저이고 다음이 WebGL2, 마지막이 CPU이다.`,
+      importP: `Vite 플러그인은 Git에서 설치한 소스 패키지를 지원합니다. 호스트 파일이 \`.shade.ts\`를 가져와 그 파일이 내보내는 것을 부르면, 호출에 필요한 디바이스와 파이프라인은 TypeShade의 런타임이 만듭니다. 헬퍼는 CPU에서 실행됩니다. \`@compute\` 진입점은 \`await entry(bindings, workgroups)\`로 부릅니다. 지원하는 환경에서는 WebGPU나 WebGL2로 실행하고, 진입점이 쓴 값을 다시 읽어 옵니다. 전체 화면 \`@fragment\` 진입점은 \`entry(canvas, bindings)\`로 캔버스에 그리는데, WebGPU가 먼저이고 다음이 WebGL2, 마지막이 CPU입니다.`,
       setupP:
-        '`npm install typeshade` 다음에 할 설정은 Vite 플러그인, 호스트 `tsconfig.json`의 두 줄, 그리고 `prepare`에 넣는 `tshc sync`이입니다. 이 명령은 `tsc`가 셰이더 파일 대신 읽는 호스트 뷰를 만듭니다. 뷰는 생성되는 파일이므로 `.gitignore`에 `*.shade.typeshade.ts`를 넣어 저장소에서 뺍니다.',
+        '설치 후에는 아래의 Vite 플러그인과 호스트 `tsconfig.json` 설정을 추가합니다. 스크립트는 Vite와 설치한 CLI를 `tsx`로 실행합니다. `prepare`는 `tsc`가 읽는 호스트 뷰를 만듭니다. `.gitignore`에 `*.shade.typeshade.ts`를 추가합니다.',
       viteLabel: 'Vite 플러그인, vite.config.ts',
       tsconfigLabel: '호스트 tsconfig.json의 두 줄',
-      packageLabel: 'prepare 스크립트, package.json',
+      packageLabel: '개발 스크립트, package.json',
+      toolingLabel: 'Vite 개발 의존성',
+      devLabel: '개발 서버 실행 명령',
       drawP:
         '그러면 호스트 파일이 이 페이지 맨 위의 `hello.shade.ts`를 호출 하나로 그립니다. 버텍스 진입점은 아직 호스트 코드에서 부를 수 없어서 뷰가 `vs`를 `never`로 선언하고, `fs`는 캔버스 전체를 빨간색으로 채웁니다.',
       drawLabel: '호스트 파일에서 hello.shade.ts 그리기, app.ts',
-      untilP: `${facts.nextVersion}이 npm에 나오기 전까지는 파일을 컴파일해 연결합니다. 방법마다 어느 쪽이 무엇을 소유하는지는 [WebGPU와 WebGL2](conceptsWebgpu)에 있습니다.`,
+      untilP: `[WebGPU와 WebGL2](conceptsWebgpu)는 컴파일러, 호스트 호출, 프로그램 런타임의 소유권 경계를 설명합니다.`,
       nextLearnP:
         '언어 가이드는 TypeScript의 개념과 TypeShade의 GPU 실행 규칙을 연결해 설명합니다.',
       nextLinks: [
@@ -1424,13 +1430,14 @@ export const ko: Copy = {
       nextEditorP:
         '[VS Code 확장](editor)을 설치하면 입력하는 동안 진단과 파일이 컴파일되는 WGSL을 볼 수 있습니다.',
     },
-    title: 'Use TypeShade: 설치하고 첫 셰이더 작성하기',
+    title: 'TypeShade Quick Start: 설치와 첫 셰이더',
     description:
-      'TypeShade를 git 서브모듈로 추가한 뒤, "use typeshade"로 시작하는 파일을 컴파일합니다. 출시 전 상태도 함께 적었습니다.',
-    h1: 'Use TypeShade',
+      'npm으로 Git 저장소의 TypeShade를 설치하고 tsx로 실행합니다. 첫 셰이더를 컴파일해 WebGPU용 WGSL과 WebGL2용 GLSL을 생성하는 방법을 설명합니다.',
+    h1: 'Quick Start',
+    runLabel: '컴파일러 실행 명령',
     installH: '설치',
     p0: 'TypeScript 파일의 첫 문장에 `"use typeshade"`를 선언합니다. 이 지시어가 TypeShade 셰이더 언어로 넘어가는 경계를 만들며, 아래 예제는 class와 스테이지 데코레이터가 붙은 함수로 작성한 완전한 첫 셰이더입니다.',
-    p1: `호스트는 호출 하나로 파일을 컴파일한다. 아래 gradient 패스를 \`${quickStartFile.shader.name}\`로 저장한다. 유니폼 블록 하나와 버텍스 단계, 프래그먼트 단계가 든 ${quickStartFile.shader.lines}줄짜리 파일이다. 그다음 [\`compile()\`](apiCompile)을 불러 WGSL을 출력하는 ${quickStartFile.host.lines}줄짜리 호스트 파일로 컴파일합니다.`,
+    p1: `호스트는 호출 하나로 파일을 컴파일합니다. 아래 gradient 패스를 \`${quickStartFile.shader.name}\`로 저장합니다. 유니폼 블록 하나와 버텍스 단계, 프래그먼트 단계가 든 ${quickStartFile.shader.lines}줄짜리 파일입니다. 그다음 [\`compile()\`](apiCompile)을 불러 WGSL을 출력하는 ${quickStartFile.host.lines}줄짜리 호스트 파일로 컴파일합니다.`,
     p2: '실행하면 두 단계의 WGSL이 함께 출력됩니다. 프래그먼트 진입점은 여기 있습니다.',
     p3: `같은 함수의 ${glsl} 단계와, [\`reflect()\`](apiReflect)가 복원한 유니폼 레이아웃은 [예제 페이지](examples)에 있다. 나머지 API는 [작성 가이드](guide)를 보면 된다.`,
     live: {
@@ -1451,7 +1458,7 @@ export const ko: Copy = {
     },
     status: {
       h: '상태',
-      p: `정식 출시 전입니다. 저장소는 ${facts.mirrorVersion} 버전이고, npm 이름 [typeshade](npm)는 ${facts.nextVersion} 출시용으로 잡아 두었다. 매니페스트와 import 이름은 그 태그에서 바뀐다. 그때까지는 미러 저장소이며, 위 import는 서브모듈 안의 \`${quickStartFile.importPath}\`에서 해석된다. 이슈는 환영한다. 다만 변경은 업스트림에 먼저 들어가고 이 트리는 그것을 fast-forward로 따라가기 때문에, 풀 리퀘스트는 아직 머지할 수 없다. ${facts.nextVersion} 소식은 [릴리스 구독](releases)으로 받을 수 있습니다.`,
+      p: `저장소 패키지는 ${facts.mirrorVersion} 버전입니다. ${facts.nextVersion}의 레지스트리 배포는 아직 나오지 않았지만, npm으로 Git 소스를 설치할 수 있습니다. 호스트는 설치한 패키지를 \`${quickStartFile.importPath}\`로 import합니다. lockfile을 커밋하면 설치한 Git 리비전이 기록됩니다. 배포된 버전은 [릴리스](releases)에 있습니다.`,
     },
   },
   motivation: {

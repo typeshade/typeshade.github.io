@@ -16,14 +16,14 @@ The site follows the shapes readers already know, and nothing else:
 
 - **Front page**: vuejs.org, with react.dev's headline: the category line (A shader language
   built around the TypeScript experience), the name in the accent colour, a one-line subtitle,
-  the tagline, five buttons (Use TypeShade, Write in the Playground, Why TypeShade, Learn the
+  the tagline, five buttons (Quick Start, Write in the Playground, Why TypeShade, Learn the
   language, Explore examples), the live shader, the authored file beside the WGSL it emits,
   four concept cards, three short points. No lists of features, no long prose.
 - **Shell**: every page is laid out in one 1600px measure, the header, the footer, the front
   page, the documentation grid and the Playground alike. Under 1600 it is the viewport behind
   the gutter; above it, it is centred on the same white field, with no grey band beside it. A new full-width surface reads `--container` too; a
   width written into one page puts that page out of line with the header over it.
-- **Header**: VitePress. Name on the left; Use TypeShade, Playground, Language, API and
+- **Header**: VitePress. Name on the left; Docs, Playground, Language, Reference and
   Examples; then a language menu (globe icon, current language, list of the others), a
   dark-mode switch (sun or moon), GitHub as an icon. Under 64rem, a menu button and a panel
   with the same items.

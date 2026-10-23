@@ -106,7 +106,15 @@ try {
           captures++;
           if (width === 390) await page.locator('.docs-local > summary').click();
           const nav = page.locator(width === 390 ? '.docs-local > nav' : '.docs-sidebar-in');
-          await nav.locator('[data-sidebar-section] > summary').nth(2).click();
+          const currentHref = `${locale === 'en' ? '' : '/ko'}${route}`;
+          const group = nav.locator('[data-sidebar-section]').filter({
+            has: page.locator(`a[href="${currentHref}"]`),
+          });
+          assert.equal(await group.count(), 1, `${id}: current page has one sidebar group`);
+          assert(await group.locator(':scope > .docs-group-title').isVisible(), id);
+          const currentLink = group.locator(`a[href="${currentHref}"]`);
+          assert(await currentLink.isVisible(), `${id}: current page link is visible`);
+          assert.equal(await currentLink.getAttribute('aria-current'), 'page', id);
           await page.screenshot({ path: path.join(shots, `${id}-menu.png`) });
           captures++;
         }
