@@ -4,11 +4,11 @@ import type {
 } from './concept-lessons-en.ts';
 
 export const conceptLessonLabels = {
-  use: '언제 쓰는가',
-  example: '계산과 판단 예',
-  caveat: '실무에서 확인할 점',
-  reasoning: '예제의 계산 과정',
-  availability: 'API 사용 가능 여부',
+  use: '활용',
+  example: '예제',
+  caveat: '주의사항',
+  reasoning: '계산 과정',
+  availability: 'API 지원 여부',
   result: '결과',
   wgsl: 'WGSL',
   glsl: 'GLSL ES',
@@ -49,7 +49,7 @@ export const conceptLessons = {
     example:
       '어댑터나 컨텍스트를 사용할 수 있는지 확인합니다. WebGPU 어댑터가 없다면, WebGL 2의 그래픽스 연산으로 작업을 구현할 수 있을 때 그 경로를 사용할 수 있습니다.',
     caveat:
-      'API 사용 가능 여부만으로 필요한 모든 기능, 한계나 텍스처 형식을 확인할 수는 없습니다. 장치 생성 실패를 처리하고 대상 기기에서 각 백엔드를 확인하십시오. API 선택만으로 성능을 예측할 수는 없습니다.',
+      'API 지원 여부만으로 필요한 모든 기능, 한계나 텍스처 형식을 확인할 수는 없습니다. 장치 생성 실패를 처리하고 대상 기기에서 각 백엔드를 확인하십시오. API 선택만으로 성능을 예측할 수는 없습니다.',
   },
   wgslAndGlsl: {
     meaning:

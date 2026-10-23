@@ -442,7 +442,7 @@ export const ko: Copy = {
       worked: {
         lessons: operationLessons,
         constructor: constructorLesson,
-        heading: '예제로 비교하기',
+        heading: '예제 비교',
         modelNote:
           '예제는 설명용 계산 모델이며 GPU를 실행하지 않습니다. 정확한 호출 형식은 아래 컴파일러 참고 자료에 있습니다.',
         example: (index: number) => `예제 ${index}`,
@@ -463,16 +463,16 @@ export const ko: Copy = {
           '소수 결과는 표시할 때 반올림했습니다. 각 예제는 명시한 전제를 따릅니다. 실제 셰이더의 결과는 대상 언어의 정밀도와 실행 규칙에 따릅니다.',
       },
       demo: {
-        heading: '움직이며 이해하기',
+        heading: '함수 그래프',
         exercises: '직접 확인해 보십시오:',
-        useHeading: '언제 쓰는가',
-        cautionHeading: '입력과 한계',
+        useHeading: '활용',
+        cautionHeading: '입력 범위와 주의사항',
         probe: '입력 x',
         parameter: '매개변수 k',
         angleInput: '각도 x (라디안)',
         degreeInput: '각도 x (도)',
         related: '관련 함수',
-        calculation: '계산 예',
+        calculation: '계산 예제',
         calculationNote:
           '참고 계산의 결과는 읽기 쉽게 반올림했습니다. 실제 셰이더 출력은 대상 언어의 정밀도 규칙을 따릅니다.',
         parameters: {
