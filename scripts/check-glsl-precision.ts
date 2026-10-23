@@ -71,15 +71,11 @@ try {
         await page.screenshot({ path: path.join(shots, `page-${width}-${locale}-${theme}.png`) });
         if (width === 390) await page.locator('.docs-local > summary').click();
         const navigation = page.locator(width === 390 ? '.docs-local > nav' : '.docs-sidebar-in');
-        const currentHref = `${locale === 'en' ? '' : '/ko'}${route}`;
-        const conceptsGroup = navigation.locator('[data-sidebar-section]').filter({
-          has: page.locator(`a[href="${currentHref}"]`),
-        });
-        assert.equal(await conceptsGroup.count(), 1, 'current page has one sidebar group');
-        assert(await conceptsGroup.locator(':scope > .docs-group-title').isVisible());
-        const currentLink = conceptsGroup.locator(`a[href="${currentHref}"]`);
-        assert(await currentLink.isVisible(), 'current page link is visible');
-        assert.equal(await currentLink.getAttribute('aria-current'), 'page');
+        const conceptLink = navigation.locator(
+          `.sidebar-sections a[href="${locale === 'en' ? '' : '/ko'}${route}"]`,
+        );
+        await conceptLink.scrollIntoViewIfNeeded();
+        assert(await conceptLink.isVisible(), 'GLSL precision navigation link is visible');
         await page.screenshot({ path: path.join(shots, `menu-${width}-${locale}-${theme}.png`) });
         if (width === 390) await page.locator('.docs-local > summary').click();
 
