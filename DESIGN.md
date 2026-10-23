@@ -1053,6 +1053,16 @@ the four things: the canvas mounts or the fallback shows, no large script is fet
 the first edit, an edit recompiles into the canvas or into diagnostics, and a moved control
 reaches both the packed uniform bytes and the rendered frame.
 
+## Korean prose
+
+`.claude/skills/readable-korean/SKILL.md` governs Korean wording and register. Use neutral,
+Wikipedia-like explanations with familiar terms and clear sentences. Published explanatory
+prose uses `~이다` and `~한다`. Headings name their content with ordinary labels such as
+활용, 예제 and 주의사항. Keep established English names or technical explanations when
+English improves recognition or precision. Preserve technical meaning and give the reader
+adequate context. Include quantities when they explain the subject; Korean explanatory prose
+has no mandatory position for a number. Update existing copy when it is part of the task.
+
 ## Languages
 
 Each language lives under a path prefix (`/ko/…`), the convention MDN, MS Learn, the Astro docs
@@ -1079,16 +1089,14 @@ language, and every page declares its alternates with `hreflang`. A host per lan
   records the sha256 of the English body it was translated from; when the pin moves and a
   section changes, the build stops and names the section, so a translation cannot fall behind
   its source unnoticed. `scripts/check-guide-translations.ts` holds a translation to the
-  English's code blocks, code spans, numerals, links and headings, and to the Korean rules
-  below. `content/guide/GLOSSARY.md` fixes the Korean for each English term. A section
-  without a file is shown in English under a note that says so; the note means the
-  translation is not there yet, never that a section is kept in English on purpose. Every
-  section is translated. What stays English is a word or a cell: code blocks, identifiers
-  and option values in code spans, a table cell that is only code, and the words the
-  glossary lists under "영어로 두는 낱말" (the ones Korean developers say in English, such
-  as fail closed, gather and scatter), glossed once at first use. The check refuses the
-  Korean substitutes the glossary names for them. The language reference's generated body stays
-  English on every locale: the declarations, the compiler's sentences and its messages. A
+  English's code blocks, code spans, numerals, links and headings, with mechanical Korean
+  copy checks. `content/guide/GLOSSARY.md` records terminology decisions. Use the Korean prose
+  policy above when a rendering needs review. A section without a current file is shown in
+  English under a note identifying its translation status. This fallback differs from a
+  deliberate English term, explanation or attributed quotation within a readable localized
+  article. Keep English when it improves clarity, with sufficient context for the audience.
+  Code, identifiers and option values keep their exact spelling. The language reference's
+  generated body stays English on every locale: the declarations, the compiler's sentences and its messages. A
   language reference note is translated, section by section (Reference notes). The API
   reference's JSDoc is translated the same way the guide is, one file per export under
   `content/api/<locale>/` that records the hash of the English it was made from; an export with
@@ -1128,7 +1136,8 @@ language, and every page declares its alternates with `hreflang`. A host per lan
 - `scripts/check-api-translations.ts` (`bun run check:api-ko`): the reference's translations
   under `content/api/<locale>/`, one JSON file per export, against the pinned JSDoc. A stale
   translation, a file for no export, a missing or extra key, a code span, code block or link
-  target that differs from the English, a dropped numeral, or a text left in English fails.
+  target that differs from the English, a dropped numeral, or an English-only prose paragraph fails the mechanical check. Review intentional English
+  passages under the Korean prose policy and align their markup or validation accordingly.
   `--source <slug>` prints an export's English and the hash to record; `--worklist <file>`
   writes every export's status, English and hash as one JSON list.
 - `scripts/check-live.mjs` (`bun run check:live`), after the build: a live example in a real browser (Live examples).

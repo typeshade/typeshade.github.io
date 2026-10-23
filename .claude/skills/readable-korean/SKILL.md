@@ -1,17 +1,17 @@
 ---
 name: readable-korean
-description: Write and review readable Korean technical documentation, translations, headings, and UI copy. Use for requests about translationese, unnatural Korean, obscure terminology, excessive translation, word choice, or Wikipedia-like tone. Prefer neutral explanatory prose, familiar terms, and English where it makes a technical explanation clearer.
+description: "Write and review Korean content published on official technical pages: documentation, reference articles, translations, headings, and labels. Remove translationese, obscure terminology, forced Korean renderings, and conversational teaching prompts. Use neutral factual prose with Wikipedia-like word choice and English where it improves technical clarity."
 ---
 
-# Readable Korean technical writing
+# Korean writing for official technical pages
 
 ## Outcome
 
-Write text a Korean reader can understand on the first reading. Use Korean Wikipedia as a
-reference for neutral, factual explanations and ordinary word choice. This is a writing style,
-not a request to reproduce Wikipedia's article structure or editorial policies.
+Write clear Korean content for official technical pages. Use Korean Wikipedia as a reference
+for neutral, factual explanations and familiar word choice. Keep the format appropriate to
+the technical document being written.
 
-Apply this skill when drafting or reviewing Korean technical prose, translating an explanation,
+Apply this skill when drafting or reviewing published Korean technical prose, translating an explanation,
 choosing a heading, or correcting awkward wording. Read the surrounding paragraph and the
 reader's task before changing a phrase. Preserve the technical meaning.
 
@@ -22,8 +22,13 @@ current wording preferences take precedence over earlier style conventions.
 ## Register and tone
 
 - Use neutral explanatory endings such as `~이다`, `~한다`, `~된다`, and `~있다` in published
-  explanations. This is written explanatory Korean, not conversational banmal addressed to a reader.
-- State the definition or main fact first. Then explain the mechanism, example and limitation.
+  explanations. Keep a consistent written register.
+- State the definition or main fact first. Then describe the mechanism, example and limitation.
+- Describe the subject directly. Avoid addressing the reader with teaching prompts such as
+  `알아보자`, `살펴보자`, `이해해 보자`, or `이제 알 수 있다`. A required procedure can
+  still state an action; an explanation should state what the system does.
+- Include numbers when they explain the subject. Do not insert a quantity merely to satisfy
+  a sentence template.
 - Give each paragraph one subject. Split a sentence when its conditions or modifiers hide the main point.
 - Prefer direct statements with a clear subject. Use a passive construction when the actor is
   unknown or irrelevant; do not replace every passive mechanically.
@@ -37,8 +42,6 @@ current wording preferences take precedence over earlier style conventions.
   passage is edited; this skill alone does not request a site-wide rewrite.
 - Procedures use short action steps, for example `파일을 연다.` and `설정을 저장한다.` UI labels
   use familiar nouns or action labels. Error messages state the problem and a useful next action.
-- The assistant's conversation can remain professional, polite Korean. This skill's default
-  explanatory register applies to the published content being written.
 
 ## Terminology and English
 
@@ -90,16 +93,17 @@ IDs and links when changing the visible label.
 
 | Translationese or inflated wording | Clearer wording |
 | --- | --- |
-| 이 기능을 통해 값을 생성하는 것이 가능하다. | 이 기능은 값을 생성한다. |
+| 이 기능을 통해 값을 생성하는 것이 가능하다. | 이 기능으로 값을 생성할 수 있다. |
 | 해당 설정은 정밀도의 향상을 제공한다. | 이 설정은 기본 정밀도를 지정한다. |
 | GPU는 많은 수의 연산을 가지고 있다. | GPU는 여러 연산을 병렬로 처리한다. |
 | 기본 정밀도는 모든 변수를 highp로 만든다. | 기본 정밀도는 해당 범위에서 정밀도를 따로 지정하지 않은 선언에 적용된다. |
 
-The second and fourth examples require checking the API or language specification. A fluent
-sentence can still be wrong. Do not assert a broader guarantee than the source supports.
+Verify every technical claim against the API or language specification. A fluent sentence
+can still be wrong. Preserve uncertainty and capability statements; do not turn them into
+unconditional guarantees.
 
-For an unfamiliar term, prefer an explanation such as `workgroup은 함께 실행되도록 묶인
-셰이더 인보케이션의 단위이다.` over a newly coined translation. Whether `워크그룹` or
+For an unfamiliar term, prefer an explanation such as `workgroup은 셰이더 인보케이션을
+묶은 작업 단위이다.` over a newly coined translation. Whether `워크그룹` or
 `workgroup` reads better depends on the audience and established usage in the document.
 
 ## Workflow
@@ -127,6 +131,7 @@ For an unfamiliar term, prefer an explanation such as `workgroup은 함께 실�
 - Are UI labels concise and understandable at the actual viewport width?
 - Are links and fragment IDs still valid after a heading change?
 
-Present the revised text first when a rewrite is requested. Report unresolved ambiguity or a
-material terminology decision briefly. A request to create this skill does not itself ask
-for every existing page to be rewritten.
+Deliver the requested page text as publication-ready content. Keep editorial notes, change
+reports and unresolved questions outside the page body. This skill governs the published
+artifact. A request to create this skill does not itself ask for every existing page to be
+rewritten.

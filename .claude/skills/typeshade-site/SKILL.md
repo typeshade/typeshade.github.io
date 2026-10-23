@@ -66,37 +66,27 @@ with a colon. Headings are single nouns or short noun phrases. Every number on t
 from `facts` in `src/lib/examples.ts`; a number that is not measured is not on the page.
 `scripts/check-style.mjs` enforces the patterns and runs at the start of every build.
 
-## Korean: meaning first
+## Korean writing
 
-Translate what a sentence means to a Korean developer, in the words Korean developer
-documentation uses (ko.vuejs.org, MDN 한국어, MS Learn 한국어). Never map English words one to
-one. Rules:
+Load `../readable-korean/SKILL.md` for Korean wording, register and terminology. The owner's
+2026-10-23 preference governs official published pages: neutral Wikipedia-like explanations,
+clear sentences and terms readers actually use. Published explanatory passages use `~이다` and `~한다`; procedures use
+short action steps. Existing polite passages are revised when they are in scope.
 
-- Keep standard technical terms as they are used in Korean developer writing: 셰이더, 유니폼,
-  프래그먼트, 버텍스, 컴파일, 바인드 그룹, 레이아웃, 파이프라인, 렌더러, 리플렉션, 커밋,
-  풀 리퀘스트, 서브모듈, 배정밀도 (double precision), 에뮬레이션, 골든 파일, 진단.
-- Words that must not appear because they mean something else in Korean: 방언 (for
-  "dialect": write 언어 or 두 언어로 된 코드), 사본 for a copy of code (write 복사본),
-  뒤단 (write 그다음 단계 or name the thing, GPU 드라이버의 셰이더 컴파일러), 미평가 (describe it:
-  합치지 않고 나란히 든 값 두 개), 동기 as a page title (write 왜 TypeShade인가), 검증 alone as
-  a page title (write 검증 방식).
-- Introduce a term of art before using it as a name: "CPU 함수로도 컴파일합니다. 이것이 기준값을
-  내는 오라클입니다." then 오라클.
-- Sentence endings vary (합니다, 됩니다, 냅니다, 없습니다, 있습니다); five in a row on the same
-  ending is a build failure. Split a modifier of three or more clauses in front of a noun into
-  two sentences. Prefer verbs to nominalisations.
-- 합쇼체 throughout. No 해요체, no 반말, no exclamation marks.
-- UI labels are short nouns: 가이드, 예제, 빠른 시작, 작성 가이드, 검증 방식, 소개, 참고.
-- What stays English is a word or a cell, never a page: code blocks; identifiers, option
-  values, extension strings and error codes inside code spans; a table cell that is only
-  code; and the words in the glossary's "영어로 두는 낱말" list (fail closed, gather, scatter,
-  ladder, tier), which Korean developers say in English. Gloss such a word once at first use,
-  then write it as it is. Table headings, explanatory cells and every sentence are Korean.
-  A page with no translation shows the English under a note, and that note means "not yet",
-  never "left in English on purpose": every section of the guide is translated. The Korean
-  sites readers respect (ko.vuejs.org, ko.react.dev, MDN 한국어) translate their reference
-  pages too and leave only identifiers in English; a page left in English is one nobody has
-  translated yet.
+Prefer familiar Korean technical terms. Keep established English terms, API names and
+technical explanations in English when that is clearer. Explain unfamiliar concepts briefly
+and keep the reader's context accessible. Distinguish an intentional English passage or
+quotation from an incomplete translation. Preserve the source's technical conditions,
+code, numbers and links.
+
+Use concise headings such as 활용, 예제 and 주의사항 when they describe the content. Review
+the actual paragraph before choosing a label. The glossary supports consistent terminology;
+an awkward prescribed rendering is a wording decision to review, not a reason to force it
+into the page. Do not invent Korean terms or change endings solely to satisfy a heuristic.
+
+Translation checks continue to protect factual and source parity. Review a style heuristic
+against this writing policy before treating its result as an editorial decision. This policy
+update does not request a bulk rewrite of published text.
 
 ## The Korean guide
 
