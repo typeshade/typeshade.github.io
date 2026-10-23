@@ -41,6 +41,7 @@ import { editCopy, links } from '../../lib/links.ts';
 import { META_MIN, fitDescription, fitLeadAndTail } from '../../lib/meta-description.ts';
 import { assertNoteReading, noteEntryId, noteOf, type NoteView } from '../../lib/reference-notes.ts';
 import { functionDemo } from '../../lib/function-demos.ts';
+import { functionSpellings } from '../../lib/function-spellings.ts';
 import type { FunctionLesson } from '../../i18n/function-lessons-en.ts';
 
 interface Props {
@@ -75,13 +76,15 @@ const targets =
 const typeTargets = kind === 'type' ? typeSpellings(entry.name) : undefined;
 // A Math member is named as an author writes it, `Math.pow`, the way its h1 names it.
 const shownName = kind === 'math' ? entry.title : entry.name;
-const title = e.title(shownName, kindWord, targets !== undefined || typeTargets !== undefined);
+const discovery = kind === 'function' ? functionSpellings(entry.name) : [];
+const relatedSearchNames = [...new Set([...discovery].sort((a, b) => Number(b.language === 'GLSL') - Number(a.language === 'GLSL')).map(item => item.name))];
+const title = (lesson ? r.discovery.title(shownName, relatedSearchNames, targets !== undefined) : undefined) ?? e.title(shownName, kindWord, targets !== undefined || typeTargets !== undefined);
 if (title.length < 45 || title.length > 60) {
   throw new Error(`[reference-entry] '${kind}/${name}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`);
 }
 // The compiler's sentence is Markdown with inline code; a meta description carries neither,
 // so the backticks come off and the rest is the compiler's own words.
-const plain = (text: string): string => text.replace(/`/g, '');
+const plain = (text: string): string => text.replace(/[`$]/g, '');
 const line = plain(entry.line);
 // With both targets' forms the lead names them and stays whole; the compiler's sentence after
 // it is what gets cut, so the description still says what the name does.
@@ -92,7 +95,7 @@ const composed = lead ? `${lead} ${line}` : e.description(shownName, kindWord, l
 const short = composed.length < META_MIN;
 const max = localeSettings[locale].metaDescriptionMax;
 const description = lesson
-  ? fitDescription(`${lesson.meaning} ${lesson.use} ${lesson.caution}`, max)
+  ? fitDescription(plain(`${lesson.meaning} ${lesson.use} ${lesson.caution}`), max)
   : lead
   ? fitLeadAndTail(lead, short ? `${line} ${plain(named.summary)}` : line, max)
   : fitDescription(short ? `${composed} ${plain(named.summary)}` : composed, max);
@@ -196,7 +199,8 @@ const next = siblings.next
     ? { label: r.kinds[nextSection.kind].name, href: localePath(locale, `/reference/${nextSection.slug}/`) }
     : { label: copyFor(locale).docs.errors.h1, href: localePath(locale, links.errors.href) };
 // What a search result calls the page: the name with its kind, so a hit reads mix (function).
-const meta = `title:${entry.name} (${kindWord})`;
+const searchNames = [entry.name, ...new Set(discovery.map(item => item.name))].join(' / ');
+const meta = `title:${searchNames} (${kindWord})`;
 ---
 
 <Docs
@@ -225,6 +229,13 @@ const meta = `title:${entry.name} (${kindWord})`;
   <h1><code>{entry.title}</code></h1>
   <p class:list={['api-kind', lesson ? 'sr-only' : undefined]} lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
   <p class="api-summary" lang={lesson ? locale : 'en'}><Rich text={lesson?.meaning ?? entry.line} locale={locale} /></p>
+  {kind === 'math' && entry.alias?.kind === 'function' && <p data-canonical-lesson><a href={localePath(locale, languageEntryPath(entry.alias.kind, entry.alias.name))}>{r.discovery.canonical}: <code>{entry.alias.title}</code></a></p>}
+  {discovery.length > 0 && <details class="mbs-4 text-(length:--text-ui) text-text-2" data-function-spellings data-pagefind-weight="3">
+    <summary class="cursor-pointer">{r.discovery.label}</summary>
+    <p>{r.discovery.note}</p>
+    <ul>{discovery.map(item => <li>{item.language}: <code>{item.name}</code></li>)}</ul>
+    <p><a href={shows('targets') ? '#targets' : '#syntax'}>{shows('targets') ? r.entry.targets : r.entry.syntax}</a></p>
+  </details>}
   {demo && lesson && <FunctionDemo locale={locale} name={name} lesson={lesson} />}
   {model && workedLesson && <OperationLesson locale={locale} name={name} lesson={workedLesson} model={model} />}
   <ReferenceNotes locale={locale} view={notes} />

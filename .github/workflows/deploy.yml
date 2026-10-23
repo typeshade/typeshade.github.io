@@ -197,6 +197,15 @@ jobs:
       - run: bun run check:mnist
         if: matrix.part == 1
         timeout-minutes: 15
+      - run: bun run check:standalone-learning
+        if: matrix.part == 4
+        timeout-minutes: 10
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.part == 4
+        with:
+          name: standalone-learning-evidence
+          path: shots/standalone-learning
+          retention-days: 3
       - run: bun run check:glsl-precision
         if: matrix.part == 4
         timeout-minutes: 10

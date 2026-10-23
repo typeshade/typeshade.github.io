@@ -1,3 +1,4 @@
+import { conceptLessons, conceptLessonLabels } from './concept-lessons-ko.ts';
 import { precisionGuide, fractionLabel } from './precision-guide-ko.ts';
 // Korean copy. Typed against the English source, so a string that exists in one and not
 // the other is a build error. Numbers come from the build, as in en.ts. scripts/check-copy.ts
@@ -412,6 +413,32 @@ export const ko: Copy = {
       categories: apiCategories,
     },
     reference: {
+      discovery: {
+        title: (name: string, related: string[], dualTarget: boolean) => {
+          const shown = related.length ? `${name} / ${related[0]}` : name;
+          const suffixes = dualTarget
+            ? [
+                ': WGSL·GLSL 함수 뜻과 사용법, 계산 예제와 입력 범위 및 주의점',
+                ': WGSL·GLSL 함수 사용법과 계산 예제, 입력 범위와 주의점',
+                ': 셰이더 함수 사용법, 계산 예제와 입력 범위·주의점',
+              ]
+            : [
+                ': 셰이더 함수 뜻과 사용법, 계산 예제와 입력 범위 및 주의점',
+                ': 셰이더 함수 사용법, 계산 예제와 입력 범위·주의점',
+              ];
+          suffixes.push(
+            ': 셰이더 함수 뜻과 사용법, 계산 예제와 입력 범위 및 주의점 | TypeShade',
+            ': 셰이더 함수 설명과 예제, 입력 범위 및 주의점',
+            ': 셰이더 함수 설명과 예제',
+          );
+          return [shown, name]
+            .flatMap((label) => suffixes.map((suffix) => label + suffix))
+            .find((title) => title.length >= 45 && title.length <= 60);
+        },
+        label: '다른 언어의 관련 이름',
+        canonical: '뜻과 예제',
+        note: '관련 연산은 인수, 지원 범위와 의미가 다를 수 있습니다. 다른 언어의 이름을 TypeShade 별칭으로 사용할 수는 없습니다. 대상 언어의 형태와 제한을 확인하십시오.',
+      },
       worked: {
         lessons: operationLessons,
         constructor: constructorLesson,
@@ -1724,6 +1751,8 @@ export const ko: Copy = {
   },
 
   concepts: {
+    lessons: conceptLessons,
+    lessonLabels: conceptLessonLabels,
     glslPrecision: precisionGuide,
     precisionFractionLabel: fractionLabel,
     title: 'TypeScript와 WebGPU: TypeScript로 WebGPU 셰이더를 작성하는 방법',
@@ -1785,40 +1814,39 @@ export const ko: Copy = {
      *  필요한 것까지 이어지는 학습 경로이며, 각 페이지는 src/components/pages의 컴포넌트와
      *  src/pages/guide/concepts의 한 줄짜리 라우트 파일로 이루어집니다. */
     cpuAndGpu: {
-      title: 'CPU와 GPU 실행 모델: 셰이더에 힙과 재귀가 없는 이유와 TypeShade 규칙',
+      title: 'CPU와 GPU 실행 모델 비교: 인보케이션, 메모리, 함수 호출과 셰이더 제약 설명',
       description:
-        'GPU가 인보케이션 하나에 무엇을 건네는지, 셰이더에 힙과 문자열과 재귀가 없는 이유는 무엇인지, 그 사실에서 어떤 TypeShade 규칙이 나오는지 설명합니다.',
+        'CPU와 GPU의 실행, 셰이더 인보케이션, 공유 리소스, 호출과 반복문을 비교합니다. 언어의 제약과 하드웨어 스케줄링, 컴파일러의 구현 선택을 구분합니다.',
       h1: 'CPU와 GPU',
-      lead: 'TypeShade 파일은 편집기에게는 TypeScript이고 컴파일러에게는 GPU 프로그램입니다. 언어 가이드가 적어 둔 제약은 취향의 문제가 아닙니다. 하나하나가 하드웨어의 동작에서 나오므로, 이 페이지는 사실을 먼저 적고 규칙을 그다음에 적습니다.',
+      lead: 'CPU 코드는 GPU에 전달할 작업과 리소스를 준비합니다. 셰이더 언어는 인보케이션이 리소스를 쓰는 방법을 정의합니다. 그 제약에는 하드웨어뿐 아니라 언어 규칙, API 계약과 컴파일러의 선택도 반영됩니다.',
       invocationH: '인보케이션',
       invocationP:
-        'TypeScript 함수는 호출할 때 한 번 실행됩니다. 진입점은 다릅니다. GPU가 부르며, 한 번 그릴 때 버텍스마다 한 번, 프리미티브가 덮는 프래그먼트마다 한 번, 디스패치의 작업 항목마다 한 번 실행됩니다. 이렇게 한 번 실행되는 단위를 인보케이션이라고 부릅니다. 인보케이션은 서로 나란히 돌아가며 서로의 값을 읽지 못합니다. 자기가 몇 번째인지 알려 주는 것도 함수 바깥에는 없습니다.',
+        '인보케이션은 버텍스, 프래그먼트 또는 컴퓨트 작업 항목을 처리하는 실행 단위입니다. 언어의 메모리와 동기화 규칙에 따라 공유 리소스로 통신할 수 있습니다. 실행 순서가 보장되는 것은 아닙니다.',
       invocationRule:
         '여기에서 규칙이 나옵니다. 스테이지 데코레이터가 셋 가운데 어느 쪽이 부르는지 밝히고, `@builtin(...)` 매개변수가 인보케이션에게 자기 자리를 알려 줍니다. 데코레이터는 [셰이더 스테이지](languageStages)가, 매개변수는 [함수](languageFunctions)가 적어 두었습니다.',
       memoryH: '메모리',
       memoryP:
-        '인보케이션은 레지스터와, 호스트가 그리기 전에 바인딩해 둔 버퍼와 텍스처 위에서 움직입니다. 그 아래에 힙이 없으므로 셰이더는 메모리를 할당할 곳도, 길이가 늘어나는 배열도, 문자열을 만들 방법도 없습니다. TypeShade 파일의 클래스는 GPU 구조체의 바이트 배치를 설명하고, 그 바이트는 호스트가 채웁니다.',
+        '셰이더는 타입이 정해진 지역 값과 호스트가 바인딩한 리소스를 사용합니다. WGSL과 GLSL ES는 자바스크립트의 일반 객체 힙을 제공하지 않습니다. TypeShade 클래스는 호스트가 바이트를 채우는 GPU 구조체를 설명합니다.',
       memoryRule:
-        '여기에서 규칙이 나옵니다. `new`는 정체성을 가진 객체가 아니라 값을 만들고, 클래스 필드의 순서가 호스트가 쓰는 바이트의 레이아웃이 되며, 리소스는 모두 `declare`로 들어옵니다. 구조체 작성 인터페이스는 [타입](languageTypes)이, 선언은 [리소스](languageResources)가 적어 두었습니다.',
+        '여기에서 규칙이 나옵니다. `new`는 정체성을 가진 객체가 아니라 값을 만들고, 클래스 필드의 순서가 호스트가 쓰는 바이트의 레이아웃이 되며, 리소스에는 `declare` 선언을 비롯한 명시적인 바인딩을 사용합니다. 구조체 작성 인터페이스는 [타입](languageTypes)이, 선언은 [리소스](languageResources)가 적어 두었습니다.',
       callsH: '호출',
       callsP:
-        '셰이더에는 돌아갈 호출 스택이 없고, 호출 그래프는 드라이버가 보기 전에 평탄화됩니다. 자기 자신을 직접 부르거나 다른 함수를 거쳐 부르는 함수는 평탄화할 대상을 남기지 못합니다.',
+        'WGSL과 GLSL ES는 재귀 호출 그래프를 허용하지 않습니다. 컴파일러는 헬퍼를 인라인하거나 지원되는 호출을 생성할 수 있습니다. 이 언어 제약을 하드웨어 호출 스택의 유무로 설명할 수는 없습니다.',
       callsRule:
         '여기에서 규칙이 나옵니다. 재귀는 컴파일러가 거부하고, 헬퍼 함수는 컴파일러가 끝까지 따라갈 수 있는 평범한 함수입니다. 호출이 무엇일 수 있는지는 [함수](languageFunctions)가 적어 두었습니다.',
       loopsH: '루프',
       loopsP:
-        '한 스테이지의 인보케이션들은 루프를 함께 지나가고, 먼저 빠져나온 쪽은 나머지를 기다립니다. 횟수를 세는 루프는 본문이 바꾸지 않는 상한과 카운터를 비교하며 그 상한 쪽으로 나아가고, 컴파일러는 바로 이 점을 검사합니다. 상한 자체는 프로그램이 실행 중에 알게 되는 값이어도 됩니다.',
+        '인보케이션마다 실행 경로와 반복 횟수가 다를 수 있습니다. 경로 분기는 처리량에 영향을 줄 수 있습니다. 루프는 스테이지 전체를 동기화하지 않습니다. 통신에는 실행 범위와 메모리 범위에 맞는 동기화 규칙이 필요합니다.',
       loopsRule:
         '여기에서 규칙이 나옵니다. `for`는 본문이 움직이지 않는 상한까지 세고, `while`은 조건이나 `break`가 정한 곳에서 끝납니다. 어떤 조건과 반복이 컴파일되는지는 [제어 흐름](languageControlFlow)이 적어 두었습니다.',
       typesH: '값 타입',
       typesP:
-        'GPU 레지스터의 폭과 배치는 셰이더를 컴파일할 때 정해집니다. 그래서 변수는 선언된 자리부터 스코프 끝까지 값 타입 하나를 담습니다. 값 타입 두 개를 합친 유니온도 없고, 실행 중에 둘 사이를 고를 방법도 없습니다.',
+        '셰이더 변수의 값 타입과 표현은 정적으로 정해집니다. 값이 레지스터나 메모리 어디에 놓일지는 컴파일러가 결정합니다. 소스 타입이 하드웨어 레지스터 배정을 지정하지는 않습니다.',
       typesRule:
-        '여기에서 규칙이 나옵니다. 모든 값은 `f32`, `u32`, `vec4`처럼 적어 둔 GPU 타입을 가집니다. 타입 작성 인터페이스는 [타입](languageTypes)이, 값 자체는 [GPU 타입](languageGpuTypes)이 적어 두었습니다.',
-      tableH: '사실과 규칙',
-      tableP:
-        '위의 사실들과 거기에서 나오는 규칙, 그리고 그 규칙을 적어 둔 언어 가이드의 페이지입니다.',
-      tableColumns: ['GPU가 하는 일', 'TypeShade가 요구하는 것', '적어 둔 곳'],
+        '여기에서 규칙이 나옵니다. 셰이더 값의 GPU 타입은 `f32`, `u32`, `vec4`처럼 정적으로 알려져 있어야 합니다. 타입 작성 인터페이스는 [타입](languageTypes)이, 값 자체는 [GPU 타입](languageGpuTypes)이 적어 두었습니다.',
+      tableH: '실행과 언어 규칙',
+      tableP: '이 실행 특성과 언어 제약을 바탕으로 아래 TypeShade 규칙을 읽을 수 있습니다.',
+      tableColumns: ['실행 특성이나 언어 제약', 'TypeShade가 요구하는 것', '적어 둔 곳'],
       tableRows: [
         [
           '버텍스, 프래그먼트, 작업 항목마다 진입점을 한 번씩 부릅니다',
@@ -1826,23 +1854,23 @@ export const ko: Copy = {
           '[셰이더 스테이지](languageStages)',
         ],
         [
-          '인보케이션에 레지스터와 바인딩된 리소스를 주고, 그 아래에 힙은 없습니다',
-          '늘어나는 배열도 문자열도 없습니다. `new`는 값을 만들고, 클래스는 레이아웃이며 리소스는 `declare`입니다',
+          '타입이 정해진 값과 바인딩한 리소스를 쓰며 일반 자바스크립트 객체 힙은 없습니다',
+          '늘어나는 배열이나 문자열은 없습니다. `new`는 값을 만들고 구조체는 배치를 설명하며 리소스는 명시적으로 바인딩합니다',
           '[리소스](languageResources)',
         ],
         [
-          '호출 스택 없이 실행합니다',
-          '컴파일러가 평탄화할 수 있는 호출 그래프를 요구하므로 재귀가 없습니다',
+          'WGSL과 GLSL ES가 재귀 호출 그래프를 허용하지 않습니다',
+          '재귀 없는 호출 그래프를 요구합니다',
           '[함수](languageFunctions)',
         ],
         [
-          '한 스테이지의 인보케이션들을 루프에 함께 통과시킵니다',
+          '인보케이션마다 실행 경로와 반복 횟수가 다를 수 있습니다',
           '컴파일러가 읽을 수 있는 루프 상한을 요구합니다',
           '[제어 흐름](languageControlFlow)',
         ],
         [
-          '레지스터 하나에 폭이 정해진 값을 담습니다',
-          '변수마다 값 타입 하나를 적어 둡니다',
+          '값 타입은 정적으로 정해지며 레지스터 배정과는 별개입니다',
+          '변수의 값 타입이 정적으로 알려져야 합니다',
           '[GPU 타입](languageGpuTypes)',
         ],
       ],

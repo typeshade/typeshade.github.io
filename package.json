@@ -39,7 +39,8 @@
     "check:operation-lessons": "bun scripts/check-operation-lessons.ts",
     "check:operation-models": "bun scripts/check-operation-models.ts",
     "check:docs-navigation": "bun scripts/check-docs-navigation.ts",
-    "check:glsl-precision": "bun scripts/check-glsl-precision.ts"
+    "check:glsl-precision": "bun scripts/check-glsl-precision.ts",
+    "check:standalone-learning": "bun scripts/check-standalone-learning.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
