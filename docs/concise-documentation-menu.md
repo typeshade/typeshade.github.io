@@ -90,3 +90,16 @@ other existing assertions. No product layout changes accompany this test fix.
 
 The complete standalone-learning check passed: 175 function lessons, 40 concept views,
 14 search queries and 136 screenshots. Formatting and TypeScript checks also passed.
+
+## Remaining sidebar regression
+
+CI on `aa20f5a` found the same stale disclosure selector in `check-glsl-precision`.
+The precision check now locates the current page's unique sidebar group by URL,
+verifies its visible title and current link, and checks `aria-current="page"`.
+The precision model, optional WebGL queries, search checks, mobile menu opening
+and screenshots are unchanged. An audit found no other sidebar summary selectors.
+
+Verification on 2026-10-23: `check:glsl-precision` passed numerical rounding,
+eight layouts, actual WebGL 1/2 queries, six search queries, two script-free
+fallbacks and three failure/support cases. Formatting and TypeScript checks
+passed. Browser and local server processes were closed.
