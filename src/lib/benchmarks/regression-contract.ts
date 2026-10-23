@@ -84,6 +84,16 @@ export const regressionRecordSchema = z
       r.runtimes.some((b, i) => b !== active.builds[i]!.runtimeDigest)
     )
       fail();
+    // New comparisons can have projection on both builds. Exact source revisions share
+    // their generated capability across retained catalogs. Older catalogs without it keep
+    // the original unified-2 baseline/candidate contract.
+    const projected = active.builds.map((build, index) => {
+      for (const catalog of registry)
+        for (const known of catalog.builds)
+          if (known.revision === build.revision && 'inputProjection' in known)
+            return known.inputProjection === true;
+      return index === 1;
+    });
     const seen = new Map<string, RegressionResult>();
     const applications =
       'applications' in active ? (active.applications as readonly string[]) : LEGACY_APPLICATIONS;
@@ -151,7 +161,7 @@ export const regressionRecordSchema = z
       if (row.readbackMs && row.readbackMs.length !== row.wallMs.length) fail();
       if (active.instrument === 'unified-2' && fields && row.status === 'passed') {
         if (row.logicalBytes !== row.n * 36) fail();
-        const inputBytes = row.n * (row.build === 'baseline' ? 8 : fields) * 4;
+        const inputBytes = row.n * (projected[row.build === 'baseline' ? 0 : 1] ? fields : 8) * 4;
         if (row.inputBytes !== inputBytes) fail();
         for (const values of [row.validationMs, row.packingMs, row.uploadBytes])
           if (!values || values.length !== row.wallMs.length) fail();

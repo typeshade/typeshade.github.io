@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 export async function checkRegressions(page, url) {
   const reports = [];
+  const active = JSON.parse(readFileSync('src/lib/benchmarks/regression-catalog.json', 'utf8'));
   // Bulk fault and visual runs avoid consuming the integration collector's hourly quota.
   await page.route('**/data/benchmarks/records/', (route) => {
     const body = route.request().postDataJSON();
@@ -65,7 +66,8 @@ export async function checkRegressions(page, url) {
     assert.equal(pair.length, 2);
     for (const row of pair) {
       assert.equal(row.checkedValues, row.n * 9);
-      assert.equal(row.inputBytes, row.n * (row.build === 'baseline' ? 8 : count) * 4);
+      const build = active.builds[row.build === 'baseline' ? 0 : 1];
+      assert.equal(row.inputBytes, row.n * (build.inputProjection ? count : 8) * 4);
       assert.equal(row.validationMs.length, 3);
       assert.equal(row.packingMs.length, 3);
       assert(row.uploadBytes.every((bytes) => bytes >= row.inputBytes + row.n * 4));

@@ -132,6 +132,7 @@ export async function open(device) {
     revision,
     runtime: revision,
     runtimeDigest,
+    inputProjection: Boolean((faces.fields1 as { gpu?: { projected?: unknown } }).gpu?.projected),
     url,
     bytes: Buffer.byteLength(js),
     cases,

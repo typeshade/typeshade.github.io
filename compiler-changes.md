@@ -298,3 +298,9 @@ id first, then the pull request that did the work.
   workload and `unified-2` instrument from main. All five previously committed comparison
   catalogs and their artifacts remain. The new catalog is reproducible with Bun 1.4.3;
   integration checks and production deployment are recorded in PR #218.
+
+  The integrated browser run exposed a collector assumption that every baseline held the full
+  input layout. The generator now records each exact build's projection capability; record
+  validation and real-browser assertions use it. Tests retain the older full-input baseline,
+  accept already projected baselines and reject incorrect input sizes. All prior catalogs
+  remain immutable. This correction changes validation provenance without changing the workload.

@@ -412,9 +412,16 @@ function pairedRecord(): RegressionRecord {
           validationMs: fieldCount(id) ? [1, 2, 3] : null,
           packingMs: fieldCount(id) ? [1, 2, 3] : null,
           uploadBytes: fieldCount(id)
-            ? Array(3).fill(16384 * ((build === 0 ? 8 : fieldCount(id)) + 1) * 4 + 16)
+            ? Array(3).fill(
+                16384 *
+                  ((regressionCatalog.builds[build]!.inputProjection ? fieldCount(id) : 8) + 1) *
+                  4 +
+                  16,
+              )
             : null,
-          inputBytes: fieldCount(id) ? 16384 * (build === 0 ? 8 : fieldCount(id)) * 4 : null,
+          inputBytes: fieldCount(id)
+            ? 16384 * (regressionCatalog.builds[build]!.inputProjection ? fieldCount(id) : 8) * 4
+            : null,
         };
       }),
     ),
@@ -497,6 +504,56 @@ test('projection observations require complete probes and the candidate actual-d
       .find((g) => g.section === 'data')!
       .items.filter((i) => i.change !== null),
   ).toHaveLength(3);
+});
+test('a projected baseline is accepted while retained full-input baselines stay strict', () => {
+  expect(regressionCatalog.builds.map((build) => build.inputProjection)).toEqual([true, true]);
+  const current = pairedRecord();
+  expect(() => parseAnyRecord(current)).not.toThrow();
+  const baseline = current.results.find((r) => r.id === 'fields-1' && r.build === 'baseline')!;
+  expect(baseline.inputBytes).toBe(baseline.n * 4);
+  baseline.inputBytes = baseline.n * 32;
+  expect(() => parseAnyRecord(current)).toThrow();
+
+  const optimizedPrior = retainedCatalogs.find(
+    (c) =>
+      c.instrument === 'unified-2' &&
+      c.builds[0]!.revision === regressionCatalog.builds[0]!.revision &&
+      !('inputProjection' in c.builds[0]!),
+  )!;
+  expect(optimizedPrior).toBeDefined();
+  const saved = pairedRecord();
+  Object.assign(saved, {
+    revision: optimizedPrior.workloadRevision,
+    instrument: optimizedPrior.instrument,
+    digest: optimizedPrior.digest,
+    workload: optimizedPrior.workload,
+    builds: optimizedPrior.builds.map((b) => b.revision),
+    runtimes: optimizedPrior.builds.map((b) => b.runtimeDigest),
+  });
+  expect(() => parseAnyRecord(saved)).not.toThrow();
+
+  const prior = retainedCatalogs.find(
+    (c) => c.instrument === 'unified-2' && c.builds[0]!.revision.startsWith('94203d3c'),
+  )!;
+  expect(prior).toBeDefined();
+  const retained = pairedRecord();
+  Object.assign(retained, {
+    revision: prior.workloadRevision,
+    instrument: prior.instrument,
+    digest: prior.digest,
+    workload: prior.workload,
+    builds: prior.builds.map((b) => b.revision),
+    runtimes: prior.builds.map((b) => b.runtimeDigest),
+  });
+  for (const row of retained.results)
+    if (fieldCount(row.id) && row.build === 'baseline') {
+      row.inputBytes = row.n * 32;
+      row.uploadBytes = Array(3).fill(row.n * 36 + 16);
+    }
+  expect(() => parseAnyRecord(retained)).not.toThrow();
+  retained.results.find((r) => r.id === 'fields-1' && r.build === 'baseline')!.inputBytes =
+    16384 * 4;
+  expect(() => parseAnyRecord(retained)).toThrow();
 });
 test('unified workload contains each original experiment and application once per build', () => {
   expect(regressionCatalog.builds[0]!.cases.map((c) => c.id)).toEqual(

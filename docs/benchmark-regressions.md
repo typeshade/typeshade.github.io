@@ -39,6 +39,14 @@ and is 466,973 bytes. It was generated with Bun 1.4.3. Reproduction, browser
 execution and deployment results are recorded in PR #218. This update makes no native
 performance claim.
 
+The first integration run exposed a collector assumption: every baseline used the full
+input layout. This comparison's baseline already projects its inputs. The generator now
+records `inputProjection` from the generated host face for each exact build. The collector
+uses that source-specific capability, including for retained catalogs of the same revision.
+Historical catalogs without capability data keep their original contract. Regression tests
+accept both projected builds and reject incorrect input sizes, while preserving the earlier
+full-input baseline. The real browser checks the measured bytes against the generated catalog.
+
 ## Scope
 
 - Retain the first catalog and its collector contract for existing reports.
