@@ -104,7 +104,8 @@ correctness check. Four section charts show timing and buffer-memory changes. Vi
 results from a visitor-initiated run. A notice below Run explains automatic reporting. The
 site Worker stores authorized records privately in D1. See [docs/benchmarks.md](docs/benchmarks.md)
 for retention, migration and maintainer commands, and
-[docs/benchmark-unification.md](docs/benchmark-unification.md) for the current instrument.
+[docs/benchmark-unification.md](docs/benchmark-unification.md) for the unified report, and
+[docs/benchmark-projection.md](docs/benchmark-projection.md) for the private input projection cohort.
 
 `bun run check:benchmark-catalog` checks the retained original fixtures against their compiler.
 `bun run check:regression-catalog` checks the unified workload against both exact builds.

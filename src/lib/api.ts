@@ -203,6 +203,8 @@ const CATEGORY_BY_FILE: Readonly<Record<string, string>> = {
   // The device owner of a host's calls (compiler change 0071) and the report of a plan, which
   // typeshade/runtime re-exports without the planner (change 0071, Amendment 2).
   'src/runtime/device.ts': 'runtime-api',
+  'src/core/build-info.ts': 'runtime-api',
+  'src/core/device-info.ts': 'runtime-api',
   'src/core/fuse-report.ts': 'runtime-api',
   'src/core/host-entry.ts': 'runtime-api',
   'src/runtime/chunk.ts': 'runtime-api',

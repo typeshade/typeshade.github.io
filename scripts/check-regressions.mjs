@@ -45,7 +45,7 @@ export async function checkRegressions(page, url) {
   const quick = await run();
   writeFileSync('shots/benchmarks/unified-quick.json', JSON.stringify(quick, null, 2));
   assert.equal(quick.status, 'complete', JSON.stringify(quick.results.at(-1)));
-  assert.equal(quick.results.length, 54);
+  assert.equal(quick.results.length, 60);
   assert(
     quick.results.every(
       (r) =>
@@ -58,11 +58,29 @@ export async function checkRegressions(page, url) {
   assert(quick.results.filter((r) => r.kind === 'compiled').every((r) => r.gpuSubmissions > 0));
   assert(quick.results.some((r) => r.kind === 'resident' && r.readbackMs.length === 3));
   assert.equal(await root.locator('[data-section]:visible').count(), 4);
+  assert.equal(quick.peers[1].runtime.tier, 'webgpu');
+  assert.equal(quick.peers[1].runtime.build.revision, null);
+  for (const count of [1, 4, 8]) {
+    const pair = quick.results.filter((r) => r.id === `fields-${count}`);
+    assert.equal(pair.length, 2);
+    for (const row of pair) {
+      assert.equal(row.checkedValues, row.n * 9);
+      assert.equal(row.inputBytes, row.n * (row.build === 'baseline' ? 8 : count) * 4);
+      assert.equal(row.validationMs.length, 3);
+      assert.equal(row.packingMs.length, 3);
+      assert(row.uploadBytes.every((bytes) => bytes >= row.inputBytes + row.n * 4));
+    }
+  }
+  for (const metric of ['validation', 'packing', 'upload']) {
+    await root.locator('[data-metric]').selectOption(metric);
+    assert.equal(await root.locator('[data-section="data"] [data-case^="fields-"]').count(), 3);
+  }
+  await root.locator('[data-metric]').selectOption('wall');
   assert.equal(await root.locator('[data-send]').isDisabled(), true);
   await root.locator('[data-profile]').selectOption('extended');
   const extended = await run();
   assert.equal(extended.status, 'complete');
-  assert.equal(extended.results.length, 162);
+  assert.equal(extended.results.length, 180);
   assert(extended.results.every((r) => r.wallMs.length === 15 && r.status === 'passed'));
   writeFileSync('shots/benchmarks/unified-extended.json', JSON.stringify(extended, null, 2));
   await root.locator('[data-profile]').selectOption('quick');
@@ -126,7 +144,7 @@ export async function checkRegressions(page, url) {
   await root.locator('[data-stop]').click();
   const partial = await record();
   assert.equal(partial.status, 'cancelled');
-  assert(partial.results.length > 0 && partial.results.length < 162);
+  assert(partial.results.length > 0 && partial.results.length < 180);
   assert.equal(partial.results.length % 2, 0);
   await page.waitForFunction(() =>
     document

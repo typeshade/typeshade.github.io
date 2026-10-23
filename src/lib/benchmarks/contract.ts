@@ -34,6 +34,52 @@ export type BenchResult = z.infer<typeof resultSchema>;
 export const metadataSchema = z
   .object({
     userAgent: text,
+    runtime: z
+      .object({
+        build: z
+          .object({
+            version: text,
+            revision: z
+              .string()
+              .regex(/^[a-f0-9]{40,64}$/)
+              .nullable(),
+          })
+          .strict(),
+        tier: z.enum(['webgpu', 'webgl2', 'cpu']),
+        webgpu: z
+          .object({
+            provenance: z.enum(['device', 'adapter', 'unavailable']),
+            vendor: text.nullable(),
+            architecture: text.nullable(),
+            device: text.nullable(),
+            description: text.nullable(),
+            fallback: z.boolean().nullable(),
+            features: z.array(z.string().max(80)).max(128),
+            limits: z
+              .record(z.string().max(80), z.number().finite().nonnegative())
+              .refine((v) => Object.keys(v).length <= 128),
+          })
+          .strict()
+          .nullable(),
+        webgl: z
+          .object({
+            vendor: text.nullable(),
+            renderer: text.nullable(),
+            unmaskedVendor: text.nullable(),
+            unmaskedRenderer: text.nullable(),
+          })
+          .strict()
+          .nullable(),
+      })
+      .strict()
+      .refine((info) =>
+        info.tier === 'webgpu'
+          ? info.webgpu !== null && info.webgl === null
+          : info.tier === 'webgl2'
+            ? info.webgpu === null && info.webgl !== null
+            : info.webgpu === null && info.webgl === null,
+      )
+      .optional(),
     webgpu: z
       .object({
         available: z.boolean(),

@@ -29,6 +29,7 @@ const warnings = kernelLoopWarnings();
   <h2 id="kernel">{content.kernel}</h2><p><Rich text={content.kernelP} locale={locale} /></p>
   <TypeShadeCode code={`export function render(k: vec4, size: u32, out: array<f32>) {\n  for (let i: u32 = 0; i < size * size; i++) {\n    const p = vec2(f32(i % size), f32(i / size)) / f32(size)\n    out[i] = k.x * sin(p.x * k.y) + k.z * cos(p.y * k.w)\n  }\n}`} />
   <p><Rich text={content.kernelRulesP} locale={locale} /></p>
+  <p><Rich text={content.kernelLayoutP} locale={locale} /></p>
   <p><Rich text={content.kernelWarnP} locale={locale} /></p>
   <table>
     <thead><tr><th>{content.kernelRule}</th><th>{content.kernelWarning}</th></tr></thead>

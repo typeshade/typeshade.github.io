@@ -1,16 +1,26 @@
 {
   "bundler": "bun@1.4.3",
-  "measurement": "14d94be6eed528dbdcfc4225517350e03ae62823f11b31fb0e5dd2e850f16c21",
-  "workloadRevision": "applications-2",
-  "instrument": "unified-1",
-  "workload": "990f44a23ba05151ab462d89a41895b4645b0402ab43fabfd43e9325eacd9f20",
+  "measurement": "2ac5d5c52ecbc3b738dd067c20fe8d84b1ed93c0dd9b60e78befe3e2f669a1b5",
+  "workloadRevision": "applications-3",
+  "instrument": "unified-2",
+  "workload": "0d6d87ae139abcf6a07be9f5b0841d0b589b5f7d0f07448a6fb867dfd23caa44",
+  "applications": [
+    "image",
+    "particles",
+    "peak",
+    "collect",
+    "resident-image",
+    "fields-1",
+    "fields-4",
+    "fields-8"
+  ],
   "builds": [
     {
-      "revision": "82d7ba527e72975df15c35eb16d27239401ea3eb",
-      "runtime": "82d7ba527e72975df15c35eb16d27239401ea3eb",
-      "runtimeDigest": "2f6da2b2cf91792ca333c36fd4b535867b944b95b7980b332f0d3de7a54b3b98",
-      "url": "/benchmarks/artifacts/2f6da2b2cf91792ca333c36fd4b535867b944b95b7980b332f0d3de7a54b3b98.js",
-      "bytes": 439080,
+      "revision": "94203d3cab6433065bbe111c3b93f66a4058828e",
+      "runtime": "94203d3cab6433065bbe111c3b93f66a4058828e",
+      "runtimeDigest": "0d9e5e430a19fa7644532d7e7e69b5146ce35d822aae7205c4e058217e7b1c7d",
+      "url": "/benchmarks/artifacts/0d9e5e430a19fa7644532d7e7e69b5146ce35d822aae7205c4e058217e7b1c7d.js",
+      "bytes": 459578,
       "cases": [
         {
           "id": "layout-aos-8-read-1",
@@ -447,11 +457,11 @@
       ]
     },
     {
-      "revision": "94203d3cab6433065bbe111c3b93f66a4058828e",
-      "runtime": "94203d3cab6433065bbe111c3b93f66a4058828e",
-      "runtimeDigest": "44b6de7a2e94a0bebccdd5a5b90a70cfd8abde420f768860f26613e3e1584a9e",
-      "url": "/benchmarks/artifacts/44b6de7a2e94a0bebccdd5a5b90a70cfd8abde420f768860f26613e3e1584a9e.js",
-      "bytes": 439332,
+      "revision": "85b803f974b8e78a36ef831a9f8c2f475ef6da87",
+      "runtime": "85b803f974b8e78a36ef831a9f8c2f475ef6da87",
+      "runtimeDigest": "cd65c36acfc370285724dd68b2661841499b027e7235de5bfefc2434fdb573ac",
+      "url": "/benchmarks/artifacts/cd65c36acfc370285724dd68b2661841499b027e7235de5bfefc2434fdb573ac.js",
+      "bytes": 466930,
       "cases": [
         {
           "id": "layout-aos-8-read-1",
@@ -888,5 +898,5 @@
       ]
     }
   ],
-  "digest": "3f1859a17048ac2eccaa0737294522f0207ed547fa0e5bc0d1d9b1d0a43322cf"
+  "digest": "a7aca57bd3b52cd25c59a0cf97793826daee7cd522fc987f6e15ec041cbb3f57"
 }

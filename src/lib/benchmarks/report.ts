@@ -7,12 +7,22 @@ import { median } from './fixtures.ts';
 
 export const REPORT_SECTIONS = ['applications', 'data', 'compute', 'execution'] as const;
 export type ReportSection = (typeof REPORT_SECTIONS)[number];
-export const REPORT_METRICS = ['wall', 'gpu', 'buffers', 'cold', 'readback'] as const;
+export const REPORT_METRICS = [
+  'wall',
+  'gpu',
+  'buffers',
+  'cold',
+  'readback',
+  'validation',
+  'packing',
+  'upload',
+] as const;
 export type ReportMetric = (typeof REPORT_METRICS)[number];
 export function formatChange(value: number): string {
   return Number(value.toFixed(1)).toFixed(1);
 }
 const sectionFor = (id: string): ReportSection => {
+  if (id.startsWith('fields-')) return 'data';
   const job = regressionCatalog.builds[0]!.cases.find((c) => c.id === id);
   if (!job) return 'applications';
   if (['layout', 'transfer', 'memory'].includes(job.suite)) return 'data';
@@ -26,9 +36,15 @@ function measurement(row: RegressionResult | undefined, metric: ReportMetric) {
       ? row.wallMs
       : metric === 'gpu'
         ? row.gpuNs
-        : metric === 'readback'
-          ? row.readbackMs
-          : [metric === 'cold' ? row.coldMs : row.peakBufferBytes];
+        : metric === 'validation'
+          ? row.validationMs
+          : metric === 'packing'
+            ? row.packingMs
+            : metric === 'upload'
+              ? row.uploadBytes
+              : metric === 'readback'
+                ? row.readbackMs
+                : [metric === 'cold' ? row.coldMs : row.peakBufferBytes];
   if (!samples?.length) return null;
   const sorted = [...samples].sort((a, b) => a - b);
   const value = median(sorted)!;
@@ -68,7 +84,7 @@ export function reportGroups(record: RegressionRecord, n: number, metric: Report
         const state =
           change === null
             ? 'unavailable'
-            : metric === 'buffers' || metric === 'cold'
+            : metric === 'buffers' || metric === 'cold' || metric === 'upload'
               ? change < 0
                 ? 'lower'
                 : change > 0

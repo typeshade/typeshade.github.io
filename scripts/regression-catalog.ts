@@ -7,6 +7,8 @@ import path from 'node:path';
 import { format } from 'prettier';
 import {
   APPLICATION_SOURCE,
+  PROJECTION_SOURCE,
+  APPLICATIONS,
   WORKLOAD_REVISION,
   INSTRUMENT_REVISION,
 } from '../src/lib/benchmarks/workloads.ts';
@@ -61,10 +63,46 @@ for (const revision of revisions) {
   });
   if (!face.code || face.diagnostics.some((d: { category: string }) => d.category === 'error'))
     throw new Error(JSON.stringify(face.diagnostics));
+  const projected = hostFace(PROJECTION_SOURCE, {
+    fileName: 'fields.shade.ts',
+    runtime: path.join(root, 'src/core/host-runtime.ts'),
+  });
+  if (
+    !projected.code ||
+    projected.diagnostics.some((d: { category: string }) => d.category === 'error')
+  )
+    throw new Error(JSON.stringify(projected.diagnostics));
+  writeFileSync(path.join(root, 'fields.ts'), projected.code);
+  const faces = Object.fromEntries(
+    projected.exports
+      .filter((e: { kind: string }) => e.kind === 'kernel')
+      .map((e: { name: string; face: unknown }) => [e.name, e.face]),
+  );
+  const projection = readFileSync(path.join(root, 'src/core/host-entry.ts'), 'utf8').includes(
+    'export function projectInputLayout',
+  );
+  const probe = `
+import {checkCall} from './src/core/host-kernel.ts';
+import {packed${projection ? ',projectInputLayout' : ''}} from './src/core/host-entry.ts';
+const inputFaces=${JSON.stringify(faces)};
+export {fields1,fields4,fields8} from './fields.ts';
+export function inputProbe(id,xs,out) {
+  const face=inputFaces[id.replace('-','')];
+  const logical=face.params.find(p=>p.name==='ps');
+  const binding=(face.gpu.projected?.arrays??face.gpu.arrays).find(p=>p.name==='ps');
+  ${projection ? 'if(binding.layout.st!==logical.layout.st)projectInputLayout(logical.layout,binding.layout);' : ''}
+  let start=performance.now();
+  checkCall({F:{},$:{bindings:{},vars:{}}},{...face,gpu:undefined},2,[xs,out]);
+  const validationMs=performance.now()-start;
+  start=performance.now();
+  const input=packed(binding,xs);
+  return {validationMs,packingMs:performance.now()-start,inputBytes:input.byteLength};
+}
+`;
   const entry = path.join(root, 'benchmark.ts');
   writeFileSync(
     entry,
-    `${face.code}\nimport './src/fuse.ts';\nimport {createDevice,createRuntime,configure} from './src/runtime.ts';
+    `${face.code}\n${probe}\nimport './src/fuse.ts';\nimport {createDevice,createRuntime,configure} from './src/runtime.ts';
 export async function open(device) {
   const rt = await createRuntime({device});
   configure({runtime:rt, prefer:['webgpu']});
@@ -102,6 +140,7 @@ export async function open(device) {
 const workload = sha(
   JSON.stringify({
     application: APPLICATION_SOURCE,
+    projection: PROJECTION_SOURCE,
     cases: builds[0]!.cases.map(({ source, id }) => ({ source, id })),
   }),
 );
@@ -119,6 +158,7 @@ const identity = {
         'fixtures.ts',
         'definitions.ts',
         'regression-contract.ts',
+        'contract.ts',
       ].map((file) => ({
         file,
         source: sha(readFileSync(`src/lib/benchmarks/${file}`, 'utf8').replace(/\r\n/g, '\n')),
@@ -128,6 +168,7 @@ const identity = {
   workloadRevision: WORKLOAD_REVISION,
   instrument: INSTRUMENT_REVISION,
   workload,
+  applications: APPLICATIONS,
   builds,
 };
 const data = { ...identity, digest: sha(JSON.stringify(identity)) };

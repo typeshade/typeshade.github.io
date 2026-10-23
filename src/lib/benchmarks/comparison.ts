@@ -27,6 +27,9 @@ export function pairedResults(record: RegressionRecord) {
           bufferRatio: ratio(a.peakBufferBytes, b.peakBufferBytes),
           coldRatio: ratio(a.coldMs, b.coldMs),
           readbackRatio: ratio(median(a.readbackMs ?? []), median(b.readbackMs ?? [])),
+          validationRatio: ratio(median(a.validationMs ?? []), median(b.validationMs ?? [])),
+          packingRatio: ratio(median(a.packingMs ?? []), median(b.packingMs ?? [])),
+          uploadRatio: ratio(median(a.uploadBytes ?? []), median(b.uploadBytes ?? [])),
           baselineWallP10: quantile(a.wallMs, 0.1),
           baselineWallP90: quantile(a.wallMs, 0.9),
           candidateWallP10: quantile(b.wallMs, 0.1),
@@ -54,6 +57,9 @@ export function summarizePaired(records: readonly RegressionRecord[]) {
         'bufferRatio',
         'coldRatio',
         'readbackRatio',
+        'validationRatio',
+        'packingRatio',
+        'uploadRatio',
       ] as const) {
         const ratio = pair[metric];
         if (ratio === null) continue;

@@ -4,10 +4,10 @@
 
 The owner requested one benchmark that includes every existing experiment and correctness
 check, with one run control, progress indicator, result ID and reporting flow. Site baseline
-is `13786f8cfab945084b6b5dac891adce1466248bc`. The compiler pin remains
+was `13786f8cfab945084b6b5dac891adce1466248bc`. The initial compiler pin was
 `94203d3cab6433065bbe111c3b93f66a4058828e`.
 
-Implementation is tracked in [PR #217](https://github.com/typeshade/typeshade.github.io/pull/217).
+The original implementation is tracked in [PR #217](https://github.com/typeshade/typeshade.github.io/pull/217).
 
 ## Scope
 
@@ -31,7 +31,7 @@ submission patterns, application calls and resident calls. Check negative GPU ou
 cancellation, missing timing support, consent, retries and local D1 collection. Inspect both
 languages and themes at 390 and 1440 pixels, including menus and populated results.
 
-## Protocol
+## Original protocol
 
 Workload `applications-2` and instrument `unified-1` combine all 22 original device experiments
 with five application workloads. Each case runs against both exact compiler/runtime builds,
@@ -90,9 +90,10 @@ intercepts submissions to avoid synthetic reports in the shared database.
 
 ## Status
 
-Implementation and local verification are complete. PR #217 is a draft while final-head CI
-is pending. This change does not implement proposal 0082 or close proposal 0081 deviation D1.
-The owner merges after review.
+PR #217 merged as `1b44abbe25b4b822165a771a003308a0024cab1c` and deployed.
+The protocol and validation below record that original instrument.
+PR #205 adds the [private input projection cohort](benchmark-projection.md) and shared runtime information.
+Its compiler pin, measurements and pending validation are recorded separately. Proposal 0081 deviation D1 remains open.
 
 ## Validation record
 

@@ -4,7 +4,7 @@ import registry from './regression-catalogs.json';
 import type { Experiment } from './definitions.ts';
 import { metadataSchema, outputLength, storageBytes } from './contract.ts';
 import { PROFILES } from './definitions.ts';
-import { APPLICATIONS, APPLICATION_SOURCE } from './workloads.ts';
+import { LEGACY_APPLICATIONS, APPLICATION_SOURCE, fieldCount } from './workloads.ts';
 import { MAX_DISPATCHES } from './timing.ts';
 
 export const regressionCatalog = data;
@@ -36,6 +36,10 @@ export const regressionResultSchema = z
     peakBufferBytes: bytes,
     bufferAllocations: z.number().int().nonnegative().max(1e6),
     gpuSubmissions: z.number().int().nonnegative().max(1e6),
+    validationMs: samples.nullable().optional(),
+    packingMs: samples.nullable().optional(),
+    uploadBytes: z.array(bytes).max(15).nullable().optional(),
+    inputBytes: bytes.nullable().optional(),
   })
   .strict();
 export type RegressionResult = z.infer<typeof regressionResultSchema>;
@@ -57,7 +61,7 @@ export const regressionRecordSchema = z
     metadata: metadataSchema,
     peers: z.array(metadataSchema).max(2),
     loadMs: z.array(ms).max(2),
-    results: z.array(regressionResultSchema).max(162),
+    results: z.array(regressionResultSchema).max(180),
   })
   .strict()
   .superRefine((r, ctx) => {
@@ -81,7 +85,15 @@ export const regressionRecordSchema = z
     )
       fail();
     const seen = new Map<string, RegressionResult>();
-    const ids = [...active.builds[0]!.cases.map((c) => c.id), ...APPLICATIONS];
+    const applications =
+      'applications' in active ? (active.applications as readonly string[]) : LEGACY_APPLICATIONS;
+    const ids = [...active.builds[0]!.cases.map((c) => c.id), ...applications];
+    if (
+      active.instrument === 'unified-2' &&
+      r.status === 'complete' &&
+      r.peers[1]?.runtime?.tier !== 'webgpu'
+    )
+      fail();
     for (const row of r.results) {
       const key = `${row.id}:${row.n}:${row.build}`;
       if (
@@ -103,21 +115,24 @@ export const regressionRecordSchema = z
           row.wallMs.length !== PROFILES[r.profile].samples)
       )
         fail();
-      const checked = e
-        ? outputLength(e as Experiment, row.n)
-        : row.id === 'particles'
-          ? row.n * 8
-          : row.id === 'peak'
-            ? 1
-            : row.id === 'collect'
-              ? 127 * 3
-              : row.n;
+      const fields = fieldCount(row.id);
+      const checked = fields
+        ? row.n * 9
+        : e
+          ? outputLength(e as Experiment, row.n)
+          : row.id === 'particles'
+            ? row.n * 8
+            : row.id === 'peak'
+              ? 1
+              : row.id === 'collect'
+                ? 127 * 3
+                : row.n;
       if (row.status === 'passed' && row.checkedValues !== checked) fail();
       if (row.status === 'failed' && row.reason === 'none') fail();
       if ((row.gpuNs === null) === (row.gpuTiming === 'available')) fail();
       if (
         row.gpuNs &&
-        (row.kind !== 'compiled' ||
+        ((row.kind !== 'compiled' && !fields) ||
           e?.kind === 'upload' ||
           e?.kind === 'readback' ||
           e?.separate ||
@@ -126,7 +141,7 @@ export const regressionRecordSchema = z
       )
         fail();
       if (
-        active.instrument === 'unified-1' &&
+        ['unified-1', 'unified-2'].includes(active.instrument) &&
         e &&
         (e.kind === 'atomic' || e.kind === 'upload' || e.kind === 'readback' || e.dispatches > 1) &&
         row.dispatches !== e.dispatches
@@ -134,6 +149,14 @@ export const regressionRecordSchema = z
         fail();
       if ((row.kind === 'resident') !== (row.readbackMs !== null)) fail();
       if (row.readbackMs && row.readbackMs.length !== row.wallMs.length) fail();
+      if (active.instrument === 'unified-2' && fields && row.status === 'passed') {
+        if (row.logicalBytes !== row.n * 36) fail();
+        const inputBytes = row.n * (row.build === 'baseline' ? 8 : fields) * 4;
+        if (row.inputBytes !== inputBytes) fail();
+        for (const values of [row.validationMs, row.packingMs, row.uploadBytes])
+          if (!values || values.length !== row.wallMs.length) fail();
+        if (row.uploadBytes?.some((v) => v < inputBytes + row.n * 4)) fail();
+      }
       const other = seen.get(
         `${row.id}:${row.n}:${row.build === 'baseline' ? 'candidate' : 'baseline'}`,
       );
@@ -150,7 +173,10 @@ export const regressionRecordSchema = z
       fail();
   });
 export type RegressionRecord = z.infer<typeof regressionRecordSchema>;
-export function regressionRows(sizes: readonly number[]): number {
-  return (data.builds[0]!.cases.length + APPLICATIONS.length) * 2 * sizes.length;
+export function regressionRows(sizes: readonly number[], digest = data.digest): number {
+  const active = registry.find((c) => c.digest === digest) ?? data;
+  const applications =
+    'applications' in active ? (active.applications as readonly string[]) : LEGACY_APPLICATIONS;
+  return (active.builds[0]!.cases.length + applications.length) * 2 * sizes.length;
 }
 export { APPLICATION_SOURCE };

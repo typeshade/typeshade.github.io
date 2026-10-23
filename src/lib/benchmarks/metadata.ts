@@ -1,5 +1,8 @@
 import type { Metadata } from './contract.ts';
-export function benchmarkMetadata(adapter: GPUAdapter | null): Metadata {
+export function benchmarkMetadata(
+  adapter: GPUAdapter | null,
+  runtime?: Metadata['runtime'],
+): Metadata {
   let webgl: Metadata['webgl'] = {
     state: 'unavailable',
     debugExtension: false,
@@ -31,6 +34,7 @@ export function benchmarkMetadata(adapter: GPUAdapter | null): Metadata {
   }
   return {
     userAgent: navigator.userAgent.slice(0, 512),
+    ...(runtime ? { runtime } : {}),
     webgl,
     webgpu: {
       available: !!adapter,

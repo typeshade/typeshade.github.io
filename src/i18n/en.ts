@@ -1514,6 +1514,9 @@ export const en = {
   benchmarks: {
     metricH: 'Measurement',
     metrics: {
+      validation: 'Validation probe',
+      packing: 'Packing probe',
+      upload: 'Uploaded bytes',
       wall: 'Elapsed time',
       gpu: 'GPU time',
       buffers: 'Peak buffer memory',
@@ -1534,6 +1537,9 @@ export const en = {
       execution: 'Workgroup sizes and queue submission patterns.',
     },
     caseNames: {
+      'fields-1': 'Kernel call, read 1 of 8 fields',
+      'fields-4': 'Kernel call, read 4 of 8 fields',
+      'fields-8': 'Kernel call, read all 8 fields',
       image: 'Image inversion',
       particles: 'Particle updates',
       peak: 'Maximum value',
@@ -1592,6 +1598,8 @@ export const en = {
       'One run includes every experiment and correctness check on both builds. It covers application calls, memory, computation and execution patterns.',
     comparisonTiming:
       'First-call time includes case preparation. Repeated compiled timings are per dispatch in a calibrated batch. Application timings cover the complete call. Resident timings cover a fixed chain; readback is recorded separately in the JSON.',
+    comparisonProbes:
+      'The field-read kernel cases measure validation and packing in separate probes before the actual call. These probes can warm caches and are not additive parts of elapsed time. Uploaded bytes count actual buffer writes. Available GPU times cover the compute pass with equal query overhead in both builds. Query buffers are excluded from workload memory. Shared runtime information describes the actual opened device; artifact and compiler hashes remain separate provenance.',
     comparisonMemory:
       'Peak buffer bytes count live WebGPU buffers created through the instrument. They exclude textures, driver allocations and JavaScript memory. The record also includes allocation and submission counts.',
     comparisonTrust:
@@ -1606,7 +1614,7 @@ export const en = {
     description:
       'Run TypeShade performance experiments on your device and contribute results to guide compiler improvements.',
     intro:
-      'Measure how workloads behave on your device. These experiments help guide compiler work, including the proposed array layout optimization.',
+      'Measure how workloads behave on your device. These experiments help guide compiler work, including private kernel input projection.',
     runH: 'Unified benchmark',
     resultsH: 'Performance report',
     sharingH: 'Contribute results',
@@ -2025,6 +2033,8 @@ export const en = {
       runtimeP: `A module the host compiles needs nothing of TypeShade in the browser. The compiler runs where the shader text is produced: in a build, in a test, or in an editor through the [language service](languageService), and what reaches the browser is the emitted shader source and the host code the application already had. A module the host imports carries \`typeshade/runtime\` into the bundle, the code its calls run on, and no compiler, because the Vite plugin compiles the module when the bundle is built. A call runs on the first tier the browser has, WebGPU, then WebGL2, then the CPU; \`configure({ prefer })\` orders the tiers a compute entry and a kernel function try, and a \`Resident\` keeps an array on the GPU between calls. A host that loads programs into the program runtime ships the same \`typeshade/runtime\` and the manifests, and no compiler either. TypeShade installs ${facts.runtimeDeps} runtime dependency, TypeScript, which \`compile()\` and the language service read source with.`,
       runtimeOwnerP:
         "A host can also open an owner of its calls with `createDevice()` from `typeshade/runtime` (Rule 11.8). It opens on the first tier of `prefer` that opens, on a `GPUDevice` the host already has, or on a program runtime's device, `createDevice({ runtime })`. `device.array()` makes the `Resident` arrays its calls take, and `device.fuse()` runs a chain of calls as one plan on that device. One `Resident` belongs to one owner for its life, so a call refuses an array of another owner. The owner also picks the flavor of the emulated double, `createDevice({ fp64Flavor })`, and the time one chunk of a long kernel may take, `createDevice({ timeBudgetMs })`. `configure()`, `resident()` and `fuse()` work on the default owner as before.",
+      runtimeInfoP:
+        '`buildInfo` reports the package version and a nullable exact source revision. Modified, stale or unstamped builds report `revision: null`. `device.info` and `runtime.info` are frozen, serializable records of the actual opened device or context, readable after loss or disposal. WebGPU identity has explicit provenance and enabled device capabilities; unavailable identity stays unknown. WebGL strings come from the actual context. This information does not identify the tier of each call or send a report. The runtime build, producing compiler and benchmark workload have separate provenance.',
       webgl2H: 'Where WebGL2 differs',
       webgl2P: 'The same source compiles for WebGL2, and the host side of it looks different.',
       webgl2Items: [
@@ -2710,6 +2720,8 @@ export const en = {
           "An exported function that is not an entry point and takes an array with no size, `array<T>`, or a 2D storage texture, `texture_storage_2d<F, A>`, is a kernel function (Rule 8.22). A sampled texture alone makes none, so an exported helper that reads one stays a helper. The array or the texture is the caller's, read and written in place. Each `for` at the top of its body is a loop the compiler may run on the GPU, one invocation per iteration, and a host file awaits the function like any import. No `@compute`, binding or `global_invocation_id` is written. `@workgroup_size([128])` before the function sets the workgroup of its loops on WebGPU, which is 64 without it. A loop that reduces always runs in workgroups of 256, so the attribute on a function with such a loop is refused (`TS8077`).",
         kernelRulesP:
           "The compiler runs a loop on the GPU when it proves that no iteration touches what another one does. The loop is a counted `for`, or a `for...of`, that steps by a constant and that nothing returns from or breaks out of. Each write lands on a name declared inside the loop, on an outer array or a texture at an index made from the loop's own, on an integer array the loop combines into at any index, on a variable the loop combines with `+=`, `*=`, `min`, `max`, `&`, `|` or `^`, which the GPU and the CPU fold in one tree order, on an array the loop only appends to with `push`, or on a `Map` or a `Set` the loop adds to. The loop reads an array it writes only where it writes it. It never reads a variable it combines, an array it appends to or a `Map` or a `Set` it adds to. It calls no function that writes a module variable or a binding, and has no barrier, no workgroup memory and no `console` call.",
+        kernelLayoutP:
+          'An ordinary WebGPU kernel call can upload only live fields of a read-only object array. Flat `f32`, `i32` and `u32` fields keep declaration order. Every declared host field is still validated, with property-read order preserved. Written, resident, fused and unproved inputs keep the full layout; so do modules built with `typeshade({ fuse: true })`. Entry bindings, reflection, manifests and raw bytes keep their external layout. CPU and WebGL2 retain their representation. Smaller uploads do not guarantee a faster complete call; physical-device measurements remain necessary.',
         kernelWarnP:
           'A loop the proof refuses runs on the CPU, and the program is correct either way. The proof never looks at a loop in an entry, a helper or a fragment shader, which stays per-invocation code. The compiler marks a refused loop with the warning `TS8070`: its first sentence names the line and the names in your code, and its second gives the remedy. At the pinned compiler the warnings read:',
         kernelRule: 'Rule',

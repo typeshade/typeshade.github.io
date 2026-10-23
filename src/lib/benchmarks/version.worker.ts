@@ -9,6 +9,8 @@ import {
   expectedApplication,
   numbersMatch,
   RESIDENT_CALLS,
+  FIELD_NAMES,
+  fieldCount,
   type Application,
 } from './workloads.ts';
 import { storageBytes } from './contract.ts';
@@ -28,6 +30,10 @@ let live = 0,
   submissions = 0;
 let lost = false,
   invalid = false;
+let timing: { query: GPUQuerySet; resolved: GPUBuffer; read: GPUBuffer } | undefined;
+let measuring = false,
+  passes = 0,
+  uploaded = 0;
 function verify(actual: number[], expected: number[]) {
   if (!numbersMatch(actual, expected)) throw new Error('validation');
   const corrupt = [...actual];
@@ -40,18 +46,49 @@ async function application() {
   const id = row.id as Application;
   const input = applicationInput(row.n, id);
   const expected = expectedApplication(id, input);
+  const fields = fieldCount(id);
+  const original = fields ? input.particles.flatMap((p) => FIELD_NAMES.map((key) => p[key])) : [];
+  const probe = fields ? api.inputProbe!(id, input.particles, input.values) : undefined;
+  passes = 0;
+  uploaded = 0;
+  measuring = fields > 0;
   const start = performance.now();
   let result: unknown;
-  if (id === 'resident-image') {
-    await session.owner.fuse(() => {
-      for (let i = 0; i < RESIDENT_CALLS; i++) void api.image!(resident);
-    });
-    await session.owner.wait();
-  } else if (id === 'image') await api.image!(input.values);
-  else if (id === 'particles') await api.particles!(input.particles);
-  else if (id === 'peak') result = await api.peak!(input.values);
-  else await api.collect!(input.keys, input.values, input.last, input.seen);
+  try {
+    if (id === 'resident-image') {
+      await session.owner.fuse(() => {
+        for (let i = 0; i < RESIDENT_CALLS; i++) void api.image!(resident);
+      });
+      await session.owner.wait();
+    } else if (id === 'image') await api.image!(input.values);
+    else if (id === 'particles') await api.particles!(input.particles);
+    else if (id === 'peak') result = await api.peak!(input.values);
+    else if (fields) await api[`fields${fields}`]!(input.particles, input.values);
+    else await api.collect!(input.keys, input.values, input.last, input.seen);
+  } finally {
+    measuring = false;
+  }
   const wallMs = performance.now() - start;
+  let elapsedNs: number | null = null;
+  if (fields) {
+    if (passes !== 1) throw new Error('validation');
+    if (timing) {
+      await timing.read.mapAsync(GPUMapMode.READ);
+      try {
+        const t = new BigUint64Array(timing.read.getMappedRange());
+        elapsedNs = Number(t[1]! - t[0]!);
+      } finally {
+        timing.read.unmap();
+      }
+    }
+    if (
+      !numbersMatch(
+        original,
+        input.particles.flatMap((p) => FIELD_NAMES.map((key) => p[key])),
+      )
+    )
+      throw new Error('validation');
+  }
   let readbackMs: number | null = null;
   if (id === 'resident-image') {
     const readStart = performance.now();
@@ -59,7 +96,8 @@ async function application() {
     readbackMs = performance.now() - readStart;
   }
   verify(applicationOutput(id, input, result), expected);
-  return { wallMs, readbackMs };
+  if (fields) row.checkedValues += original.length;
+  return { wallMs, readbackMs, elapsedNs, probe, uploaded };
 }
 async function command(data: any) {
   if (data.command === 'init') {
@@ -79,7 +117,7 @@ async function command(data: any) {
       URL.revokeObjectURL(blob);
     }
     const adapter = (await navigator.gpu?.requestAdapter()) ?? null;
-    const metadata = benchmarkMetadata(adapter);
+    let metadata = benchmarkMetadata(adapter);
     if (!adapter) return { metadata, unsupported: true, loadMs: performance.now() - start };
     device = await adapter.requestDevice({
       requiredFeatures: metadata.webgpu.timestamps ? ['timestamp-query'] : [],
@@ -112,7 +150,61 @@ async function command(data: any) {
       submissions++;
       submit(commands);
     };
+    // Timestamp copies are instrument overhead, outside the tracked workload buffers.
+    if (device.features.has('timestamp-query'))
+      timing = {
+        query: device.createQuerySet({ type: 'timestamp', count: 2 }),
+        resolved: create({
+          size: 16,
+          usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
+        }),
+        read: create({ size: 16, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ }),
+      };
+    const encoder = device.createCommandEncoder.bind(device);
+    device.createCommandEncoder = (descriptor) => {
+      const enc = encoder(descriptor);
+      let measured = false;
+      const begin = enc.beginComputePass.bind(enc);
+      enc.beginComputePass = (desc = {}) => {
+        if (!measuring) return begin(desc);
+        if (measured) throw new Error('validation');
+        measured = true;
+        passes++;
+        return begin(
+          timing
+            ? {
+                ...desc,
+                timestampWrites: {
+                  querySet: timing.query,
+                  beginningOfPassWriteIndex: 0,
+                  endOfPassWriteIndex: 1,
+                },
+              }
+            : desc,
+        );
+      };
+      const finish = enc.finish.bind(enc);
+      enc.finish = (desc) => {
+        if (measured && timing) {
+          enc.resolveQuerySet(timing.query, 0, 2, timing.resolved, 0);
+          enc.copyBufferToBuffer(timing.resolved, 0, timing.read, 0, 16);
+        }
+        return finish(desc);
+      };
+      return enc;
+    };
+    const write = device.queue.writeBuffer.bind(device.queue);
+    device.queue.writeBuffer = (buffer, offset, data, at = 0, size) => {
+      if (measuring) {
+        const unit = 'BYTES_PER_ELEMENT' in data ? Number(data.BYTES_PER_ELEMENT) : 1;
+        uploaded += size === undefined ? data.byteLength - at * unit : size * unit;
+      }
+      write(buffer, offset, data, at, size);
+    };
     session = await api.open!(device);
+    // Only a runtime that implements the API supplies this snapshot. Adapter observations and
+    // the independent WebGL probe retain their original, separate provenance.
+    metadata = { ...metadata, ...(session.owner.info ? { runtime: session.owner.info } : {}) };
     return { metadata, loadMs: performance.now() - start };
   }
   if (data.command === 'prepare') {
@@ -141,13 +233,31 @@ async function command(data: any) {
       corruptionDetected: false,
       logicalBytes: job
         ? storageBytes(job as Experiment, data.n)
-        : data.n * (data.id === 'particles' ? 32 : data.id === 'collect' ? 8 : 4),
+        : data.n *
+          (fieldCount(data.id) ? 36 : data.id === 'particles' ? 32 : data.id === 'collect' ? 8 : 4),
       peakBufferBytes: 0,
       bufferAllocations: 0,
       gpuSubmissions: 0,
+      validationMs: fieldCount(data.id) ? [] : null,
+      packingMs: fieldCount(data.id) ? [] : null,
+      uploadBytes: fieldCount(data.id) ? [] : null,
+      inputBytes: null,
     };
     const start = performance.now();
     if (job) compiled = await prepareCompiled(device, job, data.n);
+    if (fieldCount(data.id)) {
+      let refused = false;
+      try {
+        await api[`fields${fieldCount(data.id)}`]!(
+          [{ ...applicationInput(1, data.id).particles[0], cold3: 'invalid' }],
+          new Float32Array(1),
+        );
+      } catch (error) {
+        if (!(error instanceof TypeError)) throw error;
+        refused = true;
+      }
+      if (!refused) throw new Error('validation');
+    }
     if (row.kind === 'resident')
       resident = session.owner.array(applicationInput(row.n, 'resident-image').values);
     row.setupMs = performance.now() - start;
@@ -186,6 +296,13 @@ async function command(data: any) {
     } else {
       const x = await application();
       row.wallMs.push(x.wallMs);
+      if (x.probe) {
+        row.validationMs!.push(x.probe.validationMs);
+        row.packingMs!.push(x.probe.packingMs);
+        row.uploadBytes!.push(x.uploaded);
+        row.inputBytes = x.probe.inputBytes;
+        gpu.push(x.elapsedNs);
+      }
       if (x.readbackMs !== null) row.readbackMs!.push(x.readbackMs);
     }
     return {};
@@ -194,7 +311,11 @@ async function command(data: any) {
     if (compiled) await compiled.verify(row);
     if ((await device.popErrorScope()) || lost || invalid) throw new Error('validation');
     row.gpuNs = validDeviceSamples(gpu);
-    row.gpuTiming = row.gpuNs ? 'available' : compiled?.supported ? 'unresolved' : 'unsupported';
+    row.gpuTiming = row.gpuNs
+      ? 'available'
+      : compiled?.supported || (fieldCount(row.id) && timing)
+        ? 'unresolved'
+        : 'unsupported';
     row.peakBufferBytes = peak;
     row.bufferAllocations = allocations;
     row.gpuSubmissions = submissions;
@@ -206,6 +327,9 @@ async function command(data: any) {
   }
   if (data.command === 'close') {
     await session?.close();
+    timing?.query.destroy();
+    timing?.resolved.destroy();
+    timing?.read.destroy();
     device?.destroy();
     return {};
   }

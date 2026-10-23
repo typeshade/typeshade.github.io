@@ -308,12 +308,15 @@ test('analysis pairs within runs, separates reported software and counts runs wi
 
 import {
   regressionCatalog,
+  regressionRows,
   type RegressionRecord,
 } from '../src/lib/benchmarks/regression-contract.ts';
 import retainedCatalogs from '../src/lib/benchmarks/regression-catalogs.json';
 import { parseAnyRecord } from '../src/lib/benchmarks/records.ts';
 import {
   APPLICATIONS,
+  LEGACY_APPLICATIONS,
+  fieldCount,
   WORKLOAD_REVISION,
   INSTRUMENT_REVISION,
   applicationInput,
@@ -345,7 +348,27 @@ function pairedRecord(): RegressionRecord {
     status: 'complete',
     orderSeed: 1,
     metadata,
-    peers: [structuredClone(metadata), structuredClone(metadata)],
+    peers: [
+      structuredClone(metadata),
+      {
+        ...structuredClone(metadata),
+        runtime: {
+          build: { version: '0.1.0', revision: null },
+          tier: 'webgpu',
+          webgpu: {
+            provenance: 'device',
+            vendor: null,
+            architecture: null,
+            device: null,
+            description: null,
+            fallback: null,
+            features: [],
+            limits: {},
+          },
+          webgl: null,
+        },
+      },
+    ],
     loadMs: [1, 2],
     results: ids.flatMap((id) =>
       [0, 1].map((build) => {
@@ -368,22 +391,30 @@ function pairedRecord(): RegressionRecord {
           gpuNs: null,
           gpuTiming: 'unsupported' as const,
           dispatches: e?.dispatches ?? (id === 'resident-image' ? 16 : 1),
-          checkedValues: e
-            ? outputLength(e as any, 16384)
-            : id === 'particles'
-              ? 16384 * 8
-              : id === 'peak'
-                ? 1
-                : id === 'collect'
-                  ? 381
-                  : 16384,
+          checkedValues: fieldCount(id)
+            ? 16384 * 9
+            : e
+              ? outputLength(e as any, 16384)
+              : id === 'particles'
+                ? 16384 * 8
+                : id === 'peak'
+                  ? 1
+                  : id === 'collect'
+                    ? 381
+                    : 16384,
           corruptionDetected: true,
           logicalBytes: e
             ? storageBytes(e as any, 16384)
-            : 16384 * (id === 'particles' ? 32 : id === 'collect' ? 8 : 4),
+            : 16384 * (fieldCount(id) ? 36 : id === 'particles' ? 32 : id === 'collect' ? 8 : 4),
           peakBufferBytes: build === 0 ? 8192 : 4096,
           bufferAllocations: 3,
           gpuSubmissions: 4,
+          validationMs: fieldCount(id) ? [1, 2, 3] : null,
+          packingMs: fieldCount(id) ? [1, 2, 3] : null,
+          uploadBytes: fieldCount(id)
+            ? Array(3).fill(16384 * ((build === 0 ? 8 : fieldCount(id)) + 1) * 4 + 16)
+            : null,
+          inputBytes: fieldCount(id) ? 16384 * (build === 0 ? 8 : fieldCount(id)) * 4 : null,
         };
       }),
     ),
@@ -396,13 +427,15 @@ test('legacy and paired provenance, complete pairs and checked outputs are enfor
   const older = pairedRecord();
   older.revision = retained.workloadRevision;
   older.instrument = retained.instrument;
-  const retainedIds = [...retained.builds[0]!.cases.map((e) => e.id), ...APPLICATIONS];
+  const retainedIds = [...retained.builds[0]!.cases.map((e) => e.id), ...LEGACY_APPLICATIONS];
   older.results = older.results.filter((row) => retainedIds.includes(row.id));
   older.digest = retained.digest;
   older.workload = retained.workload;
   older.builds = [retained.builds[0]!.revision, retained.builds[1]!.revision];
   older.runtimes = [retained.builds[0]!.runtimeDigest, retained.builds[1]!.runtimeDigest];
+  delete older.peers[1]!.runtime;
   expect(parseAnyRecord(older).schema).toBe(2);
+  expect(regressionRows(PROFILES.quick.sizes, older.digest)).toBe(older.results.length);
   for (const mutate of [
     (r: any) => r.builds.reverse(),
     (r: any) => r.runtimes.reverse(),
@@ -436,16 +469,45 @@ test('calibration is bounded and device validity uses only measured samples', ()
   expect(validDeviceSamples([4000, null, 4000])).toBeNull();
   expect(validDeviceSamples([0, 4000])).toBeNull();
 });
+test('projection observations require complete probes and the candidate actual-device snapshot', () => {
+  for (const mutate of [
+    (r: RegressionRecord) => {
+      delete r.peers[1]!.runtime;
+    },
+    (r: RegressionRecord) => {
+      r.results.find((x) => x.id === 'fields-1')!.inputBytes! += 4;
+    },
+    (r: RegressionRecord) => {
+      r.results.find((x) => x.id === 'fields-4')!.validationMs = null;
+    },
+    (r: RegressionRecord) => {
+      r.results.find((x) => x.id === 'fields-8')!.packingMs!.pop();
+    },
+    (r: RegressionRecord) => {
+      r.results.find((x) => x.id === 'fields-1')!.uploadBytes![0] = 0;
+    },
+  ]) {
+    const record = pairedRecord();
+    mutate(record);
+    expect(() => parseAnyRecord(record)).toThrow();
+  }
+  const record = pairedRecord();
+  expect(
+    reportGroups(record, 16384, 'upload')
+      .find((g) => g.section === 'data')!
+      .items.filter((i) => i.change !== null),
+  ).toHaveLength(3);
+});
 test('unified workload contains each original experiment and application once per build', () => {
   expect(regressionCatalog.builds[0]!.cases.map((c) => c.id)).toEqual(
     catalog.cases.map((c) => c.id),
   );
   const r = pairedRecord();
-  expect(r.results).toHaveLength(54);
-  expect(new Set(r.results.map((row) => `${row.id}:${row.n}:${row.build}`)).size).toBe(54);
+  expect(r.results).toHaveLength(60);
+  expect(new Set(r.results.map((row) => `${row.id}:${row.n}:${row.build}`)).size).toBe(60);
   expect(reportGroups(r, 16384, 'wall').map((g) => [g.section, g.items.length])).toEqual([
     ['applications', 5],
-    ['data', 11],
+    ['data', 14],
     ['compute', 6],
     ['execution', 5],
   ]);
@@ -509,7 +571,7 @@ test('application references cover cold fields, insertion order and output corru
 test('paired ratios require a complete same-adapter run and expose sample spread', () => {
   const r = pairedRecord();
   const pairs = pairedResults(r);
-  expect(pairs).toHaveLength(27);
+  expect(pairs).toHaveLength(30);
   expect(pairs[0]!.wallRatio).toBe(2);
   expect(pairs[0]!.bufferRatio).toBe(2);
   expect(pairs[0]!.baselineWallP90).toBe(4);

@@ -20,7 +20,7 @@ export function renderReport(
   size.value = String(sizes.includes(chosen) ? chosen : sizes.at(-1));
   const metric = get<HTMLSelectElement>('metric').value as ReportMetric;
   const format = (value: number) =>
-    metric === 'buffers'
+    metric === 'buffers' || metric === 'upload'
       ? value >= 1048576
         ? `${(value / 1048576).toFixed(2)} MiB`
         : `${(value / 1024).toFixed(2)} KiB`
@@ -32,7 +32,7 @@ export function renderReport(
   const counts = (state: string) => items.filter((i) => i.state === state).length;
   get('verdict').textContent = copy.verdict
     .replace('{passed}', String(record.results.filter((r) => r.status === 'passed').length))
-    .replace('{total}', String(regressionRows(PROFILES[record.profile].sizes)));
+    .replace('{total}', String(regressionRows(PROFILES[record.profile].sizes, record.digest)));
   get('summary').textContent = items.some((i) => i.change !== null)
     ? copy.summary
         .replace('{lower}', String(counts('lower')))
