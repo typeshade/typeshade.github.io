@@ -48,6 +48,10 @@ interface Props {
    *  declare fails the build. */
   controls?: ControlProps;
   aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2' | '1/1';
+  /** Limit the result's visual size and place its controls directly below it. */
+  compact?: boolean;
+  /** Numeric plot bounds, shown on the result. */
+  plot?: { x: readonly [number, number]; y: readonly [number, number] };
   /** `figure` is the column a guide page shows: code, then canvas, then controls. `hero` is
    *  the front page's showcase card: a head bar with the file name and the two buttons, the
    *  code pane beside the canvas, then the controls and the caption, with no emitted-output
@@ -55,12 +59,16 @@ interface Props {
   variant?: 'figure' | 'hero';
 }
 
-const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1', variant = 'figure' } = Astro.props;
+const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1', compact = false, plot, variant = 'figure' } = Astro.props;
 const hero = variant === 'hero';
 const t = copyFor(locale);
 const l = t.live;
 const payload = liveShader(id, title, code, controls);
-const aria: StateStrings = t.canvas.aria(title);
+const graphLabel = t.docs.reference.demo.aria(title);
+const aria: StateStrings = plot ? {
+  webgpu: graphLabel, webgl2: graphLabel, none: graphLabel,
+  'still-webgpu': graphLabel, 'still-webgl2': graphLabel,
+} : t.canvas.aria(title);
 
 /** The caption, with what drew the frame appended. One line, the way the hero's is. */
 const captionFor = (backend: string): string => `${caption} ${backend}`;
@@ -95,7 +103,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
 ---
 
 <figure
-  class:list={['figure', 'live', hero ? 'live-hero' : undefined]}
+  class:list={['figure', 'live', hero ? 'live-hero' : undefined, compact && !hero ? 'live-compact' : undefined]}
   data-live-shader
   data-live-id={id}
   data-aspect={aspect}
@@ -143,11 +151,10 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
     </div>
   ) : (
     <Fragment>
-      <div class="live-parts">
+      {!compact && <div class="live-parts">
         <div class="live-code" data-live-code>
           <Code code={payload.source} lang="ts" title={file ?? l.file} locale={locale} />
         </div>
-
         <div class="live-bar">
           <button type="button" data-live-edit aria-label={`${l.edit} ${file ?? l.file}`}>{l.edit}</button>
           <button type="button" data-live-reset aria-label={`${l.reset} ${file ?? l.file}`}>{l.reset}</button>
@@ -155,20 +162,30 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
               calls log and what the compiler emits for it. */}
           <a data-live-playground href={localePath(locale, links.playground.href)} aria-label={`${l.playground} ${file ?? l.file}`}>{l.playground}</a>
         </div>
-      </div>
+      </div>}
 
       <div class="figure-frame live-frame" style={`aspect-ratio: ${aspect}`}>
         <img src={`/stills/${id}.webp`} alt={aria.none} loading="lazy" decoding="async" />
         <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
+        {plot && (
+          <div class="live-axes">
+            <span class="live-y-max"><code>y</code> = {plot.y[1]}</span>
+            <span class="live-y-min"><code>y</code> = {plot.y[0]}</span>
+            <span class="live-x-min"><code>x</code> = {plot.x[0]}</span>
+            <span class="live-x-max"><code>x</code> = {plot.x[1]}</span>
+          </div>
+        )}
       </div>
+      {compact && <div class="live-controls" data-live-controls hidden></div>}
+      {compact && <div class="live-bar live-reset"><button type="button" data-live-reset aria-label={`${l.reset} ${file ?? l.file}`}>{l.reset}</button></div>}
       <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
 
       {anchor && <p class="live-anchor"><Rich text={anchor} locale={locale} /></p>}
 
       <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
 
-      <div class="live-controls" data-live-controls hidden></div>
-      {payload.reserved.length > 0 && (
+      {!compact && <div class="live-controls" data-live-controls hidden></div>}
+      {!compact && payload.reserved.length > 0 && (
         <p class="live-reserved">
           <Rich text={reservedNote} locale={locale} />
           {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
@@ -177,9 +194,28 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
 
       {exercises.length > 0 && (
         <div class="live-exercises">
-          <p>{l.exercisesP}</p>
+          <p>{plot ? t.docs.reference.demo.exercises : l.exercisesP}</p>
           <ul>{exercises.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
         </div>
+      )}
+
+      {compact && (
+        <details class="live-parts">
+          <summary>{l.source}</summary>
+          <div class="live-bar">
+            <button type="button" data-live-edit aria-label={`${l.editCode} ${file ?? l.file}`}>{l.editCode}</button>
+            <a data-live-playground href={localePath(locale, links.playground.href)} aria-label={`${l.playground} ${file ?? l.file}`}>{l.playground}</a>
+          </div>
+          <div class="live-code" data-live-code>
+            <Code code={payload.source} lang="ts" title={file ?? l.file} locale={locale} />
+          </div>
+          {payload.reserved.length > 0 && (
+            <p class="live-reserved">
+              <Rich text={reservedNote} locale={locale} />
+              {payload.reserved.includes('mouse') && <Fragment> <Rich text={l.mouseUnits} locale={locale} /></Fragment>}
+            </p>
+          )}
+        </details>
       )}
 
       <details class="live-output" data-pagefind-ignore>
@@ -217,7 +253,17 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
      nothing but what the block's own parts need. */
   .live-code { position: relative }
   /* The figure's parts outside the hero: no box of their own, the figure's column is the box. */
-  .live-parts { display: contents }
+  .live-parts:not(details) { display: contents }
+  details.live-parts { border-block-start: 1px solid var(--color-line-1); padding-block-start: 10px }
+  details.live-parts summary { cursor: pointer; color: var(--color-text-2); font-size: var(--text-meta) }
+  details.live-parts .live-code { margin-block-start: 12px }
+  details.live-parts .live-bar { margin-block-start: 12px }
+  .live-axes { position: absolute; inset: 0; pointer-events: none; font: 400 var(--text-meta)/1.4 var(--font-mono) }
+  .live-axes span { position: absolute; padding: 1px 4px; border-radius: var(--radius-sm); background: var(--color-ground); color: var(--color-text-2) }
+  .live-y-max { inset-block-start: 6px; inset-inline-start: 6px }
+  .live-y-min { inset-block-end: 28px; inset-inline-start: 6px }
+  .live-x-min { inset-block-end: 6px; inset-inline-start: 6px }
+  .live-x-max { inset-block-end: 6px; inset-inline-end: 6px }
   /* Edit and Reset: Ant's small default button, one rule for the hero card and the figure
      column alike, so the two places cannot drift apart. */
   .live-bar { display: flex; align-items: center; gap: 8px }
@@ -234,6 +280,16 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   /* The canvas takes the pointer, which the reserved `mouse` field is filled from. Every
      other figure on the site is a picture and lets the pointer through. */
   .live-frame > canvas { pointer-events: auto }
+  /* A compact result leaves room around the picture and keeps its controls within reach.
+     The frame retains its aspect ratio, including when it shows the fallback image. */
+  .live-compact .live-frame, .live-compact .live-controls, .live-compact .live-reset {
+    inline-size: 90%; max-inline-size: 32rem; align-self: center;
+  }
+  .live-compact[data-aspect='1/1'] .live-frame,
+  .live-compact[data-aspect='1/1'] .live-controls,
+  .live-compact[data-aspect='1/1'] .live-reset { max-inline-size: 22rem }
+  .live-compact .live-reset { justify-content: flex-end }
+  .live-compact .live-controls :global(.live-control) { grid-template-columns: minmax(0, 1fr) }
   .live-diagnostics:empty { display: none }
   .live-reserved { margin: 0; color: var(--color-text-2); font-size: var(--text-meta) }
   .live-output { margin-block-start: 6px; border-block-start: 1px solid var(--color-line-1); padding-block-start: 10px }

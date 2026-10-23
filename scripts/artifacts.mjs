@@ -4,6 +4,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { FUNCTION_DEMOS } from '../src/lib/function-demo-catalog.mjs';
 
 /** One still per mount, with the page it is captured from. A mount forced onto WebGL2 gets
  * its own file, so the image under it is a frame that backend drew. An entry with `live`
@@ -153,6 +154,11 @@ export const STILLS = [
   { id: 'reference-pow-curve', live: true, page: '/reference/functions/pow/' },
   { id: 'reference-pow-negative', live: true, page: '/reference/functions/pow/' },
   { id: 'reference-pow-specular', live: true, page: '/reference/functions/pow/' },
+  ...FUNCTION_DEMOS.map(({ name }) => ({
+    id: `reference-function-${name}`,
+    live: true,
+    page: `/reference/functions/${name}/`,
+  })),
   // One tile per example the runtime can draw, photographed on the build-only /capture-stills/
   // page. The examples gallery and the front page show them as pictures.
   ...SHADE_STILL_EXAMPLES.map((id) => ({ id, example: id, page: '/capture-stills/' })),

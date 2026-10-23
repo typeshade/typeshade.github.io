@@ -1,3 +1,5 @@
+import { conceptLessons, conceptLessonLabels } from './concept-lessons-en.ts';
+import { precisionGuide, fractionLabel } from './precision-guide-en.ts';
 // English copy: the source text every translation follows. Every number comes from the
 // build (src/lib/examples.ts). Inline links are written as [text](key), where key names a
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
@@ -10,6 +12,8 @@ import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import type { LinkKey } from '../lib/links.ts';
 import { typedError } from '../lib/typed-error.ts';
 import { mnistEpochs, mnistTestSamples } from '../lib/mnist-settings.ts';
+import { operationLessons, constructorLesson } from './operation-lessons-en.ts';
+import { functionLessons } from './function-lessons-en.ts';
 
 const glsl = facts.glslTarget;
 const err = typedError();
@@ -128,6 +132,12 @@ export const en = {
     changelog: 'Changelog',
   },
   docs: {
+    navigation: {
+      location: 'Current location',
+      related: 'Related functions',
+      browse: 'All documentation',
+      overview: 'Overview',
+    },
     labels: {
       nav: {
         use: 'Use TypeShade',
@@ -153,6 +163,7 @@ export const en = {
         project: 'Project',
       },
       conceptPages: {
+        glslPrecision: 'GLSL precision',
         cpuAndGpu: 'CPU and GPU',
         pipeline: 'The shader pipeline',
         webgpuAndWebgl2: 'WebGPU and WebGL2',
@@ -326,6 +337,95 @@ export const en = {
     // sentence under every name are the compiler's, in English on every locale, the way the
     // API reference already carries its JSDoc.
     reference: {
+      discovery: {
+        title: (name: string, related: string[], dualTarget: boolean) => {
+          const shown = related.length ? `${name} / ${related[0]}` : name;
+          const suffixes = dualTarget
+            ? [
+                ': WGSL and GLSL examples, uses and input limits',
+                ': WGSL and GLSL function guide',
+                ': shader function examples and input limits',
+                ': shader function guide',
+              ]
+            : [
+                ': shader function examples, uses and input limits',
+                ': shader function examples and input limits',
+                ': shader function guide',
+              ];
+          suffixes.push(
+            ': GPU shader function reference and examples',
+            ': GPU shader function examples',
+            ': shader function reference',
+          );
+          return [shown, name]
+            .flatMap((label) => suffixes.map((suffix) => label + suffix))
+            .find((title) => title.length >= 45 && title.length <= 60);
+        },
+        label: 'Related names in other languages',
+        canonical: 'Explanation and examples',
+        note: 'These related operations can differ in arguments, support, and semantics. The foreign names are not accepted TypeShade aliases. Check the target forms and restrictions.',
+      },
+      worked: {
+        lessons: operationLessons,
+        constructor: constructorLesson,
+        heading: 'Compare examples',
+        modelNote:
+          'The examples are calculation models and do not run GPU work. The reference below gives the complete call signatures.',
+        example: (index: number) => `Example ${index}`,
+        setup: 'Model assumptions',
+        input: 'Model input',
+        output: 'Result',
+        returned: 'Returned value',
+        before: 'Stored value before',
+        after: 'Stored value after',
+        binary: 'Word in binary',
+        diagram: 'Components in this example',
+        textureDiagram:
+          'Texel grid. The upper row has the higher vertical texture coordinate. Values describe one channel; comparison grids show pass or fail.',
+        matrixDiagram: 'Matrix displayed by rows. Constructor arguments run down each column.',
+        derivativeDiagram:
+          'Field values at neighbouring pixels. The lower row adds a vertical pixel step.',
+        calculationNote:
+          'Decimal results are rounded for display. The stated assumptions determine each example; actual shader results follow the target precision and execution rules.',
+      },
+      demo: {
+        heading: 'Explore the function',
+        exercises: 'Explore the result:',
+        useHeading: 'When to use it',
+        cautionHeading: 'Inputs and limits',
+        probe: 'Input x',
+        parameter: 'Parameter k',
+        angleInput: 'Angle x (radians)',
+        degreeInput: 'Angle x (degrees)',
+        related: 'Related functions',
+        calculation: 'Example calculation',
+        calculationNote:
+          'The reference result is rounded for readability. Shader output follows the precision rules of its target.',
+        parameters: {
+          mod: 'Divisor k',
+          min: 'Other input k',
+          max: 'Other input k',
+          step: 'Edge k',
+          clamp: 'Bound magnitude k',
+          mix: 'End value k',
+          smoothstep: 'Upper edge k',
+          fma: 'Multiplier k',
+          ldexp: 'Binary exponent k',
+          hypot: 'Vertical component k',
+          length: 'Vertical component k',
+          distance: 'Other point height k',
+          dot: 'Horizontal weight k',
+        },
+        condition: 'Conditions in this example',
+        aria: (name: string) =>
+          `${name} graph. A curve shows the output and a highlighted point follows the selected input.`,
+        caption: 'The blue curve shows the output. The orange point marks the selected input.',
+        window:
+          'The axis labels show the displayed range. Values outside this window are not drawn.',
+        sources:
+          'For shader input rules and precision, consult [WGSL](specWgsl) and [GLSL ES 3.00](specGlslEs).',
+        lessons: functionLessons,
+      },
       title: 'TypeShade language reference for shader authors',
       description: `Every name a \`"use typeshade"\` file can write, ${facts.languageEntries} of them: types, attributes, builtin values, functions, constants and \`Math\` members.`,
       h1: 'Language reference',
@@ -1165,6 +1265,8 @@ export const en = {
   /** The chrome around a live example (src/components/LiveShader.astro). The sample's own
    *  code is not copy: it stays on the page that shows it, and so does its file name. */
   live: {
+    editCode: 'Edit code',
+    source: 'Full shader source',
     file: 'live.shade.ts',
     edit: 'Edit',
     reset: 'Reset',
@@ -1729,6 +1831,10 @@ export const en = {
   /** The bridge page at /guide/typescript-and-webgpu/. Rendered by
    *  src/components/pages/ConceptsPage.astro; the shader sample is not copy, so it stays there. */
   concepts: {
+    lessons: conceptLessons,
+    lessonLabels: conceptLessonLabels,
+    glslPrecision: precisionGuide,
+    precisionFractionLabel: fractionLabel,
     title: 'TypeScript and WebGPU: write GPU shaders in TypeScript',
     description: `Write WebGPU shaders in TypeScript. A "use typeshade" file compiles to WGSL and ${glsl}, and this page maps types, functions and modules to the GPU.`,
     h1: 'WebGPU shaders in TypeScript',
@@ -1788,40 +1894,40 @@ export const en = {
      *  developer knows to what a shader needs. Each is a component in src/components/pages
      *  and a one-line route file in src/pages/guide/concepts/. */
     cpuAndGpu: {
-      title: 'CPU and GPU execution: why shaders have no heap or recursion',
+      title: 'CPU and GPU execution: memory, calls and shader limits',
       description:
-        'What the GPU hands one invocation, why a shader has no heap, no strings and no recursion, and which TypeShade rule follows from each of those facts.',
+        'Compare CPU and GPU execution, shader invocations, shared resources, calls and loops. Separate language restrictions from hardware scheduling and compiler choices.',
       h1: 'CPU and GPU',
-      lead: 'A TypeShade file is TypeScript to your editor and a GPU program to the compiler. The restrictions the language guide states are not house style. Each one follows from something the hardware does, so this page gives the fact first and the rule after it.',
+      lead: 'CPU code prepares work and resources for the GPU. Shader languages define how invocations use those resources. Their restrictions come from language rules, API contracts, and compiler choices as well as hardware.',
       invocationH: 'Invocations',
       invocationP:
-        'A TypeScript function runs once when you call it. An entry point is called by the GPU instead, once for every vertex in a draw, once for every fragment a primitive covers, and once for every work item in a dispatch. Those runs happen beside each other and cannot read each other. Nothing outside the function tells one of them which one it is.',
+        'Each invocation processes a vertex, fragment, or compute work item. Invocations can communicate through shared resources under the language memory and synchronization rules. Their execution order is not implied.',
       invocationRule:
         'What follows: a stage decorator says which of the three is calling, and a `@builtin(...)` parameter is how an invocation learns its own place in the work. [Shader stages](languageStages) states the decorators and [Functions](languageFunctions) states the parameters.',
       memoryH: 'Memory',
       memoryP:
-        'An invocation works in registers and in the buffers and textures the host bound before the draw. There is no heap under it, so a shader has nothing to allocate from, no array that can grow and no string to build. A class in a TypeShade file describes the bytes of a GPU struct, and the host writes those bytes.',
+        "A shader uses typed local values and resources bound by the host. WGSL and GLSL ES do not expose JavaScript's general object heap. TypeShade classes describe GPU structs whose bytes the host supplies.",
       memoryRule:
-        "What follows: `new` builds a value and not an object with identity, the order of a class's fields is the layout of the bytes the host writes, and every resource arrives through `declare`. [Types](languageTypes) states the struct surface and [Resources](languageResources) states the declarations.",
+        "What follows: `new` builds a value and not an object with identity, the order of a class's fields is the layout of the bytes the host writes, and resources use explicit bindings, including `declare` declarations. [Types](languageTypes) states the struct surface and [Resources](languageResources) states the declarations.",
       callsH: 'Calls',
       callsP:
-        'A shader has no call stack to return through, and the call graph is flattened before a driver sees it. A function that calls itself, directly or through another function, leaves the compiler with nothing to flatten.',
+        'WGSL and GLSL ES disallow recursive call graphs. A compiler may inline helpers or emit supported calls. Hardware stack details do not define this language restriction.',
       callsRule:
         'What follows: recursion is rejected, and a helper is an ordinary function the compiler can follow to its leaves. [Functions](languageFunctions) states what a call may be.',
       loopsH: 'Loops',
       loopsP:
-        'The invocations of a stage move through a loop together, and the ones that leave early wait for the rest. A counted loop compares its counter to a bound the body does not write and steps toward it, which is what the compiler checks; the bound itself may be a value the program learns at run time.',
+        'Invocations can follow different paths and iteration counts. Divergence may affect throughput. A loop does not synchronize an entire stage; communication needs the synchronization rules of its execution and memory scope.',
       loopsRule:
         'What follows: a `for` counts toward a bound its body does not move, and a `while` ends where its condition or a `break` says. [Control flow](languageControlFlow) states which conditions and loops compile.',
       typesH: 'Value types',
       typesP:
-        'A GPU register has a width and a layout, fixed when the shader is compiled. A variable therefore holds one value type from its declaration to the end of its scope, with no union of two value types and nothing at run time that could choose between them.',
+        'Shader variables have statically defined value types and representations. The compiler decides whether a value occupies registers or memory. A source type does not specify the hardware register allocation.',
       typesRule:
-        'What follows: every value carries a written GPU type such as `f32`, `u32` or `vec4`. [Types](languageTypes) states the type surface and [GPU types](languageGpuTypes) states the values.',
-      tableH: 'Facts and rules',
+        'What follows: each shader value has a statically known GPU type such as `f32`, `u32` or `vec4`. [Types](languageTypes) states the type surface and [GPU types](languageGpuTypes) states the values.',
+      tableH: 'Execution and language rules',
       tableP:
-        'The facts above with the rule each produces, and the page of the language guide that states it.',
-      tableColumns: ['What the GPU does', 'What TypeShade asks for', 'Stated in'],
+        'These execution properties and language restrictions inform the TypeShade rules linked below.',
+      tableColumns: ['Execution or language constraint', 'What TypeShade asks for', 'Stated in'],
       tableRows: [
         [
           'Calls an entry point once per vertex, fragment or work item',
@@ -1829,23 +1935,23 @@ export const en = {
           '[Shader stages](languageStages)',
         ],
         [
-          'Gives an invocation registers and bound resources, with no heap under them',
-          'No growing array and no string; `new` builds a value, a class is a layout and a resource is a `declare`',
+          'Uses typed values and bound resources without a JavaScript object heap',
+          'No growing array or string; `new` builds a value, structs describe layout, and resources use explicit bindings',
           '[Resources](languageResources)',
         ],
         [
-          'Runs without a call stack',
-          'A call graph the compiler can flatten, so no recursion',
+          'Disallows recursive call graphs in WGSL and GLSL ES',
+          'A nonrecursive call graph',
           '[Functions](languageFunctions)',
         ],
         [
-          'Moves the invocations of a stage through a loop together',
+          'Permits different invocation paths and iteration counts',
           'A loop bound the compiler can read',
           '[Control flow](languageControlFlow)',
         ],
         [
-          'Holds a value of one width in a register',
-          'One value type per variable, written out',
+          'Defines static value types independently of register allocation',
+          'A statically known value type per variable',
           '[GPU types](languageGpuTypes)',
         ],
       ],

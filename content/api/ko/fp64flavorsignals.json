@@ -2,10 +2,10 @@
   "slug": "fp64flavorsignals",
   "source": "e4de41c909ea5532f4fe0e58acb6e8cae67f1032ab73103cf0155bf829366871",
   "texts": {
-    "summary": "recommendFp64Flavor와 isAppleGpu가 읽어 장치에 필요한 df64 종류를 고르는 장치 식별 신호입니다. Metal이 그 아래에서 돌아가는 Apple GPU에서는 'integer'를, 그 밖의 모든 장치에서는 'float'를 고릅니다.",
-    "description": "라이브러리는 GPU를 직접 볼 수 없습니다. 그래서 호출자가 가진 정보를 모아 여기에 넘겨야 합니다. WebGPU 어댑터의 `info`, WebGL2의 `UNMASKED_RENDERER_WEBGL` 문자열, `navigator.userAgent`가 그 예입니다. 모든 필드는 선택 사항입니다. Apple을 가리키는 신호는 하나만 있어도 `'integer'`를 고르기에 충분합니다. 신호를 하나도 넘기지 않으면 `'float'`를 고릅니다. 그러면 신호를 모으지 않은 Apple 장치는 잘못된 종류를 조용히 받습니다. df64는 그래도 컴파일되고 실행됩니다. 하지만 셰이더 컴파일러가 float 종류가 기대는 오차 항의 결합 순서를 바꾸면, 확장 정밀도가 일반 f32 수준으로 무너집니다.",
-    "members.adapterInfo": "`GPUAdapter.info`(또는 {vendor, architecture} 모양을 가진 임의의 객체)입니다. Apple은 vendor를 'apple'로 보고합니다(architecture는 'apple' 또는 'metal-3' 같은 값입니다).",
-    "members.rendererString": "WebGL의 `UNMASKED_RENDERER_WEBGL`(또는 RENDERER) 문자열입니다. Apple 장치의 문자열은 'ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Unspecified Version)' 또는 'Apple GPU'와 같은 모양입니다.",
-    "members.userAgent": "`navigator.userAgent`입니다. GPU 문자열이 가려져 있을 때 쓰는 대체 값입니다(iOS Safari는 항상 그 아래에서 Metal을 씁니다)."
+    "summary": "recommendFp64Flavor와 isAppleGpu가 읽어 장치에 필요한 df64 종류를 고르는 장치 식별 신호이다. Metal을 사용하는 Apple GPU에서는 'integer'를, 그 밖의 모든 장치에서는 'float'를 고른다.",
+    "description": "라이브러리는 GPU 정보를 직접 조회하지 않는다. 그래서 호출자가 가진 정보를 모아 여기에 넘겨야 한다. WebGPU 어댑터의 `info`, WebGL2의 `UNMASKED_RENDERER_WEBGL` 문자열, `navigator.userAgent`가 그 예이다. 모든 필드는 선택 사항이다. Apple을 가리키는 신호는 하나만 있어도 `'integer'`를 고르기에 충분하다. 신호를 하나도 넘기지 않으면 `'float'`를 고른다. 그러면 신호를 모으지 않은 Apple 장치는 오류 없이 적절하지 않은 구현 방식을 선택하게 된다. 이 경우에도 df64의 컴파일과 실행은 가능하다. 하지만 셰이더 컴파일러가 float 종류가 기대는 오차 항의 결합 순서를 바꾸면, 확장 정밀도가 일반 f32 수준으로 무너진다.",
+    "members.adapterInfo": "`GPUAdapter.info`(또는 {vendor, architecture} 모양을 가진 임의의 객체)이다. Apple은 vendor를 'apple'로 보고한다(architecture는 'apple' 또는 'metal-3' 같은 값이다).",
+    "members.rendererString": "WebGL의 `UNMASKED_RENDERER_WEBGL`(또는 RENDERER) 문자열이다. Apple 장치의 문자열은 'ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Unspecified Version)' 또는 'Apple GPU'와 같은 모양이다.",
+    "members.userAgent": "`navigator.userAgent`이다. GPU 문자열이 가려져 있을 때 쓰는 대체 값이다(iOS Safari는 항상 그 아래에서 Metal을 쓴다)."
   }
 }

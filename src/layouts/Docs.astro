@@ -7,6 +7,7 @@
 // stay out of it.
 import { getCollection } from 'astro:content';
 import Base from './Base.astro';
+import DocsNavigation from '../components/DocsNavigation.astro';
 import { links, sidebar, type Destination } from '../lib/links.ts';
 import { copyFor, guideSection, localePath, type Locale } from '../i18n/index.ts';
 import { githubNewIssue, ISSUE_REPOS } from '../lib/issue-data.ts';
@@ -81,12 +82,7 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2;
   <details class="docs-local" data-pagefind-ignore>
     <summary>{current ?? title}</summary>
     <nav aria-label={title}>
-      {groups.map((g) => (
-        <div class="docs-group">
-          <p class="docs-group-title">{g.title}</p>
-          <ul>{g.items.map((i) => <li class:list={[i.depth ? `depth-${i.depth}` : undefined, i.code ? 'code' : undefined]}><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
-        </div>
-      ))}
+      <DocsNavigation locale={locale} path={path} here={here} label={current ?? title} groups={groups} breadcrumbs={breadcrumbs} />
     </nav>
   </details>
   {outline.length > 0 && (
@@ -100,12 +96,7 @@ const top = outline.length > 0 ? Math.min(...outline.map((h) => h.depth)) : 2;
   <div class={outline.length > 0 ? 'docs' : 'docs docs-wide'}>
     <aside class="docs-sidebar" data-pagefind-ignore>
       <nav class="docs-sidebar-in" aria-label={title}>
-        {groups.map((g) => (
-          <div class="docs-group">
-            <p class="docs-group-title">{g.title}</p>
-            <ul>{g.items.map((i) => <li class:list={[i.depth ? `depth-${i.depth}` : undefined, i.code ? 'code' : undefined]}><a href={i.href} aria-current={i.href === here ? 'page' : undefined}>{i.label}</a></li>)}</ul>
-          </div>
-        ))}
+        <DocsNavigation locale={locale} path={path} here={here} label={current ?? title} groups={groups} breadcrumbs={breadcrumbs} />
       </nav>
     </aside>
     <article class="doc docs-content" lang={bodyLang} data-pagefind-body={noindex ? undefined : true} data-pagefind-meta={meta} data-permalink={d.permalink}>

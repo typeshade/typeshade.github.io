@@ -139,6 +139,7 @@ function setUp(root: HTMLElement): void {
   const block = pre;
   const codeEl = code;
   const rows = panel;
+  const plotted = root.querySelector('.live-axes') !== null;
 
   let payload: LivePayload;
   let copy: LiveCopy;
@@ -236,11 +237,15 @@ function setUp(root: HTMLElement): void {
     const row = el('div', 'live-control');
     row.dataset.field = control.field;
     const head = el('div', 'live-control-head');
-    head.append(el('code', undefined, control.field));
+    if (!plotted || !control.label) head.append(el('code', undefined, control.field));
     if (control.label) head.append(el('span', 'live-control-label', control.label));
     row.append(head);
 
-    const label = control.label ? `${control.field}, ${control.label}` : control.field;
+    const label = control.label
+      ? plotted
+        ? control.label
+        : `${control.field}, ${control.label}`
+      : control.field;
     const inputs = el('div', 'live-control-inputs');
     // The value reads beside the handle that sets it, which also keeps the name and the
     // label on one line in the column beside it.
@@ -515,6 +520,8 @@ function setUp(root: HTMLElement): void {
   /** The editor arrives when the reader reaches for the code, so a page that is only read
    *  carries no textarea and no listeners. */
   function openEditor(index?: number): void {
+    const disclosure = wrapper.closest('details');
+    if (disclosure) disclosure.open = true;
     if (editor) {
       editor.focus(index);
       return;

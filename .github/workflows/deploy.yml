@@ -175,6 +175,15 @@ jobs:
       # recompiles and a moved control reaches the frame. See scripts/check-live.mjs.
       - run: bun run check:live
         if: matrix.part == 2
+      - run: bun run check:function-demos
+        if: matrix.part == 2
+        timeout-minutes: 15
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.part == 2
+        with:
+          name: function-demo-evidence
+          path: shots/function-demos
+          retention-days: 3
       - run: bun run check:benchmarks
         if: matrix.part == 3
         timeout-minutes: 10
@@ -188,6 +197,37 @@ jobs:
       - run: bun run check:mnist
         if: matrix.part == 1
         timeout-minutes: 15
+      - run: bun run check:standalone-learning
+        if: matrix.part == 4
+        timeout-minutes: 10
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.part == 4
+        with:
+          name: standalone-learning-evidence
+          path: shots/standalone-learning
+          retention-days: 3
+      - run: bun run check:glsl-precision
+        if: matrix.part == 4
+        timeout-minutes: 10
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.part == 4
+        with:
+          name: glsl-precision-evidence
+          path: shots/glsl-precision
+          retention-days: 3
+      - run: bun run check:docs-navigation
+        if: matrix.part == 4
+      - run: bun run check:operation-models
+        if: matrix.part == 4
+      - run: bun run check:operation-lessons
+        if: matrix.part == 4
+        timeout-minutes: 15
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.part == 4
+        with:
+          name: operation-lesson-evidence
+          path: shots/operation-lessons
+          retention-days: 3
       # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
       - run: bun run qa:links
         if: matrix.part == 4

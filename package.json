@@ -31,10 +31,16 @@
     "qa:openseo": "bun scripts/openseo-audit.mts dist",
     "check:playground": "node scripts/check-playground.mjs",
     "check:live": "node scripts/check-live.mjs",
+    "check:function-demos": "node scripts/check-function-demos.mjs",
     "check:mnist": "node scripts/check-mnist-browser.mjs",
     "check:benchmarks": "node scripts/check-benchmarks.mjs",
     "check:benchmark-catalog": "bun scripts/benchmark-catalog.ts --check",
-    "check:regression-catalog": "bun scripts/regression-catalog.ts --check"
+    "check:regression-catalog": "bun scripts/regression-catalog.ts --check",
+    "check:operation-lessons": "bun scripts/check-operation-lessons.ts",
+    "check:operation-models": "bun scripts/check-operation-models.ts",
+    "check:docs-navigation": "bun scripts/check-docs-navigation.ts",
+    "check:glsl-precision": "bun scripts/check-glsl-precision.ts",
+    "check:standalone-learning": "bun scripts/check-standalone-learning.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

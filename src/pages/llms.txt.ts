@@ -190,6 +190,10 @@ const table = [
     note: `the same source emitted as WGSL and as ${facts.glslTarget}, with the differences between the targets`,
   },
   {
+    dest: links.conceptsGlslPrecision,
+    note: 'precision highp float explained, shader defaults, illustrative rounding and browser capability inspection without a TypeShade prerequisite',
+  },
+  {
     dest: links.examples,
     note: `the ${facts.shadeExamples} examples, one page each with the shader running and the text it emits, the GLSL emit and the emulated-double demo`,
   },

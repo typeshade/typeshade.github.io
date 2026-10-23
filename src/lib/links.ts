@@ -43,6 +43,7 @@ export const links = {
   conceptsCpuGpu: { label: 'CPU and GPU', href: '/guide/concepts/cpu-and-gpu/' },
   conceptsPipeline: { label: 'The shader pipeline', href: '/guide/concepts/the-pipeline/' },
   conceptsWebgpu: { label: 'WebGPU and WebGL2', href: '/guide/concepts/webgpu-and-webgl2/' },
+  conceptsGlslPrecision: { label: 'GLSL precision', href: '/guide/concepts/glsl-precision/' },
   conceptsWgsl: { label: 'WGSL and GLSL', href: '/guide/concepts/wgsl-and-glsl/' },
   guide: { label: 'Language guide', href: '/guide/language/' },
   languageStringKeys: {
@@ -248,6 +249,18 @@ export const links = {
     href: 'https://www.w3.org/TR/WGSL/#enable-extensions-sec',
   },
   specWgslIntro: { label: 'WGSL introduction', href: 'https://www.w3.org/TR/WGSL/#intro' },
+  specGlslEs100: {
+    label: 'GLSL ES 1.00 specification',
+    href: 'https://registry.khronos.org/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf',
+  },
+  mdnGlslPrecision: {
+    label: 'MDN GLSL precision guidance',
+    href: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices#be_precise_with_glsl_precision_annotations',
+  },
+  mdnShaderPrecision: {
+    label: 'MDN getShaderPrecisionFormat',
+    href: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getShaderPrecisionFormat',
+  },
   specGlslEs: {
     label: `${facts.glslTarget} specification`,
     href: 'https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf',
@@ -367,6 +380,10 @@ export function editCopy(locale: Locale, key?: string): string {
   const at = key === undefined ? '' : `#L${dictionaryLine(locale, key)}`;
   return `${siteRepo}/blob/main/src/i18n/${locale}.ts${at}`;
 }
+export function editPrecisionGuide(locale: Locale): string {
+  return `${siteRepo}/blob/main/src/i18n/precision-guide-${locale}.ts`;
+}
+
 export function editGuide(sourceLine: number): string {
   return `${links.guideSource.href}#L${sourceLine}`;
 }
@@ -411,6 +428,7 @@ export function docsPages(locale: Locale): readonly Destination[] {
     docsPage(locale, 'conceptsPipeline'),
     docsPage(locale, 'conceptsWebgpu'),
     docsPage(locale, 'conceptsWgsl'),
+    docsPage(locale, 'conceptsGlslPrecision'),
     docsPage(locale, 'examples'),
     docsPage(locale, 'mnist'),
     docsPage(locale, 'reference'),
@@ -436,6 +454,7 @@ type DocsPageKey =
   | 'conceptsPipeline'
   | 'conceptsWebgpu'
   | 'conceptsWgsl'
+  | 'conceptsGlslPrecision'
   | 'examples'
   | 'mnist'
   | 'reference'
@@ -462,6 +481,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
     conceptsPipeline: d.labels.conceptPages.pipeline,
     conceptsWebgpu: d.labels.conceptPages.webgpuAndWebgl2,
     conceptsWgsl: d.labels.conceptPages.wgslAndGlsl,
+    conceptsGlslPrecision: d.labels.conceptPages.glslPrecision,
     examples: d.examples,
     mnist: copyFor(locale).mnist.title,
     reference: d.labels.languageReference,
@@ -607,13 +627,14 @@ export function sidebar(
     reference.push({
       label: apiCategoryCopy(locale, category.slug).name,
       href: localePath(locale, `/api/${category.slug}/`),
+      depth: 1,
     });
     if (category.slug !== openCategory) continue;
     for (const m of members)
       reference.push({
         label: m.name,
         href: localePath(locale, `/api/${m.slug}/`),
-        depth: 1,
+        depth: 2,
         code: true,
       });
   }
@@ -635,6 +656,7 @@ export function sidebar(
         page('conceptsPipeline'),
         page('conceptsWebgpu'),
         page('conceptsWgsl'),
+        page('conceptsGlslPrecision'),
       ],
     },
     { title: labels.examples, items: [page('examples'), page('mnist')] },

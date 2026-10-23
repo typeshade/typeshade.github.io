@@ -62,5 +62,6 @@ const previous = overview ? { label: t.docs.api.h1, href: localePath(locale, lin
 >
   <p class="guide-note" lang={locale} data-pagefind-ignore><Rich text={note} locale={locale} /></p>
   {!overview && <h1>{title}</h1>}
+  {section === 'glsl-float-precision' && <aside class="guide-note" lang={locale}><p><strong>{t.concepts.glslPrecision.correctionH}</strong></p><p><Rich text={t.concepts.glslPrecision.correction} locale={locale} /></p></aside>}
   {localized === null ? <Content /> : <Fragment set:html={localized} />}
 </Docs>

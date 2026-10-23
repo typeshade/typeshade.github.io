@@ -1020,6 +1020,7 @@ export type ViewChunk =
       readonly code: string;
       readonly file?: string;
       readonly aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2' | '1/1';
+      readonly plot?: { x: readonly [number, number]; y: readonly [number, number] };
       readonly controls: ControlProps;
     };
 
@@ -1096,6 +1097,7 @@ export function noteView(
         code: live.code,
         file: live.file,
         aspect: live.aspect,
+        plot: live.plot,
         controls,
       };
     });
