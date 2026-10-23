@@ -2743,60 +2743,60 @@ export const ko: Copy = {
     overview: {
       title: 'TypeShade 언어 가이드',
       description:
-        'TypeShade 문법과 GPU 실행 규칙을 예제로 설명하는 가이드이다. 타입, 리소스, 함수, 셰이더 스테이지가 컴파일 결과에 미치는 영향도 함께 다룬다.',
+        'TypeShade 문법과 GPU 실행 규칙을 예제로 설명하는 가이드입니다. 타입, 리소스, 함수, 셰이더 스테이지가 컴파일 결과에 미치는 영향도 함께 다룹니다.',
       h1: 'TypeShade 언어 가이드',
       intro:
-        'TypeShade 셰이더의 문법은 TypeScript와 같다. 이 가이드는 컴파일 규칙과 GPU 실행 방식을 설명한다.',
+        'TypeShade 셰이더의 문법은 TypeScript와 같습니다. 이 가이드는 컴파일 규칙과 GPU 실행 방식을 설명합니다.',
       boundaryH: '1. `use typeshade`란?',
       boundaryP:
-        '`"use typeshade"`는 TypeShade 셰이더 파일을 나타내는 첫 지시문이다. 컴파일러는 이 지시문으로 파일을 구분하고, GPU 타입과 리소스, 스테이지, builtin 규칙을 적용한다.',
-      boundaryNote: '이 지시문은 일반 TypeScript 모듈과 TypeShade 셰이더 파일을 나누는 기준이다.',
+        '`"use typeshade"`는 TypeShade 셰이더 파일을 나타내는 첫 지시문입니다. 컴파일러는 이 지시문으로 파일을 구분하고, GPU 타입과 리소스, 스테이지, builtin 규칙을 적용합니다.',
+      boundaryNote: '이 지시문은 일반 TypeScript 모듈과 TypeShade 셰이더 파일을 나누는 기준입니다.',
       syntaxH: '2. TypeScript 문법',
       syntaxP:
-        '변수, 함수, 타입 별칭, 클래스, 조건문, 반복문은 TypeScript와 같은 문법이다. GPU 코드로 변환할 수 있는 값과 연산만 지원한다.',
+        '변수, 함수, 타입 별칭, 클래스, 조건문, 반복문은 TypeScript와 같은 문법입니다. GPU 코드로 변환할 수 있는 값과 연산만 지원합니다.',
       syntaxTableHeader1: 'TypeScript',
       syntaxTableHeader3: 'GPU 해석',
       syntaxTableRows: [
-        ['function', 'helper 또는 entry point', '지원되는 함수 본문을 GPU 코드로 변환한다.'],
-        ['type', 'GPU 값 타입', 'GPU 타입 규칙에 맞는지 검사한다.'],
-        ['class', 'GPU struct', 'JavaScript 객체를 만들지 않고 구조체를 정의한다.'],
-        ['if / for', 'GPU control flow', '조건과 반복문을 GPU에서 실행할 수 있는지 검사한다.'],
+        ['function', 'helper 또는 entry point', '지원되는 함수 본문을 GPU 코드로 변환합니다.'],
+        ['type', 'GPU 값 타입', 'GPU 타입 규칙에 맞는지 검사합니다.'],
+        ['class', 'GPU struct', 'JavaScript 객체를 만들지 않고 구조체를 정의합니다.'],
+        ['if / for', 'GPU control flow', '조건과 반복문을 GPU에서 실행할 수 있는지 검사합니다.'],
       ],
       gpuH: '3. GPU 인터페이스',
-      gpuP: '소스에 GPU 인터페이스가 드러난다. 리소스에는 `declare`, entry point에는 stage decorator, GPU 입력에는 `@builtin(...)` 매개변수를 쓴다.',
+      gpuP: '소스에 GPU 인터페이스가 드러납니다. 리소스에는 `declare`, entry point에는 stage decorator, GPU 입력에는 `@builtin(...)` 매개변수를 씁니다.',
       gpuNote:
-        '`camera`와 `pixels`는 호스트가 전달하는 리소스이다. 셰이더가 값을 만들지 않는다. `gid`도 전역 변수가 아니라 함수 매개변수이다.',
+        '`camera`와 `pixels`는 호스트가 전달하는 리소스입니다. 셰이더가 값을 만들지 않습니다. `gid`도 전역 변수가 아니라 함수 매개변수입니다.',
       functionH: '4. 함수와 entry point',
       functionP:
-        '매개변수와 반환 타입은 함수의 입력과 결과를 나타낸다. Stage decorator와 builtin 매개변수는 entry point의 GPU 역할을 지정한다.',
+        '매개변수와 반환 타입은 함수의 입력과 결과를 나타냅니다. Stage decorator와 builtin 매개변수는 entry point의 GPU 역할을 지정합니다.',
       functionNote:
-        '`addBias`는 재사용하는 helper이다. `paint`는 compute entry point이다. 둘은 같은 함수 문법을 쓰지만 pipeline에서 맡는 역할이 다르다.',
+        '`addBias`는 재사용하는 helper입니다. `paint`는 compute entry point입니다. 둘은 같은 함수 문법을 쓰지만 pipeline에서 맡는 역할이 다릅니다.',
       resourceH: '5. GPU 리소스',
       resourceP:
-        '`uniform<T>`와 `storage<T>`는 호스트가 제공하는 GPU 리소스이다. `declare`는 셰이더가 만들지 않는 리소스를 표시한다.',
+        '`uniform<T>`와 `storage<T>`는 호스트가 제공하는 GPU 리소스입니다. `declare`는 셰이더가 만들지 않는 리소스를 표시합니다.',
       resourceNote:
-        '리소스는 `const`로 선언한다. `storage<T>`는 읽기 전용이고, `storage<T, "read_write">`는 쓰기도 가능하다.',
+        '리소스는 `const`로 선언합니다. `storage<T>`는 읽기 전용이며, `storage<T, "read_write">`는 쓰기도 가능합니다.',
       stageH: '6. 셰이더 스테이지',
       stageP:
-        '`@vertex`, `@fragment`, `@compute`는 entry point의 스테이지를 지정한다. GPU builtin은 전역 변수로 자동 주입되지 않는다. 필요한 builtin은 매개변수로 선언한다.',
+        '`@vertex`, `@fragment`, `@compute`는 entry point의 스테이지를 지정합니다. GPU builtin은 전역 변수로 자동 주입되지 않습니다. 필요한 builtin은 매개변수로 선언합니다.',
       completeH: '7. 전체 예제',
       completeP:
-        '이 예제는 지시문, GPU struct, 리소스, compute entry point, builtin 매개변수를 하나로 구성한다.',
+        '이 예제는 지시문, GPU struct, 리소스, compute entry point, builtin 매개변수를 하나로 구성합니다.',
       tsH: '8. TypeScript와 다른 점',
       tsRows: [
-        ['`declare`', '호스트가 제공하는 GPU 리소스를 선언한다.'],
-        ['함수 매개변수', 'GPU 값이나 스테이지 builtin 입력을 받는다.'],
-        ['class', 'GPU struct와 필드 메타데이터를 정의한다.'],
-        ['number', '`f32`, `i32`, `u32` 같은 GPU 숫자 타입을 쓴다.'],
+        ['`declare`', '호스트가 제공하는 GPU 리소스를 선언합니다.'],
+        ['함수 매개변수', 'GPU 값이나 스테이지 builtin 입력을 받습니다.'],
+        ['class', 'GPU struct와 필드 메타데이터를 정의합니다.'],
+        ['number', '`f32`, `i32`, `u32` 같은 GPU 숫자 타입을 씁니다.'],
       ],
       tsNote:
-        'TypeShade는 TypeScript 문법으로 셰이더를 작성하고 GPU 규칙에 따라 컴파일한다. JavaScript의 런타임 동작을 모두 지원하지는 않는다.',
+        'TypeShade는 TypeScript 문법으로 셰이더를 작성하고 GPU 규칙에 따라 컴파일합니다. JavaScript의 런타임 동작을 모두 지원하지는 않습니다.',
       refsH: '9. 참고 자료',
       refsP:
-        '타입과 함수는 TypeScript Handbook에서, 실행 모델은 MDN의 JavaScript Guide에서 확인할 수 있다. 다음으로 GPU 개념을 읽는다.',
+        '타입과 함수는 TypeScript Handbook에서, 실행 모델은 MDN의 JavaScript Guide에서 확인할 수 있습니다. 다음으로 GPU 개념을 읽습니다.',
       nextH: '10. 학습 순서',
       nextP:
-        'Quick start에서 첫 파일을 작성한 뒤 Types, Functions, Control flow, GPU types, Resources, Shader stages 순서로 읽는다.',
+        'Quick start에서 첫 파일을 작성한 뒤 Types, Functions, Control flow, GPU types, Resources, Shader stages 순서로 읽습니다.',
       nextLink: 'Quick start',
     },
     topics: {
