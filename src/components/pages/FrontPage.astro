@@ -1,6 +1,6 @@
 ---
 // The front page: a two-column hero in Ant Design's grammar. The headline, the sentence and
-// the two actions on the left; on the right the showcase card, where the file that draws the
+// the actions on the left; on the right the showcase card, where the file that draws the
 // picture sits beside the picture and can be edited in place. Then the same idea at the
 // compiler's scale: one file and the two targets it emits, the repository's own examples
 // running as tiles, what carries over from TypeScript, the gradient pass drawn by each
@@ -87,6 +87,7 @@ const quickStart = localePath(locale, links.quickStart.href);
           <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.025 1l-2.847 2.828 6.176 6.176h-16.354v3.992h16.354l-6.176 6.176 2.847 2.828 10.975-11z" /></svg>
         </a>
         <a class="button button-lg" href={quickStart}>{f.quickStart}</a>
+        <a class="button button-lg" href={localePath(locale, links.why.href)}>{t.docs.why}</a>
       </p>
     </div>
 

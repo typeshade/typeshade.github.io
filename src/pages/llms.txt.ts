@@ -59,7 +59,14 @@ const referenceKinds = languageSections().map((section) => {
 });
 
 const table = [
-  { dest: links.motivation, note: 'why one source for two shader languages' },
+  {
+    dest: links.motivation,
+    note: 'the TypeShade language boundary and its TypeScript authoring model',
+  },
+  {
+    dest: links.why,
+    note: 'TypeScript tooling, shared shader source, output verification and adoption constraints',
+  },
   {
     dest: links.quickStart,
     note: 'the submodule command, a complete shader file and the WGSL it emits',

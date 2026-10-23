@@ -37,6 +37,7 @@ TypeShade is designed around that boundary:
 Start with the documentation site:
 
 - [Introduction](https://typeshade.dev/guide/introduction/)
+- [Why TypeShade](https://typeshade.dev/guide/why/)
 - [Quick start](https://typeshade.dev/guide/quick-start/)
 - [Authoring / language guide](https://typeshade.dev/guide/authoring/)
 - [API reference](https://typeshade.dev/api/)
