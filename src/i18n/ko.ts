@@ -2743,17 +2743,17 @@ export const ko: Copy = {
     overview: {
       title: 'TypeShade 언어 가이드',
       description:
-        'TypeShade 문법과 GPU 실행 규칙을 설명한다. 예제에서 타입, 리소스, 함수, 셰이더 스테이지가 소스 코드와 GPU 실행으로 이어지는 방식을 다룬다.',
+        'TypeShade 문법과 GPU 실행 규칙을 예제로 설명하는 가이드이다. 타입, 리소스, 함수, 셰이더 스테이지가 컴파일 결과에 미치는 영향도 함께 다룬다.',
       h1: 'TypeShade 언어 가이드',
       intro:
-        'TypeShade 셰이더는 TypeScript 문법으로 작성한다. 이 가이드는 컴파일 규칙과 GPU 실행 방식을 설명한다.',
+        'TypeShade 셰이더의 문법은 TypeScript와 같다. 이 가이드는 컴파일 규칙과 GPU 실행 방식을 설명한다.',
       boundaryH: '1. `use typeshade`란?',
       boundaryP:
-        '`"use typeshade"`는 TypeShade 셰이더 파일의 첫 지시문이다. 컴파일러는 이 지시문이 있는 파일에 GPU 타입, 리소스, 스테이지, builtin 규칙을 적용한다.',
-      boundaryNote: '이 지시문으로 TypeScript 모듈과 TypeShade 셰이더 파일을 구분한다.',
+        '`"use typeshade"`는 TypeShade 셰이더 파일을 나타내는 첫 지시문이다. 컴파일러는 이 지시문으로 파일을 구분하고, GPU 타입과 리소스, 스테이지, builtin 규칙을 적용한다.',
+      boundaryNote: '이 지시문은 일반 TypeScript 모듈과 TypeShade 셰이더 파일을 나누는 기준이다.',
       syntaxH: '2. TypeScript 문법',
       syntaxP:
-        'TypeShade는 변수, 함수, 타입 별칭, 클래스, 조건문, 반복문에 TypeScript 문법을 사용한다. 컴파일러는 GPU 코드로 변환할 수 있는 값과 연산만 허용한다.',
+        '변수, 함수, 타입 별칭, 클래스, 조건문, 반복문은 TypeScript와 같은 문법이다. GPU 코드로 변환할 수 있는 값과 연산만 지원한다.',
       syntaxTableHeader1: 'TypeScript',
       syntaxTableHeader3: 'GPU 해석',
       syntaxTableRows: [
@@ -2763,22 +2763,22 @@ export const ko: Copy = {
         ['if / for', 'GPU control flow', '조건과 반복문을 GPU에서 실행할 수 있는지 검사한다.'],
       ],
       gpuH: '3. GPU 인터페이스',
-      gpuP: 'GPU 인터페이스는 소스에 선언한다. 리소스에는 `declare`를, entry point에는 스테이지 decorator를, GPU 입력에는 `@builtin(...)` 매개변수를 쓴다.',
+      gpuP: '소스에 GPU 인터페이스가 드러난다. 리소스에는 `declare`, entry point에는 stage decorator, GPU 입력에는 `@builtin(...)` 매개변수를 쓴다.',
       gpuNote:
-        '셰이더는 `camera`와 `pixels`를 만들지 않는다. 호스트가 이 리소스를 전달한다. `gid`도 전역 변수가 아니라 함수 매개변수이다.',
+        '`camera`와 `pixels`는 호스트가 전달하는 리소스이다. 셰이더가 값을 만들지 않는다. `gid`도 전역 변수가 아니라 함수 매개변수이다.',
       functionH: '4. 함수와 entry point',
       functionP:
-        '매개변수와 반환 타입은 함수의 입력과 결과를 정한다. 스테이지 decorator와 builtin 매개변수는 entry point의 GPU 역할을 정한다.',
+        '매개변수와 반환 타입은 함수의 입력과 결과를 나타낸다. Stage decorator와 builtin 매개변수는 entry point의 GPU 역할을 지정한다.',
       functionNote:
-        '`addBias`는 재사용하는 helper이다. `paint`는 compute entry point이다. 함수 문법은 같지만 pipeline에서 역할이 다르다.',
+        '`addBias`는 재사용하는 helper이다. `paint`는 compute entry point이다. 둘은 같은 함수 문법을 쓰지만 pipeline에서 맡는 역할이 다르다.',
       resourceH: '5. GPU 리소스',
       resourceP:
-        '`uniform<T>`와 `storage<T>`는 호스트가 제공하는 GPU 리소스이다. `declare`는 셰이더가 직접 만들지 않는 리소스를 선언한다.',
+        '`uniform<T>`와 `storage<T>`는 호스트가 제공하는 GPU 리소스이다. `declare`는 셰이더가 만들지 않는 리소스를 표시한다.',
       resourceNote:
-        '리소스는 `const`로 선언한다. `storage<T>`는 읽기 전용이고 `storage<T, "read_write">`는 쓰기도 허용한다.',
+        '리소스는 `const`로 선언한다. `storage<T>`는 읽기 전용이고, `storage<T, "read_write">`는 쓰기도 가능하다.',
       stageH: '6. 셰이더 스테이지',
       stageP:
-        '`@vertex`, `@fragment`, `@compute`는 entry point의 스테이지를 지정한다. GPU builtin은 자동으로 주입되지 않으므로 매개변수로 선언한다.',
+        '`@vertex`, `@fragment`, `@compute`는 entry point의 스테이지를 지정한다. GPU builtin은 전역 변수로 자동 주입되지 않는다. 필요한 builtin은 매개변수로 선언한다.',
       completeH: '7. 전체 예제',
       completeP:
         '이 예제는 지시문, GPU struct, 리소스, compute entry point, builtin 매개변수를 하나로 구성한다.',
@@ -2790,10 +2790,10 @@ export const ko: Copy = {
         ['number', '`f32`, `i32`, `u32` 같은 GPU 숫자 타입을 쓴다.'],
       ],
       tsNote:
-        'TypeShade는 TypeScript 문법에 GPU 실행 의미를 부여한다. JavaScript의 모든 런타임 동작을 지원하지는 않는다.',
+        'TypeShade는 TypeScript 문법으로 셰이더를 작성하고 GPU 규칙에 따라 컴파일한다. JavaScript의 런타임 동작을 모두 지원하지는 않는다.',
       refsH: '9. 참고 자료',
       refsP:
-        'TypeScript Handbook에서 타입과 함수를 확인하고, JavaScript 실행 모델을 살펴본 뒤 GPU 개념을 읽는다.',
+        '타입과 함수는 TypeScript Handbook에서, 실행 모델은 MDN의 JavaScript Guide에서 확인할 수 있다. 다음으로 GPU 개념을 읽는다.',
       nextH: '10. 학습 순서',
       nextP:
         'Quick start에서 첫 파일을 작성한 뒤 Types, Functions, Control flow, GPU types, Resources, Shader stages 순서로 읽는다.',
