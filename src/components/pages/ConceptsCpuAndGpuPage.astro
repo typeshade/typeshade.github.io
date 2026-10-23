@@ -4,24 +4,35 @@
 // `concepts.cpuAndGpu` (src/i18n/en.ts, src/i18n/ko.ts); the code samples are not copy, so
 // they stay here.
 import Docs from '../../layouts/Docs.astro';
+import { fitDescription } from '../../lib/meta-description.ts';
+import ConceptLesson from '../ConceptLesson.astro';
 import ConceptDoc from '../ConceptDoc.astro';
 import Rich from '../Rich.astro';
 import TypeShadeCode from '../TypeShadeCode.astro';
-import { copyFor, type Locale } from '../../i18n/index.ts';
+import { copyFor, localeSettings, type Locale } from '../../i18n/index.ts';
 import { editCopy, links } from '../../lib/links.ts';
 import { slugify } from '../../lib/slug.ts';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const c = copyFor(locale).concepts.cpuAndGpu;
+const lesson = copyFor(locale).concepts.lessons.cpuAndGpu;
+const learningLabels = copyFor(locale).concepts.lessonLabels;
+const learningHeadings = [
+  { depth: 2, slug: 'learning-use', text: learningLabels.use },
+  { depth: 2, slug: 'learning-example', text: learningLabels.example },
+  { depth: 2, slug: 'learning-caveat', text: learningLabels.caveat },
+];
 if (c.title.length < 45 || c.title.length > 60) {
   throw new Error(`[concepts] the CPU and GPU page has a ${c.title.length}-character title, outside the 45 to 60 the SEO checks want: ${c.title}`);
 }
-const headings = [c.invocationH, c.memoryH, c.callsH, c.loopsH, c.typesH, c.tableH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }));
+const headings = [...learningHeadings, ...[c.invocationH, c.memoryH, c.callsH, c.loopsH, c.typesH, c.tableH, c.furtherH].map((h) => ({ depth: 2, slug: slugify(h), text: h }))];
 ---
 
-<Docs locale={locale} path={links.conceptsCpuGpu.href} title={c.title} description={c.description} headings={headings} editHref={editCopy(locale, 'concepts')}>
+<Docs locale={locale} path={links.conceptsCpuGpu.href} title={c.title} description={fitDescription(`${lesson.meaning} ${lesson.use}`, localeSettings[locale].metaDescriptionMax)} headings={headings} editHref={editCopy(locale, 'concepts')} breadcrumbs={[{ name: copyFor(locale).docs.labels.sidebarGroups.concepts, href: links.concepts.href }, { name: c.h1, href: links.conceptsCpuGpu.href }]}>
   <h1>{c.h1}</h1>
+  <p><Rich text={lesson.meaning} locale={locale} /></p>
+  <ConceptLesson locale={locale} lesson={lesson} topic="cpuAndGpu" />
   <p>{c.lead}</p>
 
   <section>

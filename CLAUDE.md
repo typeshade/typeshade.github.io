@@ -12,6 +12,14 @@ it has: code, comments, commit messages and pull request titles and bodies in En
 Korean pages and the Korean dictionary in Korean as `.claude/skills/typeshade-site/SKILL.md`
 writes them.
 
+## Korean published content
+
+Load `.claude/skills/readable-korean/SKILL.md` before writing or reviewing Korean page copy,
+translations, headings or labels. It records the owner's preference for neutral, readable,
+Wikipedia-like explanations, established terminology and English when it improves clarity.
+Its Korean wording and register rules supersede the earlier polite-only and blanket
+translation conventions. Keep technical facts, source parity and localization wiring intact.
+
 ## Writing and configuration management
 
 Every reply to the owner and every task follows two disciplines from aircraft maintenance

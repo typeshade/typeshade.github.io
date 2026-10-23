@@ -1,40 +1,40 @@
 ---
 entry: function/pow
-sources: definition 2a9fd974f58f, exponent-curve ea92ecac8edd, undefined-inputs 32e82b36e5c3, integer-exponents ebbbf953f4f6, accuracy 2225d454fb02, common-uses 5ef6084cb5bf, in-typeshade 7d3ceb5ae028, specifications f2a07aa3ee6f
+sources: definition 2a9fd974f58f, exponent-curve 834fc48b6109, undefined-inputs 32e82b36e5c3, integer-exponents ebbbf953f4f6, accuracy 2225d454fb02, common-uses 5ef6084cb5bf, in-typeshade 7d3ceb5ae028, specifications f2a07aa3ee6f
 rules: 1.3 fcW4P8W5BFQ0loGi6vlLvaa1Is6dCmpQ_g9tbwMsfHM=, 7.2 onO98E-yRQ3RftA44lVmgPmSW7ZkCd7rYrJGgFS8EI4=
 ---
 
 ## 정의 {#definition}
 
-`pow(x, y)`는 $x^y$이며, `x`의 `y`제곱입니다. [WGSL](specWgslPow)과 {{fact glslTarget}}([명세](specGlslEs)) 모두 이 함수를 부동소수점 값에서 정의하며, 성분을 하나씩 따로 계산합니다.
+`pow(x, y)`는 $x^y$, 즉 `x`의 `y`제곱을 구한다. [WGSL](specWgslPow)과 {{fact glslTarget}}([명세](specGlslEs)) 모두 부동소수점 값에 이 함수를 정의하며, 벡터는 성분별로 계산한다.
 
-모든 호출에 규칙 세 가지가 적용됩니다.
+호출에는 다음 세 가지 규칙이 적용된다.
 
-- 두 인자의 타입을 같게 맞추십시오. 밑이 `vec3`이면 지수도 `vec3`로 씁니다(`pow(v, vec3(2.0))`). 벡터 밑에 스칼라 지수를 주는 호출은 두 언어 어디에도 정의되어 있지 않습니다.
-- {{fact glslTarget}}에서는 지수를 float 값으로 쓰십시오. `2`가 `int`라서 그 언어에서 `pow(x, 2)`는 올바른 호출이 아닙니다(아래 정수 지수).
-- 밑은 $0$ 이상으로 두십시오. 두 명세 모두 $x < 0$이면 결과를 정의하지 않으며, 지수가 정수여도 마찬가지입니다. {{fact glslTarget}} 명세는 $y \le 0$일 때 $x = 0$도 정의하지 않습니다.
+- 두 인자의 타입은 같아야 한다. 밑이 `vec3`이면 지수도 `vec3`이다(`pow(v, vec3(2.0))`). 벡터 밑과 스칼라 지수를 받는 호출은 두 언어 모두 정의하지 않는다.
+- {{fact glslTarget}}에서 지수는 float 값이어야 한다. `2`는 `int`이므로 `pow(x, 2)`는 유효한 호출이 아니다(아래 정수 지수).
+- 밑은 $0$ 이상이어야 한다. 두 명세 모두 $x < 0$일 때 결과를 정의하지 않으며, 지수가 정수여도 같다. {{fact glslTarget}} 명세는 $y \le 0$일 때 $x = 0$도 정의하지 않는다.
 
-|                    | WGSL                                                                     | {{fact glslTarget}}                                           |
-| ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| 선언               | `fn pow(e1: T, e2: T) -> T`                                              | `genType pow(genType x, genType y)`                           |
-| 타입               | `T`는 `f32`, `f16` 또는 그 벡터이며, 상수 식에서는 `AbstractFloat`입니다 | `genType`은 `float`, `vec2`, `vec3`, `vec4` 가운데 하나입니다 |
-| `f16`              | [enable 확장](specWgslExtensions) `f16`이 있어야 씁니다                  | `f16`이 없습니다                                              |
-| 정수 타입          | `i32`나 `u32` 오버로드가 없습니다                                        | `int` 오버로드가 없고, `int`에서 변환하지도 않습니다          |
-| 정의되지 않는 입력 | $x < 0$, 그리고 무한대가 낀 두 입력(아래 무한대 입력)                    | $x < 0$, 그리고 $y \le 0$인 $x = 0$                           |
+|                    | WGSL                                                                   | {{fact glslTarget}}                                             |
+| ------------------ | ---------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 선언               | `fn pow(e1: T, e2: T) -> T`                                            | `genType pow(genType x, genType y)`                             |
+| 타입               | `T`는 `f32`, `f16` 또는 그 벡터이며, 상수 식에서는 `AbstractFloat`이다 | `genType`은 `float`, `vec2`, `vec3`, `vec4` 중 하나이다         |
+| `f16`              | [enable 확장](specWgslExtensions) `f16`이 필요하다                     | `f16`을 지원하지 않는다                                         |
+| 정수 타입          | `i32`나 `u32` 오버로드가 없다                                          | `int` 오버로드가 없으며, `int`에서 암시적으로 변환하지도 않는다 |
+| 정의되지 않는 입력 | $x < 0$, 그리고 무한대가 포함된 두 입력 조건(아래 무한대 입력)         | $x < 0$, 그리고 $y \le 0$인 $x = 0$                             |
 
 ## 지수 곡선 {#exponent-curve}
 
-$0$과 $1$ 사이에서 `pow`는 곧게 오르는 직선을 곡선으로 휩니다. 지수가 $1$보다 크면 범위의 가운데가 아래로 처지고, $1$보다 작으면 가운데가 위로 올라갑니다. 모든 $k > 0$에서 $0^k = 0$, $1^k = 1$이므로 두 끝은 제자리에 머뭅니다. 셰이더는 이 휘어짐으로 $0$과 $1$ 사이의 값을 다듬습니다.
+$0$과 $1$ 사이에서 `pow`는 입력에 비례하는 직선을 곡선으로 바꾼다. 지수가 $1$보다 크면 곡선의 중간 부분이 직선 아래에 놓이고, $1$보다 작으면 위에 놓인다. 모든 $k > 0$에서 $0^k = 0$, $1^k = 1$이므로 양 끝점은 변하지 않는다. 셰이더에서는 이 성질로 $0$과 $1$ 사이의 값을 조절한다.
 
-이 페이지의 예제는 TypeShade 파일입니다. TypeShade는 이 호출을 `pow`로 쓰며, WGSL의 철자({{entry spelling.wgsl}})와 GLSL의 철자({{entry spelling.glsl}})도 같습니다. `uv`는 캔버스를 가로질러 $0$에서 $1$까지 가고, `u.k`는 캔버스 아래 슬라이더가 정하는 유니폼을 읽습니다. 언어의 나머지가 어떻게 대응하는지는 [GLSL에서 옮겨 오기](languageFromGlsl)에 있습니다.
+캔버스 아래 슬라이더는 지수를 조절한다. 펼쳐서 확인할 수 있는 예제 코드는 TypeShade로 작성되어 있다. `uv`는 캔버스에서 $0$부터 $1$까지 변하는 좌표이고, `u.k`는 슬라이더가 설정하는 유니폼 값이다. WGSL({{entry spelling.wgsl}})과 GLSL({{entry spelling.glsl}})에서 함수 이름은 모두 `pow`이다. 소스 언어의 대응 관계는 [GLSL에서 옮겨 오기](languageFromGlsl)에 정리되어 있다.
 
 <!-- live: reference-pow-curve
-title: 영과 일 사이에서 pow(x, k)가 그리는 곡선
-caption: y = pow(x, k) 아래 영역과 사분의 일 간격의 격자선, 그리고 직선 y = x.
-anchor: 파란 영역은 `y = pow(uv.x, u.k)` 아래 전부입니다. 어두운 대각선은 `y = x`이며, $k = 1$일 때의 곡선입니다. 모든 곡선은 양 끝에서 대각선과 만납니다. `pow(0.5, 2.)`가 $0.25$이므로, $k = 2$이면 곡선은 $(0.5, 0.25)$를 지납니다.
-exercise: `k`를 $1$ 아래로 끌어 보십시오. 곡선이 대각선 위로 올라갑니다. 지수가 $1$보다 작으면 $0$과 $1$ 사이의 값이 모두 커집니다.
-exercise: `k`를 $1$보다 크게 둔 채 `y` 줄에 `1. - pow(1. - uv.x, u.k)`를 써 보십시오. 곡선이 ease-out이 되어, 처음에는 가파르게 오르다가 차츰 평평해집니다.
-exercise: `y` 줄에 `pow(uv.x, 1. / u.k)`를 써 보십시오. 지수 $1/k$가 지수 $k$를 되돌리므로, 곡선은 대각선을 사이에 두고 앞의 곡선과 대칭이 됩니다.
+title: 영과 일 사이의 pow(x, k) 곡선
+caption: y = pow(x, k) 아래 영역, 사분의 일 간격의 격자선, 직선 y = x.
+anchor: 파란 영역은 `y = pow(uv.x, u.k)` 아래를 나타낸다. 어두운 대각선은 `y = x`이며 $k = 1$일 때의 곡선이다. 모든 곡선은 양 끝점에서 대각선과 만난다. `pow(0.5, 2.)`는 $0.25$이므로 $k = 2$일 때 곡선은 $(0.5, 0.25)$를 지난다.
+exercise: `k`가 $1$보다 작으면 곡선이 대각선 위에 놓인다. 지수가 $1$보다 작을 때 $0$과 $1$ 사이의 값이 커진다.
+exercise: `k`가 $1$보다 클 때 `y` 줄을 `1. - pow(1. - uv.x, u.k)`로 바꾸면 ease-out 곡선이 된다. 처음에는 가파르게 증가하다가 점차 평평해진다.
+exercise: `y` 줄을 `pow(uv.x, 1. / u.k)`로 바꾸면 지수 $1/k$가 지수 $k$의 역변환이 된다. 원래 거듭제곱 곡선과 이 곡선은 대각선을 기준으로 대칭이다.
 control k: 지수
 -->
 
@@ -42,102 +42,102 @@ control k: 지수
 
 ### 음수 밑
 
-{{fact glslTarget}} 명세는 $x < 0$이면 결과를 정의하지 않습니다. WGSL은 모든 $x < 0$을 `pow`의 정의역 밖에 둡니다([pow](specWgslPow)). 구현이 결과를 `exp2(y * log2(x))`로 계산할 수 있는데, 음수 $x$에서는 $\log_2 x$에 실수 값이 없기 때문입니다. 두 규칙 모두 모든 $x < 0$을 가리킵니다. 그래서 $(-2)^2 = 4$이지만 `pow(-2.0, 2.0)`도 `pow(-2.0, 0.5)`와 똑같이 정의되지 않습니다.
+{{fact glslTarget}} 명세는 $x < 0$일 때 결과를 정의하지 않는다. WGSL도 모든 $x < 0$을 `pow`의 정의역에서 제외한다([pow](specWgslPow)). 구현은 결과를 `exp2(y * log2(x))`로 계산할 수 있는데, 음수 $x$에서는 $\log_2 x$의 실수 값이 없기 때문이다. 두 규칙 모두 모든 $x < 0$에 적용된다. 따라서 수학적으로 $(-2)^2 = 4$이지만 `pow(-2.0, 2.0)`도 `pow(-2.0, 0.5)`와 마찬가지로 결과가 정의되지 않는다.
 
-두 명세 모두 NaN을 약속하지 않습니다. 정의역 밖의 WGSL 호출은 [불확정 값](specWgslIndeterminate)(indeterminate value)을 낼 수 있고, 그 값은 타입의 어떤 값이든 될 수 있으며 NaN일 수도 있습니다([WGSL의 부동소수점](specWgslIeeeOverview)). {{fact glslTarget}}도 구현에 NaN을 만들라고 요구하지 않습니다.
+두 명세 모두 NaN을 반환한다고 보장하지 않는다. 정의역 밖의 WGSL 호출은 [불확정 값](specWgslIndeterminate)(indeterminate value)을 반환할 수 있다. 이는 NaN을 포함해 그 타입이 표현하는 어떤 값이든 될 수 있다([WGSL의 부동소수점](specWgslIeeeOverview)). {{fact glslTarget}}도 구현에 NaN 생성을 요구하지 않는다.
 
-그러니 음수 밑의 결과는 GPU가 내는 값 그대로입니다. 아래 그래프는 가드 없는 호출과 가드를 둔 호출을 보고 있는 이 GPU에서 나란히 그립니다.
+따라서 음수 밑의 결과는 GPU 구현에 따라 달라질 수 있다. 아래 그래프는 이 페이지를 실행하는 기기의 GPU에서 입력 검사나 변환이 없는 호출과 가드를 적용한 호출을 나란히 그린다.
 
 <!-- live: reference-pow-negative
-title: 음수 밑에서 가드 없는 호출과 가드
-caption: 마이너스 일에서 일까지 그린 두 곡선. 가드 없는 호출 pow(x, k)는 주황색, 가드 sign(x) * pow(abs(x), k)는 파란색입니다.
-anchor: 가운데보다 오른쪽에서는 `x`가 양수이고, 두 곡선이 한 선으로 겹칩니다. 가운데보다 왼쪽에서는 `x`가 음수이며, 거기서 주황 곡선은 이 GPU가 음수 밑에 돌려주는 값을 보여 줍니다. 주황 곡선이 끊긴 곳은 이 GPU가 NaN이나 그래프 밖의 값을 돌려준 곳입니다.
-exercise: `k`를 $2$로 맞춰 보십시오. 왼쪽에서 파란 곡선이 가로축 아래에 놓이지만, 그쪽에서 $x^2$는 양수입니다. 음수 `x`에서 가드가 $x^k$와 같은 경우는 $k$가 홀수일 때뿐입니다.
-exercise: `k`를 $2$에 둔 채 `signed` 줄에 `pow(abs(p.x), u.k)`를 써 보십시오. 파란 곡선의 왼쪽 절반이 오른쪽 절반과 대칭이 되고, 곡선은 양쪽 모두에서 $x^2$와 같습니다.
-exercise: `k`를 $3$에 두고 `signed` 줄에 `p.x * p.x * p.x`를 써 보십시오. 파란 곡선은 제자리에 있습니다. 그 줄은 곱셈만 쓰므로 모든 `x`에서 정의됩니다.
+title: 음수 밑에서 가드 적용 여부에 따른 결과
+caption: 마이너스 일부터 일까지의 두 곡선. 가드 없는 pow(x, k)는 주황색이고, 가드를 적용한 sign(x) * pow(abs(x), k)는 파란색이다.
+anchor: 중앙 오른쪽에서는 `x`가 양수이므로 두 곡선이 겹친다. 중앙 왼쪽에서는 `x`가 음수이며, 주황 곡선은 이 GPU가 음수 밑에 반환하는 값을 나타낸다. 주황 곡선이 끊긴 구간은 이 GPU가 NaN이나 그래프 범위 밖의 값을 반환한 곳이다.
+exercise: `k`가 $2$이면 왼쪽의 파란 곡선은 가로축 아래에 놓이지만, 같은 구간에서 $x^2$는 양수이다. 음수 `x`에서 가드의 결과가 $x^k$와 같은 경우는 $k$가 홀수일 때뿐이다.
+exercise: `k`가 $2$일 때 `signed` 줄을 `pow(abs(p.x), u.k)`로 바꾸면 파란 곡선의 왼쪽과 오른쪽이 대칭이 된다. 양쪽 모두 $x^2$와 같다.
+exercise: `k`가 $3$일 때 `signed` 줄을 `p.x * p.x * p.x`로 바꿔도 파란 곡선은 변하지 않는다. 곱셈만 사용하므로 모든 `x`에서 정의된다.
 control k: 지수
 -->
 
 ### 가드
 
-음수 값이 셰이더에서 무엇을 뜻하는지에 따라 가드를 고르십시오.
+가드는 셰이더에서 음수가 의미하는 바에 따라 선택한다.
 
-| 가드                       | 결과                                                         | 쓰는 곳                                                     |
-| -------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------- |
-| `pow(max(x, 0.0), y)`      | $y > 0$이면 음수 `x`마다 $0$                                 | $0$ 아래가 없음을 뜻하는 값. 빛을 등진 면에 닿는 빛 같은 것 |
-| `sign(x) * pow(abs(x), y)` | 원점에 대해 대칭인 곡선. $y$가 홀수일 때 $x^y$와 같습니다    | 부호가 있는 곡선. $-1$에서 $1$까지 가는 ease 같은 것        |
-| `pow(abs(x), y)`           | 양수 쪽을 거울에 비춘 모양. $y$가 짝수일 때 $x^y$와 같습니다 | 크기                                                        |
-| `x * x`, `x * x * x`       | 모든 `x`에서 $x^2$와 $x^3$                                   | 작은 정수 지수                                              |
+| 가드                       | 결과                                                                           | 활용                                                      |
+| -------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `pow(max(x, 0.0), y)`      | $y > 0$일 때 음수 `x`의 결과는 $0$                                             | $0$ 미만을 없다고 처리하는 값. 예: 빛을 등진 면에 닿는 빛 |
+| `sign(x) * pow(abs(x), y)` | 원점에 대해 대칭인 곡선. $y$가 홀수이면 $x^y$와 같다                           | 부호가 있는 곡선. 예: $-1$부터 $1$까지 변하는 ease 곡선   |
+| `pow(abs(x), y)`           | 양수 쪽 곡선을 세로축에 대해 대칭으로 복제한 모양. $y$가 짝수이면 $x^y$와 같다 | 부호를 제외한 크기                                        |
+| `x * x`, `x * x * x`       | 모든 `x`에서 $x^2$와 $x^3$                                                     | 작은 정수 지수                                            |
 
-앞의 세 가드는 밑 $0$을 그대로 넘깁니다. $y \le 0$이면 그 호출은 여전히 정의되지 않습니다(아래 밑이 영일 때).
+앞의 세 가드도 밑 $0$은 그대로 전달한다. $y \le 0$이면 결과가 여전히 정의되지 않는다(아래 밑이 영일 때).
 
 ### 밑이 영일 때
 
-{{fact glslTarget}} 명세는 $y \le 0$인 $x = 0$도 정의하지 않습니다. WGSL의 정의역은 이 경우를 따로 들지 않습니다. $x = 0$이면 $\log_2 x$는 $-\infty$입니다. $y = 0$이면 곱 $y \log_2 x$에 정의된 값이 없고, $y < 0$이면 공식이 무한대를 냅니다. WGSL은 구현이 결과를 유한하다고 가정하도록 허용하며, 그때 무한대 결과는 불확정 값이 됩니다([IEEE 부동소수점과 다른 점](specWgslIeee)). 밑이 영이고 $y \le 0$인 호출은 두 타깃 모두에서 정의되지 않는다고 보십시오.
+{{fact glslTarget}} 명세는 $y \le 0$인 $x = 0$도 정의하지 않는다. WGSL의 정의역 규칙은 이 경우를 따로 명시하지 않는다. $x = 0$일 때 $\log_2 x$는 $-\infty$이다. $y = 0$이면 곱 $y \log_2 x$의 값이 정의되지 않고, $y < 0$이면 공식의 결과가 무한대이다. WGSL은 구현이 결과를 유한하다고 가정하는 것을 허용한다. 이 가정에서는 무한대 결과가 불확정 값이 된다([IEEE 부동소수점과 다른 점](specWgslIeee)). 따라서 밑이 영이고 $y \le 0$인 호출은 두 타깃 모두에서 결과가 정의되지 않는 것으로 취급해야 한다.
 
 ### 무한대 입력
 
-공식 `exp2(y * log2(x))`는 WGSL 정의역 밖의 나머지 두 입력도 설명합니다. $\log_2 1 = 0$이고 영에 무한대 $y$를 곱한 값은 정의되지 않으므로, 무한대 $y$와 함께인 $x = 1$은 정의역 밖입니다. $y = 0$인 무한대 $x$도 영과 무한대의 같은 곱을 냅니다.
+공식 `exp2(y * log2(x))`는 WGSL 정의역에서 제외되는 나머지 두 입력 조건도 설명한다. $\log_2 1 = 0$이며, 영과 무한대 $y$의 곱은 정의되지 않는다. 따라서 무한대 $y$와 $x = 1$의 조합은 정의역 밖이다. $y = 0$인 무한대 $x$도 영과 무한대의 곱이 발생한다.
 
 ### 상수 인자
 
-WGSL에서 `pow`는 `@const` 함수입니다([pow](specWgslPow)). 인자가 리터럴이나 `const` 선언인 호출은 [상수 식](specWgslConstExpr)이 되고, 구현은 셰이더를 만들 때 이를 계산합니다. 넘치거나 NaN 또는 무한대를 내는 상수 식은 셰이더 생성 오류입니다([IEEE 부동소수점과 다른 점](specWgslIeee)). 그래서 상수 `pow(-2.0, 0.5)`는 셰이더 생성을 멈출 수 있고, 실행 시점에 읽은 값으로 하는 같은 호출은 불확정 값을 냅니다.
+WGSL에서 `pow`는 `@const` 함수이다([pow](specWgslPow)). 인자가 리터럴이나 `const` 선언인 호출은 [상수 식](specWgslConstExpr)이다. 구현은 셰이더 생성 시점에 이 식을 계산한다. 오버플로가 발생하거나 NaN 또는 무한대가 나오는 상수 식은 셰이더 생성 오류이다([IEEE 부동소수점과 다른 점](specWgslIeee)). 따라서 상수 `pow(-2.0, 0.5)`는 셰이더 생성을 중단시킬 수 있다. 같은 호출에 실행 시점에 읽은 값을 넣으면 불확정 값이 나온다.
 
 ## 정수 지수 {#integer-exponents}
 
-{{fact glslTarget}}에서 `pow(x, 2)`는 올바른 호출이 아닙니다. 이 언어에는 타입 사이의 암시적 변환이 없고 `2`는 `int`라서, `pow`의 어떤 오버로드도 맞지 않습니다. `pow(x, 2.0)`로 쓰십시오.
+{{fact glslTarget}}에서 `pow(x, 2)`는 유효한 호출이 아니다. 이 언어에는 타입 사이의 암시적 변환이 없고 `2`는 `int`이므로, 일치하는 `pow` 오버로드가 없다. 부동소수점 지수는 `pow(x, 2.0)`으로 표현한다.
 
-WGSL은 `f32`인 `x`에 대해 `pow(x, 2)`를 받아들입니다. 리터럴 `2`는 추상 정수이고 `f32`로 변환됩니다. 명세의 [소개](specWgslIntro)도 `pow(dist, 2)`라고 씁니다.
+WGSL은 `f32`인 `x`에 대해 `pow(x, 2)`를 허용한다. 리터럴 `2`는 추상 정수이며 `f32`로 변환된다. 명세의 [소개](specWgslIntro)에서도 `pow(dist, 2)`를 사용한다.
 
-TypeShade에서 `pow(x, 2)`가 내는 WGSL은 {{compile int-literal}}, GLSL은 {{compile int-literal-glsl}}이고, `x ** 2`가 내는 줄은 {{compile starstar-int-literal}}입니다. 컴파일러는 정수 리터럴 지수를 float로 쓰므로, 컴파일러가 내는 GLSL에는 `int` 지수를 쓰는 호출이 없습니다.
+TypeShade에서 `pow(x, 2)`를 컴파일한 WGSL은 {{compile int-literal}}, GLSL은 {{compile int-literal-glsl}}이다. `x ** 2`를 컴파일한 코드는 {{compile starstar-int-literal}}이다. 컴파일러는 정수 리터럴 지수를 float로 출력하므로, 생성된 GLSL에는 `int` 지수를 사용하는 호출이 없다.
 
 ### 곱셈
 
-두 명세는 `x * x`와 `pow(x, 2.0)`에 서로 다른 정확도 규칙을 둡니다. 곱셈의 정확도는 {{accuracy *}}입니다([정확도](specWgslAccuracy)). `pow`는 `exp2(y * log2(x))`의 정확도를 이어받습니다(아래 정확도). 어느 명세도 둘이 같은 값을 낸다거나 컴파일러가 하나를 다른 하나로 바꾼다고 하지 않습니다. TypeShade는 호출을 그대로 둡니다. `pow(x, 2.0)`가 내는 줄은 {{compile square-stays}}입니다. 곱셈을 원하는 곳에는 `x * x`를 쓰십시오.
+두 명세는 `x * x`와 `pow(x, 2.0)`에 서로 다른 정확도 규칙을 적용한다. 곱셈의 정확도는 {{accuracy *}}이다([정확도](specWgslAccuracy)). `pow`에는 `exp2(y * log2(x))`의 정확도 규칙이 적용된다(아래 정확도). 어느 명세도 두 연산의 결과가 같다거나 컴파일러가 하나를 다른 하나로 대체한다고 보장하지 않는다. TypeShade는 호출을 유지한다. `pow(x, 2.0)`를 컴파일한 코드는 {{compile square-stays}}이다. 곱셈을 사용하려면 `x * x`로 표현해야 한다.
 
-`x * x`는 음수 `x`를 포함한 모든 `x`에서 정의됩니다. WGSL은 영과 무한대의 곱을 뺀 모든 입력에서 곱셈을 정의하는데([정의역](specWgslDomains)), `x * x`의 두 인수는 한 값입니다.
+`x * x`는 음수 `x`를 포함한 모든 `x`에서 정의된다. WGSL은 영과 무한대의 곱을 제외한 모든 입력에서 곱셈을 정의한다([정의역](specWgslDomains)). `x * x`의 두 인수는 같은 값이므로 이 제외 조건에 해당하지 않는다.
 
 ## 정확도 {#accuracy}
 
-두 명세 모두 `pow`에 고유한 오차 한계를 두지 않습니다. `pow`는 `exp2(y * log2(x))`의 정확도를 이어받으며, 컴파일러가 밝히는 그 정확도는 {{accuracy pow}}입니다([정확도](specWgslAccuracy)). 오차는 그 식의 오차만큼 클 수 있습니다.
+두 명세 모두 `pow`에 별도의 오차 한계를 정하지 않는다. `pow`에는 `exp2(y * log2(x))`의 정확도 규칙이 적용되며, 컴파일러가 명시하는 정확도는 {{accuracy pow}}이다([정확도](specWgslAccuracy)). 오차는 이 식의 오차만큼 클 수 있다.
 
-`f32`에서 WGSL이 두는 한계는 `exp2`가 {{accuracy exp2}}, `log2`가 {{accuracy log2}}이며, {{fact glslTarget}} 명세도 단정밀도에 같은 수치를 둡니다. `exp2`의 한계는 인자의 크기에 따라 커지므로, $|y \log_2 x|$가 클수록 오차도 커질 수 있습니다. {{fact glslTarget}} 명세는 이 규칙을 `x`와 `y`를 바꾼 `exp2 (x * log2 (y))`로 적는데, 이 페이지는 WGSL이 적는 꼴을 씁니다.
+`f32`에서 WGSL의 오차 한계는 `exp2`가 {{accuracy exp2}}, `log2`가 {{accuracy log2}}이다. {{fact glslTarget}} 명세도 단정밀도에 같은 수치를 적용한다. `exp2`의 오차 한계는 인자의 크기에 따라 커지므로 $|y \log_2 x|$가 클수록 허용되는 오차도 커질 수 있다. {{fact glslTarget}} 명세는 이 규칙을 `x`와 `y`를 바꾼 `exp2 (x * log2 (y))`로 표기한다. 이 페이지는 WGSL의 표기를 따른다.
 
-구현은 `pow`를 다른 방법으로, 더 나은 정확도나 극단적인 입력에 더 너그러운 방식으로 계산해도 됩니다([부동소수점 정확도](specWgslFloatAccuracy)). 그래도 WGSL이 `pow`에 정한 정확도는 이어받은 정확도 그대로입니다.
+구현은 다른 계산 방법으로 `pow`의 정확도를 높이거나 극단적인 입력을 더 넓게 처리할 수 있다([부동소수점 정확도](specWgslFloatAccuracy)). 이 경우에도 WGSL이 정한 `pow`의 정확도 기준은 위 식에서 정한 기준이다.
 
-{{fact glslTarget}}에서는 정밀도 한정자가 또 하나의 한계를 둡니다. `mediump`는 $-2^{14}$에서 $2^{14}$까지의 범위와 $2^{-10}$의 상대 정밀도만 지키면 됩니다. $10^5$는 그 범위 밖이므로 `mediump`에서 `pow(10.0, 5.0)`는 넘칠 수 있습니다. TypeShade가 내는 GLSL은 [정밀도 옵션](guideGlslFloatPrecision)이 `mediump`를 고르지 않는 한 그 선언이 {{compile glsl-precision}}입니다.
+{{fact glslTarget}}에서는 정밀도 한정자도 표현 범위와 정밀도를 제한한다. `mediump`가 보장해야 하는 범위는 $-2^{14}$부터 $2^{14}$까지이며, 상대 정밀도는 $2^{-10}$이다. $10^5$는 이 범위 밖이므로 `mediump`에서 `pow(10.0, 5.0)`는 오버플로가 발생할 수 있다. TypeShade가 생성하는 GLSL의 선언은 [정밀도 옵션](guideGlslFloatPrecision)이 `mediump`로 설정되지 않은 경우 {{compile glsl-precision}}이다.
 
-$x \ge 0$에서 `sqrt(x)`는 $x^{1/2}$이고, `exp2(y)`는 $2^y$입니다. 둘은 고유한 정확도를 가지는데, `sqrt`는 {{accuracy sqrt}}이고 `exp2`는 위의 한계입니다.
+$x \ge 0$에서 `sqrt(x)`는 $x^{1/2}$이고, `exp2(y)`는 $2^y$이다. 두 함수에는 각각 별도의 정확도 규칙이 있다. `sqrt`는 {{accuracy sqrt}}이고 `exp2`는 위에서 설명한 오차 한계를 따른다.
 
-## 자주 쓰이는 곳 {#common-uses}
+## 활용 {#common-uses}
 
-이 사이트의 예제에서 가져온 호출 네 개입니다. 모두 밑을 $0$ 이상으로 둡니다.
+이 사이트의 예제에는 다음 네 가지 호출이 사용된다. 모두 밑이 $0$ 이상이다.
 
 - 스페큘러 하이라이트: [bit-bump](examplePowBitBump)의 `pow(max(dot(reflect(fromLight, nf), toEye), 0.), 16.)`
-- 감마: [default-args](examplePowDefaultArgs)의 `pow(max(c, vec3(0.)), vec3(1. / gamma))`. 호출이 `gamma`를 빼면 $2.2$를 씁니다.
-- 지수 줌: [fp64-julia-twin](examplePowJulia)에서 `pow(10.0, -u.zoom_exp)`는 보이는 영역의 폭입니다.
-- 비네팅: [capsule-corp-namek-class](examplePowCapsule)의 `pow(16.0 * q.x * q.y * (1.0 - q.x) * (1.0 - q.y), 0.12)`. `q`는 화면을 가로질러 $0$에서 $1$까지 갑니다.
+- 감마: [default-args](examplePowDefaultArgs)의 `pow(max(c, vec3(0.)), vec3(1. / gamma))`. 호출에서 `gamma`를 생략하면 $2.2$를 사용한다.
+- 지수 줌: [fp64-julia-twin](examplePowJulia)에서 `pow(10.0, -u.zoom_exp)`는 화면에 표시되는 영역의 폭이다.
+- 비네팅: [capsule-corp-namek-class](examplePowCapsule)의 `pow(16.0 * q.x * q.y * (1.0 - q.x) * (1.0 - q.y), 0.12)`. `q`는 화면에서 $0$부터 $1$까지 변하는 좌표이다.
 
-하이라이트를 보면 지수가 하는 일이 드러납니다. 아래 예제는 Blinn-Phong 하이라이트를 그립니다. 표면 법선과 하프 벡터(빛과 눈의 한가운데 방향) 사이의 코사인을 씁니다. 코사인은 하이라이트 한가운데에서 $1$이고 둘레로 갈수록 작아집니다. 코사인 $1$은 어떤 지수에서도 $1$로 남고, 그보다 작은 코사인은 지수가 커질수록 더 가파르게 $0$으로 떨어집니다.
+아래 예제는 Blinn-Phong 하이라이트에서 지수의 효과를 보여 준다. 표면 법선과 하프 벡터 사이 각도의 코사인을 사용한다. 하프 벡터는 광원 방향과 시선 방향의 중간 방향이다. 코사인은 하이라이트 중앙에서 $1$이고 주변으로 갈수록 작아진다. 코사인 $1$은 어떤 지수에서도 $1$을 유지한다. 이보다 작은 코사인은 지수가 커질수록 더 가파르게 $0$에 가까워진다.
 
 <!-- live: reference-pow-specular
 title: 구 위의 스페큘러 하이라이트
-caption: 광원 하나가 비추는 구. Blinn-Phong 하이라이트는 코사인을 shininess만큼 거듭제곱한 값입니다.
-anchor: 하얀 점이 `highlight`입니다. 법선 `n`과 `halfway` 사이 각의 코사인을 `shininess`만큼 거듭제곱한 값입니다. $1$에 가까운 코사인은 $1$ 근처에 머물고, 그보다 작은 코사인은 모두 $0$을 향해 떨어집니다.
-exercise: `shininess`를 범위의 맨 아래에서 맨 위까지 끌어 보십시오. 하이라이트가 넓게 번진 빛에서 작은 점으로 줄어듭니다.
-exercise: `ball` 줄의 `diffuse` 자리에 `pow(diffuse, 0.5)`를 써 보십시오. 음영의 경계가 어두운 쪽으로 옮겨 갑니다. 지수가 $1$보다 작으면 $0$과 $1$ 사이의 값이 커집니다.
-exercise: `ball` 줄의 오른쪽을 `pow(…, vec3(1. / 2.2))`로 감싸 보십시오. 구가 더 밝아지며, 이것이 감마 인코딩입니다. 밑이 `vec3`이므로 거기에 스칼라 지수 `1. / 2.2`를 쓰면 거부됩니다(아래 TypeShade에서).
+caption: 광원 하나가 비추는 구. Blinn-Phong 하이라이트는 코사인을 shininess만큼 거듭제곱한 값이다.
+anchor: 흰 점은 `highlight`이다. 법선 `n`과 `halfway` 사이 각도의 코사인을 `shininess`만큼 거듭제곱한 값이다. $1$에 가까운 코사인은 $1$ 근처에 머물고, 이보다 작은 코사인은 $0$에 가까워진다.
+exercise: `shininess`가 조절 범위의 최솟값에서 최댓값으로 증가하면 하이라이트가 넓게 퍼진 빛에서 작은 점으로 줄어든다.
+exercise: `ball` 줄의 `diffuse`를 `pow(diffuse, 0.5)`로 바꾸면 음영의 경계가 어두운 쪽으로 이동한다. 지수가 $1$보다 작으면 $0$과 $1$ 사이의 값이 커지기 때문이다.
+exercise: `ball` 줄의 오른쪽을 `pow(…, vec3(1. / 2.2))`로 감싸면 구가 더 밝아진다. 이 연산이 감마 인코딩이다. 밑이 `vec3`이므로 스칼라 지수 `1. / 2.2`를 사용하면 컴파일러가 거부한다(아래 TypeShade에서).
 control light: 광원 위치
 control shininess: 지수
 -->
 
 ## TypeShade에서 {#in-typeshade}
 
-TypeShade에는 이 호출의 철자가 세 가지 있습니다. `pow(a, b)`, `Math.pow(a, b)`({{ref math/pow}}), 거듭제곱 연산자 `a ** b`입니다. 컴파일러는 세 가지 모두에 같은 호출 하나를 내며, WGSL과 GLSL에서도 같습니다 {{assert sameEmit}}. 컴파일러가 WGSL 형태로 바꾸는 TypeScript 형태를 나열한 {{rule 7.2}}에 `a ** b`가 있습니다. 그래서 첫 예제의 `y` 줄에 `uv.x ** u.k`를 써도 같은 곡선이 그려집니다.
+TypeShade에서는 `pow(a, b)`, `Math.pow(a, b)`({{ref math/pow}}), 거듭제곱 연산자 `a ** b`로 이 연산을 표현한다. 세 표현을 컴파일하면 WGSL과 GLSL에서 각각 동일한 호출이 생성된다 {{assert sameEmit}}. TypeScript 표현을 WGSL 형태로 변환하는 규칙인 {{rule 7.2}}에는 `a ** b`가 포함되어 있다. 첫 예제의 `y` 줄을 `uv.x ** u.k`로 바꿔도 같은 곡선이 그려진다.
 
-컴파일러는 아래 표의 호출을 거부하고, 편집기도 호출마다 같은 코드와 문구를 보고합니다.
+컴파일러는 아래 표의 호출을 거부한다. 편집기도 각 호출에 대해 같은 진단 코드와 문구를 표시한다.
 
-| 쓴 코드                      | 컴파일러가 보고하는 내용           |
+| 작성한 코드                  | 컴파일러 진단                      |
 | ---------------------------- | ---------------------------------- |
 | `v: vec3`일 때 `pow(v, 2.2)` | {{compile vector-scalar}}          |
 | `v: vec3`일 때 `v ** 2.2`    | {{compile starstar-vector-scalar}} |
@@ -145,19 +145,19 @@ TypeShade에는 이 호출의 철자가 세 가지 있습니다. `pow(a, b)`, `M
 | `a, b: i32`일 때 `a ** b`    | {{compile starstar-int}}           |
 | `a **= b`                    | {{compile starstar-assign}}        |
 
-마지막 행은 TypeShade 프런트엔드의 한계이며, 두 타깃 모두 이 대입을 받아들입니다. `a = a ** b`로 쓰면 나오는 줄은 {{compile starstar-rewrite}}입니다.
+마지막 행은 TypeShade 프런트엔드의 제한이다. 두 타깃 언어 모두 거듭제곱 계산 결과를 변수에 다시 대입하는 동작은 허용한다. `a = a ** b`로 작성하면 생성되는 코드는 {{compile starstar-rewrite}}이다.
 
-인자가 모두 상수인 호출은 컴파일러가 정의역을 검사합니다. WGSL이 그런 호출을 셰이더를 만들 때 계산하기 때문입니다(위 상수 인자). 함수 안에서 `pow(-2.0, 0.5)`를 쓰면 컴파일러가 거부하며, 그 진단은 {{compile negative-literal}}입니다. 호출에 값이 있으면 메시지가 그 값을 알려 줍니다. `pow(-2.0, 2.0)`의 진단은 {{compile negative-whole}}입니다. 실행 시점에 읽는 인자가 있는 호출은 상수 식이 아니므로, 컴파일러는 그 정의역을 GPU에 맡깁니다. `pow(x, 0.5)`가 내는 줄은 {{compile runtime-base}}입니다.
+컴파일러는 인자가 모두 상수인 호출의 정의역을 검사한다. WGSL은 이런 호출을 셰이더 생성 시점에 계산하기 때문이다(위 상수 인자). 함수 안의 `pow(-2.0, 0.5)`는 거부되며 진단은 {{compile negative-literal}}이다. 호출 결과에 값이 있으면 진단 메시지에 그 값을 표시한다. `pow(-2.0, 2.0)`의 진단은 {{compile negative-whole}}이다. 실행 시점에 읽는 인자가 있는 호출은 상수 식이 아니므로, 컴파일러가 정의역을 검사하지 않고 GPU에서 실행한다. `pow(x, 0.5)`를 컴파일한 코드는 {{compile runtime-base}}이다.
 
-CPU 오라클은 TypeShade 셰이더를 CPU에서 실행하며, `pow`를 JavaScript의 `Math.pow`로 계산합니다 {{assert oracleIsMathPow}}. `x`가 $-2$일 때 오라클의 값은 `pow(x, 3.0)`에서 {{oracle pow(-2.0, 3.0)}}, `pow(x, 0.5)`에서 {{oracle pow(-2.0, 0.5)}}입니다. `x`가 $0$일 때는 `pow(x, 0.0)`에서 {{oracle pow(0.0, 0.0)}}, `pow(x, -1.0)`에서 {{oracle pow(0.0, -1.0)}}입니다. {{rule 1.3}}에 따라 오라클은 WGSL이 허용하는 어떤 값이든 낼 수 있고, 음수 밑에서 WGSL은 모든 값을 허용합니다. 그래서 그곳에서는 오라클과 GPU의 값이 다를 수 있습니다. GPU를 오라클과 비교하는 테스트는 $x > 0$이거나 $y > 0$인 $x = 0$이고, 결과가 유한한 곳에서만 성립합니다.
+CPU 오라클은 TypeShade 셰이더를 CPU에서 실행하며, `pow`를 JavaScript의 `Math.pow`로 계산한다 {{assert oracleIsMathPow}}. `x`가 $-2$일 때 오라클의 값은 `pow(x, 3.0)`에서 {{oracle pow(-2.0, 3.0)}}, `pow(x, 0.5)`에서 {{oracle pow(-2.0, 0.5)}}이다. `x`가 $0$일 때는 `pow(x, 0.0)`에서 {{oracle pow(0.0, 0.0)}}, `pow(x, -1.0)`에서 {{oracle pow(0.0, -1.0)}}이다. {{rule 1.3}}에 따라 오라클은 WGSL이 허용하는 어떤 값이든 반환할 수 있다. 음수 밑에서는 WGSL이 모든 값을 허용하므로 오라클과 GPU의 결과가 다를 수 있다. GPU와 오라클을 비교하는 테스트는 $x > 0$이거나 $y > 0$인 $x = 0$이고, 결과가 유한한 구간에서만 성립한다.
 
-모듈 수준의 `const`도 같은 검사를 거칩니다. `const K: f32 = pow(-2., 0.5)`의 진단은 {{compile module-const-no-value}}이고, `const K: f32 = pow(-2., 2.)`의 진단은 {{compile module-const-value}}입니다.
+모듈 수준의 `const`에도 같은 검사를 적용한다. `const K: f32 = pow(-2., 0.5)`의 진단은 {{compile module-const-no-value}}이고, `const K: f32 = pow(-2., 2.)`의 진단은 {{compile module-const-value}}이다.
 
-`compile()`이 돌려주는 결정성 보고서가 적는 `pow`의 정확도는 {{accuracy pow}}입니다.
+`compile()`이 반환하는 결정성 보고서에서 `pow`의 정확도는 {{accuracy pow}}이다.
 
 ## 명세 {#specifications}
 
 - [WGSL](specWgsl): [pow](specWgslPow), [WGSL의 부동소수점](specWgslIeeeOverview), [IEEE 부동소수점과 다른 점](specWgslIeee), [부동소수점 정확도](specWgslFloatAccuracy), [구체 식의 정확도](specWgslAccuracy), [식과 내장 함수의 정의역](specWgslDomains), [상수 식](specWgslConstExpr), [불확정 값](specWgslIndeterminate), [enable 확장](specWgslExtensions), [소개](specWgslIntro).
-- {{fact glslTarget}}: [명세](specGlslEs)의 지수 함수와 범위와 정밀도.
+- {{fact glslTarget}}: [명세](specGlslEs)의 지수 함수, 범위, 정밀도 규칙.
 
-정의부터 TypeShade에서까지의 절은 이 명세들에 근거하며, 이 페이지가 그리는 값은 모두 {{pin}}에서 계산합니다.
+정의 절부터 TypeShade 설명 절까지의 내용은 이 명세에 근거한다. 페이지에 표시되는 값은 모두 {{pin}}에서 계산한다.

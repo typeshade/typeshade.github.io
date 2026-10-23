@@ -123,7 +123,7 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
     // 1. A backend, or the fallback the page promises instead. The canvas is brought into
     // view first: the runtime draws nothing for a canvas out of view, so a count taken below
     // the fold measured only the frames that slipped in before the page said so.
-    await figure.evaluate((node) => node.scrollIntoView({ block: 'center' }));
+    await canvas.evaluate((node) => node.scrollIntoView({ block: 'center' }));
     await page.waitForTimeout(1500);
     const backend = await canvas.getAttribute('data-backend');
     mounted = backend === 'webgpu' || backend === 'webgl2';
@@ -137,6 +137,13 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
       if (still === 0)
         problems.push('no backend drew and there is no still image under the canvas');
     } else {
+      await page
+        .waitForFunction(
+          (at) => (document.querySelector(at)?.__shader?.frames ?? 0) >= 2,
+          `[data-live-id="${id}"] canvas`,
+          { timeout: TIMEOUT },
+        )
+        .catch(() => {});
       const frames = await page.evaluate(
         (at) => document.querySelector(at)?.__shader?.frames ?? 0,
         `[data-live-id="${id}"] canvas`,
@@ -242,6 +249,8 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
     }
 
     // 3. The editor opens where the reader reaches for the code, and an edit recompiles.
+    const disclosure = figure.locator('details.live-parts');
+    if (await disclosure.count()) await disclosure.locator('summary').click();
     await figure.locator('[data-live-code] pre').click();
     const area = figure.locator('textarea[data-live-input]');
     await area.waitFor({ timeout: TIMEOUT });

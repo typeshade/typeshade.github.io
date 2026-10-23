@@ -1,22 +1,25 @@
 ---
 // One documented name of the language surface, on a page of its own at
 // /reference/<kind>/<name>/. The shape is the one /api/ already uses and MDN set: the name,
-// a one-line summary, then Syntax, Parameters, Return value, Description, Targets, Examples
-// and See also, with a section left out where the compiler supplies nothing for it. Nothing
-// on the page is written here: the declaration, the parameters, the return types, the
+// a summary and a compiler reference ordered as Syntax, Parameters, Return value,
+// Description, Targets, Examples and See also. Mathematical lessons and authored notes
+// lead the page. Sections the compiler has nothing for are omitted. The declarations,
+// parameters, return types,
 // sentence, the stage rules and the two target spellings are a LanguageEntry
 // (src/lib/language-reference.ts), the examples come from the corpus
 // (src/lib/language-examples.ts), and the words around them are docs.reference in every
-// dictionary. A reference note is the one part a person writes: sections after Description
-// and before Targets, translated like a guide section and held to the values they read
-// (DESIGN.md, Reference notes; src/lib/reference-notes.ts, ReferenceNotes.astro). A page
-// without a note shows nothing there.
+// dictionary. Mathematical explanations live in the lesson dictionaries. Authored reference
+// notes are translated like guide sections and held to the values they read (DESIGN.md,
+// Reference notes; src/lib/reference-notes.ts, ReferenceNotes.astro).
 import { getEntry } from 'astro:content';
 import { Code } from 'astro-expressive-code/components';
 import Docs, { type Heading } from '../../layouts/Docs.astro';
 import LanguageType from '../LanguageType.astro';
 import LinkColumns from '../LinkColumns.astro';
 import ReferenceNotes from '../ReferenceNotes.astro';
+import FunctionDemo from '../FunctionDemo.astro';
+import OperationLesson from '../OperationLesson.astro';
+import { operationModel } from '../../lib/operation-models.ts';
 import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import MappingTable from '../MappingTable.astro';
@@ -37,6 +40,9 @@ import {
 import { editCopy, links } from '../../lib/links.ts';
 import { META_MIN, fitDescription, fitLeadAndTail } from '../../lib/meta-description.ts';
 import { assertNoteReading, noteEntryId, noteOf, type NoteView } from '../../lib/reference-notes.ts';
+import { functionDemo } from '../../lib/function-demos.ts';
+import { functionSpellings } from '../../lib/function-spellings.ts';
+import type { FunctionLesson } from '../../i18n/function-lessons-en.ts';
 
 interface Props {
   locale: Locale;
@@ -47,6 +53,13 @@ const { locale, kind, name } = Astro.props;
 const r = copyFor(locale).docs.reference;
 const e = r.entry;
 const entry = languageEntry(kind, name);
+const mathLesson = kind === 'function' ? (r.demo.lessons as Record<string, FunctionLesson>)[name] : undefined;
+const workedLesson = kind === 'function' ? (r.worked.lessons as Record<string, FunctionLesson>)[name] ?? r.worked.constructor(name) : undefined;
+const lesson = mathLesson ?? workedLesson;
+const model = workedLesson ? operationModel(name) : undefined;
+if (kind === 'function' && !lesson) throw new Error(`[function-lesson] missing lesson for ${name}`);
+if (workedLesson && !model) throw new Error(`[function-lesson] missing worked model for ${name}`);
+const demo = kind === 'function' ? functionDemo(name) : undefined;
 const section = languageSection(kind);
 const named = r.kinds[kind];
 const kindWord = e.kindWords[kind];
@@ -63,13 +76,15 @@ const targets =
 const typeTargets = kind === 'type' ? typeSpellings(entry.name) : undefined;
 // A Math member is named as an author writes it, `Math.pow`, the way its h1 names it.
 const shownName = kind === 'math' ? entry.title : entry.name;
-const title = e.title(shownName, kindWord, targets !== undefined || typeTargets !== undefined);
+const discovery = kind === 'function' ? functionSpellings(entry.name) : [];
+const relatedSearchNames = [...new Set([...discovery].sort((a, b) => Number(b.language === 'GLSL') - Number(a.language === 'GLSL')).map(item => item.name))];
+const title = (lesson ? r.discovery.title(shownName, relatedSearchNames, targets !== undefined) : undefined) ?? e.title(shownName, kindWord, targets !== undefined || typeTargets !== undefined);
 if (title.length < 45 || title.length > 60) {
   throw new Error(`[reference-entry] '${kind}/${name}' has a ${title.length}-character title, outside the 45 to 60 the SEO checks want: ${title}`);
 }
 // The compiler's sentence is Markdown with inline code; a meta description carries neither,
 // so the backticks come off and the rest is the compiler's own words.
-const plain = (text: string): string => text.replace(/`/g, '');
+const plain = (text: string): string => text.replace(/[`$]/g, '');
 const line = plain(entry.line);
 // With both targets' forms the lead names them and stays whole; the compiler's sentence after
 // it is what gets cut, so the description still says what the name does.
@@ -79,7 +94,9 @@ const composed = lead ? `${lead} ${line}` : e.description(shownName, kindWord, l
 // so the kind's own line fills it out, the way a category's does in the API reference.
 const short = composed.length < META_MIN;
 const max = localeSettings[locale].metaDescriptionMax;
-const description = lead
+const description = lesson
+  ? fitDescription(plain(`${lesson.meaning} ${lesson.use} ${lesson.caution}`), max)
+  : lead
   ? fitLeadAndTail(lead, short ? `${line} ${plain(named.summary)}` : line, max)
   : fitDescription(short ? `${composed} ${plain(named.summary)}` : composed, max);
 
@@ -137,6 +154,19 @@ const stageText = entry.stages.map((s) =>
 const quoteBrand = entry.showsNumber && !(kind === 'type' && name === 'f32');
 
 const sections = [
+  ...(demo ? [
+    { id: 'interactive-example', label: r.demo.heading, show: true },
+    { id: 'practical-use', label: r.demo.useHeading, show: true },
+    { id: 'input-limits', label: r.demo.cautionHeading, show: true },
+    { id: 'related-functions', label: r.demo.related, show: true },
+  ] : []),
+  ...(model ? [
+    { id: 'worked-examples', label: r.worked.heading, show: true },
+    { id: 'practical-use', label: r.demo.useHeading, show: true },
+    { id: 'input-limits', label: r.demo.cautionHeading, show: true },
+    { id: 'related-functions', label: r.demo.related, show: true },
+  ] : []),
+  ...(notes?.sections ?? []).map((n) => ({ id: n.id, label: n.heading.replace(/`/g, ''), show: true })),
   { id: 'syntax', label: e.syntax, show: true },
   // A decorator written on its own has no row to show and still has something to say, so
   // its Parameters heading stands with the line that it takes no arguments.
@@ -146,8 +176,6 @@ const sections = [
   // the sentence goes on to say, the stage the front end holds a builtin id to, and what the
   // CPU oracle does with the name. An entry with none of the three has no Description.
   { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.oracle !== null },
-  // The note's sections, each under its own heading, after Description and before Targets.
-  ...(notes?.sections ?? []).map((n) => ({ id: n.id, label: n.heading.replace(/`/g, ''), show: true })),
   { id: 'targets', label: e.targets, show: entry.spelling !== null },
   { id: 'examples', label: e.examples, show: examples.length > 0 },
   { id: 'see-also', label: e.seeAlso, show: true },
@@ -171,7 +199,8 @@ const next = siblings.next
     ? { label: r.kinds[nextSection.kind].name, href: localePath(locale, `/reference/${nextSection.slug}/`) }
     : { label: copyFor(locale).docs.errors.h1, href: localePath(locale, links.errors.href) };
 // What a search result calls the page: the name with its kind, so a hit reads mix (function).
-const meta = `title:${entry.name} (${kindWord})`;
+const searchNames = [entry.name, ...new Set(discovery.map(item => item.name))].join(' / ');
+const meta = `title:${searchNames} (${kindWord})`;
 ---
 
 <Docs
@@ -198,8 +227,18 @@ const meta = `title:${entry.name} (${kindWord})`;
     <a href={index.href}>{named.name}</a>
   </nav>
   <h1><code>{entry.title}</code></h1>
-  <p class="api-kind" lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
-  <p class="api-summary" lang="en"><Rich text={entry.line} locale={locale} /></p>
+  <p class:list={['api-kind', lesson ? 'sr-only' : undefined]} lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
+  <p class="api-summary" lang={lesson ? locale : 'en'}><Rich text={lesson?.meaning ?? entry.line} locale={locale} /></p>
+  {kind === 'math' && entry.alias?.kind === 'function' && <p data-canonical-lesson><a href={localePath(locale, languageEntryPath(entry.alias.kind, entry.alias.name))}>{r.discovery.canonical}: <code>{entry.alias.title}</code></a></p>}
+  {discovery.length > 0 && <details class="mbs-4 text-(length:--text-ui) text-text-2" data-function-spellings data-pagefind-weight="3">
+    <summary class="cursor-pointer">{r.discovery.label}</summary>
+    <p>{r.discovery.note}</p>
+    <ul>{discovery.map(item => <li>{item.language}: <code>{item.name}</code></li>)}</ul>
+    <p><a href={shows('targets') ? '#targets' : '#syntax'}>{shows('targets') ? r.entry.targets : r.entry.syntax}</a></p>
+  </details>}
+  {demo && lesson && <FunctionDemo locale={locale} name={name} lesson={lesson} />}
+  {model && workedLesson && <OperationLesson locale={locale} name={name} lesson={workedLesson} model={model} />}
+  <ReferenceNotes locale={locale} view={notes} />
   {(spelled || entry.kind === 'builtin') && (
     <dl class="ref-facts" lang={locale}>
       {spelled && (
@@ -219,6 +258,7 @@ const meta = `title:${entry.name} (${kindWord})`;
     </dl>
   )}
   <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
+  {lesson && <p lang="en"><Rich text={entry.line} locale={locale} /></p>}
 
   <section>
     <h2 id="syntax" lang={locale}>{e.syntax}</h2>
@@ -292,8 +332,6 @@ const meta = `title:${entry.name} (${kindWord})`;
     )}
   </section>
   )}
-
-  <ReferenceNotes locale={locale} view={notes} />
 
   {shows('targets') && wgslCell && glslCell && (
     <section>

@@ -28,7 +28,7 @@ Three rules hold for every call:
 
 Between $0$ and $1$, `pow` bends a straight ramp into a curve. An exponent above $1$ pulls the middle of the range down, and an exponent below $1$ lifts it. The two ends stay where they are, since $0^k = 0$ and $1^k = 1$ for every $k > 0$. Shaders use that bend to shape a value between $0$ and $1$.
 
-The samples on this page are TypeShade files. TypeShade spells the call `pow`, as WGSL does ({{entry spelling.wgsl}}) and GLSL does ({{entry spelling.glsl}}). `uv` runs from $0$ to $1$ across the canvas, and `u.k` reads the uniform that the slider under the canvas sets. [Coming from GLSL](languageFromGlsl) maps the rest of the language.
+Move the slider under the canvas to change the exponent and watch the curve. The optional source uses TypeShade: `uv` runs from $0$ to $1$ across the canvas, and `u.k` reads the uniform that the slider sets. The call is `pow` in WGSL ({{entry spelling.wgsl}}) and GLSL ({{entry spelling.glsl}}). [Coming from GLSL](languageFromGlsl) maps the source language.
 
 <!-- live: reference-pow-curve
 title: The curve pow(x, k) between zero and one

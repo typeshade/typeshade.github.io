@@ -46,6 +46,7 @@ export function main(@location(0) uv: vec2): vec4 {
   <h2 id="mapping">{content.mapping}</h2><p><Rich text={content.mappingP} locale={locale} /></p>
   <TypeShadeCode code={`// TypeScript surface, GPU-specific value types\nlet value: f32 = 1\nlet index: u32 = 0\nlet direction: vec3 = vec3(0, 1, 0)`} />
   <h2 id="scalar">{content.scalar}</h2><p>{content.scalarP}</p>
+  <p><Rich text={copyFor(locale).concepts.glslPrecision.entryLink} locale={locale} /></p>
   <h2 id="vector">{content.vector}</h2><p>{content.vectorP}</p>
   <TypeShadeCode code={`const uv: vec2 = vec2(0.5, 0.5)\nconst color: vec4 = vec4(1, 0, 0, 1)`} />
   <h2 id="matrix">{content.matrix}</h2><p>{content.matrixP}</p>

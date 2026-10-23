@@ -1,6 +1,6 @@
 ---
 // The sections a person wrote for one name of the language reference (DESIGN.md, Reference
-// notes), set between Description and Targets on its page. src/lib/reference-notes.ts has drawn
+// notes), placed before the compiler reference on its page. src/lib/reference-notes.ts has drawn
 // every token and rendered the Markdown; a {{code}} token is a code frame here and a live marker
 // a LiveShader. A section a page in another language has no current translation of is shown in
 // English, under the line that says so. An entry without a note passes no view, and nothing
@@ -44,6 +44,8 @@ const parts = (heading: string) =>
           exercises={c.exercises}
           controls={c.controls}
           aspect={c.aspect}
+          plot={c.plot}
+          compact={view.id === 'function/pow'}
         />
       ) : null,
     )}
