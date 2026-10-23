@@ -517,7 +517,14 @@ test('a projected baseline is accepted while retained full-input baselines stay 
   const optimizedPrior = retainedCatalogs.find(
     (c) =>
       c.instrument === 'unified-2' &&
-      c.builds[0]!.revision === regressionCatalog.builds[0]!.revision &&
+      retainedCatalogs.some((known) =>
+        known.builds.some(
+          (build) =>
+            build.revision === c.builds[0]!.revision &&
+            'inputProjection' in build &&
+            build.inputProjection === true,
+        ),
+      ) &&
       !('inputProjection' in c.builds[0]!),
   )!;
   expect(optimizedPrior).toBeDefined();

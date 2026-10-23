@@ -564,8 +564,8 @@ const SPECS: Record<LoweringSectionKey, readonly RowSpec[]> = {
   expressions: [
     {
       id: 'destructuring',
-      ts: 'export function swapped(v: vec2): vec2 {\n  const { x, y } = v\n  return vec2(y, x)\n}',
-      pick: ['swapped'],
+      ts: 'export function swapped(v: vec2): vec2 {\n  const { x, y } = v\n  return vec2(y, x)\n}\n\nexport function endpoints(xs: array<f32, 3>): f32 {\n  const [first, , last] = xs\n  return first + last\n}',
+      pick: ['swapped', 'endpoints'],
     },
     {
       id: 'spread',

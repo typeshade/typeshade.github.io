@@ -1,7 +1,7 @@
 ---
 id: the-cpu-oracle
-source: 56b0b7ad2943fe2235dbc88a6fa8a9852f439a4f89f3f48d9e54449f442e0f5d
-sourceLine: 1387
+source: 0372e09c40db5f814d6f24b2dabed45d06952db7468ea2419fd552a7fe2aeeda
+sourceLine: 1396
 rules: 8.22 Ca5h_etdlFvIPBA1NRya7g-bBPugGzboprLldGAJYDc=, 7.2 onO98E-yRQ3RftA44lVmgPmSW7ZkCd7rYrJGgFS8EI4=, 3.9 3B2rlXJXA0GupXGpH-mhQpicZan-WehN8Xf4nhFST6Q=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
 ---
 
@@ -273,8 +273,8 @@ const h = height([0.5, 0.5], [1, 0.5, 2, 0.25]) // a number
 커널 함수는 텍스처도 받을 수 있다(`docs/use-typeshade-surface.md` §65). `textureLoad`로 읽는
 `texture_2d<f32>`가 하나이고, 2D 스토리지 텍스처 `texture_storage_2d<F, A>`가 다른 하나이다.
 스토리지 텍스처를 받으면 그 함수는 커널 함수가 되며, 루프는 `vec2u(i % w, i / w)`에 값을
-저장한다. 스토리지 텍스처는 `device.texture({ size, format, storage: true })`로 만들고, 함수는 그
-디바이스의 `fuse()` 안에서 부른다. 텍스처 호출은 WebGPU에서 실행되고, WebGPU가 없으면 CPU
+저장한다. 스토리지 텍스처는 `device.texture({ size, format, storage: true })`로 만들고, 함수는
+디바이스를 별도로 지정하지 않고 일반 함수처럼 호출한다. 이 호출은 텍스처를 소유한 디바이스를 선택한다(변경 0085). 순서를 보장하는 스코프가 필요하면 `device.fuse()`를 사용한다. 텍스처 호출은 WebGPU에서 실행되고, WebGPU가 없으면 CPU
 tier에서 실행된다. CPU tier의 디바이스는 텍스처를 메모리에 두며, `ImageData`는 그곳으로
 복사된다. WebGL2는 아직 이 호출을 실행하지 않는다.
 
@@ -324,6 +324,10 @@ const report = await fuse((scope) => {
 report.dispatches // 1
 const y = await out.read()
 ```
+
+디바이스 소유자의 `device.fuse()`는 등록용 import 없이 같은 호출 기록기를 사용한다(변경 0085).
+본문을 동기적으로 실행하고, 큐의 실행 순서를 예약한 뒤 로컬 실행기를 불러온다.
+배포할 때는 생성된 모든 청크를 포함해야 한다. 이름으로 가져오는 `fuse`도 기본 소유자의 배열에 계속 사용할 수 있다.
 
 호출 체인의 병합에는 세 가지 작성 방식이 관련된다. 첫째, 함수마다 루프 하나를 사용하고 모든 배열은 같은 카운터로 인덱싱한다(`out[i] = a[i] + b[i]`). 바로 앞 호출이 같은 인덱스에 쓴 값을 읽는 호출은 병합된다. 둘째, 중간값은 호스트가 읽는 `resident` 대신 `scope.scratch(n)` 스크래치 배열에 둔다. 병합 그룹은 이를 지역 변수로 유지하므로 위의 `t`와 `u`는 버퍼를 만들지 않고, 해당 `read()`는 오류이다. 셋째, 합계가 필요하면 리덕션으로 체인을 끝낸다. 스코프의 마지막 호출 `total(u)`는 앞선 호출을 자신의 루프에 포함하며, 리덕션 뒤의 호출은 그룹에 병합되지 않는다.
 

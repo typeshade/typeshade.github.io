@@ -304,3 +304,17 @@ id first, then the pull request that did the work.
   validation and real-browser assertions use it. Tests retain the older full-input baseline,
   accept already projected baselines and reject incorrect input sizes. All prior catalogs
   remain immutable. This correction changes validation provenance without changing the workload.
+
+- 0085 (partial): pin `eb5c3378` includes automatic fp64 selection, mutually exclusive
+  device-source types, ordinary-call owner inference and automatic loading for `device.fuse()`.
+  English and Korean runtime, control-flow and fp64 guidance describe those delivered behaviors.
+  Fusion facts still require `fuse: true`, which still disables ordinary-call input projection.
+  Default fusion facts, projection separation, instance-local capability options, `tshc init` and
+  retained console variants are not included in this pin. Existing explicit setup and console
+  repacking guidance remains applicable. Existing benchmark cohorts and their provenance remain unchanged.
+- 0086: pin `eb5c3378` supports function-local fixed-array and homogeneous-tuple binding
+  patterns. English and Korean TypeScript and array guidance describes omissions, nesting,
+  value copies, literal inference and unsupported forms. The compiled destructuring example
+  now includes an omitted array position. Playground examples remain sourced directly from
+  the compiler; its diagnostic fixtures contained no blanket array-pattern refusal to replace.
+  Integration and browser validation are recorded in this pin pull request.

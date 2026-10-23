@@ -1,8 +1,8 @@
 {
   "slug": "madd",
-  "source": "cfd3bafa1ed70b4dba322b0e90f116c0a0e7ebbf9025148364b25fa333df248e",
+  "source": "e541454f6a5a1437d2ed43758a56304bf4990eb0e3dd3ce5c282545a5927ce13",
   "texts": {
     "summary": "곱셈 후 덧셈인 a*b + c를 계산한다. a.mul(b).add(c) 체인으로 표현한다.",
-    "description": "한 번만 반올림하는 융합 연산은 [`fma`](/api/fma/)를 쓴다."
+    "description": "WGSL의 곱셈-덧셈 내장 함수를 생성하려면 [`fma`](/api/fma/)를 쓴다. 어느 형태도 단일 반올림을 보장하지 않는다."
   }
 }

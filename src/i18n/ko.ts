@@ -2046,7 +2046,7 @@ export const ko: Copy = {
       loadOptionsP:
         '프로그램의 override 값은 이름으로 지정한다. 그릴 때는 `RenderState.constants`, 디스패치할 때는 `Program.compute()`의 `constants` 옵션으로 넘긴다. 컴퓨트 파이프라인은 진입점의 기본값과 선택한 값으로 `workgroupShape`를 결정하므로 디스패치 수를 계산하기 전에 이 값을 읽는다. 런타임은 선택한 모양이 현재 WebGPU 디바이스의 한도 안에 있는지 확인한다. `Frame.submit()`은 기록한 진입점마다 콘솔 줄 수와 버퍼 공간이 부족해 기록하지 못한 호출 수를 돌려준다. 콘솔 sink를 쓰는 호스트는 이 수치로 누락된 호출을 알릴 수 있다.',
       loadEmitP:
-        '빌드 뒤에 콘솔 기록을 켜는 호스트는 `typeshade/emit`의 `repack`을 `createRuntime({ emit: repack })`으로 넘길 수 있다. 이때 매니페스트는 `packModule(module, { ir: true })`로 만들어 이식 가능한 IR을 담아야 한다. 로드 시점 이미터는 매니페스트에 저장된 emit 옵션을 쓰며, TypeScript 프런트엔드를 포함하지 않는다. 퓨즈 스코프인 `typeshade/fuse`의 `fuse`도 이미터와 나란히 있다(규칙 11.11). 이를 가져오는 호스트는 그 플래너를 싣고, 가져오지 않는 호스트는 플래너를 하나도 싣지 않는다.',
+        '빌드 뒤에 콘솔 기록을 켜는 호스트는 `typeshade/emit`의 `repack`을 `createRuntime({ emit: repack })`으로 넘길 수 있다. 이때 매니페스트는 `packModule(module, { ir: true })`로 만들어 이식 가능한 IR을 담아야 한다. 로드 시점 이미터는 매니페스트에 저장된 emit 옵션을 쓰며, TypeScript 프런트엔드를 포함하지 않는다. 퓨즈 스코프인 `typeshade/fuse`의 `fuse`도 이미터와 나란히 있다(규칙 11.11). `device.fuse()`는 등록용 import 없이 호출을 기록하고, 필요할 때 플래너를 불러온다. 본문은 호출한 자리에서 동기적으로 한 번 실행하며, 대기 중인 호출과 읽기의 순서는 유지된다. 명시적인 import도 계속 지원한다.',
       loadNote:
         '프로그램 런타임은 WebGPU와 WebGL2를 지원한다. WebGL2에서는 프래그먼트를 그리며, 지원하는 컴퓨트 진입점은 생성된 GLSL ES 3.00 패스로 실행한다.',
       reflectionH: '리플렉션',
@@ -2056,7 +2056,7 @@ export const ko: Copy = {
       runtimeH: '런타임',
       runtimeP: `호스트가 컴파일하는 모듈은 브라우저에서 TypeShade의 어떤 코드도 필요로 하지 않는다. 컴파일러는 셰이더 텍스트가 만들어지는 곳에서 돌아간다. 빌드, 테스트, 그리고 [언어 서비스](languageService)를 거친 편집기가 그런 곳이다. 브라우저에 도달하는 것은 생성된 셰이더 소스와, 애플리케이션이 원래 쓰던 호스트 코드뿐이다. 호스트가 가져오는 모듈은 \`typeshade/runtime\`을 번들에 싣는다. 호출은 이 코드에서 실행되고, 컴파일러는 번들에 들어가지 않는다. Vite 플러그인이 번들을 만들 때 모듈을 컴파일하기 때문이다. 호출은 브라우저가 가진 첫 tier(호출이 실행되는 백엔드)에서 실행되며, 순서는 WebGPU, WebGL2, CPU이다. \`configure({ prefer })\`는 compute 진입점과 커널 함수가 시도할 tier의 순서를 정하고, \`Resident\`는 호출과 호출 사이에 배열을 GPU에 둔다. 프로그램 런타임에 프로그램을 불러오는 호스트도 같은 \`typeshade/runtime\`과 매니페스트만 싣고, 컴파일러는 싣지 않는다. TypeShade가 설치하는 런타임 의존성은 ${facts.runtimeDeps}개, \`compile()\`과 언어 서비스가 소스를 읽을 때 쓰는 TypeScript뿐이다.`,
       runtimeOwnerP:
-        '호스트는 `typeshade/runtime`의 `createDevice()`로 호출의 소유자를 따로 열 수도 있다(규칙 11.8). 소유자는 `prefer`에서 처음 열리는 tier나 호스트가 이미 가진 `GPUDevice`, 또는 프로그램 런타임의 디바이스(`createDevice({ runtime })`) 위에 열린다. `device.array()`는 그 호출이 받는 `Resident` 배열을 만들고, `device.fuse()`는 호출 체인을 그 디바이스에서 계획 하나로 실행한다. `Resident` 하나는 처음부터 끝까지 소유자 하나에 속하므로, 호출은 다른 소유자의 배열을 거부한다. 소유자는 에뮬레이션 배정밀도의 플레이버(`createDevice({ fp64Flavor })`)와, 긴 커널의 청크 하나가 쓸 수 있는 시간(`createDevice({ timeBudgetMs })`)도 정한다. `configure()`, `resident()`, `fuse()`는 이전처럼 기본 소유자를 다룬다.',
+        '호스트는 `typeshade/runtime`의 `createDevice()`로 호출의 소유자를 따로 열 수도 있다(규칙 11.8). 소유자는 `prefer`에서 처음 열리는 tier나 호스트가 이미 가진 `GPUDevice`, 또는 프로그램 런타임의 디바이스(`createDevice({ runtime })`) 위에 열린다. `device.array()`는 그 호출이 받는 `Resident` 배열을 만들고, `device.fuse()`는 호출 체인을 그 디바이스에서 계획 하나로 실행한다. 일반 호출은 배열과 텍스처의 유일한 소유자를 선택한다. 소유자가 있는 리소스가 없으면 기본 소유자를 쓴다. 여러 소유자가 섞이면 실행 전에 거부하며, 소유권과 수명 검사는 유지된다. 디바이스를 정하는 `prefer`, `device`, `runtime` 옵션은 함께 지정할 수 없다. 소유자는 에뮬레이션 배정밀도의 플레이버(`createDevice({ fp64Flavor })`)와, 긴 커널의 청크 하나가 쓸 수 있는 시간(`createDevice({ timeBudgetMs })`)도 정한다. `fp64Flavor`를 생략하면 실제 디바이스나 컨텍스트에서 자동으로 선택하며, 명시적인 재정의도 지원한다. `configure()`, `resident()`, `fuse()`는 이전처럼 기본 소유자를 다룬다.',
       runtimeInfoP:
         '`buildInfo`는 패키지 버전과, 확인할 수 있을 때만 정확한 소스 리비전을 제공한다. 수정되었거나 빌드 결과가 오래되었거나 리비전이 기록되지 않은 빌드는 `revision: null`이다. `device.info`와 `runtime.info`는 실제로 열린 디바이스나 컨텍스트의 고정된 기록이다. 직렬화할 수 있으며, 디바이스를 잃거나 해제한 뒤에도 읽을 수 있다. WebGPU 식별 정보에는 출처가 표시되고, 기능과 한도는 활성화된 디바이스의 값이다. 알 수 없는 식별 정보는 그대로 남긴다. WebGL 문자열은 실제 컨텍스트에서 읽는다. 이 정보는 개별 호출의 실행 tier를 나타내거나 보고서를 전송하지 않는다. 런타임 빌드, 프로그램을 만든 컴파일러, 벤치마크 워크로드의 출처는 각각 기록한다.',
       webgl2H: 'WebGL2에서 달라지는 것',
@@ -2720,7 +2720,7 @@ export const ko: Copy = {
       h: '에뮬레이션 배정밀도',
       p1: `WGSL에도 ${glsl}에도 배정밀도 부동소수점은 없다. TypeShade는 f32 값 두 개를 합치지 않고 나란히 든 쌍으로 이를 에뮬레이션하고, 산술, 비교, 일부 내장 함수를 그 쌍에 대한 호출로 바꿔 낸다. 그 범위 밖의 연산은 출력할 때 코드가 붙은 오류로 실패한다. 쓰는 코드는 그대로이고 선언한 타입만 다르다. deep-zoom 예제에서 \`${facts.deepZoomOrigin.name}\` 필드는 소스에서 \`${facts.deepZoomOrigin.sourceType}\`로 선언되고 유니폼 블록에서는 \`${facts.deepZoomOrigin.layoutType}\` 자리를 차지하며, 호스트가 그 자리를 분리한 쌍으로 채운다.`,
       p2: 'f64 산술을 하는 모듈에는 가드 텍스처 바인딩도 주입되는데, 호스트는 이 텍스처를 흰색 텍셀 하나로 채워야 한다. GPU 드라이버의 셰이더 컴파일러는 텍셀 읽기를 미리 계산해 버릴 수 없는데, 그 읽기가 없으면 오차 보정 항을 마음대로 최적화해 없앨 수 있기 때문이다. 연산마다 f32의 몇 배가 들므로 이 타입은 값 하나하나에 대해 골라서 쓴다. 예제는 [fp64-deep-zoom-twin.shade.ts](deepZoom)이다.',
-      p3: "이 가드는 에뮬레이션의 `'float'` 플레이버에 속한다. Apple GPU에는 `'integer'` 플레이버가 필요하다. 이 플레이버는 같은 오차 항을 정수 연산으로 계산하고, 가드를 바인딩하지 않는다. 모듈을 가져오는 호스트는 실행할 때 `createDevice({ fp64Flavor })`나 `configure({ fp64Flavor })`로 플레이버를 고른다. `recommendFp64Flavor`는 어댑터와 사용자 에이전트를 보고 알맞은 플레이버를 알려 준다.",
+      p3: "이 가드는 에뮬레이션의 `'float'` 플레이버에 속한다. Apple GPU에는 `'integer'` 플레이버가 필요하다. 이 플레이버는 같은 오차 항을 정수 연산으로 계산하고, 가드를 바인딩하지 않는다. 기본값은 실제 디바이스나 컨텍스트에서 자동으로 선택하며, 사용 가능한 경우 사용자 에이전트 정보도 참고한다. Apple이나 Metal 신호가 있으면 `'integer'`를, CPU이거나 GPU 신호를 알 수 없으면 `'float'`를 선택한다. 신호를 알 수 없을 때의 선택이 확장 정밀도를 보장하지는 않는다. `createDevice({ fp64Flavor })`나 `configure({ fp64Flavor })`로 선택을 재정의할 수 있다. `recommendFp64Flavor`는 이 선택 함수를 제공한다.",
       caption: `같은 월드 좌표를 두 번 그렸다. 왼쪽은 ${split[0]}, 오른쪽은 ${split[1]}이다. ${split[0]} 쪽은 줄무늬가 계단처럼 나오는데, 이 거리에서는 ${split[0]}의 ulp 하나가 줄무늬에 필요한 소수 부분보다 거칠기 때문이다. 다른 쪽은 매끄럽게 나온다.`,
       captionNone: '빌드할 때 렌더링한 화면이다. 이 브라우저에는 WebGPU도 WebGL2도 없다.',
     },
@@ -2991,13 +2991,13 @@ export const ko: Copy = {
           '매개변수는 ECMAScript의 `Set<K>`나 `Map<K, V>`일 수도 있다. `K`는 `u32`, `i32`, `f32` 또는 [키 타입](languageStringKeys)이다. 루프는 `s.add(k)`나 `m.set(k, v)`로 값을 넣는다. 호스트는 JavaScript의 `Set`이나 `Map`을 그대로 넘긴다. 호출이 끝나면 루프를 차례로 실행했을 때 남는 항목이 그 안에 들어 있다. 키는 한 번씩, 처음 넣은 순서대로 들어가고, 값은 마지막에 넣은 것이다. 뒤의 루프는 `has`, `get`, `size`로 읽으며, `m.get(k)!`는 `m.has(k)`로 확인한 자리에서만 읽는다. 컬렉션 루프는 WebGPU와 CPU tier에서 실행된다. WebGL2는 지원하지 않는다. 호출은 루프 전에 문자열 키를 id로 바꾸고, 끝난 뒤 문자열로 되돌리며 삽입 순서를 유지한다. 알 수 없는 호스트 문자열은 `TypeError`를 낸다. 값 집합이 열린 `Map<string, V>`와 `Set<string>`은 계속 거부된다. [kernel-set-unique](exampleKernelSetUnique)와 [호스트-set-unique](exampleHostSetUnique)가 두 가지를 모두 보여 준다.',
         fuse: '6. 커널 호출 체인',
         fuseP:
-          '호스트는 `typeshade({ fuse: true })`로 빌드하고, `typeshade/fuse`의 `fuse()` 안에서 커널 함수 여러 개를 부를 수 있다(규칙 11.13). WebGPU에서는 바로 앞 호출이 같은 인덱스에 쓴 값을 읽는 호출들이 제출 하나 안의 디스패치 하나로 실행된다. 스코프가 돌려주는 리포트는 그룹마다 이름을 대고, 두 호출이 따로 실행되는 이유를 알려 준다. 본문 안의 진입점 호출은 혼자 그룹을 이루며, 배열에 값을 덧붙이는 루프도 그렇다. `Map`이나 `Set`을 받는 호출도 별도 그룹이며, 리포트는 `b takes a Map or a Set`이나 CPU에서 실행하는 이유를 표시한다. `FuseReport`와, 여러 리포트를 하나로 합치는 `mergeReports`는 `typeshade/runtime`에서도 가져올 수 있다. 그래서 리포트를 읽기만 하는 호스트는 플래너를 싣지 않는다.',
+          '호스트는 등록용 import 없이 `device.fuse()` 안에서 커널 함수 여러 개를 부를 수 있다(규칙 11.13). 기본 소유자를 사용하는 `typeshade/fuse`의 `fuse()`도 계속 지원한다. 이 컴파일러 버전에서는 합칠 수 있는 호출을 분석하는 정보를 얻으려면 여전히 `typeshade({ fuse: true })`로 빌드해야 한다. WebGPU에서는 바로 앞 호출이 같은 인덱스에 쓴 값을 읽는 호출들이 제출 하나 안의 디스패치 하나로 실행된다. 스코프가 돌려주는 리포트는 그룹마다 이름을 대고, 두 호출이 따로 실행되는 이유를 알려 준다. 본문 안의 진입점 호출은 혼자 그룹을 이루며, 배열에 값을 덧붙이는 루프도 그렇다. `Map`이나 `Set`을 받는 호출도 별도 그룹이며, 리포트는 `b takes a Map or a Set`이나 CPU에서 실행하는 이유를 표시한다. `FuseReport`와, 여러 리포트를 하나로 합치는 `mergeReports`는 `typeshade/runtime`에서도 가져올 수 있다. 그래서 리포트를 읽기만 하는 호스트는 플래너를 싣지 않는다.',
         fuseIndirectP:
           '진입점 호출은 앞선 호출이 쓴 배열에서 워크그룹 개수를 읽을 수 있다. `entry(bindings, { indirect, offset })`는 호출이 실행될 때 `Resident<Uint32Array>`의 `offset` 원소에서 개수 세 개를 읽는다. 그러면 호출 체인 사이에 읽기가 필요 없다. 스코프 안에서는 이런 호출의 그룹이 리포트에 `indirect: true`로 적힌다.',
         fuseOverrideP:
           '`device.fuse()` 안에서도 가져온 컴퓨트 진입점의 세 번째 인자로 `{ constants }`를 넘긴다. 크기가 없는 스토리지 배열은 그 소유자의 Resident여야 한다. 호출은 계획의 제출 안에서 혼자 그룹을 이루며, 소유자의 fp64 방식을 유지한다. WebGPU에서는 `workgroupShapes`가 `[[32, 1, 1]]`처럼 선택한 차원을 표시한다. 상수 선택으로 제출이나 대기, 읽기가 추가되지는 않는다. [host-compute 예제](exampleHostCompute)는 리포트를 돌려주고 계획이 끝난 뒤 출력을 읽는다.',
         deviceP:
-          '`typeshade/runtime`의 `createDevice()`는 호출의 소유자를 연다. `device.array()`는 그 호출이 받는 `Resident` 배열을 만들고, `device.fuse()`는 본문의 호출을 그 디바이스에서 계획 하나로 실행한다. `Resident` 하나는 처음부터 끝까지 소유자 하나에 속한다. 그래서 호출은 다른 소유자의 배열을 거부한다. `device.release(r)`는 배열을 디바이스의 풀에 돌려주며, 원소와 길이가 같은 다음 `array()`가 그 배열을 다시 쓴다.',
+          '`typeshade/runtime`의 `createDevice()`는 호출의 소유자를 연다. `device.array()`는 그 호출이 받는 `Resident` 배열을 만들고, `device.fuse()`는 본문의 호출을 그 디바이스에서 계획 하나로 실행한다. 일반 호출은 배열과 텍스처의 유일한 소유자를 선택하며, 소유자가 있는 리소스가 없으면 기본 소유자를 쓴다. 여러 소유자가 섞이면 실행 전에 거부한다. `Resident`의 소유자는 수명 동안 바뀌지 않는다. `device.release(r)`는 배열을 디바이스의 풀에 돌려주며, 원소와 길이가 같은 다음 `array()`가 그 배열을 다시 쓴다.',
         chunkP:
           '디스패치 하나 안에서 반복하는 커널은 GPU 워치독이 디바이스를 재설정할 만큼 오래 돌 수 있다. 그런 루프는 청크로 나눈다. `device.chunkSize(key, max)`는 디바이스의 시간 예산 `createDevice({ timeBudgetMs })` 안에서 다음 청크의 단위 수를 준다. `device.fuse(body, { chunk: { key, units } })`는 그 청크를 혼자 실행하고 시간을 잰다. 리포트에는 `chunk` 행이 붙고, `device.chunkRates`에는 디바이스가 잰 값이 쌓인다.',
         modulesP:
@@ -3032,7 +3032,7 @@ export const ko: Copy = {
           'mat4 같은 matrix 타입은 변환 계산에 사용한다. TypeScript 객체가 아니라 GPU 연산 값이다.',
         arrays: '5. 배열',
         arraysP:
-          'array는 여러 GPU 값을 하나의 타입으로 표현한다. 리소스 요소 타입과 함께 사용하면 호스트가 제공하는 버퍼 구조를 명확하게 설명할 수 있다.',
+          '배열은 여러 GPU 값을 표현한다. 길이가 고정된 배열과 같은 타입의 원소로 이루어진 튜플은 함수 안의 const, let 바인딩 패턴을 지원한다. 일부 원소를 생략하거나 패턴을 중첩할 수 있으며, 각 바인딩은 값을 복사한다. 런타임이나 특수화 상수에 따라 길이가 정해지는 배열은 이 패턴을 지원하지 않는다. 리소스 원소 타입과 함께 쓰면 호스트가 제공하는 버퍼의 구조를 나타낸다.',
         live: '6. 라이브 예제',
         liveP:
           '아래 진입점은 줄마다 GPU 타입이 하나씩 나온다. 위치는 `vec2`, 거리와 반지름은 `f32`, 색은 `vec3`이다.',
@@ -3163,7 +3163,7 @@ export const ko: Copy = {
           '모든 맵은 `out`의 `i`에 쓰고 입력도 `i`에서 읽는다. 그래서 맵의 체인은 디스패치 하나가 되고, 전체 리덕션은 체인의 마지막 호출로 합류한다. 축 리덕션, 스캔, 압축은 입력을 다른 인덱스에서 읽는다. 그래서 그 입력을 쓴 호출 뒤에서는 저마다 새 그룹을 시작한다. 예제의 첫 스코프에서는 `fill`, `add`, `relu`가 디스패치 하나로, `sumAxis`가 두 번째 디스패치로 실행되며, 둘은 제출 하나에 담긴다.',
         tiers: '4. 함수가 실행되는 곳',
         tiersP:
-          '컴파일러의 차등 게이트는 모든 함수를 WebGPU와 WebGL2에서 불러 CPU 오라클과 비교한다. 결정성 보고서에 행이 없는 함수는 비트 단위로 같아야 하고, `exp`나 `sin`처럼 행이 있는 함수는 정해진 범위 안에 들어야 한다. WebGL2는 전체 리덕션 세 개, 스캔 두 개, `compact`, `histogram`을 거부한다. 그래서 이 호출들은 `prefer`의 다음 tier로 넘어간다(규칙 11.8).',
+          '컴파일러의 차등 게이트는 모든 함수를 WebGPU와 WebGL2에서 불러 CPU 오라클과 비교한다. 결정성 보고서에 행이 없는 함수는 비트 단위로 같아야 하고, `exp`나 `sin`처럼 행이 있는 함수는 정해진 범위 안에 들어야 한다. WebGL2는 전체 리덕션 세 개, 스캔 두 개, `compact`, `histogram`을 거부한다. 그래서 이 호출들은 선택된 소유자의 `prefer` 정책에서 다음 tier로 넘어간다(규칙 11.8).',
         device: '5. 디바이스 인터페이스',
         deviceP:
           '`"use typeshade"` 파일도 `typeshade/algorithms`에서 가져올 수 있다. 이 하위 경로는 `typeshade` 조건에서 셰이더 모듈을 가리킨다. 그 내보내기는 커널 함수이고, 커널 함수는 다른 함수가 부르지 않는다. 그래서 이번 버전에서 셰이더 파일이 이 모듈에서 부를 함수는 없다. 커널이 자기 워크그룹 메모리 위에서 조합하는 헬퍼는 다음에 나온다.',
@@ -3523,7 +3523,7 @@ export const ko: Copy = {
           },
           destructuring: {
             name: '구조 분해',
-            p: '이름마다 선언이 하나씩, 적힌 순서대로 풀린다.',
+            p: '객체 패턴은 필드를 읽는다. 함수 안의 `const`, `let` 배열 패턴은 길이가 고정된 배열이나 같은 타입의 원소로 이루어진 튜플에서 값을 순서대로 복사한다. 생략한 자리도 인덱스를 차지하며, 중첩 패턴을 지원하고 원본 식은 한 번만 계산한다. 범위, 원소 타입과 읽기 전용 접근 규칙은 유지된다. 나머지 원소, 기본값, 구조 분해 대입, 매개변수, 벡터의 배열 패턴과 런타임 또는 특수화 상수에 따라 길이가 정해지는 배열은 지원하지 않는다.',
           },
           spread: {
             name: '객체 스프레드',
@@ -3531,7 +3531,7 @@ export const ko: Copy = {
           },
           arrayLiteral: {
             name: '배열 리터럴',
-            p: '배열 초기자이다. 선언이 `array<T, N>`을 밝힌 자리에서만 쓴다. [array-literal-ramp](shadeArrayLiteralRamp)',
+            p: '문맥에서 원소 타입과 길이가 정해진 배열 초기자이다. `array<T, N>` 선언이 그 예이다. 함수 안의 배열 바인딩 패턴은 같은 타입으로 이루어진 리터럴 초기자에서 타입과 길이를 추론할 수도 있다. [array-literal-ramp](shadeArrayLiteralRamp)',
           },
           tuple: {
             name: '튜플',
