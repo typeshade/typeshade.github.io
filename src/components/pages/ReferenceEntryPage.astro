@@ -1,16 +1,16 @@
 ---
 // One documented name of the language surface, on a page of its own at
 // /reference/<kind>/<name>/. The shape is the one /api/ already uses and MDN set: the name,
-// a one-line summary, then Syntax, Parameters, Return value, Description, Targets, Examples
-// and See also, with a section left out where the compiler supplies nothing for it. Nothing
-// on the page is written here: the declaration, the parameters, the return types, the
+// a summary and a compiler reference ordered as Syntax, Parameters, Return value,
+// Description, Targets, Examples and See also. Mathematical lessons and authored notes
+// lead the page. Sections the compiler has nothing for are omitted. The declarations,
+// parameters, return types,
 // sentence, the stage rules and the two target spellings are a LanguageEntry
 // (src/lib/language-reference.ts), the examples come from the corpus
 // (src/lib/language-examples.ts), and the words around them are docs.reference in every
-// dictionary. A reference note is the one part a person writes: sections after Description
-// and before Targets, translated like a guide section and held to the values they read
-// (DESIGN.md, Reference notes; src/lib/reference-notes.ts, ReferenceNotes.astro). A page
-// without a note shows nothing there.
+// dictionary. Mathematical explanations live in the lesson dictionaries. Authored reference
+// notes are translated like guide sections and held to the values they read (DESIGN.md,
+// Reference notes; src/lib/reference-notes.ts, ReferenceNotes.astro).
 import { getEntry } from 'astro:content';
 import { Code } from 'astro-expressive-code/components';
 import Docs, { type Heading } from '../../layouts/Docs.astro';
@@ -160,7 +160,6 @@ const sections = [
   // the sentence goes on to say, the stage the front end holds a builtin id to, and what the
   // CPU oracle does with the name. An entry with none of the three has no Description.
   { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.oracle !== null },
-  // The note's sections, each under its own heading, after Description and before Targets.
   { id: 'targets', label: e.targets, show: entry.spelling !== null },
   { id: 'examples', label: e.examples, show: examples.length > 0 },
   { id: 'see-also', label: e.seeAlso, show: true },

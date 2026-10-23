@@ -16,6 +16,19 @@ const server = await serveDist(
   Number(process.env.FUNCTION_DEMOS_PORT ?? 4487),
 );
 const browser = await launchChromium();
+const layoutsOnly = process.argv.includes('--layouts-only');
+const externalHosts = new Set();
+const localPage = async (options) => {
+  const page = await browser.newPage(options);
+  await page.route('**/*', (route) => {
+    const url = new URL(route.request().url());
+    if (url.origin === server.url || ['blob:', 'data:'].includes(url.protocol))
+      return route.continue();
+    externalHosts.add(url.hostname);
+    return route.abort();
+  });
+  return page;
+};
 const measurements = [];
 const tick = (page) =>
   page.evaluate(
@@ -23,105 +36,113 @@ const tick = (page) =>
   );
 
 try {
-  const page = await browser.newPage({
-    viewport: { width: 1440, height: 1000 },
-    reducedMotion: 'reduce',
-  });
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  for (const backend of ['webgpu', 'webgl2']) {
-    for (const demo of FUNCTION_DEMOS) {
-      assert(
-        demo.expression.includes(`${demo.name}(`),
-        `${demo.name}: expression calls a different function`,
-      );
-      errors.length = 0;
-      await page.goto(
-        `${server.url}/reference/functions/${demo.name}/${backend === 'webgl2' ? '?forcegl2=1' : ''}`,
-      );
-      const figure = page.locator(`[data-live-id="reference-function-${demo.name}"]`);
-      const canvas = figure.locator('canvas');
-      const calculation = await page.locator('[data-function-calculation]').innerText();
-      assert(
-        calculation.includes(`${demo.name}(`) && calculation.includes('≈'),
-        `${demo.name}: no worked calculation`,
-      );
-      await canvas.scrollIntoViewIfNeeded();
-      await page.waitForFunction((id) => {
-        const canvas = document.querySelector(`[data-live-id="${id}"] canvas`);
-        return canvas?.dataset.backend && canvas.dataset.backend !== 'none';
-      }, `reference-function-${demo.name}`);
-      assert.equal(
-        await canvas.getAttribute('data-backend'),
-        backend,
-        `${demo.name}: wrong backend`,
-      );
-      assert.equal(
-        await figure.locator('.live-axes span').count(),
-        4,
-        `${demo.name}: missing plot bounds`,
-      );
-      assert.equal(
-        await figure.locator('details.live-parts').getAttribute('open'),
-        null,
-        `${demo.name}: source starts open`,
-      );
-      assert(
-        await page.evaluate(() => {
-          const explanation = document.getElementById('interactive-example');
-          const syntax = document.getElementById('syntax');
-          return !!(explanation.compareDocumentPosition(syntax) & Node.DOCUMENT_POSITION_FOLLOWING);
-        }),
-        `${demo.name}: compiler syntax precedes the explanation`,
-      );
-      await tick(page);
-      for (const control of await figure.locator('input[type="range"]').all()) {
-        const before = await canvas.screenshot();
-        const moved = await control.evaluate((input) => {
-          const previous = input.value;
-          input.value = String(Number(input.min) + (Number(input.max) - Number(input.min)) * 0.73);
-          if (input.value === previous)
-            input.value = input.value === input.max ? input.min : input.max;
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          return previous !== input.value;
-        });
-        assert(moved, `${demo.name}: control did not move`);
-        await tick(page);
-        const after = await canvas.screenshot();
-        assert(!before.equals(after), `${demo.name}: a moved control did not change the image`);
-      }
-      assert.deepEqual(errors, [], `${demo.name}: browser errors`);
-      if (demo.name === 'sin' && backend === 'webgpu') {
-        await figure.locator('details.live-parts > summary').click();
-        await figure.locator('[data-live-edit]').click();
-        const editor = figure.locator('textarea[data-live-input]');
-        const source = await editor.inputValue();
-        await editor.fill(
-          source
-            .replace('probe: f32', 'probe: f32\n  extra: f32')
-            .replace('return sin(x)', 'return sin(x) + u.extra'),
-        );
-        await page.waitForFunction(() => {
-          const root = document.querySelector('[data-live-id="reference-function-sin"]');
-          return root?.dataset.liveState === 'ok' && root.querySelector('[data-field="extra"]');
-        });
+  if (!layoutsOnly) {
+    const page = await localPage({
+      viewport: { width: 1440, height: 1000 },
+      reducedMotion: 'reduce',
+    });
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    for (const backend of ['webgpu', 'webgl2']) {
+      for (const demo of FUNCTION_DEMOS) {
         assert(
-          (await figure.locator('[data-field="extra"] .live-control-head').innerText()).includes(
-            'extra',
-          ),
+          demo.expression.includes(`${demo.name}(`),
+          `${demo.name}: expression calls a different function`,
         );
-        await figure.locator('[data-live-reset]').click();
-        await page.waitForFunction(
-          () =>
-            !document.querySelector('[data-live-id="reference-function-sin"] [data-field="extra"]'),
+        errors.length = 0;
+        await page.goto(
+          `${server.url}/reference/functions/${demo.name}/${backend === 'webgl2' ? '?forcegl2=1' : ''}`,
+        );
+        const figure = page.locator(`[data-live-id="reference-function-${demo.name}"]`);
+        const canvas = figure.locator('canvas');
+        const calculation = await page.locator('[data-function-calculation]').innerText();
+        assert(
+          calculation.includes(`${demo.name}(`) && calculation.includes('≈'),
+          `${demo.name}: no worked calculation`,
+        );
+        await canvas.scrollIntoViewIfNeeded();
+        await page.waitForFunction((id) => {
+          const canvas = document.querySelector(`[data-live-id="${id}"] canvas`);
+          return canvas?.dataset.backend && canvas.dataset.backend !== 'none';
+        }, `reference-function-${demo.name}`);
+        assert.equal(
+          await canvas.getAttribute('data-backend'),
+          backend,
+          `${demo.name}: wrong backend`,
+        );
+        assert.equal(
+          await figure.locator('.live-axes span').count(),
+          4,
+          `${demo.name}: missing plot bounds`,
+        );
+        assert.equal(
+          await figure.locator('details.live-parts').getAttribute('open'),
+          null,
+          `${demo.name}: source starts open`,
+        );
+        assert(
+          await page.evaluate(() => {
+            const explanation = document.getElementById('interactive-example');
+            const syntax = document.getElementById('syntax');
+            return !!(
+              explanation.compareDocumentPosition(syntax) & Node.DOCUMENT_POSITION_FOLLOWING
+            );
+          }),
+          `${demo.name}: compiler syntax precedes the explanation`,
+        );
+        await tick(page);
+        for (const control of await figure.locator('input[type="range"]').all()) {
+          const before = await canvas.screenshot();
+          const moved = await control.evaluate((input) => {
+            const previous = input.value;
+            input.value = String(
+              Number(input.min) + (Number(input.max) - Number(input.min)) * 0.73,
+            );
+            if (input.value === previous)
+              input.value = input.value === input.max ? input.min : input.max;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            return previous !== input.value;
+          });
+          assert(moved, `${demo.name}: control did not move`);
+          await tick(page);
+          const after = await canvas.screenshot();
+          assert(!before.equals(after), `${demo.name}: a moved control did not change the image`);
+        }
+        assert.deepEqual(errors, [], `${demo.name}: browser errors`);
+        if (demo.name === 'sin' && backend === 'webgpu') {
+          await figure.locator('details.live-parts > summary').click();
+          await figure.locator('[data-live-edit]').click();
+          const editor = figure.locator('textarea[data-live-input]');
+          const source = await editor.inputValue();
+          await editor.fill(
+            source
+              .replace('probe: f32', 'probe: f32\n  extra: f32')
+              .replace('return sin(x)', 'return sin(x) + u.extra'),
+          );
+          await page.waitForFunction(() => {
+            const root = document.querySelector('[data-live-id="reference-function-sin"]');
+            return root?.dataset.liveState === 'ok' && root.querySelector('[data-field="extra"]');
+          });
+          assert(
+            (await figure.locator('[data-field="extra"] .live-control-head').innerText()).includes(
+              'extra',
+            ),
+          );
+          await figure.locator('[data-live-reset]').click();
+          await page.waitForFunction(
+            () =>
+              !document.querySelector(
+                '[data-live-id="reference-function-sin"] [data-field="extra"]',
+              ),
+          );
+        }
+        console.log(
+          `[function-demos] ${demo.name}: ${backend}, plot bounds, source disclosure and controls passed`,
         );
       }
-      console.log(
-        `[function-demos] ${demo.name}: ${backend}, plot bounds, source disclosure and controls passed`,
-      );
     }
+    await page.close();
   }
-  await page.close();
 
   // Representative continuous, discontinuous, constrained-domain, parameterized, and
   // vector-component plots, including their translated first screens.
@@ -129,7 +150,7 @@ try {
     for (const locale of ['', '/ko']) {
       for (const colorScheme of ['light', 'dark']) {
         for (const name of ['sin', 'log', 'mod', 'smoothstep', 'normalize']) {
-          const page = await browser.newPage({
+          const page = await localPage({
             viewport: { width, height: 1000 },
             colorScheme,
             reducedMotion: 'reduce',
@@ -179,7 +200,7 @@ try {
 
   // Every page remains useful with scripts disabled: the same program has a real captured
   // frame, its bounds are visible, and the mathematical explanation is server-rendered.
-  const fallback = await browser.newPage({
+  const fallback = await localPage({
     javaScriptEnabled: false,
     viewport: { width: 390, height: 1000 },
   });
@@ -196,7 +217,10 @@ try {
   await fallback.close();
   await writeFile(path.join(shots, 'measurements.json'), JSON.stringify(measurements, null, 2));
   console.log(
-    `[function-demos] ${FUNCTION_DEMOS.length} functions, both backends, ${measurements.length} layout screenshots and script-free fallback passed`,
+    `[function-demos] ${FUNCTION_DEMOS.length} functions, ${layoutsOnly ? 'layout review' : 'both backends'}, ${measurements.length} layout screenshots and script-free fallback passed`,
+  );
+  console.log(
+    `[function-demos] third-party requests excluded: ${[...externalHosts].join(', ') || 'none'}`,
   );
 } finally {
   await browser.close();
