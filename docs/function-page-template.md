@@ -23,9 +23,16 @@ The first catalogue covers scalar mathematical functions and vector magnitude ex
 produce a scalar result. Each entry supplies its expression, input range, output range, and
 optional parameter control. Page copy and labels come from both language dictionaries.
 
-Texture access, atomics, synchronization, and declarations need examples of their resources
-or execution model. A scalar curve cannot explain those operations. Keep their generated
-reference and corpus examples until a suitable example is supplied.
+Texture access, atomics, synchronization, and declarations use worked resource or execution
+models. Each model states its assumptions and offers contrasting cases. These examples are
+readable without JavaScript and do not claim to execute GPU work. Texture examples show texels
+and filtering; atomic examples distinguish the old value, return value, and stored value;
+barrier examples show workgroup participation and memory scope. Constructors show components
+or matrix columns. Bit operations show the full word and its component bits.
+
+Every function must have either a live mathematical example, the authored Pow note, or a
+worked model. Coverage is checked against the pinned compiler's function table. Generated
+compiler signatures and target restrictions remain on every page after its lesson.
 
 ## Review
 
