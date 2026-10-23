@@ -2592,69 +2592,68 @@ export const en = {
     overview: {
       title: 'TypeShade language guide',
       description:
-        'A progressive guide to TypeShade syntax and GPU semantics for TypeScript developers, with examples and concept mapping.',
+        'Examples explain TypeShade syntax, GPU types, resources, shader stages and execution rules.',
       h1: 'TypeShade language guide',
       intro:
-        'Do not learn TypeShade as a list of syntax forms. Start from TypeScript concepts you already know, then learn what changes when the same idea must execute on a GPU. Each topic moves from syntax to meaning, a small example, and a real shader use.',
-      boundaryH: '1. Start with `use typeshade`',
+        'TypeShade uses TypeScript syntax for shader source. This guide explains what the compiler accepts and what the GPU runs.',
+      boundaryH: '1. What is `use typeshade`?',
       boundaryP:
-        '`"use typeshade"` is a language boundary, not just a string literal. Inside the file, TypeScript-like authoring is combined with TypeShade rules for types, resources, stages and builtin inputs.',
-      boundaryNote:
-        'The first directive tells you that this file is not interpreted as an ordinary TypeScript module.',
-      syntaxH: '2. TypeScript syntax is the starting point',
+        '`"use typeshade"` marks a TypeShade shader file. The compiler applies TypeShade rules for GPU types, resources, stages and builtin inputs.',
+      boundaryNote: 'The directive must appear first in the file.',
+      syntaxH: '2. TypeScript syntax',
       syntaxP:
-        'Variables, functions, type aliases, classes, conditionals and loops provide a familiar authoring surface. A shader does not execute like a JavaScript program, though. A construct has TypeShade meaning only when the compiler can lower its values and operations to GPU code.',
-      syntaxTableHeader1: 'TypeScript concept',
-      syntaxTableHeader3: 'What changes',
+        'TypeShade uses TypeScript syntax for variables, functions, type aliases, classes, conditionals and loops. The compiler accepts only values and operations it can lower to GPU code.',
+      syntaxTableHeader1: 'TypeScript',
+      syntaxTableHeader3: 'GPU meaning',
       syntaxTableRows: [
-        ['function', 'helper / entry', 'The body must be GPU-lowerable.'],
-        ['type', 'GPU value shape', 'The shape is checked against GPU value semantics.'],
         [
-          'class',
-          'GPU struct',
-          'A struct and the functions written with it, with no runtime object.',
+          'function',
+          'helper or entry point',
+          'The compiler lowers supported function bodies to GPU code.',
         ],
+        ['type', 'GPU value type', 'The compiler checks it against GPU type rules.'],
+        ['class', 'GPU struct', 'It defines a struct; it does not create a JavaScript object.'],
         [
           'if / for',
           'GPU control flow',
-          'Only flow that compiles to GPU execution, not the whole JavaScript runtime.',
+          'The compiler checks conditions and loops for GPU support.',
         ],
       ],
-      gpuH: '3. GPU concepts stay visible in the source',
-      gpuP: 'TypeShade makes the GPU interface explicit. Resources use `declare`, stages use decorated top-level functions, and builtin inputs are declared as `@builtin(...)` parameters.',
+      gpuH: '3. GPU interface',
+      gpuP: 'The source declares the GPU interface. Use `declare` for resources, stage decorators for entry points, and `@builtin(...)` parameters for GPU inputs.',
       gpuNote:
-        'The shader does not create `camera` or `pixels`. `gid` is not injected as a global either; it is declared as an input to the function.',
-      functionH: '4. Functions describe value flow',
+        'The shader does not create `camera` or `pixels`; the host provides them. `gid` is a function parameter, not a global.',
+      functionH: '4. Functions and entry points',
       functionP:
-        'As in TypeScript, parameters and return types describe a function contract. TypeShade adds shader-specific meaning through stages and builtin inputs.',
+        'Parameters and return types define a function’s inputs and result. Stage decorators and builtin parameters define an entry point’s GPU role.',
       functionNote:
-        '`addBias` is a reusable helper; `paint` is a compute entry. They share function syntax but have different roles in the pipeline.',
-      resourceH: '5. Resources form the host boundary',
+        '`addBias` is a reusable helper. `paint` is a compute entry point. They use the same function syntax but have different pipeline roles.',
+      resourceH: '5. GPU resources',
       resourceP:
-        '`uniform<T>` and `storage<T>` are GPU resources supplied by the host, not JavaScript objects created by the shader. `declare` records that ownership boundary in source.',
+        '`uniform<T>` and `storage<T>` name GPU resources supplied by the host. `declare` marks resources that the shader does not create.',
       resourceNote:
-        'A resource is always declared `const`. Whether the shader may write a `storage` binding is part of its type, `storage<T, "read_write">`.',
-      stageH: '6. Entry functions start a pipeline stage',
+        'Declare each resource with `const`. `storage<T>` is read-only; `storage<T, "read_write">` also allows writes.',
+      stageH: '6. Shader stages',
       stageP:
-        '`@vertex`, `@fragment` and `@compute` declare which shader stage owns an entry function. Builtins are explicit parameters instead of automatically injected globals.',
-      completeH: '7. Put the pieces together',
+        '`@vertex`, `@fragment` and `@compute` mark an entry point’s stage. Declare GPU builtins as parameters; the compiler does not inject them as globals.',
+      completeH: '7. Complete example',
       completeP:
-        'Read the following example from top to bottom. The language directive, GPU struct, resources, compute stage and builtin parameter form one explicit program contract.',
-      tsH: '8. What TypeScript gives you, and what changes',
+        'This example combines the directive, a GPU struct, resources, a compute entry point and a builtin parameter.',
+      tsH: '8. TypeScript and TypeShade',
       tsRows: [
-        ['`declare`', '`declare` describes host-provided GPU resources.'],
-        ['function parameter', 'GPU value or explicit stage builtin input.'],
-        ['class', 'GPU struct and field metadata.'],
-        ['number', 'Use explicit GPU numeric types such as `f32`, `i32`, `u32`.'],
+        ['`declare`', 'Names a GPU resource supplied by the host.'],
+        ['function parameter', 'Holds a GPU value or a stage builtin input.'],
+        ['class', 'Defines a GPU struct and its field metadata.'],
+        ['number', 'Use GPU numeric types such as `f32`, `i32` and `u32`.'],
       ],
       tsNote:
-        'TypeShade is therefore not a copy of TypeScript syntax. It connects the TypeScript authoring experience to a GPU language model.',
+        'TypeShade keeps TypeScript syntax and gives it GPU semantics. JavaScript runtime behavior does not carry over automatically.',
       refsH: '9. Further reading',
       refsP:
-        'When learning a TypeShade concept, read the matching TypeScript type or function documentation, check the JavaScript execution model, and then connect it to the GPU concept.',
+        'Read the TypeScript Handbook for types and functions, review the JavaScript execution model, then continue with the GPU concepts.',
       nextH: '10. Learning path',
       nextP:
-        'Build a first file in Quick start, then expand through Types, Functions, Control flow, GPU types, Resources and Shader stages, in that order.',
+        'Start with Quick start, then read Types, Functions, Control flow, GPU types, Resources and Shader stages in order.',
       nextLink: 'Quick start',
     },
     topics: {
