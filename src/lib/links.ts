@@ -34,6 +34,7 @@ export const links = {
   home: { label: 'TypeShade', href: '/' },
   benchmarks: { label: 'Benchmarks', href: '/benchmarks/' },
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
+  why: { label: 'Why TypeShade', href: '/guide/why/' },
   quickStart: { label: 'Quick Start', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
   editor: { label: 'Editor support', href: '/guide/editor/' },
@@ -416,6 +417,7 @@ export function apiPage(name: string): string {
 export function docsPages(locale: Locale): readonly Destination[] {
   return [
     docsPage(locale, 'motivation'),
+    docsPage(locale, 'why'),
     docsPage(locale, 'quickStart'),
     docsPage(locale, 'editor'),
     docsPage(locale, 'guide'),
@@ -440,6 +442,7 @@ export function docsPages(locale: Locale): readonly Destination[] {
 
 type DocsPageKey =
   | 'motivation'
+  | 'why'
   | 'quickStart'
   | 'playground'
   | 'editor'
@@ -468,6 +471,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
   const m = d.labels.mappingSections;
   const labels: Record<DocsPageKey, string> = {
     motivation: d.introduction,
+    why: d.why,
     quickStart: d.quickStart,
     playground: d.labels.playground,
     editor: d.labels.editor,
@@ -645,7 +649,13 @@ export function sidebar(
   return [
     {
       title: labels.getStarted,
-      items: [page('motivation'), page('quickStart'), page('playground'), page('editor')],
+      items: [
+        page('motivation'),
+        page('why'),
+        page('quickStart'),
+        page('playground'),
+        page('editor'),
+      ],
     },
     { title: labels.language, items: languagePages },
     {

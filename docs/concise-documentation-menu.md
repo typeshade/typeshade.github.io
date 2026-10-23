@@ -38,3 +38,21 @@ Menu changes and reader installation form the documentation entry workflow in th
 
 The owner separately reported slider movement and missing plot axes. Those graphics corrections
 will be tracked in a separate pull request; this PR retains navigation and installation scope.
+
+## Integration with the Why page
+
+Before merging PR 231, integrate main `47afdb6d510102d07d3a33f793ffb91203891909`
+(the bilingual Why TypeShade page from PR 232). Resolve the navigation conflict by
+retaining the Why page and its sidebar link alongside Docs and Quick Start.
+The installation description keeps the npm Git command.
+
+On 2026-10-23 UTC, the integrated branch passed formatting, the full build, TypeScript,
+IfChange and artifact hashes. SEO covered 2606 pages and 2486 sitemap entries; OpenSEO
+reported no issues. All eight worker prefixes passed. External links had 1804 resolved
+URLs, one font-license transport warning and zero broken URLs.
+
+The 24 browser views at 1440/390 px in EN/KO and both themes retained the Docs label,
+Quick Start heading, 65 px header and 836/358 px article widths without page overflow.
+Evidence is in `/workspace/shared/concise-documentation-menu/after-main47/`.
+No width, padding or grid-column rule was added or removed by this conflict resolution.
+The compiler pin remains `91c2fe31`.

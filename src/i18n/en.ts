@@ -1593,31 +1593,47 @@ export const en = {
       ],
       columns: ['Concept', 'Familiar from TypeScript', 'What TypeShade adds'],
     },
-    title: 'Why one shader source for WebGPU and WebGL2, TypeShade',
-    description: `Why TypeShade emits WGSL and ${glsl} from one typed TypeScript module: what maintaining two shader languages costs, with the Khronos survey figures.`,
+    title: 'Why TypeShade for TypeScript shader development',
+    description:
+      'TypeShade brings TypeScript syntax and editor tools to GPU programs. Learn how shared shader source, multiple targets and CPU checks fit your project.',
     h1: 'Why TypeShade',
+    intro:
+      'TypeShade keeps shader logic in a typed source file and compiles it for supported GPU targets. It brings TypeScript authoring tools, shared shader source and output verification into the same workflow.',
     sections: [
       {
-        h: 'Two copies of every shader',
-        p: 'A shader that has to run on WebGL2 and on WebGPU exists twice. The two languages disagree about types, entry points, resource binding and precision, so the second copy is a rewrite. A fix that lands in one copy and misses the other only shows up on the machines that take the other path, and a reviewer has to read two dialects to decide whether they still mean the same thing.',
+        id: 'typescript-tooling',
+        h: 'TypeScript tooling',
+        p: 'Functions, classes, type annotations and imports provide a familiar way to organize shader code. A file starts with `"use typeshade"`, which marks the boundary where shader types and execution rules apply. The [editor extension](editor) adds completions, shader diagnostics and navigation. The [TypeScript mapping](languageFromTypescript) explains how each supported construct compiles.',
       },
       {
-        h: 'The move to WebGPU',
-        p: 'The web is in the middle of one such move. The [MapLibre graphics modernization roadmap](maplibreRoadmap), the [deck.gl WebGPU guide](deckglWebgpu) and the [PixiJS v8 migration guide](pixijsMigration) each describe a WebGPU path arriving beside an existing WebGL one, so a custom layer written as GLSL will need a WGSL copy.',
+        id: 'shared-source',
+        h: 'Shared shader source',
+        p: `WebGPU consumes WGSL, while WebGL2 consumes ${glsl}. Maintaining separate implementations means applying each change in each language. TypeShade lowers a shader program to a shared intermediate representation and emits the supported targets from it. A change to a helper function reaches each emitted version through the same compilation. The [target guide](conceptsWgsl) explains where their capabilities differ.`,
       },
       {
-        h: 'What the survey says',
-        p: `In the [${facts.survey.title}](survey), ${facts.survey.figure64}% of the ${facts.survey.n}+ shader developers surveyed adapt shaders across platforms, APIs or tools, and nearly ${facts.survey.figure10}% describe it as a significant engineering cost or one of their largest.`,
+        id: 'host-integration',
+        h: 'Host integration',
+        p: 'The compiler exposes shader source and reflection metadata for a host to inspect and consume. An application can use the output with its own renderer. The Vite plugin also lets a host import shader modules and call their entries through `typeshade/runtime`. The [WebGPU and WebGL2 guide](conceptsWebgpu) describes these integration paths and the resources the host provides.',
       },
       {
-        h: 'What TypeShade does',
-        p: 'The official surface is a TypeScript file that starts with \`"use typeshade"\`. A misspelt field or a wrong-typed return is caught in the editor; one intermediate representation emits both languages; and the same source compiles to a CPU function in double precision, so what a backend produces can be checked against a reference computed from the same source. [Verification](checks) says what runs on every push. The graph API remains for the gallery.',
+        id: 'verification',
+        h: 'A reference for verification',
+        p: 'The CPU oracle evaluates the same intermediate representation in double precision. It supplies a reference for checking GPU results. Compiler checks also include target compilation, output snapshots and differential tests. Floating-point results can differ between execution targets. [Verification](checks) describes the checks and their scope.',
       },
       {
-        h: 'What it does not do',
-        p: 'TypeShade has no renderer and no scene graph. It returns strings and reflection metadata; creating pipelines, binding resources and issuing draws stay with the host. SPIR-V, MSL and HLSL come out of naga or Tint, fed the WGSL, because every native host already reaches WGSL through Dawn or wgpu.',
+        id: 'constraints',
+        h: 'GPU constraints',
+        p: 'A shader must follow resource, stage and target rules. Some constructs emit WGSL alone, and WebGL2 compute uses supported lowering paths with capability limits. TypeShade adds a compiler step and its own language rules. The [language guide](guide) and [target guide](conceptsWgsl) describe those constraints. Existing WGSL or GLSL may already cover a project that needs a single target or specific target features.',
+      },
+      {
+        id: 'project-status',
+        h: 'Project status',
+        p: 'TypeShade is pre-release. Check the features and targets your application needs against the pinned compiler before adopting it. The [quick start](quickStart) documents the current setup, and the [design rules](rules) describe the language contract.',
       },
     ],
+    nextH: 'Next steps',
+    nextP:
+      'Open the [Playground](playground) to edit a shader and inspect its output. Follow the [quick start](quickStart) to use it in a project, or browse the [examples](examples) for complete programs.',
   },
 
   benchmarks: {
