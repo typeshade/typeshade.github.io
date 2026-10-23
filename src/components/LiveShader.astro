@@ -48,6 +48,8 @@ interface Props {
    *  declare fails the build. */
   controls?: ControlProps;
   aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2' | '1/1';
+  /** Limit the result's visual size and place its controls directly below it. */
+  compact?: boolean;
   /** `figure` is the column a guide page shows: code, then canvas, then controls. `hero` is
    *  the front page's showcase card: a head bar with the file name and the two buttons, the
    *  code pane beside the canvas, then the controls and the caption, with no emitted-output
@@ -55,7 +57,7 @@ interface Props {
   variant?: 'figure' | 'hero';
 }
 
-const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1', variant = 'figure' } = Astro.props;
+const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1', compact = false, variant = 'figure' } = Astro.props;
 const hero = variant === 'hero';
 const t = copyFor(locale);
 const l = t.live;
@@ -95,7 +97,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
 ---
 
 <figure
-  class:list={['figure', 'live', hero ? 'live-hero' : undefined]}
+  class:list={['figure', 'live', hero ? 'live-hero' : undefined, compact && !hero ? 'live-compact' : undefined]}
   data-live-shader
   data-live-id={id}
   data-aspect={aspect}
@@ -161,13 +163,14 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
         <img src={`/stills/${id}.webp`} alt={aria.none} loading="lazy" decoding="async" />
         <canvas role="img" aria-label={aria.none} data-backend="none"></canvas>
       </div>
+      {compact && <div class="live-controls" data-live-controls hidden></div>}
       <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
 
       {anchor && <p class="live-anchor"><Rich text={anchor} locale={locale} /></p>}
 
       <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
 
-      <div class="live-controls" data-live-controls hidden></div>
+      {!compact && <div class="live-controls" data-live-controls hidden></div>}
       {payload.reserved.length > 0 && (
         <p class="live-reserved">
           <Rich text={reservedNote} locale={locale} />
@@ -234,6 +237,13 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   /* The canvas takes the pointer, which the reserved `mouse` field is filled from. Every
      other figure on the site is a picture and lets the pointer through. */
   .live-frame > canvas { pointer-events: auto }
+  /* A compact result leaves room around the picture and keeps its controls within reach.
+     The frame retains its aspect ratio, including when it shows the fallback image. */
+  .live-compact .live-frame, .live-compact .live-controls {
+    inline-size: 90%; max-inline-size: 32rem; align-self: center;
+  }
+  .live-compact[data-aspect='1/1'] .live-frame,
+  .live-compact[data-aspect='1/1'] .live-controls { max-inline-size: 22rem }
   .live-diagnostics:empty { display: none }
   .live-reserved { margin: 0; color: var(--color-text-2); font-size: var(--text-meta) }
   .live-output { margin-block-start: 6px; border-block-start: 1px solid var(--color-line-1); padding-block-start: 10px }

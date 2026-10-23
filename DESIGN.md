@@ -922,6 +922,9 @@ Putting one on a page:
   then canvas, then controls. `variant="hero"` is the front page's showcase card, one elevated
   card with the file name as an active tab in a 56px head bar, the code pane and the canvas
   side by side from 48rem, and the controls under both.
+- `compact` limits a figure's result and controls to 90% of the available width, capped at
+  22rem for square results and 32rem for other aspects. It centres both and places the
+  controls directly below the canvas. The Pow reference note uses this setting.
 - The build compiles the sample (`src/lib/live-shader-emit.ts`) and inlines the WGSL, both
   GLSL ES 3.00 stages, the compiled program manifest, the reflected layout and the controls. A sample the compiler reports
   an error on fails the build.
