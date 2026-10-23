@@ -4,8 +4,8 @@
 
 - Baseline: `2ea4efff78e7fab08346e1610e1f0edc05e19ea1` (site main).
 - Compiler pin: `91c2fe31de045ebf0e5f2c333ac98b95cc460280`, unchanged.
-- Annotated release tag object: `30c74a6c88d76323cc4e9a10b967c7260970c832` (recorded by Bun); peeled commit below.
-- TypePlot release dependency: `github:typeshade/typeplot#v0.1.0`, targeting `089996ae3dc3dc2a503774614faa0955b7b73a71`.
+- Annotated release tag object: `0747e33ffbe0f7777242892f2360f92ecc0f238e` (recorded by Bun); peeled commit below.
+- TypePlot release dependency: `github:typeshade/typeplot#v0.1.1`, targeting `f5eceac674c77af7f3805da0c7b5709dea4174fd`.
 - Initial review implementation: `typeshade/typeplot#1`, commit `099c252cc3257ead0bedc22d41e4412cb9e9ec51`; shader and interaction behavior are unchanged in the release.
 - Install the independent package from its stable Git release tag.
 - Import the shared shader documents and plot interaction controller through package subpaths.
@@ -32,4 +32,14 @@ The site now consumes only `typeplot/shaders` and `typeplot/interaction`. The im
 
 Browser screenshots and measurements: `/workspace/shared/typeplot-package-integration`. Final release-tag browser smoke passed inverseSqrt on both backends, including the 118,037-byte script budget, stable slider, zoom and reset. All temporary browsers and servers were stopped. Temporary helpers live outside the repository. No test files were added.
 
-TypePlot PRs 1 and 2 are merged. The site installs the `v0.1.0` Git release. The npm package is not published yet; replacing this Git dependency with a registry version follows its first publication. No merge is authorized for this integration PR.
+TypePlot PRs 1, 2 and 3 are merged. The site installs the `v0.1.1` Git release. The npm package is not published yet; replacing this Git dependency with a registry version follows its first publication. The owner authorized continuing the integration after review on 2026-10-23. Merge requires the current required checks to pass and PR 231 to land first.
+
+## Release 0.1.1 integration
+
+The site now targets TypePlot `v0.1.1`. Its `dist/interaction.js`, `dist/shaders.js` and
+`shaders/plot.shade.ts` are byte-identical to the installed `v0.1.0` files. Accessibility
+and Vite changes in the high-level renderer do not enter this site bundle.
+
+PR 231's navigation and current-sidebar verification updates are integrated before the final
+site checks. This branch must not merge before PR 231. The compiler pin and page dimensions
+remain unchanged.
