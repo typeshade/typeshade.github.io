@@ -5,17 +5,11 @@ sourceLine: 1172
 rules: 6.6 qXyf0FpXuS4xir_HpHadSIsWFZT2WtMx8M-wm9BvJOE=, 12.3 CjhXTenX6H0V0STxt5Bka_Sp7X0GVUeCZR9Mt1IqNvA=
 ---
 
-이 페이지를 읽고 나면 모듈을 WGSL로, GLSL 스테이지 둘로, 또는 호스트가 자기 프로그램에
-이어 붙이는 모듈 조각(module fragment)으로 바꿀 수 있고, 호스트가 바인딩할 때 참고하는
-파이프라인 메타데이터도 읽을 수 있습니다.
+이 페이지는 모듈을 WGSL, GLSL 스테이지 두 개, 호스트 프로그램에 결합할 모듈 조각(module fragment)으로 생성하는 방법을 설명한다. 바인딩에 필요한 파이프라인 메타데이터를 읽는 방법도 다룬다.
 
-생성(emit)은 모듈이 담고 있는 IR을 타깃 하나의 소스 텍스트로 바꾸는 과정입니다. 리플렉션은
-같은 모듈을 반대편에서 본 것으로, 셰이더가 무엇을 기대하는지를 데이터로 기술합니다. 덕분에
-버퍼를 할당하고 바인드 그룹을 만들고 버텍스 레이아웃을 정하는 코드가 같은 내용을 손으로
-다시 적지 않고 모듈에서 바로 읽어 올 수 있습니다. 둘 다 IR을 읽기만 할 뿐 바꾸지 않으므로,
-어느 쪽을 호출해도 넘긴 모듈은 그대로 남습니다.
+생성(emit)은 모듈의 IR을 특정 타깃의 소스로 변환한다. 리플렉션은 같은 모듈에서 셰이더의 요구 사항을 데이터로 추출한다. 호스트는 이를 읽어 버퍼 할당, 바인드 그룹 생성, 버텍스 레이아웃 설정에 사용하므로 선언을 수동으로 다시 작성할 필요가 없다. 두 기능 모두 IR을 읽기만 하며 입력 모듈은 변경하지 않는다.
 
-이 페이지의 예제는 다음 소스에서 `compile()`이 돌려준 모듈을 `m`이라는 이름으로 읽습니다.
+이 페이지의 예제는 다음 소스에서 `compile()`이 돌려준 모듈을 `m`이라는 이름으로 읽는다.
 
 ```ts
 "use typeshade";
@@ -45,11 +39,11 @@ export function fs(vo: VsOut): vec4 {
 
 ### WGSL 생성
 
-`compile()`은 이미 WGSL을 `wgsl`로 돌려줍니다. `emitModule(m)`은 모듈에서 같은 문자열을
-돌려주며, 빌드마다 달라지는 옵션을 받습니다. 최적화 수준, 괄호 모드, f64 방식, 플러그인 체인이
-그런 옵션입니다. 생성 전 검사를 먼저 돌리므로,
+`compile()`은 이미 WGSL을 `wgsl`로 반환한다. `emitModule(m)`은 모듈에서 같은 문자열을
+돌려주며, 빌드마다 달라지는 옵션을 받는다. 최적화 수준, 괄호 모드, f64 방식, 플러그인 체인이
+그런 옵션이다. 생성 전 검사를 먼저 돌리므로,
 검증에 실패하는 모듈이나 타깃이 지원하지 않는 기능을 쓰는 모듈은 생성을 호출하는 시점에
-오류 코드가 붙은 오류를 던집니다.
+오류 코드가 붙은 오류를 던진다.
 
 ```ts
 import { compile, emitModule, emitModuleAt, emitIdentity } from 'typeshade'
@@ -65,19 +59,14 @@ const naive = emitModuleAt(m, 'O0')
 emitIdentity('wgsl') // 'wgsl;parens=full;fp64=float;plugins=-#069d5f95'
 ```
 
-생성 결과는 모듈뿐 아니라 설정에도 달려 있습니다. 괄호 모드, f64 방식, 고정해 둔 오버라이드
-값, 플러그인 체인이 모두 생성되는 바이트를 바꾸므로, 설정이 다른 두 파일을 나란히 놓으면
-이유를 알 수 없는 diff가 나옵니다. `emitIdentity(target, opts)`는 그 설정을 사람이 읽을 수
-있는 요약 한 줄과 그 다이제스트로 정리해 줍니다. 커밋하는 아티팩트 옆에 이 값을 적어 두고
-빌드가 끝난 뒤 비교하십시오. 값이 같으면 두 파일을 같은 설정으로 만들었다는 뜻이고, 다르면
-설정의 어느 항목이 바뀌었는지가 값에 드러납니다.
+생성 결과는 모듈과 설정에 따라 달라진다. 괄호 모드, f64 방식, 고정된 오버라이드 값, 플러그인 체인은 모두 출력 바이트에 영향을 준다. 다른 설정으로 생성한 파일을 비교하면 모듈 변경과 무관한 diff가 생길 수 있다. `emitIdentity(target, opts)`는 설정을 읽을 수 있는 한 줄 요약과 다이제스트로 반환한다. 아티팩트와 함께 기록해 빌드 후 비교한다. 값이 같으면 생성 설정도 같으며, 값이 다르면 변경한 항목을 확인할 수 있다.
 
 ### GLSL ES 3.00 생성
 
 WebGL2 프로그램은 따로 컴파일되는 셰이더 두 개로 이루어지므로, GLSL 백엔드는 호출 한 번에
-스테이지 하나씩만 생성합니다. `emitGlslStages(m)`은 한 모듈의 두 스테이지를 한꺼번에
-돌려주며, 두 스테이지에 공통인 하향 변환(lowering)은 한 번만 수행합니다. `compile()`이 `glsl`로
-돌려주는 값이 바로 이 결과입니다.
+스테이지 하나씩만 생성한다. `emitGlslStages(m)`은 한 모듈의 두 스테이지를 한꺼번에
+돌려주며, 두 스테이지에 공통인 하향 변환(lowering)은 한 번만 수행한다. `compile()`이 `glsl`로
+돌려주는 값이 바로 이 결과이다.
 
 ```ts
 import { emitGlslModule, emitGlslStages } from 'typeshade'
@@ -93,21 +82,17 @@ const whole = emitGlslModule(m)
 ```
 
 문자열마다 `#version 300 es` 줄과 정밀도 프리앰블이 들어 있고, 선언은 그 스테이지가 실제로
-쓰는 것만 담깁니다. 하향 변환은 결정적이라 두 스테이지가 공유하는 이름은 전부 같게 나오고,
-그래서 둘을 링크할 수 있습니다. 한 스테이지 안에 진입점을 여러 개 담은 모듈이라면
+쓰는 것만 담긴다. 하향 변환은 결정적이라 두 스테이지가 공유하는 이름은 전부 같게 나오고,
+그래서 둘을 링크할 수 있다. 한 스테이지 안에 진입점을 여러 개 담은 모듈이라면
 `emitGlslStages`에 `vertexEntry`와 `fragmentEntry`도 넘길 수 있으며, 이름을 지정해도 하향
-변환은 여전히 한 번입니다. GLSL은 스테이지마다 `main()`이 하나뿐이라, 이런 스테이지에서 진입점
-이름을 지정하지 않으면 `emitGlslStages`와 `emitGlslModule` 모두 거부합니다. `compile()`은 이를
-`TS8015` 경고로 알리고 `glsl`은 undefined로 둡니다. GLSL 쪽 함수는 WGSL 생성 옵션에 GLSL 전용 옵션을 더해 받습니다.
-전체 목록은 `GlslEmitOptions` 참고 문서에 있습니다.
+변환은 여전히 한 번이다. GLSL은 스테이지마다 `main()`이 하나뿐이라, 이런 스테이지에서 진입점
+이름을 지정하지 않으면 `emitGlslStages`와 `emitGlslModule` 모두 거부한다. `compile()`은 이를
+`TS8015` 경고로 알리고 `glsl`은 undefined로 둔다. GLSL 쪽 함수는 WGSL 생성 옵션에 GLSL 전용 옵션을 더해 받는다.
+전체 목록은 `GlslEmitOptions` 참고 문서에 있다.
 
 ### 모듈 조각
 
-모듈 조각은 프로그램의 한 부분입니다. 버전 헤더 없이, 기본값으로는 진입점도 없이 선언과
-헬퍼만 담은 것으로, 최종 프로그램은 호스트가 소유하고 우리 쪽 텍스트를 그 안에 붙여 넣는
-경우에 씁니다. GLSL 호스트 코드베이스에서 `#include`를 쓰던 자리에는 모듈 조각을 쓰면 됩니다.
-`emitGlslFragment(m, stage)`는 GLSL용 모듈 조각을, `emitFragment(m)`은 WGSL용 모듈 조각을
-같은 모양으로 돌려줍니다.
+모듈 조각은 버전 헤더 없이 선언과 헬퍼를 제공하는 프로그램의 일부이다. 기본적으로 진입점도 포함하지 않는다. 호스트가 최종 프로그램을 구성하고 생성된 텍스트를 결합할 때 사용한다. GLSL 코드베이스의 `#include`를 대체할 수 있다. `emitGlslFragment(m, stage)`는 GLSL 조각을, `emitFragment(m)`은 WGSL 조각을 같은 구조로 반환한다.
 
 ```ts
 import { emitFragment, emitGlslFragment } from 'typeshade'
@@ -124,20 +109,18 @@ const w = emitFragment(m, { entryPoints: true })
 ```
 
 프리앰블은 문자열에 섞이지 않고 데이터로 돌아오므로, 조각 여러 개를 조합하는 쪽에서 그
-줄들을 합치고 중복을 걸러 낼 수 있습니다. 빠지는 줄이 없으니 정규식으로 헤더를 걷어 낼
-일도 없습니다. `declares`는 `source`가 무엇을 정의하는지 적은 목록이라 조합하는 쪽이 이어
+줄들을 합치고 중복을 걸러 낼 수 있다. 빠지는 줄이 없으니 정규식으로 헤더를 걷어 낼
+일도 없다. `declares`는 `source`가 무엇을 정의하는지 적은 목록이라 조합하는 쪽이 이어
 붙이기 전에 이름 충돌을 확인할 수 있고, `requires`는 호스트 쪽 프리앰블이 채워 줘야 하는
-이름을 나열합니다. 진입점은 따로 요청하지 않으면 조각에 들어가지 않지만,
-`declares.entryPoints`에는 어느 경우든 이름이 올라갑니다. 조각에 들어가지 않아도 진입점이
-스테이지 범위를 정하기 때문입니다. 조각이 어떤 헬퍼, 구조체, 바인딩을 담는지는 그
-스테이지에 무엇이 필요한지로 정해집니다. 모듈 조각도 모듈 전체를 생성할 때와 같은 생성 전
-검사를 거칩니다.
+이름을 나열한다. 진입점은 따로 요청하지 않으면 조각에 들어가지 않지만,
+`declares.entryPoints`에는 어느 경우든 이름이 올라간다. 조각에 들어가지 않아도 진입점이
+스테이지 범위를 정하기 때문이다. 조각이 어떤 헬퍼, 구조체, 바인딩을 담는지는 그
+스테이지에 무엇이 필요한지로 정해진다. 모듈 조각도 모듈 전체를 생성할 때와 같은 생성 전
+검사를 거친다.
 
 ### reflect가 돌려주는 것
 
-`reflect(m)`은 모듈을 타깃과 무관한 데이터로 기술합니다. 타깃과 무관하다는 말은 `reflect`가
-백엔드 인자 없이 모듈만 받는다는 뜻이고, 그래서 리플렉션 하나로 그 모듈의 WGSL 생성 결과와
-GLSL 생성 결과를 함께 설명할 수 있습니다.
+`reflect(m)`은 모듈을 타깃과 독립적인 데이터로 기술한다. `reflect`는 백엔드 인자 없이 모듈만 받으므로, 리플렉션 하나로 WGSL과 GLSL 생성 결과를 모두 설명한다.
 
 ```ts
 import { reflect } from 'typeshade'
@@ -158,24 +141,15 @@ r.requiredLanguageFeatures // the WGSL language features the browser must implem
 r.requires // host-provided globals the module references and does not declare
 ```
 
-`uniforms`는 std140, `storage`는 std430 레이아웃입니다. 타깃이 유니폼 블록과 스토리지 버퍼에
-각각 쓰는 바이트 레이아웃입니다. 둘 다 필드마다 오프셋, 정렬, 크기를 적고, 구조체 자체의
-크기도 정렬 단위로 이미 올림한 값으로 담습니다. 그래서 그 크기를 그대로 구조체 배열의
-스트라이드로 쓸 수 있습니다. `storage<array<T>>` 바인딩은 요소 타입의 배열이므로
-`bindGroups`에는 나타나지만 `storage`에는 항목이 없습니다. 그 요소의 std430 스트라이드나,
-모듈이 선언한 아무 구조체의 레이아웃이 필요하면 그 선언에 `wgslLayout`을 호출하십시오.
-[레이아웃과 리소스](/guide/authoring/layouts-and-resources/)가 선언한 구조체라면
-`wgslLayout(m.structs.find((s) => s.name === 'ShapeSegment')!, 'std430')`처럼 씁니다. 버텍스 진입점이 `location` 매개변수를
-하나도 받지 않는 모듈에서는 `vertex`가 `undefined`입니다.
+`uniforms`는 유니폼 블록의 std140 레이아웃이고, `storage`는 스토리지 버퍼의 std430 레이아웃이다. 두 레이아웃은 필드별 오프셋, 정렬, 크기를 제공한다. 구조체 크기는 정렬 단위로 올림되어 있어 배열 스트라이드로 사용할 수 있다. `storage<array<T>>`는 요소 타입의 배열 바인딩이므로 `bindGroups`에 포함되지만 `storage`에는 항목이 없다. 요소의 std430 스트라이드나 다른 구조체의 레이아웃이 필요하면 선언에 `wgslLayout`을 호출한다. [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)의 구조체는 `wgslLayout(m.structs.find((s) => s.name === 'ShapeSegment')!, 'std430')`로 조회한다. 버텍스 진입점에 `location` 매개변수가 없으면 `vertex`는 `undefined`이다.
 
-`packModule(m)`은 같은 정보를 평범한 JSON 매니페스트 하나로 모읍니다. 프로그램의 WGSL, 바이트
-레이아웃이 붙은 바인딩, 진입점, WebGL2 프로그램이 여기에 들어갑니다. 빌드가 이 매니페스트를
-디스크에 쓰고, `typeshade/runtime`이 불러옵니다(`docs/use-typeshade-surface.md` §69).
+`packModule(m)`은 같은 정보를 평범한 JSON 매니페스트 하나로 모은다. 프로그램의 WGSL, 바이트
+레이아웃이 붙은 바인딩, 진입점, WebGL2 프로그램이 여기에 들어간다. 빌드가 이 매니페스트를
+디스크에 쓰고, `typeshade/runtime`이 불러온다(`docs/use-typeshade-surface.md` §69).
 
 ### 리플렉션에서 바인딩하기
 
-호스트는 `bindGroups`를 훑으며 항목마다 리소스를 하나씩 만듭니다. 무엇을 만들지는 필드
-세 개를 보고 정합니다.
+호스트는 `bindGroups`의 각 항목에 대응하는 리소스를 생성한다. 생성할 리소스는 다음 세 필드로 결정한다.
 
 ```ts
 import { reachFrom, reflect, stageOf } from 'typeshade'
@@ -197,23 +171,6 @@ reach.bindings // Set { 'u' }, the binding names that stage reads
 reach.fns // the call-graph closure from those entries, the entries included
 ```
 
-`owner`는 리소스의 주인이 누구인지 나타냅니다. 모듈이 바인딩을 선언하고 호스트가 이
-리플렉션을 보고 할당하면 `'module'`입니다. `"use typeshade"` 파일이 선언하는 바인딩은 모두
-이 경우입니다. `resourceKind`는 무엇을
-만들어야 하는지 나타냅니다. 텍스처 항목에는 뷰에 필요한 두 값인 `textureDim`과
-`textureElem`도 들어 있으며, 작성하는 쪽 설명은
-[레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에 있습니다. 바인드 그룹
-레이아웃에 넣는 단어는 `sampleType`입니다. 깊이 텍스처는 `'depth'`, 정수 텍스처는 `'uint'`
-또는 `'sint'`입니다. `f32` 텍스처에 샘플러를 주는 호출이 있으면 `'float'`이고, 프로그램이
-텍셀을 읽거나 크기나 개수만 확인하면 `'unfilterable-float'`입니다. `r32float`처럼 32비트
-실수 텍스처에는 후자가 필요합니다. `stages`는 어떤
-스테이지가 그 바인딩을 쓰는지 나타냅니다. WebGPU에서는 바인드 그룹 레이아웃 항목에 넣을
-가시성 마스크가 되고, WebGL2에서는 호스트가 유니폼 블록 바인딩 포인트와 텍스처 유닛을
-스테이지별로 배정할 때 쓰는 정보가 됩니다.
+`owner`는 리소스 할당 주체를 나타낸다. 모듈이 바인딩을 선언하고 호스트가 리플렉션에 따라 할당하는 경우는 `'module'`이다. `"use typeshade"` 파일의 바인딩은 모두 이에 해당한다. `resourceKind`는 생성할 리소스 종류이다. 텍스처 항목의 `textureDim`과 `textureElem`은 뷰 생성에 사용하며, 선언 방법은 [레이아웃과 리소스](/guide/authoring/layouts-and-resources/)에서 설명한다. 바인드 그룹 레이아웃의 `sampleType`은 깊이 텍스처가 `'depth'`, 정수 텍스처가 `'uint'` 또는 `'sint'`이다. `f32` 텍스처를 샘플러와 함께 읽으면 `'float'`이고, 텍셀·크기·개수만 조회하면 `'unfilterable-float'`이다. `r32float` 같은 32비트 실수 텍스처에는 후자가 필요하다. `stages`는 바인딩을 사용하는 스테이지 목록이다. WebGPU에서는 바인드 그룹 레이아웃의 가시성 마스크로, WebGL2에서는 스테이지별 유니폼 블록 바인딩 포인트와 텍스처 유닛 할당에 사용한다.
 
-바인드 그룹에는 직접 선언한 바인딩뿐 아니라 하향 변환이 끼워 넣는 바인딩도 들어갑니다.
-[fp64](/guide/authoring/fp64/) 하향 변환은 에뮬레이션 헬퍼가 가드 텍스처를 읽는 모듈에
-`_fp64`라는 텍스처 바인딩을 추가합니다. 그 페이지가 설명하는 가드 텍스처가 바로 이것입니다.
-이 리플렉션을 보고 바인딩하는 호스트는 그런 사정을 몰라도 이 바인딩을 다른 바인딩과
-똑같이 바인딩하게 됩니다. 생성할 때 넘길 `fp64Flavor`를 `reflect`에도 똑같이 넘기십시오.
-그래야 리플렉션이 실제로 실행될 프로그램을 기술합니다.
+바인드 그룹에는 직접 선언한 바인딩과 하향 변환에서 추가한 바인딩이 모두 포함된다. [fp64](/guide/authoring/fp64/) 하향 변환은 에뮬레이션 헬퍼가 가드 텍스처를 읽는 모듈에 `_fp64` 텍스처 바인딩을 추가한다. 이는 해당 페이지에서 설명하는 가드 텍스처이다. 리플렉션을 사용하는 호스트는 생성 경위를 구별하지 않고 다른 바인딩과 같은 방식으로 연결한다. 리플렉션이 실제 실행 프로그램과 일치하려면 생성 옵션의 `fp64Flavor`를 `reflect`에도 동일하게 전달해야 한다.

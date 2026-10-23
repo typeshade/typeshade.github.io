@@ -2,8 +2,8 @@
   "slug": "vertexattr",
   "source": "449b345084e926c997de414631d3af5e876cfcb89fbde60e251d26b337cc51a0",
   "texts": {
-    "summary": "모듈의 @vertex 진입점에 있는, @location 속성이 붙은 매개변수 하나입니다.",
-    "description": "속성은 진입 함수가 매개변수를 선언한 순서대로 나열됩니다. `offset`은 이 순서대로 매개변수를 훑으며, 각 매개변수를 자신의 타입에 맞는 std430 정렬로 올림해서 구합니다. 레이아웃은 매개변수 순서를 따르므로, 진입점의 매개변수 순서를 바꾸면 뒤에 오는 모든 속성의 `offset`이 바뀝니다. `type`은 DSL 타입 키입니다. 이 값은 [`typeKey`](/api/typekey/)가 돌려주는 문자열이며, `StructLayout.fields[].type`이 쓰는 표기와 같습니다.",
-    "members.emitted": "생성된 텍스트에 쓰인 매개변수 이름입니다(규칙 11.10)."
+    "summary": "모듈의 @vertex 진입점에 있는, @location 속성이 붙은 매개변수 하나이다.",
+    "description": "속성은 진입 함수가 매개변수를 선언한 순서대로 나열된다. `offset`은 이 순서대로 매개변수를 훑으며, 각 매개변수를 자신의 타입에 맞는 std430 정렬로 올림해서 구한다. 레이아웃은 매개변수 순서를 따르므로, 진입점의 매개변수 순서를 바꾸면 뒤에 오는 모든 속성의 `offset`이 바뀐다. `type`은 DSL 타입 키이다. 이 값은 [`typeKey`](/api/typekey/)가 돌려주는 문자열이며, `StructLayout.fields[].type`이 쓰는 표기와 같다.",
+    "members.emitted": "생성된 텍스트에 쓰인 매개변수 이름이다(규칙 11.10)."
   }
 }

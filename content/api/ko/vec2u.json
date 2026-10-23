@@ -2,7 +2,7 @@
   "slug": "vec2u",
   "source": "f9599bebae27d7b45fa3a368cb3c35ae9e2ca2ac70c35b2e6e16b3e97fee5eb9",
   "texts": {
-    "summary": "vec2<u32> 생성자이며, WGSL 방식으로 vec2u(x, y)라고 씁니다.",
-    "description": "그냥 숫자 성분은 u32로 승격됩니다. [`vec2`](/api/vec2/)가 그냥 숫자를 f32로 승격하는 것과 다릅니다. 픽 버퍼 좌표처럼 부호 없는 쌍에 씁니다."
+    "summary": "vec2<u32> 생성자이며, WGSL 방식으로 vec2u(x, y)라고 쓴다.",
+    "description": "일반 숫자 성분은 u32로 승격된다. [`vec2`](/api/vec2/)가 일반 숫자를 f32로 승격하는 것과 다르다. 피킹 버퍼 좌표처럼 부호 없는 쌍에 쓴다."
   }
 }
