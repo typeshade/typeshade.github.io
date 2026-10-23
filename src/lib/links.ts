@@ -263,6 +263,7 @@ export const links = {
     href: '/guide/examples/kernel-set-unique/',
   },
   exampleHostSetUnique: { label: 'host-set-unique', href: '/guide/examples/host-set-unique/' },
+  exampleHostCompute: { label: 'host-compute', href: '/guide/examples/host-compute/' },
   examplePowCapsule: {
     label: 'capsule-corp-namek-class',
     href: '/guide/examples/capsule-corp-namek-class/',

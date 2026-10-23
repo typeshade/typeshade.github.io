@@ -271,3 +271,30 @@ id first, then the pull request that did the work.
 - 0081, this pull request: pin `91df8e2` moves to `94203d3c` (typeshade/typeshade#733). English and Korean pages teach key types, dense numeric Records and the host contract. The TypeScript string row links to the key page, and collection copy explains string conversions. The registered host example has both translations. D1 remains open upstream.
 - 0082, #205: pin `85b803f9` includes the first private input projection from compiler #738. English and Korean control-flow guidance describes eligibility, full logical validation and layout fallbacks. The unified benchmark adds actual one/four/eight-field host calls, separate validation/packing probes, input/upload bytes and device intervals. Controlled physical-device evidence remains pending upstream.
 - 0083, #205: pin `85b803f9` includes runtime information from compiler #736, merged as `72049d09`. The generated API reference has all new exports and translated JSDoc. English and Korean host guidance explains immutable snapshots and nullable provenance. The benchmark uses its candidate owner's `Device.info`, retaining independent adapter/WebGL observations and compiler/artifact/workload hashes. Source archives truthfully report `revision: null`.
+
+- 0084: pin `3b40e065e17fd4d6929d4c30ab45656da73f0fcd` includes
+  typeshade/typeshade#743 and its completed `host-compute` example. The English and Korean
+  WebGPU concept, shader-stage and control-flow pages explain the optional `{ constants }`
+  argument, authored defaults, dispatch counts, normalized pipeline caches, owner-selected fp64,
+  selected report shapes and CPU/WebGL2 limits. All three changed authoring-guide sections are
+  translated again; the gallery shows the executed default, direct and planned calls in both
+  locales. Rule fingerprints record review against the pinned contracts. The pin also includes
+  typeshade/typeshade#742's merged fp64 workgroup-array correctness fix. PR #743 awaits merge;
+  this site change depends on it and does not claim deployment or native GPU performance.
+  On 2026-10-22 UTC the assistant validated the preceding `c5fd951c` pin on Node 24.19.0 / Bun 1.4.4: the complete
+  build (2,514 generated pages), host/Worker typechecks, all 15 Korean guide translations,
+  25 shader samples, all 515 Korean API entries, 90 regression tests and the built reference
+  notes passed. Formatting, compiler impact, IfChange, SEO and Worker-route checks passed.
+  The Playground browser check also executes `runSpecialized()` and compares both direct
+  and planned outputs; its result is recorded in the pull request.
+  The versioned comparison catalog was regenerated and reproduced with Bun 1.4.3 for
+  `94203d3c` against `c5fd951c`, retaining all prior catalogs and runtime artifacts. Workload
+  and measurement identities did not change; `docs/benchmark-regressions.md` records the pin.
+
+  On 2026-10-23 UTC, this branch integrates site main `6f2985d` (#205). The current pin retains
+  0082 input projection and 0083 runtime information alongside 0084. English/Korean host guidance,
+  all runtime-information API translations and actual projection benchmarks remain present.
+  The current comparison advances `85b803f9` to `3b40e065` with the unchanged `applications-3`
+  workload and `unified-2` instrument from main. All five previously committed comparison
+  catalogs and their artifacts remain. The new catalog is reproducible with Bun 1.4.3;
+  integration checks and production deployment are recorded in PR #218.
