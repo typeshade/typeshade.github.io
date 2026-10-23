@@ -1,7 +1,7 @@
 ---
 id: conditional-programs
-source: 71cd6e3d933c1439c344131ccc354e6ecc7f86191e35d2e823c84a017ce94825
-sourceLine: 1944
+source: d19efbaf735c59350ca903ccffb0775c6015e3b78a9cad962de988ea42e3432d
+sourceLine: 2056
 ---
 
 이 페이지를 마치면 한 코드베이스에서 여러 프로그램 가운데 무엇을 만들지 정할 수 있습니다. 변형이
@@ -104,9 +104,12 @@ export function fs(@location(0) v: f32): vec4 {
 
 WGSL은 `override quality: f32 = 1.0;`을 생성하고, 호스트는 파이프라인의 `constants`로 값을
 고정합니다. GLSL ES 3.00에는 드라이버 쪽에서 이에 해당하는 기능이 없습니다. 그래서 백엔드는
-기본값으로 `#define`을 생성하고, 다른 값을 원하는 호스트는
-`emitGlslModule(m, 'fragment', { overrideValues: { quality: 2 } })`로 다시 생성합니다. 두 호스트
-형태 모두 채워야 할 상수 목록을 `reflect().overrides`에서 읽습니다.
+기본값으로 `#define`을 생성합니다. 프로그램 런타임은 `render({ constants })`나
+`compute(entry, { constants })`로 이 값을 고정하며, 가져온 컴퓨트 진입점은 세 번째 인자로
+같은 레코드를 받습니다. GLSL을 직접 생성하는 호스트는
+`emitGlslModule(m, 'fragment', { overrideValues: { quality: 2 } })`로 값을 지정합니다.
+이 경로들은 선언한 상수 목록을 `reflect().overrides`에서 읽습니다. WebGL2 컴퓨트는 일반
+override 값이 바뀌어도 기본 워크그룹 모양과 배열 길이를 유지합니다.
 
 이 읽기는 최적화 단계가 들여다보지 못하므로, 위의 분기는 모든 패스를 거쳐 살아남습니다. 그리고
 드라이버가 파이프라인 변형마다 이 분기를 지웁니다. 전형적인 우버셰이더 방식입니다. 간단한 기준은

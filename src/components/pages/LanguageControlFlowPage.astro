@@ -46,6 +46,7 @@ const warnings = kernelLoopWarnings();
   <TypeShadeCode code={`export function labels(pixels: array<u32>, seen: Set<u32>): u32 {\n  for (let i: u32 = 0; i < pixels.length; i++) {\n    if (pixels[i] !== 0) {\n      seen.add(pixels[i])\n    }\n  }\n  return seen.size\n}`} />
   <h2 id="fuse">{content.fuse}</h2><p><Rich text={content.fuseP} locale={locale} /></p>
   <p><Rich text={content.fuseIndirectP} locale={locale} /></p>
+  <p><Rich text={content.fuseOverrideP} locale={locale} /></p>
   <p><Rich text={content.deviceP} locale={locale} /></p>
   <TypeShadeCode code={`import { createDevice } from 'typeshade/runtime'\nimport 'typeshade/fuse'\n\nconst dev = await createDevice({ prefer: ['webgpu', 'cpu'] })\nconst a = dev.array(new Float32Array(n))\nconst out = dev.array(n, 'f32')\nawait dev.fuse(() => {\n  relu(out, a)\n})\ndev.release(a) // the next array(n, 'f32') takes it from the pool\nconst values = await out.read()\nawait dev.dispose()`} title="host.ts" />
   <p><Rich text={content.chunkP} locale={locale} /></p>

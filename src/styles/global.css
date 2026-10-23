@@ -1394,6 +1394,17 @@ body > main {
   font-family: var(--font-mono);
   font-size: 0.875em;
 }
+/* Inline identifiers stay distinct from prose, including links and wrapped calls. */
+.doc :is(p, li, td, th, dt, dd, figcaption, summary) code:not(pre code) {
+  padding: 0.075em 0.3em;
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  font-weight: 500;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  overflow-wrap: anywhere;
+}
 
 .doc h1 {
   font-size: var(--text-h1);

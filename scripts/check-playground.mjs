@@ -3647,7 +3647,10 @@ async function checkHostTs(browser, origin) {
       if (!marked) problems.push('a type error in host.ts brought back no marker');
       const clean = host.replace(
         '  return ys;',
-        "  console.log('host says', ys[3]);\n  return ys;",
+        "  console.log('host says', ys[3]);\n" +
+          '  const specialized = await runSpecialized();\n' +
+          "  console.log('specialized says', specialized.direct[3], specialized.values[3]);\n" +
+          '  return ys;',
       );
       await setHostText(page, clean);
       const cleared = await page
@@ -3681,6 +3684,7 @@ async function checkHostTs(browser, origin) {
           () => {
             const rows = [...document.querySelectorAll('[data-console-block="host"] li')];
             return rows.some((row) => row.textContent?.includes('host says')) &&
+              rows.some((row) => row.textContent?.includes('specialized says')) &&
               rows.some((row) => row.textContent?.includes('run()'))
               ? rows.map((row) => row.textContent)
               : false;
@@ -3700,7 +3704,15 @@ async function checkHostTs(browser, origin) {
         problems.push(
           `the host's console line did not arrive from host.ts:${logLine}: ${printed.join(' | ') || 'no lines'}`,
         );
-      if (!printed.some((row) => /run\(\).*Float32Array\(256\) \[0, 2\.5, 5/.test(row ?? '')))
+      if (!printed.some((row) => row?.includes('specialized says 3.75 7.5')))
+        problems.push(`the direct and planned constants gave wrong values: ${printed.join(' | ')}`);
+      // Read the default from the host shown in the editor, so a compiler example update
+      // cannot leave this check asserting an older input length.
+      const count = Number(/export async function run\(n = (\d+)\)/.exec(host)?.[1]);
+      if (!Number.isSafeInteger(count) || count <= 3)
+        problems.push('host-compute has no positive default input length to check');
+      const returned = new RegExp(`run\\(\\).*Float32Array\\(${count}\\) \\[0, 2\\.5, 5`);
+      if (!printed.some((row) => returned.test(row ?? '')))
         problems.push(`what run() returned was not shown: ${printed.join(' | ')}`);
       const runUrl = page.url();
       if (!/[#&]host=/.test(runUrl)) problems.push('the link does not carry the edited host.ts');

@@ -1,6 +1,6 @@
 ---
 id: functions-and-entry-points
-source: a6bf3910702cfaeb61cd5426c328d0cb1754a6384855c231e0268ea74055235e
+source: 4b9834e22864d0da600a9234914602a8b484d1793574a61ac66cc3aef4a18a92
 sourceLine: 514
 ---
 
@@ -108,8 +108,10 @@ export function reduceWindows(@builtin("global_invocation_id") gid: vec3u): void
 
 워크그룹 크기 자리에는 `override<u32>` 이름을 쓸 수도 있습니다. 이 이름은 워크그룹 임시 배열의
 바깥 길이와 함께 씁니다. 평범한 TypeScript 코드가 입력 형태를 보고 특수화 값을 고른 뒤
-`program.compute(entry, { constants })`로 넘기고, 디스패치 횟수를 계산하기 전에 확정된
-`pipeline.workgroupShape`를 읽을 수 있습니다. 소스 형태와 제한, 호스트 호출은
+`program.compute(entry, { constants })`나 가져온 진입점의 선택적 세 번째 인자
+`entry(bindings, groups, { constants })`로 넘깁니다. 프로그램 파이프라인은 확정된
+`pipeline.workgroupShape`를 돌려줍니다. `device.fuse()` 안을 포함해 진입점 호출은 선택한
+모양을 사용하되 넘긴 워크그룹 개수를 바꾸지 않습니다. 소스 형태와 제한, 호스트 호출은
 [`docs/use-typeshade-surface.md` §3](docs/use-typeshade-surface.md#3-entries--function-decorators-and-explicit-builtins),
 [`§15`](docs/use-typeshade-surface.md#15-textures-samplers-and-overrides),
 [`§24`](docs/use-typeshade-surface.md#24-module-variables),

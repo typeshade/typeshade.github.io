@@ -11,6 +11,11 @@ The owner authorized continuation and task-related merges on 2026-10-22 UTC.
 A Codex agent implements and validates this follow-up. The accepted compiler proposals are 0082 and 0083.
 Proposal 0082 remains accepted pending controlled physical-device whole-call evidence. Proposal 0081 deviation D1 remains open.
 
+PR #218 advances the comparison to `85b803f9` against `3b40e065`. Both builds project the
+eligible inputs and expose runtime information. The generator records each exact build's
+`inputProjection` capability. Record validation checks actual per-build input sizes and
+preserves the earlier full-input comparison below.
+
 ## Workload
 
 Workload `applications-3`, instrument `unified-2`, retains every experiment from the unified benchmark.

@@ -4,12 +4,48 @@
 
 The owner approved this change on 2026-10-22 UTC. The benchmark must show how
 compiler and runtime changes affect the same application. Site baseline is
-`02aa4ea9838024aa50c278a1c2d73c674cc4fbf8`. The documentation pin remains
-`94203d3cab6433065bbe111c3b93f66a4058828e`.
+`02aa4ea9838024aa50c278a1c2d73c674cc4fbf8`. The documentation pin at that baseline was
+`94203d3cab6433065bbe111c3b93f66a4058828e`. The compiler-pin follow-up below records its
+subsequent update.
 
 Implementation is tracked in [PR #216](https://github.com/typeshade/typeshade.github.io/pull/216).
 It merged as `13786f8` and deployed on 2026-10-22 UTC. The unified instrument in PR #217
 supersedes the separate controls described here; see [benchmark-unification.md](benchmark-unification.md).
+
+## Compiler-pin follow-up
+
+[PR #218](https://github.com/typeshade/typeshade.github.io/pull/218) pins the documentation
+compiler at `c5fd951c81ca6efe62c7dadf91b1e27ac07daa52` for compute-entry constants and the
+complete host example. The regression catalog must advance with that pin. The assistant
+regenerated it with `bun@1.4.3 scripts/regression-catalog.ts --new`, then reproduced it with
+`bun@1.4.3 run check:regression-catalog` on 2026-10-22 UTC.
+
+The current comparison is `94203d3c` against `c5fd951c`. Workload and measurement identity
+remain unchanged. The catalog registry retains every prior comparison, and the old runtime
+artifacts remain available for earlier reports. The new runtime artifact has digest
+`702f7fd1f55fdd6e0cfa55ec4448f2e945eba6629c2507adeb003a22f77df65c` and is 440,704 bytes.
+Regeneration proves reproducibility of the artifacts; browser correctness and instrument
+checks are recorded in PR #218 separately. No hardware performance gain is inferred from it.
+
+### Integration with site main
+
+On 2026-10-23 UTC, PR #218 integrates site main `6f2985d` (#205) and advances the compiler
+pin to `3b40e065e17fd4d6929d4c30ab45656da73f0fcd`. The current comparison is
+`85b803f9` against `3b40e065`, using main's `applications-3` workload and `unified-2` instrument.
+This retains actual input-projection measurements and runtime/device information. The older
+comparison above remains in the registry with every other committed catalog and artifact.
+The current candidate artifact has digest `929c4cf9583b6825c4f9b18b90caced11be4abfb7941e33b59a22ec147a39d1c`
+and is 466,973 bytes. It was generated with Bun 1.4.3. Reproduction, browser
+execution and deployment results are recorded in PR #218. This update makes no native
+performance claim.
+
+The first integration run exposed a collector assumption: every baseline used the full
+input layout. This comparison's baseline already projects its inputs. The generator now
+records `inputProjection` from the generated host face for each exact build. The collector
+uses that source-specific capability, including for retained catalogs of the same revision.
+Historical catalogs without capability data keep their original contract. Regression tests
+accept both projected builds and reject incorrect input sizes, while preserving the earlier
+full-input baseline. The real browser checks the measured bytes against the generated catalog.
 
 ## Scope
 
