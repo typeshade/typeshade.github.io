@@ -22,10 +22,10 @@ const trees = groups.map(group => ({ ...group, nodes: sidebarNodes(group.items) 
 </div>
 <p class="sidebar-caption sidebar-browse-title">{t.browse}</p>
 <div class="sidebar-sections">
-  {trees.map(group => <details class="docs-group sidebar-section" data-sidebar-section>
-    <summary class:list={['docs-group-title', { 'sidebar-section-current': group.nodes.some(node => containsPage(node, here)) }]}>{group.title}</summary>
+  {trees.map(group => <section class="docs-group sidebar-section" data-sidebar-section>
+    <p class:list={['docs-group-title', { 'sidebar-section-current': group.nodes.some(node => containsPage(node, here)) }]}>{group.title}</p>
     <SidebarTree nodes={group.nodes} here={here} overview={t.overview} />
-  </details>)}
+  </section>)}
 </div>
 <style>
   .sidebar-caption { padding-inline: 12px; font-size: 0.75rem; color: var(--color-text-3); line-height: 1.5 }
@@ -39,7 +39,6 @@ const trees = groups.map(group => ({ ...group, nodes: sidebarNodes(group.items) 
   .sidebar-browse-title { margin-block-start: 24px; padding-block-start: 16px; border-block-start: 1px solid var(--color-line-2) }
   .sidebar-sections { margin-block-start: 8px }
   .sidebar-section { margin-block-start: 2px }
-  .sidebar-section > summary { padding: 10px 12px; border-radius: var(--radius); cursor: pointer; font-size: var(--text-ui); color: var(--color-text-2) }
-  .sidebar-section > summary:hover { background: var(--fill-3); color: var(--color-text-1) }
+  .sidebar-section > .docs-group-title { margin: 0; padding: 10px 12px 4px; font-size: var(--text-ui); color: var(--color-text-2) }
   .sidebar-section > .sidebar-section-current { color: var(--color-text-1); font-weight: 600 }
 </style>

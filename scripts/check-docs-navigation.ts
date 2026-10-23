@@ -1,5 +1,5 @@
-// Audit the rendered navigation on every document. An optional prior build also checks
-// that collapsing the site tree preserved destinations and pager order.
+// Audit the rendered navigation on every document. The full tree stays visible without
+// disclosure controls; an optional prior build checks destinations and pager order.
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
@@ -57,8 +57,12 @@ for (const file of files(dist)) {
   const groups = elements(sections, (e) => 'data-sidebar-section' in e.attribs);
   assert.equal(groups.length, 6, `${route}: missing documentation group`);
   assert(
-    groups.every((e) => !('open' in e.attribs)),
-    `${route}: full navigation starts expanded`,
+    groups.every((e) => e.name === 'section'),
+    `${route}: group is still collapsible`,
+  );
+  assert(
+    elements(sections, (e) => e.name === 'details' || e.name === 'summary').length === 0,
+    `${route}: sidebar tree still has disclosure controls`,
   );
   const related = elements(context, (e) => hasClass(e, 'sidebar-related'));
   assert(related.length <= 6, `${route}: unrelated menu growth`);
@@ -92,5 +96,5 @@ for (const file of files(dist)) {
 }
 assert(count > 0, 'no document pages were audited');
 console.log(
-  `[docs-navigation] ${count} document contexts, collapsed groups and destinations passed; ${preserved} baseline sidebars and pagers preserved`,
+  `[docs-navigation] ${count} document contexts, visible groups and destinations passed; ${preserved} baseline sidebars and pagers preserved`,
 );

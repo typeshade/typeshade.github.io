@@ -70,8 +70,8 @@ from `facts` in `src/lib/examples.ts`; a number that is not measured is not on t
 
 Load `../readable-korean/SKILL.md` for Korean wording, register and terminology. The owner's
 2026-10-23 preference governs official published pages: neutral Wikipedia-like explanations,
-clear sentences and terms readers actually use. Published explanatory passages use `~이다` and `~한다`; procedures use
-short action steps. Existing polite passages are revised when they are in scope.
+clear sentences, polite formal endings such as `~입니다` and `~합니다`, and terms readers
+actually use. Published explanations and procedures use consistent polite formal endings.
 
 Prefer familiar Korean technical terms. Keep established English terms, API names and
 technical explanations in English when that is clearer. Explain unfamiliar concepts briefly

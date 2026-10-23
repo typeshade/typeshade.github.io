@@ -16,9 +16,10 @@ writes them.
 
 Load `.claude/skills/readable-korean/SKILL.md` before writing or reviewing Korean page copy,
 translations, headings or labels. It records the owner's preference for neutral, readable,
-Wikipedia-like explanations, established terminology and English when it improves clarity.
-Its Korean wording and register rules supersede the earlier polite-only and blanket
-translation conventions. Keep technical facts, source parity and localization wiring intact.
+Wikipedia-like explanations, polite formal endings such as `~입니다` and `~합니다`, established
+terminology and English when it improves clarity. The current preference for polite formal
+endings supersedes the earlier plain explanatory register. Keep technical facts, source parity
+and localization wiring intact.
 
 ## Writing and configuration management
 
