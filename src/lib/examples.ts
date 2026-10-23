@@ -83,14 +83,15 @@ const QUICK_START_HOST = 'compile.ts';
  *  registration block and its comments taken out, since those talk about the compiler's own
  *  test corpus; no line of code is touched, and the build compiles both texts and stops if
  *  their WGSL differs. The host file is the one call that compiles it, `compile()` from the
- *  main entry, imported from the path this pin resolves (nothing is on npm yet; the
- *  checked-out submodule is the package). */
+ *  main entry, imported by the package name installed from the Git repository. */
 function buildQuickStartFile(): {
   shader: { name: string; code: string; lines: number };
   host: { name: string; code: string; lines: number };
   importPath: string;
 } {
-  const importPath = `./${gitmodulesField('path')}/src/index.js`;
+  const importPath = JSON.parse(
+    readFileSync(path.join(gitmodulesField('path'), 'package.json'), 'utf8'),
+  ).name as string;
   const shader = source
     .replace(/\r\n/g, '\n')
     .replace(/\/\*\s*@example[\s\S]*?\*\/\n?/, '')

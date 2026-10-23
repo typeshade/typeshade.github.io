@@ -60,7 +60,7 @@ const sections = guide
 const groups = sidebar(locale, sections, openCategory, path);
 const here = localePath(locale, path);
 // The Playground is in the sidebar but renders outside this layout and has no pager of its
-// own, so the walk steps over it: Use TypeShade leads into the language guide.
+// own, so the walk steps over it: Quick Start leads into the language guide.
 const flat = groups.flatMap((g) => g.items).filter((i) => i.href !== localePath(locale, links.playground.href));
 const at = flat.findIndex((i) => i.href === here);
 // Previous and next follow the sidebar, unless the page passed its own: the reference walks

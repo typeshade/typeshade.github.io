@@ -624,7 +624,7 @@ why lives on its own page.
   convention), a link to report a problem with the page (MDN's "Report a problem with this
   content"), and previous and next, which follow the sidebar's order.
   - Get started: `/guide/introduction/` (the language boundary, what stays familiar from
-    TypeScript, what the compiler produces), `/guide/quick-start/` (the submodule command,
+    TypeScript, what the compiler produces), `/guide/quick-start/` (the npm Git installation command,
     the authored file, the WGSL it emits, the host code, the release state), `/playground/`
     and `/guide/editor/` (the VS Code extension: where to install it, what it gives a shader
     file on the desktop and in VS Code for the Web with the two conditions the web build
@@ -709,9 +709,12 @@ per `html lang`, so a Korean page is searched in Korean. The magnifier in the he
 dialog that loads the index on its first open, and Pagefind's UI is dressed in the site's
 tokens through the CSS variables its stylesheet reads.
 
-The header is the one every library site has: the name on the left; Use TypeShade, Playground,
-Language, API and Examples; then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
-groups (Documentation, Project, Languages) across the shell, then the licence, the copyright
+Navigation uses short destination names such as Docs, Getting Started and Quick Start in both locales.
+Page descriptions explain the content; menu labels name the destination.
+
+The header is the one every library site has: the name on the left; Docs, Playground,
+Language, Reference and Examples; then search, a language menu, a dark-mode switch and GitHub as icons. The footer is a site map in three
+groups (Docs, Project, Languages) across the shell, then the licence, the copyright
 and the commit the page was built from. Project closes with the products built on TypeShade,
 each a link under its own name (Radiance, TypeNN), so a new product adds a row to that group and no
 group to the footer. Documentation carries 20 links and runs them down two

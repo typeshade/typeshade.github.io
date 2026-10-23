@@ -140,7 +140,7 @@ export const en = {
     },
     labels: {
       nav: {
-        use: 'Use TypeShade',
+        docs: 'Docs',
         playground: 'Playground',
         language: 'Language',
         reference: 'Reference',
@@ -155,7 +155,7 @@ export const en = {
       editor: 'Editor support',
       /** The sidebar's own group headings (src/lib/links.ts sidebar()). */
       sidebarGroups: {
-        getStarted: 'Get started',
+        getStarted: 'Getting Started',
         language: 'Language',
         concepts: 'Concepts',
         examples: 'Examples',
@@ -217,7 +217,7 @@ export const en = {
     authoring: 'Authoring',
     project: 'Project',
     why: 'Why TypeShade',
-    quickStart: 'Quick start',
+    quickStart: 'Quick Start',
     authoringGuide: 'Language guide',
     checks: 'Verification',
     examples: 'Examples',
@@ -1235,7 +1235,7 @@ export const en = {
   },
 
   footer: {
-    docs: 'Documentation',
+    docs: 'Docs',
     project: 'Project',
     languages: 'Languages',
     readme: 'README',
@@ -1304,7 +1304,11 @@ export const en = {
 
   code: { copy: 'Copy to clipboard', copied: 'Copied' },
 
-  install: { label: 'Submodule command' },
+  install: {
+    label: 'npm installation',
+    source:
+      'The Git dependency contains TypeScript source. tsx runs the compiler and CLI under Node.js.',
+  },
   diagnostic: {
     frameLabel: 'Shader with a misspelt field, typed-error.shade.ts',
     error: (code: string, line: number, column: number) =>
@@ -1332,8 +1336,8 @@ export const en = {
     title: 'TypeShade, a shader language you write in TypeScript',
     searchTitle: 'TypeShade',
     lede: `TypeShade is a language of its own, with TypeScript's syntax, types and editor. A file that starts with \`"use typeshade"\` emits WGSL for WebGPU and ${glsl} for WebGL2. ${facts.shadeRenderable} of the ${facts.shadeExamples} examples in the repository emit both from one file.`,
-    playground: 'Open the Playground',
-    quickStart: 'Quick start',
+    playground: 'Playground',
+    quickStart: 'Quick Start',
     stageAria: 'A shader running beside the file that draws it',
     first: {
       title: 'Warped bands',
@@ -1423,7 +1427,7 @@ export const en = {
     },
     install: {
       h: 'Install',
-      p: `Pre-release: ${facts.nextVersion} is not on npm yet. Add the repository as a git submodule and import from it; the [quick start](quickStart) walks through the first file.`,
+      p: `Install the repository with npm through its Git URL. Import the package as \`typeshade\`; [Quick Start](quickStart) covers installation and the first shader. The ${facts.nextVersion} registry release is not published yet.`,
     },
   },
   quickStart: {
@@ -1448,16 +1452,18 @@ export const en = {
       hostP2:
         'TypeShade owns the language semantics and shader emission. The host owns runtime objects and their lifetimes, including the device, pipeline, bind groups, buffers, textures and command encoders.',
       importH: 'Importing the file',
-      importP: `This way arrives with ${facts.nextVersion} on npm. A host file imports a \`.shade.ts\` and calls what it exports, and TypeShade's runtime creates the device and the pipelines those calls need. A helper runs on the CPU. A \`@compute\` entry is \`await entry(bindings, workgroups)\`: it runs on WebGPU or WebGL2 where supported and reads back what it wrote. A full-screen \`@fragment\` entry draws into a canvas as \`entry(canvas, bindings)\`, on WebGPU, then WebGL2, then the CPU.`,
+      importP: `The Vite plugin supports the Git-installed source package. A host file imports a \`.shade.ts\` and calls what it exports, and TypeShade's runtime creates the device and the pipelines those calls need. A helper runs on the CPU. A \`@compute\` entry is \`await entry(bindings, workgroups)\`: it runs on WebGPU or WebGL2 where supported and reads back what it wrote. A full-screen \`@fragment\` entry draws into a canvas as \`entry(canvas, bindings)\`, on WebGPU, then WebGL2, then the CPU.`,
       setupP:
-        'After `npm install typeshade`, the setup is the Vite plugin, two lines of the host `tsconfig.json`, and `tshc sync` in `prepare`, which writes the host view `tsc` reads in place of each shader file. The views are generated files, and `*.shade.typeshade.ts` in `.gitignore` keeps them out of the repository.',
+        'After installation, add the Vite plugin and the host `tsconfig.json` settings below. The scripts run Vite and the installed CLI through `tsx`. The `prepare` script writes the host views that `tsc` reads. Add `*.shade.typeshade.ts` to `.gitignore`.',
       viteLabel: 'The Vite plugin, vite.config.ts',
       tsconfigLabel: 'Two lines of the host tsconfig.json',
-      packageLabel: 'The prepare script, package.json',
+      packageLabel: 'Development scripts, package.json',
+      toolingLabel: 'Vite development dependency',
+      devLabel: 'Start the development server',
       drawP:
         'A host file then draws `hello.shade.ts`, the file at the top of this page, with one call. A vertex entry cannot be called from host code yet, so the view declares `vs` as `never`, and `fs` fills the whole canvas in red.',
       drawLabel: 'Drawing hello.shade.ts from a host file, app.ts',
-      untilP: `Until ${facts.nextVersion} is on npm, compile the file. [WebGPU and WebGL2](conceptsWebgpu) says which side owns what in each way.`,
+      untilP: `[WebGPU and WebGL2](conceptsWebgpu) describes the ownership boundaries of the compiler, host calls and program runtime.`,
       nextLearnP: 'Now connect familiar TypeScript concepts to their TypeShade GPU meaning.',
       nextLinks: nextLinks([
         { linkKey: 'languageTypes', label: 'Types: value shapes and GPU structs' },
@@ -1471,10 +1477,11 @@ export const en = {
       nextEditorP:
         'The [VS Code extension](editor) shows diagnostics and the WGSL a file compiles to while you type.',
     },
-    title: 'Use TypeShade: install and write your first shader',
+    title: 'TypeShade Quick Start: install and write your first shader',
     description:
-      'Add TypeShade as a git submodule and compile a file that starts with "use typeshade", with a note on the pre-release status.',
-    h1: 'Use TypeShade',
+      'Install TypeShade from Git with npm, run its TypeScript source with tsx, and compile your first shader to WGSL for WebGPU or GLSL for WebGL2.',
+    h1: 'Quick Start',
+    runLabel: 'Run the compiler, terminal',
     installH: 'Install',
     p0: 'Start with a TypeScript file whose first statement is `"use typeshade"`. That directive crosses the boundary into the TypeShade shader language; the example below is a complete first shader, written with a class and stage-decorated functions.',
     p1: `A host compiles a file with one call. Save the gradient pass below as \`${quickStartFile.shader.name}\`, ${quickStartFile.shader.lines} lines with a uniform block, a vertex stage and a fragment stage, and compile it from a host file of ${quickStartFile.host.lines} lines that calls [\`compile()\`](apiCompile) and prints the WGSL:`,
@@ -1498,7 +1505,7 @@ export const en = {
     },
     status: {
       h: 'Status',
-      p: `Pre-release. The repository is at version ${facts.mirrorVersion}; ${facts.nextVersion} is the release the npm name [typeshade](npm) is reserved for, and the manifest and the imports are renamed at that tag. Until then this is a mirror: the import above resolves at \`${quickStartFile.importPath}\`, inside the submodule itself. Issues are welcome; pull requests cannot be merged yet, because changes land upstream and this tree is fast-forwarded from there. [Watch releases](releases) to hear about ${facts.nextVersion}.`,
+      p: `The repository package is version ${facts.mirrorVersion}. The ${facts.nextVersion} registry release is not published yet; npm can install the Git source now. The host imports \`${quickStartFile.importPath}\` from the installed package. Commit the lockfile to record the resolved Git revision. [Releases](releases) lists published versions.`,
     },
   },
 
