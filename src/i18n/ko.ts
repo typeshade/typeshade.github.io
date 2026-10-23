@@ -7,6 +7,7 @@ import { facts, hero, quickStartFile } from '../lib/examples.ts';
 import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import { typedError } from '../lib/typed-error.ts';
 import { mnistEpochs, mnistTestSamples } from '../lib/mnist-settings.ts';
+import { operationLessons, constructorLesson } from './operation-lessons-ko.ts';
 import { functionLessons } from './function-lessons-ko.ts';
 
 const glsl = facts.glslTarget;
@@ -403,6 +404,29 @@ export const ko: Copy = {
       categories: apiCategories,
     },
     reference: {
+      worked: {
+        lessons: operationLessons,
+        constructor: constructorLesson,
+        heading: '예제로 비교하기',
+        modelNote:
+          '예제는 설명용 계산 모델이며 GPU를 실행하지 않습니다. 정확한 호출 형식은 아래 컴파일러 참고 자료에 있습니다.',
+        example: (index: number) => `예제 ${index}`,
+        setup: '모델의 전제',
+        input: '모델 입력',
+        output: '결과',
+        returned: '반환값',
+        before: '연산 전 저장값',
+        after: '연산 후 저장값',
+        binary: '정수의 이진 표현',
+        diagram: '이 예제의 성분',
+        textureDiagram:
+          '텍셀 격자입니다. 위쪽 행의 세로 텍스처 좌표가 더 큽니다. 값은 한 채널을 나타내며 비교 격자는 통과 여부를 보여줍니다.',
+        matrixDiagram: '행을 따라 표시한 행렬입니다. 생성자 인수는 각 열을 아래로 읽는 순서입니다.',
+        derivativeDiagram:
+          '이웃 픽셀의 필드 값입니다. 아래쪽 행은 세로 방향으로 한 픽셀 이동한 결과입니다.',
+        calculationNote:
+          '소수 결과는 표시할 때 반올림했습니다. 각 예제는 명시한 전제를 따릅니다. 실제 셰이더의 결과는 대상 언어의 정밀도와 실행 규칙에 따릅니다.',
+      },
       demo: {
         heading: '움직이며 이해하기',
         exercises: '직접 확인해 보십시오:',

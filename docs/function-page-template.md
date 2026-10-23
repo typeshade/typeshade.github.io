@@ -34,6 +34,32 @@ Every function must have either a live mathematical example, the authored Pow no
 worked model. Coverage is checked against the pinned compiler's function table. Generated
 compiler signatures and target restrictions remain on every page after its lesson.
 
+## Worked models
+
+Offer contrasting inputs through native example disclosures. Open the first example and
+keep the others closed. Place the assumptions beside the examples and the implementation
+note after them. Keep each diagram within the compact live example's maximum width.
+
+| Operation             | What the reader compares                                                    |
+| --------------------- | --------------------------------------------------------------------------- |
+| Texture reads         | A texel centre, a filtered neighbourhood, and mip selection                 |
+| Depth comparison      | Per-texel comparisons before filtering, with the sampler comparison stated  |
+| Atomics               | Initial stored value, returned old value, and final stored value            |
+| Weak compare-exchange | A mismatch and both permitted outcomes of a match                           |
+| Synchronization       | Participation within one workgroup and separation between workgroups        |
+| Bits and packing      | Whole-word binary, lane order, quantization, and truncation or clamping     |
+| Derivatives           | Constant and affine fields, with screen-space axes stated                   |
+| Geometry              | Direction, sign, and degenerate cases                                       |
+| Constructors          | Broadcasts, distinct components, zero values, and column-major matrix input |
+| Resource declarations | Host-provided values, access mode, and the distinction from allocation      |
+
+The value-model audit compiles deterministic expressions and compares their results with
+the pinned compiler's CPU oracle. Resource, derivative, and scheduling diagrams retain
+explicit assumptions and do not claim to measure GPU execution. The browser audit checks
+every model in both languages, sizes, and themes with JavaScript disabled. Use
+`bun run check:operation-models` and `bun run check:operation-lessons`; add
+`--all-screenshots` to the latter to capture every model instead of representative pages.
+
 ## Review
 
 Compile every catalogue entry. Verify that the call names the documented function. Exercise

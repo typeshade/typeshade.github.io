@@ -18,6 +18,8 @@ import LanguageType from '../LanguageType.astro';
 import LinkColumns from '../LinkColumns.astro';
 import ReferenceNotes from '../ReferenceNotes.astro';
 import FunctionDemo from '../FunctionDemo.astro';
+import OperationLesson from '../OperationLesson.astro';
+import { operationModel } from '../../lib/operation-models.ts';
 import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import MappingTable from '../MappingTable.astro';
@@ -50,7 +52,12 @@ const { locale, kind, name } = Astro.props;
 const r = copyFor(locale).docs.reference;
 const e = r.entry;
 const entry = languageEntry(kind, name);
-const lesson = kind === 'function' ? (r.demo.lessons as Record<string, FunctionLesson>)[name] : undefined;
+const mathLesson = kind === 'function' ? (r.demo.lessons as Record<string, FunctionLesson>)[name] : undefined;
+const workedLesson = kind === 'function' ? (r.worked.lessons as Record<string, FunctionLesson>)[name] ?? r.worked.constructor(name) : undefined;
+const lesson = mathLesson ?? workedLesson;
+const model = workedLesson ? operationModel(name) : undefined;
+if (kind === 'function' && !lesson) throw new Error(`[function-lesson] missing lesson for ${name}`);
+if (workedLesson && !model) throw new Error(`[function-lesson] missing worked model for ${name}`);
 const demo = kind === 'function' ? functionDemo(name) : undefined;
 const section = languageSection(kind);
 const named = r.kinds[kind];
@@ -150,6 +157,12 @@ const sections = [
     { id: 'input-limits', label: r.demo.cautionHeading, show: true },
     { id: 'related-functions', label: r.demo.related, show: true },
   ] : []),
+  ...(model ? [
+    { id: 'worked-examples', label: r.worked.heading, show: true },
+    { id: 'practical-use', label: r.demo.useHeading, show: true },
+    { id: 'input-limits', label: r.demo.cautionHeading, show: true },
+    { id: 'related-functions', label: r.demo.related, show: true },
+  ] : []),
   ...(notes?.sections ?? []).map((n) => ({ id: n.id, label: n.heading.replace(/`/g, ''), show: true })),
   { id: 'syntax', label: e.syntax, show: true },
   // A decorator written on its own has no row to show and still has something to say, so
@@ -213,6 +226,7 @@ const meta = `title:${entry.name} (${kindWord})`;
   <p class:list={['api-kind', lesson ? 'sr-only' : undefined]} lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
   <p class="api-summary" lang={lesson ? locale : 'en'}><Rich text={lesson?.meaning ?? entry.line} locale={locale} /></p>
   {demo && lesson && <FunctionDemo locale={locale} name={name} lesson={lesson} />}
+  {model && workedLesson && <OperationLesson locale={locale} name={name} lesson={workedLesson} model={model} />}
   <ReferenceNotes locale={locale} view={notes} />
   {(spelled || entry.kind === 'builtin') && (
     <dl class="ref-facts" lang={locale}>

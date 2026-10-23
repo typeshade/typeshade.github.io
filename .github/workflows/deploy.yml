@@ -197,6 +197,17 @@ jobs:
       - run: bun run check:mnist
         if: matrix.part == 1
         timeout-minutes: 15
+      - run: bun run check:operation-models
+        if: matrix.part == 4
+      - run: bun run check:operation-lessons
+        if: matrix.part == 4
+        timeout-minutes: 15
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.part == 4
+        with:
+          name: operation-lesson-evidence
+          path: shots/operation-lessons
+          retention-days: 3
       # Only a 404 or 410 fails this step. A 403, 429 or timeout is a rate-limited runner.
       - run: bun run qa:links
         if: matrix.part == 4

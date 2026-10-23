@@ -889,6 +889,10 @@ plants a fault into a copy of it for each check and sees the check fail, and
 Mathematical function pages also serve readers who use other languages. Start with the
 function's mathematical meaning, a compact interactive example, a practical use, and input
 limits. Put TypeShade signatures and compiler-specific details after this material.
+Resource and execution functions use compact worked models with explicit assumptions.
+Native example disclosures keep these comparisons usable without JavaScript. Models show
+texels, stored and returned atomic values, memory scope, bits, or matrix components as
+appropriate. They state that they do not execute GPU work.
 
 `src/lib/function-demo-catalog.mjs` supplies bounded input and output ranges and the actual
 expression each example draws. `src/lib/function-demos.ts` creates its TypeShade program.

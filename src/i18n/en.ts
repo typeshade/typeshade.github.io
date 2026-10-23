@@ -10,6 +10,7 @@ import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import type { LinkKey } from '../lib/links.ts';
 import { typedError } from '../lib/typed-error.ts';
 import { mnistEpochs, mnistTestSamples } from '../lib/mnist-settings.ts';
+import { operationLessons, constructorLesson } from './operation-lessons-en.ts';
 import { functionLessons } from './function-lessons-en.ts';
 
 const glsl = facts.glslTarget;
@@ -327,6 +328,29 @@ export const en = {
     // sentence under every name are the compiler's, in English on every locale, the way the
     // API reference already carries its JSDoc.
     reference: {
+      worked: {
+        lessons: operationLessons,
+        constructor: constructorLesson,
+        heading: 'Compare examples',
+        modelNote:
+          'The examples are calculation models and do not run GPU work. The reference below gives the complete call signatures.',
+        example: (index: number) => `Example ${index}`,
+        setup: 'Model assumptions',
+        input: 'Model input',
+        output: 'Result',
+        returned: 'Returned value',
+        before: 'Stored value before',
+        after: 'Stored value after',
+        binary: 'Word in binary',
+        diagram: 'Components in this example',
+        textureDiagram:
+          'Texel grid. The upper row has the higher vertical texture coordinate. Values describe one channel; comparison grids show pass or fail.',
+        matrixDiagram: 'Matrix displayed by rows. Constructor arguments run down each column.',
+        derivativeDiagram:
+          'Field values at neighbouring pixels. The lower row adds a vertical pixel step.',
+        calculationNote:
+          'Decimal results are rounded for display. The stated assumptions determine each example; actual shader results follow the target precision and execution rules.',
+      },
       demo: {
         heading: 'Explore the function',
         exercises: 'Explore the result:',

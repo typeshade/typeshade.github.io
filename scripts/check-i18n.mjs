@@ -24,6 +24,8 @@ const EXEMPT_FILES = new Set([
   path.join(I18N_DIR, 'ko.ts'),
   path.join(I18N_DIR, 'function-lessons-en.ts'),
   path.join(I18N_DIR, 'function-lessons-ko.ts'),
+  path.join(I18N_DIR, 'operation-lessons-en.ts'),
+  path.join(I18N_DIR, 'operation-lessons-ko.ts'),
   path.join(I18N_DIR, 'locales.ts'),
   path.join(SRC, 'content.config.ts'),
 ]);
