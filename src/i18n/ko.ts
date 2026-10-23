@@ -1,3 +1,4 @@
+import { precisionGuide, fractionLabel } from './precision-guide-ko.ts';
 // Korean copy. Typed against the English source, so a string that exists in one and not
 // the other is a build error. Numbers come from the build, as in en.ts. scripts/check-copy.ts
 // compares every string with its English one: the same numerals, links and code, no
@@ -252,6 +253,7 @@ export const ko: Copy = {
         project: '프로젝트',
       },
       conceptPages: {
+        glslPrecision: 'GLSL 정밀도',
         cpuAndGpu: 'CPU와 GPU',
         pipeline: '셰이더 파이프라인',
         webgpuAndWebgl2: 'WebGPU와 WebGL2',
@@ -1722,6 +1724,8 @@ export const ko: Copy = {
   },
 
   concepts: {
+    glslPrecision: precisionGuide,
+    precisionFractionLabel: fractionLabel,
     title: 'TypeScript와 WebGPU: TypeScript로 WebGPU 셰이더를 작성하는 방법',
     description: `TypeScript로 WebGPU 셰이더를 작성합니다. "use typeshade" 파일은 WGSL과 ${glsl}으로 컴파일됩니다. 타입, 함수, 모듈이 GPU에서 무엇이 되는지 설명합니다.`,
     h1: 'TypeScript로 쓰는 WebGPU 셰이더',

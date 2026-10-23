@@ -87,6 +87,7 @@ const nameLang = ['glsl', 'wgsl', 'ts'] as const;
 
   <section>
     <h2 id={slugify(c.furtherH)}>{c.furtherH}</h2>
+    <p><Rich text={copyFor(locale).concepts.glslPrecision.entryLink} locale={locale} /></p>
     <ul>{c.furtherItems.map((item) => <li><Rich text={item} locale={locale} /></li>)}</ul>
     <p><Rich text={c.nextP} locale={locale} /></p>
   </section>

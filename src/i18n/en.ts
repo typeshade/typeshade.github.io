@@ -1,3 +1,4 @@
+import { precisionGuide, fractionLabel } from './precision-guide-en.ts';
 // English copy: the source text every translation follows. Every number comes from the
 // build (src/lib/examples.ts). Inline links are written as [text](key), where key names a
 // record in src/lib/links.ts; inline code is written in backticks. Rich.astro renders both.
@@ -161,6 +162,7 @@ export const en = {
         project: 'Project',
       },
       conceptPages: {
+        glslPrecision: 'GLSL precision',
         cpuAndGpu: 'CPU and GPU',
         pipeline: 'The shader pipeline',
         webgpuAndWebgl2: 'WebGPU and WebGL2',
@@ -1792,6 +1794,8 @@ export const en = {
   /** The bridge page at /guide/typescript-and-webgpu/. Rendered by
    *  src/components/pages/ConceptsPage.astro; the shader sample is not copy, so it stays there. */
   concepts: {
+    glslPrecision: precisionGuide,
+    precisionFractionLabel: fractionLabel,
     title: 'TypeScript and WebGPU: write GPU shaders in TypeScript',
     description: `Write WebGPU shaders in TypeScript. A "use typeshade" file compiles to WGSL and ${glsl}, and this page maps types, functions and modules to the GPU.`,
     h1: 'WebGPU shaders in TypeScript',
