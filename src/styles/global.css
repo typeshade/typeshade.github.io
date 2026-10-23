@@ -1452,7 +1452,7 @@ body > main {
   margin-block-start: var(--section-gap);
 }
 .doc h1 {
-  margin-block-end: 12px;
+  margin-block-end: 24px;
 }
 .doc h2 {
   margin-block-end: 16px;
