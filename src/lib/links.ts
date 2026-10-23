@@ -35,7 +35,7 @@ export const links = {
   benchmarks: { label: 'Benchmarks', href: '/benchmarks/' },
   motivation: { label: 'Introduction', href: '/guide/introduction/' },
   why: { label: 'Why TypeShade', href: '/guide/why/' },
-  quickStart: { label: 'Use TypeShade', href: '/guide/quick-start/' },
+  quickStart: { label: 'Quick Start', href: '/guide/quick-start/' },
   playground: { label: 'Playground', href: '/playground/' },
   editor: { label: 'Editor support', href: '/guide/editor/' },
   // The gallery's page, built here and served at gallery.typeshade.dev (src/lib/gallery-data.ts).
@@ -395,7 +395,7 @@ export function editGuideTranslation(locale: Locale, id: string): string {
 export function navLinks(locale: Locale): readonly Destination[] {
   const labels = copyFor(locale).docs.labels.nav;
   return [
-    { label: labels.use, href: localePath(locale, links.quickStart.href) },
+    { label: labels.docs, href: localePath(locale, links.quickStart.href) },
     { label: labels.playground, href: localePath(locale, links.playground.href) },
     { label: labels.language, href: localePath(locale, links.guide.href) },
     { label: labels.reference, href: localePath(locale, links.reference.href) },
@@ -472,7 +472,7 @@ function docsPage(locale: Locale, key: DocsPageKey): Destination {
   const labels: Record<DocsPageKey, string> = {
     motivation: d.introduction,
     why: d.why,
-    quickStart: d.labels.nav.use,
+    quickStart: d.quickStart,
     playground: d.labels.playground,
     editor: d.labels.editor,
     guide: d.labels.languageGuide,
