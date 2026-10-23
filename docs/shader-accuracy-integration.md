@@ -47,3 +47,17 @@ On 2026-10-23 UTC, with Bun 1.4.3 and Node 24.19.0:
 
 Build, rendered-page review, current-head CI and deployment evidence remain in progress.
 No layout dimensions, grids, route names or search metadata templates changed.
+
+## Comparison catalog correction
+
+The first site CI run failed because the active regression comparison still named the previous compiler pin.
+Regenerated it with `bun scripts/regression-catalog.ts --new` using Bun 1.4.3.
+The active pair is now the previous candidate `3b40e065` and the reviewed correction `91c2fe31`.
+The retained registry and prior runtime artifacts are preserved.
+The workload and measurement sources are unchanged; this update makes no performance claim.
+Both `check:regression-catalog` and the original 22-fixture `check:benchmark-catalog` passed.
+Compiler PR 756 has merged as `bdd0a8f1`, preserving the exact site pin in main's ancestry.
+The refreshed site head must pass CI before merge and deployment.
+The retained-catalog test previously assumed the active baseline was also the historical comparison's baseline.
+It now finds a historical comparison by its recorded projection capability rather than the moving active baseline.
+All prior acceptance and corruption-refusal assertions remain; all 17 benchmark contract tests passed.
