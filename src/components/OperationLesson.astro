@@ -33,7 +33,7 @@ const value = (v: number | boolean) => typeof v === 'number' ? Number(v.toPrecis
           </dl>
           {sample.word !== undefined && <figure class="model-figure">
             <figcaption class="text-(length:--text-ui) text-text-2">{t.binary}: <code>{sample.word >>> 0}</code></figcaption>
-            <div class="model-bits" aria-label={modelBits(sample.word)}>{[...modelBits(sample.word)].map(bit => <span class:list={['model-bit', { 'model-set': bit === '1' }]} aria-hidden="true">{bit}</span>)}</div>
+            <div class="model-bits" role="img" aria-label={`${t.binary}: ${modelBits(sample.word)}`}>{[...modelBits(sample.word)].map(bit => <span class:list={['model-bit', { 'model-set': bit === '1' }]} aria-hidden="true">{bit}</span>)}</div>
           </figure>}
         </div>
       </details>
