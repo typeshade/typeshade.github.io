@@ -635,6 +635,23 @@ export class BindingsModel {
     };
   }
 
+  /** Preserve the viewport carried by a function graph link on GPU and CPU. */
+  private linkedPlotValue(name: string, block: UniformBlock): number[] | null {
+    if (name === 'plotBlend' && this.linkedProps.plotBlend) {
+      const mode = block.fields.find((field) => field.name === 'view3d');
+      if (mode) {
+        const value = this.values.get(this.fieldKey(block, mode));
+        if (value) return [value[0] ? 1 : 0];
+      }
+    }
+    const count =
+      name === 'plotBlend' ? 1 : ['plotCenter', 'plotSpan', 'plotRotation'].includes(name) ? 2 : 0;
+    const value = this.linkedProps[name]?.value;
+    return count && Array.isArray(value) && value.length === count && value.every(Number.isFinite)
+      ? [...value]
+      : null;
+  }
+
   /** The numbers one field of a uniform block holds this frame, laid out the way the runtime
    *  writes them: a matrix column padded to four floats where std140 pads it, an f64 split
    *  into the two floats the emulation reads. Reserved fields are the page's to fill. The
@@ -655,7 +672,9 @@ export class BindingsModel {
     const field = block?.fields.find((f) => f.name === name);
     if (!block || !field) return null;
     if (!block.bare && isReserved(name, field.type)) {
-      const v = reservedValue(name, seconds, width, height, pointer, clock);
+      const v =
+        this.linkedPlotValue(name, block) ??
+        reservedValue(name, seconds, width, height, pointer, clock);
       if (!v) return null;
       // A registry example's `mouse` is a vec4 of [x, y, down, used]; the rest stay 0.
       return [
@@ -794,7 +813,10 @@ export class BindingsModel {
       const valueOf = (field: PackedField): unknown => {
         let v: number[];
         if (!block.bare && isReserved(field.name, field.type)) {
-          const r = reservedValue(field.name, seconds, width, height, pointer) ?? [];
+          const r =
+            this.linkedPlotValue(field.name, block) ??
+            reservedValue(field.name, seconds, width, height, pointer) ??
+            [];
           v = [
             ...r,
             ...Array.from({ length: Math.max(0, componentCount(field.shape) - r.length) }, () => 0),

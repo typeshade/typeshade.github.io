@@ -4,7 +4,7 @@ import Rich from './Rich.astro';
 import LinkColumns from './LinkColumns.astro';
 import { copyFor, localePath, type Locale } from '../i18n/index.ts';
 import type { FunctionLesson } from '../i18n/function-lessons-en.ts';
-import { demoSource, demoControls, demoCondition, demoCalculation, functionDemo, relatedDemos } from '../lib/function-demos.ts';
+import { FUNCTION_PLOT_FILES, demoSource, demoControls, demoCondition, demoCalculation, functionDemo, relatedDemos } from '../lib/function-demos.ts';
 
 interface Props { locale: Locale; name: string; lesson: FunctionLesson }
 const { locale, name, lesson } = Astro.props;
@@ -24,10 +24,11 @@ const parameterLabel = (t.parameters as Record<string, string>)[name] ?? t.param
       title={name}
       code={demoSource(demo)}
       file={`${name}-plot.shade.ts`}
+      files={FUNCTION_PLOT_FILES}
       caption={t.caption}
       anchor={t.window}
       exercises={[lesson.try]}
-      controls={demoControls(demo, inputLabel, parameterLabel)}
+      controls={{ ...demoControls(demo, inputLabel, parameterLabel), view3d: { label: t.view3d, toggle: true, value: false } }}
       aspect="1/1"
       compact
       plot={{ x: demo.x, y: demo.y }}

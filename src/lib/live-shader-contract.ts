@@ -36,6 +36,8 @@ import type { ShaderLayout, UniformField } from './shader-runtime.ts';
  *  - `frame`: the frames drawn since the clock started, as a `u32`, 0 on the first. A pass
  *    that reads its own frame before (compiler change 0026) starts from it.
  *  - `timeDelta`: the seconds since the frame before, as an `f32`, 0 on the first.
+ *  - `plotCenter`, `plotSpan`: the graph viewport in data units, as `vec2`.
+ *  - `plotRotation`: graph yaw/pitch radians, as `vec2`; `plotBlend`: 2D/3D mix, as `f32`.
  */
 export const RESERVED_UNIFORMS: Readonly<Record<string, string>> = {
   time: 'f32',
@@ -43,6 +45,10 @@ export const RESERVED_UNIFORMS: Readonly<Record<string, string>> = {
   mouse: 'vec2<f32>',
   frame: 'u32',
   timeDelta: 'f32',
+  plotCenter: 'vec2<f32>',
+  plotSpan: 'vec2<f32>',
+  plotRotation: 'vec2<f32>',
+  plotBlend: 'f32',
 };
 
 /** The two fields reserved only at their own type. They came to the contract after examples
@@ -73,6 +79,10 @@ export function reservedValue(
   if (field === 'mouse') return [pointer[0], pointer[1]];
   if (field === 'frame') return [clock.frame];
   if (field === 'timeDelta') return [clock.delta];
+  if (field === 'plotCenter') return [0, 0];
+  if (field === 'plotSpan') return [1, 1];
+  if (field === 'plotRotation') return [0.65, 0.45];
+  if (field === 'plotBlend') return [0];
   return null;
 }
 
@@ -80,9 +90,8 @@ export function reservedValue(
 //
 // A live sample is a complete file the reader could paste into a project, the way every
 // Book of Shaders page shows a whole `.frag` and every MDN example shows something that runs.
-// The one thing a page supplies is the vertex half, which is what glslCanvas supplies there:
-// a fullscreen triangle and the `uv` it hands the fragment stage. Nothing else is hidden, so
-// every name in front of the reader is declared in front of the reader.
+// The page supplies a fullscreen vertex triangle and its uv. Imported TypeShade modules
+// are shown alongside the entry and carried into the Playground with it.
 //
 // The fragment half then reads the way a GLSL or WGSL author expects:
 //
@@ -143,7 +152,7 @@ const DIRECTIVE = '"use typeshade"';
  *  one. A diagnostic's line is reported against the composed source, so a page subtracts
  *  `offset` to underline the line the reader is looking at. */
 export function composeSource(source: string): { readonly text: string; readonly offset: number } {
-  const body = source.replace(/^\s*(['"])use typeshade\1\s*\n?/, '');
+  const body = source.replace(/^\s*(['"])use typeshade\1[ \t]*;?\s*\n?/, '');
   const head =
     sampleShape(body) === 'module' ? `${DIRECTIVE}\n\n` : `${DIRECTIVE}\n\n${FRAGMENT_PRELUDE}\n`;
   // A sample that carries the directive itself loses those lines here, so the reader's first

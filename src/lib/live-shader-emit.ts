@@ -8,6 +8,7 @@
 // the same contract (src/lib/live-shader-contract.ts), so the first frame a reader sees and
 // the frame after their first keystroke come from one set of rules.
 
+import { projectOptions, type LiveProject } from './live-shader-project.ts';
 import { compile, reflect, packModule } from '../../vendor/shader-dsl/src/index.ts';
 import {
   composeSource,
@@ -23,7 +24,7 @@ import {
 import type { ShaderData } from './shader-runtime.ts';
 
 /** Everything one live example puts on the page. */
-export interface LiveShaderPayload {
+export interface LiveShaderPayload extends LiveProject {
   readonly id: string;
   /** The text the editor opens with, which is the reader's half alone. */
   readonly source: string;
@@ -51,13 +52,15 @@ export function liveShader(
   title: string,
   source: string,
   props: ControlProps = {},
+  project: LiveProject = {},
 ): LiveShaderPayload {
   const { text, offset } = composeSource(source);
+  const options = projectOptions(project);
   // compile() throws on a module the validator rejects instead of reporting it, and the most
   // common authoring mistake (a path that falls through without a return) is one of those.
   let result: ReturnType<typeof compile>;
   try {
-    result = compile(text);
+    result = compile(text, options);
   } catch (error) {
     throw new Error(
       `[live-shader] '${id}' does not compile: ${error instanceof Error ? error.message : String(error)}`,
@@ -66,7 +69,10 @@ export function liveShader(
   const errors = result.diagnostics.filter((d) => d.category === 'error');
   if (errors.length > 0) {
     const lines = errors
-      .map((e) => `  line ${Math.max(1, e.line - offset)}: ${e.message}`)
+      .map(
+        (e) =>
+          `  ${e.fileName ?? ''} line ${Math.max(1, e.line - (options.fileName && e.fileName && e.fileName !== options.fileName ? 0 : offset))}: ${e.message}`,
+      )
       .join('\n');
     throw new Error(`[live-shader] '${id}' does not compile:\n${lines}`);
   }
@@ -144,6 +150,7 @@ export function liveShader(
   return {
     id,
     source,
+    ...project,
     composed: text,
     offset,
     data,
@@ -162,6 +169,8 @@ export function livePayloadJson(payload: LiveShaderPayload): string {
   const inline = {
     id: payload.id,
     source: payload.source,
+    fileName: payload.fileName,
+    files: payload.files,
     offset: payload.offset,
     data: payload.data,
     controls: payload.controls,

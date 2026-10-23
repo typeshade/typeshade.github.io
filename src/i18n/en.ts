@@ -393,6 +393,10 @@ export const en = {
         exercises: 'Explore the result:',
         useHeading: 'When to use it',
         cautionHeading: 'Inputs and limits',
+        interaction2d: 'Wheel to zoom; drag to pan. Keyboard: arrows, +/-, Home to reset.',
+        view3d: '3D view',
+        interaction:
+          'Wheel to zoom; drag to pan, or rotate in 3D. Keyboard: arrows, +/-, Home to reset.',
         probe: 'Input x',
         parameter: 'Parameter k',
         angleInput: 'Angle x (radians)',

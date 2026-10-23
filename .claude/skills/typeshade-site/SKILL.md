@@ -152,7 +152,9 @@ this is the working procedure.
    and neither is `file`, the name over the block. Write a whole file, short enough to read at
    a glance: a `Uniforms` class, one `declare const u: uniform<Uniforms>`, and one entry,
    `@fragment export function main(@location(0) uv: vec2): vec4`. Leave out the `@vertex`
-   entry and the component supplies the fullscreen triangle behind it. `uv` is 0 to 1 with the
+   entry and the component supplies the fullscreen triangle behind it. Reusable shader code
+   belongs in imported TypeShade modules passed through `files`; show each imported file
+   and carry it into Playground links. Use function-typed callbacks for shared graph rendering. `uv` is 0 to 1 with the
    origin at the bottom left on both backends; do not read the fragment position builtin,
    whose y axis points the other way on the two targets.
 2. Name the uniform fields the runtime fills as `time` (`f32`), `resolution` (`vec2`) and
