@@ -75,3 +75,18 @@ No width, padding or grid-column rule changed relative to this main revision.
 The compiler pin remains `91c2fe31`. Required CI must pass on the resolved branch head.
 
 The external-link pass checked 1805 URLs: 1773 passed, 32 returned temporary remote warnings, and none were broken.
+
+## Sidebar regression after PR 234
+
+The main deployment for `2ea4efff78e7fab08346e1610e1f0edc05e19ea1`
+(run `39939396428`) failed in `check:standalone-learning`. The test still
+clicked the third sidebar disclosure, although PR 234 replaced disclosures with
+visible sections. This was a stale locator, not a GPU failure.
+
+Use the current page URL to find its unique documentation group. Check that its
+title and current-page link are visible and that the link has `aria-current="page"`.
+Keep the mobile menu click, screenshots, content checks, search checks and all
+other existing assertions. No product layout changes accompany this test fix.
+
+The complete standalone-learning check passed: 87 function lessons, 40 concept views,
+14 search queries and 136 screenshots. Formatting and TypeScript checks also passed.
