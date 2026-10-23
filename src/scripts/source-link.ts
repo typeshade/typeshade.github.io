@@ -62,6 +62,8 @@ export function parseAspect(text: string | null | undefined): [number, number] |
  *  draws the picture the page draws. */
 export interface LinkedView {
   readonly aspect?: string;
+  readonly files?: Readonly<Record<string, string>>;
+  readonly fileName?: string;
   readonly controls?: Readonly<Record<string, unknown>>;
 }
 
@@ -77,5 +79,8 @@ export async function playgroundLink(
     parts.push(`aspect=${view.aspect}`);
   if (view.controls && Object.keys(view.controls).length > 0)
     parts.push(`controls=${await encodeSource(JSON.stringify(view.controls))}`);
+  if (view.files && Object.keys(view.files).length)
+    parts.push(`files=${await encodeSource(JSON.stringify(view.files))}`);
+  if (view.fileName) parts.push(`name=${encodeURIComponent(view.fileName)}`);
   return `${base}#${parts.join('&')}`;
 }

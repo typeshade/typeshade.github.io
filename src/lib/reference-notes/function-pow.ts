@@ -2,72 +2,58 @@
 // live examples, the programs its {{compile}} tokens read, the scope its code spans compile in,
 // what it asserts and the spans that are no expression. The live examples name their entries
 // after what they draw.
+import { readFileSync } from 'node:fs';
 import { compile, compileModule } from '../../../vendor/shader-dsl/src/index.ts';
 import type { NoteRecord } from './index.ts';
 
+const plotFiles: Readonly<Record<string, string>> = {
+  'function-plot.shade.ts': readFileSync('src/shaders/function-plot.shade.ts', 'utf8'),
+};
+
 const curve = `"use typeshade"
 
-class Uniforms {
-  k: f32
-}
+import { PlotViewport, plotFilled } from "./function-plot.shade.ts";
 
-declare const u: uniform<Uniforms>
+class Uniforms extends PlotViewport { k: f32; }
+declare const u: uniform<Uniforms>;
 
-// 1 under the curve y = f and 0 above it. fwidth keeps the edge one pixel wide at any slope.
-function under(uv: vec2, f: f32): f32 {
-  const d = uv.y - f
-  return 1. - smoothstep(-fwidth(d), fwidth(d), d)
-}
-
-// 1 within about px pixels of where d is 0. w is how much d changes from one pixel to the
-// next, taken from a value that does not jump, so the line keeps its width everywhere.
-function line(d: f32, w: f32, px: f32): f32 {
-  return 1. - smoothstep(0., px * w, abs(d))
+// At k = 2, pow(0.5, 2.) = 0.25. The imported renderer draws the reference diagonal y = x.
+function sample(x: f32): f32 {
+  // uv is a data coordinate here, so the expression remains editable after pan and zoom.
+  const uv = vec2(x, 0.);
+  if (uv.x < 0.) { return 1e20; }
+  const y = pow(uv.x, u.k);
+  return y;
 }
 
 @fragment
 export function curve(@location(0) uv: vec2): vec4 {
-  const y = pow(uv.x, u.k)
-  let color = mix(vec3(0.95, 0.96, 0.98), vec3(0.09, 0.47, 1.), under(uv, y))
-  // A grid line every 0.25, so a value such as pow(0.5, 2.) = 0.25 can be read off it.
-  // fract jumps halfway between two lines, so the width comes from uv * 4., which does not.
-  const g = uv * 4.
-  const gx = fract(g.x + 0.5) - 0.5
-  const gy = fract(g.y + 0.5) - 0.5
-  color = mix(color, vec3(0.45), 0.35 * max(line(gx, fwidth(g.x), 1.), line(gy, fwidth(g.y), 1.)))
-  // The line y = x is the curve at k = 1.
-  const diagonal = uv.y - uv.x
-  color = mix(color, vec3(0.15), 0.6 * line(diagonal, fwidth(diagonal), 1.5))
-  return vec4(color, 1.)
+  return plotFilled(sample, uv, u);
 }
 `;
 
 const negative = `"use typeshade"
 
-class Uniforms {
-  k: f32
+import { PlotViewport, plotComparison } from "./function-plot.shade.ts";
+
+class Uniforms extends PlotViewport { k: f32; }
+declare const u: uniform<Uniforms>;
+
+function signedCurve(x: f32): f32 {
+  const p = vec2(x, 0.);
+  const signed = sign(p.x) * pow(abs(p.x), u.k);
+  return signed;
 }
 
-declare const u: uniform<Uniforms>
-
-// 1 where a lies within px pixels of b, 0 elsewhere. The test is a comparison, so the
-// colour stays a number whatever value b holds.
-function near(a: f32, b: f32, px: f32): f32 {
-  const d = a - b
-  return abs(d) < px * fwidth(d) ? 1. : 0.
+function rawCurve(x: f32): f32 {
+  const p = vec2(x, 0.);
+  const bare = pow(p.x, u.k);
+  return bare;
 }
 
 @fragment
 export function plot(@location(0) uv: vec2): vec4 {
-  // Both axes run from -1 to 1, with 0 at the centre of the canvas.
-  const p = uv * 2. - 1.
-  const bare = pow(p.x, u.k)
-  const signed = sign(p.x) * pow(abs(p.x), u.k)
-  let color = vec3(0.97, 0.97, 0.98)
-  color = mix(color, vec3(0.75), max(near(p.x, 0., 0.5), near(p.y, 0., 0.5)))
-  color = mix(color, vec3(0.09, 0.47, 1.), near(p.y, signed, 2.5))
-  color = mix(color, vec3(0.98, 0.42, 0.06), near(p.y, bare, 1.))
-  return vec4(color, 1.)
+  return plotComparison(signedCurve, rawCurve, uv, u);
 }
 `;
 
@@ -135,6 +121,7 @@ export const functionPow: NoteRecord = {
       aspect: '1/1',
       plot: { x: [0, 1], y: [0, 1] },
       code: curve,
+      files: plotFiles,
       controls: { k: { min: 0.1, max: 5, step: 0.01, value: 2 } },
     },
     'reference-pow-negative': {
@@ -142,6 +129,7 @@ export const functionPow: NoteRecord = {
       aspect: '1/1',
       plot: { x: [-1, 1], y: [-1, 1] },
       code: negative,
+      files: plotFiles,
       controls: { k: { min: 0.5, max: 5, step: 0.5, value: 3 } },
     },
     'reference-pow-specular': {

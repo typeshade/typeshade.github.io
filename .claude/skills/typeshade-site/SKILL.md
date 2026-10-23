@@ -70,8 +70,8 @@ from `facts` in `src/lib/examples.ts`; a number that is not measured is not on t
 
 Load `../readable-korean/SKILL.md` for Korean wording, register and terminology. The owner's
 2026-10-23 preference governs official published pages: neutral Wikipedia-like explanations,
-clear sentences and terms readers actually use. Published explanatory passages use `~이다` and `~한다`; procedures use
-short action steps. Existing polite passages are revised when they are in scope.
+clear sentences, polite formal endings such as `~입니다` and `~합니다`, and terms readers
+actually use. Published explanations and procedures use consistent polite formal endings.
 
 Prefer familiar Korean technical terms. Keep established English terms, API names and
 technical explanations in English when that is clearer. Explain unfamiliar concepts briefly
@@ -152,7 +152,9 @@ this is the working procedure.
    and neither is `file`, the name over the block. Write a whole file, short enough to read at
    a glance: a `Uniforms` class, one `declare const u: uniform<Uniforms>`, and one entry,
    `@fragment export function main(@location(0) uv: vec2): vec4`. Leave out the `@vertex`
-   entry and the component supplies the fullscreen triangle behind it. `uv` is 0 to 1 with the
+   entry and the component supplies the fullscreen triangle behind it. Reusable shader code
+   belongs in imported TypeShade modules passed through `files`; show each imported file
+   and carry it into Playground links. Use function-typed callbacks for shared graph rendering. `uv` is 0 to 1 with the
    origin at the bottom left on both backends; do not read the fragment position builtin,
    whose y axis points the other way on the two targets.
 2. Name the uniform fields the runtime fills as `time` (`f32`), `resolution` (`vec2`) and

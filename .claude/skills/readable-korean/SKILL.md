@@ -21,11 +21,11 @@ current wording preferences take precedence over earlier style conventions.
 
 ## Register and tone
 
-- Use neutral explanatory endings such as `~이다`, `~한다`, `~된다`, and `~있다` in published
-  explanations. Keep a consistent written register.
+- Use neutral polite endings such as `~입니다`, `~합니다`, `~됩니다`, and `~있습니다` in
+  published explanations. Keep a consistent written register.
 - State the definition or main fact first. Then describe the mechanism, example and limitation.
 - Describe the subject directly. Avoid addressing the reader with teaching prompts such as
-  `알아보자`, `살펴보자`, `이해해 보자`, or `이제 알 수 있다`. A required procedure can
+  `알아보겠습니다`, `살펴보겠습니다`, `이해해 보겠습니다`, or `이제 알 수 있습니다`. A required procedure can
   still state an action; an explanation should state what the system does.
 - Include numbers when they explain the subject. Do not insert a quantity merely to satisfy
   a sentence template.
@@ -33,14 +33,14 @@ current wording preferences take precedence over earlier style conventions.
 - Prefer direct statements with a clear subject. Use a passive construction when the actor is
   unknown or irrelevant; do not replace every passive mechanically.
 - Avoid praise, persuasion, rhetorical questions, teacher-like prompts, exaggerated emphasis
-  and assurances such as "쉽게 이해할 수 있다" without an actual explanation.
+  and assurances such as "쉽게 이해할 수 있습니다" without an actual explanation.
 - Avoid ceremonial words such as `해당`, `상기`, `본 기능`, and `수행되어진다` when a plain noun
   or verb works. Judge the sentence in context, not through an absolute word blacklist.
-- Do not vary endings merely to meet a count. Repeated `~한다` can be appropriate. Improve a
+- Do not vary endings merely to meet a count. Repeated `~합니다` can be appropriate. Improve a
   monotonous paragraph by changing its structure or removing repetition.
 - Keep the register consistent within a passage. Existing polite copy can be revised when that
   passage is edited; this skill alone does not request a site-wide rewrite.
-- Procedures use short action steps, for example `파일을 연다.` and `설정을 저장한다.` UI labels
+- Procedures use short action steps, for example `파일을 엽니다.` and `설정을 저장합니다.` UI labels
   use familiar nouns or action labels. Error messages state the problem and a useful next action.
 
 ## Terminology and English

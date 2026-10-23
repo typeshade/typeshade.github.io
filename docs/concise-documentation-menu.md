@@ -56,3 +56,22 @@ Quick Start heading, 65 px header and 836/358 px article widths without page ove
 Evidence is in `/workspace/shared/concise-documentation-menu/after-main47/`.
 No width, padding or grid-column rule was added or removed by this conflict resolution.
 The compiler pin remains `91c2fe31`.
+
+## Integration with the official Korean copy
+
+Integrate main `2ea4efff78e7fab08346e1610e1f0edc05e19ea1` from PR 234 before merging.
+Resolve six Korean dictionary conflicts while preserving the new page copy and the
+updated readable-korean policy. Keep Docs, Getting Started, Quick Start and Playground
+as concise labels. Preserve the verified npm Git installation, package imports and tsx commands.
+Installation paragraphs use the merged policy's neutral polite register.
+
+On 2026-10-23 UTC, the Korean change-rate and structural gates passed at 2.8% change.
+The integrated branch passed formatting, the full build, TypeScript, IfChange and artifact
+hashes. Copy validation covered 3345 strings. SEO covered 2606 pages and 2486 sitemap
+entries; OpenSEO reported no issues and all eight worker prefixes passed.
+The 24 menu views retained the 65 px header, 836/358 px articles and no page overflow.
+Evidence is in `/workspace/shared/concise-documentation-menu/after-main234/`.
+No width, padding or grid-column rule changed relative to this main revision.
+The compiler pin remains `91c2fe31`. Required CI must pass on the resolved branch head.
+
+The external-link pass checked 1805 URLs: 1773 passed, 32 returned temporary remote warnings, and none were broken.

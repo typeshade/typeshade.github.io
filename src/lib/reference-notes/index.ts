@@ -27,6 +27,7 @@ export type NoteControl = Omit<ControlProp, 'label'>;
 /** The code behind a `<!-- live: <id> -->` marker: what LiveShader compiles and draws. */
 export interface NoteLive {
   readonly code: string;
+  readonly files?: Readonly<Record<string, string>>;
   readonly file?: string;
   readonly aspect?: '3/1' | '2/1' | '16/9' | '4/3' | '3/2' | '1/1';
   readonly plot?: { x: readonly [number, number]; y: readonly [number, number] };

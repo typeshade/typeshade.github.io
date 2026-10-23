@@ -37,6 +37,7 @@ interface Props {
   /** The name over the block. A file name is not copy, so it is written on the page and reads
    *  the same in every language, the way the other code frames on the site name their file. */
   file?: string;
+  files?: Readonly<Record<string, string>>;
   /** One line saying what the reader is looking at, precise enough to check by eye. It is the
    *  prose form of the "Expected output" comment an MDN interactive example carries. From the
    *  dictionaries. */
@@ -59,11 +60,11 @@ interface Props {
   variant?: 'figure' | 'hero';
 }
 
-const { locale, id, title, code, caption, file, anchor, exercises = [], controls = {}, aspect = '2/1', compact = false, plot, variant = 'figure' } = Astro.props;
+const { locale, id, title, code, caption, file, files = {}, anchor, exercises = [], controls = {}, aspect = '2/1', compact = false, plot, variant = 'figure' } = Astro.props;
 const hero = variant === 'hero';
 const t = copyFor(locale);
 const l = t.live;
-const payload = liveShader(id, title, code, controls);
+const payload = liveShader(id, title, code, controls, { fileName: file, files });
 const graphLabel = t.docs.reference.demo.aria(title);
 const aria: StateStrings = plot ? {
   webgpu: graphLabel, webgl2: graphLabel, none: graphLabel,
@@ -107,6 +108,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   data-live-shader
   data-live-id={id}
   data-aspect={aspect}
+  data-live-plot={plot ? JSON.stringify(plot) : undefined}
   data-payload={payloadId}
   data-copy={JSON.stringify(runtimeCopy)}
   data-live-state="idle"
@@ -180,6 +182,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
       {compact && <div class="live-bar live-reset"><button type="button" data-live-reset aria-label={`${l.reset} ${file ?? l.file}`}>{l.reset}</button></div>}
       <figcaption class="figure-caption" data-live-caption>{caption}</figcaption>
 
+      {plot && <p class="live-anchor">{payload.controls.some((control) => control.field === 'view3d') ? t.docs.reference.demo.interaction : t.docs.reference.demo.interaction2d}</p>}
       {anchor && <p class="live-anchor"><Rich text={anchor} locale={locale} /></p>}
 
       <div class="live-diagnostics" data-live-diagnostics role="status" aria-live="polite"></div>
@@ -209,6 +212,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
           <div class="live-code" data-live-code>
             <Code code={payload.source} lang="ts" title={file ?? l.file} locale={locale} />
           </div>
+          {Object.entries(files).map(([name, source]) => <Code code={source} lang="ts" title={name} locale={locale} />)}
           {payload.reserved.length > 0 && (
             <p class="live-reserved">
               <Rich text={reservedNote} locale={locale} />
@@ -249,6 +253,10 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
 </script>
 
 <style>
+  [data-live-plot] canvas { cursor: grab }
+  [data-live-plot] canvas:active { cursor: grabbing }
+  .live-controls :global(.live-control-value) { white-space: nowrap; text-align: end; font-variant-numeric: tabular-nums; flex-shrink: 0 }
+
   /* .figure already sets the column and its 10px gap (src/styles/global.css), so this adds
      nothing but what the block's own parts need. */
   .live-code { position: relative }

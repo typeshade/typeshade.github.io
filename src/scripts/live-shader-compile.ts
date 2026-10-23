@@ -3,6 +3,7 @@
 // gzipped) stays out of a page until a reader edits something. Every instance on a page
 // awaits the same import, so the chunk is fetched once however many canvases are on it.
 
+import { projectOptions, type LiveProject } from '../lib/live-shader-project.ts';
 import { compile, reflect, packModule } from '../../vendor/shader-dsl/src/index.ts';
 import {
   composeSource,
@@ -65,23 +66,37 @@ export function compileLive(
   title: string,
   source: string,
   props: ControlProps = {},
+  project: LiveProject = {},
 ): LiveCompileResult {
   const { text, offset } = composeSource(source);
+  const options = projectOptions(project);
   let result: ReturnType<typeof compile>;
   try {
-    result = compile(text);
+    result = compile(text, options);
   } catch (error) {
     return { diagnostics: [unlocated(error instanceof Error ? error.message : String(error))] };
   }
 
   const diagnostics: LiveDiagnostic[] = result.diagnostics.map((d) => ({
-    message: renamed(d.message),
+    message: renamed(
+      project.files &&
+        Object.keys(project.files).length > 0 &&
+        d.fileName &&
+        d.fileName !== options.fileName
+        ? `${d.fileName}:${d.line}: ${d.message}`
+        : d.message,
+    ),
     code: d.code ?? '',
     line: Math.max(1, d.line - offset),
     character: d.character,
     // A diagnostic whose line falls inside the prelude belongs to the module and not to a
     // line the reader can see.
-    located: d.line - offset >= 1,
+    located:
+      (!project.files ||
+        Object.keys(project.files).length === 0 ||
+        !d.fileName ||
+        d.fileName === options.fileName) &&
+      d.line - offset >= 1,
     category: d.category,
   }));
   const failed = diagnostics.some((d) => d.category === 'error');

@@ -1012,6 +1012,7 @@ export type ViewChunk =
   | { readonly kind: 'code'; readonly code: string; readonly file?: string }
   | {
       readonly kind: 'live';
+      readonly files?: Readonly<Record<string, string>>;
       readonly id: string;
       readonly title: string;
       readonly caption: string;
@@ -1095,6 +1096,7 @@ export function noteView(
         anchor: c.marker.anchor,
         exercises: c.marker.exercises,
         code: live.code,
+        files: live.files,
         file: live.file,
         aspect: live.aspect,
         plot: live.plot,
