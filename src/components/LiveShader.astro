@@ -244,6 +244,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   }
   .live-compact[data-aspect='1/1'] .live-frame,
   .live-compact[data-aspect='1/1'] .live-controls { max-inline-size: 22rem }
+  .live-compact .live-controls :global(.live-control) { grid-template-columns: minmax(0, 1fr) }
   .live-diagnostics:empty { display: none }
   .live-reserved { margin: 0; color: var(--color-text-2); font-size: var(--text-meta) }
   .live-output { margin-block-start: 6px; border-block-start: 1px solid var(--color-line-1); padding-block-start: 10px }
