@@ -1,7 +1,8 @@
 # Function page template
 
-The function reference uses compiler-generated signatures and descriptions. Authored examples
-explain the result beside the actual program that produces it.
+The page must help a reader who does not use TypeShade. Start with the mathematical meaning,
+an interactive explanation, a practical use, and input limits. Put compiler-specific signatures
+and descriptions after this explanation. Full shader source is optional reading.
 
 ## Interactive example
 
@@ -11,6 +12,8 @@ explain the result beside the actual program that produces it.
 - Show the function expression before the plot. Put the complete editable program in a disclosure.
 - Use valid input ranges. State that the graph shows a bounded window of the function.
 - Draw a highlighted input point so a reader can connect a control to the curve.
+- Give a worked calculation, evaluated at build time, beside the practical use. State that
+  its rounded reference result is separate from shader precision guarantees.
 - Compile the same TypeShade program to WebGPU and WebGL2. Capture a fallback still from it.
 - Keep the compiler behind the first edit, using the existing LiveShader implementation.
 

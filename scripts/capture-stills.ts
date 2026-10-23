@@ -49,7 +49,7 @@ try {
       );
       // Hide the previous stills so the screenshot is the canvas alone.
       await page.addStyleTag({
-        content: '.figure-frame > img, .figure-split { visibility: hidden }',
+        content: '.figure-frame > img, .figure-split, .live-axes { visibility: hidden }',
       });
       current = route;
     }

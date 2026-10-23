@@ -31,6 +31,7 @@
     "qa:openseo": "bun scripts/openseo-audit.mts dist",
     "check:playground": "node scripts/check-playground.mjs",
     "check:live": "node scripts/check-live.mjs",
+    "check:function-demos": "node scripts/check-function-demos.mjs",
     "check:mnist": "node scripts/check-mnist-browser.mjs",
     "check:benchmarks": "node scripts/check-benchmarks.mjs",
     "check:benchmark-catalog": "bun scripts/benchmark-catalog.ts --check",

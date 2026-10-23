@@ -1,6 +1,6 @@
 ---
 entry: function/pow
-sources: definition 2a9fd974f58f, exponent-curve ea92ecac8edd, undefined-inputs 32e82b36e5c3, integer-exponents ebbbf953f4f6, accuracy 2225d454fb02, common-uses 5ef6084cb5bf, in-typeshade 7d3ceb5ae028, specifications f2a07aa3ee6f
+sources: definition 2a9fd974f58f, exponent-curve 834fc48b6109, undefined-inputs 32e82b36e5c3, integer-exponents ebbbf953f4f6, accuracy 2225d454fb02, common-uses 5ef6084cb5bf, in-typeshade 7d3ceb5ae028, specifications f2a07aa3ee6f
 rules: 1.3 fcW4P8W5BFQ0loGi6vlLvaa1Is6dCmpQ_g9tbwMsfHM=, 7.2 onO98E-yRQ3RftA44lVmgPmSW7ZkCd7rYrJGgFS8EI4=
 ---
 
@@ -26,7 +26,7 @@ rules: 1.3 fcW4P8W5BFQ0loGi6vlLvaa1Is6dCmpQ_g9tbwMsfHM=, 7.2 onO98E-yRQ3RftA44lV
 
 $0$과 $1$ 사이에서 `pow`는 곧게 오르는 직선을 곡선으로 휩니다. 지수가 $1$보다 크면 범위의 가운데가 아래로 처지고, $1$보다 작으면 가운데가 위로 올라갑니다. 모든 $k > 0$에서 $0^k = 0$, $1^k = 1$이므로 두 끝은 제자리에 머뭅니다. 셰이더는 이 휘어짐으로 $0$과 $1$ 사이의 값을 다듬습니다.
 
-이 페이지의 예제는 TypeShade 파일입니다. TypeShade는 이 호출을 `pow`로 쓰며, WGSL의 철자({{entry spelling.wgsl}})와 GLSL의 철자({{entry spelling.glsl}})도 같습니다. `uv`는 캔버스를 가로질러 $0$에서 $1$까지 가고, `u.k`는 캔버스 아래 슬라이더가 정하는 유니폼을 읽습니다. 언어의 나머지가 어떻게 대응하는지는 [GLSL에서 옮겨 오기](languageFromGlsl)에 있습니다.
+캔버스 아래 슬라이더로 지수를 바꾸며 곡선을 보십시오. 필요할 때 펼쳐 보는 코드는 TypeShade로 작성했습니다. `uv`는 캔버스를 가로질러 $0$에서 $1$까지 가고, `u.k`는 슬라이더가 정하는 유니폼을 읽습니다. 호출은 WGSL({{entry spelling.wgsl}})과 GLSL({{entry spelling.glsl}}) 모두 `pow`입니다. 소스 언어의 대응 관계는 [GLSL에서 옮겨 오기](languageFromGlsl)에서 확인할 수 있습니다.
 
 <!-- live: reference-pow-curve
 title: 영과 일 사이에서 pow(x, k)가 그리는 곡선

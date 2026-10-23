@@ -10,6 +10,7 @@ import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import type { LinkKey } from '../lib/links.ts';
 import { typedError } from '../lib/typed-error.ts';
 import { mnistEpochs, mnistTestSamples } from '../lib/mnist-settings.ts';
+import { functionLessons } from './function-lessons-en.ts';
 
 const glsl = facts.glslTarget;
 const err = typedError();
@@ -326,6 +327,44 @@ export const en = {
     // sentence under every name are the compiler's, in English on every locale, the way the
     // API reference already carries its JSDoc.
     reference: {
+      demo: {
+        heading: 'Explore the function',
+        exercises: 'Explore the result:',
+        useHeading: 'When to use it',
+        cautionHeading: 'Inputs and limits',
+        probe: 'Input x',
+        parameter: 'Parameter k',
+        angleInput: 'Angle x (radians)',
+        degreeInput: 'Angle x (degrees)',
+        related: 'Related functions',
+        calculation: 'Example calculation',
+        calculationNote:
+          'The reference result is rounded for readability. Shader output follows the precision rules of its target.',
+        parameters: {
+          mod: 'Divisor k',
+          min: 'Other input k',
+          max: 'Other input k',
+          step: 'Edge k',
+          clamp: 'Bound magnitude k',
+          mix: 'End value k',
+          smoothstep: 'Upper edge k',
+          fma: 'Multiplier k',
+          ldexp: 'Binary exponent k',
+          hypot: 'Vertical component k',
+          length: 'Vertical component k',
+          distance: 'Other point height k',
+          dot: 'Horizontal weight k',
+        },
+        condition: 'Conditions in this example',
+        aria: (name: string) =>
+          `${name} graph. A curve shows the output and a highlighted point follows the selected input.`,
+        caption: 'The blue curve shows the output. The orange point marks the selected input.',
+        window:
+          'The axis labels show the displayed range. Values outside this window are not drawn.',
+        sources:
+          'For shader input rules and precision, consult [WGSL](specWgsl) and [GLSL ES 3.00](specGlslEs).',
+        lessons: functionLessons,
+      },
       title: 'TypeShade language reference for shader authors',
       description: `Every name a \`"use typeshade"\` file can write, ${facts.languageEntries} of them: types, attributes, builtin values, functions, constants and \`Math\` members.`,
       h1: 'Language reference',
@@ -1165,6 +1204,8 @@ export const en = {
   /** The chrome around a live example (src/components/LiveShader.astro). The sample's own
    *  code is not copy: it stays on the page that shows it, and so does its file name. */
   live: {
+    editCode: 'Edit code',
+    source: 'Full shader source',
     file: 'live.shade.ts',
     edit: 'Edit',
     reset: 'Reset',

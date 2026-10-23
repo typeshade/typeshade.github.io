@@ -242,6 +242,8 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
     }
 
     // 3. The editor opens where the reader reaches for the code, and an edit recompiles.
+    const disclosure = figure.locator('details.live-parts');
+    if (await disclosure.count()) await disclosure.locator('summary').click();
     await figure.locator('[data-live-code] pre').click();
     const area = figure.locator('textarea[data-live-input]');
     await area.waitFor({ timeout: TIMEOUT });

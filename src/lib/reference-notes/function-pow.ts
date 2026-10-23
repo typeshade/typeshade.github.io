@@ -133,12 +133,14 @@ export const functionPow: NoteRecord = {
     'reference-pow-curve': {
       file: 'pow-curve.shade.ts',
       aspect: '1/1',
+      plot: { x: [0, 1], y: [0, 1] },
       code: curve,
       controls: { k: { min: 0.1, max: 5, step: 0.01, value: 2 } },
     },
     'reference-pow-negative': {
       file: 'pow-negative.shade.ts',
       aspect: '1/1',
+      plot: { x: [-1, 1], y: [-1, 1] },
       code: negative,
       controls: { k: { min: 0.5, max: 5, step: 0.5, value: 3 } },
     },

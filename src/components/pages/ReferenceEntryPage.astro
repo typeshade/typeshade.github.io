@@ -17,6 +17,7 @@ import Docs, { type Heading } from '../../layouts/Docs.astro';
 import LanguageType from '../LanguageType.astro';
 import LinkColumns from '../LinkColumns.astro';
 import ReferenceNotes from '../ReferenceNotes.astro';
+import FunctionDemo from '../FunctionDemo.astro';
 import Rich from '../Rich.astro';
 import { copyFor, localePath, localeSettings, type Locale } from '../../i18n/index.ts';
 import MappingTable from '../MappingTable.astro';
@@ -37,6 +38,8 @@ import {
 import { editCopy, links } from '../../lib/links.ts';
 import { META_MIN, fitDescription, fitLeadAndTail } from '../../lib/meta-description.ts';
 import { assertNoteReading, noteEntryId, noteOf, type NoteView } from '../../lib/reference-notes.ts';
+import { functionDemo } from '../../lib/function-demos.ts';
+import type { FunctionLesson } from '../../i18n/function-lessons-en.ts';
 
 interface Props {
   locale: Locale;
@@ -47,6 +50,8 @@ const { locale, kind, name } = Astro.props;
 const r = copyFor(locale).docs.reference;
 const e = r.entry;
 const entry = languageEntry(kind, name);
+const lesson = kind === 'function' ? (r.demo.lessons as Record<string, FunctionLesson>)[name] : undefined;
+const demo = kind === 'function' ? functionDemo(name) : undefined;
 const section = languageSection(kind);
 const named = r.kinds[kind];
 const kindWord = e.kindWords[kind];
@@ -79,7 +84,9 @@ const composed = lead ? `${lead} ${line}` : e.description(shownName, kindWord, l
 // so the kind's own line fills it out, the way a category's does in the API reference.
 const short = composed.length < META_MIN;
 const max = localeSettings[locale].metaDescriptionMax;
-const description = lead
+const description = lesson
+  ? fitDescription(`${lesson.meaning} ${lesson.use} ${lesson.caution}`, max)
+  : lead
   ? fitLeadAndTail(lead, short ? `${line} ${plain(named.summary)}` : line, max)
   : fitDescription(short ? `${composed} ${plain(named.summary)}` : composed, max);
 
@@ -137,6 +144,13 @@ const stageText = entry.stages.map((s) =>
 const quoteBrand = entry.showsNumber && !(kind === 'type' && name === 'f32');
 
 const sections = [
+  ...(demo ? [
+    { id: 'interactive-example', label: r.demo.heading, show: true },
+    { id: 'practical-use', label: r.demo.useHeading, show: true },
+    { id: 'input-limits', label: r.demo.cautionHeading, show: true },
+    { id: 'related-functions', label: r.demo.related, show: true },
+  ] : []),
+  ...(notes?.sections ?? []).map((n) => ({ id: n.id, label: n.heading.replace(/`/g, ''), show: true })),
   { id: 'syntax', label: e.syntax, show: true },
   // A decorator written on its own has no row to show and still has something to say, so
   // its Parameters heading stands with the line that it takes no arguments.
@@ -147,7 +161,6 @@ const sections = [
   // CPU oracle does with the name. An entry with none of the three has no Description.
   { id: 'description', label: e.descriptionHeading, show: entry.rest.length > 0 || entry.oracle !== null },
   // The note's sections, each under its own heading, after Description and before Targets.
-  ...(notes?.sections ?? []).map((n) => ({ id: n.id, label: n.heading.replace(/`/g, ''), show: true })),
   { id: 'targets', label: e.targets, show: entry.spelling !== null },
   { id: 'examples', label: e.examples, show: examples.length > 0 },
   { id: 'see-also', label: e.seeAlso, show: true },
@@ -198,8 +211,10 @@ const meta = `title:${entry.name} (${kindWord})`;
     <a href={index.href}>{named.name}</a>
   </nav>
   <h1><code>{entry.title}</code></h1>
-  <p class="api-kind" lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
-  <p class="api-summary" lang="en"><Rich text={entry.line} locale={locale} /></p>
+  <p class:list={['api-kind', lesson ? 'sr-only' : undefined]} lang={locale} data-pagefind-meta={`${e.kindMeta}:${e.kindNames[kind]}`}>{e.kindNames[kind]}</p>
+  <p class="api-summary" lang={lesson ? locale : 'en'}><Rich text={lesson?.meaning ?? entry.line} locale={locale} /></p>
+  {demo && lesson && <FunctionDemo locale={locale} name={name} lesson={lesson} />}
+  <ReferenceNotes locale={locale} view={notes} />
   {(spelled || entry.kind === 'builtin') && (
     <dl class="ref-facts" lang={locale}>
       {spelled && (
@@ -219,6 +234,7 @@ const meta = `title:${entry.name} (${kindWord})`;
     </dl>
   )}
   <p class="guide-note" lang={locale}><Rich text={r.note} locale={locale} /></p>
+  {lesson && <p lang="en"><Rich text={entry.line} locale={locale} /></p>}
 
   <section>
     <h2 id="syntax" lang={locale}>{e.syntax}</h2>
@@ -292,8 +308,6 @@ const meta = `title:${entry.name} (${kindWord})`;
     )}
   </section>
   )}
-
-  <ReferenceNotes locale={locale} view={notes} />
 
   {shows('targets') && wgslCell && glslCell && (
     <section>

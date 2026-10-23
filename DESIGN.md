@@ -884,6 +884,22 @@ changes a reading carries a line `Read-Against: <note>`, which CI checks. The fi
 plants a fault into a copy of it for each check and sees the check fail, and
 `REFERENCE_NOTES_FIXTURE=1` runs the checks, or a build, on it.
 
+### Mathematical function lessons
+
+Mathematical function pages also serve readers who use other languages. Start with the
+function's mathematical meaning, a compact interactive example, a practical use, and input
+limits. Put TypeShade signatures and compiler-specific details after this material.
+
+`src/lib/function-demo-catalog.mjs` supplies bounded input and output ranges and the actual
+expression each example draws. `src/lib/function-demos.ts` creates its TypeShade program.
+`src/i18n/function-lessons-en.ts` and its Korean translation explain each function independently
+of TypeShade. Mathematics and general uses are authored; shader semantics cite the language
+specifications, and compiler-specific descriptions remain generated from the pin.
+
+Full source starts closed in compact figures. Edit opens it before focusing the editor.
+Numeric plot labels identify the displayed window. A selected input is marked on the curve.
+The same program supplies both GPU backends and its captured fallback image.
+
 ## Live examples
 
 A guide or concept page can carry a shader the reader edits. The model is

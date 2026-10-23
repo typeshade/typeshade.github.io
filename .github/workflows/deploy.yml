@@ -175,6 +175,15 @@ jobs:
       # recompiles and a moved control reaches the frame. See scripts/check-live.mjs.
       - run: bun run check:live
         if: matrix.part == 2
+      - run: bun run check:function-demos
+        if: matrix.part == 2
+        timeout-minutes: 15
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.part == 2
+        with:
+          name: function-demo-evidence
+          path: shots/function-demos
+          retention-days: 3
       - run: bun run check:benchmarks
         if: matrix.part == 3
         timeout-minutes: 10

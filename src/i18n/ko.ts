@@ -7,6 +7,7 @@ import { facts, hero, quickStartFile } from '../lib/examples.ts';
 import { ISSUE_IMAGE_BYTES, ISSUE_IMAGES_MAX } from '../lib/issue-data.ts';
 import { typedError } from '../lib/typed-error.ts';
 import { mnistEpochs, mnistTestSamples } from '../lib/mnist-settings.ts';
+import { functionLessons } from './function-lessons-ko.ts';
 
 const glsl = facts.glslTarget;
 const err = typedError();
@@ -402,6 +403,43 @@ export const ko: Copy = {
       categories: apiCategories,
     },
     reference: {
+      demo: {
+        heading: '움직이며 이해하기',
+        exercises: '직접 확인해 보십시오:',
+        useHeading: '언제 쓰는가',
+        cautionHeading: '입력과 한계',
+        probe: '입력 x',
+        parameter: '매개변수 k',
+        angleInput: '각도 x (라디안)',
+        degreeInput: '각도 x (도)',
+        related: '관련 함수',
+        calculation: '계산 예',
+        calculationNote:
+          '참고 계산의 결과는 읽기 쉽게 반올림했습니다. 실제 셰이더 출력은 대상 언어의 정밀도 규칙을 따릅니다.',
+        parameters: {
+          mod: '제수 k',
+          min: '다른 입력 k',
+          max: '다른 입력 k',
+          step: '경계 k',
+          clamp: '경계 크기 k',
+          mix: '끝값 k',
+          smoothstep: '위쪽 경계 k',
+          fma: '배율 k',
+          ldexp: '이진 지수 k',
+          hypot: '세로 성분 k',
+          length: '세로 성분 k',
+          distance: '다른 점 높이 k',
+          dot: '가로 가중치 k',
+        },
+        condition: '이 예제의 입력 조건',
+        aria: (name: string) =>
+          `${name} 그래프입니다. 곡선이 출력을 나타내며, 강조된 점은 선택한 입력을 따라 움직입니다.`,
+        caption: '파란 곡선은 출력이고, 주황색 점은 선택한 입력의 위치입니다.',
+        window: '축 옆에 표시한 범위만 그립니다. 이 범위 밖의 값은 화면에 나타나지 않습니다.',
+        sources:
+          '셰이더의 입력 규칙과 정밀도는 [WGSL](specWgsl)과 [GLSL ES 3.00](specGlslEs)에서 확인하십시오.',
+        lessons: functionLessons,
+      },
       title: 'TypeShade 언어 참조: "use typeshade" 파일이 쓰는 이름 전체 목록',
       description: `\`"use typeshade"\` 파일에서 쓸 수 있는 이름 ${facts.languageEntries}개를 모았습니다. 타입과 어트리뷰트, 내장 값, 함수, 상수, \`Math\` 멤버가 여기 들어 있습니다.`,
       h1: '언어 참조',
@@ -1126,6 +1164,8 @@ export const ko: Copy = {
   },
 
   live: {
+    editCode: '코드 수정',
+    source: '전체 셰이더 코드',
     file: 'live.shade.ts',
     edit: '수정',
     reset: '초기화',
