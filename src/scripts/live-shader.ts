@@ -24,10 +24,12 @@ import {
 import { mountEditor, type LiveEditor } from './live-shader-editor.ts';
 import { highlight } from './live-shader-highlight.ts';
 import { errorLink, linkedMessage } from './error-links.ts';
+import { createPlotInteraction, type PlotBounds } from './plot-interaction.ts';
+import type { LiveProject } from '../lib/live-shader-project.ts';
 import { playgroundLink } from './source-link.ts';
 
 /** What LiveShader.astro inlined for one example. */
-interface LivePayload {
+interface LivePayload extends LiveProject {
   readonly id: string;
   readonly source: string;
   readonly data: ShaderData;
@@ -121,10 +123,33 @@ const fromHex = (hex: string): [number, number, number] => [
 ];
 
 /** How a number reads under a control: an integer plain, a float to three places. */
+const DISPLAY_DECIMALS = 3;
+
 const show = (control: LiveControl, v: number): string =>
   control.scalar === 'f32'
-    ? v.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')
+    ? v.toFixed(DISPLAY_DECIMALS).replace(/0+$/, '').replace(/\.$/, '')
     : String(Math.round(v));
+
+/** Reserve each component's full precision so a changing value cannot move its slider. */
+const readoutCapacity = (control: LiveControl, current: readonly number[]): number => {
+  let capacity = Math.max(0, control.components - 1) * 2; // The ", " between components.
+  for (let i = 0; i < control.components; i++) {
+    const candidates = [
+      control.min[i] ?? 0,
+      control.max[i] ?? 1,
+      control.value[i] ?? 0,
+      current[i] ?? 0,
+    ];
+    capacity += Math.max(
+      ...candidates.map((value) =>
+        control.scalar === 'f32'
+          ? value.toFixed(DISPLAY_DECIMALS).length
+          : show(control, value).length,
+      ),
+    );
+  }
+  return capacity;
+};
 
 function setUp(root: HTMLElement): void {
   const canvas = root.querySelector('canvas');
@@ -155,7 +180,7 @@ function setUp(root: HTMLElement): void {
   const pointer: [number, number] = [0.5, 0.5];
   // Less motion means a pinned clock and no loop: the canvas still answers a control, and
   // nothing redraws between one move and the next.
-  const onDemand = prefersReducedMotion();
+  const onDemand = plotted || prefersReducedMotion();
   let frozen: number | null = onDemand ? STILL_SECONDS : null;
   let reported: string[] = [];
   const handle: LiveHandle = {
@@ -181,11 +206,34 @@ function setUp(root: HTMLElement): void {
     _instance?: string,
     clock?: FrameClock,
   ): readonly number[] | null =>
+    plotInteraction?.value(name) ??
     reservedValue(name, frozen ?? seconds, canvas.width, canvas.height, pointer, clock) ??
     values[name] ??
     null;
 
   let mounted: MountedShader | null = null;
+  const plotInteraction =
+    root.dataset.livePlot && payload.data.layout.fields.some((field) => field.name === 'plotCenter')
+      ? createPlotInteraction(canvas, JSON.parse(root.dataset.livePlot) as PlotBounds, () => {
+          const bounds = plotInteraction!.bounds();
+          for (const [selector, axis, index] of [
+            ['.live-x-min', 'x', 0],
+            ['.live-x-max', 'x', 1],
+            ['.live-y-min', 'y', 0],
+            ['.live-y-max', 'y', 1],
+          ] as const) {
+            const label = root.querySelector(selector);
+            if (label) {
+              const name = label.querySelector('code') ?? document.createTextNode(axis);
+              label.replaceChildren(name, ` = ${Number(bounds[axis][index].toPrecision(4))}`);
+            }
+          }
+          mounted?.redraw();
+        })
+      : null;
+  window.addEventListener('pagehide', (event) => {
+    if (!event.persisted) plotInteraction?.destroy();
+  });
 
   canvas.addEventListener('pointermove', (e) => {
     const box = canvas.getBoundingClientRect();
@@ -204,6 +252,7 @@ function setUp(root: HTMLElement): void {
     const slot = values[control.field];
     if (!slot) return;
     slot[index] = clamp(control, index, raw);
+    if (control.field === 'view3d') plotInteraction?.setMode(slot[0] !== 0);
     // A reader who asked for less motion gets no frame loop, so the move they just made is
     // what puts the next frame up.
     if (onDemand) mounted?.redraw();
@@ -250,6 +299,8 @@ function setUp(root: HTMLElement): void {
     // The value reads beside the handle that sets it, which also keeps the name and the
     // label on one line in the column beside it.
     const readout = el('output', 'live-control-value');
+    if (plotted && control.field === 'view3d') readout.hidden = true;
+    readout.style.inlineSize = `${readoutCapacity(control, values[control.field] ?? [])}ch`;
     const paint = (): void => {
       const v = values[control.field] ?? [];
       readout.textContent = v.map((n) => show(control, n)).join(', ');
@@ -448,7 +499,13 @@ function setUp(root: HTMLElement): void {
     const { compileLive } = await loadCompiler();
     handle.compilerLoaded = true;
     if (mine !== generation) return;
-    const result = compileLive(payload.id, payload.data.title, editor.value(), payload.props);
+    const result = compileLive(
+      payload.id,
+      payload.data.title,
+      editor.value(),
+      payload.props,
+      payload,
+    );
     handle.compiles++;
     const report: Message[] = result.diagnostics.map((d) => ({
       text: d.message,
@@ -480,32 +537,54 @@ function setUp(root: HTMLElement): void {
   const openLink = root.querySelector<HTMLAnchorElement>('[data-live-playground]');
   const playground = openLink?.getAttribute('href') ?? '';
   let linked = '';
-  const syncLink = (): void => {
+  let pendingLink = Promise.resolve(playground);
+  const syncLink = (): Promise<string> => {
     const source = editor ? editor.value() : payload.source;
     const view = {
       aspect: root.dataset.aspect,
-      controls: Object.fromEntries(
-        controls.map((c) => [
-          c.field,
-          {
-            min: c.min,
-            max: c.max,
-            step: c.step,
-            value: values[c.field] ?? c.value,
-            ...(c.kind === 'color' ? { color: true } : {}),
-            ...(c.kind === 'checkbox' ? { toggle: true } : {}),
-          },
-        ]),
-      ),
+      files: payload.files,
+      fileName: payload.fileName,
+      controls: {
+        ...Object.fromEntries(
+          controls.map((c) => [
+            c.field,
+            {
+              min: c.min,
+              max: c.max,
+              step: c.step,
+              value: values[c.field] ?? c.value,
+              ...(c.kind === 'color' ? { color: true } : {}),
+              ...(c.kind === 'checkbox' ? { toggle: true } : {}),
+            },
+          ]),
+        ),
+        ...Object.fromEntries(
+          ['plotCenter', 'plotSpan', 'plotRotation', 'plotBlend'].flatMap((name) => {
+            const value = plotInteraction?.value(name);
+            return value ? [[name, { value }]] : [];
+          }),
+        ),
+      },
     };
     const key = `${source}\u0000${JSON.stringify(view)}`;
-    if (!openLink || key === linked) return;
+    if (!openLink || key === linked) return pendingLink;
     linked = key;
-    void playgroundLink(playground, source, view).then((href) => {
+    pendingLink = playgroundLink(playground, source, view).then((href) => {
       if (linked === key) openLink.href = href;
+      return href;
     });
+    return pendingLink;
   };
   syncLink();
+  openLink?.addEventListener('pointerenter', syncLink);
+  openLink?.addEventListener('focus', syncLink);
+  openLink?.addEventListener('click', (event) => {
+    if (!plotted || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    void syncLink().then((href) => {
+      window.location.href = href;
+    });
+  });
 
   function onEdit(): void {
     handle.edits++;
@@ -615,6 +694,8 @@ function setUp(root: HTMLElement): void {
 
   root.querySelector<HTMLElement>('[data-live-reset]')?.addEventListener('click', () => {
     for (const control of payload.controls) values[control.field] = [...control.value];
+    plotInteraction?.reset();
+    plotInteraction?.setMode(false);
     forgetTap();
     if (editor) {
       editor.destroy();
@@ -628,7 +709,13 @@ function setUp(root: HTMLElement): void {
       generation++;
       if (handle.compilerLoaded) {
         const { compileLive } = await loadCompiler();
-        const result = compileLive(payload.id, payload.data.title, payload.source, payload.props);
+        const result = compileLive(
+          payload.id,
+          payload.data.title,
+          payload.source,
+          payload.props,
+          payload,
+        );
         if (result.data) {
           await mounted?.swap(result.data);
           showEmitted(result.data);

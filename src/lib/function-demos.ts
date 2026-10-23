@@ -1,13 +1,16 @@
 // One plotting program for the mathematical function catalogue. Every page compiles the
 // actual function call to both backends through LiveShader, including the highlighted point.
+import { readFileSync } from 'node:fs';
 import { FUNCTION_DEMOS, type FunctionDemo } from './function-demo-catalog.mjs';
 import type { ControlProps } from './live-shader-contract.ts';
 import { compile, compileModule } from '../../vendor/shader-dsl/src/index.ts';
 
 export { FUNCTION_DEMOS };
 
-const literal = (n: number): string => (Number.isInteger(n) ? `${n}.` : String(n));
-const pair = (v: readonly number[]): string => `vec2(${v.map(literal).join(', ')})`;
+/** Real shader dependencies, kept as separate documents through compilation and editing. */
+export const FUNCTION_PLOT_FILES: Readonly<Record<string, string>> = {
+  'function-plot.shade.ts': readFileSync('src/shaders/function-plot.shade.ts', 'utf8'),
+};
 
 export const functionDemo = (name: string): FunctionDemo | undefined =>
   FUNCTION_DEMOS.find((demo) => demo.name === name);
@@ -125,6 +128,7 @@ export function demoCondition(demo: FunctionDemo): string {
 
 export function demoSource(demo: FunctionDemo): string {
   const jumps = [
+    'tan',
     'atan2',
     'sign',
     'floor',
@@ -135,35 +139,43 @@ export function demoSource(demo: FunctionDemo): string {
     'mod',
     'step',
   ].includes(demo.name);
-  return `"use typeshade"
+  const domain = ['log', 'log2', 'log10', 'inverseSqrt'].includes(demo.name)
+    ? 'x <= 0.'
+    : ['asin', 'acos'].includes(demo.name)
+      ? 'abs(x) > 1.'
+      : demo.name === 'sqrt'
+        ? 'x < 0.'
+        : demo.name === 'acosh'
+          ? 'x < 1.'
+          : demo.name === 'atanh'
+            ? 'abs(x) >= 1.'
+            : demo.name === 'log1p'
+              ? 'x <= -1.'
+              : undefined;
+  return `"use typeshade";
 
-class Uniforms {
-  resolution: vec2
-  probe: f32${demo.k ? '\n  k: f32' : ''}
-}
-declare const u: uniform<Uniforms>
+import { PlotUniforms, plot2D, plot3D } from "./function-plot.shade.ts";
 
+${demo.k ? 'class Uniforms extends PlotUniforms { k: f32; }' : 'class Uniforms extends PlotUniforms {}'}
+declare const u: uniform<Uniforms>;
+
+// Inputs outside the mathematical domain are omitted, including after pan or zoom.
 function sample(x: f32): f32 {
-  return ${demo.expression}
+  ${domain ? `if (${domain}) { return 1e20; }` : ''}
+  return ${demo.expression};
+}
+
+function trajectory(t: f32): vec3 {
+  return vec3(t, sample(t), 0.);
 }
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  const lo = ${pair([demo.x[0], demo.y[0]])}
-  const hi = ${pair([demo.x[1], demo.y[1]])}
-  const p = mix(lo, hi, uv)
-  const y = sample(p.x)
-  const d = (p.y - y) / (hi.y - lo.y)
-  // ${jumps ? 'Cap the derivative near jumps so they do not fill a vertical band.' : 'Use the slope to keep a smooth line at steep and shallow angles.'}
-  const width = max(1. / u.resolution.y, ${jumps ? 'min(fwidth(d), 2. / u.resolution.y)' : 'fwidth(d)'})
-  const curve = 1. - smoothstep(0., width * 1.5, abs(d))
-  const axis = max(1. - step(fwidth(p.x), abs(p.x)), 1. - step(fwidth(p.y), abs(p.y)))
-  let color = mix(vec3(0.96, 0.97, 0.98), vec3(0.75), axis)
-  color = mix(color, vec3(0.09, 0.47, 1.), curve)
-  const point = (vec2(u.probe, sample(u.probe)) - lo) / (hi - lo)
-  const radius = length((uv - point) * u.resolution)
-  color = mix(color, vec3(0.94, 0.35, 0.06), 1. - smoothstep(3., 5., radius))
-  return vec4(color, 1.)
+  const bounds = vec2(u.plotCenter.x - u.plotSpan.x * 0.5, u.plotCenter.x + u.plotSpan.x * 0.5);
+  const flat = plot2D(sample, uv, u, ${jumps});
+  if (u.plotBlend <= 0.) { return flat; }
+  const space = plot3D(trajectory, uv, u, bounds, ${jumps});
+  return mix(flat, space, clamp(u.plotBlend, 0., 1.));
 }
 `;
 }

@@ -116,7 +116,10 @@ try {
           const source = await editor.inputValue();
           await editor.fill(
             source
-              .replace('probe: f32', 'probe: f32\n  extra: f32')
+              .replace(
+                'class Uniforms extends PlotUniforms {}',
+                'class Uniforms extends PlotUniforms { extra: f32; }',
+              )
               .replace('return sin(x)', 'return sin(x) + u.extra'),
           );
           await page.waitForFunction(() => {

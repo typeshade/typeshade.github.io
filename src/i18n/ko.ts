@@ -466,6 +466,11 @@ export const ko: Copy = {
         exercises: '입력 변화 관찰',
         useHeading: '활용',
         cautionHeading: '입력 범위와 주의사항',
+        interaction2d:
+          '휠로 확대·축소하고 드래그로 이동한다. 키보드: 방향키, +/-, Home으로 초기화.',
+        view3d: '3D 보기',
+        interaction:
+          '휠로 확대·축소하고 드래그로 이동한다. 3D에서는 드래그로 회전한다. 키보드: 방향키, +/-, Home으로 초기화.',
         probe: '입력 x',
         parameter: '매개변수 k',
         angleInput: '각도 x (라디안)',

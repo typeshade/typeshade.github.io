@@ -961,7 +961,7 @@ Putting one on a page:
   GLSL ES 3.00 stages, the compiled program manifest, the reflected layout and the controls. A sample the compiler reports
   an error on fails the build.
 
-Five uniform field names are reserved and filled by the runtime every frame, so they get no
+Runtime uniform field names are reserved and filled by the host, so they get no
 control. `frame` and `timeDelta` are reserved only at the type below, since examples already used
 the names for fields of their own: an `f32` `frame` stays a field with its control. A sample declares the ones it reads and leaves out the rest, and the note under the
 controls names the ones it declared:
@@ -987,6 +987,12 @@ A field of any other type stops the build, so a page cannot ship a uniform it le
 without saying so. `bool` is one of them: WGSL forbids it in the uniform address space, so a
 flag is a `u32` with `toggle: true`.
 
+Function plots also reserve `plotCenter` (`vec2`, data coordinates), `plotSpan` (`vec2`, visible
+extent), `plotRotation` (`vec2`, yaw/pitch radians) and `plotBlend` (`f32`, 2D/3D transition).
+Their controller supplies these fields during interaction. A Playground link carries its
+viewport snapshot through the existing controls payload. Plots redraw on input and during a
+bounded transition; reduced motion applies the target view immediately.
+
 A still is captured for every drawable `.shade.ts` example, not for the live blocks alone.
 `SHADE_STILL_EXAMPLES` in `scripts/artifacts.mjs` lists them, `src/pages/capture-stills.astro` is a
 build-only route that draws all of them at the tile aspect, `scripts/capture-stills.ts`
@@ -1000,9 +1006,11 @@ this is written against, and the failure was silent: the shader did not link, th
 empty, and the page told the reader their browser has no WebGL2. `check-live` opens a page with
 `?forcegl2=1` so the fallback is exercised on every run.
 
-A sample is a whole file, the way a Book of Shaders page shows a whole `.frag` and an MDN
-example shows something that runs: every name in front of the reader is declared in front of
-the reader. The one thing a page supplies is the vertex half, which is what glslCanvas
+A sample includes its complete entry file and any imported TypeShade modules. Imported files
+are visible in the source disclosure and travel with the entry to the Playground. The build
+and editor use the compiler import resolver with the same source documents. Function graphs
+share a shader module whose callbacks evaluate 2D functions and 3D trajectories. The host
+supplies plotCenter, plotSpan, plotRotation and plotBlend for pan, zoom and mode transitions. The one thing a page supplies is the vertex half, which is what glslCanvas
 supplies there. A sample that declares no `@vertex` entry is compiled behind a fullscreen
 triangle and the `uv` it hands the fragment stage; a sample that declares both stages is
 compiled as written. A diagnostic's line is moved back into the reader's own text before the

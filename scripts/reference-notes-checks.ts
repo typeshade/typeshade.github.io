@@ -368,7 +368,8 @@ function lintFile(
         );
       // N9
       if (p.marker) {
-        const sample = note.record.live[p.marker.id]?.code ?? '';
+        const live = note.record.live[p.marker.id];
+        const sample = [live?.code ?? '', ...Object.values(live?.files ?? {})].join('\n');
         for (const span of codeSpans(p.text))
           if (!sample.includes(span) && !(span in note.record.literals))
             out.push(
@@ -550,7 +551,10 @@ function sampleProblems(set: NoteSet, note: LoadedNote): string[] {
       ]),
     );
     try {
-      liveShader(m.id, m.title ?? m.id, live.code, controls as never);
+      liveShader(m.id, m.title ?? m.id, live.code, controls as never, {
+        fileName: live.file,
+        files: live.files,
+      });
     } catch (e) {
       out.push(
         `[reference-notes] ${file}:${m.line}: the live example '${m.id}' does not build: ${e instanceof Error ? e.message : String(e)}`,
