@@ -423,6 +423,10 @@ cards takes the column. A third measure needs a reason.
 - **Tag.** A 12px chip with a 4px radius, a `#d9d9d9` border and the `#fafafa` fill: an
   optional parameter, a target's support state, the one example that emits a single target.
   The target state that reads "not supported" swaps the border and text to the red.
+- **Inline code.** Identifiers in document prose use Plex Mono at weight 500, a surface-2
+  fill, a line-2 border and a 4px radius. Small internal padding separates the text from its
+  frame. Wrapped calls repeat the decoration on each line. Long identifiers wrap within the
+  reading column, and linked code retains the link colour. Both themes use the shared tokens.
 - **Code frames.** Expressive Code in the same shape as a card: 8px radius, a 1px `#f0f0f0`
   border, a `#fafafa` tab bar, white code at 13px, no shadow. The copy button is the one piece
   of chrome the plugin draws itself, and it carries the page's language.
