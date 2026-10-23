@@ -988,6 +988,11 @@ A field of any other type stops the build, so a page cannot ship a uniform it le
 without saying so. `bool` is one of them: WGSL forbids it in the uniform address space, so a
 flag is a `u32` with `toggle: true`.
 
+The independent `typeplot` package owns the function plot shader documents (`typeplot/shaders`)
+and viewport interaction controller (`typeplot/interaction`). The site imports those subpaths,
+keeps its existing renderer and lazy compiler, and includes the imported shader source in the
+editor and Playground project. The root TypePlot renderer is not part of the site bundle.
+
 Function plots also reserve `plotCenter` (`vec2`, data coordinates), `plotSpan` (`vec2`, visible
 extent), `plotRotation` (`vec2`, yaw/pitch radians) and `plotBlend` (`f32`, 2D/3D transition).
 Their controller supplies these fields during interaction. A Playground link carries its

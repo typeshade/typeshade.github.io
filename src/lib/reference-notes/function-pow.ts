@@ -2,13 +2,11 @@
 // live examples, the programs its {{compile}} tokens read, the scope its code spans compile in,
 // what it asserts and the spans that are no expression. The live examples name their entries
 // after what they draw.
-import { readFileSync } from 'node:fs';
+import { plotShaderFiles } from 'typeplot/shaders';
 import { compile, compileModule } from '../../../vendor/shader-dsl/src/index.ts';
 import type { NoteRecord } from './index.ts';
 
-const plotFiles: Readonly<Record<string, string>> = {
-  'function-plot.shade.ts': readFileSync('src/shaders/function-plot.shade.ts', 'utf8'),
-};
+const plotFiles: Readonly<Record<string, string>> = plotShaderFiles;
 
 const curve = `"use typeshade"
 

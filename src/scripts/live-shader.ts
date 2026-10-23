@@ -24,7 +24,7 @@ import {
 import { mountEditor, type LiveEditor } from './live-shader-editor.ts';
 import { highlight } from './live-shader-highlight.ts';
 import { errorLink, linkedMessage } from './error-links.ts';
-import { createPlotInteraction, type PlotBounds } from './plot-interaction.ts';
+import { createPlotInteraction, type PlotBounds } from 'typeplot/interaction';
 import type { LiveProject } from '../lib/live-shader-project.ts';
 import { playgroundLink } from './source-link.ts';
 
