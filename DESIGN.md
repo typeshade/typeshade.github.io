@@ -624,7 +624,8 @@ why lives on its own page.
   convention), a link to report a problem with the page (MDN's "Report a problem with this
   content"), and previous and next, which follow the sidebar's order.
   - Get started: `/guide/introduction/` (the language boundary, what stays familiar from
-    TypeScript, what the compiler produces), `/guide/quick-start/` (the submodule command,
+    TypeScript, what the compiler produces), `/guide/why/` (the authoring workflow, shared
+    shader source, verification and adoption constraints), `/guide/quick-start/` (the submodule command,
     the authored file, the WGSL it emits, the host code, the release state), `/playground/`
     and `/guide/editor/` (the VS Code extension: where to install it, what it gives a shader
     file on the desktop and in VS Code for the Web with the two conditions the web build
