@@ -118,5 +118,4 @@ Artifacts: `/workspace/shared/neutral-korean-docs/`, including `reports.json` an
 `metadata-recheck.json`. Supporting logs are `/tmp/neutral-*-complete.log` and
 `/tmp/neutral-korean-review/`. These files are review artifacts, not published page content.
 
-Delivery: draft PR #228 against `docs/readable-korean-skill`; no merge or production
-rollout in this change. Existing compiler-source follow-ups remain open as listed above.
+Pre-approval delivery: commit `d2ee4ec` on draft PR #228 against `docs/readable-korean-skill`, before merge or rollout. The subsequent owner-approved main integration is recorded in `docs/learning-quality-landing.md`. Existing compiler-source follow-ups remain open as listed above.
