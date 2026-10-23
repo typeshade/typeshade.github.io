@@ -103,3 +103,11 @@ Verification on 2026-10-23: `check:glsl-precision` passed numerical rounding,
 eight layouts, actual WebGL 1/2 queries, six search queries, two script-free
 fallbacks and three failure/support cases. Formatting and TypeScript checks
 passed. Browser and local server processes were closed.
+
+## Integration with sidebar verification PR 237
+
+Merge main `e87636880174c780696774c8c1abfa609e50912c`, which independently
+resolved both removed-disclosure selectors. Preserve its approved URL-based
+visible-link assertions and scroll behavior in both browser checks. This
+supersedes the earlier group-based assertions described above. The browser
+check files now match main exactly; no product behavior changes in this merge.
