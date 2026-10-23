@@ -106,7 +106,11 @@ try {
           captures++;
           if (width === 390) await page.locator('.docs-local > summary').click();
           const nav = page.locator(width === 390 ? '.docs-local > nav' : '.docs-sidebar-in');
-          await nav.locator('[data-sidebar-section] > summary').nth(2).click();
+          const conceptLink = nav.locator(
+            `.sidebar-sections a[href="${locale === 'en' ? '' : '/ko'}${route}"]`,
+          );
+          await conceptLink.scrollIntoViewIfNeeded();
+          assert(await conceptLink.isVisible(), `${id}: concept navigation link is visible`);
           await page.screenshot({ path: path.join(shots, `${id}-menu.png`) });
           captures++;
         }
