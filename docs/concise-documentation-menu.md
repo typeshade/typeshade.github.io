@@ -88,5 +88,5 @@ title and current-page link are visible and that the link has `aria-current="pag
 Keep the mobile menu click, screenshots, content checks, search checks and all
 other existing assertions. No product layout changes accompany this test fix.
 
-The complete standalone-learning check passed: 87 function lessons, 40 concept views,
+The complete standalone-learning check passed: 175 function lessons, 40 concept views,
 14 search queries and 136 screenshots. Formatting and TypeScript checks also passed.
