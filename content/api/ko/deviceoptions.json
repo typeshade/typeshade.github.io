@@ -1,14 +1,8 @@
 {
   "slug": "deviceoptions",
-  "source": "b6d805ed82e9f0de3b05af1b8fafb6b934d17080279292a676d7dfa940c51ea6",
+  "source": "accaec350a4a30feaa284f969342d1b0ce2261cc39dec8bff20fe4ec58a8fff4",
   "texts": {
     "summary": "createDevice()가 디바이스를 여는 방식이다.",
-    "description": "`prefer`, `device`, `runtime`은 하나만 줄 수 있다.",
-    "members.prefer": "차례로 시도할 tier이며, 처음 열리는 tier가 디바이스의 tier가 된다. 기본값은 `['webgpu', 'webgl2', 'cpu']`이다. tier가 하나뿐인 목록은 그 tier를 필수로 만든다. 열린 tier 뒤의 tier는 그 tier가 실행할 수 없는 호출의 대안으로 남는다(규칙 11.8).",
-    "members.device": "호스트가 이미 가진 `GPUDevice`이다. 디바이스는 이것을 쓰고, 파괴하지 않는다.",
-    "members.runtime": "`createRuntime()`의 프로그램 런타임이다(규칙 11.11). 소유자는 그 디바이스를 쓰고, 파괴하지 않는다. WebGL2 런타임은 거부된다. 그곳에서는 호출이 자기 컨텍스트를 쓰기 때문이다.",
-    "members.poolBytes": "원소와 길이가 같은 이후의 `array()`를 위해 디바이스가 보관하는 반환된 배열의 최대 바이트 수이다. 기본값은 64 MiB이고, `0`이면 보관하지 않는다.",
-    "members.fp64Flavor": "디바이스의 호출이 실행하는 에뮬레이션 배정밀도의 구현 방식이다(변경 0073). 기본값 `'float'` 또는 `'integer'`이며, `recommendFp64Flavor()`는 Apple GPU에 이 값을 고른다. `f64`를 에뮬레이션하는 모듈에 대해 이 디바이스의 커널 호출, 진입점 호출, `fuse()` 계획은 그 구현 방식의 WGSL을 디스패치한다. `'float'`에서는 `_fp64` 가드를 바인딩하고, `'integer'`에서는 가드가 없다. `f64`를 에뮬레이션하지 않는 모듈은 바뀌지 않는다.",
-    "members.timeBudgetMs": "긴 커널의 청크 하나가 쓸 수 있는 시간이며, 밀리초 단위이다(변경 0074). 기본값은 250이다. `device.chunkSize()`는 키의 청크마다 이 시간의 10분의 8에 들어가도록 크기를 정한다. 1부터 60000까지의 유한한 수가 아니면 `RangeError`이다."
+    "description": "`prefer`, `device`, `runtime`은 TypeScript 타입과 런타임에서 모두 상호 배타적이다(변경 0085). 추가 옵션은 `DeviceOptions & { label?: string }`처럼 교차 타입으로 결합한다. 인터페이스는 이 유니언 타입을 확장할 수 없다."
   }
 }
