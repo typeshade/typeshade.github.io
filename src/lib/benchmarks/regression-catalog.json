@@ -16,12 +16,12 @@
   ],
   "builds": [
     {
-      "revision": "3b40e065e17fd4d6929d4c30ab45656da73f0fcd",
-      "runtime": "3b40e065e17fd4d6929d4c30ab45656da73f0fcd",
-      "runtimeDigest": "929c4cf9583b6825c4f9b18b90caced11be4abfb7941e33b59a22ec147a39d1c",
+      "revision": "bdd0a8f1ec999f8e96d268fa1be9982aa28b7859",
+      "runtime": "bdd0a8f1ec999f8e96d268fa1be9982aa28b7859",
+      "runtimeDigest": "168a4d8e7d9b6896f2876a92a3c63eb95c1fa405341ff3af7a3e8df13231ee78",
       "inputProjection": true,
-      "url": "/benchmarks/artifacts/929c4cf9583b6825c4f9b18b90caced11be4abfb7941e33b59a22ec147a39d1c.js",
-      "bytes": 466973,
+      "url": "/benchmarks/artifacts/168a4d8e7d9b6896f2876a92a3c63eb95c1fa405341ff3af7a3e8df13231ee78.js",
+      "bytes": 491854,
       "cases": [
         {
           "id": "layout-aos-8-read-1",
@@ -458,12 +458,12 @@
       ]
     },
     {
-      "revision": "91c2fe31de045ebf0e5f2c333ac98b95cc460280",
-      "runtime": "91c2fe31de045ebf0e5f2c333ac98b95cc460280",
-      "runtimeDigest": "ebd99519069f8c64a4e613cc80f42dbbfa054c1cd74f9c311e3cab264c0a7e41",
+      "revision": "05618e22885229cdcf15e6915b32b45b0cdc1db1",
+      "runtime": "05618e22885229cdcf15e6915b32b45b0cdc1db1",
+      "runtimeDigest": "168a4d8e7d9b6896f2876a92a3c63eb95c1fa405341ff3af7a3e8df13231ee78",
       "inputProjection": true,
-      "url": "/benchmarks/artifacts/ebd99519069f8c64a4e613cc80f42dbbfa054c1cd74f9c311e3cab264c0a7e41.js",
-      "bytes": 471310,
+      "url": "/benchmarks/artifacts/168a4d8e7d9b6896f2876a92a3c63eb95c1fa405341ff3af7a3e8df13231ee78.js",
+      "bytes": 491854,
       "cases": [
         {
           "id": "layout-aos-8-read-1",
@@ -900,5 +900,5 @@
       ]
     }
   ],
-  "digest": "5d7315d6674eb8a3101b01e480d272df6716b0d013bb0c8ca3caed957180d19f"
+  "digest": "96b18177a5c04a6ac9556be8c708c4ef8134b5db6228cab05ed47e1f2843bf5c"
 }
