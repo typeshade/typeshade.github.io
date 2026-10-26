@@ -6,7 +6,7 @@
   "description": "typeshade.dev, the TypeShade website",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-style.mjs && bun scripts/check-copy.ts && node scripts/check-i18n.mjs && bun scripts/check-guide-translations.ts && bun scripts/check-page-samples.ts && bun scripts/check-reference-notes.ts && node scripts/patch-vendor-api.mjs && node scripts/patch-api-categories.mjs && bun scripts/check-api.ts && bun scripts/check-api-translations.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
+    "build": "node scripts/sync-typeplot-assets.mjs --check && node scripts/check-style.mjs && bun scripts/check-copy.ts && node scripts/check-i18n.mjs && bun scripts/check-guide-translations.ts && bun scripts/check-page-samples.ts && bun scripts/check-reference-notes.ts && node scripts/patch-vendor-api.mjs && node scripts/patch-api-categories.mjs && bun scripts/check-api.ts && bun scripts/check-api-translations.ts && rm -rf node_modules/.astro && astro build && node_modules/.bin/pagefind --site dist",
     "preview": "astro preview",
     "check:style": "node scripts/check-style.mjs",
     "check:copy": "bun scripts/check-copy.ts",
@@ -40,7 +40,8 @@
     "check:operation-models": "bun scripts/check-operation-models.ts",
     "check:docs-navigation": "bun scripts/check-docs-navigation.ts",
     "check:glsl-precision": "bun scripts/check-glsl-precision.ts",
-    "check:standalone-learning": "bun scripts/check-standalone-learning.ts"
+    "check:standalone-learning": "bun scripts/check-standalone-learning.ts",
+    "sync:typeplot-assets": "node scripts/sync-typeplot-assets.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -52,7 +53,7 @@
     "remark-math": "^6.0.0",
     "tailwindcss": "^4.3.2",
     "temml": "0.14.0",
-    "typeplot": "github:typeshade/typeplot#v0.1.1"
+    "typeplot": "github:typeshade/typeplot#v0.2.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260928.1",
