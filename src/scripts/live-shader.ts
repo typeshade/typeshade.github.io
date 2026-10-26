@@ -101,31 +101,12 @@ const loadCompiler = (): Promise<typeof import('./live-shader-compile.ts')> => {
   return compilerChunk;
 };
 
-let highlighterChunk: Promise<typeof import('./live-shader-highlight.ts')> | null = null;
-const loadHighlighter = () =>
-  (highlighterChunk ??= import('./live-shader-highlight.ts').catch((error) => {
-    highlighterChunk = null;
+let toolsChunk: Promise<typeof import('./live-shader-tools.ts')> | null = null;
+const loadTools = () =>
+  (toolsChunk ??= import('./live-shader-tools.ts').catch((error) => {
+    toolsChunk = null;
     throw error;
   }));
-
-let editorChunk: Promise<typeof import('./live-shader-editor.ts')> | null = null;
-const loadEditor = () =>
-  (editorChunk ??= import('./live-shader-editor.ts').catch((error) => {
-    editorChunk = null;
-    throw error;
-  }));
-let errorLinks: typeof import('./error-links.ts') | undefined;
-let errorLinksChunk: Promise<typeof import('./error-links.ts')> | null = null;
-const loadErrorLinks = () =>
-  (errorLinksChunk ??= import('./error-links.ts')
-    .then((module) => {
-      errorLinks = module;
-      return module;
-    })
-    .catch((error) => {
-      errorLinksChunk = null;
-      throw error;
-    }));
 
 const el = (tag: string, className?: string, text?: string): HTMLElement => {
   const node = document.createElement(tag);
@@ -488,7 +469,7 @@ function setUp(root: HTMLElement): void {
       const copyButton = pane?.querySelector<HTMLElement>('.copy button');
       if (copyButton) copyButton.dataset.code = text;
     }
-    void loadHighlighter()
+    void loadTools()
       .then(({ highlight }) => {
         if (emittedData !== data || !root.isConnected) return;
         for (const [name, text] of panes) {
@@ -512,7 +493,7 @@ function setUp(root: HTMLElement): void {
       const code = module.querySelector<HTMLElement>('pre code');
       if (source === undefined || !code) return;
       code.textContent = source;
-      void loadHighlighter()
+      void loadTools()
         .then(({ highlight }) => {
           if (root.isConnected) code.innerHTML = highlight(source);
         })
@@ -543,44 +524,18 @@ function setUp(root: HTMLElement): void {
     if (next.join('\n') === reported.join('\n') && !note) return;
     reported = next;
     const currentMessage = ++messageGeneration;
-    const paintMessages = (): void => {
-      messages.textContent = '';
-      for (const message of list) {
-        const line = el('div', 'live-message');
-        if (message.line !== undefined) {
-          // A located message walks the reader to the line, which is what the line number is for.
-          const jump = el(
-            'button',
-            'live-jump',
-            copy.lineAt.replace('{line}', String(message.line)),
-          );
-          jump.setAttribute('type', 'button');
-          jump.addEventListener('click', () => editor?.goTo(message.line!, 1));
-          line.append(jump, document.createTextNode('  '));
-        }
-        // The code leads the message and links to its page, the way the reference prints one.
-        const code = message.code
-          ? (errorLinks?.errorLink(copy.errorsHref, message.code, 'live-error-code') ??
-            el('code', 'live-error-code', message.code))
-          : null;
-        if (code) line.append(code, document.createTextNode(' '));
-        line.append(
-          ...(errorLinks?.linkedMessage(copy.errorsHref, message.text, 'live-error-code') ?? [
-            document.createTextNode(message.text),
-          ]),
-        );
-        messages.append(line);
-      }
-      if (note) messages.append(el('div', 'live-note', note));
-    };
-    paintMessages();
-    if (list.length && !errorLinks) {
-      void loadErrorLinks()
-        .then(() => {
-          if (currentMessage === messageGeneration && root.isConnected) paintMessages();
+    messages.textContent = list
+      .map((message, i) => `${message.code ? message.code + ' ' : ''}${next[i]}`)
+      .join('\n');
+    if (note) messages.append(el('div', 'live-note', note));
+    if (list.length) {
+      void loadTools()
+        .then(({ paintDiagnostics }) => {
+          if (currentMessage === messageGeneration && root.isConnected)
+            paintDiagnostics(messages, list, copy, (line) => editor?.goTo(line, 1), note);
         })
         .catch(() => {
-          /* Plain diagnostics remain visible when link helpers fail to load. */
+          /* Plain diagnostics remain visible if tools fail to load. */
         });
     }
   };
@@ -713,7 +668,7 @@ function setUp(root: HTMLElement): void {
     }
     const version = editorVersion;
     try {
-      const { mountEditor } = await loadEditor();
+      const { mountEditor } = await loadTools();
       if (version !== editorVersion || !root.isConnected) return;
       editor ??= mountEditor(wrapper, block, codeEl, payload.source, {
         ariaLabel: copy.editorAria,
