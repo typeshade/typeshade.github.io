@@ -32,17 +32,27 @@ Shared module listings and generated targets populate when expanded. The main ed
 callback remains server-rendered, and plaintext noscript fallbacks retain shader source
 access without JavaScript. Shared library source is excluded from the page search index.
 
-## Verification status
+## Verification
 
-- Frozen lock installation, asset provenance check, site/worker TypeScript and changed-file
-  formatting pass.
-- The first full site build passes. All 49 changed graph stills were regenerated with
-  Chromium/WebGPU using the existing production capture pipeline. The final build is running.
-- Static import analysis initially measured 127,359 bytes of initial JavaScript. Deferred
-  editor and error helpers address this; final artifact measurement is pending.
-- No test suite was added or run for this update. Production browser capture regenerates
-  the existing fallback images. Full browser regression checks remain CI work.
+- Frozen lock installation, asset provenance, site/worker TypeScript and formatting pass.
+- The final full site build passes. All 49 changed graph stills were regenerated with
+  Chromium/WebGPU using the production capture pipeline, and their artifact hashes pass.
+- SEO passes for 2,606 pages and 2,486 sitemap entries. Worker routing covers eight prefixes.
+  OpenSEO reports no info, warning or critical issues across its 50 selected pages.
+- Static import traversal measures 119,384 bytes across ten initial scripts, within the
+  unchanged 120,000-byte budget. The same traversal reproduces the v0.1.1 measurement of
+  118,037 bytes. This is artifact analysis, not an additional browser network review.
+- Korean inverseSqrt HTML is 737,968 bytes (158,604 bytes gzip), down from approximately
+  3.1 MiB in the first v0.2.1 build. It remains larger than the v0.1.1 page at 570,540 bytes
+  (46,685 bytes gzip), because the new shader programs and font source are larger.
+- The external checker collects 1,805 unique URLs. Its final result is recorded on PR #238.
+- No test suite was added. Full manual browser regression checks were not run. The existing
+  CI browser checks run on the PR; asset capture verifies the displayed initial 2D graphs.
 - Compiler pin, page widths, padding and grid columns are unchanged.
+
+The branding audit excludes only the exact five third-party font credit phrases (including
+an HTML-escaped spelling) present in the released font shader. All other former-brand
+references remain rejected. The source comments and license notices are preserved unchanged.
 
 This PR is not merged or deployed. The v0.1.1 adoption evidence in
 [typeplot-package-integration.md](typeplot-package-integration.md) is historical.
