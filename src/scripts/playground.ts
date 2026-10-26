@@ -3480,8 +3480,8 @@ function mount(root: HTMLElement): void {
     // microseconds, so the return values are not worth a button press; the buttons re-run
     // with edited arguments and redraw. Only the engine the reader is looking at runs: a
     // rasteriser drawing a canvas nobody is shown is the page's own CPU for nothing.
-    // Texture-backed return values wait for an explicit CPU request rather than decoding
-    // large atlas pixels during an otherwise GPU-only startup.
+    // Texture-backed return values wait for an explicit CPU request.
+    // A GPU-only startup does not decode atlas pixels.
     if (!bindings.needsCpuResources()) void evaluateOnCpu();
     if (bindingsHost instanceof HTMLElement) bindings.render(bindingsHost);
     syncDropHint();

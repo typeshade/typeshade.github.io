@@ -216,7 +216,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
             <details class="live-output" data-live-module={name} data-pagefind-ignore>
               <summary><code>{name}</code></summary>
               <Code code="" lang="ts" title={name} locale={locale} />
-              <noscript><pre><code>{source}</code></pre></noscript>
+              <noscript><pre tabindex="0" role="region" aria-label={name}><code>{source}</code></pre></noscript>
             </details>
           ))}
           {payload.reserved.length > 0 && (
@@ -232,9 +232,9 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
         <summary>{l.output}</summary>
         <div class="live-output-body">
           <p class="live-reserved"><Rich text={l.outputNote} locale={locale} /></p>
-          <div data-live-emitted="wgsl"><Code code={plot ? "" : payload.wgsl} lang="wgsl" title={l.wgsl} locale={locale} />{plot && <noscript><pre><code>{payload.wgsl}</code></pre></noscript>}</div>
-          <div data-live-emitted="vertex"><Code code={plot ? "" : payload.glsl.vertex} lang="glsl" title={l.glslVertex} locale={locale} />{plot && <noscript><pre><code>{payload.glsl.vertex}</code></pre></noscript>}</div>
-          <div data-live-emitted="fragment"><Code code={plot ? "" : payload.glsl.fragment} lang="glsl" title={l.glslFragment} locale={locale} />{plot && <noscript><pre><code>{payload.glsl.fragment}</code></pre></noscript>}</div>
+          <div data-live-emitted="wgsl"><Code code={plot ? "" : payload.wgsl} lang="wgsl" title={l.wgsl} locale={locale} />{plot && <noscript><pre tabindex="0" role="region" aria-label={l.wgsl}><code>{payload.wgsl}</code></pre></noscript>}</div>
+          <div data-live-emitted="vertex"><Code code={plot ? "" : payload.glsl.vertex} lang="glsl" title={l.glslVertex} locale={locale} />{plot && <noscript><pre tabindex="0" role="region" aria-label={l.glslVertex}><code>{payload.glsl.vertex}</code></pre></noscript>}</div>
+          <div data-live-emitted="fragment"><Code code={plot ? "" : payload.glsl.fragment} lang="glsl" title={l.glslFragment} locale={locale} />{plot && <noscript><pre tabindex="0" role="region" aria-label={l.glslFragment}><code>{payload.glsl.fragment}</code></pre></noscript>}</div>
           {fields.length > 0 && (
             <table class="live-reflection">
               <caption>{l.uniforms}</caption>
@@ -307,6 +307,7 @@ const reservedNote = l.reserved(payload.reserved.map((name) => `\`${name}\``).jo
   .live-diagnostics:empty { display: none }
   .live-reserved { margin: 0; color: var(--color-text-2); font-size: var(--text-meta) }
   .live-output { margin-block-start: 6px; border-block-start: 1px solid var(--color-line-1); padding-block-start: 10px }
+  .live-output noscript pre { overflow-x: auto; white-space: pre }
   .live-output summary { color: var(--color-text-2); font-size: var(--text-meta); cursor: pointer }
   .live-output-body { display: flex; flex-direction: column; gap: 12px; margin-block-start: 12px }
   .live-reflection { width: 100%; border-collapse: collapse; font-size: var(--text-meta) }
