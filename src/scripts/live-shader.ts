@@ -463,7 +463,11 @@ function setUp(root: HTMLElement): void {
   // edits, so it never describes a program that is no longer on the canvas. Expressive Code
   // coloured the build's own output; an edit is coloured by the same function the editor uses.
 
+  const output = root.querySelector<HTMLDetailsElement>('[data-live-output]');
+  let emittedData = payload.data;
   const showEmitted = (data: ShaderData): void => {
+    emittedData = data;
+    if (isPlotLayout(data.layout) && !output?.open) return;
     const panes: [string, string][] = [
       ['wgsl', data.wgsl],
       ['vertex', data.vertex],
@@ -478,6 +482,23 @@ function setUp(root: HTMLElement): void {
       if (copyButton) copyButton.dataset.code = text;
     }
   };
+
+  output?.addEventListener('toggle', () => {
+    if (output.open && isPlotLayout(emittedData.layout)) showEmitted(emittedData);
+  });
+  for (const module of root.querySelectorAll<HTMLDetailsElement>('[data-live-module]')) {
+    let painted = false;
+    module.addEventListener('toggle', () => {
+      if (!module.open || painted) return;
+      const source = payload.files?.[module.dataset.liveModule ?? ''];
+      const code = module.querySelector<HTMLElement>('pre code');
+      if (source === undefined || !code) return;
+      code.innerHTML = highlight(source);
+      const copy = module.querySelector<HTMLElement>('.copy button');
+      if (copy) copy.dataset.code = source;
+      painted = true;
+    });
+  }
 
   // ── diagnostics ───────────────────────────────────────────────────────────
   // Nothing is written here while the code compiles, the way MDN's own editor says nothing
