@@ -5,7 +5,7 @@
 // asks for. A sample the compiler reports an error on fails the build.
 //
 // The browser half compiles the same way after an edit (src/scripts/live-shader.ts), through
-// the same contract (src/lib/live-shader-contract.ts), so the first frame a reader sees and
+// the same compile contract (src/lib/live-shader-compile-contract.ts), so the first frame a reader sees and
 // the frame after their first keystroke come from one set of rules.
 
 import { projectOptions, type LiveProject } from './live-shader-project.ts';
@@ -21,7 +21,7 @@ import {
   RESERVED_UNIFORMS,
   type ControlProps,
   type LiveControl,
-} from './live-shader-contract.ts';
+} from './live-shader-compile-contract.ts';
 import type { ShaderData } from './shader-runtime.ts';
 
 /** Everything one live example puts on the page. */

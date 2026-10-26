@@ -15,7 +15,7 @@ import {
 import type { Control as MirrorControl } from '../../vendor/shader-dsl/examples/_shared.ts';
 import type { Control, ShaderData, ShaderLayout, ShaderPassData } from './shader-runtime.ts';
 import type { ResourceSpec } from './shader-bindings.ts';
-import { isReserved } from './live-shader-contract.ts';
+import { isReserved } from './live-shader-compile-contract.ts';
 
 /** Translate the registry's `Control` union into the runtime's. Throws on a kind the packer
  *  has no case for. */
@@ -51,7 +51,7 @@ function toRuntimeControl(id: string, field: string, c: MirrorControl): Control 
 }
 
 // The three uniform-field names the runtime fills by itself, the same three the live blocks
-// reserve (src/lib/live-shader-contract.ts states the contract).
+// reserve (src/lib/live-shader-compile-contract.ts states the contract).
 const RESERVED: Readonly<Record<string, MirrorControl>> = {
   time: { kind: 'time' },
   resolution: { kind: 'resolution' },

@@ -11,17 +11,19 @@ import type { ModuleDecl, StructDecl } from '../../vendor/shader-dsl/src/core/ir
 import type { ShaderType } from '../../vendor/shader-dsl/src/core/ir/types.ts';
 import { wgslLayout, type Reflection } from '../../vendor/shader-dsl/src/core/reflect.ts';
 import {
-  controlFor,
-  isReserved,
   isPlotLayout,
-  isPlotHostField,
   plotUniformValue,
-  plotFontResource,
   reservedValue,
-  suggestsColour,
   type ControlProp,
   type ControlProps,
 } from '../lib/live-shader-contract.ts';
+import {
+  controlFor,
+  isReserved,
+  isPlotHostField,
+  plotFontResource,
+  suggestsColour,
+} from '../lib/live-shader-compile-contract.ts';
 import {
   componentCount,
   depthRamp,

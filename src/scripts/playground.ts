@@ -47,15 +47,17 @@ import {
   type LanguageClient,
 } from './playground-language.ts';
 import {
-  codeOnly,
-  FRAGMENT_PRELUDE,
-  isReserved,
   isPlotLayout,
   reservedValue,
-  sampleShape,
   type ControlProp,
   type ControlProps,
 } from '../lib/live-shader-contract.ts';
+import {
+  codeOnly,
+  FRAGMENT_PRELUDE,
+  isReserved,
+  sampleShape,
+} from '../lib/live-shader-compile-contract.ts';
 import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
@@ -429,7 +431,7 @@ interface MonacoRange {
 // ── The fullscreen vertex half ─────────────────────────────────────────────────────────────
 // A file that declares no `@vertex` entry is compiled behind the fullscreen triangle every
 // Book of Shaders page draws on, which is what `<LiveShader>` does on a guide page and what
-// src/lib/live-shader-contract.ts fixes as the site's one rule for it. So a reader can write
+// src/lib/live-shader-compile-contract.ts fixes as the site's one rule for it. So a reader can write
 // a fragment program alone, take the `uv` the triangle hands them, and see it cover the
 // canvas, instead of reading that the canvas needs a vertex entry they did not want to write.
 //

@@ -24,7 +24,6 @@ import {
   type LiveControl,
 } from '../lib/live-shader-contract.ts';
 import type { LiveEditor } from './live-shader-editor.ts';
-import { highlight } from './live-shader-highlight.ts';
 import { createPlotInteraction, type PlotBounds } from 'typeplot/interaction';
 import type { LiveProject } from '../lib/live-shader-project.ts';
 import { playgroundLink } from './source-link.ts';
@@ -101,6 +100,13 @@ const loadCompiler = (): Promise<typeof import('./live-shader-compile.ts')> => {
   compilerChunk ??= import('./live-shader-compile.ts');
   return compilerChunk;
 };
+
+let highlighterChunk: Promise<typeof import('./live-shader-highlight.ts')> | null = null;
+const loadHighlighter = () =>
+  (highlighterChunk ??= import('./live-shader-highlight.ts').catch((error) => {
+    highlighterChunk = null;
+    throw error;
+  }));
 
 let editorChunk: Promise<typeof import('./live-shader-editor.ts')> | null = null;
 const loadEditor = () =>
@@ -183,6 +189,7 @@ function setUp(root: HTMLElement): void {
   const wrapper = host;
   const block = pre;
   const codeEl = code;
+  const originalCodeMarkup = codeEl.innerHTML;
   const rows = panel;
   const plotted = root.querySelector('.live-axes') !== null;
 
@@ -477,10 +484,21 @@ function setUp(root: HTMLElement): void {
       const pane = root.querySelector<HTMLElement>(`[data-live-emitted="${name}"]`);
       const body = pane?.querySelector<HTMLElement>('pre code');
       if (!body) continue;
-      body.innerHTML = highlight(text);
+      body.textContent = text;
       const copyButton = pane?.querySelector<HTMLElement>('.copy button');
       if (copyButton) copyButton.dataset.code = text;
     }
+    void loadHighlighter()
+      .then(({ highlight }) => {
+        if (emittedData !== data || !root.isConnected) return;
+        for (const [name, text] of panes) {
+          const body = root.querySelector<HTMLElement>(`[data-live-emitted="${name}"] pre code`);
+          if (body) body.innerHTML = highlight(text);
+        }
+      })
+      .catch(() => {
+        /* Uncolored shader text remains available. */
+      });
   };
 
   output?.addEventListener('toggle', () => {
@@ -493,7 +511,14 @@ function setUp(root: HTMLElement): void {
       const source = payload.files?.[module.dataset.liveModule ?? ''];
       const code = module.querySelector<HTMLElement>('pre code');
       if (source === undefined || !code) return;
-      code.innerHTML = highlight(source);
+      code.textContent = source;
+      void loadHighlighter()
+        .then(({ highlight }) => {
+          if (root.isConnected) code.innerHTML = highlight(source);
+        })
+        .catch(() => {
+          /* Uncolored module text remains available. */
+        });
       const copy = module.querySelector<HTMLElement>('.copy button');
       if (copy) copy.dataset.code = source;
       painted = true;
@@ -789,7 +814,7 @@ function setUp(root: HTMLElement): void {
     if (editor) {
       editor.destroy();
       editor = null;
-      codeEl.innerHTML = highlight(payload.source);
+      codeEl.innerHTML = originalCodeMarkup;
     }
     controls = payload.controls;
     drawControls();

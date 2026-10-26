@@ -15,7 +15,7 @@ import {
   RESERVED_UNIFORMS,
   type ControlProps,
   type LiveControl,
-} from '../lib/live-shader-contract.ts';
+} from '../lib/live-shader-compile-contract.ts';
 import type { ShaderData } from '../lib/shader-runtime.ts';
 
 /** One message under the canvas. `line` and `character` are one-based and already moved back
