@@ -18,12 +18,13 @@ import {
   clamp,
   initialValues,
   reservedValue,
+  isPlotLayout,
+  plotUniformValue,
   type ControlProps,
   type LiveControl,
 } from '../lib/live-shader-contract.ts';
-import { mountEditor, type LiveEditor } from './live-shader-editor.ts';
+import type { LiveEditor } from './live-shader-editor.ts';
 import { highlight } from './live-shader-highlight.ts';
-import { errorLink, linkedMessage } from './error-links.ts';
 import { createPlotInteraction, type PlotBounds } from 'typeplot/interaction';
 import type { LiveProject } from '../lib/live-shader-project.ts';
 import { playgroundLink } from './source-link.ts';
@@ -100,6 +101,25 @@ const loadCompiler = (): Promise<typeof import('./live-shader-compile.ts')> => {
   compilerChunk ??= import('./live-shader-compile.ts');
   return compilerChunk;
 };
+
+let editorChunk: Promise<typeof import('./live-shader-editor.ts')> | null = null;
+const loadEditor = () =>
+  (editorChunk ??= import('./live-shader-editor.ts').catch((error) => {
+    editorChunk = null;
+    throw error;
+  }));
+let errorLinks: typeof import('./error-links.ts') | undefined;
+let errorLinksChunk: Promise<typeof import('./error-links.ts')> | null = null;
+const loadErrorLinks = () =>
+  (errorLinksChunk ??= import('./error-links.ts')
+    .then((module) => {
+      errorLinks = module;
+      return module;
+    })
+    .catch((error) => {
+      errorLinksChunk = null;
+      throw error;
+    }));
 
 const el = (tag: string, className?: string, text?: string): HTMLElement => {
   const node = document.createElement(tag);
@@ -203,13 +223,24 @@ function setUp(root: HTMLElement): void {
   const uniformValues = (
     name: string,
     seconds: number,
-    _instance?: string,
+    instance?: string,
     clock?: FrameClock,
-  ): readonly number[] | null =>
-    plotInteraction?.value(name) ??
-    reservedValue(name, frozen ?? seconds, canvas.width, canvas.height, pointer, clock) ??
-    values[name] ??
-    null;
+  ): readonly number[] | null => {
+    const plot = isPlotLayout(payload.data.layout);
+    const box = canvas.getBoundingClientRect();
+    const width = plot ? Math.max(1, box.width) : canvas.width;
+    const height = plot ? Math.max(1, box.height) : canvas.height;
+    if (plot && instance === 'font' && name === 'pixelRatio') return [canvas.width / width];
+    if (plot) {
+      const rotation = plotInteraction?.value('plotRotation') ?? [0.65, 0.45];
+      const bounds = plotInteraction?.bounds().x;
+      const supplied = plotInteraction?.value(name) ?? plotUniformValue(name, rotation, bounds);
+      if (supplied) return supplied;
+    }
+    return (
+      reservedValue(name, frozen ?? seconds, width, height, pointer, clock) ?? values[name] ?? null
+    );
+  };
 
   let mounted: MountedShader | null = null;
   const plotInteraction =
@@ -232,7 +263,10 @@ function setUp(root: HTMLElement): void {
         })
       : null;
   window.addEventListener('pagehide', (event) => {
-    if (!event.persisted) plotInteraction?.destroy();
+    if (!event.persisted) {
+      editorVersion++;
+      plotInteraction?.destroy();
+    }
   });
 
   canvas.addEventListener('pointermove', (e) => {
@@ -450,6 +484,7 @@ function setUp(root: HTMLElement): void {
   // until something breaks. The region is a status, so rewriting it is announced; it is left
   // alone when the message set has not moved, so typing does not talk over the reader.
 
+  let messageGeneration = 0;
   const say = (
     state: 'idle' | 'loading' | 'ok' | 'error' | 'stale',
     list: readonly Message[],
@@ -461,31 +496,54 @@ function setUp(root: HTMLElement): void {
     root.dataset.liveState = state;
     if (next.join('\n') === reported.join('\n') && !note) return;
     reported = next;
-    messages.textContent = '';
-    for (const message of list) {
-      const line = el('div', 'live-message');
-      if (message.line !== undefined) {
-        // A located message walks the reader to the line, which is what the line number is for.
-        const jump = el('button', 'live-jump', copy.lineAt.replace('{line}', String(message.line)));
-        jump.setAttribute('type', 'button');
-        jump.addEventListener('click', () => editor?.goTo(message.line!, 1));
-        line.append(jump, document.createTextNode('  '));
+    const currentMessage = ++messageGeneration;
+    const paintMessages = (): void => {
+      messages.textContent = '';
+      for (const message of list) {
+        const line = el('div', 'live-message');
+        if (message.line !== undefined) {
+          // A located message walks the reader to the line, which is what the line number is for.
+          const jump = el(
+            'button',
+            'live-jump',
+            copy.lineAt.replace('{line}', String(message.line)),
+          );
+          jump.setAttribute('type', 'button');
+          jump.addEventListener('click', () => editor?.goTo(message.line!, 1));
+          line.append(jump, document.createTextNode('  '));
+        }
+        // The code leads the message and links to its page, the way the reference prints one.
+        const code = message.code
+          ? (errorLinks?.errorLink(copy.errorsHref, message.code, 'live-error-code') ??
+            el('code', 'live-error-code', message.code))
+          : null;
+        if (code) line.append(code, document.createTextNode(' '));
+        line.append(
+          ...(errorLinks?.linkedMessage(copy.errorsHref, message.text, 'live-error-code') ?? [
+            document.createTextNode(message.text),
+          ]),
+        );
+        messages.append(line);
       }
-      // The code leads the message and links to its page, the way the reference prints one.
-      const code = message.code
-        ? errorLink(copy.errorsHref, message.code, 'live-error-code')
-        : null;
-      if (code) line.append(code, document.createTextNode(' '));
-      line.append(...linkedMessage(copy.errorsHref, message.text, 'live-error-code'));
-      messages.append(line);
+      if (note) messages.append(el('div', 'live-note', note));
+    };
+    paintMessages();
+    if (list.length && !errorLinks) {
+      void loadErrorLinks()
+        .then(() => {
+          if (currentMessage === messageGeneration && root.isConnected) paintMessages();
+        })
+        .catch(() => {
+          /* Plain diagnostics remain visible when link helpers fail to load. */
+        });
     }
-    if (note) messages.append(el('div', 'live-note', note));
   };
   say('idle', []);
 
   // ── editing ───────────────────────────────────────────────────────────────
 
   let editor: LiveEditor | null = null;
+  let editorVersion = 0;
   let composing = false;
   let timer = 0;
   // Every edit takes a number. A compile that finishes after a later edit started throws its
@@ -559,10 +617,12 @@ function setUp(root: HTMLElement): void {
           ]),
         ),
         ...Object.fromEntries(
-          ['plotCenter', 'plotSpan', 'plotRotation', 'plotBlend'].flatMap((name) => {
-            const value = plotInteraction?.value(name);
-            return value ? [[name, { value }]] : [];
-          }),
+          ['plotCenter', 'plotSpan', 'plotRotation', 'plotBlend', 'plotPan', 'plotCenterZ'].flatMap(
+            (name) => {
+              const value = plotInteraction?.value(name);
+              return value ? [[name, { value }]] : [];
+            },
+          ),
         ),
       },
     };
@@ -598,21 +658,28 @@ function setUp(root: HTMLElement): void {
 
   /** The editor arrives when the reader reaches for the code, so a page that is only read
    *  carries no textarea and no listeners. */
-  function openEditor(index?: number): void {
+  async function openEditor(index?: number): Promise<void> {
     const disclosure = wrapper.closest('details');
     if (disclosure) disclosure.open = true;
     if (editor) {
       editor.focus(index);
       return;
     }
-    editor = mountEditor(wrapper, block, codeEl, payload.source, {
-      ariaLabel: copy.editorAria,
-      onInput: onEdit,
-      onComposing: (state) => {
-        composing = state;
-      },
-    });
-    editor.focus(index);
+    const version = editorVersion;
+    try {
+      const { mountEditor } = await loadEditor();
+      if (version !== editorVersion || !root.isConnected) return;
+      editor ??= mountEditor(wrapper, block, codeEl, payload.source, {
+        ariaLabel: copy.editorAria,
+        onInput: onEdit,
+        onComposing: (state) => {
+          composing = state;
+        },
+      });
+      editor.focus(index);
+    } catch (error) {
+      say('error', [{ text: error instanceof Error ? error.message : String(error) }]);
+    }
   }
 
   /** The point a caret API reports under a pixel, in whichever of the two spellings the
@@ -693,6 +760,7 @@ function setUp(root: HTMLElement): void {
     ?.addEventListener('click', () => openEditor(0));
 
   root.querySelector<HTMLElement>('[data-live-reset]')?.addEventListener('click', () => {
+    editorVersion++;
     for (const control of payload.controls) values[control.field] = [...control.value];
     plotInteraction?.reset();
     plotInteraction?.setMode(false);

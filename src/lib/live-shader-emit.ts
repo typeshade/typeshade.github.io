@@ -15,6 +15,7 @@ import {
   controlsFor,
   isControllable,
   isReserved,
+  isPlotHostField,
   layoutFor,
   strayProps,
   RESERVED_UNIFORMS,
@@ -94,6 +95,7 @@ export function liveShader(
   }
 
   for (const field of layout.fields) {
+    if (isPlotHostField(layout, field)) continue;
     if (isReserved(field.name)) {
       const wanted = RESERVED_UNIFORMS[field.name];
       if (field.type !== wanted) {

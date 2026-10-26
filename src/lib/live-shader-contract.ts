@@ -17,6 +17,7 @@
 //      fullscreen triangle with a `uv` for free.
 
 import type { ShaderLayout, UniformField } from './shader-runtime.ts';
+import type { TextureSpec } from './shader-bindings.ts';
 
 // ── Reserved uniform fields ─────────────────────────────────────────────────
 
@@ -84,6 +85,122 @@ export function reservedValue(
   if (field === 'plotRotation') return [0.65, 0.45];
   if (field === 'plotBlend') return [0];
   return null;
+}
+
+/** TypePlot host fields are reserved only inside a graph viewport block. */
+export const PLOT_HOST_UNIFORMS: Readonly<Record<string, string>> = {
+  rotationBasis: 'vec4<f32>',
+  plotPan: 'vec2<f32>',
+  appearance: 'vec4<f32>',
+  decorations: 'u32',
+  labelStyle: 'vec4<f32>',
+  decorationOpacity: 'vec3<f32>',
+  model: 'mat4x4<f32>',
+  inverseModel: 'mat4x4<f32>',
+  axesModel: 'mat4x4<f32>',
+  inverseAxesModel: 'mat4x4<f32>',
+  sceneOpacity: 'vec2<f32>',
+  cameraLens: 'vec2<f32>',
+  plotCenterZ: 'f32',
+  parameterFocusSeed: 'f32',
+  parameterBounds: 'vec2<f32>',
+  parameterMode: 'u32',
+  curveQuality: 'vec2<u32>',
+  curvePattern: 'vec4<f32>',
+  curveTiles: 'vec4<u32>',
+  surfaceBounds: 'vec4<f32>',
+  surfaceDomainMode: 'u32',
+  surfaceRange: 'vec2<f32>',
+  surfaceHeight: 'vec2<f32>',
+  surfaceDepth: 'vec2<f32>',
+  surfaceRender: 'vec4<f32>',
+  surfaceFlags: 'u32',
+};
+
+export const isPlotLayout = (layout: Pick<ShaderLayout, 'fields'>): boolean =>
+  layout.fields.some((f) => f.name === 'plotCenter' && f.type === 'vec2<f32>') &&
+  layout.fields.some((f) => f.name === 'plotSpan' && f.type === 'vec2<f32>');
+
+export const isPlotHostField = (
+  layout: Pick<ShaderLayout, 'fields'>,
+  field: Pick<UniformField, 'name' | 'type'>,
+): boolean => isPlotLayout(layout) && PLOT_HOST_UNIFORMS[field.name] === field.type;
+
+/** CSS-pixel defaults for the low-level TypePlot renderer. The library owns the shaders. */
+export function plotUniformValue(
+  name: string,
+  rotation: readonly number[] = [0.65, 0.45],
+  bounds: readonly number[] = [-0.5, 0.5],
+): readonly number[] | null {
+  const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  if (['model', 'inverseModel', 'axesModel', 'inverseAxesModel'].includes(name)) return identity;
+  const yaw = Math.fround(rotation[0] ?? 0.65),
+    pitch = Math.fround(rotation[1] ?? 0.45);
+  switch (name) {
+    case 'rotationBasis':
+      return [Math.sin(yaw), Math.cos(yaw), Math.sin(pitch), Math.cos(pitch)];
+    case 'plotPan':
+      return [0, 0];
+    case 'appearance':
+      return [1, 1, 2, 11];
+    case 'decorations':
+      return [7];
+    case 'labelStyle':
+      return [1, 0.8, 0, 0];
+    case 'decorationOpacity':
+      return [1, 1, 1];
+    case 'sceneOpacity':
+      return [1, 1];
+    case 'cameraLens':
+      return [Math.tan(Math.PI / 8), 3];
+    case 'plotCenterZ':
+    case 'parameterFocusSeed':
+    case 'surfaceDomainMode':
+    case 'surfaceFlags':
+      return [0];
+    case 'parameterBounds':
+      return [...bounds];
+    case 'parameterMode':
+      return [3];
+    case 'curveQuality':
+      return [128, 5];
+    case 'curvePattern':
+      return [0, 0.2, 0, 0.55];
+    case 'curveTiles':
+      return [0, 0, 16, 0];
+    case 'surfaceBounds':
+      return [-1, 1, -1, 1];
+    case 'surfaceRange':
+    case 'surfaceHeight':
+      return [-1, 1];
+    case 'surfaceDepth':
+      return [0.001, 12];
+    case 'surfaceRender':
+      return [128, 6, 1, 1];
+    default:
+      return null;
+  }
+}
+
+/** The versioned package's base atlas is copied unchanged by sync-typeplot-assets.mjs. */
+export function plotFontResource(binding: {
+  readonly name: string;
+  readonly group: number;
+  readonly binding: number;
+}): TextureSpec {
+  return {
+    kind: 'texture',
+    name: binding.name,
+    group: binding.group,
+    binding: binding.binding,
+    dim: '2d',
+    sample: 'float',
+    width: 1,
+    height: 1,
+    layers: 1,
+    texels: [],
+    imageUrl: '/vendor/typeplot/font-base.png',
+  };
 }
 
 // ── The shape of a sample ───────────────────────────────────────────────────
@@ -291,6 +408,7 @@ export function controlFor(field: UniformField, prop: ControlProp = {}): LiveCon
 export function controlsFor(layout: ShaderLayout, props: ControlProps = {}): LiveControl[] {
   const out: LiveControl[] = [];
   for (const field of layout.fields) {
+    if (isPlotHostField(layout, field)) continue;
     const control = controlFor(field, props[field.name]);
     if (control) out.push(control);
   }
@@ -316,6 +434,7 @@ export interface ReflectedBinding {
   readonly group: number;
   readonly binding: number;
   readonly resourceKind: string;
+  readonly structName?: string;
 }
 
 export interface ReflectedStruct {
@@ -341,17 +460,32 @@ export interface ShaderReflection {
  *  bind no uniform block at all, so a size of 0 is a normal answer here. Throws when the
  *  module has no vertex or no fragment entry, or binds a texture the runtime cannot fill. */
 export function layoutFor(id: string, reflection: ShaderReflection): ShaderLayout {
-  const group = reflection.bindGroups[0];
-  const uniformEntry = group?.entries.find((e) => e.resourceKind === 'uniform-buffer');
-  const block = reflection.uniforms[0];
-
-  const textures = (group?.entries ?? [])
-    .filter((e) => e.resourceKind === 'texture')
-    .map((e) => {
-      // The runtime supplies the compiler's fp64 fast-math guard, a 1x1 white texel, and has
-      // no data to put in any other texture.
-      if (e.name !== '_fp64') throw new Error(`[live-shader] '${id}' declares texture '${e.name}'`);
-      return { name: e.name, binding: e.binding };
+  const bindings = reflection.bindGroups.flatMap((group) =>
+    group.entries.map((entry) => ({ ...entry, group: group.group })),
+  );
+  const blocks = bindings
+    .filter((entry) => entry.resourceKind === 'uniform-buffer')
+    .map((binding) => ({
+      binding,
+      block: reflection.uniforms.find((block) => block.name === binding.structName),
+    }));
+  // Reflection lists structs independently from binding order. Prefer the graph/user block
+  // over TypePlot's font block and identify each one by its reflected struct name.
+  const primary = blocks.find(({ block }) => block && isPlotLayout(block)) ?? blocks[0];
+  const uniformEntry = primary?.binding;
+  const block = primary?.block;
+  const plot = block ? isPlotLayout(block) : false;
+  const resources = bindings
+    .filter(
+      (binding) => plot && binding.name === 'glyphAtlas' && binding.resourceKind === 'texture',
+    )
+    .map(plotFontResource);
+  const textures = bindings
+    .filter((entry) => entry.resourceKind === 'texture' && !(plot && entry.name === 'glyphAtlas'))
+    .map((entry) => {
+      if (entry.name !== '_fp64')
+        throw new Error(`[live-shader] '${id}' declares texture '${entry.name}'`);
+      return { name: entry.name, binding: entry.binding };
     });
 
   const entry = (stage: 'vertex' | 'fragment'): string => {
@@ -370,6 +504,21 @@ export function layoutFor(id: string, reflection: ShaderReflection): ShaderLayou
     vertexEntry: entry('vertex'),
     fragmentEntry: entry('fragment'),
     textures,
+    ...(resources.length ? { resources } : {}),
+    ...(blocks.length > 1
+      ? {
+          moreBlocks: blocks
+            .filter((entry) => entry !== primary && entry.block)
+            .map(({ binding, block }) => ({
+              size: block!.size,
+              block: block!.name,
+              group: binding.group,
+              binding: binding.binding,
+              instance: binding.name,
+              fields: block!.fields,
+            })),
+        }
+      : {}),
   };
 }
 

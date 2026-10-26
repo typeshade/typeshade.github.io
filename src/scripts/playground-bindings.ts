@@ -13,6 +13,10 @@ import { wgslLayout, type Reflection } from '../../vendor/shader-dsl/src/core/re
 import {
   controlFor,
   isReserved,
+  isPlotLayout,
+  isPlotHostField,
+  plotUniformValue,
+  plotFontResource,
   reservedValue,
   suggestsColour,
   type ControlProp,
@@ -356,6 +360,67 @@ export class BindingsModel {
   private readonly overrideValues = new Map<string, number>();
   /** Built texels by binding, so a redraw that did not change a texture does not rebuild it. */
   private readonly texelCache = new Map<string, TextureSpec>();
+  private readonly cpuImages = new Map<
+    string,
+    { width: number; height: number; texels: Uint8Array<ArrayBuffer> }
+  >();
+  private readonly cpuImageLoads = new Map<string, Promise<void>>();
+
+  /** Only CPU consumers decode atlas pixels on the host; GPU-only views upload the image directly. */
+  needsCpuResources(): boolean {
+    return this.resources(false).some(
+      (resource) =>
+        resource.kind === 'texture' && resource.imageUrl && !this.cpuImages.has(resource.imageUrl),
+    );
+  }
+
+  async prepareCpuResources(): Promise<void> {
+    await Promise.all(
+      this.resources(false).flatMap((resource) => {
+        if (
+          resource.kind !== 'texture' ||
+          !resource.imageUrl ||
+          this.cpuImages.has(resource.imageUrl)
+        )
+          return [];
+        const url = resource.imageUrl;
+        let pending = this.cpuImageLoads.get(url);
+        if (!pending) {
+          pending = (async () => {
+            const response = await fetch(url);
+            if (!response.ok)
+              throw new Error(`Cannot load texture '${resource.name}' (${response.status}).`);
+            const bitmap = await createImageBitmap(await response.blob(), {
+              premultiplyAlpha: 'none',
+              colorSpaceConversion: 'none',
+            });
+            const scratch = document.createElement('canvas');
+            try {
+              scratch.width = bitmap.width;
+              scratch.height = bitmap.height;
+              const context = scratch.getContext('2d', { willReadFrequently: true });
+              if (!context) throw new Error('Cannot decode the texture pixels.');
+              // This canvas decodes a texture asset. All chart graphics remain TypeShade output.
+              context.drawImage(bitmap, 0, 0);
+              const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height);
+              this.cpuImages.set(url, {
+                width: bitmap.width,
+                height: bitmap.height,
+                texels: new Uint8Array(pixels.data.buffer),
+              });
+            } finally {
+              bitmap.close();
+              scratch.width = scratch.height = 0;
+            }
+          })();
+          this.cpuImageLoads.set(url, pending);
+          void pending.catch(() => this.cpuImageLoads.delete(url));
+        }
+        return [pending];
+      }),
+    );
+  }
+
   /** The ranges a live example's link carried, by field name (`setControls`). */
   private linkedProps: ControlProps = {};
   /** Starting values an example brings for the next module read, by field name. */
@@ -459,7 +524,7 @@ export class BindingsModel {
     for (const block of this.uniforms) {
       for (const field of block.fields) {
         const key = this.fieldKey(block, field);
-        if (this.values.has(key) || isReserved(field.name, field.type)) continue;
+        if (this.values.has(key) || this.hostField(block, field)) continue;
         this.values.set(
           key,
           this.startValue(field, () => START_COLOURS[colour++ % START_COLOURS.length]!),
@@ -577,6 +642,22 @@ export class BindingsModel {
     return { binding: entry, type, runtimeSized, fixedLength, elem, stride };
   }
 
+  private plotBlock(block: UniformBlock): boolean {
+    return !block.bare && isPlotLayout(block);
+  }
+
+  private plotFont(block: UniformBlock): boolean {
+    return block.binding.name === 'font' && this.uniforms.some((entry) => this.plotBlock(entry));
+  }
+
+  private hostField(block: UniformBlock, field: PackedField): boolean {
+    return (
+      isReserved(field.name, field.type) ||
+      (!block.bare && isPlotHostField(block, field)) ||
+      (this.plotFont(block) && field.name === 'pixelRatio' && field.type === 'f32')
+    );
+  }
+
   private fieldKey(block: UniformBlock, field: PackedField): string {
     return block.bare
       ? `${block.binding.name}|${field.type}`
@@ -614,14 +695,20 @@ export class BindingsModel {
 
   /** The first uniform block the render pass packs every frame, as the runtime's layout
    *  spells it, or undefined when the module binds none. */
+  private primaryUniform(): UniformBlock | undefined {
+    return this.uniforms.find((block) => this.plotBlock(block)) ?? this.uniforms[0];
+  }
+
   renderBlock(): UniformBlockLayout | undefined {
-    const block = this.uniforms[0];
+    const block = this.primaryUniform();
     return block ? this.blockLayout(block) : undefined;
   }
 
   /** Every uniform block after the first, which the render pass packs every frame too. */
   moreBlocks(): UniformBlockLayout[] {
-    return this.uniforms.slice(1).map((block) => this.blockLayout(block));
+    return this.uniforms
+      .filter((block) => block !== this.primaryUniform())
+      .map((block) => this.blockLayout(block));
   }
 
   private blockLayout(block: UniformBlock): UniformBlockLayout {
@@ -644,8 +731,11 @@ export class BindingsModel {
         if (value) return [value[0] ? 1 : 0];
       }
     }
-    const count =
-      name === 'plotBlend' ? 1 : ['plotCenter', 'plotSpan', 'plotRotation'].includes(name) ? 2 : 0;
+    const count = ['plotBlend', 'plotCenterZ'].includes(name)
+      ? 1
+      : ['plotCenter', 'plotSpan', 'plotRotation', 'plotPan', 'cameraLens'].includes(name)
+        ? 2
+        : 0;
     const value = this.linkedProps[name]?.value;
     return count && Array.isArray(value) && value.length === count && value.every(Number.isFinite)
       ? [...value]
@@ -667,11 +757,21 @@ export class BindingsModel {
   ): number[] | null {
     const block =
       instance === undefined
-        ? this.uniforms[0]
+        ? this.primaryUniform()
         : this.uniforms.find((b) => b.binding.name === instance);
     const field = block?.fields.find((f) => f.name === name);
     if (!block || !field) return null;
-    if (!block.bare && isReserved(name, field.type)) {
+    if (this.plotFont(block) && name === 'pixelRatio') return [1];
+    if (isPlotHostField(block, field)) {
+      const rotation = this.linkedPlotValue('plotRotation', block) ?? [0.65, 0.45];
+      const center = this.linkedPlotValue('plotCenter', block) ?? [0, 0];
+      const span = this.linkedPlotValue('plotSpan', block) ?? [1, 1];
+      const supplied =
+        this.linkedPlotValue(name, block) ??
+        plotUniformValue(name, rotation, [center[0]! - span[0]! / 2, center[0]! + span[0]! / 2]);
+      if (supplied) return [...supplied];
+    }
+    if (!block.bare && this.hostField(block, field)) {
       const v =
         this.linkedPlotValue(name, block) ??
         reservedValue(name, seconds, width, height, pointer, clock);
@@ -807,16 +907,24 @@ export class BindingsModel {
     width: number,
     height: number,
     pointer: readonly [number, number],
+    pixelRatio = 1,
   ): Record<string, unknown> {
     const out: Record<string, unknown> = {};
     for (const block of this.uniforms) {
       const valueOf = (field: PackedField): unknown => {
         let v: number[];
-        if (!block.bare && isReserved(field.name, field.type)) {
+        if (!block.bare && this.hostField(block, field)) {
           const r =
-            this.linkedPlotValue(field.name, block) ??
-            reservedValue(field.name, seconds, width, height, pointer) ??
-            [];
+            this.plotFont(block) && field.name === 'pixelRatio'
+              ? [pixelRatio]
+              : (this.renderValue(
+                  field.name,
+                  seconds,
+                  width,
+                  height,
+                  pointer,
+                  block.binding.name,
+                ) ?? []);
           v = [
             ...r,
             ...Array.from({ length: Math.max(0, componentCount(field.shape) - r.length) }, () => 0),
@@ -856,7 +964,13 @@ export class BindingsModel {
     for (const b of this.storage) out[b.binding.name] = this.cpuStorage(b);
     // A texture and a sampler are bound as the same data the GPU is handed: the texels, and
     // the filter and address mode. src/scripts/playground-oracle-textures.ts reads them.
-    for (const t of this.textures) out[t.name] = this.textureSpec(t);
+    for (const t of this.textures) {
+      const spec = this.textureSpec(t);
+      const image = spec.imageUrl ? this.cpuImages.get(spec.imageUrl) : undefined;
+      out[t.name] = image
+        ? { ...spec, width: image.width, height: image.height, texels: [image.texels] }
+        : spec;
+    }
     for (const s of this.samplers) out[s.name] = this.samplerSpec(s);
     // A storage texture is the texels a dispatch writes, zero to start with as the GPU's are,
     // in the format's own bytes; src/scripts/playground-oracle-textures.ts reads and writes them.
@@ -1003,7 +1117,7 @@ export class BindingsModel {
     const u32 = new Uint32Array(bytes.buffer);
     for (const field of block.fields) {
       const numbers =
-        isReserved(field.name, field.type) && !block.bare
+        this.hostField(block, field) && !block.bare
           ? []
           : this.std140Numbers(field, this.values.get(this.fieldKey(block, field)) ?? []);
       const base = field.offset / 4;
@@ -1062,6 +1176,8 @@ export class BindingsModel {
   }
 
   private textureSpec(t: Binding): TextureSpec {
+    if (t.name === 'glyphAtlas' && this.uniforms.some((block) => this.plotBlock(block)))
+      return plotFontResource(t);
     // A pass's output has no texels here: the runtime binds the pass's own target, the size
     // of the canvas (compiler change 0026).
     if (this.passes.has(t.name) && !t.textureDepth && (t.textureDim ?? '2d') === '2d')
@@ -1228,7 +1344,11 @@ export class BindingsModel {
     }
     for (const t of this.textures) {
       const kind = `texture_${t.textureDepth ? 'depth_' : ''}${(t.textureDim ?? '2d').replace('-', '_')}${t.textureDepth ? '' : `<${t.textureElem ?? 'f32'}>`}`;
-      head(t, kind).append(this.textureControl(t));
+      head(t, kind).append(
+        t.name === 'glyphAtlas' && this.uniforms.some((block) => this.plotBlock(block))
+          ? el('p', 'binding-note', this.copy.runtime)
+          : this.textureControl(t),
+      );
     }
     for (const s of this.samplers)
       head(s, s.samplerComparison ? 'sampler_comparison' : 'sampler').append(
@@ -1265,7 +1385,7 @@ export class BindingsModel {
 
   private fieldControl(block: UniformBlock, field: PackedField): HTMLElement {
     const row = this.line(block.bare ? '' : field.name);
-    if (!block.bare && isReserved(field.name, field.type)) {
+    if (!block.bare && this.hostField(block, field)) {
       row.append(el('span', 'binding-runtime', this.copy.runtime));
       return row;
     }

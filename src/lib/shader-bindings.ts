@@ -40,6 +40,8 @@ export interface TextureSpec {
   readonly layers: number;
   /** RGBA8 texels per layer, row by row, `width * height * 4` bytes each. Empty for depth. */
   readonly texels: readonly Uint8Array<ArrayBuffer>[];
+  /** A 2D RGBA image decoded at mount time; its dimensions replace width and height. */
+  readonly imageUrl?: string;
   /** Depth per layer in 0 to 1, `width * height` values each. Set only on a depth texture. */
   readonly depth?: readonly Float32Array<ArrayBuffer>[];
   /** The pass whose output this texture reads (compiler change 0026): the runtime binds that

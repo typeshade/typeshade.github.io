@@ -560,6 +560,36 @@ function serialize<T>(build: () => Promise<T>): Promise<T> {
 
 const WHITE_TEXEL = new Uint8Array([255, 255, 255, 255]);
 
+// Keep compressed source bytes shared across mounts and edits. Decoded images belong to
+// one upload and are closed immediately; neither payloads nor this cache own GPU objects.
+const textureImages = new Map<string, Promise<Blob>>();
+async function textureImage(spec: TextureSpec): Promise<ImageBitmap | null> {
+  if (spec.imageUrl === undefined) return null;
+  if (spec.dim !== '2d' || spec.sample !== 'float' || spec.layers !== 1 || spec.pass !== undefined)
+    throw new Error(`'${spec.name}' image requires a single-layer float 2D texture`);
+  let bytes = textureImages.get(spec.imageUrl);
+  if (!bytes) {
+    const url = spec.imageUrl;
+    bytes = fetch(url).then((response) => {
+      if (!response.ok)
+        throw new Error(`Cannot load image for '${spec.name}' (${response.status})`);
+      return response.blob();
+    });
+    textureImages.set(url, bytes);
+    void bytes.catch(() => textureImages.delete(url));
+  }
+  try {
+    return await createImageBitmap(await bytes, {
+      premultiplyAlpha: 'none',
+      colorSpaceConversion: 'none',
+    });
+  } catch (error) {
+    // Discard undecodable bytes so the next mount can retry.
+    textureImages.delete(spec.imageUrl);
+    throw error;
+  }
+}
+
 function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader {
   const sh = gl.createShader(type);
   if (!sh) throw new Error('createShader failed');
@@ -612,6 +642,7 @@ function bindGlTextures(
   resources: readonly ResourceSpec[],
   firstUnit: number,
   readPass?: (name: string) => WebGLTexture | null,
+  images: ReadonlyMap<TextureSpec, ImageBitmap> = new Map(),
 ): GlTextures {
   const textures: WebGLTexture[] = [];
   const samplers: WebGLSampler[] = [];
@@ -691,7 +722,15 @@ function bindGlTextures(
           : bytes;
       };
       if (target === gl.TEXTURE_2D) {
-        gl.texImage2D(target, 0, internal, spec.width, spec.height, 0, format, type, layer(0));
+        const image = images.get(spec);
+        if (image) {
+          const limit = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+          if (image.width > limit || image.height > limit)
+            throw new Error(`Image for '${spec.name}' exceeds the WebGL2 texture size limit`);
+          gl.texImage2D(target, 0, internal, format, type, image);
+        } else {
+          gl.texImage2D(target, 0, internal, spec.width, spec.height, 0, format, type, layer(0));
+        }
       } else if (target === gl.TEXTURE_CUBE_MAP) {
         for (let f = 0; f < 6; f++) {
           gl.texImage2D(
@@ -762,11 +801,33 @@ function bindGlTextures(
   return { rebind, dispose };
 }
 
-function createWebGl2Pass(
+async function createWebGl2Pass(
   canvas: HTMLCanvasElement,
   data: ShaderData,
   state: FrameState,
   io: GlPassIo = {},
+): Promise<Pass> {
+  const images = new Map<TextureSpec, ImageBitmap>();
+  try {
+    for (const resource of data.layout.resources ?? []) {
+      if (resource.kind !== 'texture') continue;
+      const image = await textureImage(resource);
+      if (image) images.set(resource, image);
+    }
+    // No asynchronous work occurs while GL state is being assembled: the previous pass
+    // may still render during image loading without changing a half-built pass's state.
+    return createWebGl2PassReady(canvas, data, state, io, images);
+  } finally {
+    for (const image of images.values()) image.close();
+  }
+}
+
+function createWebGl2PassReady(
+  canvas: HTMLCanvasElement,
+  data: ShaderData,
+  state: FrameState,
+  io: GlPassIo = {},
+  images: ReadonlyMap<TextureSpec, ImageBitmap> = new Map(),
 ): Pass {
   // alpha:true + a transparent clear: a pass that stops drawing reveals the page behind it.
   const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, depth: false });
@@ -856,6 +917,7 @@ function createWebGl2Pass(
       data.layout.resources ?? [],
       data.layout.textures.length,
       io.readPass,
+      images,
     );
   } catch (error) {
     for (const t of guards) gl.deleteTexture(t);
@@ -1147,6 +1209,34 @@ export async function gpuResource(
 ): Promise<{ resource: GPUBindingResource; owned?: { destroy(): void } }> {
   switch (r.kind) {
     case 'texture': {
+      if (r.imageUrl !== undefined) {
+        const image = await textureImage(r);
+        let texture: GPUTexture | undefined;
+        try {
+          if (!image) throw new Error(`No image for '${r.name}'`);
+          const limit = device.limits.maxTextureDimension2D;
+          if (image.width > limit || image.height > limit)
+            throw new Error(`Image for '${r.name}' exceeds the WebGPU texture size limit`);
+          texture = device.createTexture({
+            size: [image.width, image.height],
+            format: 'rgba8unorm',
+            usage:
+              GPUTextureUsage.TEXTURE_BINDING |
+              GPUTextureUsage.COPY_DST |
+              GPUTextureUsage.RENDER_ATTACHMENT,
+          });
+          device.queue.copyExternalImageToTexture({ source: image }, { texture }, [
+            image.width,
+            image.height,
+          ]);
+          return { resource: texture.createView(), owned: texture };
+        } catch (error) {
+          texture?.destroy();
+          throw error;
+        } finally {
+          image?.close();
+        }
+      }
       const texture = gpuTexture(device, r);
       const dimension = r.dim === '2d-ms' ? '2d' : r.dim;
       return { resource: texture.createView({ dimension }), owned: texture };
@@ -1525,13 +1615,13 @@ export async function mountShader(
       try {
         for (const [i, p] of passes.entries()) {
           subs.push(
-            createWebGl2Pass(canvas, p, states[i]!, {
+            await createWebGl2Pass(canvas, p, states[i]!, {
               target: () => targets[i]![parity]!.framebuffer,
               readPass: reads(i),
             }),
           );
         }
-        main = createWebGl2Pass(canvas, d, frame, { readPass: reads(passes.length) });
+        main = await createWebGl2Pass(canvas, d, frame, { readPass: reads(passes.length) });
       } catch (error) {
         for (const sub of subs) sub.dispose(false);
         drop();
@@ -1576,7 +1666,7 @@ export async function mountShader(
         ? await buildMultipass(backend, d, frame)
         : backend === 'webgpu'
           ? await createWebGpuPass(canvas, d, frame)
-          : createWebGl2Pass(canvas, d, frame),
+          : await createWebGl2Pass(canvas, d, frame),
     );
 
   let pass: Pass | null = null;

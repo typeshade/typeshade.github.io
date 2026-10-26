@@ -152,7 +152,7 @@ export function demoSource(demo: FunctionDemo): string {
               : undefined;
   return `"use typeshade";
 
-import { PlotUniforms, plot2D, plot3D } from "./function-plot.shade.ts";
+import { PlotUniforms, plot2D, plotScalar3D } from "./function-plot.shade.ts";
 
 ${demo.k ? 'class Uniforms extends PlotUniforms { k: f32; }' : 'class Uniforms extends PlotUniforms {}'}
 declare const u: uniform<Uniforms>;
@@ -169,10 +169,9 @@ function trajectory(t: f32): vec3 {
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  const bounds = vec2(u.plotCenter.x - u.plotSpan.x * 0.5, u.plotCenter.x + u.plotSpan.x * 0.5);
   const flat = plot2D(sample, uv, u, ${jumps});
   if (u.plotBlend <= 0.) { return flat; }
-  const space = plot3D(trajectory, uv, u, bounds, ${jumps});
+  const space = plotScalar3D(sample, trajectory, uv, u, ${jumps});
   return mix(flat, space, clamp(u.plotBlend, 0., 1.));
 }
 `;

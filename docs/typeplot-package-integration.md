@@ -1,4 +1,6 @@
-# TypePlot package integration
+# Initial TypePlot v0.1.1 integration record
+
+This document records the original adoption. See [the v0.2.1 update](typeplot-v0.2.1-update.md) for the current dependency and compatibility work.
 
 ## Scope
 
