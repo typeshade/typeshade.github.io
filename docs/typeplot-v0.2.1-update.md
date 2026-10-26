@@ -11,7 +11,7 @@
 
 The site continues to import `typeplot/shaders` and `typeplot/interaction`. No TypePlot
 renderer or compiler is added to the site browser runtime. The new shared shader documents
-include the font and palette modules, and scalar spatial plots use `plotScalar3D`.
+include the font and palette modules, and spatial plots retain `plot3D` so edits to every trajectory coordinate remain effective.
 
 Graph blocks receive the release's camera, transform and appearance uniforms. Ordinary
 shader blocks retain their existing reserved fields and primary-block ordering. The extra
