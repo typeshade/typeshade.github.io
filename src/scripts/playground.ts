@@ -47,14 +47,17 @@ import {
   type LanguageClient,
 } from './playground-language.ts';
 import {
-  codeOnly,
-  FRAGMENT_PRELUDE,
-  isReserved,
+  isPlotLayout,
   reservedValue,
-  sampleShape,
   type ControlProp,
   type ControlProps,
 } from '../lib/live-shader-contract.ts';
+import {
+  codeOnly,
+  FRAGMENT_PRELUDE,
+  isReserved,
+  sampleShape,
+} from '../lib/live-shader-compile-contract.ts';
 import { runComputeOnGpu } from '../lib/compute-runner.ts';
 import { BindingsModel, type BindingsCopy } from './playground-bindings.ts';
 import { installOracleTextures } from './playground-oracle-textures.ts';
@@ -320,7 +323,7 @@ interface PlaygroundHandle {
     points: readonly (readonly [number, number])[],
     width: number,
     height: number,
-  ): (number[] | null)[] | string;
+  ): Promise<(number[] | null)[] | string>;
 }
 
 declare global {
@@ -428,7 +431,7 @@ interface MonacoRange {
 // ── The fullscreen vertex half ─────────────────────────────────────────────────────────────
 // A file that declares no `@vertex` entry is compiled behind the fullscreen triangle every
 // Book of Shaders page draws on, which is what `<LiveShader>` does on a guide page and what
-// src/lib/live-shader-contract.ts fixes as the site's one rule for it. So a reader can write
+// src/lib/live-shader-compile-contract.ts fixes as the site's one rule for it. So a reader can write
 // a fragment program alone, take the `uv` the triangle hands them, and see it cover the
 // canvas, instead of reading that the canvas needs a vertex entry they did not want to write.
 //
@@ -1163,8 +1166,17 @@ function mount(root: HTMLElement): void {
   };
 
   /** Runs every entry point on the CPU oracle and writes what each returned. */
-  const evaluateOnCpu = (): void => {
-    if (!compiled || !(reflectionPane instanceof HTMLElement)) return;
+  const evaluateOnCpu = async (): Promise<void> => {
+    const current = compiled;
+    try {
+      await bindings.prepareCpuResources();
+    } catch (error) {
+      if (reflectionPane instanceof HTMLElement)
+        for (const node of reflectionPane.querySelectorAll<HTMLElement>('.io-value'))
+          node.textContent = error instanceof Error ? error.message : String(error);
+      return;
+    }
+    if (current !== compiled || !compiled || !(reflectionPane instanceof HTMLElement)) return;
     for (const entry of entries) {
       const slot = reflectionPane.querySelector(
         `[data-returns="${CSS.escape(entry.name)}"] .io-value`,
@@ -1777,19 +1789,27 @@ function mount(root: HTMLElement): void {
           : { backend: 'webgpu' as const }),
       // A pass's field the main file does not declare (compiler change 0026) is filled when
       // the page reserves its name, so a pass reads the clock the program reads.
-      uniformValues: (name, seconds, instance, clock) =>
-        bindings.renderValue(
-          name,
-          shaderClock(seconds),
-          target.width,
-          target.height,
-          pointer,
-          instance,
-          clock,
-        ) ??
-        (isReserved(name, passFieldTypes.get(name))
-          ? reservedValue(name, shaderClock(seconds), target.width, target.height, pointer, clock)
-          : null),
+      uniformValues: (name, seconds, instance, clock) => {
+        const plot = isPlotLayout(payload.data.layout);
+        const box = target.getBoundingClientRect();
+        const width = plot ? Math.max(1, box.width) : target.width;
+        const height = plot ? Math.max(1, box.height) : target.height;
+        if (plot && instance === 'font' && name === 'pixelRatio') return [target.width / width];
+        return (
+          bindings.renderValue(
+            name,
+            shaderClock(seconds),
+            width,
+            height,
+            pointer,
+            instance,
+            clock,
+          ) ??
+          (isReserved(name, passFieldTypes.get(name))
+            ? reservedValue(name, shaderClock(seconds), width, height, pointer, clock)
+            : null)
+        );
+      },
     });
     if (mine !== resultRun) {
       next.stop();
@@ -2332,8 +2352,15 @@ function mount(root: HTMLElement): void {
     return out;
   };
 
-  const logPixel = (target: HTMLCanvasElement, event: MouseEvent): void => {
+  const logPixel = async (target: HTMLCanvasElement, event: MouseEvent): Promise<void> => {
     if (!logsWhileDrawing()) return;
+    const current = compiled;
+    try {
+      await bindings.prepareCpuResources();
+    } catch {
+      return;
+    }
+    if (current !== compiled) return;
     const box = target.getBoundingClientRect();
     if (box.width === 0 || box.height === 0) return;
     const width = target.width;
@@ -2421,6 +2448,16 @@ function mount(root: HTMLElement): void {
     const mine = ++consoleRun;
     if (pixelNote instanceof HTMLElement) pixelNote.hidden = true;
     paintConsole({ report: 'frame/pending' }, sentence(copy.consoleRecording));
+    try {
+      await bindings.prepareCpuResources();
+    } catch (error) {
+      paintConsole(
+        { report: 'frame/failed' },
+        sentence(error instanceof Error ? error.message : String(error)),
+      );
+      return;
+    }
+    if (mine !== consoleRun) return;
     const cpu = consoleOnCpu(target.width, target.height);
     try {
       const got = await captureOnGpu(shader, target, FRAME_WORDS);
@@ -2491,6 +2528,8 @@ function mount(root: HTMLElement): void {
     const logs = hasConsoleCall(compiled.module);
     try {
       if (picked === 'cpu') {
+        await bindings.prepareCpuResources();
+        if (mine !== resultRun) return;
         const started = performance.now();
         // With the GPU-only reads allowed: a texture read and a storage texture's load and
         // store answer from the panel's data (src/scripts/playground-oracle-textures.ts).
@@ -2597,7 +2636,7 @@ function mount(root: HTMLElement): void {
     } else if (engineIsCpu()) {
       resultRun += 1;
       stopMount();
-      if (moduleDrawable && canvasFits) drawOnCpu();
+      if (moduleDrawable && canvasFits) await drawOnCpu();
     } else await runOnGpu();
     if (frame instanceof HTMLElement && at === analysedVersion && mine === lastResult)
       frame.dataset.settled = String(at);
@@ -2615,7 +2654,14 @@ function mount(root: HTMLElement): void {
       mounted?.redraw();
     },
     idle: (on) => mounted?.idle(on),
-    cpuPixels: (points, width, height) => {
+    cpuPixels: async (points, width, height) => {
+      const current = compiled;
+      try {
+        await bindings.prepareCpuResources();
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+      if (current !== compiled) return 'the source changed';
       if (!compiled) return 'no module';
       const vertex = entries.find((entry) => entry.stage === 'vertex');
       const fragment = entries.find((entry) => entry.stage === 'fragment');
@@ -2701,7 +2747,18 @@ function mount(root: HTMLElement): void {
     width: number,
     height: number,
   ): Record<string, unknown> => {
-    const out = bindings.cpuBindings(seconds, width, height, pointer);
+    const plot = isPlotLayout(bindings.renderBlock() ?? { fields: [] });
+    const target = engineIsCpu() ? canvas : gpuCanvasNow();
+    const box = target instanceof HTMLCanvasElement ? target.getBoundingClientRect() : undefined;
+    const cssWidth = plot && box && box.width > 0 ? box.width : width;
+    const cssHeight = plot && box && box.height > 0 ? box.height : height;
+    const out = bindings.cpuBindings(
+      seconds,
+      cssWidth,
+      cssHeight,
+      pointer,
+      width / Math.max(cssWidth, 1),
+    );
     if (passGraph.length === 0) return out;
     const names = passGraph.map((p) => p.name);
     const drawn = new Map<string, Float32Array<ArrayBuffer>>();
@@ -2952,7 +3009,20 @@ function mount(root: HTMLElement): void {
     frameConsole.show();
   };
 
-  const drawOnCpu = (): void => {
+  let cpuPreparation = 0;
+  const drawOnCpu = async (): Promise<void> => {
+    const preparation = ++cpuPreparation;
+    const selectedEngine = engine();
+    const current = compiled;
+    try {
+      await bindings.prepareCpuResources();
+    } catch (error) {
+      if (canvasNote instanceof HTMLElement)
+        canvasNote.textContent = error instanceof Error ? error.message : String(error);
+      return;
+    }
+    if (preparation !== cpuPreparation || current !== compiled || selectedEngine !== engine())
+      return;
     if (!(canvas instanceof HTMLCanvasElement) || !(canvasNote instanceof HTMLElement)) return;
     const context = canvas.getContext('2d');
     const plan = rasterPlan();
@@ -3412,7 +3482,9 @@ function mount(root: HTMLElement): void {
     // microseconds, so the return values are not worth a button press; the buttons re-run
     // with edited arguments and redraw. Only the engine the reader is looking at runs: a
     // rasteriser drawing a canvas nobody is shown is the page's own CPU for nothing.
-    evaluateOnCpu();
+    // Texture-backed return values wait for an explicit CPU request.
+    // A GPU-only startup does not decode atlas pixels.
+    if (!bindings.needsCpuResources()) void evaluateOnCpu();
     if (bindingsHost instanceof HTMLElement) bindings.render(bindingsHost);
     syncDropHint();
     // A compute module has no rasteriser half, so the engine's canvases are set for it again.

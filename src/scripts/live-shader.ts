@@ -18,12 +18,12 @@ import {
   clamp,
   initialValues,
   reservedValue,
+  isPlotLayout,
+  plotUniformValue,
   type ControlProps,
   type LiveControl,
 } from '../lib/live-shader-contract.ts';
-import { mountEditor, type LiveEditor } from './live-shader-editor.ts';
-import { highlight } from './live-shader-highlight.ts';
-import { errorLink, linkedMessage } from './error-links.ts';
+import type { LiveEditor } from './live-shader-editor.ts';
 import { createPlotInteraction, type PlotBounds } from 'typeplot/interaction';
 import type { LiveProject } from '../lib/live-shader-project.ts';
 import { playgroundLink } from './source-link.ts';
@@ -101,6 +101,13 @@ const loadCompiler = (): Promise<typeof import('./live-shader-compile.ts')> => {
   return compilerChunk;
 };
 
+let toolsChunk: Promise<typeof import('./live-shader-tools.ts')> | null = null;
+const loadTools = () =>
+  (toolsChunk ??= import('./live-shader-tools.ts').catch((error) => {
+    toolsChunk = null;
+    throw error;
+  }));
+
 const el = (tag: string, className?: string, text?: string): HTMLElement => {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -163,6 +170,7 @@ function setUp(root: HTMLElement): void {
   const wrapper = host;
   const block = pre;
   const codeEl = code;
+  const originalCodeMarkup = codeEl.innerHTML;
   const rows = panel;
   const plotted = root.querySelector('.live-axes') !== null;
 
@@ -203,13 +211,24 @@ function setUp(root: HTMLElement): void {
   const uniformValues = (
     name: string,
     seconds: number,
-    _instance?: string,
+    instance?: string,
     clock?: FrameClock,
-  ): readonly number[] | null =>
-    plotInteraction?.value(name) ??
-    reservedValue(name, frozen ?? seconds, canvas.width, canvas.height, pointer, clock) ??
-    values[name] ??
-    null;
+  ): readonly number[] | null => {
+    const plot = isPlotLayout(payload.data.layout);
+    const box = canvas.getBoundingClientRect();
+    const width = plot ? Math.max(1, box.width) : canvas.width;
+    const height = plot ? Math.max(1, box.height) : canvas.height;
+    if (plot && instance === 'font' && name === 'pixelRatio') return [canvas.width / width];
+    if (plot) {
+      const rotation = plotInteraction?.value('plotRotation') ?? [0.65, 0.45];
+      const bounds = plotInteraction?.bounds().x;
+      const supplied = plotInteraction?.value(name) ?? plotUniformValue(name, rotation, bounds);
+      if (supplied) return supplied;
+    }
+    return (
+      reservedValue(name, frozen ?? seconds, width, height, pointer, clock) ?? values[name] ?? null
+    );
+  };
 
   let mounted: MountedShader | null = null;
   const plotInteraction =
@@ -232,7 +251,10 @@ function setUp(root: HTMLElement): void {
         })
       : null;
   window.addEventListener('pagehide', (event) => {
-    if (!event.persisted) plotInteraction?.destroy();
+    if (!event.persisted) {
+      editorVersion++;
+      plotInteraction?.destroy();
+    }
   });
 
   canvas.addEventListener('pointermove', (e) => {
@@ -429,7 +451,11 @@ function setUp(root: HTMLElement): void {
   // edits, so it never describes a program that is no longer on the canvas. Expressive Code
   // coloured the build's own output; an edit is coloured by the same function the editor uses.
 
+  const output = root.querySelector<HTMLDetailsElement>('[data-live-output]');
+  let emittedData = payload.data;
   const showEmitted = (data: ShaderData): void => {
+    emittedData = data;
+    if (isPlotLayout(data.layout) && !output?.open) return;
     const panes: [string, string][] = [
       ['wgsl', data.wgsl],
       ['vertex', data.vertex],
@@ -439,17 +465,53 @@ function setUp(root: HTMLElement): void {
       const pane = root.querySelector<HTMLElement>(`[data-live-emitted="${name}"]`);
       const body = pane?.querySelector<HTMLElement>('pre code');
       if (!body) continue;
-      body.innerHTML = highlight(text);
+      body.textContent = text;
       const copyButton = pane?.querySelector<HTMLElement>('.copy button');
       if (copyButton) copyButton.dataset.code = text;
     }
+    void loadTools()
+      .then(({ highlight }) => {
+        if (emittedData !== data || !root.isConnected) return;
+        for (const [name, text] of panes) {
+          const body = root.querySelector<HTMLElement>(`[data-live-emitted="${name}"] pre code`);
+          if (body) body.innerHTML = highlight(text);
+        }
+      })
+      .catch(() => {
+        /* Uncolored shader text remains available. */
+      });
   };
+
+  output?.addEventListener('toggle', () => {
+    if (output.open && isPlotLayout(emittedData.layout)) showEmitted(emittedData);
+  });
+  for (const module of root.querySelectorAll<HTMLDetailsElement>('[data-live-module]')) {
+    let painted = false;
+    module.addEventListener('toggle', () => {
+      if (!module.open || painted) return;
+      const source = payload.files?.[module.dataset.liveModule ?? ''];
+      const code = module.querySelector<HTMLElement>('pre code');
+      if (source === undefined || !code) return;
+      code.textContent = source;
+      void loadTools()
+        .then(({ highlight }) => {
+          if (root.isConnected) code.innerHTML = highlight(source);
+        })
+        .catch(() => {
+          /* Uncolored module text remains available. */
+        });
+      const copy = module.querySelector<HTMLElement>('.copy button');
+      if (copy) copy.dataset.code = source;
+      painted = true;
+    });
+  }
 
   // ── diagnostics ───────────────────────────────────────────────────────────
   // Nothing is written here while the code compiles, the way MDN's own editor says nothing
   // until something breaks. The region is a status, so rewriting it is announced; it is left
   // alone when the message set has not moved, so typing does not talk over the reader.
 
+  let messageGeneration = 0;
   const say = (
     state: 'idle' | 'loading' | 'ok' | 'error' | 'stale',
     list: readonly Message[],
@@ -461,31 +523,28 @@ function setUp(root: HTMLElement): void {
     root.dataset.liveState = state;
     if (next.join('\n') === reported.join('\n') && !note) return;
     reported = next;
-    messages.textContent = '';
-    for (const message of list) {
-      const line = el('div', 'live-message');
-      if (message.line !== undefined) {
-        // A located message walks the reader to the line, which is what the line number is for.
-        const jump = el('button', 'live-jump', copy.lineAt.replace('{line}', String(message.line)));
-        jump.setAttribute('type', 'button');
-        jump.addEventListener('click', () => editor?.goTo(message.line!, 1));
-        line.append(jump, document.createTextNode('  '));
-      }
-      // The code leads the message and links to its page, the way the reference prints one.
-      const code = message.code
-        ? errorLink(copy.errorsHref, message.code, 'live-error-code')
-        : null;
-      if (code) line.append(code, document.createTextNode(' '));
-      line.append(...linkedMessage(copy.errorsHref, message.text, 'live-error-code'));
-      messages.append(line);
-    }
+    const currentMessage = ++messageGeneration;
+    messages.textContent = list
+      .map((message, i) => `${message.code ? message.code + ' ' : ''}${next[i]}`)
+      .join('\n');
     if (note) messages.append(el('div', 'live-note', note));
+    if (list.length) {
+      void loadTools()
+        .then(({ paintDiagnostics }) => {
+          if (currentMessage === messageGeneration && root.isConnected)
+            paintDiagnostics(messages, list, copy, (line) => editor?.goTo(line, 1), note);
+        })
+        .catch(() => {
+          /* Plain diagnostics remain visible if tools fail to load. */
+        });
+    }
   };
   say('idle', []);
 
   // ── editing ───────────────────────────────────────────────────────────────
 
   let editor: LiveEditor | null = null;
+  let editorVersion = 0;
   let composing = false;
   let timer = 0;
   // Every edit takes a number. A compile that finishes after a later edit started throws its
@@ -559,10 +618,12 @@ function setUp(root: HTMLElement): void {
           ]),
         ),
         ...Object.fromEntries(
-          ['plotCenter', 'plotSpan', 'plotRotation', 'plotBlend'].flatMap((name) => {
-            const value = plotInteraction?.value(name);
-            return value ? [[name, { value }]] : [];
-          }),
+          ['plotCenter', 'plotSpan', 'plotRotation', 'plotBlend', 'plotPan', 'plotCenterZ'].flatMap(
+            (name) => {
+              const value = plotInteraction?.value(name);
+              return value ? [[name, { value }]] : [];
+            },
+          ),
         ),
       },
     };
@@ -598,21 +659,28 @@ function setUp(root: HTMLElement): void {
 
   /** The editor arrives when the reader reaches for the code, so a page that is only read
    *  carries no textarea and no listeners. */
-  function openEditor(index?: number): void {
+  async function openEditor(index?: number): Promise<void> {
     const disclosure = wrapper.closest('details');
     if (disclosure) disclosure.open = true;
     if (editor) {
       editor.focus(index);
       return;
     }
-    editor = mountEditor(wrapper, block, codeEl, payload.source, {
-      ariaLabel: copy.editorAria,
-      onInput: onEdit,
-      onComposing: (state) => {
-        composing = state;
-      },
-    });
-    editor.focus(index);
+    const version = editorVersion;
+    try {
+      const { mountEditor } = await loadTools();
+      if (version !== editorVersion || !root.isConnected) return;
+      editor ??= mountEditor(wrapper, block, codeEl, payload.source, {
+        ariaLabel: copy.editorAria,
+        onInput: onEdit,
+        onComposing: (state) => {
+          composing = state;
+        },
+      });
+      editor.focus(index);
+    } catch (error) {
+      say('error', [{ text: error instanceof Error ? error.message : String(error) }]);
+    }
   }
 
   /** The point a caret API reports under a pixel, in whichever of the two spellings the
@@ -693,6 +761,7 @@ function setUp(root: HTMLElement): void {
     ?.addEventListener('click', () => openEditor(0));
 
   root.querySelector<HTMLElement>('[data-live-reset]')?.addEventListener('click', () => {
+    editorVersion++;
     for (const control of payload.controls) values[control.field] = [...control.value];
     plotInteraction?.reset();
     plotInteraction?.setMode(false);
@@ -700,7 +769,7 @@ function setUp(root: HTMLElement): void {
     if (editor) {
       editor.destroy();
       editor = null;
-      codeEl.innerHTML = highlight(payload.source);
+      codeEl.innerHTML = originalCodeMarkup;
     }
     controls = payload.controls;
     drawControls();

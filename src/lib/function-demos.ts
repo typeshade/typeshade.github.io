@@ -169,10 +169,9 @@ function trajectory(t: f32): vec3 {
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  const bounds = vec2(u.plotCenter.x - u.plotSpan.x * 0.5, u.plotCenter.x + u.plotSpan.x * 0.5);
   const flat = plot2D(sample, uv, u, ${jumps});
   if (u.plotBlend <= 0.) { return flat; }
-  const space = plot3D(trajectory, uv, u, bounds, ${jumps});
+  const space = plot3D(trajectory, uv, u, ${jumps});
   return mix(flat, space, clamp(u.plotBlend, 0., 1.));
 }
 `;

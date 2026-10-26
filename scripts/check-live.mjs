@@ -124,6 +124,13 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
     // view first: the runtime draws nothing for a canvas out of view, so a count taken below
     // the fold measured only the frames that slipped in before the page said so.
     await canvas.evaluate((node) => node.scrollIntoView({ block: 'center' }));
+    // The host handle appears before asynchronous pipeline and font preparation finishes.
+    // The canvas handle reports the completed backend choice, including a real fallback.
+    await page.waitForFunction(
+      (at) => document.querySelector(at)?.__shader != null,
+      `[data-live-id="${id}"] canvas`,
+      { timeout: TIMEOUT },
+    );
     await page.waitForTimeout(1500);
     const backend = await canvas.getAttribute('data-backend');
     mounted = backend === 'webgpu' || backend === 'webgl2';
@@ -131,7 +138,7 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
       problems.push(`this route asks for ${expected} and drew on ${backend}`);
     }
     if (!mounted) {
-      const note = (await figure.locator('figcaption').innerText()).trim();
+      const note = (await figure.locator('[data-live-caption]').innerText()).trim();
       const still = await figure.locator('.figure-frame img').count();
       if (note.length === 0) problems.push('no backend drew and the fallback note is empty');
       if (still === 0)
@@ -250,7 +257,7 @@ async function checkRoute(browser, origin, { route, id, backend: expected }) {
 
     // 3. The editor opens where the reader reaches for the code, and an edit recompiles.
     const disclosure = figure.locator('details.live-parts');
-    if (await disclosure.count()) await disclosure.locator('summary').click();
+    if (await disclosure.count()) await disclosure.locator(':scope > summary').click();
     await figure.locator('[data-live-code] pre').click();
     const area = figure.locator('textarea[data-live-input]');
     await area.waitFor({ timeout: TIMEOUT });

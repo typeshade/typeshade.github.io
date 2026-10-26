@@ -97,8 +97,21 @@ for (const file of pages) {
     else if (!Array.isArray(crumbs.itemListElement) || crumbs.itemListElement.length === 0)
       fail('BreadcrumbList has no items');
   }
-  // No page names the compiler's former host. The guide keeps one env var with the old prefix.
-  if (/x-?gis/i.test(html.replace(/XGIS_SHADER_DSL_TRACE/g, ''))) fail('names the former host');
+  // TypePlot's released font shader retains these third-party implementation credits.
+  // They identify the licensed text renderer, independently of the compiler's former brand.
+  const fontCredits = [
+    'X-GIS/TinySDF distance encoding over licensed IBM Plex input glyphs.',
+    'X-GIS/X-GIS map/src/shaders/dsl/text.ts (MIT).',
+    "X-GIS's local-glyph size routing while keeping the atlas offline.",
+    'X-GIS&#39;s local-glyph size routing while keeping the atlas offline.',
+    'X-GIS fill edge and analytic AA: EDGE_GAMMA 0.105 * ONE_EM 24.',
+    'as X-GIS glyph slots do.',
+  ];
+  const branded = fontCredits.reduce(
+    (text, credit) => text.replaceAll(credit, ''),
+    html.replace(/XGIS_SHADER_DSL_TRACE/g, ''),
+  );
+  if (/x-?gis/i.test(branded)) fail('names the former host');
   if (!/property="og:image" content="https:/.test(html)) fail('no absolute og:image');
 
   if (isPreview) {

@@ -10,11 +10,12 @@ import {
   controlsFor,
   isControllable,
   isReserved,
+  isPlotHostField,
   layoutFor,
   RESERVED_UNIFORMS,
   type ControlProps,
   type LiveControl,
-} from '../lib/live-shader-contract.ts';
+} from '../lib/live-shader-compile-contract.ts';
 import type { ShaderData } from '../lib/shader-runtime.ts';
 
 /** One message under the canvas. `line` and `character` are one-based and already moved back
@@ -120,6 +121,7 @@ export function compileLive(
   // A reserved field the reader has re-typed with the wrong type would be filled with numbers
   // that do not fit it, so it is reported the way the compiler reports a mistake.
   for (const field of layout.fields) {
+    if (isPlotHostField(layout, field)) continue;
     if (isReserved(field.name) && field.type !== RESERVED_UNIFORMS[field.name]) {
       return {
         diagnostics: [
@@ -132,7 +134,9 @@ export function compileLive(
     }
   }
 
-  const uncontrolled = layout.fields.filter((f) => !isReserved(f.name) && !isControllable(f.type));
+  const uncontrolled = layout.fields.filter(
+    (f) => !isReserved(f.name) && !isPlotHostField(layout, f) && !isControllable(f.type),
+  );
   const data: ShaderData = {
     id,
     title,
