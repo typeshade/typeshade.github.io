@@ -23,6 +23,8 @@ export const SHADE_STILL_EXAMPLES = [
   'convert-grid',
   'cutout',
   'default-args',
+  'optional-values',
+  'optional-fields',
   'domain-warp-twin',
   'generic-class',
   'generic-helpers',

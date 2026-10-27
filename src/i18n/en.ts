@@ -739,7 +739,7 @@ export const en = {
         MISSING_DIRECTIVE:
           'A file compiled as TypeShade that has no `"use typeshade"` directive at all.',
         TYPE_MISMATCH:
-          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross, an f32 past its range or a builtin call outside its domain, such as `pow(-2., 2.)`.',
+          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), a read of an optional value `T | undefined` that no test narrowed (Rule 7.10), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross, an f32 past its range or a builtin call outside its domain, such as `pow(-2., 2.)`.',
         UNKNOWN_FN: 'A call to a function the file neither declares nor imports.',
         CONST_ASSIGN:
           'An assignment to a name that cannot change, such as a `const` or a read-only resource.',
@@ -2739,6 +2739,7 @@ export const en = {
           'A getter and a setter each lower to a function of their own, and a class has one constructor, as in TypeScript.',
           '`new` builds a value inside a function body, and a module constant takes an object literal.',
           'Prefer a type alias when no field needs a decorator.',
+          "A value that may be absent is `T | undefined`: a local, a parameter, a result, a struct field or an array element in function scope (Rules 7.10 and 8.8). Read it where a test, `??` or `?.` narrowed it. A binding, a module variable, a module constant and an entry's parameter or result cannot hold one, `null` has no shader value, and an exported helper that takes or returns one has no host value yet (Rule 8.21).",
         ],
         mapping: '5. Concept mapping',
         mappingRows: [
@@ -2846,14 +2847,14 @@ export const en = {
         branch: '2. Branching',
         branchP:
           'Use if/else to express calculation paths. Inside a branch, keep values and resources within the TypeShade GPU model.',
-        branchValueP: `A value chosen by a condition is written \`c ? a : b\`. WGSL has no \`?:\` operator. For a scalar or a vector, the WGSL emit is \`select(b, a, c)\`, with the false value first and the condition last. WGSL evaluates both values, so put an expensive arm in an \`if\`. ${glsl} keeps \`?:\`. A struct or an array is chosen through a variable and an \`if\` on both targets.`,
+        branchValueP: `A value chosen by a condition is written \`c ? a : b\`. WGSL has no \`?:\` operator. For a scalar or a vector, the WGSL emit is \`select(b, a, c)\`, with the false value first and the condition last. WGSL evaluates both values. An arm that calls a function of the file, reads a texture or holds eight or more operations is lowered to a variable and an \`if\` by the compiler, so only the arm taken runs (Rule 7.2); a cheap arm stays \`select\`. ${glsl} keeps \`?:\` for the cheap arm and takes the same \`if\` for the costly one. A struct or an array is chosen through a variable and an \`if\` on both targets.`,
         loop: '3. Loops',
         loopP:
           "Write a for loop, a while loop, or for...of over an array. A for loop may count to a value known only at run time, such as a uniform field or the length of an array. An array's map, forEach, some, every, reduce, fill, findIndex, findLastIndex, indexOf, lastIndexOf and includes compile too, each to a counted loop, and map takes an array with a fixed length.",
         // A kernel function (compiler change 0013): the loop the compiler may run on the GPU.
         kernel: '4. A loop that runs as a kernel',
         kernelP:
-          "An exported function that is not an entry point and takes an array with no size, `array<T>`, or a 2D storage texture, `texture_storage_2d<F, A>`, is a kernel function (Rule 8.22). A sampled texture alone makes none, so an exported helper that reads one stays a helper. The array or the texture is the caller's, read and written in place. Each `for` at the top of its body is a loop the compiler may run on the GPU, one invocation per iteration, and a host file awaits the function like any import. No `@compute`, binding or `global_invocation_id` is written. `@workgroup_size([128])` before the function sets the workgroup of its loops on WebGPU, which is 64 without it. A loop that reduces always runs in workgroups of 256, so the attribute on a function with such a loop is refused (`TS8077`).",
+          "An exported function that is not an entry point and takes an array with no size, `array<T>`, or a 2D storage texture, `texture_storage_2d<F, A>`, is a kernel function (Rule 8.22). A sampled texture alone makes none, so an exported helper that reads one stays a helper. The array or the texture is the caller's, read and written in place. Each `for` at the top of its body is a loop the compiler may run on the GPU, one invocation per iteration, and a host file awaits the function like any import. No `@compute`, binding or `global_invocation_id` is written. `@workgroup_size([128])` before the function sets the workgroup of its loops on WebGPU, which is 64 without it. A loop that reduces always runs in workgroups of 256, so the attribute on a function with such a loop is refused (`TS8077`). The last workgroup of a dispatch holds the lanes past the loop's last iteration, and none of them returns early: a workgroup wholly past the end returns as one, and in the workgroup that holds the last iteration such a lane runs that iteration again with every write masked, so every lane of a workgroup runs the same control flow, the form that completed on a D3D12 device where an early return hung. Where that lane would read what another lane writes, it skips the iteration under the same flag. The results do not change on any tier.",
         kernelRulesP:
           "The compiler runs a loop on the GPU when it proves that no iteration touches what another one does. The loop is a counted `for`, or a `for...of`, that steps by a constant and that nothing returns from or breaks out of. Each write lands on a name declared inside the loop, on an outer array or a texture at an index made from the loop's own, on an integer array the loop combines into at any index, on a variable the loop combines with `+=`, `*=`, `min`, `max`, `&`, `|` or `^`, which the GPU and the CPU fold in one tree order, on an array the loop only appends to with `push`, or on a `Map` or a `Set` the loop adds to. The loop reads an array it writes only where it writes it. It never reads a variable it combines, an array it appends to or a `Map` or a `Set` it adds to. It calls no function that writes a module variable or a binding, and has no barrier, no workgroup memory and no `console` call.",
         kernelLayoutP:
@@ -3305,6 +3306,10 @@ export const en = {
             name: 'Default argument',
             p: 'Every parameter stays, and the argument left out is written at the call. [default-args](shadeDefaultArgs)',
           },
+          optionalValue: {
+            name: 'Optional value',
+            p: 'A function that returns `undefined` beside a value returns `T | undefined` (Rule 7.10): the compiler carries the value and a flag that says whether it is there, the same on every target, and `??`, `?.` and a test against `undefined` read it. A read that nothing narrowed is `TS8003`. [optional-values](shadeOptionalValues)',
+          },
           overloads: {
             name: 'Overload signature',
             p: 'The signatures are skipped and the implementation is lowered once.',
@@ -3400,7 +3405,7 @@ export const en = {
           },
           ternaryScalar: {
             name: 'Ternary on a scalar',
-            p: `WGSL has no \`?:\` operator, so the ternary becomes \`select\`: the false value first, the condition last. WGSL evaluates both values. ${glsl} keeps the ternary.`,
+            p: `WGSL has no \`?:\` operator, so the ternary becomes \`select\`: the false value first, the condition last. WGSL evaluates both values, so an arm that calls a function of the file, reads a texture or holds eight or more operations is hoisted into a slot and an \`if\` instead, and only the arm taken runs. ${glsl} keeps the ternary for the cheap arm.`,
           },
           ternaryStruct: {
             name: 'Ternary on a struct',
@@ -3457,7 +3462,7 @@ export const en = {
           },
           optionalMember: {
             name: 'Optional field',
-            p: 'A struct field is always there in the memory the host fills.',
+            p: 'A field `radius?: f32` holds `f32 | undefined` where the struct is a local, a parameter or a result (Rule 8.8). Read it where a test or `??` has narrowed it; the compiler carries the value and a flag that says whether it is there. A binding, a module variable or an entry cannot hold one, since the memory the host fills has no absent value. [optional-fields](shadeOptionalFields)',
           },
           stringValue: {
             name: 'String value',
@@ -3616,7 +3621,7 @@ export const en = {
           'statements.switch':
             'Each case ends with `break`, which a WGSL case does without and the lowering drops. A case whose end is reachable would run on into the next case in TypeScript, so it is refused (`TS8017`). The last case needs no `break`. A label is an integer constant that may appear once. Two labels stacked over one body are one case with two selectors, `case 0, 1:` on WGSL.',
           'statements.select':
-            'WGSL has no ternary, so a scalar or vector conditional becomes `select`, whose first argument is the arm the condition does not choose. A conditional on a struct or an array is hoisted into a slot and an `if`, since neither target has an operator for that.',
+            'WGSL has no ternary, so a scalar or vector conditional becomes `select`, whose first argument is the arm the condition does not choose. A conditional on a struct or an array is hoisted into a slot and an `if`, since neither target has an operator for that, and so is one whose arm is costly: a call of a function of the file, a texture read, or eight or more operations, so the arm not taken does not run.',
           'statements.call': 'A function called for what it does, with its result dropped.',
           'statements.phony':
             'A value-returning builtin dropped the same way takes the phony assignment, because Tint reads every such builtin as `@must_use`.',

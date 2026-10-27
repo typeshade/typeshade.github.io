@@ -1023,24 +1023,24 @@ export function main(@location(0) uv: vec2): vec4 {
   TS8020: {
     trigger: `"use typeshade"
 
-function shade(x?: f32): f32 {
-  return 0.5
+function shade(x?: f32, y: f32): f32 {
+  return (x ?? 0.5) * y
 }
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(uv, shade(uv.x), 1.)
+  return vec4(uv, shade(uv.x, uv.y), 1.)
 }
 `,
     fix: `"use typeshade"
 
-function shade(x: f32 = 0.5): f32 {
-  return x
+function shade(y: f32, x?: f32): f32 {
+  return (x ?? 0.5) * y
 }
 
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(uv, shade(uv.x), 1.)
+  return vec4(uv, shade(uv.y, uv.x), 1.)
 }
 `,
   },
