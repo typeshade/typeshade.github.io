@@ -333,3 +333,14 @@ id first, then the pull request that did the work.
 - 0097: pin `a21f7024`: the ternary sentences of the control-flow page, the from-TypeScript
   control-flow row and the WGSL mapping row say, in both locales, that a costly arm is lowered to
   an `if` and a cheap one stays `select`. Handled in this pin's pull request.
+
+- 0098: this pin adds null-only and three-state optional values. The types, functions and
+  from-TypeScript guides describe classes, members, accessors, callbacks, generics,
+  initialization and refused boundaries in both languages. The Korean authoring section
+  follows the new source. TS8003 has a nullable-read trigger and a loose-null-check repair;
+  generated diagnostic sites and replacement pairs come from the compiler. The `null-values`
+  example joins the values group with Korean copy. `check-null-values.mjs` exercises its
+  Playground rendering and nullable diagnostics in both locales and GPU backends.
+- 0099: the optional-result guide describes bare return and fall-through. Null-only results
+  produce null; results admitting undefined produce undefined. Plain-valued bare returns
+  remain TS8021, including the error reference's existing trigger and repair.

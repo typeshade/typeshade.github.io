@@ -676,17 +676,22 @@ export function main(@location(0) uv: vec2): vec4 {
   },
   TS8003: {
     trigger: `"use typeshade"
-
+function gain(value: f32 | null | undefined): f32 {
+  return value * 2.
+}
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(uv + vec3(0.5, 0.5, 0.5), 1.)
+  return vec4(uv, gain(null), 1.)
 }
 `,
     fix: `"use typeshade"
-
+function gain(value: f32 | null | undefined): f32 {
+  if (value == null) { return 0. }
+  return value * 2.
+}
 @fragment
 export function main(@location(0) uv: vec2): vec4 {
-  return vec4(vec3(uv, 0.) + vec3(0.5, 0.5, 0.5), 1.)
+  return vec4(uv, gain(null), 1.)
 }
 `,
   },
