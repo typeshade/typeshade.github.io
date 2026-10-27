@@ -1,8 +1,8 @@
 ---
 id: values-and-mutation
-source: e4b7430ee9da22a9a6c96f6ff842918ea37afa75def1e7909bbb1f002c771783
-sourceLine: 335
-rules: 11.12 30yuoBdpwkfDlJLbGKIzbnlOXHnKqWPpqDe7V6UDujU=, 6.2 X1TddP_Ob7b4QaR9Qbuoo1UgPCngNA5JdtbbWwd_lOc=, 6.10 suiaQZS1y-SaWxDmJXHL21Qzp_yYkddUlpCNV8AsLVc=, 8.13 aNXyjNJvi1bR7zPmCgF2WJ0PmaP_Qk6WWqXOOuEbzCg=, 8.14 SP-Fa9DtpBru_e2Zuh3x8ZUFrqweaTrNrJs-c8RHbE0=, 8.17 iy_UhoCMHYdgpfUXu8eRAllyZo67mQ2c6BRfQtMcIYY=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 12.7 J74H031gQ4FNHTZrIegdYr02_KKNMFFkgQLHhsuICeM=
+source: 3a02e1dbbbe5fda8ac90d8402169911032a712808168f627c31206baecc190d8
+sourceLine: 344
+rules: 11.12 30yuoBdpwkfDlJLbGKIzbnlOXHnKqWPpqDe7V6UDujU=, 6.2 X1TddP_Ob7b4QaR9Qbuoo1UgPCngNA5JdtbbWwd_lOc=, 6.10 suiaQZS1y-SaWxDmJXHL21Qzp_yYkddUlpCNV8AsLVc=, 8.13 aNXyjNJvi1bR7zPmCgF2WJ0PmaP_Qk6WWqXOOuEbzCg=, 8.14 SP-Fa9DtpBru_e2Zuh3x8ZUFrqweaTrNrJs-c8RHbE0=, 8.17 iy_UhoCMHYdgpfUXu8eRAllyZo67mQ2c6BRfQtMcIYY=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 12.7 SkSrn4xn6XZT8sRnUhlr8vIKyWMklM4ekx2qOXqa0Yw=, 2.3 r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=, 4.8 ZaXqxS6SImuhTEXg74x7e6A4X5QWcoGarvtV45ZRA4I=, 5.3 AlhLu-cJSNgGl-ltXEFlhL7eWs5_USuUdEImJEf0Eb4=, 5.4 RphTFmChXNrzoLVIpKED02ndV41w4BSuuRjq3nTUtVM=, 6.3 pemg9yKGahUemSQAl6etOjgglWVpRbuBu_W4Sz92xGY=, 7.1 AFJzu81K-Vqw_MC2Gc-m4fnJAG7BARdj8l_YuG5C368=, 7.4 Emky1db0T6Mhf0H1_VyxRD8Ub8JLKEB_0DqK59uhD-M=, 7.5 4308LIgSysAnlue51NfkW0VyNcY9-VTAPwyWJ1UyQN4=, 7.10 IoJrV4MANl0iueACpPWJeuHmywlfQmBJ8eKmso1vdwM=, 8.18 -FRxyejz7lohPsgSmNjnLm4mTBEUJ4vbUAtGEHZaut0=, 8.19 SCeMKZYaVna29yD-AWO_FBXuK2XNjb2yKapog24hLTg=, 12.6 kuInDVEKCI_Qu_9zVLzT--W8UeBj0WgdX22sRWA_VNY=, 2.1 l05tfvIh6yqrDrP5O_FPgntb8Kkz9wOg4ebQjpW_4ro=, 4.1 AmgGh0CW9YDxPJY5zgEMW7x81knuXtQ9RsVpX787fSU=, 4.6 RwdafG75jJiCMgm6Du1X3zVcPigfJdPEwfy6iWlDksU=, 7.8 rU16dEJIfBLcCcCJKZYXBuTzOeWUmx7DoB94qm3ePeM=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
 ---
 
 이 페이지는 중간값의 선언, 타입 표기, 값의 변경, 상수와 변수의 차이를 설명합니다.
@@ -111,6 +111,35 @@ const cell = mod(p.x, 2.) - 1.;
 const lonRad = radians(lon);
 const latDeg = degrees(latRad);
 ```
+
+### 없을 수도 있는 값
+
+없을 수도 있는 값은 TypeScript와 같이 `T | undefined`로 적습니다. 지역 변수, 헬퍼 함수의 매개변수, 함수의 결과가 이 타입을 가질 수 있습니다. 컴파일러는 값과 함께 값이 있는지를 나타내는 `bool` 하나를 가지고 다니며, 이 방식은 모든 타깃에서 같습니다. `return undefined;`는 없는 값을 돌려주고, `v === undefined`는 값이 없는지 검사하며, `v ?? d`는 `v`가 없을 때 `d`를 줍니다.
+
+```ts
+"use typeshade";
+
+function root(x: f32): f32 | undefined {
+  if (x < 0.) {
+    return undefined;
+  }
+  return sqrt(x);
+}
+
+export function rootOr(x: f32, fallback: f32): f32 {
+  const v = root(x);
+  if (v === undefined) {
+    return fallback;
+  }
+  return v * 2.; // v is an f32 here, as TypeScript reads it
+}
+
+export function rootOrOne(x: f32): f32 {
+  return root(x) ?? 1.;
+}
+```
+
+컴파일러는 TypeScript의 타입 좁히기(narrowing)를 따릅니다. `if`, `?:`, `&&`, `||`, `while`, `for` 안의 `v !== undefined` 검사, 조기 `return`, 대입이 타입을 좁힙니다. 아무것도 좁히지 않은 값을 읽으면 `TS8003`이 발생하며, 진단은 써야 할 검사와 폴백을 알려 줍니다. `o?.f`는 선택적 구조체의 필드를 읽고, 그 결과도 선택적 값입니다. 함수 범위에서는 구조체 필드와 배열 요소가 선택적 값을 담을 수 있고, 선택적 매개변수 `x?: T`는 본문에서 `T | undefined`이며 호출에서 생략할 수 있습니다. 바인딩, 모듈 변수, 모듈 상수, 진입점의 매개변수와 결과는 선택적 값을 담을 수 없고, `null`은 셰이더 값이 아닙니다. 이때 `TS8002`가 위치와 필드를, 또는 써야 할 `T | undefined` 표기를 알려 줍니다. 선택적 값은 아직 호스트 값이 없으므로, 선택적 값을 받거나 돌려주는 내보낸 헬퍼는 호스트 코드에서 부를 수 없습니다. 하향 변환, 좁히기 형태, 모든 거부 조건은 `docs/use-typeshade-surface.md` §76에 있습니다.
 
 ### 숫자 리터럴
 
