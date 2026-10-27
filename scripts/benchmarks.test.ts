@@ -445,7 +445,10 @@ test('legacy and paired provenance, complete pairs and checked outputs are enfor
   expect(regressionRows(PROFILES.quick.sizes, older.digest)).toBe(older.results.length);
   for (const mutate of [
     (r: any) => r.builds.reverse(),
-    (r: any) => r.runtimes.reverse(),
+    // A wrong digest, not a swap: a pin that changes nothing the runtime bundles (a front-end
+    // change) gives both builds one runtime artifact, and a swap of two equal digests is no
+    // change.
+    (r: any) => (r.runtimes[1] = '0'.repeat(64)),
     (r: any) => (r.workload = '0'.repeat(64)),
     (r: any) => r.results.pop(),
     (r: any) => r.results[0].checkedValues--,

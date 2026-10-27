@@ -769,7 +769,7 @@ export const ko: Copy = {
         MISSING_DIRECTIVE:
           'TypeShade로 컴파일하는 파일에 `"use typeshade"` 지시문이 아예 없습니다.',
         TYPE_MISMATCH:
-          '연산자나 조건, 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않거나, 검사로 좁히지 않은 선택적 값 `T | undefined`를 읽거나(규칙 7.10), 컴파일러가 접는 상수를 WGSL이 거부합니다. 31을 넘는 시프트 양, 0인 제수, 서로 엇갈린 clamp 경계, 범위를 넘는 f32 값, `pow(-2., 2.)`처럼 정의역 밖에서 부르는 내장 함수가 그렇습니다.',
+          '연산자나 조건, 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않거나, 검사로 좁히지 않은 선택적 값 `T | undefined`나 `T | null`을 읽거나(규칙 7.10), 컴파일러가 접는 상수를 WGSL이 거부합니다. 31을 넘는 시프트 양, 0인 제수, 서로 엇갈린 clamp 경계, 범위를 넘는 f32 값, `pow(-2., 2.)`처럼 정의역 밖에서 부르는 내장 함수가 그렇습니다.',
         UNKNOWN_FN: '파일이 선언하지도 가져오지도 않은 함수를 부릅니다.',
         CONST_ASSIGN: '`const`나 읽기 전용 리소스처럼 바뀔 수 없는 이름에 값을 대입합니다.',
         LOOP_BOUND:
@@ -2395,6 +2395,7 @@ export const ko: Copy = {
         'default-args': '매개변수 기본값',
         'optional-values': '없을 수도 있는 값: T | undefined',
         'optional-fields': '없을 수도 있는 필드, 요소, 매개변수',
+        'null-values': 'null, undefined, 있는 값',
         'reference-parameters': '되돌려 쓰는 매개변수: @inout과 @out',
         'bit-bump': '내장 함수 한 바퀴',
         'bool-select': '불 벡터',
@@ -2517,6 +2518,8 @@ export const ko: Copy = {
           '함수, 지역 변수, 콜백이 `T | undefined`를 가지며, 컴파일러는 값이 있는지를 함께 전달합니다.',
         'optional-fields':
           '구조체 필드, 배열 요소, 매개변수가 `T | undefined`를 가집니다(§76, 변경 0093).',
+        'null-values':
+          'null을 허용하는 클래스와 멤버가 optional chaining을 거쳐도 세 가지 상태를 유지합니다.',
         'reference-parameters':
           '호출한 쪽의 변수를 바꾸는 함수들입니다. 아직 값이 없는 지역 변수에 결과를 쓰는 함수도 있습니다.',
         'bit-bump':
@@ -2902,7 +2905,7 @@ export const ko: Copy = {
           'getter와 setter는 각각 제 함수로 내려가고, 생성자는 TypeScript처럼 클래스마다 하나입니다.',
           '`new`는 함수 본문 안에서 값을 만들고, 모듈 상수는 객체 리터럴로 씁니다.',
           '데코레이터가 필요한 필드가 없다면 타입 별칭가 더 명확합니다.',
-          '없을 수도 있는 값은 `T | undefined`입니다. 함수 범위의 지역 변수, 매개변수, 반환값, 구조체 필드, 배열 원소가 이를 담을 수 있습니다(규칙 7.10, 8.8). 검사나 `??`, `?.`로 좁힌 곳에서 읽습니다. 바인딩, 모듈 변수, 모듈 상수, 진입점의 매개변수와 반환값은 담을 수 없고, `null`은 셰이더 값이 아니며, 이런 값을 받거나 돌려주는 내보낸 헬퍼는 아직 호스트 값이 없습니다(규칙 8.21).',
+          '없을 수도 있는 값은 `T | undefined`입니다. 함수 범위의 지역 변수, 매개변수, 반환값, 구조체 필드, 배열 원소가 이를 담을 수 있습니다(규칙 7.10, 8.8). 검사나 `??`, `?.`로 좁힌 곳에서 읽습니다. `T | null`도 없을 수도 있는 값이며, `T | null | undefined`는 두 가지 없는 상태를 구분합니다. 느슨한 `v == null`은 둘 다 검사하고, 엄격한 `=== null`과 `=== undefined`는 둘을 구분합니다. 바인딩, 모듈 변수, 모듈 상수, 진입점의 매개변수와 반환값은 담을 수 없고, 이런 값을 받거나 돌려주는 내보낸 헬퍼는 아직 호스트 값이 없습니다(규칙 8.21).',
         ],
         mapping: '5. 개념 대응표',
         mappingRows: [
@@ -3457,7 +3460,7 @@ export const ko: Copy = {
           },
           optionalValue: {
             name: '선택적 값',
-            p: '값 옆에 `undefined`를 돌려주는 함수는 `T | undefined`를 돌려줍니다(규칙 7.10). 컴파일러는 값과 함께 값이 있는지를 나타내는 플래그를 모든 타깃에서 같은 방식으로 전달하며, `??`, `?.`, `undefined` 검사로 읽습니다. 좁히지 않고 읽으면 `TS8003`입니다. [optional-values](shadeOptionalValues)',
+            p: '값 옆에 `undefined`를 돌려주는 함수는 `T | undefined`를 돌려줍니다(규칙 7.10). 컴파일러는 값과 함께 값이 있는지를 나타내는 플래그를 모든 타깃에서 같은 방식으로 전달하며, `??`, `?.`, `undefined` 검사로 읽습니다. 빈 `return;`과 반환문 없이 끝나는 경로도 TypeScript와 같이 없는 값이며, `null`은 그 자체로 없는 값인 `T | null`입니다. 좁히지 않고 읽으면 `TS8003`입니다. [optional-values](shadeOptionalValues) [null-values](shadeNullValues)',
           },
           overloads: {
             name: '오버로드 시그니처',

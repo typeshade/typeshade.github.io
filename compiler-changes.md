@@ -333,3 +333,11 @@ id first, then the pull request that did the work.
 - 0097: pin `a21f7024`: the ternary sentences of the control-flow page, the from-TypeScript
   control-flow row and the WGSL mapping row say, in both locales, that a costly arm is lowered to
   an `if` and a cheap one stays `select`. Handled in this pin's pull request.
+- 0098: pin `a591e1b7` carries `T | null` and `T | null | undefined` beside `T | undefined`. The
+  values-and-mutation guide section (en at the pin, ko translated again), the types page's
+  boundary item and the TS8003 line name the null forms in both locales, the `null-values`
+  example joins the values group, the Playground and the stills, and no error-code program or
+  Playground fixture quoted the old TS8002 null sentence. Handled in this pin's pull request.
+- 0099: pin `a591e1b7`: the values-and-mutation guide section and the from-TypeScript
+  `optionalValue` row say, in both locales, that a bare `return;` and a path that ends the body
+  are the absent value. Handled in this pin's pull request.

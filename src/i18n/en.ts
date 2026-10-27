@@ -739,7 +739,7 @@ export const en = {
         MISSING_DIRECTIVE:
           'A file compiled as TypeShade that has no `"use typeshade"` directive at all.',
         TYPE_MISMATCH:
-          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), a read of an optional value `T | undefined` that no test narrowed (Rule 7.10), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross, an f32 past its range or a builtin call outside its domain, such as `pow(-2., 2.)`.',
+          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), a read of an optional value `T | undefined` or `T | null` that no test narrowed (Rule 7.10), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross, an f32 past its range or a builtin call outside its domain, such as `pow(-2., 2.)`.',
         UNKNOWN_FN: 'A call to a function the file neither declares nor imports.',
         CONST_ASSIGN:
           'An assignment to a name that cannot change, such as a `const` or a read-only resource.',
@@ -2739,7 +2739,7 @@ export const en = {
           'A getter and a setter each lower to a function of their own, and a class has one constructor, as in TypeScript.',
           '`new` builds a value inside a function body, and a module constant takes an object literal.',
           'Prefer a type alias when no field needs a decorator.',
-          "A value that may be absent is `T | undefined`: a local, a parameter, a result, a struct field or an array element in function scope (Rules 7.10 and 8.8). Read it where a test, `??` or `?.` narrowed it. A binding, a module variable, a module constant and an entry's parameter or result cannot hold one, `null` has no shader value, and an exported helper that takes or returns one has no host value yet (Rule 8.21).",
+          "A value that may be absent is `T | undefined`: a local, a parameter, a result, a struct field or an array element in function scope (Rules 7.10 and 8.8). Read it where a test, `??` or `?.` narrowed it. `T | null` is an optional value too, and `T | null | undefined` keeps the two absent states apart; a loose `v == null` tests either, a strict `=== null` or `=== undefined` tells them apart. A binding, a module variable, a module constant and an entry's parameter or result cannot hold one, and an exported helper that takes or returns one has no host value yet (Rule 8.21).",
         ],
         mapping: '5. Concept mapping',
         mappingRows: [
@@ -3308,7 +3308,7 @@ export const en = {
           },
           optionalValue: {
             name: 'Optional value',
-            p: 'A function that returns `undefined` beside a value returns `T | undefined` (Rule 7.10): the compiler carries the value and a flag that says whether it is there, the same on every target, and `??`, `?.` and a test against `undefined` read it. A read that nothing narrowed is `TS8003`. [optional-values](shadeOptionalValues)',
+            p: 'A function that returns `undefined` beside a value returns `T | undefined` (Rule 7.10): the compiler carries the value and a flag that says whether it is there, the same on every target, and `??`, `?.` and a test against `undefined` read it. A bare `return;` and a path that ends the body are the absent value too, as TypeScript reads them, and `null` is an absent value of its own, `T | null`. A read that nothing narrowed is `TS8003`. [optional-values](shadeOptionalValues) [null-values](shadeNullValues)',
           },
           overloads: {
             name: 'Overload signature',

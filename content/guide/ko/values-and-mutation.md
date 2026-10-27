@@ -1,8 +1,8 @@
 ---
 id: values-and-mutation
-source: 3a02e1dbbbe5fda8ac90d8402169911032a712808168f627c31206baecc190d8
+source: db841d4f72e018d8d385438fef640b9c6650a1fa072afaea50e103dbc183f38e
 sourceLine: 344
-rules: 11.12 30yuoBdpwkfDlJLbGKIzbnlOXHnKqWPpqDe7V6UDujU=, 6.2 X1TddP_Ob7b4QaR9Qbuoo1UgPCngNA5JdtbbWwd_lOc=, 6.10 suiaQZS1y-SaWxDmJXHL21Qzp_yYkddUlpCNV8AsLVc=, 8.13 aNXyjNJvi1bR7zPmCgF2WJ0PmaP_Qk6WWqXOOuEbzCg=, 8.14 SP-Fa9DtpBru_e2Zuh3x8ZUFrqweaTrNrJs-c8RHbE0=, 8.17 iy_UhoCMHYdgpfUXu8eRAllyZo67mQ2c6BRfQtMcIYY=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 12.7 SkSrn4xn6XZT8sRnUhlr8vIKyWMklM4ekx2qOXqa0Yw=, 2.3 r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=, 4.8 ZaXqxS6SImuhTEXg74x7e6A4X5QWcoGarvtV45ZRA4I=, 5.3 AlhLu-cJSNgGl-ltXEFlhL7eWs5_USuUdEImJEf0Eb4=, 5.4 RphTFmChXNrzoLVIpKED02ndV41w4BSuuRjq3nTUtVM=, 6.3 pemg9yKGahUemSQAl6etOjgglWVpRbuBu_W4Sz92xGY=, 7.1 AFJzu81K-Vqw_MC2Gc-m4fnJAG7BARdj8l_YuG5C368=, 7.4 Emky1db0T6Mhf0H1_VyxRD8Ub8JLKEB_0DqK59uhD-M=, 7.5 4308LIgSysAnlue51NfkW0VyNcY9-VTAPwyWJ1UyQN4=, 7.10 IoJrV4MANl0iueACpPWJeuHmywlfQmBJ8eKmso1vdwM=, 8.18 -FRxyejz7lohPsgSmNjnLm4mTBEUJ4vbUAtGEHZaut0=, 8.19 SCeMKZYaVna29yD-AWO_FBXuK2XNjb2yKapog24hLTg=, 12.6 kuInDVEKCI_Qu_9zVLzT--W8UeBj0WgdX22sRWA_VNY=, 2.1 l05tfvIh6yqrDrP5O_FPgntb8Kkz9wOg4ebQjpW_4ro=, 4.1 AmgGh0CW9YDxPJY5zgEMW7x81knuXtQ9RsVpX787fSU=, 4.6 RwdafG75jJiCMgm6Du1X3zVcPigfJdPEwfy6iWlDksU=, 7.8 rU16dEJIfBLcCcCJKZYXBuTzOeWUmx7DoB94qm3ePeM=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
+rules: 11.12 30yuoBdpwkfDlJLbGKIzbnlOXHnKqWPpqDe7V6UDujU=, 6.2 X1TddP_Ob7b4QaR9Qbuoo1UgPCngNA5JdtbbWwd_lOc=, 6.10 suiaQZS1y-SaWxDmJXHL21Qzp_yYkddUlpCNV8AsLVc=, 8.13 aNXyjNJvi1bR7zPmCgF2WJ0PmaP_Qk6WWqXOOuEbzCg=, 8.14 SP-Fa9DtpBru_e2Zuh3x8ZUFrqweaTrNrJs-c8RHbE0=, 8.17 iy_UhoCMHYdgpfUXu8eRAllyZo67mQ2c6BRfQtMcIYY=, 7.6 kyzs2Ws4Mk2xUgP_v9ZM_z6jm_3zIWP2-BekxmeHpC8=, 8.25 XZRD1So9e-OFRi9VePXRjyCfT2_T_xaPFWQw_Uy0ZrM=, 12.7 TawOmv8klHJxgWPx5cItYK8gProqi2towGMRoE6fL2M=, 2.3 r7XKZw0j-Hb5AH5VaQM8ueWwC512ZArtkVGU0ccfsOE=, 4.8 ZaXqxS6SImuhTEXg74x7e6A4X5QWcoGarvtV45ZRA4I=, 5.3 AlhLu-cJSNgGl-ltXEFlhL7eWs5_USuUdEImJEf0Eb4=, 5.4 RphTFmChXNrzoLVIpKED02ndV41w4BSuuRjq3nTUtVM=, 6.3 pemg9yKGahUemSQAl6etOjgglWVpRbuBu_W4Sz92xGY=, 7.1 AFJzu81K-Vqw_MC2Gc-m4fnJAG7BARdj8l_YuG5C368=, 7.4 Emky1db0T6Mhf0H1_VyxRD8Ub8JLKEB_0DqK59uhD-M=, 7.5 4308LIgSysAnlue51NfkW0VyNcY9-VTAPwyWJ1UyQN4=, 7.10 PYk25-5OvWimXdyvUO_bSDwAj1Fe4ZpajpsEKH01s-o=, 8.18 WSJEXSLWucW9-ovejXz9e-mLa7u8vqZrdwezeNyrr7M=, 8.19 2D92Uur_1PtJq4PAX_vx-kOcr0i4SbSGiaNJkCSbJ_g=, 12.6 kuInDVEKCI_Qu_9zVLzT--W8UeBj0WgdX22sRWA_VNY=, 2.1 l05tfvIh6yqrDrP5O_FPgntb8Kkz9wOg4ebQjpW_4ro=, 4.1 AmgGh0CW9YDxPJY5zgEMW7x81knuXtQ9RsVpX787fSU=, 4.6 RwdafG75jJiCMgm6Du1X3zVcPigfJdPEwfy6iWlDksU=, 7.8 fyWaTaGHHUsBo-fTN-eap0uAUPB1U1v3TNqAC_1wgPU=, 12.4 BHZ-Neq9i9zSLzX_EHLkq_rZA6ansI2EDMVOVFuqdZk=
 ---
 
 이 페이지는 중간값의 선언, 타입 표기, 값의 변경, 상수와 변수의 차이를 설명합니다.
@@ -114,7 +114,7 @@ const latDeg = degrees(latRad);
 
 ### 없을 수도 있는 값
 
-없을 수도 있는 값은 TypeScript와 같이 `T | undefined`로 적습니다. 지역 변수, 헬퍼 함수의 매개변수, 함수의 결과가 이 타입을 가질 수 있습니다. 컴파일러는 값과 함께 값이 있는지를 나타내는 `bool` 하나를 가지고 다니며, 이 방식은 모든 타깃에서 같습니다. `return undefined;`는 없는 값을 돌려주고, `v === undefined`는 값이 없는지 검사하며, `v ?? d`는 `v`가 없을 때 `d`를 줍니다.
+없을 수도 있는 값은 TypeScript와 같이 `T | undefined`로 적습니다. 지역 변수, 헬퍼 함수의 매개변수, 함수의 결과가 이 타입을 가질 수 있습니다. 컴파일러는 값과 함께 값이 있는지를 나타내는 `bool` 하나를 가지고 다니며, 이 방식은 모든 타깃에서 같습니다. `return undefined;`는 없는 값을 돌려주며, 빈 `return;`과 `return` 없이 끝나는 경로도 TypeScript와 같이 없는 값입니다. `v === undefined`는 값이 없는지 검사하며, `v ?? d`는 `v`가 없을 때 `d`를 줍니다. 느슨한 `v == null`과 `v != null`도 피연산자 순서와 관계없이 같은 좁히기로 없음과 있음을 검사합니다(변경 0098, D4). null을 저장하려면 `T | null`을, 두 가지 없는 상태를 구분하려면 `T | null | undefined`를 씁니다. 엄격한 검사(`=== null`, `=== undefined`)는 둘을 구분하고, 느슨한 검사는 둘 다 제외합니다.
 
 ```ts
 "use typeshade";
@@ -139,7 +139,9 @@ export function rootOrOne(x: f32): f32 {
 }
 ```
 
-컴파일러는 TypeScript의 타입 좁히기(narrowing)를 따릅니다. `if`, `?:`, `&&`, `||`, `while`, `for` 안의 `v !== undefined` 검사, 조기 `return`, 대입이 타입을 좁힙니다. 아무것도 좁히지 않은 값을 읽으면 `TS8003`이 발생하며, 진단은 써야 할 검사와 폴백을 알려 줍니다. `o?.f`는 선택적 구조체의 필드를 읽고, 그 결과도 선택적 값입니다. 함수 범위에서는 구조체 필드와 배열 요소가 선택적 값을 담을 수 있고, 선택적 매개변수 `x?: T`는 본문에서 `T | undefined`이며 호출에서 생략할 수 있습니다. 바인딩, 모듈 변수, 모듈 상수, 진입점의 매개변수와 결과는 선택적 값을 담을 수 없고, `null`은 셰이더 값이 아닙니다. 이때 `TS8002`가 위치와 필드를, 또는 써야 할 `T | undefined` 표기를 알려 줍니다. 선택적 값은 아직 호스트 값이 없으므로, 선택적 값을 받거나 돌려주는 내보낸 헬퍼는 호스트 코드에서 부를 수 없습니다. 하향 변환, 좁히기 형태, 모든 거부 조건은 `docs/use-typeshade-surface.md` §76에 있습니다.
+컴파일러는 TypeScript의 타입 좁히기(narrowing)를 따릅니다. `if`, `?:`, `&&`, `||`, `while`, `for` 안의 `v !== undefined` 검사, 조기 `return`, 대입이 타입을 좁힙니다. 아무것도 좁히지 않은 값을 읽으면 `TS8003`이 발생하며, 진단은 써야 할 검사와 폴백을 알려 줍니다. `o?.f`는 선택적 구조체의 필드를 읽고, 그 결과도 선택적 값입니다. 함수 범위에서는 구조체 필드와 배열 요소가 선택적 값을 담을 수 있고, 선택적 매개변수 `x?: T`는 본문에서 `T | undefined`이며 호출에서 생략할 수 있습니다. 바인딩, 모듈 변수, 모듈 상수, 진입점의 매개변수와 결과는 선택적 값을 담을 수 없습니다. 이때 `TS8002`가 위치와 필드를 알려 줍니다. 선택적 값은 아직 호스트 값이 없으므로, 선택적 값을 받거나 돌려주는 내보낸 헬퍼는 호스트 코드에서 부를 수 없습니다. 하향 변환, 좁히기 형태, 모든 거부 조건은 `docs/use-typeshade-surface.md` §76에 있습니다.
+
+`T | null`은 일반 함수와 지역 변수뿐 아니라 클래스, 필드, 생성자, 메서드, 접근자, 콜백, 제네릭 인자에도 적용됩니다. 두 상태를 가지는 null 타입과 undefined 타입은 저장소를 공유하지만 서로 다른 타입이며, 각각 세 상태 타입으로 넓어질 수 있습니다. `box?.value`에서 수신자가 없으면 undefined가 되고, 수신자가 있으면 null인 멤버를 그대로 유지합니다. 초기화하지 않은 nullable 클래스 필드는 null로 시작하고, undefined를 허용하는 필드는 undefined로 시작합니다. 지역 변수 `let x: T | null`은 읽기 전에 값을 대입해야 합니다. `?`로 선언한 필드만 객체 리터럴에서 생략할 수 있습니다. 세 가지 상태 모두의 예는 `examples/null-values.shade.ts`에 있습니다.
 
 ### 숫자 리터럴
 

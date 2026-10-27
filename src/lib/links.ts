@@ -295,6 +295,7 @@ export const links = {
   shadeDefaultArgs: shade('default-args'),
   shadeOptionalValues: shade('optional-values'),
   shadeOptionalFields: shade('optional-fields'),
+  shadeNullValues: shade('null-values'),
   shadeReferenceParameters: shade('reference-parameters'),
   shadeAtomicHistogram: shade('atomic-histogram'),
   shadeOrbitInout: shade('orbit-inout'),

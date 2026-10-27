@@ -25,6 +25,7 @@ export const SHADE_STILL_EXAMPLES = [
   'default-args',
   'optional-values',
   'optional-fields',
+  'null-values',
   'domain-warp-twin',
   'generic-class',
   'generic-helpers',
