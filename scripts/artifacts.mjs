@@ -24,6 +24,7 @@ export const SHADE_STILL_EXAMPLES = [
   'cutout',
   'default-args',
   'optional-values',
+  'null-values',
   'optional-fields',
   'domain-warp-twin',
   'generic-class',

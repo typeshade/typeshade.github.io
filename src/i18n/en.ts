@@ -739,7 +739,7 @@ export const en = {
         MISSING_DIRECTIVE:
           'A file compiled as TypeShade that has no `"use typeshade"` directive at all.',
         TYPE_MISMATCH:
-          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), a read of an optional value `T | undefined` that no test narrowed (Rule 7.10), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross, an f32 past its range or a builtin call outside its domain, such as `pow(-2., 2.)`.',
+          'Two types that do not fit where they meet (an operator, a condition, a declaration, a return or an argument), a read of an optional value (`T | undefined`, `T | null` or `T | null | undefined`) that no test narrowed (Rule 7.10), or a constant the compiler folds that WGSL refuses: a shift amount past 31, a divisor of 0, clamp bounds that cross, an f32 past its range or a builtin call outside its domain, such as `pow(-2., 2.)`.',
         UNKNOWN_FN: 'A call to a function the file neither declares nor imports.',
         CONST_ASSIGN:
           'An assignment to a name that cannot change, such as a `const` or a read-only resource.',
@@ -2739,7 +2739,7 @@ export const en = {
           'A getter and a setter each lower to a function of their own, and a class has one constructor, as in TypeScript.',
           '`new` builds a value inside a function body, and a module constant takes an object literal.',
           'Prefer a type alias when no field needs a decorator.',
-          "A value that may be absent is `T | undefined`: a local, a parameter, a result, a struct field or an array element in function scope (Rules 7.10 and 8.8). Read it where a test, `??` or `?.` narrowed it. A binding, a module variable, a module constant and an entry's parameter or result cannot hold one, `null` has no shader value, and an exported helper that takes or returns one has no host value yet (Rule 8.21).",
+          'A value may be absent as `T | undefined`, `T | null` or `T | null | undefined` in function-scope locals, parameters, results, class fields and fixed-array elements (Rules 7.10 and 8.8). Strict tests distinguish null and undefined; `!= null` excludes both. Bindings, module/static data, entry IO and kernel interfaces refuse these types. Exported helpers using them have no host value (Rule 8.21).',
         ],
         mapping: '5. Concept mapping',
         mappingRows: [
@@ -2772,7 +2772,7 @@ export const en = {
           'Here <code>value</code> is the input parameter, <code>f32</code> is the GPU type of both the input and result, and <code>return</code> produces the value for the caller.',
         params: '2. Parameters and return types',
         paramsP:
-          'A parameter is an input to the function and the return type describes the shape of its result. Reassigning a value parameter changes a local copy for that invocation and leaves the caller’s value unchanged. This applies to helpers, methods and stage inputs. Types tell the compiler which values and operations are valid.',
+          'A parameter is an input to the function and the return type describes the shape of its result. Reassigning a value parameter changes a local copy for that invocation and leaves the caller’s value unchanged. This applies to helpers, methods and stage inputs. Types tell the compiler which values and operations are valid. Helpers accept nullable parameters and results, including generic functions and function-typed callbacks. `value?: T | null` admits both absent states. Nullable values remain outside entry IO and kernel interfaces.',
         paramsTable: [
           ['Part', 'Role'],
           ['`a`, `b`', 'GPU input values.'],
@@ -3308,7 +3308,7 @@ export const en = {
           },
           optionalValue: {
             name: 'Optional value',
-            p: 'A function that returns `undefined` beside a value returns `T | undefined` (Rule 7.10): the compiler carries the value and a flag that says whether it is there, the same on every target, and `??`, `?.` and a test against `undefined` read it. A read that nothing narrowed is `TS8003`. [optional-values](shadeOptionalValues)',
+            p: 'Function results may be `T | undefined`, `T | null` or `T | null | undefined` (Rule 7.10). Inference preserves the absent states of returned values, including callbacks and local functions. A bare return or fall-through supplies null for a null-only result and undefined when admitted. Strict tests distinguish states; `??` evaluates its fallback only for an absent value. An un-narrowed read is `TS8003`. [Nullable values](shadeNullValues)',
           },
           overloads: {
             name: 'Overload signature',
@@ -3462,7 +3462,7 @@ export const en = {
           },
           optionalMember: {
             name: 'Optional field',
-            p: 'A field `radius?: f32` holds `f32 | undefined` where the struct is a local, a parameter or a result (Rule 8.8). Read it where a test or `??` has narrowed it; the compiler carries the value and a flag that says whether it is there. A binding, a module variable or an entry cannot hold one, since the memory the host fills has no absent value. [optional-fields](shadeOptionalFields)',
+            p: 'A field `radius?: f32 | null` admits null and undefined; omitting it supplies undefined (Rule 8.8). Constructors, methods, accessors, private/protected/readonly fields and generic classes support nullable payloads. An uninitialized null-only class field starts null; one admitting undefined starts undefined. A null-only local must be assigned before reading. Static data, bindings and entry IO refuse optional storage. [Nullable values](shadeNullValues)',
           },
           stringValue: {
             name: 'String value',

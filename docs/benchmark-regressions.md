@@ -47,6 +47,16 @@ Historical catalogs without capability data keep their original contract. Regres
 accept both projected builds and reject incorrect input sizes, while preserving the earlier
 full-input baseline. The real browser checks the measured bytes against the generated catalog.
 
+### Nullable compiler adoption
+
+On 2026-10-27 UTC, PR #240 advances the documentation pin to `3e1e8420`
+for nullable values and optional implicit returns. The active comparison now uses
+`a21f7024` and `3e1e8420`. Bun 1.4.3 regenerated and reproduced
+both builds with the existing workload and instrument. Earlier catalogs remain retained.
+The candidate runtime artifact is `976d6bef3b47408808bdb674e3f93098565076d1f0d317a705506a5f2865e1f0`
+(505,394 bytes). The comparison records compiler identity; it makes no native-GPU
+performance claim for nullable values.
+
 ## Scope
 
 - Retain the first catalog and its collector contract for existing reports.

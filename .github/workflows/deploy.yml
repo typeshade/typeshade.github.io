@@ -173,6 +173,8 @@ jobs:
       # canvas and the controls the reflection asks for. Chromium opens one per page and
       # checks that the canvas mounts, the compiler stays out of the initial bundle, an edit
       # recompiles and a moved control reaches the frame. See scripts/check-live.mjs.
+      - run: bun run check:null-values
+        if: matrix.part == 3
       - run: bun run check:live
         if: matrix.part == 2
       - run: bun run check:function-demos

@@ -769,7 +769,7 @@ export const ko: Copy = {
         MISSING_DIRECTIVE:
           'TypeShade로 컴파일하는 파일에 `"use typeshade"` 지시문이 아예 없습니다.',
         TYPE_MISMATCH:
-          '연산자나 조건, 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않거나, 검사로 좁히지 않은 선택적 값 `T | undefined`를 읽거나(규칙 7.10), 컴파일러가 접는 상수를 WGSL이 거부합니다. 31을 넘는 시프트 양, 0인 제수, 서로 엇갈린 clamp 경계, 범위를 넘는 f32 값, `pow(-2., 2.)`처럼 정의역 밖에서 부르는 내장 함수가 그렇습니다.',
+          '연산자나 조건, 선언, 반환, 인자처럼 두 값이 만나는 자리에서 타입이 서로 맞지 않거나, 검사로 좁히지 않은 선택적 값(`T | undefined`, `T | null`, `T | null | undefined`)을 읽거나(규칙 7.10), 컴파일러가 접는 상수를 WGSL이 거부합니다. 31을 넘는 시프트 양, 0인 제수, 서로 엇갈린 clamp 경계, 범위를 넘는 f32 값, `pow(-2., 2.)`처럼 정의역 밖에서 부르는 내장 함수가 그렇습니다.',
         UNKNOWN_FN: '파일이 선언하지도 가져오지도 않은 함수를 부릅니다.',
         CONST_ASSIGN: '`const`나 읽기 전용 리소스처럼 바뀔 수 없는 이름에 값을 대입합니다.',
         LOOP_BOUND:
@@ -2393,6 +2393,7 @@ export const ko: Copy = {
         'pick-composite': '구조체와 배열을 고르는 조건식',
         cutout: '컷아웃 (소스 언어)',
         'default-args': '매개변수 기본값',
+        'null-values': 'null, undefined와 실제 값',
         'optional-values': '없을 수도 있는 값: T | undefined',
         'optional-fields': '없을 수도 있는 필드, 요소, 매개변수',
         'reference-parameters': '되돌려 쓰는 매개변수: @inout과 @out',
@@ -2513,6 +2514,8 @@ export const ko: Copy = {
         cutout:
           '프래그먼트 진입점이 부르는 헬퍼 안에서 `discard`를 씁니다. `fwidth`가 테두리를 부드럽게 하고, `saturate`, `exp2`, `**`가 감쇠 곡선을 만듭니다.',
         'default-args': '매개변수에 기본값을 둔 헬퍼 셋입니다. 호출마다 생략하는 인자가 다릅니다.',
+        'null-values':
+          'Nullable 클래스와 멤버는 optional chaining을 거쳐도 세 상태를 유지합니다. 왼쪽 영역은 객체가 없고(undefined), 가운데는 null 멤버이며, 오른쪽에는 실제 값이 있습니다. 엄격한 비교로 각각 빨강, 초록, 파랑을 표시합니다.',
         'optional-values':
           '함수, 지역 변수, 콜백이 `T | undefined`를 가지며, 컴파일러는 값이 있는지를 함께 전달합니다.',
         'optional-fields':
@@ -2902,7 +2905,7 @@ export const ko: Copy = {
           'getter와 setter는 각각 제 함수로 내려가고, 생성자는 TypeScript처럼 클래스마다 하나입니다.',
           '`new`는 함수 본문 안에서 값을 만들고, 모듈 상수는 객체 리터럴로 씁니다.',
           '데코레이터가 필요한 필드가 없다면 타입 별칭가 더 명확합니다.',
-          '없을 수도 있는 값은 `T | undefined`입니다. 함수 범위의 지역 변수, 매개변수, 반환값, 구조체 필드, 배열 원소가 이를 담을 수 있습니다(규칙 7.10, 8.8). 검사나 `??`, `?.`로 좁힌 곳에서 읽습니다. 바인딩, 모듈 변수, 모듈 상수, 진입점의 매개변수와 반환값은 담을 수 없고, `null`은 셰이더 값이 아니며, 이런 값을 받거나 돌려주는 내보낸 헬퍼는 아직 호스트 값이 없습니다(규칙 8.21).',
+          '함수 범위의 지역 변수, 매개변수, 반환값, 클래스 필드, 고정 길이 배열 원소는 `T | undefined`, `T | null`, `T | null | undefined`를 담을 수 있습니다(규칙 7.10, 8.8). 엄격한 비교는 null과 undefined를 구분하고, `!= null`은 둘 다 제외합니다. 바인딩, 모듈/static 데이터, 진입점 IO, 커널 인터페이스에는 이 타입을 사용할 수 없습니다. 이를 사용하는 내보낸 헬퍼는 호스트 값이 없습니다(규칙 8.21).',
         ],
         mapping: '5. 개념 대응표',
         mappingRows: [
@@ -2935,7 +2938,7 @@ export const ko: Copy = {
           '여기서 <code>value</code>는 입력 매개변수이고 <code>f32</code>는 입력과 결과의 GPU 타입입니다. <code>return</code>은 함수가 계산한 값을 호출자에게 돌려줍니다.',
         params: '2. Parameter와 반환 타입',
         paramsP:
-          '매개변수는 함수가 읽는 입력이고 반환 타입은 계산 결과의 GPU 값의 구조를 설명합니다. 값 매개변수를 다시 대입하면 해당 호출의 지역 복사본이 바뀌고 호출자의 값은 유지됩니다. 헬퍼, 메서드와 스테이지 입력에 모두 적용됩니다. 타입은 컴파일러가 표현식의 유효성을 판단하는 정보입니다.',
+          '매개변수는 함수가 읽는 입력이고 반환 타입은 계산 결과의 GPU 값의 구조를 설명합니다. 값 매개변수를 다시 대입하면 해당 호출의 지역 복사본이 바뀌고 호출자의 값은 유지됩니다. 헬퍼, 메서드와 스테이지 입력에 모두 적용됩니다. 타입은 컴파일러가 표현식의 유효성을 판단하는 정보입니다. 헬퍼는 nullable 매개변수와 반환값을 지원하며, 제네릭 함수와 함수 타입 콜백에도 적용됩니다. `value?: T | null`은 두 부재 상태를 허용합니다. 진입점 IO와 커널 인터페이스에는 nullable 값을 사용할 수 없습니다.',
         paramsTable: [
           ['부분', '역할'],
           ['`a`, `b`', 'GPU 입력 값입니다.'],
@@ -3457,7 +3460,7 @@ export const ko: Copy = {
           },
           optionalValue: {
             name: '선택적 값',
-            p: '값 옆에 `undefined`를 돌려주는 함수는 `T | undefined`를 돌려줍니다(규칙 7.10). 컴파일러는 값과 함께 값이 있는지를 나타내는 플래그를 모든 타깃에서 같은 방식으로 전달하며, `??`, `?.`, `undefined` 검사로 읽습니다. 좁히지 않고 읽으면 `TS8003`입니다. [optional-values](shadeOptionalValues)',
+            p: '함수의 반환값은 `T | undefined`, `T | null`, `T | null | undefined`가 될 수 있습니다(규칙 7.10). 콜백과 지역 함수에서도 반환값 추론은 각 부재 상태를 유지합니다. 값 없는 return이나 함수 끝 도달은 null만 허용하는 반환 타입에서 null을, undefined를 허용하면 undefined를 반환합니다. 엄격한 비교는 상태를 구분하며 `??`는 값이 없을 때만 폴백을 평가합니다. 좁히지 않고 읽으면 `TS8003`입니다. [Nullable 값](shadeNullValues)',
           },
           overloads: {
             name: '오버로드 시그니처',
@@ -3611,7 +3614,7 @@ export const ko: Copy = {
           },
           optionalMember: {
             name: '선택 필드',
-            p: '`radius?: f32` 필드는 구조체가 지역 변수, 매개변수, 반환값인 곳에서 `f32 | undefined`를 담습니다(규칙 8.8). 검사나 `??`로 좁힌 곳에서 읽습니다. 컴파일러는 값과 함께 값이 있는지를 나타내는 플래그를 전달합니다. 바인딩, 모듈 변수, 진입점은 선택 필드를 담을 수 없습니다. 호스트가 채우는 메모리에는 없는 값이 없기 때문입니다. [optional-fields](shadeOptionalFields)',
+            p: '`radius?: f32 | null` 필드는 null과 undefined를 허용하며, 생략하면 undefined가 됩니다(규칙 8.8). 생성자, 메서드, 접근자, private/protected/readonly 필드와 제네릭 클래스도 nullable 값을 지원합니다. 초기화하지 않은 클래스 필드는 null만 허용하면 null, undefined를 허용하면 undefined로 시작합니다. null만 허용하는 지역 변수는 읽기 전에 대입해야 합니다. Static 데이터, 바인딩, 진입점 IO는 선택적 값을 저장할 수 없습니다. [Nullable 값](shadeNullValues)',
           },
           stringValue: {
             name: '문자열 값',
