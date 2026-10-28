@@ -8,6 +8,10 @@
 
 **TypeScript for shaders.**
 
+> This repository preserves the website's earlier source and history. Active website
+> development, issues, and pull requests belong in [typeshade/web](https://github.com/typeshade/web).
+> Do not add new site features or maintenance changes here.
+
 TypeShade lets you author shader programs in TypeScript with a TypeShade-specific language model. A source file opts into that model with the file-level directive `"use typeshade"`.
 
 ```ts
@@ -45,51 +49,19 @@ Start with the documentation site:
 
 The important concept to understand first is **`"use typeshade"`**. It is the boundary between ordinary TypeScript and TypeShade's shader authoring semantics.
 
-## Repository layout
+## Repository status
 
-| Path                   | Purpose                                               |
-| ---------------------- | ----------------------------------------------------- |
-| `typeshade/`           | TypeShade compiler and language implementation        |
-| `typeshade.github.io/` | Documentation site, examples, and generated reference |
-| `.github/`             | CI and repository automation                          |
+The current website source is maintained in [typeshade/web](https://github.com/typeshade/web).
+Use that repository for documentation, examples, site code, and deployment changes.
 
-The documentation site is built with Astro and served by a Cloudflare Worker, which also serves the examples the compiler has added since the last build and opens on GitHub the issues readers file on the site ([docs/cloudflare.md](docs/cloudflare.md)). The compiler is vendored as a git submodule so examples and generated API documentation can be checked against a pinned compiler revision.
+This repository keeps its existing source tree and Git history as a historical snapshot. Its
+site build, compiler pinning, example publishing, and gallery setup workflows are retired here.
+The site is no longer developed or deployed from this repository. See
+[docs/repository-migration.md](docs/repository-migration.md) for the migration record and the
+remaining cutover boundaries.
 
-## Development
-
-```bash
-git clone --recurse-submodules https://github.com/typeshade/typeshade.github.io
-cd typeshade.github.io
-bun install
-bun run dev
-```
-
-The production build verifies generated artifacts, documentation consistency, links, and SEO before deployment. See `DESIGN.md` for the site's writing and design rules and `.claude/skills/typeshade-site/SKILL.md` for the site maintenance workflow.
-
-## Checks
-
-`bun run format:check` runs first in CI, and `bun run format` fixes what it reports: Prettier over the TypeScript, CSS, JSON and Markdown, then `scripts/astro-semicolons.ts`, which writes the `;` in each component's frontmatter and `<script>`. Prettier leaves `.astro` files alone, because Astro keeps the whitespace written between tags and a reformatted component renders differently.
-
-`bun run build` runs, in order:
-
-- `check-style`: the voice rules in `DESIGN.md`, over `src/`, `scripts/` and the Markdown files, and that `src/styles/global.css` names only shared classes (DESIGN.md, Styling).
-- `check-copy`: numerals, links and code spans equal in English and Korean; label widths.
-- `check-i18n`: every string in the dictionaries, every locale URL through `localePath()`, no Hangul or locale literal outside `src/i18n/`, route parity between `src/pages` and `src/pages/ko`, one-line route files.
-- `check-guide`: the Korean guide translations against the pinned English.
-- `check-notes`: the reference notes against their rules and their readings at the pin (DESIGN.md, Reference notes). After the build, `bun scripts/check-reference-notes.ts --dist` reads the built pages.
-- `check-api`: the reference data from the compiler.
-- `check-api-translations`: the Korean API reference against the pinned JSDoc (`bun run check:api-ko`).
-- The artifact hashes, the Korean font coverage, then Astro and Pagefind.
-
-After the build: `bun run qa:seo`, `bun run qa:links` and `bun run qa:openseo` over `dist/`.
-
-`bun run check:null-values` opens the nullable example in English and Korean on WebGPU and WebGL2. It verifies the three colored bands, the TS8003 diagnostic and its repair. CI runs it in browser part 3.
-
-In a Claude Code session, `scripts/commit-gate.mjs` runs the checks that read only the source tree (`format:check`, `check-style`, `check-copy`, `check-i18n`, `check:notes:lint`) before every commit, side by side in about ten seconds, so a numeral that differs between the English and the Korean stops the commit instead of a CI build.
-
-On a pull request, CI also checks what a compiler bump owes the site. The check runs `scripts/downstream-impact.ts` from the pinned compiler. It fails while a page, a component or a script still names an export or a file that the new pin removes. It also fails while a compiler change proposal that the new pin implements names this site and `compiler-changes.md` does not record its id. It also fails while a compiler `LINT.ThenChange(//typeshade.github.io/…)` target has not changed with its block. The site's own `LINT.IfChange` pairs are checked by the compiler's `scripts/ifchange.ts`. The compiler's `AGENTS.md` describes the convention.
-
-A pull request that changes only documents (`.md` files outside `content/`, `src/` and `public/`) runs the build and the checks above, which read documents, and skips the browser checks and the preview, which open `dist/` and read none. The `change scope` job in `deploy.yml` decides from the diff, and the required check, `build`, passes on the build alone. A push to `main` runs everything.
+The old source is available for history and comparison. Its development instructions and
+automation describe the previous site implementation and are not instructions for current work.
 
 ## Status
 
